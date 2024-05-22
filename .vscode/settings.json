@@ -1,0 +1,4 @@
+{
+    "editor.fontVariations": false,
+    "css.lint.unknownAtRules": "ignore"
+}
