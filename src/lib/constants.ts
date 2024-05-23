@@ -1,12 +1,35 @@
+import {
+  LayoutDashboard,
+  BriefcaseBusiness,
+  CalendarClock,
+  UserRound,
+  LineChart,
+} from "lucide-react";
+
 export const SIDEBAR_LINKS = [
   {
-    imgURL: "/icons/dashboard.svg",
-    route: "/",
+    icon: LayoutDashboard,
+    route: "#",
     label: "Dashboard",
   },
   {
-    imgURL: "/icons/jobs.svg",
-    route: "/my-jobs",
+    icon: BriefcaseBusiness,
+    route: "#",
     label: "My Jobs",
+  },
+  {
+    icon: CalendarClock,
+    route: "#",
+    label: "Activities",
+  },
+  {
+    icon: UserRound,
+    route: "#",
+    label: "Profile",
+  },
+  {
+    icon: LineChart,
+    route: "#",
+    label: "Analytics",
   },
 ];
