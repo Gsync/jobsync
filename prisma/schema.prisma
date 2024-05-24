@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  name        String
+  email       String   @unique
+  password    String
+  createdAt   DateTime @default(now())
+  jobsApplied Job[]
+}
+
+model Contact {
+  id          Int        @id @default(autoincrement())
+  name        String
+  email       String
+  Interview   Interview? @relation(fields: [interviewId], references: [id])
+  interviewId Int?
+}
+
+model JobTitle {
+  id    Int    @id @default(autoincrement())
+  title String @unique
+  jobs  Job[]
+}
+
+model JobStatus {
+  id         Int    @id @default(autoincrement())
+  statusName String @unique
+  jobs       Job[]
+}
+
+model Location {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  state       String?
+  country     String
+  jobsApplied Job[]
+}
+
+model Company {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  jobsApplied Job[]
+  logoUrl     String? // field is optional
+}
+
+model JobSource {
+  id          Int    @id @default(autoincrement())
+  name        String
+  jobsApplied Job[]
+}
+
+model Interview {
+  id           Int       @id @default(autoincrement())
+  jobId        Int
+  job          Job?      @relation(fields: [jobId], references: [id])
+  interviewers Contact[]
+}
+
+model Job {
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  User        User        @relation(fields: [userId], references: [id])
+  description String
+  createdAt   DateTime
+  appliedDate DateTime?
+  dueDate     DateTime?
+  statusId    Int
+  Status      JobStatus   @relation(fields: [statusId], references: [id])
+  JobTitle    JobTitle    @relation(fields: [jobTitleId], references: [id])
+  jobTitleId  Int
+  Company     Company     @relation(fields: [companyId], references: [id])
+  companyId   Int
+  JobSource   JobSource?  @relation(fields: [jobSourceId], references: [id])
+  jobSourceId Int?
+  salaryRange String?
+  Location    Location?   @relation(fields: [locationId], references: [id])
+  locationId  Int?
+  Interview   Interview[]
+}
