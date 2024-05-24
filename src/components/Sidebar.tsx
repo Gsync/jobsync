@@ -16,14 +16,14 @@ function Sidebar() {
           <Briefcase className="h-4 w-4 transition-all group-hover:scale-110" />
           <span className="sr-only">JobSync</span>
         </Link>
-        <TooltipProvider delayDuration={200}>
+        <TooltipProvider delayDuration={800}>
           {SIDEBAR_LINKS.map((item) => {
             return (
               <NavLink
                 key={item.label}
                 label={item.label}
                 Icon={item.icon}
-                route="#"
+                route={item.route}
               />
             );
           })}
