@@ -7,6 +7,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { LucideProps } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface NavLinkProps {
   label: string;
@@ -14,17 +15,25 @@ interface NavLinkProps {
     Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
   >;
   route: string;
+  pathname: string;
 }
 
-function NavLink({ label, Icon, route }: NavLinkProps) {
+function NavLink({ label, Icon, route, pathname }: NavLinkProps) {
+  const isActive = route === pathname || pathname.startsWith(`${route}/`);
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <Link
           href={route}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+          className={cn("navlink", {
+            "border-b-2 border-black dark:border-white": isActive,
+          })}
         >
-          <Icon className="h-5 w-5" />
+          <Icon
+            className={cn("h-5 w-5", {
+              "text-black dark:text-white": isActive,
+            })}
+          />
           <span className="sr-only">{label}</span>
         </Link>
       </TooltipTrigger>

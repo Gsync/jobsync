@@ -9,6 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@nivo/bar": "^0.87.0",
+    "@nivo/calendar": "^0.87.0",
+    "@nivo/core": "^0.87.0",
     "@prisma/client": "^5.14.0",
     "@radix-ui/react-avatar": "^1.0.4",
     "@radix-ui/react-dialog": "^1.0.5",
