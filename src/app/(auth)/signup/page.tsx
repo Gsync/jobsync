@@ -66,8 +66,7 @@ export default function Signup() {
       <CardContent>
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            // className="w-2/3 space-y-6"
+          // className="w-2/3 space-y-6"
           >
             <div className="grid gap-4">
               <div className="grid gap-2">

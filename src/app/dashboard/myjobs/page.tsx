@@ -28,6 +28,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MY_JOBS_DATA } from "@/lib/myJobsData";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "My Jobs | JobSync",
+};
 
 function MyJobs() {
   return (

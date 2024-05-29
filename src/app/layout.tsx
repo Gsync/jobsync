@@ -10,7 +10,10 @@ const fontSans = FontSans({
 });
 
 export const metadata: Metadata = {
-  title: "JobSync App",
+  title: {
+    template: "%s | JobSync",
+    default: "JobSync",
+  },
   description: "Job Application Tracking System",
 };
 

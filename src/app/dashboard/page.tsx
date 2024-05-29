@@ -5,6 +5,12 @@ import RecentJobsCard from "@/components/RecentJobsCard";
 import WeeklyBarChart from "@/components/WeeklyBarChart";
 import { calendarData } from "@/lib/calendarData";
 
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+};
+
 export default function Dashboard() {
   return (
     <>

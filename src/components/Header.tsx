@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { PanelLeft, Briefcase, Search } from "lucide-react";
+import { PanelLeft, Briefcase, Search, PowerIcon } from "lucide-react";
 import { Input } from "./ui/input";
 
 import { Button } from "./ui/button";
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/sheet";
 import { ModeToggle } from "./ModeToggle";
 import { SIDEBAR_LINKS } from "@/lib/constants";
+import { signOut } from "@/auth";
 
 function Header() {
   return (
@@ -90,7 +91,19 @@ function Header() {
           <DropdownMenuItem>Settings</DropdownMenuItem>
           <DropdownMenuItem>Support</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Logout</DropdownMenuItem>
+          <form
+            action={async () => {
+              "use server";
+              await signOut();
+            }}
+          >
+            <DropdownMenuItem>
+              <Button variant="ghost" className="w-full">
+                <PowerIcon className="w-5" />
+                <div className="hidden md:block mx-2">Logout</div>
+              </Button>
+            </DropdownMenuItem>
+          </form>
         </DropdownMenuContent>
       </DropdownMenu>
       <ModeToggle />
