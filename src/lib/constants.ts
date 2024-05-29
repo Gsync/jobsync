@@ -9,22 +9,22 @@ import {
 export const SIDEBAR_LINKS = [
   {
     icon: LayoutDashboard,
-    route: "/",
+    route: "/dashboard",
     label: "Dashboard",
   },
   {
     icon: BriefcaseBusiness,
-    route: "/myjobs",
+    route: "/dashboard/myjobs",
     label: "My Jobs",
   },
   {
     icon: CalendarClock,
-    route: "/activities",
+    route: "/dashboard/activities",
     label: "Activities",
   },
   {
     icon: UserRound,
-    route: "/profile",
+    route: "/dashboard/profile",
     label: "Profile",
   },
   {

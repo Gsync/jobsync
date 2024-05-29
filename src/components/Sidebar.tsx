@@ -39,7 +39,7 @@ function Sidebar() {
           <NavLink
             label="Settings"
             Icon={Settings}
-            route="/settings"
+            route="/dashboard/settings"
             pathname={path}
           />
         </TooltipProvider>

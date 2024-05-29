@@ -19,7 +19,8 @@ interface NavLinkProps {
 }
 
 function NavLink({ label, Icon, route, pathname }: NavLinkProps) {
-  const isActive = route === pathname || pathname.startsWith(`${route}/`);
+  const isActive =
+    route === pathname || pathname.startsWith(`${route}/dashboard`);
   return (
     <Tooltip>
       <TooltipTrigger asChild>
