@@ -11,7 +11,7 @@ datasource db {
 }
 
 model User {
-  id          Int      @id @default(autoincrement())
+  id          String   @id @default(uuid())
   name        String
   email       String   @unique
   password    String
@@ -20,27 +20,27 @@ model User {
 }
 
 model Contact {
-  id          Int        @id @default(autoincrement())
+  id          String     @id @default(uuid())
   name        String
   email       String
   Interview   Interview? @relation(fields: [interviewId], references: [id])
-  interviewId Int?
+  interviewId String?
 }
 
 model JobTitle {
-  id    Int    @id @default(autoincrement())
+  id    String @id @default(uuid())
   title String @unique
   jobs  Job[]
 }
 
 model JobStatus {
-  id         Int    @id @default(autoincrement())
+  id         String @id @default(uuid())
   statusName String @unique
   jobs       Job[]
 }
 
 model Location {
-  id          Int     @id @default(autoincrement())
+  id          String  @id @default(uuid())
   name        String  @unique
   state       String?
   country     String
@@ -48,43 +48,43 @@ model Location {
 }
 
 model Company {
-  id          Int     @id @default(autoincrement())
+  id          String  @id @default(uuid())
   name        String  @unique
   jobsApplied Job[]
   logoUrl     String? // field is optional
 }
 
 model JobSource {
-  id          Int    @id @default(autoincrement())
+  id          String @id @default(uuid())
   name        String
   jobsApplied Job[]
 }
 
 model Interview {
-  id           Int       @id @default(autoincrement())
-  jobId        Int
+  id           String    @id @default(uuid())
+  jobId        String
   job          Job?      @relation(fields: [jobId], references: [id])
   interviewers Contact[]
 }
 
 model Job {
-  id          Int         @id @default(autoincrement())
-  userId      Int
+  id          String      @id @default(uuid())
+  userId      String
   User        User        @relation(fields: [userId], references: [id])
   description String
   createdAt   DateTime
   appliedDate DateTime?
   dueDate     DateTime?
-  statusId    Int
+  statusId    String
   Status      JobStatus   @relation(fields: [statusId], references: [id])
   JobTitle    JobTitle    @relation(fields: [jobTitleId], references: [id])
-  jobTitleId  Int
+  jobTitleId  String
   Company     Company     @relation(fields: [companyId], references: [id])
-  companyId   Int
+  companyId   String
   JobSource   JobSource?  @relation(fields: [jobSourceId], references: [id])
-  jobSourceId Int?
+  jobSourceId String?
   salaryRange String?
   Location    Location?   @relation(fields: [locationId], references: [id])
-  locationId  Int?
+  locationId  String?
   Interview   Interview[]
 }

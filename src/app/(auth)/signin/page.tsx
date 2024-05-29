@@ -21,6 +21,9 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useFormState, useFormStatus } from "react-dom";
+import { ArrowRightIcon } from "lucide-react";
+import { authenticate } from "@/actions/auth.actions";
 
 const FormSchema = z.object({
   email: z
@@ -41,9 +44,9 @@ export default function Signin() {
     resolver: zodResolver(FormSchema),
   });
 
-  function onSubmit(data: z.infer<typeof FormSchema>) {
-    console.log("onsubmit data: ", data);
-  }
+  const [errorMessage, dispatch] = useFormState(authenticate, undefined);
+
+  const { pending } = useFormStatus();
 
   return (
     <Card className="mx-auto max-w-sm">
@@ -56,7 +59,7 @@ export default function Signin() {
       <CardContent>
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(onSubmit)}
+            action={dispatch}
             // className="w-2/3 space-y-6"
           >
             <div className="grid gap-4">
@@ -97,9 +100,20 @@ export default function Signin() {
                 {/* </div> */}
                 {/* <Input id="password" type="password" required /> */}
               </div>
-              <Button type="submit" className="w-full">
+              <Button aria-disabled={pending} className="w-full">
                 Login
               </Button>
+              <div
+                className="flex h-8 items-end space-x-1"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                {errorMessage && (
+                  <>
+                    <p className="text-sm text-red-500">{errorMessage}</p>
+                  </>
+                )}
+              </div>
             </div>
           </form>
         </Form>
