@@ -10,7 +10,7 @@ export default function RecentJobsCard() {
       <CardContent className="grid gap-6">
         <div className="flex items-center gap-4">
           <Avatar className="hidden h-9 w-9 sm:flex">
-            <AvatarImage src="/avatars/01.png" alt="Avatar" />
+            {/* <AvatarImage src="/avatars/01.png" alt="Avatar" /> */}
             <AvatarFallback>MS</AvatarFallback>
           </Avatar>
           <div className="grid gap-1">
@@ -23,7 +23,7 @@ export default function RecentJobsCard() {
         </div>
         <div className="flex items-center gap-4">
           <Avatar className="hidden h-9 w-9 sm:flex">
-            <AvatarImage src="/avatars/02.png" alt="Avatar" />
+            {/* <AvatarImage src="/avatars/02.png" alt="Avatar" /> */}
             <AvatarFallback>FB</AvatarFallback>
           </Avatar>
           <div className="grid gap-1">
@@ -36,7 +36,7 @@ export default function RecentJobsCard() {
         </div>
         <div className="flex items-center gap-4">
           <Avatar className="hidden h-9 w-9 sm:flex">
-            <AvatarImage src="/avatars/03.png" alt="Avatar" />
+            {/* <AvatarImage src="/avatars/03.png" alt="Avatar" /> */}
             <AvatarFallback>AM</AvatarFallback>
           </Avatar>
           <div className="grid gap-1">
@@ -49,7 +49,7 @@ export default function RecentJobsCard() {
         </div>
         <div className="flex items-center gap-4">
           <Avatar className="hidden h-9 w-9 sm:flex">
-            <AvatarImage src="/avatars/04.png" alt="Avatar" />
+            {/* <AvatarImage src="/avatars/04.png" alt="Avatar" /> */}
             <AvatarFallback>NF</AvatarFallback>
           </Avatar>
           <div className="grid gap-1">
@@ -62,7 +62,7 @@ export default function RecentJobsCard() {
         </div>
         <div className="flex items-center gap-4">
           <Avatar className="hidden h-9 w-9 sm:flex">
-            <AvatarImage src="/avatars/05.png" alt="Avatar" />
+            {/* <AvatarImage src="/avatars/05.png" alt="Avatar" /> */}
             <AvatarFallback>SD</AvatarFallback>
           </Avatar>
           <div className="grid gap-1">

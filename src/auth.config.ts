@@ -1,17 +1,21 @@
 import type { NextAuthConfig } from "next-auth";
 
+declare module "next-auth" {
+  interface Session {
+    accessToken?: any;
+  }
+}
+
 export const authConfig = {
   pages: {
     signIn: "/signin",
     error: "/signin",
   },
+  secret: process.env.AUTH_SECRET,
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
-      console.log("auth: ", auth);
-      console.log("PATHNAME: ", nextUrl);
       const isLoggedIn = !!auth?.user;
       const isOnDashboard = nextUrl.pathname.startsWith("/dashboard");
-      console.log("isOnDashboard: ", isOnDashboard);
 
       if (isOnDashboard) {
         if (isLoggedIn) return true;
@@ -20,6 +24,11 @@ export const authConfig = {
         return Response.redirect(new URL("/dashboard", nextUrl));
       }
       return true;
+    },
+    async session({ session, token }) {
+      // Send properties to the client, like an access_token from a provider.
+      session.accessToken = token;
+      return session;
     },
   },
   providers: [], // Add providers with an empty array for now
