@@ -8,20 +8,12 @@ export default function UserAvatar({ user }: { user: SessionUser }) {
   // console.log("session user :", session?.user, status);
   if (!user) return null;
   return (
-    <>
-      <Button
-        variant="outline"
-        size="icon"
-        className="overflow-hidden rounded-full"
-      >
-        <Image
-          src="/images/placeholder-user.jpg"
-          width={36}
-          height={36}
-          alt="Avatar"
-          className="overflow-hidden rounded-full"
-        />
-      </Button>
-    </>
+    <Image
+      src="/images/placeholder-user.jpg"
+      width={36}
+      height={36}
+      alt="Avatar"
+      className="overflow-hidden rounded-full"
+    />
   );
 }
