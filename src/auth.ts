@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
 var bcrypt = require("bcryptjs");
 import { authConfig } from "./auth.config";
-import { User } from "./models/user";
+import { User } from "./models/user.model";
 import prisma from "./lib/db";
 
 async function getUser(email: string): Promise<User | undefined> {

@@ -19,12 +19,13 @@ import {
 } from "@/components/ui/sheet";
 import { ModeToggle } from "./ModeToggle";
 import { SIDEBAR_LINKS } from "@/lib/constants";
-import { auth, signOut } from "@/auth";
+import { signOut } from "@/auth";
 import UserAvatar from "./UserAvatar";
-import { SessionUser } from "@/models/user";
+import { getCurrentUser } from "@/utils/user.utils";
 
 async function Header() {
-  const session = await auth();
+  // const session = await auth();
+  const user = await getCurrentUser();
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
       <Sheet>
@@ -74,7 +75,7 @@ async function Header() {
 
       <DropdownMenu>
         <DropdownMenuTrigger>
-          <UserAvatar user={session?.user as SessionUser} />
+          <UserAvatar user={user} />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>

@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/table";
 import { MY_JOBS_DATA } from "@/lib/myJobsData";
 import { Metadata } from "next";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { AddJob } from "@/components/AddJob";
 
 export const metadata: Metadata = {
   title: "My Jobs | JobSync",
@@ -68,12 +70,22 @@ function MyJobs() {
                   Export
                 </span>
               </Button>
-              <Button size="sm" className="h-8 gap-1">
-                <PlusCircle className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Add Job
-                </span>
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="h-8 gap-1">
+                    <PlusCircle className="h-3.5 w-3.5" />
+                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                      Add Job
+                    </span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent
+                  className="lg:max-w-screen-lg overflow-y-scroll lg:max-h-screen"
+                  // className="sm:max-w-[425px]"
+                >
+                  <AddJob />
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </CardHeader>

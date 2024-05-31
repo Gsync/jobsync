@@ -1,9 +1,8 @@
-import { Button } from "./ui/button";
 import Image from "next/image";
-import { useSession } from "next-auth/react";
-import { SessionUser } from "@/models/user";
+import { CurrentUser } from "@/models/user.model";
+// import { useSession } from "next-auth/react";
 
-export default function UserAvatar({ user }: { user: SessionUser }) {
+export default function UserAvatar({ user }: { user: CurrentUser | null }) {
   // const { data: session, status } = useSession();
   // console.log("session user :", session?.user, status);
   if (!user) return null;

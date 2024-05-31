@@ -5,7 +5,10 @@ export interface User {
   password: string;
 }
 
-export type SessionUser = {
+export type CurrentUser = {
+  id: string;
   name: string;
   email: string;
+  iat?: number;
+  exp?: number;
 };

@@ -6,7 +6,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const loggedIn: User = { $id: "23", name: "JobSync", email: "test@test.com" };
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <Sidebar />
