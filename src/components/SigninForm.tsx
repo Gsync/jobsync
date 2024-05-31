@@ -16,26 +16,11 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-const FormSchema = z.object({
-  email: z
-    .string({
-      required_error: "Email is required.",
-    })
-    .min(3, {
-      message: "Email must be at least 3 characters.",
-    })
-    .email("Please enter a valid email."),
-  password: z
-    .string({
-      required_error: "Please enter your password.",
-    })
-    .min(1),
-});
+import { SigninFormSchema } from "@/models/signinForm.schema";
 
 function SigninForm() {
-  const form = useForm<z.infer<typeof FormSchema>>({
-    resolver: zodResolver(FormSchema),
+  const form = useForm<z.infer<typeof SigninFormSchema>>({
+    resolver: zodResolver(SigninFormSchema),
     mode: "onChange",
   });
 
@@ -44,14 +29,17 @@ function SigninForm() {
 
   const { pending } = useFormStatus();
 
-  const getFormData = (object: Object) =>
-    Object.keys(object).reduce((formData, key) => {
-      formData.append(key, object[key as keyof object]);
-      return formData;
-    }, new FormData());
+  // const getFormData = (object: Object) =>
+  //   Object.keys(object).reduce((formData, key) => {
+  //     formData.append(key, object[key as keyof object]);
+  //     return formData;
+  //   }, new FormData());
 
-  const onSubmit = async (data: z.infer<typeof FormSchema>) => {
-    const formData = getFormData(data);
+  const onSubmit = async (data: z.infer<typeof SigninFormSchema>) => {
+    // const formData = getFormData(data);
+    const formData = new FormData();
+    formData.set("email", data.email);
+    formData.set("password", data.password);
     const errorResponse = await authenticate("", formData);
     if (!!errorResponse) {
       setError(errorResponse);

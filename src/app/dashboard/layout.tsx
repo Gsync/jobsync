@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
+import { Toaster } from "@/components/ui/toaster";
 
 export default function RootLayout({
   children,
@@ -14,6 +15,7 @@ export default function RootLayout({
         <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-4 lg:grid-cols-3 xl:grid-cols-3">
           {children}
         </main>
+        <Toaster />
       </div>
     </div>
   );
