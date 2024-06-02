@@ -29,12 +29,32 @@ import { AddJobFormSchema } from "@/models/addJobForm.schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "./ui/use-toast";
+import { ComboboxFormItem } from "./ComboBoxFormItem";
 
 interface AddJobFormProps {
   jobStatuses: { id: string; statusName: string }[];
 }
 
 export default function AddJobForm({ jobStatuses }: AddJobFormProps) {
+  const jobSources = [
+    { label: "Indeed", value: "indeed" },
+    { label: "Linkedin", value: "linkedin" },
+    { label: "Monster", value: "monster" },
+    { label: "Glassdoor", value: "glassdoor" },
+    { label: "Company Career page", value: "careerpage" },
+    { label: "Google", value: "google" },
+    { label: "ZipRecruiter", value: "ziprecruiter" },
+    { label: "Job Street", value: "jobstreet" },
+    { label: "Other", value: "other" },
+  ];
+  const comboOptions = [
+    { label: "option1", value: "optionvalue1" },
+    { label: "option2", value: "optionvalue2" },
+    { label: "option3", value: "optionvalue3" },
+    { label: "option4", value: "optionvalue4" },
+  ];
+  const selectedValue = comboOptions[1].value;
+
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
     resolver: zodResolver(AddJobFormSchema),
     // mode: "onChange",
@@ -54,6 +74,10 @@ export default function AddJobForm({ jobStatuses }: AddJobFormProps) {
         </pre>
       ),
     });
+  }
+
+  function handleOnCreate(value: string) {
+    console.log("handle new optoin created: ", value);
   }
 
   return (
@@ -102,7 +126,7 @@ export default function AddJobForm({ jobStatuses }: AddJobFormProps) {
               name="location"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Location</FormLabel>
+                  <FormLabel>Job Location</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -117,13 +141,15 @@ export default function AddJobForm({ jobStatuses }: AddJobFormProps) {
               control={form.control}
               name="source"
               render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Source</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                <ComboboxFormItem
+                  options={jobSources}
+                  label="Job Source"
+                  field={field}
+                  onChange={field.onChange}
+                  onCreate={(value) => {
+                    handleOnCreate(value);
+                  }}
+                ></ComboboxFormItem>
               )}
             />
           </div>
@@ -308,6 +334,7 @@ export default function AddJobForm({ jobStatuses }: AddJobFormProps) {
               )}
             />
           </div>
+
           {/* Job Description */}
           <div className="md:col-span-2">
             <FormField

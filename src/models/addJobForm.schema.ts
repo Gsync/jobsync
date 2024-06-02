@@ -45,6 +45,7 @@ export const AddJobFormSchema = z.object({
   //
   dateApplied: z.date(),
   salaryRange: z.string(),
+  testCombo: z.string(),
   jobDescription: z.string().min(10, {
     message: "Job description must be at least 10 characters.",
   }),
