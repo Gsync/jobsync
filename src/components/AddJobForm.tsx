@@ -21,12 +21,19 @@ import { DatePicker } from "./DatePicker";
 import SelectFormCtrl from "./Select";
 import { JOB_SOURCES } from "@/lib/data/jobSourcesData";
 import { SALARY_RANGES } from "@/lib/data/salaryRangeData";
+import { useState } from "react";
 
 interface AddJobFormProps {
   jobStatuses: { id: string; statusName: string }[];
+  companies: any[];
 }
 
-export default function AddJobForm({ jobStatuses }: AddJobFormProps) {
+export default function AddJobForm({
+  jobStatuses,
+  companies,
+}: AddJobFormProps) {
+  const [loading, setLoading] = useState(false);
+
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
     resolver: zodResolver(AddJobFormSchema),
     // mode: "onChange",
@@ -46,10 +53,6 @@ export default function AddJobForm({ jobStatuses }: AddJobFormProps) {
         </pre>
       ),
     });
-  }
-
-  function handleOnCreate(value: string) {
-    console.log("handle new optoin created: ", value);
   }
 
   return (
@@ -84,7 +87,11 @@ export default function AddJobForm({ jobStatuses }: AddJobFormProps) {
                 <FormItem className="flex flex-col">
                   <FormLabel>Company</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Combobox
+                      dataKeys={["name", "id"]}
+                      options={companies}
+                      field={field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -116,11 +123,9 @@ export default function AddJobForm({ jobStatuses }: AddJobFormProps) {
                 <FormItem className="flex flex-col">
                   <FormLabel>Job Source</FormLabel>
                   <Combobox
+                    dataKeys={["label", "value"]}
                     options={JOB_SOURCES}
                     field={field}
-                    onCreate={(value) => {
-                      handleOnCreate(value);
-                    }}
                   />
                   <FormMessage />
                 </FormItem>
