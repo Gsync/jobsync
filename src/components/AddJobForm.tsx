@@ -19,17 +19,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { cn } from "@/lib/utils";
-import { Calendar as CalendarIcon } from "lucide-react";
-import { addDays, format } from "date-fns";
-import { Calendar } from "./ui/calendar";
 import { z } from "zod";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "./ui/use-toast";
 import { ComboboxFormItem } from "./ComboBoxFormItem";
+import { DatePicker } from "./DatePicker";
 
 interface AddJobFormProps {
   jobStatuses: { id: string; statusName: string }[];
@@ -47,13 +43,6 @@ export default function AddJobForm({ jobStatuses }: AddJobFormProps) {
     { label: "Job Street", value: "jobstreet" },
     { label: "Other", value: "other" },
   ];
-  const comboOptions = [
-    { label: "option1", value: "optionvalue1" },
-    { label: "option2", value: "optionvalue2" },
-    { label: "option3", value: "optionvalue3" },
-    { label: "option4", value: "optionvalue4" },
-  ];
-  const selectedValue = comboOptions[1].value;
 
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
     resolver: zodResolver(AddJobFormSchema),
@@ -202,55 +191,7 @@ export default function AddJobForm({ jobStatuses }: AddJobFormProps) {
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Due Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-[280px] pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      {/* <Select
-                        onValueChange={(value) =>
-                          setDate(addDays(new Date(), parseInt(value)))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent position="popper">
-                          <SelectItem value="0">Today</SelectItem>
-                          <SelectItem value="1">Tomorrow</SelectItem>
-                          <SelectItem value="3">In 3 days</SelectItem>
-                          <SelectItem value="7">In a week</SelectItem>
-                        </SelectContent>
-                      </Select> */}
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        /* onSelect={() => {
-                          setCalendarOpen(false);
-                        }} */
-                        disabled={(date) =>
-                          date > new Date() || date < new Date("1900-01-01")
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <DatePicker field={field} presets={true} />
                   <FormMessage />
                 </FormItem>
               )}
@@ -264,55 +205,7 @@ export default function AddJobForm({ jobStatuses }: AddJobFormProps) {
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Date Applied</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-[280px] pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      {/* <Select
-                        onValueChange={(value) =>
-                          setDate(addDays(new Date(), parseInt(value)))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent position="popper">
-                          <SelectItem value="0">Today</SelectItem>
-                          <SelectItem value="1">Tomorrow</SelectItem>
-                          <SelectItem value="3">In 3 days</SelectItem>
-                          <SelectItem value="7">In a week</SelectItem>
-                        </SelectContent>
-                      </Select> */}
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        /* onSelect={() => {
-                          setCalendarOpen(false);
-                        }} */
-                        disabled={(date) =>
-                          date > new Date() || date < new Date("1900-01-01")
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <DatePicker field={field} presets={false} />
                   <FormMessage />
                 </FormItem>
               )}
