@@ -21,6 +21,7 @@ import {
 import { ControllerRenderProps } from "react-hook-form";
 import { Job } from "@/models/job.model";
 import { useState } from "react";
+import { FormControl } from "./ui/form";
 
 interface DatePickerProps {
   field: ControllerRenderProps<Job, any>;
@@ -33,16 +34,22 @@ export function DatePicker({ field, presets }: DatePickerProps) {
   return (
     <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant={"outline"}
-          className={cn(
-            "w-[280px] justify-start text-left font-normal",
-            !field.value && "text-muted-foreground"
-          )}
-        >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-        </Button>
+        <FormControl>
+          <Button
+            variant={"outline"}
+            className={cn(
+              "w-[280px] justify-start text-left font-normal",
+              !field.value && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {field.value ? (
+              format(field.value, "PPP")
+            ) : (
+              <span>Pick a date</span>
+            )}
+          </Button>
+        </FormControl>
       </PopoverTrigger>
       <PopoverContent className="flex w-auto flex-col space-y-2 p-2">
         {presets ? (

@@ -27,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MY_JOBS_DATA } from "@/lib/myJobsData";
+import { MY_JOBS_DATA } from "@/lib/data/myJobsData";
 import { Metadata } from "next";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { AddJob } from "@/components/AddJob";

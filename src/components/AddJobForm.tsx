@@ -11,39 +11,22 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "./ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
 import { z } from "zod";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "./ui/use-toast";
-import { ComboboxFormItem } from "./ComboBoxFormItem";
+import { Combobox } from "./ComboBox";
 import { DatePicker } from "./DatePicker";
+import SelectFormCtrl from "./Select";
+import { JOB_SOURCES } from "@/lib/data/jobSourcesData";
+import { SALARY_RANGES } from "@/lib/data/salaryRangeData";
 
 interface AddJobFormProps {
   jobStatuses: { id: string; statusName: string }[];
 }
 
 export default function AddJobForm({ jobStatuses }: AddJobFormProps) {
-  const jobSources = [
-    { label: "Indeed", value: "indeed" },
-    { label: "Linkedin", value: "linkedin" },
-    { label: "Monster", value: "monster" },
-    { label: "Glassdoor", value: "glassdoor" },
-    { label: "Company Career page", value: "careerpage" },
-    { label: "Google", value: "google" },
-    { label: "ZipRecruiter", value: "ziprecruiter" },
-    { label: "Job Street", value: "jobstreet" },
-    { label: "Other", value: "other" },
-  ];
-
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
     resolver: zodResolver(AddJobFormSchema),
     // mode: "onChange",
@@ -130,15 +113,17 @@ export default function AddJobForm({ jobStatuses }: AddJobFormProps) {
               control={form.control}
               name="source"
               render={({ field }) => (
-                <ComboboxFormItem
-                  options={jobSources}
-                  label="Job Source"
-                  field={field}
-                  onChange={field.onChange}
-                  onCreate={(value) => {
-                    handleOnCreate(value);
-                  }}
-                ></ComboboxFormItem>
+                <FormItem className="flex flex-col">
+                  <FormLabel>Job Source</FormLabel>
+                  <Combobox
+                    options={JOB_SOURCES}
+                    field={field}
+                    onCreate={(value) => {
+                      handleOnCreate(value);
+                    }}
+                  />
+                  <FormMessage />
+                </FormItem>
               )}
             />
           </div>
@@ -148,36 +133,14 @@ export default function AddJobForm({ jobStatuses }: AddJobFormProps) {
               control={form.control}
               name="status"
               render={({ field }) => (
-                <FormItem className="flex flex-col">
+                <FormItem className="flex flex-col [&>button]:capitalize">
                   <FormLabel>Status</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    name="status"
-                  >
-                    <FormControl>
-                      <SelectTrigger
-                        aria-label="Select status"
-                        className="w-[180px]"
-                      >
-                        <SelectValue placeholder="Select job status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectGroup>
-                        {jobStatuses.map((status) => {
-                          return (
-                            <SelectItem
-                              key={status.id}
-                              value={status.statusName}
-                            >
-                              {status.statusName.toUpperCase()}
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                  <SelectFormCtrl
+                    label="Job Status"
+                    dataKey="statusName"
+                    options={jobStatuses}
+                    field={field}
+                  />
                   <FormMessage />
                 </FormItem>
               )}
@@ -220,7 +183,12 @@ export default function AddJobForm({ jobStatuses }: AddJobFormProps) {
                 <FormItem className="flex flex-col">
                   <FormLabel>Salary Range</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <SelectFormCtrl
+                      label="Salary Range"
+                      dataKey="range"
+                      options={SALARY_RANGES}
+                      field={field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -253,7 +221,11 @@ export default function AddJobForm({ jobStatuses }: AddJobFormProps) {
             // className="md:col-span
             >
               <DialogClose>
-                <Button variant="outline" className="mt-2 md:mt-0 w-full">
+                <Button
+                  type="reset"
+                  variant="outline"
+                  className="mt-2 md:mt-0 w-full"
+                >
                   Cancel
                 </Button>
               </DialogClose>

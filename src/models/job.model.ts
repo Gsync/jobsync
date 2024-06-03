@@ -7,6 +7,5 @@ export interface Job {
   dueDate: Date;
   dateApplied: Date;
   salaryRange: string;
-  testCombo: string;
   jobDescription: string;
 }

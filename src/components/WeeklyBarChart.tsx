@@ -1,5 +1,5 @@
 "use client";
-import { barChartData } from "@/lib/barChartData";
+import { barChartData } from "@/lib/data/barChartData";
 import { ResponsiveBar } from "@nivo/bar";
 
 export default function WeeklyBarChart() {

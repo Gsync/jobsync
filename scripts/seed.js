@@ -1,4 +1,4 @@
-const { STATUS_DATA } = require("../src/lib/seedData");
+const { STATUS_DATA } = require("../src/lib/data/seedData");
 
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");

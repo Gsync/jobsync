@@ -3,7 +3,7 @@ import JobsApplied from "@/components/JobsAppliedCard";
 import NumberCard from "@/components/NumberCard";
 import RecentJobsCard from "@/components/RecentJobsCard";
 import WeeklyBarChart from "@/components/WeeklyBarChart";
-import { calendarData } from "@/lib/calendarData";
+import { calendarData } from "@/lib/data/calendarData";
 
 import { Metadata } from "next";
 
