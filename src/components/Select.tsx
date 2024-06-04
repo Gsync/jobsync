@@ -15,10 +15,9 @@ interface SelectProps {
   label: string;
   options: any[];
   field: ControllerRenderProps<Job, any>;
-  dataKey: string;
 }
 
-function SelectFormCtrl({ label, options, field, dataKey }: SelectProps) {
+function SelectFormCtrl({ label, options, field }: SelectProps) {
   return (
     <>
       <Select
@@ -37,10 +36,10 @@ function SelectFormCtrl({ label, options, field, dataKey }: SelectProps) {
               return (
                 <SelectItem
                   key={option.id}
-                  value={option[dataKey]}
+                  value={option.value}
                   className="capitalize"
                 >
-                  {option[dataKey]}
+                  {option.label ? option.label : option.value}
                 </SelectItem>
               );
             })}

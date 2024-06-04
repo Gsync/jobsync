@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ChevronsUpDown, CirclePlus, Loader } from "lucide-react";
-import { ControllerRenderProps, FieldName } from "react-hook-form";
+import { ControllerRenderProps } from "react-hook-form";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -13,12 +13,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import {
-  FormControl,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { FormControl } from "@/components/ui/form";
 import {
   Popover,
   PopoverContent,
@@ -26,36 +21,31 @@ import {
 } from "@/components/ui/popover";
 import { Job } from "@/models/job.model";
 import { ScrollArea } from "./ui/scroll-area";
-import { useState } from "react";
-import { upsertCompanyName } from "@/utils/company";
+import { useState, useTransition } from "react";
 import { delay } from "@/utils/delay";
+import { createCompany } from "@/actions/job.actions";
 
 interface ComboboxProps {
-  dataKeys: string[];
   options: any[];
   field: ControllerRenderProps<Job, any>;
+  creatable?: boolean;
 }
 
-export function Combobox({ options, field, dataKeys }: ComboboxProps) {
+export function Combobox({ options, field, creatable }: ComboboxProps) {
   const [newOption, setNewOption] = useState<string>("");
   const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
-  const [loading, setLoading] = useState(false);
-  const [key1, key2] = dataKeys;
-  async function onCreateOption(value: string) {
-    setLoading(true);
-    try {
-      if (field.name === "company") {
-        const newOption = await upsertCompanyName(value);
-        options.unshift(newOption);
-        field.onChange(newOption[key2]);
-        setIsPopoverOpen(false);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
+
+  const [isPending, startTransition] = useTransition();
+
+  const onCreateOption2 = (label: string) => {
+    if (!label) return;
+    startTransition(async () => {
+      const response = await createCompany(label);
+      options.unshift(response);
+      field.onChange(response.value);
+      setIsPopoverOpen(false);
+    });
+  };
 
   return (
     <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
@@ -70,10 +60,10 @@ export function Combobox({ options, field, dataKeys }: ComboboxProps) {
             )}
           >
             {field.value
-              ? options.find((option) => option[key2] === field.value)[key1]
+              ? options.find((option) => option.value === field.value).label
               : `Select ${field.name}`}
 
-            {loading ? (
+            {isPending ? (
               <Loader className="h-4 w-4 shrink-0 spinner" />
             ) : (
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -86,16 +76,19 @@ export function Combobox({ options, field, dataKeys }: ComboboxProps) {
           <CommandInput
             value={newOption}
             onValueChange={(val: string) => setNewOption(val)}
-            placeholder={`Search ${field.name}`}
+            placeholder={`${creatable ? "Create or " : ""}Search ${field.name}`}
           />
           <CommandEmpty
             onClick={() => {
-              onCreateOption(newOption);
+              onCreateOption2(newOption);
               setNewOption("");
             }}
-            className="flex cursor-pointer items-center justify-center gap-1 italic"
+            className={cn(
+              "flex cursor-pointer items-center justify-center gap-1 italic mt-2",
+              !newOption && "text-muted-foreground cursor-default"
+            )}
           >
-            {field.name === "company" ? (
+            {creatable ? (
               <>
                 <CirclePlus className="h-4 w-4" />
                 <p>Create: </p>
@@ -112,11 +105,11 @@ export function Combobox({ options, field, dataKeys }: ComboboxProps) {
               <CommandList className="capitalize">
                 {options.map((option) => (
                   <CommandItem
-                    value={option[key1]}
-                    key={option[key2]}
+                    value={option.value}
+                    key={option.id}
                     onSelect={() => {
                       if (field.onChange) {
-                        field.onChange(option[key2]);
+                        field.onChange(option.value);
                         setIsPopoverOpen(false);
                       }
                     }}
@@ -124,12 +117,12 @@ export function Combobox({ options, field, dataKeys }: ComboboxProps) {
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        option[key2] === field.value
+                        option.value === field.value
                           ? "opacity-100"
                           : "opacity-0"
                       )}
                     />
-                    {option[key1]}
+                    {option.label}
                   </CommandItem>
                 ))}
               </CommandList>

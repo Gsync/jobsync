@@ -33,7 +33,7 @@ async function seedStatus() {
       // Check if the status already exists
       const existingStatus = await prisma.jobStatus.findUnique({
         where: {
-          statusName: status.statusName,
+          value: status.value,
         },
       });
 

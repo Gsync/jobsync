@@ -24,7 +24,7 @@ import { SALARY_RANGES } from "@/lib/data/salaryRangeData";
 import { useState } from "react";
 
 interface AddJobFormProps {
-  jobStatuses: { id: string; statusName: string }[];
+  jobStatuses: { id: string; label: string; value: string }[];
   companies: any[];
 }
 
@@ -39,7 +39,7 @@ export default function AddJobForm({
     // mode: "onChange",
     defaultValues: {
       dateApplied: new Date(),
-      status: jobStatuses[0].statusName,
+      status: jobStatuses[0].value,
     },
   });
 
@@ -87,11 +87,7 @@ export default function AddJobForm({
                 <FormItem className="flex flex-col">
                   <FormLabel>Company</FormLabel>
                   <FormControl>
-                    <Combobox
-                      dataKeys={["name", "id"]}
-                      options={companies}
-                      field={field}
-                    />
+                    <Combobox options={companies} field={field} creatable />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -122,11 +118,7 @@ export default function AddJobForm({
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Job Source</FormLabel>
-                  <Combobox
-                    dataKeys={["label", "value"]}
-                    options={JOB_SOURCES}
-                    field={field}
-                  />
+                  <Combobox options={JOB_SOURCES} field={field} />
                   <FormMessage />
                 </FormItem>
               )}
@@ -142,7 +134,6 @@ export default function AddJobForm({
                   <FormLabel>Status</FormLabel>
                   <SelectFormCtrl
                     label="Job Status"
-                    dataKey="statusName"
                     options={jobStatuses}
                     field={field}
                   />
@@ -190,7 +181,6 @@ export default function AddJobForm({
                   <FormControl>
                     <SelectFormCtrl
                       label="Salary Range"
-                      dataKey="range"
                       options={SALARY_RANGES}
                       field={field}
                     />

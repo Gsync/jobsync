@@ -1,11 +1,11 @@
 const STATUS_DATA = [
-  { statusName: "draft" },
-  { statusName: "applied" },
-  { statusName: "interview" },
-  { statusName: "offer" },
-  { statusName: "rejected" },
-  { statusName: "expired" },
-  { statusName: "archived" },
+  { label: "Draft", value: "draft" },
+  { label: "Applied", value: "applied" },
+  { label: "Interview", value: "interview" },
+  { label: "Offer", value: "offer" },
+  { label: "Rejected", value: "rejected" },
+  { label: "Expired", value: "expired" },
+  { label: "Archived", value: "archived" },
 ];
 
 module.exports = {

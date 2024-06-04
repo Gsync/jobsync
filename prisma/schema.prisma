@@ -1,5 +1,7 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Step: 1 run `npx prisma generate` 
+// Step: 2 run `npx prisma migrate dev` after update, make sure code is updated afterwards
 
 generator client {
   provider = "prisma-client-js"
@@ -11,70 +13,87 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(uuid())
+  id          String     @id @default(uuid())
   name        String
-  email       String   @unique
+  email       String     @unique
   password    String
-  createdAt   DateTime @default(now())
+  createdAt   DateTime   @default(now())
   jobsApplied Job[]
+  JobTitle    JobTitle[]
+  Location    Location[]
+  Company     Company[]
+  Contact     Contact[]
 }
 
 model Contact {
   id          String     @id @default(uuid())
   name        String
   email       String
+  createdAt   DateTime
+  createdBy   String // userId
+  user        User       @relation(fields: [createdBy], references: [id])
   Interview   Interview? @relation(fields: [interviewId], references: [id])
   interviewId String?
 }
 
 model JobTitle {
-  id    String @id @default(uuid())
-  title String @unique
-  jobs  Job[]
+  id        String @id @default(uuid())
+  label     String
+  value     String @unique
+  jobs      Job[]
+  createdBy String // userId
+  user      User   @relation(fields: [createdBy], references: [id])
 }
 
 model JobStatus {
-  id         String @id @default(uuid())
-  statusName String @unique
-  jobs       Job[]
+  id    String @id @default(uuid())
+  label String
+  value String @unique
+  jobs  Job[]
 }
 
 model Location {
   id          String  @id @default(uuid())
-  name        String  @unique
-  state       String?
-  country     String
+  label       String
+  value       String
+  stateProv   String?
+  country     String?
   jobsApplied Job[]
+  createdBy   String // userId
+  user        User    @relation(fields: [createdBy], references: [id])
 }
 
 model Company {
   id          String  @id @default(uuid())
-  name        String  @unique
+  label       String
+  value       String  @unique
   jobsApplied Job[]
   logoUrl     String? // field is optional
+  createdBy   String // userId
+  user        User    @relation(fields: [createdBy], references: [id])
 }
-
-//TODO: Add createdBy
 
 model JobSource {
   id          String @id @default(uuid())
-  name        String
+  label       String
+  value       String @unique
   jobsApplied Job[]
 }
 
 model Interview {
   id           String    @id @default(uuid())
+  createdAt    DateTime
   jobId        String
   job          Job?      @relation(fields: [jobId], references: [id])
   interviewers Contact[]
 }
 
-//TODO: Add jobtype(fulltime, part time, contract)
 model Job {
   id          String      @id @default(uuid())
   userId      String
   User        User        @relation(fields: [userId], references: [id])
   description String
+  jobType     String
   createdAt   DateTime
   appliedDate DateTime?
   dueDate     DateTime?
