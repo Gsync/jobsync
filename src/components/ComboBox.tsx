@@ -23,7 +23,11 @@ import { Job } from "@/models/job.model";
 import { ScrollArea } from "./ui/scroll-area";
 import { useState, useTransition } from "react";
 import { delay } from "@/utils/delay";
-import { createCompany } from "@/actions/job.actions";
+import {
+  createCompany,
+  createJobTitle,
+  createLocation,
+} from "@/actions/job.actions";
 
 interface ComboboxProps {
   options: any[];
@@ -37,10 +41,23 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
 
   const [isPending, startTransition] = useTransition();
 
-  const onCreateOption2 = (label: string) => {
+  const onCreateOption = (label: string) => {
     if (!label) return;
     startTransition(async () => {
-      const response = await createCompany(label);
+      let response;
+      switch (field.name) {
+        case "company":
+          response = await createCompany(label);
+          break;
+        case "title":
+          response = await createJobTitle(label);
+          break;
+        case "location":
+          response = await createLocation(label);
+          break;
+        default:
+          break;
+      }
       options.unshift(response);
       field.onChange(response.value);
       setIsPopoverOpen(false);
@@ -80,7 +97,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
           />
           <CommandEmpty
             onClick={() => {
-              onCreateOption2(newOption);
+              onCreateOption(newOption);
               setNewOption("");
             }}
             className={cn(

@@ -26,11 +26,15 @@ import { useState } from "react";
 interface AddJobFormProps {
   jobStatuses: { id: string; label: string; value: string }[];
   companies: any[];
+  jobTitles: { id: string; label: string; value: string }[];
+  locations: { id: string; label: string; value: string }[];
 }
 
 export default function AddJobForm({
   jobStatuses,
   companies,
+  jobTitles,
+  locations,
 }: AddJobFormProps) {
   const [loading, setLoading] = useState(false);
 
@@ -71,7 +75,7 @@ export default function AddJobForm({
                 <FormItem className="flex flex-col">
                   <FormLabel>Job Title</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Combobox options={jobTitles} field={field} creatable />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -103,7 +107,7 @@ export default function AddJobForm({
                 <FormItem className="flex flex-col">
                   <FormLabel>Job Location</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Combobox options={locations} field={field} creatable />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
