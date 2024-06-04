@@ -1,0 +1,7 @@
+
+POST http://localhost:3002/api/company HTTP/1.1
+content-type: application/json
+
+{
+    "name": "rest Client test 45"
+}

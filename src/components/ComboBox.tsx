@@ -41,7 +41,6 @@ export function Combobox({ options, field, dataKeys }: ComboboxProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
   const [key1, key2] = dataKeys;
-
   async function onCreateOption(value: string) {
     setLoading(true);
     try {
@@ -66,7 +65,7 @@ export function Combobox({ options, field, dataKeys }: ComboboxProps) {
             variant="outline"
             role="combobox"
             className={cn(
-              "w-[240px] justify-between capitalize",
+              "md:w-[240px] lg:w-[280px] justify-between capitalize",
               !field.value && "text-muted-foreground"
             )}
           >
@@ -82,7 +81,7 @@ export function Combobox({ options, field, dataKeys }: ComboboxProps) {
           </Button>
         </FormControl>
       </PopoverTrigger>
-      <PopoverContent className="w-[240px] p-0">
+      <PopoverContent className="md:w-[240px] lg:w-[280px] p-0">
         <Command>
           <CommandInput
             value={newOption}

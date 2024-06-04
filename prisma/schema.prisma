@@ -54,6 +54,8 @@ model Company {
   logoUrl     String? // field is optional
 }
 
+//TODO: Add createdBy
+
 model JobSource {
   id          String @id @default(uuid())
   name        String
@@ -67,6 +69,7 @@ model Interview {
   interviewers Contact[]
 }
 
+//TODO: Add jobtype(fulltime, part time, contract)
 model Job {
   id          String      @id @default(uuid())
   userId      String
