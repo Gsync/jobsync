@@ -1,4 +1,4 @@
-const { STATUS_DATA } = require("../src/lib/data/seedData");
+const { STATUS_DATA, JOB_SOURCES } = require("../src/lib/data/seedData");
 
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
@@ -51,9 +51,30 @@ async function seedStatus() {
   }
 }
 
+async function seedJobSouces() {
+  try {
+    const sources = JOB_SOURCES;
+    for (const source of sources) {
+      const { label, value } = source;
+      await prisma.jobSource.upsert({
+        where: {
+          value,
+        },
+        update: { label, value },
+        create: { label, value },
+      });
+    }
+    console.log("Seeded job sources");
+  } catch (error) {
+    console.error("Error seeding job sources: ", error);
+    throw error;
+  }
+}
+
 async function main() {
   await seedUser();
   await seedStatus();
+  await seedJobSouces();
 }
 
 main()

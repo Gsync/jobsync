@@ -36,10 +36,10 @@ function SelectFormCtrl({ label, options, field }: SelectProps) {
               return (
                 <SelectItem
                   key={option.id}
-                  value={option.value}
+                  value={option.id}
                   className="capitalize"
                 >
-                  {option.label ? option.label : option.value}
+                  {option.label ?? option.value}
                 </SelectItem>
               );
             })}

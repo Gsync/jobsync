@@ -21,13 +21,17 @@ import { DatePicker } from "./DatePicker";
 import SelectFormCtrl from "./Select";
 import { JOB_SOURCES } from "@/lib/data/jobSourcesData";
 import { SALARY_RANGES } from "@/lib/data/salaryRangeData";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { addDays } from "date-fns";
+import { addJob } from "@/actions/job.actions";
+import { Loader } from "lucide-react";
 
 interface AddJobFormProps {
   jobStatuses: { id: string; label: string; value: string }[];
   companies: any[];
   jobTitles: { id: string; label: string; value: string }[];
   locations: { id: string; label: string; value: string }[];
+  jobSources: { id: string; label: string; value: string }[];
 }
 
 export default function AddJobForm({
@@ -35,20 +39,30 @@ export default function AddJobForm({
   companies,
   jobTitles,
   locations,
+  jobSources,
 }: AddJobFormProps) {
   const [loading, setLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
     resolver: zodResolver(AddJobFormSchema),
     // mode: "onChange",
     defaultValues: {
       dateApplied: new Date(),
-      status: jobStatuses[0].value,
+      dueDate: addDays(new Date(), 3),
+      status: jobStatuses[0].id,
+      salaryRange: "1",
+      jobDescription: "Job details are provided here",
     },
   });
 
   function onSubmit(data: z.infer<typeof AddJobFormSchema>) {
     console.log("add job form data: ", data);
+    startTransition(async () => {
+      const res = await addJob(data);
+      form.reset();
+      console.log("RESPONSE DATA: ", res);
+    });
     toast({
       title: "You submitted the following values:",
       description: (
@@ -122,7 +136,7 @@ export default function AddJobForm({
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Job Source</FormLabel>
-                  <Combobox options={JOB_SOURCES} field={field} />
+                  <Combobox options={jobSources} field={field} />
                   <FormMessage />
                 </FormItem>
               )}
@@ -228,7 +242,12 @@ export default function AddJobForm({
                   Cancel
                 </Button>
               </DialogClose>
-              <Button type="submit">Save</Button>
+              <Button type="submit">
+                Save
+                {isPending ? (
+                  <Loader className="h-4 w-4 shrink-0 spinner" />
+                ) : null}
+              </Button>
             </DialogFooter>
           </div>
         </form>

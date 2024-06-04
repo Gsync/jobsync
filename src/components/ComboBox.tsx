@@ -59,7 +59,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
           break;
       }
       options.unshift(response);
-      field.onChange(response.value);
+      field.onChange(response.id);
       setIsPopoverOpen(false);
     });
   };
@@ -77,7 +77,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
             )}
           >
             {field.value
-              ? options.find((option) => option.value === field.value).label
+              ? options.find((option) => option.id === field.value).label
               : `Select ${field.name}`}
 
             {isPending ? (
@@ -126,7 +126,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
                     key={option.id}
                     onSelect={() => {
                       if (field.onChange) {
-                        field.onChange(option.value);
+                        field.onChange(option.id);
                         setIsPopoverOpen(false);
                       }
                     }}
