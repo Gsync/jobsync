@@ -83,11 +83,7 @@ async function MyJobs() {
                     </span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent
-                  className="lg:max-w-screen-lg lg:max-h-screen"
-                  // className="overflow-y-auto sm:overflow-y-scroll md:overflow-y-auto lg:overflow-y-scroll"
-                  // className="sm:max-w-[425px]"
-                >
+                <DialogContent className="lg:max-w-screen-lg lg:max-h-screen overflow-y-scroll">
                   <AddJob />
                 </DialogContent>
               </Dialog>
