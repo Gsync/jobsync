@@ -3,7 +3,7 @@ import {
   BriefcaseBusiness,
   CalendarClock,
   UserRound,
-  LineChart,
+  Sheet,
 } from "lucide-react";
 
 export const SIDEBAR_LINKS = [
@@ -28,8 +28,8 @@ export const SIDEBAR_LINKS = [
     label: "Profile",
   },
   {
-    icon: LineChart,
-    route: "#",
-    label: "Analytics",
+    icon: Sheet,
+    route: "/dashboard/admin",
+    label: "Administration",
   },
 ];
