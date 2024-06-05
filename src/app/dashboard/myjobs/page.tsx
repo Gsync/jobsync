@@ -27,16 +27,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MY_JOBS_DATA } from "@/lib/data/myJobsData";
 import { Metadata } from "next";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { AddJob } from "@/components/AddJob";
+import { getJobsList } from "@/actions/job.actions";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "My Jobs | JobSync",
 };
 
-function MyJobs() {
+async function MyJobs() {
+  const jobsList = await getJobsList();
+  console.log("JOB OBJECT: ", jobsList[5]);
   return (
     <div className="col-span-3">
       <Card x-chunk="dashboard-06-chunk-0">
@@ -95,9 +99,10 @@ function MyJobs() {
             <TableHeader>
               <TableRow>
                 <TableHead className="hidden w-[100px] sm:table-cell">
-                  <span className="sr-only">Company</span>
+                  <span className="sr-only">Company Logo</span>
                 </TableHead>
                 <TableHead>Title</TableHead>
+                <TableHead>Company</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="hidden md:table-cell">Source</TableHead>
                 <TableHead className="hidden md:table-cell">Location</TableHead>
@@ -110,7 +115,7 @@ function MyJobs() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {MY_JOBS_DATA.data.map((job) => {
+              {jobsList.map((job: any) => {
                 return (
                   <TableRow key={job.id}>
                     <TableCell className="hidden sm:table-cell">
@@ -118,25 +123,35 @@ function MyJobs() {
                         alt="Company logo"
                         className="aspect-square rounded-md object-cover"
                         height="32"
-                        src={job.companyLogo}
+                        src="/icons/amazon-logo.svg"
                         width="32"
                       />
                     </TableCell>
-                    <TableCell className="font-medium">{job.company}</TableCell>
                     <TableCell className="font-medium">
-                      {job.jobTitle}
+                      {job.JobTitle?.label}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {job.Company?.label}
                     </TableCell>
                     <TableCell>
-                      <Badge>{job.status}</Badge>
+                      <Badge
+                        className={cn(
+                          "w-[70px] justify-center",
+                          job.Status?.value === "applied" && "bg-cyan-500",
+                          job.Status?.value === "interview" && "bg-green-500"
+                        )}
+                      >
+                        {job.Status?.label}
+                      </Badge>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      {job.jobSource}
+                      {job.JobSource?.label}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      {job.location}
+                      {job.Location?.label}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      {job.dateApplied}
+                      {format(new Date(job.appliedDate), "MMM d, yyyy")}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>

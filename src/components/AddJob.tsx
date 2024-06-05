@@ -10,16 +10,14 @@ import {
 } from "@/actions/job.actions";
 
 export async function AddJob() {
-  const [statuses, companies, jobTitles, locations, jobSources, jobs] =
+  const [statuses, companies, jobTitles, locations, jobSources] =
     await Promise.all([
       getStatusList(),
       getCompanyList(),
       getJobTitleList(),
       getJobLocationList(),
       getJobSourceList(),
-      getJobsList(),
     ]);
-  console.log("JOBS LIST: ", jobs);
   return (
     <>
       <DialogHeader>

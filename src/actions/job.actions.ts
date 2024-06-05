@@ -69,6 +69,9 @@ export const getJobsList = async (): Promise<any | undefined> => {
         Status: true,
         Location: true,
       },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
     return list;
   } catch (error) {
@@ -165,19 +168,32 @@ export const addJob = async (
       throw new Error("Not authenticated");
     }
 
+    const {
+      title,
+      company,
+      location,
+      type,
+      status,
+      source,
+      salaryRange,
+      dueDate,
+      dateApplied,
+      jobDescription,
+    } = data;
+
     const job = await prisma.job.create({
       data: {
-        jobTitleId: data.title,
-        companyId: data.company,
-        locationId: data.location,
-        statusId: data.status,
-        jobSourceId: data.source,
-        salaryRange: data.salaryRange,
+        jobTitleId: title,
+        companyId: company,
+        locationId: location,
+        statusId: status,
+        jobSourceId: source,
+        salaryRange: salaryRange,
         createdAt: new Date(),
-        dueDate: data.dueDate,
-        appliedDate: data.dateApplied,
-        description: data.jobDescription,
-        jobType: "fulltime",
+        dueDate: dueDate,
+        appliedDate: dateApplied,
+        description: jobDescription,
+        jobType: type,
         userId: user.id,
       },
     });

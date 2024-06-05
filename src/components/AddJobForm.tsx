@@ -9,7 +9,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "./ui/textarea";
 import { z } from "zod";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
@@ -19,12 +18,15 @@ import { toast } from "./ui/use-toast";
 import { Combobox } from "./ComboBox";
 import { DatePicker } from "./DatePicker";
 import SelectFormCtrl from "./Select";
-import { JOB_SOURCES } from "@/lib/data/jobSourcesData";
 import { SALARY_RANGES } from "@/lib/data/salaryRangeData";
-import { useState, useTransition } from "react";
+import { useRef, useTransition } from "react";
 import { addDays } from "date-fns";
 import { addJob } from "@/actions/job.actions";
 import { Loader } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { JOB_TYPES } from "@/models/job.model";
+import { useRouter } from "next/router";
+import { redirect } from "next/navigation";
 
 interface AddJobFormProps {
   jobStatuses: { id: string; label: string; value: string }[];
@@ -41,13 +43,13 @@ export default function AddJobForm({
   locations,
   jobSources,
 }: AddJobFormProps) {
-  const [loading, setLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
     resolver: zodResolver(AddJobFormSchema),
     // mode: "onChange",
     defaultValues: {
+      type: Object.keys(JOB_TYPES)[0],
       dateApplied: new Date(),
       dueDate: addDays(new Date(), 3),
       status: jobStatuses[0].id,
@@ -61,15 +63,10 @@ export default function AddJobForm({
     startTransition(async () => {
       const res = await addJob(data);
       form.reset();
-      console.log("RESPONSE DATA: ", res);
+      redirect("/dashboard/myjobs");
     });
     toast({
-      title: "You submitted the following values:",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
+      description: "Job has been created successfully",
     });
   }
 
@@ -123,6 +120,36 @@ export default function AddJobForm({
                   <FormControl>
                     <Combobox options={locations} field={field} creatable />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          {/* Job Type */}
+          <div>
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel className="mb-2">Job Type</FormLabel>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="flex space-y-1"
+                  >
+                    {Object.entries(JOB_TYPES).map(([key, value]) => (
+                      <FormItem
+                        key={key}
+                        className="flex items-center space-x-3 space-y-0"
+                      >
+                        <FormControl>
+                          <RadioGroupItem value={key} />
+                        </FormControl>
+                        <FormLabel className="font-normal">{value}</FormLabel>
+                      </FormItem>
+                    ))}
+                  </RadioGroup>
                   <FormMessage />
                 </FormItem>
               )}
