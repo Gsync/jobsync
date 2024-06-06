@@ -5,19 +5,17 @@ import {
   getJobLocationList,
   getJobSourceList,
   getJobTitleList,
-  getJobsList,
   getStatusList,
 } from "@/actions/job.actions";
 
 export async function AddJob() {
-  const [statuses, companies, jobTitles, locations, jobSources] =
-    await Promise.all([
-      getStatusList(),
-      getCompanyList(),
-      getJobTitleList(),
-      getJobLocationList(),
-      getJobSourceList(),
-    ]);
+  const [statuses, companies, titles, locations, sources] = await Promise.all([
+    getStatusList(),
+    getCompanyList(),
+    getJobTitleList(),
+    getJobLocationList(),
+    getJobSourceList(),
+  ]);
   return (
     <>
       <DialogHeader>
@@ -26,9 +24,9 @@ export async function AddJob() {
       <AddJobForm
         jobStatuses={statuses}
         companies={companies}
-        jobTitles={jobTitles}
+        jobTitles={titles}
         locations={locations}
-        jobSources={jobSources}
+        jobSources={sources}
       />
     </>
   );

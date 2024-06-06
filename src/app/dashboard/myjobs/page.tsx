@@ -1,7 +1,5 @@
-import Image from "next/image";
-import { File, ListFilter, MoreHorizontal, PlusCircle } from "lucide-react";
+import { File, ListFilter, PlusCircle } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,25 +12,16 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Metadata } from "next";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { AddJob } from "@/components/AddJob";
 import { getJobsList } from "@/actions/job.actions";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+
+import MyJobsTable from "@/components/MyJobsTable";
 
 export const metadata: Metadata = {
   title: "My Jobs | JobSync",
@@ -91,88 +80,7 @@ async function MyJobs() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="hidden w-[100px] sm:table-cell">
-                  <span className="sr-only">Company Logo</span>
-                </TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Company</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="hidden md:table-cell">Source</TableHead>
-                <TableHead className="hidden md:table-cell">Location</TableHead>
-                <TableHead className="hidden md:table-cell">
-                  Date Applied
-                </TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {jobsList.map((job: any) => {
-                return (
-                  <TableRow key={job.id}>
-                    <TableCell className="hidden sm:table-cell">
-                      <Image
-                        alt="Company logo"
-                        className="aspect-square rounded-md object-cover"
-                        height="32"
-                        src="/icons/amazon-logo.svg"
-                        width="32"
-                      />
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {job.JobTitle?.label}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {job.Company?.label}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={cn(
-                          "w-[70px] justify-center",
-                          job.Status?.value === "applied" && "bg-cyan-500",
-                          job.Status?.value === "interview" && "bg-green-500"
-                        )}
-                      >
-                        {job.Status?.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {job.JobSource?.label}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {job.Location?.label}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {format(new Date(job.appliedDate), "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            aria-haspopup="true"
-                            size="icon"
-                            variant="ghost"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
-                          <DropdownMenuItem>Delete</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          <MyJobsTable jobs={jobsList} />
         </CardContent>
         <CardFooter>
           <div className="text-xs text-muted-foreground">
