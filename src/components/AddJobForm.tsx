@@ -27,6 +27,7 @@ import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { JOB_TYPES } from "@/models/job.model";
 import { useRouter } from "next/router";
 import { redirect } from "next/navigation";
+import TiptapEditor from "./TiptapEditor";
 
 interface AddJobFormProps {
   jobStatuses: { id: string; label: string; value: string }[];
@@ -54,7 +55,7 @@ export default function AddJobForm({
       dueDate: addDays(new Date(), 3),
       status: jobStatuses[0].id,
       salaryRange: "1",
-      jobDescription: "Job details are provided here",
+      // jobDescription: "Job details are provided here",
     },
   });
 
@@ -245,11 +246,7 @@ export default function AddJobForm({
                 <FormItem className="flex flex-col">
                   <FormLabel>Job Description</FormLabel>
                   <FormControl>
-                    <Textarea
-                      className="h-36 overflow-auto"
-                      placeholder="Copy and paste you job description here."
-                      {...field}
-                    />
+                    <TiptapEditor field={field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

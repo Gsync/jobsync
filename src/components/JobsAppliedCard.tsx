@@ -1,3 +1,4 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -6,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { redirect } from "next/navigation";
 
 export default function JobsAppliedCard() {
   return (
@@ -17,7 +19,7 @@ export default function JobsAppliedCard() {
         </CardDescription>
       </CardHeader>
       <CardFooter>
-        <Button>Create New Job</Button>
+        <Button>Add New Job</Button>
       </CardFooter>
     </Card>
   );

@@ -17,7 +17,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Metadata } from "next";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogOverlay,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { AddJob } from "@/components/AddJob";
 import { getJobsList } from "@/actions/job.actions";
 
@@ -72,9 +77,11 @@ async function MyJobs() {
                     </span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="lg:max-w-screen-lg lg:max-h-screen overflow-y-scroll">
-                  <AddJob />
-                </DialogContent>
+                <DialogOverlay>
+                  <DialogContent className="lg:max-w-screen-lg lg:max-h-screen overflow-y-scroll">
+                    <AddJob />
+                  </DialogContent>
+                </DialogOverlay>
               </Dialog>
             </div>
           </div>
