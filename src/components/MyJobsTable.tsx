@@ -19,7 +19,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -34,8 +33,10 @@ import {
   CommandItem,
   CommandList,
 } from "./ui/command";
-import { useState } from "react";
-function MyJobsTable({ jobs }: { jobs: any[] }) {
+import { useEffect, useState } from "react";
+import { TablePagination } from "./TablePagination";
+import { getJobsList } from "@/actions/job.actions";
+function MyJobsTable() {
   const labels = [
     "draft",
     "applied",
@@ -47,124 +48,158 @@ function MyJobsTable({ jobs }: { jobs: any[] }) {
   ];
   const [label, setLabel] = useState("feature");
   const [open, setOpen] = useState(false);
+
+  const [jobs, setJobs] = useState([]);
+  const [totalJobs, setTotalJobs] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const jobsPerPage = 10;
+
+  useEffect(() => {
+    const loadJobs = async () => {
+      const { data, total } = await getJobsList(currentPage, jobsPerPage);
+
+      setJobs(data);
+      setTotalJobs(total);
+    };
+    loadJobs();
+  }, [currentPage]);
+  const totalPages = Math.ceil(totalJobs / jobsPerPage);
+  const startPostIndex = (currentPage - 1) * jobsPerPage + 1;
+  const endPostIndex = Math.min(currentPage * jobsPerPage, totalJobs);
+
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="hidden w-[100px] sm:table-cell">
-            <span className="sr-only">Company Logo</span>
-          </TableHead>
-          <TableHead>Title</TableHead>
-          <TableHead>Company</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="hidden md:table-cell">Source</TableHead>
-          <TableHead className="hidden md:table-cell">Location</TableHead>
-          <TableHead className="hidden md:table-cell">Date Applied</TableHead>
-          <TableHead>
-            <span className="sr-only">Actions</span>
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {jobs.map((job: any) => {
-          return (
-            <TableRow key={job.id}>
-              <TableCell className="hidden sm:table-cell">
-                <Image
-                  alt="Company logo"
-                  className="aspect-square rounded-md object-cover"
-                  height="32"
-                  src="/icons/amazon-logo.svg"
-                  width="32"
-                />
-              </TableCell>
-              <TableCell className="font-medium">
-                {job.JobTitle?.label}
-              </TableCell>
-              <TableCell className="font-medium">
-                {job.Company?.label}
-              </TableCell>
-              <TableCell>
-                <Badge
-                  className={cn(
-                    "w-[70px] justify-center",
-                    job.Status?.value === "applied" && "bg-cyan-500",
-                    job.Status?.value === "interview" && "bg-green-500"
-                  )}
-                >
-                  {job.Status?.label}
-                </Badge>
-              </TableCell>
-              <TableCell className="hidden md:table-cell">
-                {job.JobSource?.label}
-              </TableCell>
-              <TableCell className="hidden md:table-cell">
-                {job.Location?.label}
-              </TableCell>
-              <TableCell className="hidden md:table-cell">
-                {format(new Date(job.appliedDate), "PP")}
-              </TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button aria-haspopup="true" size="icon" variant="ghost">
-                      <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Toggle menu</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-[200px]">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuGroup>
-                      <DropdownMenuItem>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                          <Tags className="mr-2 h-4 w-4" />
-                          Change status
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent className="p-0">
-                          <Command>
-                            <CommandInput
-                              placeholder="Filter label..."
-                              autoFocus={true}
-                            />
-                            <CommandList>
-                              <CommandEmpty>No label found.</CommandEmpty>
-                              <CommandGroup>
-                                {labels.map((label) => (
-                                  <CommandItem
-                                    key={label}
-                                    value={label}
-                                    onSelect={(value) => {
-                                      setLabel(value);
-                                      setOpen(false);
-                                    }}
-                                  >
-                                    {label}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </DropdownMenuSubContent>
-                      </DropdownMenuSub>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-red-600">
-                        <Trash className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="hidden w-[100px] sm:table-cell">
+              <span className="sr-only">Company Logo</span>
+            </TableHead>
+            <TableHead>Title</TableHead>
+            <TableHead>Company</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="hidden md:table-cell">Source</TableHead>
+            <TableHead className="hidden md:table-cell">Location</TableHead>
+            <TableHead className="hidden md:table-cell">Date Applied</TableHead>
+            <TableHead>
+              <span className="sr-only">Actions</span>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {jobs.map((job: any) => {
+            return (
+              <TableRow key={job.id}>
+                <TableCell className="hidden sm:table-cell">
+                  <Image
+                    alt="Company logo"
+                    className="aspect-square rounded-md object-cover"
+                    height="32"
+                    src="/icons/amazon-logo.svg"
+                    width="32"
+                  />
+                </TableCell>
+                <TableCell className="font-medium">
+                  {job.JobTitle?.label}
+                </TableCell>
+                <TableCell className="font-medium">
+                  {job.Company?.label}
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    className={cn(
+                      "w-[70px] justify-center",
+                      job.Status?.value === "applied" && "bg-cyan-500",
+                      job.Status?.value === "interview" && "bg-green-500"
+                    )}
+                  >
+                    {job.Status?.label}
+                  </Badge>
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {job.JobSource?.label}
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {job.Location?.label}
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {format(new Date(job.appliedDate), "PP")}
+                </TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button aria-haspopup="true" size="icon" variant="ghost">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Toggle menu</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-[200px]">
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuSub>
+                          <DropdownMenuSubTrigger>
+                            <Tags className="mr-2 h-4 w-4" />
+                            Change status
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent className="p-0">
+                            <Command>
+                              <CommandInput
+                                placeholder="Filter label..."
+                                autoFocus={true}
+                              />
+                              <CommandList>
+                                <CommandEmpty>No label found.</CommandEmpty>
+                                <CommandGroup>
+                                  {labels.map((label) => (
+                                    <CommandItem
+                                      key={label}
+                                      value={label}
+                                      onSelect={(value) => {
+                                        setLabel(value);
+                                        setOpen(false);
+                                      }}
+                                    >
+                                      {label}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-red-600">
+                          <Trash className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+      <div className="text-xs text-muted-foreground">
+        Showing{" "}
+        <strong>
+          {startPostIndex} to {endPostIndex}
+        </strong>{" "}
+        of
+        <strong> {totalJobs}</strong> jobs
+      </div>
+      <TablePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
+    </>
   );
 }
 

@@ -33,8 +33,6 @@ export const metadata: Metadata = {
 };
 
 async function MyJobs() {
-  const jobsList = await getJobsList();
-  console.log("JOB OBJECT: ", jobsList[5]);
   return (
     <div className="col-span-3">
       <Card x-chunk="dashboard-06-chunk-0">
@@ -87,13 +85,9 @@ async function MyJobs() {
           </div>
         </CardHeader>
         <CardContent>
-          <MyJobsTable jobs={jobsList} />
+          <MyJobsTable />
         </CardContent>
-        <CardFooter>
-          <div className="text-xs text-muted-foreground">
-            Showing <strong>1-10</strong> of <strong>32</strong> products
-          </div>
-        </CardFooter>
+        <CardFooter></CardFooter>
       </Card>
     </div>
   );
