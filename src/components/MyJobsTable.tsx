@@ -8,7 +8,13 @@ import {
   TableRow,
 } from "./ui/table";
 import Image from "next/image";
-import { MoreHorizontal, Pencil, Tags, Trash, User } from "lucide-react";
+import {
+  ListCollapse,
+  MoreHorizontal,
+  Pencil,
+  Tags,
+  Trash,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "./ui/badge";
 import { format } from "date-fns";
@@ -36,6 +42,9 @@ import {
 import { useEffect, useState } from "react";
 import { TablePagination } from "./TablePagination";
 import { getJobsList } from "@/actions/job.actions";
+import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
+import JobDetails from "./JobDetails";
+
 function MyJobsTable() {
   const labels = [
     "draft",
@@ -48,6 +57,8 @@ function MyJobsTable() {
   ];
   const [label, setLabel] = useState("feature");
   const [open, setOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [curJobId, setCurJobId] = useState("");
 
   const [jobs, setJobs] = useState([]);
   const [totalJobs, setTotalJobs] = useState(0);
@@ -67,6 +78,11 @@ function MyJobsTable() {
   const startPostIndex = (currentPage - 1) * jobsPerPage + 1;
   const endPostIndex = Math.min(currentPage * jobsPerPage, totalJobs);
 
+  const viewJobDetails = (jobId: string) => {
+    setCurJobId(jobId);
+    setDialogOpen(true);
+  };
+
   return (
     <>
       <Table>
@@ -75,12 +91,12 @@ function MyJobsTable() {
             <TableHead className="hidden w-[100px] sm:table-cell">
               <span className="sr-only">Company Logo</span>
             </TableHead>
+            <TableHead className="hidden md:table-cell">Date Applied</TableHead>
             <TableHead>Title</TableHead>
             <TableHead>Company</TableHead>
+            <TableHead className="hidden md:table-cell">Location</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="hidden md:table-cell">Source</TableHead>
-            <TableHead className="hidden md:table-cell">Location</TableHead>
-            <TableHead className="hidden md:table-cell">Date Applied</TableHead>
             <TableHead>
               <span className="sr-only">Actions</span>
             </TableHead>
@@ -89,7 +105,11 @@ function MyJobsTable() {
         <TableBody>
           {jobs.map((job: any) => {
             return (
-              <TableRow key={job.id}>
+              <TableRow
+                key={job.id}
+                className="cursor-pointer"
+                onClick={() => viewJobDetails(job?.id)}
+              >
                 <TableCell className="hidden sm:table-cell">
                   <Image
                     alt="Company logo"
@@ -99,31 +119,35 @@ function MyJobsTable() {
                     width="32"
                   />
                 </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {format(new Date(job.appliedDate), "PP")}
+                </TableCell>
                 <TableCell className="font-medium">
                   {job.JobTitle?.label}
                 </TableCell>
                 <TableCell className="font-medium">
                   {job.Company?.label}
                 </TableCell>
-                <TableCell>
-                  <Badge
-                    className={cn(
-                      "w-[70px] justify-center",
-                      job.Status?.value === "applied" && "bg-cyan-500",
-                      job.Status?.value === "interview" && "bg-green-500"
-                    )}
-                  >
-                    {job.Status?.label}
-                  </Badge>
-                </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  {job.JobSource?.label}
-                </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {job.Location?.label}
                 </TableCell>
+                <TableCell>
+                  {new Date() > job.dueDate && job.Status?.value === "draft" ? (
+                    <Badge className="bg-red-500">Expired</Badge>
+                  ) : (
+                    <Badge
+                      className={cn(
+                        "w-[70px] justify-center",
+                        job.Status?.value === "applied" && "bg-cyan-500",
+                        job.Status?.value === "interview" && "bg-green-500"
+                      )}
+                    >
+                      {job.Status?.label}
+                    </Badge>
+                  )}
+                </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {format(new Date(job.appliedDate), "PP")}
+                  {job.JobSource?.label}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
@@ -136,6 +160,13 @@ function MyJobsTable() {
                     <DropdownMenuContent align="end" className="w-[200px]">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuGroup>
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={() => viewJobDetails(job?.id)}
+                        >
+                          <ListCollapse className="mr-2 h-4 w-4" />
+                          View Details
+                        </DropdownMenuItem>
                         <DropdownMenuItem>
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit
@@ -186,11 +217,17 @@ function MyJobsTable() {
           })}
         </TableBody>
       </Table>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogTrigger asChild></DialogTrigger>
+        <DialogContent className="lg:max-w-screen-lg lg:max-h-screen overflow-y-scroll">
+          <JobDetails jobId={curJobId} />
+        </DialogContent>
+      </Dialog>
       <div className="text-xs text-muted-foreground">
-        Showing{" "}
+        Showing
         <strong>
           {startPostIndex} to {endPostIndex}
-        </strong>{" "}
+        </strong>
         of
         <strong> {totalJobs}</strong> jobs
       </div>

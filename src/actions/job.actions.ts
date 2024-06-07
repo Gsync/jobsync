@@ -77,12 +77,16 @@ export const getJobsList = async (
         },
         skip,
         take: limit,
-        include: {
+        select: {
+          id: true,
           JobSource: true,
           JobTitle: true,
           Company: true,
           Status: true,
           Location: true,
+          dueDate: true,
+          appliedDate: true,
+          description: false,
         },
         orderBy: {
           createdAt: "desc",
@@ -97,6 +101,39 @@ export const getJobsList = async (
     return { data, total };
   } catch (error) {
     const msg = "Failed to fetch jobs list. ";
+    console.error(msg, error);
+    throw new Error(msg);
+  }
+};
+
+export const getJobDetails = async (
+  jobId: string
+): Promise<any | undefined> => {
+  try {
+    if (!jobId) {
+      throw new Error("Please provide job id");
+    }
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const job = prisma.job.findUnique({
+      where: {
+        id: jobId,
+      },
+      include: {
+        JobSource: true,
+        JobTitle: true,
+        Company: true,
+        Status: true,
+        Location: true,
+      },
+    });
+    return job;
+  } catch (error) {
+    const msg = "Failed to fetch job details. ";
     console.error(msg, error);
     throw new Error(msg);
   }
