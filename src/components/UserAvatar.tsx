@@ -4,7 +4,6 @@ import { CurrentUser } from "@/models/user.model";
 
 export default function UserAvatar({ user }: { user: CurrentUser | null }) {
   // const { data: session, status } = useSession();
-  // console.log("session user :", session?.user, status);
   if (!user) return null;
   return (
     <Image

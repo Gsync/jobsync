@@ -1,4 +1,5 @@
 import {
+  getJobsActivityForPeriod,
   getJobsAppliedForPeriod,
   getRecentJobs,
 } from "@/actions/dashboard.actions";
@@ -16,13 +17,13 @@ export const metadata: Metadata = {
 };
 
 export default async function Dashboard() {
-  const [jobsAppliedLast7Days, jobsAppliedLast30Days, recentJobs] =
+  const [jobsAppliedLast7Days, jobsAppliedLast30Days, recentJobs, weeklyData] =
     await Promise.all([
       getJobsAppliedForPeriod(7),
       getJobsAppliedForPeriod(30),
       getRecentJobs(),
+      getJobsActivityForPeriod(),
     ]);
-  // console.log("WEEKLY COUNT: ", count);
   return (
     <>
       <div className="grid auto-rows-max items-start gap-2 md:gap-2 lg:col-span-2">
@@ -45,7 +46,7 @@ export default async function Dashboard() {
           <h3 className="text-2xl font-semibold leading-none tracking-tight">
             Weekly Activity
           </h3>
-          <WeeklyBarChart />
+          <WeeklyBarChart data={weeklyData} />
         </div>
       </div>
       <div>

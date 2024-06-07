@@ -12,6 +12,8 @@ import { DialogDescription } from "@radix-ui/react-dialog";
 import { format } from "date-fns";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { Badge } from "./ui/badge";
+import { cn } from "@/lib/utils";
 
 function JobDetails({ jobId }: { jobId: string }) {
   const [job, setJob] = useState<any>({});
@@ -41,7 +43,24 @@ function JobDetails({ jobId }: { jobId: string }) {
             </DialogDescription>
           </DialogHeader>
 
-          <h3>Applied: {format(new Date(job?.appliedDate), "PP")}</h3>
+          <h3>
+            {new Date() > job.dueDate && job.Status?.value === "draft" ? (
+              <Badge className="bg-red-500">Expired</Badge>
+            ) : (
+              <Badge
+                className={cn(
+                  "w-[70px] justify-center",
+                  job.Status?.value === "applied" && "bg-cyan-500",
+                  job.Status?.value === "interview" && "bg-green-500"
+                )}
+              >
+                {job.Status?.label}
+              </Badge>
+            )}
+            <span className="ml-2">
+              {format(new Date(job?.appliedDate), "PP")}
+            </span>
+          </h3>
           <div className="my-4">
             <EditorContent editor={editor} />
           </div>

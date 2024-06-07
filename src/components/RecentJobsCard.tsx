@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 
 export default function RecentJobsCard({ jobs }: { jobs: any[] }) {
-  console.log("RECENT JOBS: ", jobs[0]);
   return (
     <Card>
       <CardHeader>

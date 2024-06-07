@@ -2,12 +2,12 @@
 import { barChartData } from "@/lib/data/barChartData";
 import { ResponsiveBar } from "@nivo/bar";
 
-export default function WeeklyBarChart() {
+export default function WeeklyBarChart({ data }: { data: any[] }) {
   return (
     <ResponsiveBar
-      data={barChartData.data}
+      data={data}
       keys={["jobs"]}
-      indexBy="day"
+      indexBy="date"
       margin={{
         top: 10,
         right: 10,
