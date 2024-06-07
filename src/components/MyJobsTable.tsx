@@ -41,7 +41,7 @@ import {
 } from "./ui/command";
 import { useEffect, useState } from "react";
 import { TablePagination } from "./TablePagination";
-import { getJobsList } from "@/actions/job.actions";
+import { deleteJobById, getJobsList } from "@/actions/job.actions";
 import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 import JobDetails from "./JobDetails";
 
@@ -83,6 +83,12 @@ function MyJobsTable() {
     setDialogOpen(true);
   };
 
+  const deleteJob = async (jobId: string) => {
+    const res = await deleteJobById(jobId);
+    const updatedJobs = jobs.filter((job: any) => job.id !== res.id);
+    setJobs(updatedJobs);
+  };
+
   return (
     <>
       <Table>
@@ -108,7 +114,7 @@ function MyJobsTable() {
               <TableRow
                 key={job.id}
                 className="cursor-pointer"
-                onClick={() => viewJobDetails(job?.id)}
+                // onClick={() => viewJobDetails(job?.id)}
               >
                 <TableCell className="hidden sm:table-cell">
                   <Image
@@ -204,7 +210,10 @@ function MyJobsTable() {
                           </DropdownMenuSubContent>
                         </DropdownMenuSub>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-600">
+                        <DropdownMenuItem
+                          className="text-red-600 cursor-pointer"
+                          onClick={() => deleteJob(job.id)}
+                        >
                           <Trash className="mr-2 h-4 w-4" />
                           Delete
                         </DropdownMenuItem>
@@ -224,10 +233,10 @@ function MyJobsTable() {
         </DialogContent>
       </Dialog>
       <div className="text-xs text-muted-foreground">
-        Showing
+        Showing{" "}
         <strong>
           {startPostIndex} to {endPostIndex}
-        </strong>
+        </strong>{" "}
         of
         <strong> {totalJobs}</strong> jobs
       </div>

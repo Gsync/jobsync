@@ -89,7 +89,7 @@ export const getJobsList = async (
           description: false,
         },
         orderBy: {
-          createdAt: "desc",
+          appliedDate: "desc",
         },
       }),
       prisma.job.count({
@@ -259,6 +259,30 @@ export const addJob = async (
     return job;
   } catch (error) {
     const msg = "Failed to create job. ";
+    console.error(msg, error);
+    throw new Error(msg);
+  }
+};
+
+export const deleteJobById = async (
+  jobId: string
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const res = prisma.job.delete({
+      where: {
+        id: jobId,
+        userId: user.id,
+      },
+    });
+    return res;
+  } catch (error) {
+    const msg = "Failed to delete job.";
     console.error(msg, error);
     throw new Error(msg);
   }

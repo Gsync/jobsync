@@ -24,7 +24,7 @@ export default function RecentJobsCard({ jobs }: { jobs: any[] }) {
               </p>
             </div>
             <div className="ml-auto font-medium">
-              {format(job.appliedDate, "PP")}
+              {format(job?.appliedDate, "PP")}
             </div>
           </div>
         ))}
