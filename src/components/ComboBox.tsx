@@ -19,7 +19,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Job } from "@/models/job.model";
 import { ScrollArea } from "./ui/scroll-area";
 import { useState, useTransition } from "react";
 import { delay } from "@/utils/delay";
@@ -28,10 +27,11 @@ import {
   createJobTitle,
   createLocation,
 } from "@/actions/job.actions";
+import { JobForm } from "@/models/job.model";
 
 interface ComboboxProps {
   options: any[];
-  field: ControllerRenderProps<Job, any>;
+  field: ControllerRenderProps<JobForm, any>;
   creatable?: boolean;
 }
 

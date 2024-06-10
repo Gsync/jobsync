@@ -1,4 +1,6 @@
-export interface Job {
+export interface JobForm {
+  id?: string;
+  userId?: string;
   source: string;
   title: string;
   type: string;
@@ -9,6 +11,11 @@ export interface Job {
   dateApplied: Date;
   salaryRange: string;
   jobDescription: string;
+}
+
+export interface JobResponse {
+  id: string;
+  userId: string;
 }
 
 export enum JOB_TYPES {

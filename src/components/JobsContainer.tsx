@@ -24,6 +24,7 @@ import {
   getJobDetails,
   getJobsList,
 } from "@/actions/job.actions";
+import { toast } from "./ui/use-toast";
 
 type MyJobsProps = {
   statuses: { id: string; label: string; value: string }[];
@@ -61,7 +62,12 @@ function JobsContainer({
   };
 
   const onDeleteJob = async (jobId: string) => {
-    await deleteJobById(jobId);
+    const res = await deleteJobById(jobId);
+    if (res) {
+      toast({
+        description: `Job has been deleted successfully`,
+      });
+    }
     reloadJobs();
   };
 

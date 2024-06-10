@@ -9,12 +9,12 @@ import {
 } from "./ui/select";
 import { FormControl } from "./ui/form";
 import { ControllerRenderProps } from "react-hook-form";
-import { Job } from "@/models/job.model";
+import { JobForm } from "@/models/job.model";
 
 interface SelectProps {
   label: string;
   options: any[];
-  field: ControllerRenderProps<Job, any>;
+  field: ControllerRenderProps<JobForm, any>;
 }
 
 function SelectFormCtrl({ label, options, field }: SelectProps) {

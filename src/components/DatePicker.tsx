@@ -19,12 +19,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ControllerRenderProps } from "react-hook-form";
-import { Job } from "@/models/job.model";
+import { JobForm } from "@/models/job.model";
 import { useState } from "react";
 import { FormControl } from "./ui/form";
 
 interface DatePickerProps {
-  field: ControllerRenderProps<Job, any>;
+  field: ControllerRenderProps<JobForm, any>;
   presets: boolean;
 }
 

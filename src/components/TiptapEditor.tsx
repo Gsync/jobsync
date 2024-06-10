@@ -1,6 +1,6 @@
 "use client";
 
-import { Job } from "@/models/job.model";
+import { JobForm } from "@/models/job.model";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
@@ -8,7 +8,7 @@ import { ControllerRenderProps } from "react-hook-form";
 import { Toggle } from "./ui/toggle";
 import { Bold, Heading2, Italic, List, ListOrdered } from "lucide-react";
 
-const Tiptap = ({ field }: { field: ControllerRenderProps<Job, any> }) => {
+const Tiptap = ({ field }: { field: ControllerRenderProps<JobForm, any> }) => {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({

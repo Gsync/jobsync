@@ -30,7 +30,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Button } from "./ui/button";
+import { Button, buttonVariants } from "./ui/button";
 import {
   Command,
   CommandEmpty,
@@ -43,6 +43,16 @@ import { useState } from "react";
 import { TablePagination } from "./TablePagination";
 import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 import JobDetails from "./JobDetails";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
 
 type MyJobsTableProps = {
   jobs: any[];
@@ -77,7 +87,9 @@ function MyJobsTable({
   const [label, setLabel] = useState("feature");
   const [open, setOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [alertOpen, setAlertOpen] = useState(false);
   const [curJobId, setCurJobId] = useState("");
+  const [jobIdToDelete, setJobIdToDelete] = useState("");
 
   const startPostIndex = (currentPage - 1) * jobsPerPage + 1;
   const endPostIndex = Math.min(currentPage * jobsPerPage, totalJobs);
@@ -85,6 +97,11 @@ function MyJobsTable({
   const viewJobDetails = (jobId: string) => {
     setCurJobId(jobId);
     setDialogOpen(true);
+  };
+
+  const onDeleteJob = (jobId: string) => {
+    setAlertOpen(true);
+    setJobIdToDelete(jobId);
   };
 
   return (
@@ -210,7 +227,7 @@ function MyJobsTable({
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="text-red-600 cursor-pointer"
-                          onClick={() => deleteJob(job.id)}
+                          onClick={() => onDeleteJob(job.id)}
                         >
                           <Trash className="mr-2 h-4 w-4" />
                           Delete
@@ -243,6 +260,28 @@ function MyJobsTable({
         totalPages={totalPages}
         onPageChange={onPageChange}
       />
+      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Are you sure you want to delete this job?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete and
+              remove data from server.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={() => deleteJob(jobIdToDelete)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
