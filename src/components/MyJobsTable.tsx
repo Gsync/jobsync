@@ -52,6 +52,7 @@ type MyJobsTableProps = {
   jobsPerPage: number;
   onPageChange: (n: number) => void;
   deleteJob: (id: string) => void;
+  editJob: (id: string) => void;
 };
 
 function MyJobsTable({
@@ -62,6 +63,7 @@ function MyJobsTable({
   jobsPerPage,
   onPageChange,
   deleteJob,
+  editJob,
 }: MyJobsTableProps) {
   const labels = [
     "draft",
@@ -169,9 +171,9 @@ function MyJobsTable({
                           <ListCollapse className="mr-2 h-4 w-4" />
                           View Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => editJob(job.id)}>
                           <Pencil className="mr-2 h-4 w-4" />
-                          Edit
+                          Edit Job
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuSub>

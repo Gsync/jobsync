@@ -6,14 +6,13 @@ import {
   DialogHeader,
   DialogOverlay,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { addJob } from "@/actions/job.actions";
+import { addJob, updateJob } from "@/actions/job.actions";
 import { Loader, PlusCircle } from "lucide-react";
 import { Button } from "./ui/button";
 import { useForm } from "react-hook-form";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { JOB_TYPES } from "@/models/job.model";
@@ -41,7 +40,9 @@ type AddJobProps = {
   jobTitles: { id: string; label: string; value: string }[];
   locations: { id: string; label: string; value: string }[];
   jobSources: { id: string; label: string; value: string }[];
-  onAddJob: () => void;
+  reloadJobs: () => void;
+  editJob?: any;
+  resetEditJob: () => void;
 };
 
 export function AddJob({
@@ -50,7 +51,9 @@ export function AddJob({
   jobTitles,
   locations,
   jobSources,
-  onAddJob,
+  reloadJobs,
+  editJob,
+  resetEditJob,
 }: AddJobProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -67,33 +70,62 @@ export function AddJob({
     },
   });
 
+  const { setValue, reset } = form;
+
+  useEffect(() => {
+    if (editJob) {
+      setValue("id", editJob.id);
+      setValue("userId", editJob.userId);
+      setValue("title", editJob.JobTitle.id);
+      setValue("company", editJob.Company.id);
+      setValue("location", editJob.Location.id);
+      setValue("type", editJob.jobType);
+      setValue("source", editJob.JobSource.id);
+      setValue("status", editJob.Status.id);
+      setValue("dueDate", editJob.dueDate);
+      setValue("dateApplied", editJob.appliedDate);
+      setValue("salaryRange", editJob.salaryRange);
+      setValue("jobDescription", editJob.description);
+      setDialogOpen(true);
+    }
+  }, [editJob, setValue]);
+
   function onSubmit(data: z.infer<typeof AddJobFormSchema>) {
     startTransition(async () => {
-      const res = await addJob(data);
-      form.reset();
+      const res = editJob ? await updateJob(data) : await addJob(data);
+      reset();
       setDialogOpen(false);
-      onAddJob();
+      reloadJobs();
     });
     toast({
-      description: "Job has been created successfully",
+      description: `Job has been ${
+        editJob ? "updated" : "created"
+      } successfully`,
     });
   }
 
+  const pageTitle = editJob ? "Edit Job" : "Add Job";
+
+  const addJobForm = () => {
+    reset();
+    resetEditJob();
+    setDialogOpen(true);
+  };
+
   return (
     <>
+      <Button size="sm" className="h-8 gap-1" onClick={addJobForm}>
+        <PlusCircle className="h-3.5 w-3.5" />
+        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+          Add Job
+        </span>
+      </Button>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogTrigger asChild>
-          <Button size="sm" className="h-8 gap-1">
-            <PlusCircle className="h-3.5 w-3.5" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-              Add Job
-            </span>
-          </Button>
-        </DialogTrigger>
+        {/* <DialogTrigger asChild></DialogTrigger> */}
         <DialogOverlay>
           <DialogContent className="lg:max-w-screen-lg lg:max-h-screen overflow-y-scroll">
             <DialogHeader>
-              <DialogTitle>Add Job</DialogTitle>
+              <DialogTitle>{pageTitle}</DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form

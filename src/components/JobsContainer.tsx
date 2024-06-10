@@ -19,7 +19,11 @@ import { Button } from "./ui/button";
 import { File, ListFilter } from "lucide-react";
 import MyJobsTable from "./MyJobsTable";
 import { AddJob } from "./AddJob";
-import { deleteJobById, getJobsList } from "@/actions/job.actions";
+import {
+  deleteJobById,
+  getJobDetails,
+  getJobsList,
+} from "@/actions/job.actions";
 
 type MyJobsProps = {
   statuses: { id: string; label: string; value: string }[];
@@ -39,6 +43,7 @@ function JobsContainer({
   const [jobs, setJobs] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalJobs, setTotalJobs] = useState(0);
+  const [editJob, setEditJob] = useState(null);
 
   const jobsPerPage = 10;
 
@@ -56,9 +61,17 @@ function JobsContainer({
   };
 
   const onDeleteJob = async (jobId: string) => {
-    const res = await deleteJobById(jobId);
-    const updatedJobs = jobs.filter((job: any) => job.id !== res.id);
-    setJobs(updatedJobs);
+    await deleteJobById(jobId);
+    reloadJobs();
+  };
+
+  const onEditJob = async (jobId: string) => {
+    const job = await getJobDetails(jobId);
+    setEditJob(job);
+  };
+
+  const resetEditJob = () => {
+    setEditJob(null);
   };
 
   useEffect(() => {
@@ -104,7 +117,9 @@ function JobsContainer({
                 jobTitles={titles}
                 locations={locations}
                 jobSources={sources}
-                onAddJob={reloadJobs}
+                reloadJobs={reloadJobs}
+                editJob={editJob}
+                resetEditJob={resetEditJob}
               />
             </div>
           </div>
@@ -118,6 +133,7 @@ function JobsContainer({
             totalJobs={totalJobs}
             onPageChange={setCurrentPage}
             deleteJob={onDeleteJob}
+            editJob={onEditJob}
           />
         </CardContent>
         <CardFooter></CardFooter>

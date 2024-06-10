@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 export const AddJobFormSchema = z.object({
+  id: z.string().optional(),
+  userId: z.string().optional(),
   title: z
     .string({
       required_error: "Job title is required.",

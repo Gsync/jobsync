@@ -264,6 +264,61 @@ export const addJob = async (
   }
 };
 
+export const updateJob = async (
+  data: z.infer<typeof AddJobFormSchema>
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+    if (!data.id || user.id != data.userId) {
+      console.log({ data, user });
+      throw new Error("Id is not provide or no user privilages");
+    }
+
+    const {
+      id,
+      title,
+      company,
+      location,
+      type,
+      status,
+      source,
+      salaryRange,
+      dueDate,
+      dateApplied,
+      jobDescription,
+    } = data;
+
+    const job = await prisma.job.update({
+      where: {
+        id,
+      },
+      data: {
+        jobTitleId: title,
+        companyId: company,
+        locationId: location,
+        statusId: status,
+        jobSourceId: source,
+        salaryRange: salaryRange,
+        createdAt: new Date(),
+        dueDate: dueDate,
+        appliedDate: dateApplied,
+        description: jobDescription,
+        jobType: type,
+      },
+    });
+
+    return job;
+  } catch (error) {
+    const msg = "Failed to update job. ";
+    console.error(msg, error);
+    throw new Error(msg);
+  }
+};
+
 export const deleteJobById = async (
   jobId: string
 ): Promise<any | undefined> => {
