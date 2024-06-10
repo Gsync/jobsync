@@ -35,13 +35,14 @@ import { DatePicker } from "./DatePicker";
 import { SALARY_RANGES } from "@/lib/data/salaryRangeData";
 import TiptapEditor from "./TiptapEditor";
 
-interface AddJobProps {
+type AddJobProps = {
   jobStatuses: { id: string; label: string; value: string }[];
   companies: any[];
   jobTitles: { id: string; label: string; value: string }[];
   locations: { id: string; label: string; value: string }[];
   jobSources: { id: string; label: string; value: string }[];
-}
+  onAddJob: () => void;
+};
 
 export function AddJob({
   jobStatuses,
@@ -49,6 +50,7 @@ export function AddJob({
   jobTitles,
   locations,
   jobSources,
+  onAddJob,
 }: AddJobProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -66,11 +68,11 @@ export function AddJob({
   });
 
   function onSubmit(data: z.infer<typeof AddJobFormSchema>) {
-    console.log("add job form data: ", data);
     startTransition(async () => {
       const res = await addJob(data);
       form.reset();
       setDialogOpen(false);
+      onAddJob();
     });
     toast({
       description: "Job has been created successfully",

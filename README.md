@@ -34,3 +34,19 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
+
+Add/edit job solution
+
+1. Move code from page.tsx (for myjobs page) and create new Myjobs (make it client component) component to hold both table and form
+2. Fetch jobs data in page.tsx and pass to myjobs as props
+3. 
+```typescript
+const StateManager = ({ initialRecords }) => { 
+    const [records, setRecords] = useState(initialRecords); 
+    const addRecord = (newRecord) => { setRecords([...records, newRecord]); }; 
+    return ( 
+        <div> <Table records={records} /> <FormaddRecord={addRecord} /> </div> 
+    ); 
+};
+```

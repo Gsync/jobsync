@@ -39,13 +39,30 @@ import {
   CommandItem,
   CommandList,
 } from "./ui/command";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { TablePagination } from "./TablePagination";
-import { deleteJobById, getJobsList } from "@/actions/job.actions";
 import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 import JobDetails from "./JobDetails";
 
-function MyJobsTable() {
+type MyJobsTableProps = {
+  jobs: any[];
+  currentPage: number;
+  totalPages: number;
+  totalJobs: number;
+  jobsPerPage: number;
+  onPageChange: (n: number) => void;
+  deleteJob: (id: string) => void;
+};
+
+function MyJobsTable({
+  jobs,
+  currentPage,
+  totalPages,
+  totalJobs,
+  jobsPerPage,
+  onPageChange,
+  deleteJob,
+}: MyJobsTableProps) {
   const labels = [
     "draft",
     "applied",
@@ -60,33 +77,12 @@ function MyJobsTable() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [curJobId, setCurJobId] = useState("");
 
-  const [jobs, setJobs] = useState([]);
-  const [totalJobs, setTotalJobs] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const jobsPerPage = 10;
-
-  useEffect(() => {
-    const loadJobs = async () => {
-      const { data, total } = await getJobsList(currentPage, jobsPerPage);
-
-      setJobs(data);
-      setTotalJobs(total);
-    };
-    loadJobs();
-  }, [currentPage]);
-  const totalPages = Math.ceil(totalJobs / jobsPerPage);
   const startPostIndex = (currentPage - 1) * jobsPerPage + 1;
   const endPostIndex = Math.min(currentPage * jobsPerPage, totalJobs);
 
   const viewJobDetails = (jobId: string) => {
     setCurJobId(jobId);
     setDialogOpen(true);
-  };
-
-  const deleteJob = async (jobId: string) => {
-    const res = await deleteJobById(jobId);
-    const updatedJobs = jobs.filter((job: any) => job.id !== res.id);
-    setJobs(updatedJobs);
   };
 
   return (
@@ -243,7 +239,7 @@ function MyJobsTable() {
       <TablePagination
         currentPage={currentPage}
         totalPages={totalPages}
-        onPageChange={setCurrentPage}
+        onPageChange={onPageChange}
       />
     </>
   );
