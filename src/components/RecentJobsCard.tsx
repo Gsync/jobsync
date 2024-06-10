@@ -1,8 +1,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { JobResponse } from "@/models/job.model";
 import { format } from "date-fns";
 
-export default function RecentJobsCard({ jobs }: { jobs: any[] }) {
+export default function RecentJobsCard({ jobs }: { jobs: JobResponse[] }) {
   return (
     <Card>
       <CardHeader>

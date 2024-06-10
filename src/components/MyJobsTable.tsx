@@ -53,9 +53,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
+import { JobResponse } from "@/models/job.model";
 
 type MyJobsTableProps = {
-  jobs: any[];
+  jobs: JobResponse[];
   currentPage: number;
   totalPages: number;
   totalJobs: number;
@@ -188,7 +189,10 @@ function MyJobsTable({
                           <ListCollapse className="mr-2 h-4 w-4" />
                           View Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => editJob(job.id)}>
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={() => editJob(job.id)}
+                        >
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit Job
                         </DropdownMenuItem>

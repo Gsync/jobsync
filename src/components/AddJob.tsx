@@ -15,7 +15,15 @@ import { useForm } from "react-hook-form";
 import { useEffect, useState, useTransition } from "react";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { JOB_TYPES } from "@/models/job.model";
+import {
+  Company,
+  JOB_TYPES,
+  JobLocation,
+  JobResponse,
+  JobSource,
+  JobStatus,
+  JobTitle,
+} from "@/models/job.model";
 import { addDays } from "date-fns";
 import { z } from "zod";
 import { toast } from "./ui/use-toast";
@@ -35,13 +43,13 @@ import { SALARY_RANGES } from "@/lib/data/salaryRangeData";
 import TiptapEditor from "./TiptapEditor";
 
 type AddJobProps = {
-  jobStatuses: { id: string; label: string; value: string }[];
-  companies: any[];
-  jobTitles: { id: string; label: string; value: string }[];
-  locations: { id: string; label: string; value: string }[];
-  jobSources: { id: string; label: string; value: string }[];
+  jobStatuses: JobStatus[];
+  companies: Company[];
+  jobTitles: JobTitle[];
+  locations: JobLocation[];
+  jobSources: JobSource[];
   reloadJobs: () => void;
-  editJob?: any;
+  editJob?: JobResponse | null;
   resetEditJob: () => void;
 };
 

@@ -25,13 +25,21 @@ import {
   getJobsList,
 } from "@/actions/job.actions";
 import { toast } from "./ui/use-toast";
+import {
+  Company,
+  JobLocation,
+  JobResponse,
+  JobSource,
+  JobStatus,
+  JobTitle,
+} from "@/models/job.model";
 
 type MyJobsProps = {
-  statuses: { id: string; label: string; value: string }[];
-  companies: any[];
-  titles: { id: string; label: string; value: string }[];
-  locations: { id: string; label: string; value: string }[];
-  sources: { id: string; label: string; value: string }[];
+  statuses: JobStatus[];
+  companies: Company[];
+  titles: JobTitle[];
+  locations: JobLocation[];
+  sources: JobSource[];
 };
 
 function JobsContainer({
@@ -41,7 +49,7 @@ function JobsContainer({
   locations,
   sources,
 }: MyJobsProps) {
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<JobResponse[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalJobs, setTotalJobs] = useState(0);
   const [editJob, setEditJob] = useState(null);

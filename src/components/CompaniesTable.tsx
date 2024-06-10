@@ -27,8 +27,9 @@ import {
   CardTitle,
 } from "./ui/card";
 import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
+import { Company } from "@/models/job.model";
 
-function CompaniesTable({ companies }: { companies: any[] }) {
+function CompaniesTable({ companies }: { companies: Company[] }) {
   return (
     <div className="col-span-3">
       <Card x-chunk="dashboard-06-chunk-0">
