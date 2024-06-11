@@ -1,9 +1,9 @@
-import { getCompanyList } from "@/actions/job.actions";
+import { getCompanyList } from "@/actions/company.actions";
 import CompaniesTable from "@/components/CompaniesTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 async function AdminPage() {
-  const companies = await getCompanyList();
+  const companies = await getCompanyList("applied");
   return (
     <div className="flex flex-col col-span-3">
       <h3 className="text-2xl font-semibold leading-none tracking-tight mb-4">

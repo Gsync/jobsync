@@ -1,13 +1,13 @@
 import { Metadata } from "next";
 
 import {
-  getCompanyList,
   getJobLocationList,
   getJobSourceList,
   getJobTitleList,
   getStatusList,
 } from "@/actions/job.actions";
 import JobsContainer from "@/components/JobsContainer";
+import { getCompanyList } from "@/actions/company.actions";
 
 export const metadata: Metadata = {
   title: "My Jobs | JobSync",

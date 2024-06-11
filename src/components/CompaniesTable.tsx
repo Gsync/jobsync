@@ -1,3 +1,4 @@
+"use client";
 import { Button } from "./ui/button";
 import Image from "next/image";
 
@@ -26,10 +27,17 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
-import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
+import { Dialog, DialogContent } from "./ui/dialog";
 import { Company } from "@/models/job.model";
+import { useState } from "react";
 
 function CompaniesTable({ companies }: { companies: Company[] }) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const addCompanyForm = () => {
+    // reset();
+    // resetEditJob();
+    setDialogOpen(true);
+  };
   return (
     <div className="col-span-3">
       <Card x-chunk="dashboard-06-chunk-0">
@@ -37,41 +45,13 @@ function CompaniesTable({ companies }: { companies: Company[] }) {
           <CardTitle>Companies</CardTitle>
           <div className="flex items-center">
             <div className="ml-auto flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 gap-1">
-                    <ListFilter className="h-3.5 w-3.5" />
-                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                      Filter
-                    </span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Filter by</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuCheckboxItem checked>
-                    Applied
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem>Draft</DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem>Interview</DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem>Archived</DropdownMenuCheckboxItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button size="sm" variant="outline" className="h-8 gap-1">
-                <File className="h-3.5 w-3.5" />
+              <Button size="sm" className="h-8 gap-1" onClick={addCompanyForm}>
+                <PlusCircle className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Export
+                  Add Company
                 </span>
               </Button>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="h-8 gap-1">
-                    <PlusCircle className="h-3.5 w-3.5" />
-                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                      Add Company
-                    </span>
-                  </Button>
-                </DialogTrigger>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogContent className="lg:max-w-screen-lg lg:max-h-screen overflow-y-scroll"></DialogContent>
               </Dialog>
             </div>
@@ -86,6 +66,7 @@ function CompaniesTable({ companies }: { companies: Company[] }) {
                 </TableHead>
                 <TableHead>Company Name</TableHead>
                 <TableHead>Value</TableHead>
+                <TableHead>Jobs Applied</TableHead>
                 <TableHead>Actions</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -93,7 +74,7 @@ function CompaniesTable({ companies }: { companies: Company[] }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {companies.map((company: any) => {
+              {companies.map((company: Company) => {
                 return (
                   <TableRow key={company.id}>
                     <TableCell className="hidden sm:table-cell">
@@ -110,6 +91,9 @@ function CompaniesTable({ companies }: { companies: Company[] }) {
                     </TableCell>
                     <TableCell className="font-medium">
                       {company.value}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {company._count?.jobsApplied}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>

@@ -15,17 +15,6 @@ export const getStatusList = async (): Promise<any | undefined> => {
   }
 };
 
-export const getCompanyList = async (): Promise<any | undefined> => {
-  try {
-    const companies = await prisma.company.findMany();
-    return companies;
-  } catch (error) {
-    const msg = "Failed to fetch company list. ";
-    console.error(msg, error);
-    throw new Error(msg);
-  }
-};
-
 export const getJobTitleList = async (): Promise<any | undefined> => {
   try {
     const list = await prisma.jobTitle.findMany();
@@ -61,7 +50,8 @@ export const getJobLocationList = async (): Promise<any | undefined> => {
 
 export const getJobsList = async (
   page = 1,
-  limit = 10
+  limit = 10,
+  filter?: string
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -70,10 +60,19 @@ export const getJobsList = async (
       throw new Error("Not authenticated");
     }
     const skip = (page - 1) * limit;
+
+    const filterBy = filter
+      ? {
+          Status: {
+            value: filter,
+          },
+        }
+      : {};
     const [data, total] = await Promise.all([
       prisma.job.findMany({
         where: {
           userId: user.id,
+          ...filterBy,
         },
         skip,
         take: limit,
@@ -95,6 +94,7 @@ export const getJobsList = async (
       prisma.job.count({
         where: {
           userId: user.id,
+          ...filterBy,
         },
       }),
     ]);

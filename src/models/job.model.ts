@@ -26,6 +26,9 @@ export interface Company {
   value: string;
   createdBy: string;
   logoUrl?: string;
+  _count?: {
+    jobsApplied: number;
+  };
 }
 
 export interface JobStatus {

@@ -7,14 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
+import { DropdownMenuSeparator } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
 import { File, ListFilter } from "lucide-react";
 import MyJobsTable from "./MyJobsTable";
@@ -33,6 +26,15 @@ import {
   JobStatus,
   JobTitle,
 } from "@/models/job.model";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 type MyJobsProps = {
   statuses: JobStatus[];
@@ -58,9 +60,8 @@ function JobsContainer({
 
   const totalPages = Math.ceil(totalJobs / jobsPerPage);
 
-  const loadJobs = async (page: number) => {
-    const { data, total } = await getJobsList(page, jobsPerPage);
-
+  const loadJobs = async (page: number, filter?: string) => {
+    const { data, total } = await getJobsList(page, jobsPerPage, filter);
     setJobs(data);
     setTotalJobs(total);
   };
@@ -92,6 +93,10 @@ function JobsContainer({
     loadJobs(currentPage);
   }, [currentPage]);
 
+  const onFilterChange = (filterBy: string) => {
+    filterBy === "none" ? reloadJobs() : loadJobs(1, filterBy);
+  };
+
   return (
     <>
       <Card x-chunk="dashboard-06-chunk-0">
@@ -99,26 +104,23 @@ function JobsContainer({
           <CardTitle>My Jobs</CardTitle>
           <div className="flex items-center">
             <div className="ml-auto flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 gap-1">
-                    <ListFilter className="h-3.5 w-3.5" />
-                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                      Filter
-                    </span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Filter by</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuCheckboxItem checked>
-                    Applied
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem>Draft</DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem>Interview</DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem>Archived</DropdownMenuCheckboxItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Select onValueChange={onFilterChange}>
+                <SelectTrigger className="w-[120px] h-8">
+                  <ListFilter className="h-3.5 w-3.5" />
+                  <SelectValue placeholder="Filter" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Filter by</SelectLabel>
+                    <DropdownMenuSeparator />
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="applied">Applied</SelectItem>
+                    <SelectItem value="interview">Interview</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
               <Button size="sm" variant="outline" className="h-8 gap-1">
                 <File className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">

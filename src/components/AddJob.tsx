@@ -131,7 +131,7 @@ export function AddJob({
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         {/* <DialogTrigger asChild></DialogTrigger> */}
         <DialogOverlay>
-          <DialogContent className="lg:max-w-screen-lg lg:max-h-screen overflow-y-scroll">
+          <DialogContent className="h-full xl:h-[85vh] lg:h-[95vh] lg:max-w-screen-lg lg:max-h-screen overflow-y-scroll">
             <DialogHeader>
               <DialogTitle>{pageTitle}</DialogTitle>
             </DialogHeader>
@@ -209,6 +209,7 @@ export function AddJob({
                       <FormItem className="flex flex-col">
                         <FormLabel className="mb-2">Job Type</FormLabel>
                         <RadioGroup
+                          name="type"
                           onValueChange={field.onChange}
                           defaultValue={field.value}
                           className="flex space-y-1"
