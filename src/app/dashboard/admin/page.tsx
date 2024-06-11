@@ -1,9 +1,7 @@
-import { getCompanyList } from "@/actions/company.actions";
-import CompaniesTable from "@/components/CompaniesTable";
+import CompaniesContainer from "@/components/CompaniesContainer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 async function AdminPage() {
-  const companies = await getCompanyList("applied");
   return (
     <div className="flex flex-col col-span-3">
       <h3 className="text-2xl font-semibold leading-none tracking-tight mb-4">
@@ -16,7 +14,7 @@ async function AdminPage() {
           <TabsTrigger value="locations">Locations</TabsTrigger>
         </TabsList>
         <TabsContent value="companies">
-          <CompaniesTable companies={companies} />
+          <CompaniesContainer />
         </TabsContent>
         <TabsContent value="titles">titles table here</TabsContent>
         <TabsContent value="locations">location table here</TabsContent>

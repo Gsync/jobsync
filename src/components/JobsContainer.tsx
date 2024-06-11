@@ -35,6 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { APP_CONSTANTS } from "@/lib/constants";
 
 type MyJobsProps = {
   statuses: JobStatus[];
@@ -56,7 +57,7 @@ function JobsContainer({
   const [totalJobs, setTotalJobs] = useState(0);
   const [editJob, setEditJob] = useState(null);
 
-  const jobsPerPage = 10;
+  const jobsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
 
   const totalPages = Math.ceil(totalJobs / jobsPerPage);
 

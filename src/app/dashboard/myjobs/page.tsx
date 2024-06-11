@@ -7,7 +7,7 @@ import {
   getStatusList,
 } from "@/actions/job.actions";
 import JobsContainer from "@/components/JobsContainer";
-import { getCompanyList } from "@/actions/company.actions";
+import { getAllCompanies, getCompanyList } from "@/actions/company.actions";
 
 export const metadata: Metadata = {
   title: "My Jobs | JobSync",
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 async function MyJobs() {
   const [statuses, companies, titles, locations, sources] = await Promise.all([
     getStatusList(),
-    getCompanyList(),
+    getAllCompanies(),
     getJobTitleList(),
     getJobLocationList(),
     getJobSourceList(),

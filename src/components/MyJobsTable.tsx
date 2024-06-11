@@ -125,7 +125,7 @@ function MyJobsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {jobs.map((job: any) => {
+          {jobs.map((job: JobResponse) => {
             return (
               <TableRow
                 key={job.id}
@@ -137,11 +137,11 @@ function MyJobsTable({
                     alt="Company logo"
                     className="aspect-square rounded-md object-cover"
                     height="32"
-                    src="/icons/amazon-logo.svg"
+                    src={job.Company?.logoUrl || "/images/jobsync-logo.svg"}
                     width="32"
                   />
                 </TableCell>
-                <TableCell className="hidden md:table-cell">
+                <TableCell className="hidden md:table-cell w-[120px]">
                   {format(job.appliedDate, "PP")}
                 </TableCell>
                 <TableCell className="font-medium">

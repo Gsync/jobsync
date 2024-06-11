@@ -6,6 +6,10 @@ import {
   Sheet,
 } from "lucide-react";
 
+export enum APP_CONSTANTS {
+  RECORDS_PER_PAGE = 10,
+}
+
 export const SIDEBAR_LINKS = [
   {
     icon: LayoutDashboard,

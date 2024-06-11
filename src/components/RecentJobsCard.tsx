@@ -4,6 +4,8 @@ import { JobResponse } from "@/models/job.model";
 import { format } from "date-fns";
 
 export default function RecentJobsCard({ jobs }: { jobs: JobResponse[] }) {
+  debugger;
+
   return (
     <Card>
       <CardHeader>
@@ -12,9 +14,12 @@ export default function RecentJobsCard({ jobs }: { jobs: JobResponse[] }) {
       <CardContent className="grid gap-6">
         {jobs.map((job) => (
           <div key={job.id} className="flex items-center gap-4">
-            <Avatar className="hidden h-9 w-9 sm:flex">
-              <AvatarImage src="/icons/google-logo.svg" alt="Avatar" />
-              <AvatarFallback>MS</AvatarFallback>
+            <Avatar className="hidden h-8 w-8 sm:flex">
+              <AvatarImage
+                src={job.Company?.logoUrl || "/images/jobsync-logo.svg"}
+                alt="Avatar"
+              />
+              <AvatarFallback>JS</AvatarFallback>
             </Avatar>
             <div className="grid gap-1">
               <p className="text-sm font-medium leading-none">
@@ -24,7 +29,7 @@ export default function RecentJobsCard({ jobs }: { jobs: JobResponse[] }) {
                 {job.Company?.label}
               </p>
             </div>
-            <div className="ml-auto font-medium">
+            <div className="ml-auto text-sm font-medium">
               {format(job?.appliedDate, "PP")}
             </div>
           </div>
