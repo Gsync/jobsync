@@ -28,6 +28,7 @@ type CompaniesTableProps = {
   totalCompanies: number;
   recordsPerPage: number;
   onPageChange: (n: number) => void;
+  editCompany: (id: string) => void;
 };
 
 function CompaniesTable({
@@ -37,6 +38,7 @@ function CompaniesTable({
   totalCompanies,
   recordsPerPage,
   onPageChange,
+  editCompany,
 }: CompaniesTableProps) {
   const startPostIndex = (currentPage - 1) * recordsPerPage + 1;
   const endPostIndex = Math.min(currentPage * recordsPerPage, totalCompanies);
@@ -67,7 +69,7 @@ function CompaniesTable({
                     alt="Company logo"
                     className="aspect-square rounded-md object-cover"
                     height="32"
-                    src="/icons/amazon-logo.svg"
+                    src={company.logoUrl || "/images/jobsync-logo.svg"}
                     width="32"
                   />
                 </TableCell>
@@ -86,7 +88,12 @@ function CompaniesTable({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem>Edit</DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={() => editCompany(company.id)}
+                      >
+                        Edit
+                      </DropdownMenuItem>
                       <DropdownMenuItem>Delete</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

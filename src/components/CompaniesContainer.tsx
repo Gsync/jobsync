@@ -10,13 +10,14 @@ import {
   CardTitle,
 } from "./ui/card";
 import { Company } from "@/models/job.model";
-import { getCompanyList } from "@/actions/company.actions";
+import { getCompanyById, getCompanyList } from "@/actions/company.actions";
 import { APP_CONSTANTS } from "@/lib/constants";
 
 function CompaniesContainer() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [totalCompanies, setTotalCompanies] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [editCompany, setEditCompany] = useState(null);
 
   const recordsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
 
@@ -36,9 +37,18 @@ function CompaniesContainer() {
     loadCompanies(1);
   };
 
+  const resetEditCompany = () => {
+    setEditCompany(null);
+  };
+
   useEffect(() => {
     loadCompanies(currentPage);
   }, [currentPage]);
+
+  const onEditCompany = async (companyId: string) => {
+    const company = await getCompanyById(companyId);
+    setEditCompany(company);
+  };
 
   return (
     <>
@@ -48,7 +58,11 @@ function CompaniesContainer() {
             <CardTitle>Companies</CardTitle>
             <div className="flex items-center">
               <div className="ml-auto flex items-center gap-2">
-                <AddCompany reloadCompanies={reloadCompanies} />
+                <AddCompany
+                  editCompany={editCompany}
+                  reloadCompanies={reloadCompanies}
+                  resetEditCompany={resetEditCompany}
+                />
               </div>
             </div>
           </CardHeader>
@@ -60,6 +74,7 @@ function CompaniesContainer() {
               recordsPerPage={recordsPerPage}
               totalCompanies={totalCompanies}
               onPageChange={setCurrentPage}
+              editCompany={onEditCompany}
             />
           </CardContent>
         </Card>

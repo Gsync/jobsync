@@ -25,8 +25,10 @@ export const getCompanyList = async (
         ...(countBy
           ? {
               select: {
+                id: true,
                 label: true,
                 value: true,
+                logoUrl: true,
                 _count: {
                   select: {
                     jobsApplied: {
@@ -105,6 +107,32 @@ export const createCompany = async (
     return upsertedName;
   } catch (error) {
     const msg = "Failed to create company. ";
+    console.error(msg, error);
+    throw new Error(msg);
+  }
+};
+
+export const getCompanyById = async (
+  companyId: string
+): Promise<any | undefined> => {
+  try {
+    if (!companyId) {
+      throw new Error("Please provide company id");
+    }
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const company = prisma.company.findUnique({
+      where: {
+        id: companyId,
+      },
+    });
+    return company;
+  } catch (error) {
+    const msg = "Failed to fetch company by Id. ";
     console.error(msg, error);
     throw new Error(msg);
   }

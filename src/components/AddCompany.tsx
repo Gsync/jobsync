@@ -1,5 +1,5 @@
 "use client";
-import { useTransition, useState } from "react";
+import { useTransition, useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -26,17 +26,23 @@ import {
 import { Input } from "./ui/input";
 import { toast } from "./ui/use-toast";
 import { createCompany } from "@/actions/company.actions";
+import { Company } from "@/models/job.model";
 
 type AddCompanyProps = {
   reloadCompanies: () => void;
+  editCompany?: Company | null;
+  resetEditCompany: () => void;
 };
 
-function AddCompany({ reloadCompanies }: AddCompanyProps) {
+function AddCompany({
+  reloadCompanies,
+  editCompany,
+  resetEditCompany,
+}: AddCompanyProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const editJob = false;
-  const pageTitle = "editJob" ? "Edit Company" : "Add Company";
+  const pageTitle = editCompany ? "Edit Company" : "Add Company";
 
   const form = useForm<z.infer<typeof AddCompanyFormSchema>>({
     resolver: zodResolver(AddCompanyFormSchema),
@@ -44,9 +50,19 @@ function AddCompany({ reloadCompanies }: AddCompanyProps) {
 
   const { setValue, reset } = form;
 
+  useEffect(() => {
+    if (editCompany) {
+      setValue("id", editCompany.id);
+      setValue("company", editCompany.label);
+      setValue("logoUrl", editCompany.logoUrl);
+
+      setDialogOpen(true);
+    }
+  }, [editCompany, setValue]);
+
   const addCompanyForm = () => {
-    // reset();
-    // resetEditJob();
+    reset();
+    resetEditCompany();
     setDialogOpen(true);
   };
 
@@ -60,7 +76,7 @@ function AddCompany({ reloadCompanies }: AddCompanyProps) {
     });
     toast({
       description: `Company has been ${
-        editJob ? "updated" : "created"
+        editCompany ? "updated" : "created"
       } successfully`,
     });
   };
