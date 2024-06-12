@@ -1,6 +1,8 @@
 "use server";
 import prisma from "@/lib/db";
+import { AddCompanyFormSchema } from "@/models/addCompanyForm.schema";
 import { getCurrentUser } from "@/utils/user.utils";
+import { z } from "zod";
 
 export const getCompanyList = async (
   page = 1,
@@ -84,9 +86,8 @@ export const getAllCompanies = async (): Promise<any | undefined> => {
   }
 };
 
-export const createCompany = async (
-  label: string,
-  logoUrl?: string
+export const addCompany = async (
+  data: z.infer<typeof AddCompanyFormSchema>
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -95,20 +96,85 @@ export const createCompany = async (
       throw new Error("Not authenticated");
     }
 
-    const value = label.trim().toLowerCase();
+    const { company, logoUrl } = data;
 
-    // Upsert the name (create if it does not exist, update if it exists)
-    const upsertedName = await prisma.company.upsert({
-      where: { value },
-      update: { label, value, logoUrl },
-      create: { label, value, logoUrl, createdBy: user.id },
+    const value = company.trim().toLowerCase();
+
+    const companyExists = await prisma.company.findUnique({
+      where: {
+        value,
+      },
     });
 
-    return upsertedName;
+    if (companyExists) {
+      throw new Error("Company already exists!");
+    }
+
+    const res = await prisma.company.create({
+      data: {
+        createdBy: user.id,
+        value,
+        label: company,
+        logoUrl,
+      },
+    });
+
+    return { success: true, data: res };
   } catch (error) {
-    const msg = "Failed to create company. ";
+    const msg = "Failed to create company.";
     console.error(msg, error);
-    throw new Error(msg);
+    if (error instanceof Error) {
+      return { success: false, message: error.message };
+    }
+  }
+};
+
+export const updateCompany = async (
+  data: z.infer<typeof AddCompanyFormSchema>
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const { id, company, logoUrl, createdBy } = data;
+
+    if (!id || user.id != createdBy) {
+      throw new Error("Id is not provided or no user privilages");
+    }
+
+    const value = company.trim().toLowerCase();
+
+    const companyExists = await prisma.company.findUnique({
+      where: {
+        value,
+      },
+    });
+
+    if (companyExists) {
+      throw new Error("Company already exists!");
+    }
+
+    const res = await prisma.company.update({
+      where: {
+        id,
+      },
+      data: {
+        value,
+        label: company,
+        logoUrl,
+      },
+    });
+
+    return { success: true, data: res };
+  } catch (error) {
+    const msg = "Failed to update company.";
+    console.error(msg, error);
+    if (error instanceof Error) {
+      return { success: false, message: error.message };
+    }
   }
 };
 

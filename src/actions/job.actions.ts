@@ -247,7 +247,6 @@ export const updateJob = async (
       throw new Error("Not authenticated");
     }
     if (!data.id || user.id != data.userId) {
-      console.log({ data, user });
       throw new Error("Id is not provide or no user privilages");
     }
 

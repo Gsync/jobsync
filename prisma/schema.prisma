@@ -92,9 +92,11 @@ model Job {
   id          String      @id @default(uuid())
   userId      String
   User        User        @relation(fields: [userId], references: [id])
+  jobUrl      String?
   description String
   jobType     String
   createdAt   DateTime
+  applied     Boolean     @default(false)
   appliedDate DateTime?
   dueDate     DateTime?
   statusId    String

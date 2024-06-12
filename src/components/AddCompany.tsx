@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -25,7 +26,7 @@ import {
 } from "./ui/form";
 import { Input } from "./ui/input";
 import { toast } from "./ui/use-toast";
-import { createCompany } from "@/actions/company.actions";
+import { addCompany, updateCompany } from "@/actions/company.actions";
 import { Company } from "@/models/job.model";
 
 type AddCompanyProps = {
@@ -48,13 +49,16 @@ function AddCompany({
     resolver: zodResolver(AddCompanyFormSchema),
   });
 
-  const { setValue, reset } = form;
+  const { setValue, reset, formState } = form;
 
   useEffect(() => {
     if (editCompany) {
       setValue("id", editCompany.id);
       setValue("company", editCompany.label);
-      setValue("logoUrl", editCompany.logoUrl);
+      setValue("createdBy", editCompany.createdBy);
+      if (editCompany.logoUrl) {
+        setValue("logoUrl", editCompany?.logoUrl);
+      }
 
       setDialogOpen(true);
     }
@@ -67,17 +71,27 @@ function AddCompany({
   };
 
   const onSubmit = (data: z.infer<typeof AddCompanyFormSchema>) => {
-    console.log("form data: ", data);
     startTransition(async () => {
-      const res = await createCompany(data.company, data.logoUrl);
-      reset();
-      setDialogOpen(false);
-      reloadCompanies();
-    });
-    toast({
-      description: `Company has been ${
-        editCompany ? "updated" : "created"
-      } successfully`,
+      const res = editCompany
+        ? await updateCompany(data)
+        : await addCompany(data);
+      if (!res.success) {
+        toast({
+          variant: "destructive",
+          title: "Error!",
+          description: res.message,
+        });
+      } else {
+        reset();
+        setDialogOpen(false);
+        reloadCompanies();
+        toast({
+          variant: "success",
+          description: `Company has been ${
+            editCompany ? "updated" : "created"
+          } successfully`,
+        });
+      }
     });
   };
 
@@ -93,11 +107,15 @@ function AddCompany({
         <DialogContent className="lg:max-h-screen overflow-y-scroll">
           <DialogHeader>
             <DialogTitle>{pageTitle}</DialogTitle>
+            <DialogDescription className="text-primary">
+              Caution: Editing name of the company with affect all the related
+              job records.
+            </DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
-              className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4"
+              className="grid grid-cols-1 md:grid-cols-2 gap-4 p-2"
             >
               {/* COMPANY NAME */}
               <div className="md:col-span-2">
@@ -145,7 +163,7 @@ function AddCompany({
                       Cancel
                     </Button>
                   </DialogClose>
-                  <Button type="submit">
+                  <Button type="submit" disabled={!formState.isDirty}>
                     Save
                     {isPending ? (
                       <Loader className="h-4 w-4 shrink-0 spinner" />

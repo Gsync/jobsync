@@ -7,7 +7,7 @@ import {
   getStatusList,
 } from "@/actions/job.actions";
 import JobsContainer from "@/components/JobsContainer";
-import { getAllCompanies, getCompanyList } from "@/actions/company.actions";
+import { getAllCompanies } from "@/actions/company.actions";
 
 export const metadata: Metadata = {
   title: "My Jobs | JobSync",

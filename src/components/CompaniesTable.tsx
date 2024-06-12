@@ -18,7 +18,7 @@ import {
   TableRow,
 } from "./ui/table";
 import { Company } from "@/models/job.model";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Pencil } from "lucide-react";
 import { TablePagination } from "./TablePagination";
 
 type CompaniesTableProps = {
@@ -92,7 +92,8 @@ function CompaniesTable({
                         className="cursor-pointer"
                         onClick={() => editCompany(company.id)}
                       >
-                        Edit
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit Company
                       </DropdownMenuItem>
                       <DropdownMenuItem>Delete</DropdownMenuItem>
                     </DropdownMenuContent>
