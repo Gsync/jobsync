@@ -14,9 +14,11 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Badge } from "./ui/badge";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { JobResponse } from "@/models/job.model";
 
 function JobDetails({ jobId }: { jobId: string }) {
-  const [job, setJob] = useState<any>({});
+  const [job, setJob] = useState<JobResponse>();
   const editor = useEditor({
     extensions: [StarterKit],
     content: "",
@@ -42,7 +44,6 @@ function JobDetails({ jobId }: { jobId: string }) {
               {job?.Location?.label} - {job?.jobType}
             </DialogDescription>
           </DialogHeader>
-
           <h3>
             {new Date() > job.dueDate && job.Status?.value === "draft" ? (
               <Badge className="bg-red-500">Expired</Badge>
@@ -61,6 +62,11 @@ function JobDetails({ jobId }: { jobId: string }) {
               {format(new Date(job?.appliedDate), "PP")}
             </span>
           </h3>
+
+          <div className="my-3">
+            <span className="font-semibold mr-2">Job URL:</span>
+            <a href={job.jobUrl}>{job.jobUrl}</a>
+          </div>
           <div className="my-4">
             <EditorContent editor={editor} />
           </div>

@@ -41,6 +41,7 @@ import SelectFormCtrl from "./Select";
 import { DatePicker } from "./DatePicker";
 import { SALARY_RANGES } from "@/lib/data/salaryRangeData";
 import TiptapEditor from "./TiptapEditor";
+import { Input } from "./ui/input";
 
 type AddJobProps = {
   jobStatuses: JobStatus[];
@@ -94,6 +95,9 @@ export function AddJob({
       setValue("dateApplied", editJob.appliedDate);
       setValue("salaryRange", editJob.salaryRange);
       setValue("jobDescription", editJob.description);
+      if (editJob.jobUrl) {
+        setValue("jobUrl", editJob.jobUrl);
+      }
       setDialogOpen(true);
     }
   }, [editJob, setValue]);
@@ -140,6 +144,26 @@ export function AddJob({
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4"
               >
+                {/* Job URL */}
+                <div className="md:col-span-2">
+                  <FormField
+                    control={form.control}
+                    name="jobUrl"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Job URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Copy and paste job link here"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 {/* Job Title */}
                 <div>
                   <FormField

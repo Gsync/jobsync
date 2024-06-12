@@ -24,7 +24,7 @@ import { useState, useTransition } from "react";
 import { delay } from "@/utils/delay";
 import { createJobTitle, createLocation } from "@/actions/job.actions";
 import { JobForm } from "@/models/job.model";
-import { createCompany } from "@/actions/company.actions";
+import { addCompany } from "@/actions/company.actions";
 
 interface ComboboxProps {
   options: any[];
@@ -44,7 +44,8 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
       let response;
       switch (field.name) {
         case "company":
-          response = await createCompany(label);
+          const res = await addCompany({ company: label });
+          response = res.data;
           break;
         case "title":
           response = await createJobTitle(label);

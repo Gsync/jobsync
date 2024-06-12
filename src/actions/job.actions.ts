@@ -210,6 +210,7 @@ export const addJob = async (
       dueDate,
       dateApplied,
       jobDescription,
+      jobUrl,
     } = data;
 
     const job = await prisma.job.create({
@@ -226,6 +227,7 @@ export const addJob = async (
         description: jobDescription,
         jobType: type,
         userId: user.id,
+        jobUrl,
       },
     });
 
@@ -262,6 +264,7 @@ export const updateJob = async (
       dueDate,
       dateApplied,
       jobDescription,
+      jobUrl,
     } = data;
 
     const job = await prisma.job.update({
@@ -280,6 +283,7 @@ export const updateJob = async (
         appliedDate: dateApplied,
         description: jobDescription,
         jobType: type,
+        jobUrl,
       },
     });
 

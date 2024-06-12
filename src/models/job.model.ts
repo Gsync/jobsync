@@ -11,6 +11,7 @@ export interface JobForm {
   dateApplied: Date;
   salaryRange: string;
   jobDescription: string;
+  jobUrl?: string;
 }
 
 export interface JobTitle {
@@ -72,6 +73,7 @@ export interface JobResponse {
   dueDate: Date;
   salaryRange: string;
   description: string;
+  jobUrl: string;
 }
 
 export enum JOB_TYPES {
