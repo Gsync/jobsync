@@ -112,6 +112,7 @@ export function AddJob({
       reloadJobs();
     });
     toast({
+      variant: "success",
       description: `Job has been ${
         editJob ? "updated" : "created"
       } successfully`,

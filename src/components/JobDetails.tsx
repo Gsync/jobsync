@@ -13,7 +13,7 @@ import { format } from "date-fns";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Badge } from "./ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, formatUrl } from "@/lib/utils";
 import Link from "next/link";
 import { JobResponse } from "@/models/job.model";
 
@@ -65,7 +65,11 @@ function JobDetails({ jobId }: { jobId: string }) {
           {job.jobUrl ? (
             <div className="my-3">
               <span className="font-semibold mr-2">Job URL:</span>
-              <a href={job.jobUrl} target="_blank">
+              <a
+                href={formatUrl(job.jobUrl)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 {job.jobUrl}
               </a>
             </div>
