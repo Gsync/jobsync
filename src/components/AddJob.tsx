@@ -43,6 +43,7 @@ import { SALARY_RANGES } from "@/lib/data/salaryRangeData";
 import TiptapEditor from "./TiptapEditor";
 import { Input } from "./ui/input";
 import { Switch } from "./ui/switch";
+import { redirect } from "next/navigation";
 
 type AddJobProps = {
   jobStatuses: JobStatus[];
@@ -73,14 +74,15 @@ export function AddJob({
     // mode: "onChange",
     defaultValues: {
       type: Object.keys(JOB_TYPES)[0],
-      dateApplied: new Date(),
       dueDate: addDays(new Date(), 3),
       status: jobStatuses[0].id,
       salaryRange: "1",
     },
   });
 
-  const { setValue, reset } = form;
+  const { setValue, reset, watch, resetField } = form;
+
+  const appliedValue = watch("applied");
 
   useEffect(() => {
     if (editJob) {
@@ -93,12 +95,14 @@ export function AddJob({
       setValue("source", editJob.JobSource.id);
       setValue("status", editJob.Status.id);
       setValue("dueDate", editJob.dueDate);
-      setValue("dateApplied", editJob.appliedDate);
       setValue("salaryRange", editJob.salaryRange);
       setValue("jobDescription", editJob.description);
       setValue("applied", editJob.applied);
       if (editJob.jobUrl) {
         setValue("jobUrl", editJob.jobUrl);
+      }
+      if (editJob.appliedDate) {
+        setValue("dateApplied", editJob.appliedDate);
       }
       setDialogOpen(true);
     }
@@ -109,7 +113,8 @@ export function AddJob({
       const res = editJob ? await updateJob(data) : await addJob(data);
       reset();
       setDialogOpen(false);
-      reloadJobs();
+      // reloadJobs();
+      redirect("/dashboard/myjobs");
     });
     toast({
       variant: "success",
@@ -125,6 +130,18 @@ export function AddJob({
     reset();
     resetEditJob();
     setDialogOpen(true);
+  };
+
+  const jobAppliedChange = (applied: boolean) => {
+    if (applied) {
+      form.getValues("status") === jobStatuses[0].id
+        ? setValue("status", jobStatuses[1].id)
+        : null;
+      setValue("dateApplied", new Date());
+    } else {
+      resetField("dateApplied");
+      setValue("status", jobStatuses[0].id);
+    }
   };
 
   return (
@@ -284,7 +301,10 @@ export function AddJob({
                       <FormItem className="flex flex-row">
                         <Switch
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(a) => {
+                            field.onChange(a);
+                            jobAppliedChange(a);
+                          }}
                         />
                         <FormLabel className="flex items-center ml-4 mb-2">
                           {field.value ? "Applied" : "Not Applied"}
@@ -314,20 +334,7 @@ export function AddJob({
                     )}
                   />
                 </div>
-                {/* Due Date */}
-                <div>
-                  <FormField
-                    control={form.control}
-                    name="dueDate"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Due Date</FormLabel>
-                        <DatePicker field={field} presets={true} />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+
                 {/* Date Applied */}
                 <div className="flex flex-col">
                   <FormField
@@ -336,12 +343,36 @@ export function AddJob({
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel>Date Applied</FormLabel>
-                        <DatePicker field={field} presets={false} />
+                        <DatePicker
+                          field={field}
+                          presets={false}
+                          isEnabled={appliedValue}
+                        />
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
+
+                {/* Due Date */}
+                <div>
+                  <FormField
+                    control={form.control}
+                    name="dueDate"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Due Date</FormLabel>
+                        <DatePicker
+                          field={field}
+                          presets={true}
+                          isEnabled={true}
+                        />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 {/* Salary Range */}
                 <div>
                   <FormField

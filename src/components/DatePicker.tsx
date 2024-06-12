@@ -26,9 +26,10 @@ import { FormControl } from "./ui/form";
 interface DatePickerProps {
   field: ControllerRenderProps<JobForm, any>;
   presets: boolean;
+  isEnabled: boolean;
 }
 
-export function DatePicker({ field, presets }: DatePickerProps) {
+export function DatePicker({ field, presets, isEnabled }: DatePickerProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
 
   return (
@@ -41,6 +42,7 @@ export function DatePicker({ field, presets }: DatePickerProps) {
               "md:w-[240px] lg:w-[280px] justify-start text-left font-normal",
               !field.value && "text-muted-foreground"
             )}
+            disabled={!isEnabled}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {field.value ? format(field.value, "PP") : <span>Pick a date</span>}

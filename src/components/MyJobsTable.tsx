@@ -142,7 +142,7 @@ function MyJobsTable({
                   />
                 </TableCell>
                 <TableCell className="hidden md:table-cell w-[120px]">
-                  {format(job.appliedDate, "PP")}
+                  {job.appliedDate ? format(job.appliedDate, "PP") : "N/A"}
                 </TableCell>
                 <TableCell className="font-medium">
                   {job.JobTitle?.label}

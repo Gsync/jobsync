@@ -22,7 +22,7 @@ function SelectFormCtrl({ label, options, field }: SelectProps) {
     <>
       <Select
         onValueChange={field.onChange}
-        defaultValue={field.value}
+        value={field.value}
         name={field.name}
       >
         <FormControl>

@@ -32,6 +32,7 @@ import {
   SelectGroup,
   SelectItem,
   SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
@@ -113,7 +114,7 @@ function JobsContainer({
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Filter by</SelectLabel>
-                    <DropdownMenuSeparator />
+                    <SelectSeparator />
                     <SelectItem value="none">None</SelectItem>
                     <SelectItem value="applied">Applied</SelectItem>
                     <SelectItem value="interview">Interview</SelectItem>

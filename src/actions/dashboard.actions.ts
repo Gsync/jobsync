@@ -37,9 +37,7 @@ export const getJobsAppliedForPeriod = async (
     const count = await prisma.job.count({
       where: {
         userId: user.id,
-        Status: {
-          value: "applied",
-        },
+        applied: true,
         appliedDate: {
           gte: startDate,
           lt: endDate,
@@ -68,9 +66,7 @@ export const getJobsAppliedThisWeek = async (): Promise<any | undefined> => {
     const count = await prisma.job.count({
       where: {
         userId: user.id,
-        Status: {
-          value: "applied",
-        },
+        applied: true,
         appliedDate: {
           gte: startOfWeek,
           lt: new Date(endOfWeek.setDate(endOfWeek.getDate() + 1)), // Add 1 to include the end of the week
@@ -96,9 +92,7 @@ export const getRecentJobs = async (): Promise<any | undefined> => {
     const list = await prisma.job.findMany({
       where: {
         userId: user.id,
-        Status: {
-          value: "applied",
-        },
+        applied: true,
       },
       include: {
         JobSource: true,
@@ -148,9 +142,7 @@ export const getJobsActivityForPeriod = async (): Promise<any | undefined> => {
       },
       where: {
         userId: user.id,
-        Status: {
-          value: "applied",
-        },
+        applied: true,
         appliedDate: {
           gte: sevenDaysAgo,
           lte: today,

@@ -8,7 +8,7 @@ export interface JobForm {
   location: string;
   status: string;
   dueDate: Date;
-  dateApplied: Date;
+  dateApplied?: Date;
   salaryRange: string;
   jobDescription: string;
   jobUrl?: string;
