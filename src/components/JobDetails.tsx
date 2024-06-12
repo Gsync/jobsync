@@ -62,11 +62,14 @@ function JobDetails({ jobId }: { jobId: string }) {
               {format(new Date(job?.appliedDate), "PP")}
             </span>
           </h3>
-
-          <div className="my-3">
-            <span className="font-semibold mr-2">Job URL:</span>
-            <a href={job.jobUrl}>{job.jobUrl}</a>
-          </div>
+          {job.jobUrl ? (
+            <div className="my-3">
+              <span className="font-semibold mr-2">Job URL:</span>
+              <a href={job.jobUrl} target="_blank">
+                {job.jobUrl}
+              </a>
+            </div>
+          ) : null}
           <div className="my-4">
             <EditorContent editor={editor} />
           </div>

@@ -52,4 +52,5 @@ export const AddJobFormSchema = z.object({
     message: "Job description must be at least 10 characters.",
   }),
   jobUrl: z.string().optional(),
+  applied: z.boolean().default(false),
 });

@@ -42,6 +42,7 @@ import { DatePicker } from "./DatePicker";
 import { SALARY_RANGES } from "@/lib/data/salaryRangeData";
 import TiptapEditor from "./TiptapEditor";
 import { Input } from "./ui/input";
+import { Switch } from "./ui/switch";
 
 type AddJobProps = {
   jobStatuses: JobStatus[];
@@ -95,6 +96,7 @@ export function AddJob({
       setValue("dateApplied", editJob.appliedDate);
       setValue("salaryRange", editJob.salaryRange);
       setValue("jobDescription", editJob.description);
+      setValue("applied", editJob.applied);
       if (editJob.jobUrl) {
         setValue("jobUrl", editJob.jobUrl);
       }
@@ -271,6 +273,28 @@ export function AddJob({
                     )}
                   />
                 </div>
+
+                {/* Applied */}
+                <div className="flex items-center">
+                  <FormField
+                    control={form.control}
+                    name="applied"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row">
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                        <FormLabel className="flex items-center ml-4 mb-2">
+                          {field.value ? "Applied" : "Not Applied"}
+                        </FormLabel>
+
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 {/* Status */}
                 <div>
                   <FormField

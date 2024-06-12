@@ -12,6 +12,25 @@ export interface JobForm {
   salaryRange: string;
   jobDescription: string;
   jobUrl?: string;
+  applied: boolean;
+}
+
+export interface JobResponse {
+  id: string;
+  userId: string;
+  JobTitle: JobTitle;
+  Company: Company;
+  Status: JobStatus;
+  Location: JobLocation;
+  JobSource: JobSource;
+  jobType: string;
+  createdAt: Date;
+  appliedDate: Date;
+  dueDate: Date;
+  salaryRange: string;
+  description: string;
+  jobUrl: string;
+  applied: boolean;
 }
 
 export interface JobTitle {
@@ -57,23 +76,6 @@ export interface Country {
   id: string;
   label: string;
   value: string;
-}
-
-export interface JobResponse {
-  id: string;
-  userId: string;
-  JobTitle: JobTitle;
-  Company: Company;
-  Status: JobStatus;
-  Location: JobLocation;
-  JobSource: JobSource;
-  jobType: string;
-  createdAt: Date;
-  appliedDate: Date;
-  dueDate: Date;
-  salaryRange: string;
-  description: string;
-  jobUrl: string;
 }
 
 export enum JOB_TYPES {
