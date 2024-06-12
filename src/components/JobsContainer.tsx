@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
-import { DropdownMenuSeparator } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
 import { File, ListFilter } from "lucide-react";
 import MyJobsTable from "./MyJobsTable";
