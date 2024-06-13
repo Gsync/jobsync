@@ -1,6 +1,12 @@
 import Link from "next/link";
-import { PanelLeft, Briefcase, Search, PowerIcon } from "lucide-react";
-import { Input } from "./ui/input";
+import {
+  PanelLeft,
+  Briefcase,
+  Search,
+  PowerIcon,
+  Settings,
+  Info,
+} from "lucide-react";
 
 import { Button } from "./ui/button";
 import {
@@ -22,6 +28,7 @@ import { SIDEBAR_LINKS } from "@/lib/constants";
 import { signOut } from "@/auth";
 import UserAvatar from "./UserAvatar";
 import { getCurrentUser } from "@/utils/user.utils";
+import { redirect } from "next/navigation";
 
 async function Header() {
   // const session = await auth();
@@ -64,13 +71,13 @@ async function Header() {
       </Sheet>
       <h1 className="font-semibold">JobSync - Job Search Assistant</h1>
       <div className="relative ml-auto flex-1 md:grow-0">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        {/* <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           id="search"
           type="search"
           placeholder="Search..."
           className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
-        />
+        /> */}
       </div>
 
       <DropdownMenu>
@@ -80,8 +87,14 @@ async function Header() {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Settings</DropdownMenuItem>
-          <DropdownMenuItem>Support</DropdownMenuItem>
+          <DropdownMenuItem>
+            <Settings className="w-5 mr-2" />
+            <Link href="/dashboard/settings">Settings</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <Info className="w-5 mr-2" />
+            Support
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <form
             action={async () => {
@@ -98,7 +111,7 @@ async function Header() {
           </form>
         </DropdownMenuContent>
       </DropdownMenu>
-      <ModeToggle />
+      {/* <ModeToggle /> */}
     </header>
   );
 }
