@@ -1,14 +1,15 @@
 import {
+  getActivityCalendarData,
   getJobsActivityForPeriod,
   getJobsAppliedForPeriod,
   getRecentJobs,
 } from "@/actions/dashboard.actions";
-import MyResponsiveCalendar from "@/components/ActivityCalendar";
+import ActivityCalendar from "@/components/ActivityCalendar";
 import JobsApplied from "@/components/JobsAppliedCard";
 import NumberCard from "@/components/NumberCard";
 import RecentJobsCard from "@/components/RecentJobsCard";
 import WeeklyBarChart from "@/components/WeeklyBarChart";
-import { calendarData } from "@/lib/data/calendarData";
+import { generateRandomActivityCalendarData } from "@/lib/utils";
 
 import { Metadata } from "next";
 
@@ -17,13 +18,19 @@ export const metadata: Metadata = {
 };
 
 export default async function Dashboard() {
-  const [jobsAppliedLast7Days, jobsAppliedLast30Days, recentJobs, weeklyData] =
-    await Promise.all([
-      getJobsAppliedForPeriod(7),
-      getJobsAppliedForPeriod(30),
-      getRecentJobs(),
-      getJobsActivityForPeriod(),
-    ]);
+  const [
+    jobsAppliedLast7Days,
+    jobsAppliedLast30Days,
+    recentJobs,
+    weeklyData,
+    activityCalendarData,
+  ] = await Promise.all([
+    getJobsAppliedForPeriod(7),
+    getJobsAppliedForPeriod(30),
+    getRecentJobs(),
+    getJobsActivityForPeriod(),
+    getActivityCalendarData(),
+  ]);
   return (
     <>
       <div className="grid auto-rows-max items-start gap-2 md:gap-2 lg:col-span-2">
@@ -42,21 +49,19 @@ export default async function Dashboard() {
             progress={25}
           />
         </div>
-        <div className=" w-100 h-[240px] flex flex-col justify-center my-4">
-          <h3 className="text-2xl font-semibold leading-none tracking-tight">
-            Weekly Activity
-          </h3>
+        <div className="flex flex-col justify-center">
           <WeeklyBarChart data={weeklyData} />
+          {/* <WeeklyBarChart
+            data={generateRandomActivityCalendarData(7, 0.3, "PP")}
+          /> */}
         </div>
       </div>
       <div>
         <RecentJobsCard jobs={recentJobs} />
       </div>
-      <div className="h-[200px] flex flex-col items-start col-span-3">
-        <h3 className="text-2xl font-semibold leading-none tracking-tight">
-          Activity Calender
-        </h3>
-        <MyResponsiveCalendar data={calendarData.data} />
+      <div className="flex flex-col items-start col-span-3">
+        <ActivityCalendar data={activityCalendarData} />
+        {/* <ActivityCalendar data={generateRandomActivityCalendarData(150)} /> */}
       </div>
     </>
   );
