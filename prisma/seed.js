@@ -15,7 +15,6 @@ async function seedUser() {
         email,
       },
     });
-    console.log("User already exists: ", { email });
     if (!existingUser) {
       await prisma.user.create({
         data: {
@@ -24,7 +23,9 @@ async function seedUser() {
           password,
         },
       });
-      console.log("Seeded user: ", { email });
+      console.log("Seeded new user: ", { email });
+    } else {
+      console.log("User already exists: ", { email });
     }
   } catch (error) {
     console.error("Error seeding user: ", error);

@@ -9,5 +9,8 @@ export const config = {
     // "/((?!api|_next/static|_next/image|.*\\.png$).*)",
     "/dashboard",
     "/dashboard/myjobs",
+    "/dashboard/settings",
+    "/dashboard/admin",
+    //Note: add more routes here to protect
   ],
 };
