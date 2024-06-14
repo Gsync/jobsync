@@ -8,18 +8,24 @@ const prisma = new PrismaClient();
 async function seedUser() {
   try {
     const password = await bcrypt.hash("password123", 10);
-
-    const user1 = await prisma.user.upsert({
-      where: { email: "admin@example.com" },
-      update: {},
-      create: {
-        email: "admin@example.com",
-        name: "Admin",
-        password,
+    const email = "admin@example.com";
+    // Check if the user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: {
+        email,
       },
     });
-
-    console.log("Seeded user: ", { user1 });
+    console.log("User already exists: ", { email });
+    if (!existingUser) {
+      await prisma.user.create({
+        data: {
+          email,
+          name: "Admin",
+          password,
+        },
+      });
+      console.log("Seeded user: ", { email });
+    }
   } catch (error) {
     console.error("Error seeding user: ", error);
     throw error;

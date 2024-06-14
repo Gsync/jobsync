@@ -34,3 +34,29 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
+## Generate auth secret 
+
+### For npm
+
+```sh
+    npm exec auth secret
+```
+OR
+```sh
+    npx auth secret
+```
+
+### Using the openssl command available on Linux and Mac OS X:
+
+```sh
+    openssl rand -base64 33
+```
+
+These methods will generate a random string that you can use as your AUTH_SECRET. Make sure to set this in your environment variables:
+
+For example, add it to your .env local file:
+
+```sh
+AUTH_SECRET="your_generated_secret"
+```
