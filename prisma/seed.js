@@ -7,8 +7,8 @@ const prisma = new PrismaClient();
 
 async function seedUser() {
   try {
-    const password = await bcrypt.hash("password123", 10);
-    const email = "admin@example.com";
+    const password = await bcrypt.hash(process.env.USER_PASSWORD, 10);
+    const email = process.env.USER_EMAIL;
     // Check if the user already exists
     const existingUser = await prisma.user.findUnique({
       where: {
