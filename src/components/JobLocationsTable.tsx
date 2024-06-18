@@ -16,36 +16,39 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { JobTitle } from "@/models/job.model";
+import { JobLocation, JobTitle } from "@/models/job.model";
 import { MoreHorizontal, Pencil } from "lucide-react";
 import { TablePagination } from "./TablePagination";
 
-type JobTitlesTableProps = {
-  jobTitles: JobTitle[];
+type JobLocationsTableProps = {
+  jobLocations: JobLocation[];
   currentPage: number;
   totalPages: number;
-  totalJobTitles: number;
+  totalJobLocations: number;
   recordsPerPage: number;
   onPageChange: (n: number) => void;
 };
 
-function JobTitlesTable({
-  jobTitles,
+function JobLocationsTable({
+  jobLocations,
   currentPage,
   totalPages,
-  totalJobTitles,
+  totalJobLocations,
   recordsPerPage,
   onPageChange,
-}: JobTitlesTableProps) {
+}: JobLocationsTableProps) {
   const startPostIndex = (currentPage - 1) * recordsPerPage + 1;
-  const endPostIndex = Math.min(currentPage * recordsPerPage, totalJobTitles);
+  const endPostIndex = Math.min(
+    currentPage * recordsPerPage,
+    totalJobLocations
+  );
 
   return (
     <>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Job Title</TableHead>
+            <TableHead>Location</TableHead>
             <TableHead>Value</TableHead>
             <TableHead>Jobs Applied</TableHead>
             <TableHead>Actions</TableHead>
@@ -55,13 +58,13 @@ function JobTitlesTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {jobTitles.map((title: JobTitle) => {
+          {jobLocations.map((location: JobLocation) => {
             return (
-              <TableRow key={title.id}>
-                <TableCell className="font-medium">{title.label}</TableCell>
-                <TableCell className="font-medium">{title.value}</TableCell>
+              <TableRow key={location.id}>
+                <TableCell className="font-medium">{location.label}</TableCell>
+                <TableCell className="font-medium">{location.value}</TableCell>
                 <TableCell className="font-medium">
-                  {title._count?.jobs}
+                  {location._count?.jobsApplied}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
@@ -88,9 +91,9 @@ function JobTitlesTable({
           {startPostIndex} to {endPostIndex}
         </strong>{" "}
         of
-        <strong> {totalJobTitles}</strong> titles
+        <strong> {totalJobLocations}</strong> locations
       </div>
-      {totalJobTitles > recordsPerPage ? (
+      {totalJobLocations > recordsPerPage ? (
         <TablePagination
           currentPage={currentPage}
           totalPages={totalPages}
@@ -101,4 +104,4 @@ function JobTitlesTable({
   );
 }
 
-export default JobTitlesTable;
+export default JobLocationsTable;

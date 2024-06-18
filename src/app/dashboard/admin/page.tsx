@@ -1,4 +1,5 @@
 import CompaniesContainer from "@/components/CompaniesContainer";
+import JobLocationsContainer from "@/components/JobLocationsContainer";
 import JobTitlesContainer from "@/components/JobTitlesContainer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -20,7 +21,9 @@ async function AdminPage() {
         <TabsContent value="titles">
           <JobTitlesContainer />
         </TabsContent>
-        <TabsContent value="locations">location table here</TabsContent>
+        <TabsContent value="locations">
+          <JobLocationsContainer />
+        </TabsContent>
       </Tabs>
     </div>
   );

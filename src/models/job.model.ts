@@ -73,6 +73,9 @@ export interface JobLocation {
   stateProv?: string;
   country?: string;
   createdBy: string;
+  _count?: {
+    jobsApplied: number;
+  };
 }
 
 export interface Country {

@@ -26,17 +26,6 @@ export const getJobSourceList = async (): Promise<any | undefined> => {
   }
 };
 
-export const getJobLocationList = async (): Promise<any | undefined> => {
-  try {
-    const list = await prisma.location.findMany();
-    return list;
-  } catch (error) {
-    const msg = "Failed to fetch job location list. ";
-    console.error(msg, error);
-    throw new Error(msg);
-  }
-};
-
 export const getJobsList = async (
   page = 1,
   limit = 10,
