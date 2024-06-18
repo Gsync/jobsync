@@ -25,9 +25,15 @@ const appearanceFormSchema = z.object({
 
 type AppearanceFormValues = z.infer<typeof appearanceFormSchema>;
 
+const currentTheme = localStorage.getItem("theme") as
+  | "light"
+  | "dark"
+  | "system"
+  | undefined;
+
 // This can come from your database or API.
 const defaultValues: Partial<AppearanceFormValues> = {
-  theme: "system",
+  theme: currentTheme || "system",
 };
 
 function DisplaySettings() {
