@@ -11,6 +11,8 @@ export const config = {
     "/dashboard/myjobs",
     "/dashboard/settings",
     "/dashboard/admin",
+    "/dashboard/activities",
+    "/dashboard/profile",
     //Note: add more routes here to protect
   ],
 };
