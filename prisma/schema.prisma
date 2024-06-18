@@ -39,7 +39,7 @@ model Contact {
 model JobTitle {
   id        String @id @default(uuid())
   label     String
-  value     String @unique
+  value     String @unique //TODO: Change and Apply unique constraint on index  with value and userid
   jobs      Job[]
   createdBy String // userId
   user      User   @relation(fields: [createdBy], references: [id])

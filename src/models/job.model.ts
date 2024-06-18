@@ -38,6 +38,9 @@ export interface JobTitle {
   label: string;
   value: string;
   createdBy: string;
+  _count?: {
+    jobs: number;
+  };
 }
 
 export interface Company {

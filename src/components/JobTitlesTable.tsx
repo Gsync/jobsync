@@ -1,6 +1,5 @@
 "use client";
 import { Button } from "./ui/button";
-import Image from "next/image";
 
 import {
   DropdownMenu,
@@ -17,41 +16,36 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { Company } from "@/models/job.model";
+import { JobTitle } from "@/models/job.model";
 import { MoreHorizontal, Pencil } from "lucide-react";
 import { TablePagination } from "./TablePagination";
 
-type CompaniesTableProps = {
-  companies: Company[];
+type JobTitlesTableProps = {
+  jobTitles: JobTitle[];
   currentPage: number;
   totalPages: number;
-  totalCompanies: number;
+  totalJobTitles: number;
   recordsPerPage: number;
   onPageChange: (n: number) => void;
-  editCompany: (id: string) => void;
 };
 
-function CompaniesTable({
-  companies,
+function JobTitlesTable({
+  jobTitles,
   currentPage,
   totalPages,
-  totalCompanies,
+  totalJobTitles,
   recordsPerPage,
   onPageChange,
-  editCompany,
-}: CompaniesTableProps) {
+}: JobTitlesTableProps) {
   const startPostIndex = (currentPage - 1) * recordsPerPage + 1;
-  const endPostIndex = Math.min(currentPage * recordsPerPage, totalCompanies);
+  const endPostIndex = Math.min(currentPage * recordsPerPage, totalJobTitles);
 
   return (
     <>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="hidden w-[100px] sm:table-cell">
-              <span className="sr-only">Company Logo</span>
-            </TableHead>
-            <TableHead>Company Name</TableHead>
+            <TableHead>Job Title</TableHead>
             <TableHead>Value</TableHead>
             <TableHead>Jobs Applied</TableHead>
             <TableHead>Actions</TableHead>
@@ -61,22 +55,13 @@ function CompaniesTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {companies.map((company: Company) => {
+          {jobTitles.map((title: JobTitle) => {
             return (
-              <TableRow key={company.id}>
-                <TableCell className="hidden sm:table-cell">
-                  <Image
-                    alt="Company logo"
-                    className="aspect-square rounded-md object-cover"
-                    height="32"
-                    src={company.logoUrl || "/images/jobsync-logo.svg"}
-                    width="32"
-                  />
-                </TableCell>
-                <TableCell className="font-medium">{company.label}</TableCell>
-                <TableCell className="font-medium">{company.value}</TableCell>
+              <TableRow key={title.id}>
+                <TableCell className="font-medium">{title.label}</TableCell>
+                <TableCell className="font-medium">{title.value}</TableCell>
                 <TableCell className="font-medium">
-                  {company._count?.jobsApplied}
+                  {title._count?.jobs}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
@@ -88,13 +73,6 @@ function CompaniesTable({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem
-                        className="cursor-pointer"
-                        onClick={() => editCompany(company.id)}
-                      >
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit Company
-                      </DropdownMenuItem>
                       <DropdownMenuItem>Delete</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -110,9 +88,9 @@ function CompaniesTable({
           {startPostIndex} to {endPostIndex}
         </strong>{" "}
         of
-        <strong> {totalCompanies}</strong> companies
+        <strong> {totalJobTitles}</strong> companies
       </div>
-      {totalCompanies > recordsPerPage ? (
+      {totalJobTitles > recordsPerPage ? (
         <TablePagination
           currentPage={currentPage}
           totalPages={totalPages}
@@ -123,4 +101,4 @@ function CompaniesTable({
   );
 }
 
-export default CompaniesTable;
+export default JobTitlesTable;

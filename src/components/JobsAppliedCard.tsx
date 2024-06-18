@@ -7,9 +7,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function JobsAppliedCard() {
+  const router = useRouter();
   return (
     <Card className="sm:col-span-2">
       <CardHeader className="pb-3">
@@ -19,7 +20,9 @@ export default function JobsAppliedCard() {
         </CardDescription>
       </CardHeader>
       <CardFooter>
-        <Button>Add New Job</Button>
+        <Button onClick={() => router.push("/dashboard/myjobs")}>
+          Add New Job
+        </Button>
       </CardFooter>
     </Card>
   );

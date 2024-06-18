@@ -1,14 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AddCompany from "./AddCompany";
 import CompaniesTable from "./CompaniesTable";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Company } from "@/models/job.model";
 import { getCompanyById, getCompanyList } from "@/actions/company.actions";
 import { APP_CONSTANTS } from "@/lib/constants";
@@ -23,15 +17,18 @@ function CompaniesContainer() {
 
   const totalPages = Math.ceil(totalCompanies / recordsPerPage);
 
-  const loadCompanies = async (page: number) => {
-    const { data, total } = await getCompanyList(
-      page,
-      recordsPerPage,
-      "applied"
-    );
-    setCompanies(data);
-    setTotalCompanies(total);
-  };
+  const loadCompanies = useCallback(
+    async (page: number) => {
+      const { data, total } = await getCompanyList(
+        page,
+        recordsPerPage,
+        "applied"
+      );
+      setCompanies(data);
+      setTotalCompanies(total);
+    },
+    [recordsPerPage]
+  );
 
   const reloadCompanies = () => {
     loadCompanies(1);
@@ -43,7 +40,7 @@ function CompaniesContainer() {
 
   useEffect(() => {
     loadCompanies(currentPage);
-  }, [currentPage]);
+  }, [currentPage, loadCompanies]);
 
   const onEditCompany = async (companyId: string) => {
     const company = await getCompanyById(companyId);

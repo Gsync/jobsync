@@ -15,17 +15,6 @@ export const getStatusList = async (): Promise<any | undefined> => {
   }
 };
 
-export const getJobTitleList = async (): Promise<any | undefined> => {
-  try {
-    const list = await prisma.jobTitle.findMany();
-    return list;
-  } catch (error) {
-    const msg = "Failed to fetch job title list. ";
-    console.error(msg, error);
-    throw new Error(msg);
-  }
-};
-
 export const getJobSourceList = async (): Promise<any | undefined> => {
   try {
     const list = await prisma.jobSource.findMany();
@@ -134,32 +123,6 @@ export const getJobDetails = async (
     return job;
   } catch (error) {
     const msg = "Failed to fetch job details. ";
-    console.error(msg, error);
-    throw new Error(msg);
-  }
-};
-
-export const createJobTitle = async (
-  label: string
-): Promise<any | undefined> => {
-  try {
-    const user = await getCurrentUser();
-
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
-
-    const value = label.trim().toLowerCase();
-
-    const upsertedTitle = await prisma.jobTitle.upsert({
-      where: { value },
-      update: { label },
-      create: { label, value, createdBy: user.id },
-    });
-
-    return upsertedTitle;
-  } catch (error) {
-    const msg = "Failed to create job title. ";
     console.error(msg, error);
     throw new Error(msg);
   }

@@ -107,7 +107,7 @@ function AddCompany({
           <DialogHeader>
             <DialogTitle>{pageTitle}</DialogTitle>
             <DialogDescription className="text-primary">
-              Caution: Editing name of the company with affect all the related
+              Caution: Editing name of the company will affect all the related
               job records.
             </DialogDescription>
           </DialogHeader>

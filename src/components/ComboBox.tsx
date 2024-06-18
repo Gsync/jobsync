@@ -22,9 +22,10 @@ import {
 import { ScrollArea } from "./ui/scroll-area";
 import { useState, useTransition } from "react";
 import { delay } from "@/utils/delay";
-import { createJobTitle, createLocation } from "@/actions/job.actions";
+import { createLocation } from "@/actions/job.actions";
 import { JobForm } from "@/models/job.model";
 import { addCompany } from "@/actions/company.actions";
+import { createJobTitle } from "@/actions/jobtitle.actions";
 
 interface ComboboxProps {
   options: any[];

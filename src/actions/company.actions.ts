@@ -45,11 +45,11 @@ export const getCompanyList = async (
               },
             }
           : {}),
-        //   orderBy: {
-        //     jobsApplied: {
-        //       _count: "desc",
-        //     },
-        //   },
+        orderBy: {
+          jobsApplied: {
+            _count: "desc",
+          },
+        },
       }),
       prisma.company.count({
         where: {
