@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { APP_CONSTANTS } from "@/lib/constants";
+import Loading from "./Loading";
 
 type MyJobsProps = {
   statuses: JobStatus[];
@@ -56,16 +57,24 @@ function JobsContainer({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalJobs, setTotalJobs] = useState(0);
   const [editJob, setEditJob] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const jobsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
 
   const totalPages = Math.ceil(totalJobs / jobsPerPage);
 
-  const loadJobs = async (page: number, filter?: string) => {
-    const { data, total } = await getJobsList(page, jobsPerPage, filter);
-    setJobs(data);
-    setTotalJobs(total);
-  };
+  const loadJobs = useCallback(
+    async (page: number, filter?: string) => {
+      setLoading(true);
+      const { data, total } = await getJobsList(page, jobsPerPage, filter);
+      setJobs(data);
+      setTotalJobs(total);
+      if (data) {
+        setLoading(false);
+      }
+    },
+    [jobsPerPage]
+  );
 
   const reloadJobs = () => {
     loadJobs(1);
@@ -92,7 +101,7 @@ function JobsContainer({
 
   useEffect(() => {
     loadJobs(currentPage);
-  }, [currentPage]);
+  }, [currentPage, loadJobs]);
 
   const onFilterChange = (filterBy: string) => {
     filterBy === "none" ? reloadJobs() : loadJobs(1, filterBy);
@@ -142,16 +151,20 @@ function JobsContainer({
           </div>
         </CardHeader>
         <CardContent>
-          <MyJobsTable
-            jobs={jobs}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            jobsPerPage={jobsPerPage}
-            totalJobs={totalJobs}
-            onPageChange={setCurrentPage}
-            deleteJob={onDeleteJob}
-            editJob={onEditJob}
-          />
+          {!loading ? (
+            <MyJobsTable
+              jobs={jobs}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              jobsPerPage={jobsPerPage}
+              totalJobs={totalJobs}
+              onPageChange={setCurrentPage}
+              deleteJob={onDeleteJob}
+              editJob={onEditJob}
+            />
+          ) : (
+            <Loading />
+          )}
         </CardContent>
         <CardFooter></CardFooter>
       </Card>

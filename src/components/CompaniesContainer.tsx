@@ -6,12 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Company } from "@/models/job.model";
 import { getCompanyById, getCompanyList } from "@/actions/company.actions";
 import { APP_CONSTANTS } from "@/lib/constants";
+import Loading from "./Loading";
 
 function CompaniesContainer() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [totalCompanies, setTotalCompanies] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [editCompany, setEditCompany] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const recordsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
 
@@ -19,6 +21,7 @@ function CompaniesContainer() {
 
   const loadCompanies = useCallback(
     async (page: number) => {
+      setLoading(true);
       const { data, total } = await getCompanyList(
         page,
         recordsPerPage,
@@ -26,6 +29,9 @@ function CompaniesContainer() {
       );
       setCompanies(data);
       setTotalCompanies(total);
+      if (data) {
+        setLoading(false);
+      }
     },
     [recordsPerPage]
   );
@@ -64,15 +70,19 @@ function CompaniesContainer() {
             </div>
           </CardHeader>
           <CardContent>
-            <CompaniesTable
-              companies={companies}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              recordsPerPage={recordsPerPage}
-              totalCompanies={totalCompanies}
-              onPageChange={setCurrentPage}
-              editCompany={onEditCompany}
-            />
+            {!loading ? (
+              <CompaniesTable
+                companies={companies}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                recordsPerPage={recordsPerPage}
+                totalCompanies={totalCompanies}
+                onPageChange={setCurrentPage}
+                editCompany={onEditCompany}
+              />
+            ) : (
+              <Loading />
+            )}
           </CardContent>
         </Card>
       </div>
