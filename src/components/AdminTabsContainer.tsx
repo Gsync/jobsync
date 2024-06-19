@@ -22,7 +22,6 @@ function AdminTabsContainer() {
   );
 
   const onTabChange = (tab: string) => {
-    router.push(pathname + "?" + createQueryString("tab", tab));
     router.push(pathname + "?" + createQueryString("page", "1"));
   };
   return (
