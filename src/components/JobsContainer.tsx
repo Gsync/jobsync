@@ -37,6 +37,7 @@ import {
 } from "./ui/select";
 import { APP_CONSTANTS } from "@/lib/constants";
 import Loading from "./Loading";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type MyJobsProps = {
   statuses: JobStatus[];
@@ -53,8 +54,23 @@ function JobsContainer({
   locations,
   sources,
 }: MyJobsProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const queryParams = useSearchParams();
+
+  const createQueryString = useCallback(
+    (name: string, value: string) => {
+      const params = new URLSearchParams(queryParams.toString());
+      params.set(name, value);
+
+      return params.toString();
+    },
+    [queryParams]
+  );
   const [jobs, setJobs] = useState<JobResponse[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(
+    Number(queryParams.get("page")) || 1
+  );
   const [totalJobs, setTotalJobs] = useState(0);
   const [editJob, setEditJob] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -105,6 +121,11 @@ function JobsContainer({
 
   const onFilterChange = (filterBy: string) => {
     filterBy === "none" ? reloadJobs() : loadJobs(1, filterBy);
+  };
+
+  const onPageChange = (page: number) => {
+    setCurrentPage(page);
+    router.push(pathname + "?" + createQueryString("page", page.toString()));
   };
 
   return (
@@ -158,7 +179,7 @@ function JobsContainer({
               totalPages={totalPages}
               jobsPerPage={jobsPerPage}
               totalJobs={totalJobs}
-              onPageChange={setCurrentPage}
+              onPageChange={onPageChange}
               deleteJob={onDeleteJob}
               editJob={onEditJob}
             />
