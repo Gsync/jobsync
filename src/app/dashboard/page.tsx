@@ -9,7 +9,6 @@ import JobsApplied from "@/components/JobsAppliedCard";
 import NumberCard from "@/components/NumberCard";
 import RecentJobsCard from "@/components/RecentJobsCard";
 import WeeklyBarChart from "@/components/WeeklyBarChart";
-import { generateRandomActivityCalendarData } from "@/lib/utils";
 
 import { Metadata } from "next";
 
@@ -51,9 +50,6 @@ export default async function Dashboard() {
         </div>
         <div className="flex flex-col justify-center">
           <WeeklyBarChart data={weeklyData} />
-          {/* <WeeklyBarChart
-            data={generateRandomActivityCalendarData(7, 0.3, "PP")}
-          /> */}
         </div>
       </div>
       <div>
@@ -61,7 +57,6 @@ export default async function Dashboard() {
       </div>
       <div className="flex flex-col items-start col-span-3">
         <ActivityCalendar data={activityCalendarData} />
-        {/* <ActivityCalendar data={generateRandomActivityCalendarData(150)} /> */}
       </div>
     </>
   );
