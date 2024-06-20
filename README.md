@@ -1,10 +1,12 @@
 # JobSync - Job Search Assistant
 
-## <a href="https://demo.jobsync.ca" target="_blank">Live Demo</a>
+## <a href="https://demo.jobsync.ca">Live Demo</a>
 
 JobSync is a web app companion for managing your job search journey. This free and open-source project is designed to help job seekers efficiently track and organize their job applications. Say goodbye to the chaos of scattered information and hello to a streamlined, intuitive, and powerful job search experience.
 
-Job searching can be overwhelming, with numerous applications to track and deadlines to meet. JobSeeker Assistant is here to simplify this process, allowing you to focus on what really matters: landing your dream job. JobSync app platform empowers you with the tools you need to stay organized, informed, and proactive throughout your job search.
+Job searching can be overwhelming, with numerous applications to track and deadlines to meet. JobSeeker Assistant is here to simplify this process, allowing you to focus on what really matters: landing your job. JobSync app platform empowers you with the tools you need to stay organized, informed, and proactive throughout your job search.
+
+![App Snapshot](./screenshots/jobsync-dashboard-screenshot.png?raw=true "App Snapshot Image")
 
 ## Key Features
 - **Application Tracker:** Keep a detailed record of all your job applications, including company details, job titles, application dates, and current status.
@@ -66,7 +68,7 @@ You can use default username (admin@example) and password (password123) or chang
 
 #### Step 3 - Build docker image and run container
 * **Please make sure you have <a href="https://www.docker.com">docker</a> installed, you dont need to know docker to be able to run the following command**
-* Please make sure you are in the root folder
+* Please make sure you are in the root folder in your terminal
 
 ```sh
 docker compose up
@@ -78,10 +80,11 @@ docker compose up
 
 ### Thanks to the following libraries to make it easy to build apps
 
-- <a href="https://github.com/facebook/react" target="_blank">React</a>
-- <a href="https://github.com/vercel/next.js" target="_blank">Next</a>
-- <a href="https://github.com/shadcn-ui/ui" target="_blank">Shadcn</a>
-- <a href="https://github.com/tailwindlabs/tailwindcss" target="_blank">Tailwind</a>
-- <a href="https://github.com/ueberdosis/tiptap" target="_blank">Tiptap</a>
-- <a href="https://github.com/plouc/nivo" target="_blank">Nivo</a>
-- <a href="https://github.com/sqlite/sqlite" target="_blank">Sqlite</a>
+- <a href="https://github.com/facebook/react">React</a>
+- <a href="https://github.com/vercel/next.js">Next</a>
+- <a href="https://github.com/shadcn-ui/ui">Shadcn</a>
+- <a href="https://github.com/prisma/prisma">Prisma</a>
+- <a href="https://github.com/tailwindlabs/tailwindcss">Tailwind</a>
+- <a href="https://github.com/ueberdosis/tiptap">Tiptap</a>
+- <a href="https://github.com/plouc/nivo">Nivo</a>
+- <a href="https://github.com/sqlite/sqlite">Sqlite</a>
