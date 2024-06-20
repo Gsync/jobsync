@@ -8,6 +8,7 @@ import { getCompanyById, getCompanyList } from "@/actions/company.actions";
 import { APP_CONSTANTS } from "@/lib/constants";
 import Loading from "./Loading";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { getMockList } from "@/lib/mock.utils";
 
 function CompaniesContainer({
   createQueryString,
@@ -32,10 +33,15 @@ function CompaniesContainer({
   const loadCompanies = useCallback(
     async (page: number) => {
       setLoading(true);
-      const { data, total } = await getCompanyList(
+      // const { data, total } = await getCompanyList(
+      //   page,
+      //   recordsPerPage,
+      //   "applied"
+      // );
+      const { data, total } = await getMockList(
         page,
         recordsPerPage,
-        "applied"
+        "companies"
       );
       setCompanies(data);
       setTotalCompanies(total);

@@ -9,7 +9,11 @@ import JobsApplied from "@/components/JobsAppliedCard";
 import NumberCard from "@/components/NumberCard";
 import RecentJobsCard from "@/components/RecentJobsCard";
 import WeeklyBarChart from "@/components/WeeklyBarChart";
-import { generateRandomActivityCalendarData } from "@/lib/utils";
+import {
+  getMockJobActivityData,
+  getMockRecentJobs,
+  getRandomInt,
+} from "@/lib/mock.utils";
 
 import { Metadata } from "next";
 
@@ -25,11 +29,16 @@ export default async function Dashboard() {
     weeklyData,
     activityCalendarData,
   ] = await Promise.all([
-    getJobsAppliedForPeriod(7),
-    getJobsAppliedForPeriod(30),
-    getRecentJobs(),
-    getJobsActivityForPeriod(),
-    getActivityCalendarData(),
+    // getJobsAppliedForPeriod(7),
+    // getJobsAppliedForPeriod(30),
+    // getRecentJobs(),
+    // getJobsActivityForPeriod(),
+    // getActivityCalendarData(),
+    getRandomInt(5, 15),
+    getRandomInt(20, 60),
+    getMockRecentJobs(),
+    getMockJobActivityData(7, 0.3, "PP"),
+    getMockJobActivityData(180),
   ]);
   return (
     <>

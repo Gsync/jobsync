@@ -5,6 +5,7 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import { JobTitle } from "@prisma/client";
 import JobLocationsTable from "./JobLocationsTable";
 import { getJobLocationsList } from "@/actions/jobLocation.actions";
+import { getMockList } from "@/lib/mock.utils";
 
 function JobLocationsContainer() {
   const [Locations, setLocations] = useState<JobTitle[]>([]);
@@ -18,10 +19,15 @@ function JobLocationsContainer() {
 
   const loadJobLocations = useCallback(
     async (page: number) => {
-      const { data, total } = await getJobLocationsList(
+      // const { data, total } = await getJobLocationsList(
+      //   page,
+      //   recordsPerPage,
+      //   "applied"
+      // );
+      const { data, total } = await getMockList(
         page,
         recordsPerPage,
-        "applied"
+        "locations"
       );
       setLocations(data);
       setTotalJobLocations(total);

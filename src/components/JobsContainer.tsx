@@ -38,6 +38,8 @@ import {
 import { APP_CONSTANTS } from "@/lib/constants";
 import Loading from "./Loading";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { MY_JOBS_DATA } from "@/lib/data/myJobsData";
+import { getMockJobsList } from "@/lib/mock.utils";
 
 type MyJobsProps = {
   statuses: JobStatus[];
@@ -82,7 +84,8 @@ function JobsContainer({
   const loadJobs = useCallback(
     async (page: number, filter?: string) => {
       setLoading(true);
-      const { data, total } = await getJobsList(page, jobsPerPage, filter);
+      // const { data, total } = await getJobsList(page, jobsPerPage, filter);
+      const { data, total } = await getMockJobsList(page, jobsPerPage, filter);
       setJobs(data);
       setTotalJobs(total);
       if (data) {

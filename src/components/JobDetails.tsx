@@ -15,6 +15,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { Badge } from "./ui/badge";
 import { cn, formatUrl } from "@/lib/utils";
 import { JobResponse } from "@/models/job.model";
+import { getMockJobDetails } from "@/lib/mock.utils";
 
 function JobDetails({ jobId }: { jobId: string }) {
   const [job, setJob] = useState<JobResponse>();
@@ -25,7 +26,8 @@ function JobDetails({ jobId }: { jobId: string }) {
   });
   useEffect(() => {
     const getJob = async (id: string) => {
-      const res = await getJobDetails(id);
+      // const res = await getJobDetails(id);
+      const res = await getMockJobDetails(id);
       editor?.commands.setContent(res.description);
       setJob(res);
     };
