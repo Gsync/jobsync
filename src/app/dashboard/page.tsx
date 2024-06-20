@@ -9,6 +9,7 @@ import JobsApplied from "@/components/JobsAppliedCard";
 import NumberCard from "@/components/NumberCard";
 import RecentJobsCard from "@/components/RecentJobsCard";
 import WeeklyBarChart from "@/components/WeeklyBarChart";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
   getMockJobActivityData,
   getMockRecentJobs,
@@ -71,6 +72,17 @@ export default async function Dashboard() {
       <div className="flex flex-col items-start col-span-3">
         <ActivityCalendar data={activityCalendarData} />
         {/* <ActivityCalendar data={generateRandomActivityCalendarData(150)} /> */}
+      </div>
+      <div className="flex flex-col items-start col-span-3">
+        <Card>
+          <CardContent>
+            Souce Code:{" "}
+            <a href="https://github.com/Gsync/jobsync" target="_blank">
+              https://github.com/Gsync/jobsync
+            </a>
+          </CardContent>
+          <CardFooter>Note: Data is randomly generated mock data</CardFooter>
+        </Card>
       </div>
     </>
   );
