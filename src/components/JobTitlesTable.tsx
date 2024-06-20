@@ -46,7 +46,7 @@ function JobTitlesTable({
         <TableHeader>
           <TableRow>
             <TableHead>Job Title</TableHead>
-            <TableHead>Value</TableHead>
+            <TableHead className="hidden sm:table-cell">Value</TableHead>
             <TableHead>Jobs Applied</TableHead>
             <TableHead>Actions</TableHead>
             <TableHead>
@@ -59,7 +59,9 @@ function JobTitlesTable({
             return (
               <TableRow key={title.id}>
                 <TableCell className="font-medium">{title.label}</TableCell>
-                <TableCell className="font-medium">{title.value}</TableCell>
+                <TableCell className="font-medium hidden sm:table-cell">
+                  {title.value}
+                </TableCell>
                 <TableCell className="font-medium">
                   {title._count?.jobs}
                 </TableCell>

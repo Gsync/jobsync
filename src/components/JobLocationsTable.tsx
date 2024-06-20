@@ -49,7 +49,7 @@ function JobLocationsTable({
         <TableHeader>
           <TableRow>
             <TableHead>Location</TableHead>
-            <TableHead>Value</TableHead>
+            <TableHead className="hidden sm:table-cell">Value</TableHead>
             <TableHead>Jobs Applied</TableHead>
             <TableHead>Actions</TableHead>
             <TableHead>
@@ -62,7 +62,9 @@ function JobLocationsTable({
             return (
               <TableRow key={location.id}>
                 <TableCell className="font-medium">{location.label}</TableCell>
-                <TableCell className="font-medium">{location.value}</TableCell>
+                <TableCell className="font-medium hidden sm:table-cell">
+                  {location.value}
+                </TableCell>
                 <TableCell className="font-medium">
                   {location._count?.jobsApplied}
                 </TableCell>

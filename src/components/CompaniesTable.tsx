@@ -52,7 +52,7 @@ function CompaniesTable({
               <span className="sr-only">Company Logo</span>
             </TableHead>
             <TableHead>Company Name</TableHead>
-            <TableHead>Value</TableHead>
+            <TableHead className="hidden sm:table-cell">Value</TableHead>
             <TableHead>Jobs Applied</TableHead>
             <TableHead>Actions</TableHead>
             <TableHead>
@@ -74,7 +74,9 @@ function CompaniesTable({
                   />
                 </TableCell>
                 <TableCell className="font-medium">{company.label}</TableCell>
-                <TableCell className="font-medium">{company.value}</TableCell>
+                <TableCell className="font-medium hidden sm:table-cell">
+                  {company.value}
+                </TableCell>
                 <TableCell className="font-medium">
                   {company._count?.jobsApplied}
                 </TableCell>
