@@ -6,6 +6,8 @@ import {
 } from "@/models/job.model";
 import { MY_JOBS_DATA } from "./data/myJobsData";
 import { addDays, format, subDays } from "date-fns";
+import { JOB_STATUSES } from "./data/jobStatusesData";
+import { JOB_SOURCES } from "./data/jobSourcesData";
 
 export function getMockJobsList(
   page: number,
@@ -154,5 +156,19 @@ export function getMockList(
     const data = Object.values(result);
 
     resolve({ data, total: data.length });
+  });
+}
+
+export function getMockJobStatuses(): Promise<any> {
+  return new Promise((resolve) => {
+    const data = JOB_STATUSES;
+    resolve(data);
+  });
+}
+
+export function getMockJobSources(): Promise<any> {
+  return new Promise((resolve) => {
+    const data = JOB_SOURCES;
+    resolve(data);
   });
 }

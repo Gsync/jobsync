@@ -5,7 +5,11 @@ import JobsContainer from "@/components/JobsContainer";
 import { getAllCompanies } from "@/actions/company.actions";
 import { getAllJobTitles } from "@/actions/jobtitle.actions";
 import { getAllJobLocations } from "@/actions/jobLocation.actions";
-import { getMockList } from "@/lib/mock.utils";
+import {
+  getMockJobSources,
+  getMockJobStatuses,
+  getMockList,
+} from "@/lib/mock.utils";
 
 export const metadata: Metadata = {
   title: "My Jobs | JobSync",
@@ -13,14 +17,16 @@ export const metadata: Metadata = {
 
 async function MyJobs() {
   const [statuses, companies, titles, locations, sources] = await Promise.all([
-    getStatusList(),
+    // getStatusList(),
     // getAllCompanies(),
     // getAllJobTitles(),
     // getAllJobLocations(),
+    // getJobSourceList(),
+    getMockJobStatuses(),
     getMockList(1, 10, "companies"),
     getMockList(1, 10, "jobTitles"),
     getMockList(1, 10, "locations"),
-    getJobSourceList(),
+    getMockJobSources(),
   ]);
   return (
     <div className="col-span-3">
