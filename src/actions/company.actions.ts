@@ -2,6 +2,7 @@
 import prisma from "@/lib/db";
 import { AddCompanyFormSchema } from "@/models/addCompanyForm.schema";
 import { getCurrentUser } from "@/utils/user.utils";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 export const getCompanyList = async (
@@ -118,7 +119,7 @@ export const addCompany = async (
         logoUrl,
       },
     });
-
+    revalidatePath("/dashboard/myjobs", "page");
     return { success: true, data: res };
   } catch (error) {
     const msg = "Failed to create company.";

@@ -1,7 +1,6 @@
 "use client";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogHeader,
   DialogOverlay,
@@ -68,10 +67,9 @@ export function AddJob({
 }: AddJobProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-
+  console.log("add job");
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
     resolver: zodResolver(AddJobFormSchema),
-    // mode: "onChange",
     defaultValues: {
       type: Object.keys(JOB_TYPES)[0],
       dueDate: addDays(new Date(), 3),
