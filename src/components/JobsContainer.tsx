@@ -15,6 +15,7 @@ import {
   deleteJobById,
   getJobDetails,
   getJobsList,
+  updateJobStatus,
 } from "@/actions/job.actions";
 import { toast } from "./ui/use-toast";
 import {
@@ -100,6 +101,7 @@ function JobsContainer({
     const res = await deleteJobById(jobId);
     if (res) {
       toast({
+        variant: "success",
         description: `Job has been deleted successfully`,
       });
     }
@@ -109,6 +111,17 @@ function JobsContainer({
   const onEditJob = async (jobId: string) => {
     const job = await getJobDetails(jobId);
     setEditJob(job);
+  };
+
+  const onChangeJobStatus = async (jobId: string, jobStatus: JobStatus) => {
+    const job = await updateJobStatus(jobId, jobStatus);
+    if (job) {
+      toast({
+        variant: "success",
+        description: `Job has been updated successfully`,
+      });
+    }
+    reloadJobs();
   };
 
   const resetEditJob = () => {
@@ -175,6 +188,7 @@ function JobsContainer({
           {!loading ? (
             <MyJobsTable
               jobs={jobs}
+              jobStatuses={statuses}
               currentPage={currentPage}
               totalPages={totalPages}
               jobsPerPage={jobsPerPage}
@@ -182,6 +196,7 @@ function JobsContainer({
               onPageChange={onPageChange}
               deleteJob={onDeleteJob}
               editJob={onEditJob}
+              onChangeJobStatus={onChangeJobStatus}
             />
           ) : (
             <Loading />

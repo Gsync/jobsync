@@ -24,6 +24,7 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuPortal,
   DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
@@ -31,14 +32,6 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Button, buttonVariants } from "./ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "./ui/command";
 import { useState } from "react";
 import { TablePagination } from "./TablePagination";
 import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
@@ -53,10 +46,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
-import { JobResponse } from "@/models/job.model";
+import { JobResponse, JobStatus } from "@/models/job.model";
 
 type MyJobsTableProps = {
   jobs: JobResponse[];
+  jobStatuses: JobStatus[];
   currentPage: number;
   totalPages: number;
   totalJobs: number;
@@ -64,10 +58,12 @@ type MyJobsTableProps = {
   onPageChange: (n: number) => void;
   deleteJob: (id: string) => void;
   editJob: (id: string) => void;
+  onChangeJobStatus: (id: string, status: JobStatus) => void;
 };
 
 function MyJobsTable({
   jobs,
+  jobStatuses,
   currentPage,
   totalPages,
   totalJobs,
@@ -75,18 +71,8 @@ function MyJobsTable({
   onPageChange,
   deleteJob,
   editJob,
+  onChangeJobStatus,
 }: MyJobsTableProps) {
-  const labels = [
-    "draft",
-    "applied",
-    "interview",
-    "expired",
-    "rejected",
-    "offer",
-    "archived",
-  ];
-  const [label, setLabel] = useState("feature");
-  const [open, setOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [curJobId, setCurJobId] = useState("");
@@ -202,31 +188,40 @@ function MyJobsTable({
                             <Tags className="mr-2 h-4 w-4" />
                             Change status
                           </DropdownMenuSubTrigger>
-                          <DropdownMenuSubContent className="p-0">
-                            <Command>
-                              <CommandInput
-                                placeholder="Filter label..."
-                                autoFocus={true}
-                              />
+                          <DropdownMenuPortal>
+                            <DropdownMenuSubContent className="p-0">
+                              {jobStatuses.map((status) => (
+                                <DropdownMenuItem
+                                  className="cursor-pointer"
+                                  key={status.id}
+                                  onSelect={(_) => {
+                                    onChangeJobStatus(job.id, status);
+                                  }}
+                                  disabled={status.id === job.Status.id}
+                                >
+                                  <span>{status.label}</span>
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuSubContent>
+                          </DropdownMenuPortal>
+                          {/* <Command>
                               <CommandList>
-                                <CommandEmpty>No label found.</CommandEmpty>
                                 <CommandGroup>
-                                  {labels.map((label) => (
+                                  {jobStatuses.map((status) => (
                                     <CommandItem
-                                      key={label}
-                                      value={label}
+                                      className="cursor-pointer"
+                                      key={status.id}
+                                      value={status.label}
                                       onSelect={(value) => {
-                                        setLabel(value);
-                                        setOpen(false);
+                                        onChangeJobStatus(value);
                                       }}
                                     >
-                                      {label}
+                                      {status.label}
                                     </CommandItem>
                                   ))}
                                 </CommandGroup>
                               </CommandList>
-                            </Command>
-                          </DropdownMenuSubContent>
+                            </Command> */}
                         </DropdownMenuSub>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
