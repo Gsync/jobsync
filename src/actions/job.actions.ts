@@ -68,7 +68,7 @@ export const getJobsList = async (
         },
         orderBy: {
           createdAt: "desc",
-          appliedDate: "desc",
+          // appliedDate: "desc",
         },
       }),
       prisma.job.count({
