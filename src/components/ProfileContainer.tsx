@@ -38,6 +38,10 @@ function ActivitiesContainer() {
     [recordsPerPage]
   );
 
+  const reloadResumes = async () => {
+    await loadResumes(1);
+  };
+
   useEffect(() => {
     loadResumes(currentPage);
   }, [currentPage, loadResumes]);
@@ -47,7 +51,7 @@ function ActivitiesContainer() {
       <CardHeader className="flex-row justify-between items-center">
         <CardTitle>Profile</CardTitle>
         <div className="flex items-center">
-          <CreateResume />
+          <CreateResume reloadResumes={reloadResumes} />
         </div>
       </CardHeader>
       <CardContent>

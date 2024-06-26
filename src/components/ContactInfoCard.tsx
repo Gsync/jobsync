@@ -4,11 +4,12 @@ import { Card, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Edit } from "lucide-react";
 
-function ContactInfoCard({
-  contactInfo,
-}: {
+interface ContactInfoCardProps {
   contactInfo: ContactInfo | undefined;
-}) {
+  openDialog: () => void;
+}
+
+function ContactInfoCard({ contactInfo, openDialog }: ContactInfoCardProps) {
   const editContactInfo = () => {};
   return (
     <Card>
@@ -26,7 +27,7 @@ function ContactInfoCard({
           variant="ghost"
           size="sm"
           className="h-8 gap-1 absolute top-0 right-1"
-          onClick={editContactInfo}
+          onClick={openDialog}
         >
           <Edit className="h-3.5 w-3.5" />
           <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">

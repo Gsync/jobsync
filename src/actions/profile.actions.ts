@@ -3,6 +3,7 @@ import prisma from "@/lib/db";
 import { AddContactInfoFormSchema } from "@/models/addContactInfoForm.schema";
 import { CreateResumeFormSchema } from "@/models/createResumeForm.schema";
 import { getCurrentUser } from "@/utils/user.utils";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 export const getResumeList = async (
@@ -82,14 +83,13 @@ export const getResumeById = async (
 export const addContactInfo = async (
   data: z.infer<typeof AddContactInfoFormSchema>
 ): Promise<any | undefined> => {
+  console.log("Add contact info: ", data);
   try {
     const user = await getCurrentUser();
 
     if (!user) {
       throw new Error("Not authenticated");
     }
-
-    //check if contact info exists
 
     const res = await prisma.resume.update({
       where: {
@@ -111,10 +111,44 @@ export const addContactInfo = async (
         },
       },
     });
-    console.log("response: ", res);
+    revalidatePath("/dashboard/profile/resume");
     return { data: res, success: true };
   } catch (error) {
     const msg = "Failed to create contact info.";
+    console.error(msg, error);
+    if (error instanceof Error) {
+      return { success: false, message: error.message };
+    }
+  }
+};
+
+export const updateContactInfo = async (
+  data: z.infer<typeof AddContactInfoFormSchema>
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const res = await prisma.contactInfo.update({
+      where: {
+        id: data.id,
+      },
+      data: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        headline: data.headline,
+        email: data.email!,
+        phone: data.phone!,
+        address: data.address,
+      },
+    });
+    revalidatePath("/dashboard/profile/resume");
+    return { data: res, success: true };
+  } catch (error) {
+    const msg = "Failed to update contact info.";
     console.error(msg, error);
     if (error instanceof Error) {
       return { success: false, message: error.message };
@@ -160,6 +194,7 @@ export const createResumeProfile = async (
               },
             },
           });
+    revalidatePath("/dashboard/profile");
     return { success: true, data: res };
   } catch (error) {
     const msg = "Failed to create resume.";

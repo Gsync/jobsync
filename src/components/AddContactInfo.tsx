@@ -22,27 +22,29 @@ import { AddContactInfoFormSchema } from "@/models/addContactInfoForm.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useTransition } from "react";
+import { useEffect, useTransition } from "react";
 import { toast } from "./ui/use-toast";
 import { ContactInfo } from "@/models/profile.model";
-import { addContactInfo } from "@/actions/profile.actions";
+import { addContactInfo, updateContactInfo } from "@/actions/profile.actions";
 
 interface AddContactInfoProps {
   dialogOpen: boolean;
   setDialogOpen: (e: boolean) => void;
-  editContactInfo?: ContactInfo | null;
+  contactInfoToEdit?: ContactInfo | null;
   resumeId: string | undefined;
 }
 
 function AddContactInfo({
   dialogOpen,
   setDialogOpen,
-  editContactInfo,
+  contactInfoToEdit,
   resumeId,
 }: AddContactInfoProps) {
   const [isPending, startTransition] = useTransition();
 
-  const pageTitle = editContactInfo ? "Edit Contact Info" : "Add Contact Info";
+  const pageTitle = contactInfoToEdit
+    ? "Edit Contact Info"
+    : "Add Contact Info";
 
   const form = useForm<z.infer<typeof AddContactInfoFormSchema>>({
     resolver: zodResolver(AddContactInfoFormSchema),
@@ -53,12 +55,24 @@ function AddContactInfo({
 
   const { setValue, reset, formState } = form;
 
+  useEffect(() => {
+    if (contactInfoToEdit) {
+      setValue("id", contactInfoToEdit.id);
+      setValue("resumeId", contactInfoToEdit.resumeId);
+      setValue("firstName", contactInfoToEdit.firstName);
+      setValue("lastName", contactInfoToEdit.lastName);
+      setValue("headline", contactInfoToEdit.headline);
+      setValue("email", contactInfoToEdit.email);
+      setValue("phone", contactInfoToEdit.phone);
+      setValue("address", contactInfoToEdit.address);
+    }
+  }, [contactInfoToEdit, setValue]);
+
   const onSubmit = (data: z.infer<typeof AddContactInfoFormSchema>) => {
     startTransition(async () => {
-      //   const res = editContactInfo
-      //     ? await updateCompany(data)
-      //     : await addContactInfo(data);
-      const res = await addContactInfo(data);
+      const res = contactInfoToEdit
+        ? await updateContactInfo(data)
+        : await addContactInfo(data);
       if (!res.success) {
         toast({
           variant: "destructive",
@@ -72,7 +86,7 @@ function AddContactInfo({
         toast({
           variant: "success",
           description: `Contact Info has been ${
-            editContactInfo ? "updated" : "created"
+            contactInfoToEdit ? "updated" : "created"
           } successfully`,
         });
       }
@@ -83,7 +97,7 @@ function AddContactInfo({
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogContent className="lg:max-h-screen overflow-y-scroll">
         <DialogHeader>
-          <DialogTitle>Add Contact Info</DialogTitle>
+          <DialogTitle>{pageTitle}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form

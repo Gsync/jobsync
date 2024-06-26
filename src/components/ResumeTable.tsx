@@ -44,7 +44,7 @@ ResumeTableProps) {
       <TableHeader>
         <TableRow>
           <TableHead>Resume Title</TableHead>
-          <TableHead>Created At</TableHead>
+          <TableHead>Created</TableHead>
           <TableHead>Actions</TableHead>
           <TableHead>
             <span className="sr-only">Actions</span>

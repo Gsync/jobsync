@@ -29,9 +29,10 @@ import { createResumeProfile } from "@/actions/profile.actions";
 
 type CreateResumeProps = {
   editResume?: Resume | null;
+  reloadResumes: () => void;
 };
 
-function CreateResume({ editResume }: CreateResumeProps) {
+function CreateResume({ editResume, reloadResumes }: CreateResumeProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -64,7 +65,7 @@ function CreateResume({ editResume }: CreateResumeProps) {
       } else {
         reset();
         setDialogOpen(false);
-        // reloadCompanies();
+        reloadResumes();
         toast({
           variant: "success",
           description: `Resume title has been ${
