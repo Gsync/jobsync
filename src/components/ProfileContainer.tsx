@@ -1,8 +1,47 @@
-import ActivitiesTable from "./ActivitiesTable";
+"use client";
+import { useCallback, useEffect, useState } from "react";
 import CreateResume from "./CreateResume";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { getResumeList } from "@/actions/profile.actions";
+import { Resume } from "@/models/profile.model";
+import { useSearchParams } from "next/navigation";
+import { APP_CONSTANTS } from "@/lib/constants";
+import Loading from "./Loading";
+import ResumeTable from "./ResumeTable";
 
 function ActivitiesContainer() {
+  const queryParams = useSearchParams();
+  const recordsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
+
+  const [resumes, setResumes] = useState<Resume[]>([]);
+  const [totalResumes, setTotalResumes] = useState(0);
+  const [currentPage, setCurrentPage] = useState(
+    Number(queryParams.get("page")) || 1
+  );
+  const [loading, setLoading] = useState(false);
+
+  const totalPages = Math.ceil(totalResumes / recordsPerPage);
+
+  const loadResumes = useCallback(
+    async (page: number) => {
+      setLoading(true);
+      const { data, total, success } = await getResumeList(
+        page,
+        recordsPerPage
+      );
+      setResumes(data);
+      setTotalResumes(total);
+      if (success) {
+        setLoading(false);
+      }
+    },
+    [recordsPerPage]
+  );
+
+  useEffect(() => {
+    loadResumes(currentPage);
+  }, [currentPage, loadResumes]);
+
   return (
     <Card>
       <CardHeader className="flex-row justify-between items-center">
@@ -11,7 +50,21 @@ function ActivitiesContainer() {
           <CreateResume />
         </div>
       </CardHeader>
-      <CardContent></CardContent>
+      <CardContent>
+        {!loading ? (
+          <ResumeTable
+            resumes={resumes}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            recordsPerPage={recordsPerPage}
+            totalResumes={totalResumes}
+            // onPageChange={onPageChange}
+            // editCompany={onEditCompany}
+          />
+        ) : (
+          <Loading />
+        )}
+      </CardContent>
     </Card>
   );
 }
