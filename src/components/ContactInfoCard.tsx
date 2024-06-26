@@ -10,7 +10,6 @@ interface ContactInfoCardProps {
 }
 
 function ContactInfoCard({ contactInfo, openDialog }: ContactInfoCardProps) {
-  const editContactInfo = () => {};
   return (
     <Card>
       <CardHeader className="flex-row justify-between relative">

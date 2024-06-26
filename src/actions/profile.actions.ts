@@ -205,51 +205,33 @@ export const createResumeProfile = async (
   }
 };
 
-// export const editResumeTitle = async (
-//   data: z.infer<typeof CreateResumeFormSchema>
-// ): Promise<any | undefined> => {
-//   try {
-//     const user = await getCurrentUser();
+export const editResume = async (
+  data: z.infer<typeof CreateResumeFormSchema>
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
 
-//     if (!user) {
-//       throw new Error("Not authenticated");
-//     }
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
 
-//     const { id, company, logoUrl, createdBy } = data;
+    const { id, title } = data;
 
-//     if (!id || user.id != createdBy) {
-//       throw new Error("Id is not provided or no user privilages");
-//     }
+    const res = await prisma.resume.update({
+      where: {
+        id,
+      },
+      data: {
+        title,
+      },
+    });
 
-//     const value = company.trim().toLowerCase();
-
-//     const companyExists = await prisma.company.findUnique({
-//       where: {
-//         value,
-//       },
-//     });
-
-//     if (companyExists) {
-//       throw new Error("Company already exists!");
-//     }
-
-//     const res = await prisma.company.update({
-//       where: {
-//         id,
-//       },
-//       data: {
-//         value,
-//         label: company,
-//         logoUrl,
-//       },
-//     });
-
-//     return { success: true, data: res };
-//   } catch (error) {
-//     const msg = "Failed to update company.";
-//     console.error(msg, error);
-//     if (error instanceof Error) {
-//       return { success: false, message: error.message };
-//     }
-//   }
-// };
+    return { success: true, data: res };
+  } catch (error) {
+    const msg = "Failed to update resume.";
+    console.error(msg, error);
+    if (error instanceof Error) {
+      return { success: false, message: error.message };
+    }
+  }
+};

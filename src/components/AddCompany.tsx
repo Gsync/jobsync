@@ -48,10 +48,11 @@ function AddCompany({
     resolver: zodResolver(AddCompanyFormSchema),
   });
 
-  const { setValue, reset, formState } = form;
+  const { setValue, reset, formState, clearErrors } = form;
 
   useEffect(() => {
     if (editCompany) {
+      clearErrors();
       setValue("id", editCompany.id);
       setValue("company", editCompany.label);
       setValue("createdBy", editCompany.createdBy);
@@ -61,7 +62,7 @@ function AddCompany({
 
       setDialogOpen(true);
     }
-  }, [editCompany, setValue]);
+  }, [editCompany, setValue, clearErrors]);
 
   const addCompanyForm = () => {
     reset();

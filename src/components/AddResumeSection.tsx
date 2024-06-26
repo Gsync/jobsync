@@ -10,22 +10,25 @@ import {
 } from "./ui/dropdown-menu";
 import AddContactInfo from "./AddContactInfo";
 import { forwardRef, useImperativeHandle, useState } from "react";
-import { Resume } from "@/models/profile.model";
+import { ContactInfo, Resume } from "@/models/profile.model";
 
 interface AddResumeSectionProps {
   resume: Resume;
 }
 
 export interface AddResumeSectionRef {
-  openDialog: () => void;
+  openDialog: (c: ContactInfo) => void;
 }
 
 const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
   ({ resume }, ref) => {
     const [contactInfoDialogOpen, setContactInfoDialogOpen] = useState(false);
+    const [contactInfoToEdit, setContactInfoToEdit] =
+      useState<ContactInfo | null>(null);
     useImperativeHandle(ref, () => ({
-      openDialog() {
+      openDialog(contactInfo: ContactInfo) {
         setContactInfoDialogOpen(true);
+        setContactInfoToEdit({ ...contactInfo });
       },
     }));
     return (
@@ -58,7 +61,7 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
           dialogOpen={contactInfoDialogOpen}
           setDialogOpen={setContactInfoDialogOpen}
           resumeId={resume.id}
-          contactInfoToEdit={resume.ContactInfo}
+          contactInfoToEdit={contactInfoToEdit}
         />
       </>
     );

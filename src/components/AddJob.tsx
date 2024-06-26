@@ -77,12 +77,13 @@ export function AddJob({
     },
   });
 
-  const { setValue, reset, watch, resetField } = form;
+  const { setValue, reset, watch, resetField, clearErrors } = form;
 
   const appliedValue = watch("applied");
 
   useEffect(() => {
     if (editJob) {
+      clearErrors();
       setValue("id", editJob.id);
       setValue("userId", editJob.userId);
       setValue("title", editJob.JobTitle.id);
@@ -103,7 +104,7 @@ export function AddJob({
       }
       setDialogOpen(true);
     }
-  }, [editJob, setValue]);
+  }, [editJob, setValue, clearErrors]);
 
   function onSubmit(data: z.infer<typeof AddJobFormSchema>) {
     startTransition(async () => {

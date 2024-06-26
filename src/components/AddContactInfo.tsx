@@ -53,10 +53,11 @@ function AddContactInfo({
     },
   });
 
-  const { setValue, reset, formState } = form;
+  const { setValue, reset, formState, clearErrors } = form;
 
   useEffect(() => {
     if (contactInfoToEdit) {
+      clearErrors();
       setValue("id", contactInfoToEdit.id);
       setValue("resumeId", contactInfoToEdit.resumeId);
       setValue("firstName", contactInfoToEdit.firstName);
@@ -65,8 +66,10 @@ function AddContactInfo({
       setValue("email", contactInfoToEdit.email);
       setValue("phone", contactInfoToEdit.phone);
       setValue("address", contactInfoToEdit.address);
+    } else {
+      reset();
     }
-  }, [contactInfoToEdit, setValue]);
+  }, [contactInfoToEdit, setValue, clearErrors, reset, dialogOpen]);
 
   const onSubmit = (data: z.infer<typeof AddContactInfoFormSchema>) => {
     startTransition(async () => {
@@ -82,7 +85,6 @@ function AddContactInfo({
       } else {
         reset();
         setDialogOpen(false);
-        // reloadCompanies();
         toast({
           variant: "success",
           description: `Contact Info has been ${

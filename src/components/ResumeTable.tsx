@@ -27,7 +27,7 @@ type ResumeTableProps = {
   totalResumes: number;
   recordsPerPage: number;
   //   onPageChange: (n: number) => void;
-  //   editCompany: (id: string) => void;
+  editResume: (resume: Resume) => void;
 };
 
 function ResumeTable({
@@ -36,8 +36,8 @@ function ResumeTable({
   totalPages,
   totalResumes,
   recordsPerPage,
+  editResume,
 }: //   onPageChange,
-//   editCompany,
 ResumeTableProps) {
   return (
     <Table>
@@ -45,6 +45,7 @@ ResumeTableProps) {
         <TableRow>
           <TableHead>Resume Title</TableHead>
           <TableHead>Created</TableHead>
+          <TableHead className="hidden md:table-cell">Updated</TableHead>
           <TableHead>Actions</TableHead>
           <TableHead>
             <span className="sr-only">Actions</span>
@@ -63,6 +64,9 @@ ResumeTableProps) {
               <TableCell>
                 {resume.createdAt && format(resume.createdAt, "PP")}
               </TableCell>
+              <TableCell className="hidden md:table-cell">
+                {resume.updatedAt && format(resume.updatedAt, "PP")}
+              </TableCell>
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -73,22 +77,19 @@ ResumeTableProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <Link href={`/dashboard/profile/resume/${resume.id}`}>
-                      <DropdownMenuItem
-                        className="cursor-pointer"
-                        onClick={() => ""}
-                      >
-                        <FilePenLine className="mr-2 h-4 w-4" />
-                        View/Edit Resume
-                      </DropdownMenuItem>
-                    </Link>
                     <DropdownMenuItem
                       className="cursor-pointer"
-                      onClick={() => ""}
+                      onClick={() => editResume(resume)}
                     >
                       <Pencil className="mr-2 h-4 w-4" />
                       Edit Resume Title
                     </DropdownMenuItem>
+                    <Link href={`/dashboard/profile/resume/${resume.id}`}>
+                      <DropdownMenuItem className="cursor-pointer">
+                        <FilePenLine className="mr-2 h-4 w-4" />
+                        View/Edit Resume
+                      </DropdownMenuItem>
+                    </Link>
                     <DropdownMenuItem className="text-red-600 cursor-pointer">
                       <Trash className="mr-2 h-4 w-4" />
                       Delete

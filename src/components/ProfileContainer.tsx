@@ -14,6 +14,7 @@ function ActivitiesContainer() {
   const recordsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
 
   const [resumes, setResumes] = useState<Resume[]>([]);
+  const [resumeToEdit, setResumeToEdit] = useState<Resume | null>(null);
   const [totalResumes, setTotalResumes] = useState(0);
   const [currentPage, setCurrentPage] = useState(
     Number(queryParams.get("page")) || 1
@@ -46,12 +47,25 @@ function ActivitiesContainer() {
     loadResumes(currentPage);
   }, [currentPage, loadResumes]);
 
+  const onEditResume = (resume: Resume) => {
+    const _resumeToEdit = { id: resume.id, title: resume.title };
+    setResumeToEdit(_resumeToEdit);
+  };
+
+  const resetResumeToEdit = () => {
+    setResumeToEdit(null);
+  };
+
   return (
     <Card>
       <CardHeader className="flex-row justify-between items-center">
         <CardTitle>Profile</CardTitle>
         <div className="flex items-center">
-          <CreateResume reloadResumes={reloadResumes} />
+          <CreateResume
+            reloadResumes={reloadResumes}
+            resumeToEdit={resumeToEdit}
+            resetResumeToEdit={resetResumeToEdit}
+          />
         </div>
       </CardHeader>
       <CardContent>
@@ -63,7 +77,7 @@ function ActivitiesContainer() {
             recordsPerPage={recordsPerPage}
             totalResumes={totalResumes}
             // onPageChange={onPageChange}
-            // editCompany={onEditCompany}
+            editResume={onEditResume}
           />
         ) : (
           <Loading />

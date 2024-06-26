@@ -8,7 +8,7 @@ import { useRef } from "react";
 function ResumeContainer({ resume }: { resume: Resume }) {
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
   const openContactInfoDialog = () => {
-    resumeSectionRef.current?.openDialog();
+    resumeSectionRef.current?.openDialog(resume.ContactInfo!);
   };
   return (
     <>

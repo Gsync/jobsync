@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { CreateResumeFormSchema } from "@/models/createResumeForm.schema";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   Dialog,
   DialogClose,
@@ -25,37 +25,51 @@ import {
 import { Input } from "./ui/input";
 import { Resume } from "@/models/profile.model";
 import { toast } from "./ui/use-toast";
-import { createResumeProfile } from "@/actions/profile.actions";
+import { createResumeProfile, editResume } from "@/actions/profile.actions";
 
 type CreateResumeProps = {
-  editResume?: Resume | null;
+  resumeToEdit?: Resume | null;
   reloadResumes: () => void;
+  resetResumeToEdit: () => void;
 };
 
-function CreateResume({ editResume, reloadResumes }: CreateResumeProps) {
+function CreateResume({
+  resumeToEdit,
+  reloadResumes,
+  resetResumeToEdit,
+}: CreateResumeProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const pageTitle = editResume ? "Edit Resume Title" : "Create Resume";
+  const pageTitle = resumeToEdit ? "Edit Resume Title" : "Create Resume";
 
   const form = useForm<z.infer<typeof CreateResumeFormSchema>>({
     resolver: zodResolver(CreateResumeFormSchema),
   });
 
-  const { setValue, reset, formState } = form;
+  const { setValue, reset, formState, clearErrors } = form;
+
+  useEffect(() => {
+    if (resumeToEdit) {
+      clearErrors();
+      setValue("id", resumeToEdit.id);
+      setValue("title", resumeToEdit.title);
+
+      setDialogOpen(true);
+    }
+  }, [resumeToEdit, setValue, clearErrors]);
 
   const createResume = () => {
-    // reset();
-    // resetEditJob();
+    reset();
+    resetResumeToEdit();
     setDialogOpen(true);
   };
 
   const onSubmit = (data: z.infer<typeof CreateResumeFormSchema>) => {
     startTransition(async () => {
-      const res = await createResumeProfile(data);
-      // const res = editCompany
-      //     ? await updateCompany(data)
-      //     : await addCompany(data);
+      const res = resumeToEdit
+        ? await editResume(data)
+        : await createResumeProfile(data);
       if (!res.success) {
         toast({
           variant: "destructive",
@@ -69,7 +83,7 @@ function CreateResume({ editResume, reloadResumes }: CreateResumeProps) {
         toast({
           variant: "success",
           description: `Resume title has been ${
-            editResume ? "updated" : "created"
+            resumeToEdit ? "updated" : "created"
           } successfully`,
         });
       }
