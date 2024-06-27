@@ -3,12 +3,12 @@ import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import {
   DialogClose,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
 import { getJobDetails } from "@/actions/job.actions";
-import { DialogDescription } from "@radix-ui/react-dialog";
 import { format } from "date-fns";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";

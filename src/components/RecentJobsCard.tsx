@@ -4,8 +4,6 @@ import { JobResponse } from "@/models/job.model";
 import { format } from "date-fns";
 
 export default function RecentJobsCard({ jobs }: { jobs: JobResponse[] }) {
-  debugger;
-
   return (
     <Card>
       <CardHeader>

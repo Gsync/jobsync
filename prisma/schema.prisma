@@ -42,7 +42,6 @@ model Resume {
   ContactInfo    ContactInfo?
   ResumeSections ResumeSection[]
   profile        Profile         @relation(fields: [profileId], references: [id])
-  summaryId      String?
 }
 
 model ResumeSection {
@@ -50,7 +49,7 @@ model ResumeSection {
   resumeId                String
   sectionTitle            String
   sectionType             String
-  summaryId               String?
+  summaryId               String?                  @unique
   summary                 Summary?                 @relation(fields: [summaryId], references: [id])
   workExperiences         WorkExperience[]
   educations              Education[]
@@ -74,11 +73,11 @@ model ContactInfo {
 }
 
 model Summary {
-  id            String          @id @default(uuid())
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id            String         @id @default(uuid())
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   content       String
-  ResumeSection ResumeSection[]
+  ResumeSection ResumeSection? @relation
 }
 
 model WorkExperience {

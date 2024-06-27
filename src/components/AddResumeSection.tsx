@@ -10,27 +10,45 @@ import {
 } from "./ui/dropdown-menu";
 import AddContactInfo from "./AddContactInfo";
 import { forwardRef, useImperativeHandle, useState } from "react";
-import { ContactInfo, Resume } from "@/models/profile.model";
+import {
+  ContactInfo,
+  Resume,
+  ResumeSection,
+  SectionType,
+} from "@/models/profile.model";
+import AddResumeSummary from "./AddResumeSummary";
 
 interface AddResumeSectionProps {
   resume: Resume;
 }
 
 export interface AddResumeSectionRef {
-  openDialog: (c: ContactInfo) => void;
+  openContactInfoDialog: (c: ContactInfo) => void;
+  openSummaryDialog: (s: ResumeSection) => void;
 }
 
 const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
   ({ resume }, ref) => {
     const [contactInfoDialogOpen, setContactInfoDialogOpen] = useState(false);
+    const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
     const [contactInfoToEdit, setContactInfoToEdit] =
       useState<ContactInfo | null>(null);
+    const [summaryToEdit, setSummaryToEdit] = useState<ResumeSection | null>(
+      null
+    );
     useImperativeHandle(ref, () => ({
-      openDialog(contactInfo: ContactInfo) {
+      openContactInfoDialog(contactInfo: ContactInfo) {
         setContactInfoDialogOpen(true);
         setContactInfoToEdit({ ...contactInfo });
       },
+      openSummaryDialog(summarySection: ResumeSection) {
+        setSummaryDialogOpen(true);
+        setSummaryToEdit({ ...summarySection });
+      },
     }));
+    const summarySection = resume.ResumeSections.find(
+      (section) => section.sectionType === SectionType.SUMMARY
+    );
     return (
       <>
         <DropdownMenu>
@@ -51,7 +69,13 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
               >
                 Add Contact Info
               </DropdownMenuItem>
-              <DropdownMenuItem>Add Summary</DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => setSummaryDialogOpen(true)}
+                disabled={!!summarySection}
+              >
+                Add Summary
+              </DropdownMenuItem>
               <DropdownMenuItem>Add Experience</DropdownMenuItem>
               <DropdownMenuItem>Add Education</DropdownMenuItem>
             </DropdownMenuGroup>
@@ -62,6 +86,12 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
           setDialogOpen={setContactInfoDialogOpen}
           resumeId={resume.id}
           contactInfoToEdit={contactInfoToEdit}
+        />
+        <AddResumeSummary
+          resumeId={resume.id}
+          dialogOpen={summaryDialogOpen}
+          setDialogOpen={setSummaryDialogOpen}
+          summaryToEdit={summaryToEdit}
         />
       </>
     );

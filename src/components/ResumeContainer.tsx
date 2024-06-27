@@ -1,14 +1,21 @@
 "use client";
-import { Resume } from "@/models/profile.model";
+import { Resume, SectionType } from "@/models/profile.model";
 import { Card, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import AddResumeSection, { AddResumeSectionRef } from "./AddResumeSection";
 import ContactInfoCard from "./ContactInfoCard";
 import { useRef } from "react";
+import SummarySectionCard from "./SummarySectionCard";
 
 function ResumeContainer({ resume }: { resume: Resume }) {
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
+  const summarySection = resume.ResumeSections.find(
+    (section) => section.sectionType === SectionType.SUMMARY
+  );
   const openContactInfoDialog = () => {
-    resumeSectionRef.current?.openDialog(resume.ContactInfo!);
+    resumeSectionRef.current?.openContactInfoDialog(resume.ContactInfo!);
+  };
+  const openSummaryDialogForEdit = () => {
+    resumeSectionRef.current?.openSummaryDialog(summarySection!);
   };
   return (
     <>
@@ -25,6 +32,12 @@ function ResumeContainer({ resume }: { resume: Resume }) {
         <ContactInfoCard
           contactInfo={resume.ContactInfo}
           openDialog={openContactInfoDialog}
+        />
+      ) : null}
+      {summarySection ? (
+        <SummarySectionCard
+          summarySection={summarySection}
+          openDialogForEdit={openSummaryDialogForEdit}
         />
       ) : null}
     </>
