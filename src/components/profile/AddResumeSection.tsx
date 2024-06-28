@@ -17,6 +17,7 @@ import {
   SectionType,
 } from "@/models/profile.model";
 import AddResumeSummary from "./AddResumeSummary";
+import AddExperience from "./AddExperience";
 
 interface AddResumeSectionProps {
   resume: Resume;
@@ -31,6 +32,7 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
   ({ resume }, ref) => {
     const [contactInfoDialogOpen, setContactInfoDialogOpen] = useState(false);
     const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
+    const [experienceDialogOpen, setExperienceDialogOpen] = useState(false);
     const [contactInfoToEdit, setContactInfoToEdit] =
       useState<ContactInfo | null>(null);
     const [summaryToEdit, setSummaryToEdit] = useState<ResumeSection | null>(
@@ -76,7 +78,12 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
               >
                 Add Summary
               </DropdownMenuItem>
-              <DropdownMenuItem>Add Experience</DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => setExperienceDialogOpen(true)}
+              >
+                Add Experience
+              </DropdownMenuItem>
               <DropdownMenuItem>Add Education</DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
@@ -92,6 +99,10 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
           dialogOpen={summaryDialogOpen}
           setDialogOpen={setSummaryDialogOpen}
           summaryToEdit={summaryToEdit}
+        />
+        <AddExperience
+          dialogOpen={experienceDialogOpen}
+          setDialogOpen={setExperienceDialogOpen}
         />
       </>
     );

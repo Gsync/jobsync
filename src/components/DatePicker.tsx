@@ -24,7 +24,7 @@ import { useState } from "react";
 import { FormControl } from "./ui/form";
 
 interface DatePickerProps {
-  field: ControllerRenderProps<JobForm, any>;
+  field: ControllerRenderProps<any, any>;
   presets: boolean;
   isEnabled: boolean;
 }

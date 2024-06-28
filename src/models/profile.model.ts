@@ -1,3 +1,5 @@
+import { Company, JobLocation, JobTitle } from "./job.model";
+
 export interface Resume {
   id?: string;
   profileId?: string;
@@ -53,4 +55,16 @@ export interface ResumeSection {
   sectionTitle: string;
   sectionType: SectionType;
   summary?: Summary;
+  workExperiences?: WorkExperience[];
+}
+
+export interface WorkExperience {
+  id?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  company: Company;
+  title: JobTitle;
+  location: JobLocation;
+  startDate: Date;
+  endDate: Date;
 }

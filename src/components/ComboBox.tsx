@@ -29,7 +29,7 @@ import { createJobTitle } from "@/actions/jobtitle.actions";
 
 interface ComboboxProps {
   options: any[];
-  field: ControllerRenderProps<JobForm, any>;
+  field: ControllerRenderProps<any, any>;
   creatable?: boolean;
 }
 
