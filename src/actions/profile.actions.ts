@@ -90,7 +90,6 @@ export const getResumeById = async (
 export const addContactInfo = async (
   data: z.infer<typeof AddContactInfoFormSchema>
 ): Promise<any | undefined> => {
-  console.log("Add contact info: ", data);
   try {
     const user = await getCurrentUser();
 

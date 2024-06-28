@@ -1,8 +1,8 @@
 "use client";
 
 import { Edit } from "lucide-react";
-import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { ResumeSection } from "@/models/profile.model";
 import { useEffect } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";

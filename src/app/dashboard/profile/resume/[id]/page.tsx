@@ -1,5 +1,5 @@
 import { getResumeById } from "@/actions/profile.actions";
-import ResumeContainer from "@/components/ResumeContainer";
+import ResumeContainer from "@/components/profile/ResumeContainer";
 
 async function ResumePage({ params }: any) {
   const { id } = params;

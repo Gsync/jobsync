@@ -1,12 +1,12 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import CreateResume from "./CreateResume";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { getResumeList } from "@/actions/profile.actions";
 import { Resume } from "@/models/profile.model";
 import { useSearchParams } from "next/navigation";
 import { APP_CONSTANTS } from "@/lib/constants";
-import Loading from "./Loading";
+import Loading from "../Loading";
 import ResumeTable from "./ResumeTable";
 
 function ActivitiesContainer() {

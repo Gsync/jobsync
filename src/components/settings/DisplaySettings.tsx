@@ -1,6 +1,6 @@
 "use client";
 import { z } from "zod";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import {
   Form,
   FormControl,
@@ -9,12 +9,12 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "./ui/form";
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+} from "../ui/form";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "./ui/use-toast";
-import { Button } from "./ui/button";
+import { toast } from "../ui/use-toast";
+import { Button } from "../ui/button";
 import { useTheme } from "next-themes";
 
 const appearanceFormSchema = z.object({

@@ -6,7 +6,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "./ui/table";
+} from "../ui/table";
 import Image from "next/image";
 import {
   ListCollapse,
@@ -16,7 +16,7 @@ import {
   Trash,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "./ui/badge";
+import { Badge } from "../ui/badge";
 import { format } from "date-fns";
 import {
   DropdownMenu,
@@ -30,11 +30,11 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
-import { Button, buttonVariants } from "./ui/button";
+} from "../ui/dropdown-menu";
+import { Button, buttonVariants } from "../ui/button";
 import { useState } from "react";
-import { TablePagination } from "./TablePagination";
-import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
+import { TablePagination } from "../TablePagination";
+import { Dialog, DialogContent, DialogTrigger } from "../ui/dialog";
 import JobDetails from "./JobDetails";
 import {
   AlertDialog,
@@ -45,7 +45,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "./ui/alert-dialog";
+} from "../ui/alert-dialog";
 import { JobResponse, JobStatus } from "@/models/job.model";
 
 type MyJobsTableProps = {

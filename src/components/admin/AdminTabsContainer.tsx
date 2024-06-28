@@ -1,7 +1,7 @@
 "use client";
-import CompaniesContainer from "@/components/CompaniesContainer";
-import JobLocationsContainer from "@/components/JobLocationsContainer";
-import JobTitlesContainer from "@/components/JobTitlesContainer";
+import CompaniesContainer from "@/components/admin/CompaniesContainer";
+import JobLocationsContainer from "@/components/admin/JobLocationsContainer";
+import JobTitlesContainer from "@/components/admin/JobTitlesContainer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";

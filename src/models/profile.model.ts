@@ -5,7 +5,7 @@ export interface Resume {
   createdAt?: Date;
   updatedAt?: Date;
   ContactInfo?: ContactInfo;
-  ResumeSections: ResumeSection[];
+  ResumeSections?: ResumeSection[];
 }
 
 export interface ContactInfo {

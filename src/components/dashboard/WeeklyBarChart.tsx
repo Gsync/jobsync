@@ -1,7 +1,7 @@
 "use client";
 import { barChartData } from "@/lib/data/barChartData";
 import { ResponsiveBar } from "@nivo/bar";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 export default function WeeklyBarChart({ data }: { data: any[] }) {
   return (

@@ -6,18 +6,16 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "./ui/card";
-import { Button } from "./ui/button";
+} from "../ui/card";
+import { Button } from "../ui/button";
 import { File, ListFilter } from "lucide-react";
-import MyJobsTable from "./MyJobsTable";
-import { AddJob } from "./AddJob";
 import {
   deleteJobById,
   getJobDetails,
   getJobsList,
   updateJobStatus,
 } from "@/actions/job.actions";
-import { toast } from "./ui/use-toast";
+import { toast } from "../ui/use-toast";
 import {
   Company,
   JobLocation,
@@ -35,10 +33,12 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
+} from "../ui/select";
 import { APP_CONSTANTS } from "@/lib/constants";
-import Loading from "./Loading";
+import Loading from "../Loading";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { AddJob } from "./AddJob";
+import MyJobsTable from "./MyJobsTable";
 
 type MyJobsProps = {
   statuses: JobStatus[];

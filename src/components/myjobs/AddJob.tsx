@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { addJob, updateJob } from "@/actions/job.actions";
 import { Loader, PlusCircle } from "lucide-react";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import { useForm } from "react-hook-form";
 import { useEffect, useState, useTransition } from "react";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
@@ -25,7 +25,7 @@ import {
 } from "@/models/job.model";
 import { addDays } from "date-fns";
 import { z } from "zod";
-import { toast } from "./ui/use-toast";
+import { toast } from "../ui/use-toast";
 import {
   Form,
   FormControl,
@@ -33,16 +33,16 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "./ui/form";
-import { Combobox } from "./ComboBox";
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
-import SelectFormCtrl from "./Select";
-import { DatePicker } from "./DatePicker";
+} from "../ui/form";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import SelectFormCtrl from "../Select";
+import { DatePicker } from "../DatePicker";
 import { SALARY_RANGES } from "@/lib/data/salaryRangeData";
-import TiptapEditor from "./TiptapEditor";
-import { Input } from "./ui/input";
-import { Switch } from "./ui/switch";
+import TiptapEditor from "../TiptapEditor";
+import { Input } from "../ui/input";
+import { Switch } from "../ui/switch";
 import { redirect } from "next/navigation";
+import { Combobox } from "../ComboBox";
 
 type AddJobProps = {
   jobStatuses: JobStatus[];

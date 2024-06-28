@@ -1,13 +1,12 @@
 "use client";
 import { FilePenLine, MoreHorizontal, Pencil, Trash } from "lucide-react";
-import { Button } from "./ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
+} from "../ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -15,10 +14,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "./ui/table";
+} from "../ui/table";
 import { Resume } from "@/models/profile.model";
 import { format } from "date-fns";
 import Link from "next/link";
+import { Button } from "../ui/button";
 
 type ResumeTableProps = {
   resumes: Resume[];

@@ -1,4 +1,4 @@
-import ActivitiesContainer from "@/components/ActivitiesContainer";
+import ActivitiesContainer from "@/components/activities/ActivitiesContainer";
 import React from "react";
 
 function Activities() {

@@ -1,4 +1,4 @@
-import AdminTabsContainer from "@/components/AdminTabsContainer";
+import AdminTabsContainer from "@/components/admin/AdminTabsContainer";
 
 async function AdminPage() {
   return (

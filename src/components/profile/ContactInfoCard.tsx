@@ -1,7 +1,7 @@
 "use client";
 import { ContactInfo } from "@/models/profile.model";
-import { Card, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
+import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
 
 interface ContactInfoCardProps {

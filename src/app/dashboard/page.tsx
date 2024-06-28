@@ -4,11 +4,11 @@ import {
   getJobsAppliedForPeriod,
   getRecentJobs,
 } from "@/actions/dashboard.actions";
-import ActivityCalendar from "@/components/ActivityCalendar";
-import JobsApplied from "@/components/JobsAppliedCard";
-import NumberCard from "@/components/NumberCard";
-import RecentJobsCard from "@/components/RecentJobsCard";
-import WeeklyBarChart from "@/components/WeeklyBarChart";
+import ActivityCalendar from "@/components/dashboard/ActivityCalendar";
+import JobsApplied from "@/components/dashboard/JobsAppliedCard";
+import NumberCard from "@/components/dashboard/NumberCard";
+import RecentJobsCard from "@/components/dashboard/RecentJobsCard";
+import WeeklyBarChart from "@/components/dashboard/WeeklyBarChart";
 
 import { Metadata } from "next";
 

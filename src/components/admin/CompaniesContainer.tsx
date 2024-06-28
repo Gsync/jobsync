@@ -2,11 +2,11 @@
 import { useCallback, useEffect, useState } from "react";
 import AddCompany from "./AddCompany";
 import CompaniesTable from "./CompaniesTable";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Company } from "@/models/job.model";
 import { getCompanyById, getCompanyList } from "@/actions/company.actions";
 import { APP_CONSTANTS } from "@/lib/constants";
-import Loading from "./Loading";
+import Loading from "../Loading";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 function CompaniesContainer({

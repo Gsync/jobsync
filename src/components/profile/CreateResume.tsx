@@ -1,6 +1,6 @@
 "use client";
 import { Loader, PlusCircle } from "lucide-react";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import { useForm } from "react-hook-form";
 import { CreateResumeFormSchema } from "@/models/createResumeForm.schema";
 import { z } from "zod";
@@ -13,7 +13,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "./ui/dialog";
+} from "../ui/dialog";
 import {
   Form,
   FormControl,
@@ -21,10 +21,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "./ui/form";
-import { Input } from "./ui/input";
+} from "../ui/form";
+import { Input } from "../ui/input";
 import { Resume } from "@/models/profile.model";
-import { toast } from "./ui/use-toast";
+import { toast } from "../ui/use-toast";
 import { createResumeProfile, editResume } from "@/actions/profile.actions";
 
 type CreateResumeProps = {

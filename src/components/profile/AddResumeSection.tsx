@@ -1,13 +1,13 @@
 "use client";
 import { PlusCircle } from "lucide-react";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
+} from "../ui/dropdown-menu";
 import AddContactInfo from "./AddContactInfo";
 import { forwardRef, useImperativeHandle, useState } from "react";
 import {
@@ -46,7 +46,7 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
         setSummaryToEdit({ ...summarySection });
       },
     }));
-    const summarySection = resume.ResumeSections.find(
+    const summarySection = resume.ResumeSections?.find(
       (section) => section.sectionType === SectionType.SUMMARY
     );
     return (
@@ -82,9 +82,9 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
           </DropdownMenuContent>
         </DropdownMenu>
         <AddContactInfo
+          resumeId={resume.id}
           dialogOpen={contactInfoDialogOpen}
           setDialogOpen={setContactInfoDialogOpen}
-          resumeId={resume.id}
           contactInfoToEdit={contactInfoToEdit}
         />
         <AddResumeSummary

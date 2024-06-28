@@ -6,10 +6,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "./ui/dialog";
+} from "../ui/dialog";
 import { AddSummarySectionFormSchema } from "@/models/addSummaryForm.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import {
   Form,
   FormControl,
@@ -17,13 +17,13 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "./ui/form";
-import { Input } from "./ui/input";
+} from "../ui/form";
+import { Input } from "../ui/input";
 import { Loader } from "lucide-react";
 import { useEffect, useTransition } from "react";
-import { toast } from "./ui/use-toast";
+import { toast } from "../ui/use-toast";
 import { z } from "zod";
-import TiptapEditor from "./TiptapEditor";
+import TiptapEditor from "../TiptapEditor";
 import {
   addResumeSummary,
   updateResumeSummary,
