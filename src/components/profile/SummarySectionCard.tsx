@@ -29,9 +29,7 @@ function SummarySectionCard({
     <>
       <Card>
         <CardHeader className="flex-row justify-between relative">
-          <div>
-            <CardTitle>{summarySection?.sectionTitle}</CardTitle>
-          </div>
+          <CardTitle>{summarySection?.sectionTitle}</CardTitle>
           <Button
             variant="ghost"
             size="sm"

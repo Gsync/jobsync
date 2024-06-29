@@ -1,6 +1,7 @@
 "use server";
 import prisma from "@/lib/db";
 import { AddContactInfoFormSchema } from "@/models/addContactInfoForm.schema";
+import { AddExperienceFormSchema } from "@/models/addExperienceForm.schema";
 import { AddSummarySectionFormSchema } from "@/models/addSummaryForm.schema";
 import { CreateResumeFormSchema } from "@/models/createResumeForm.schema";
 import { ResumeSection, SectionType, Summary } from "@/models/profile.model";
@@ -73,6 +74,14 @@ export const getResumeById = async (
         ResumeSections: {
           include: {
             summary: true,
+            workExperiences: {
+              include: {
+                jobTitle: true,
+                Company: true,
+                location: true,
+              },
+            },
+            educations: true,
           },
         },
       },
@@ -316,6 +325,95 @@ export const updateResumeSummary = async (
     return { data: summary, success: true };
   } catch (error) {
     const msg = "Failed to update summary.";
+    console.error(msg, error);
+    if (error instanceof Error) {
+      return { success: false, message: error.message };
+    }
+  }
+};
+
+export const addExperience = async (
+  data: z.infer<typeof AddExperienceFormSchema>
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+    const section = !data.sectionId
+      ? await prisma.resumeSection.create({
+          data: {
+            resumeId: data.resumeId!,
+            sectionTitle: data.sectionTitle!,
+            sectionType: SectionType.EXPERIENCE,
+          },
+        })
+      : undefined;
+
+    const experience = await prisma.resumeSection.update({
+      where: {
+        id: section ? section.id : data.sectionId,
+      },
+      data: {
+        workExperiences: {
+          create: {
+            jobTitleId: data.title,
+            companyId: data.company,
+            locationId: data.location,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            description: data.jobDescription,
+          },
+        },
+      },
+    });
+    revalidatePath("/dashboard/profile/resume/[id]");
+    return { data: experience, success: true };
+  } catch (error) {
+    const msg = "Failed to create experience.";
+    console.error(msg, error);
+    if (error instanceof Error) {
+      return { success: false, message: error.message };
+    }
+  }
+};
+
+export const updateExperience = async (
+  data: z.infer<typeof AddExperienceFormSchema>
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+    // const res = await prisma.resumeSection.update({
+    //   where: {
+    //     id: data.id,
+    //   },
+    //   data: {
+    //     sectionTitle: data.sectionTitle!,
+    //   },
+    // });
+
+    const summary = await prisma.workExperience.update({
+      where: {
+        id: data.id,
+      },
+      data: {
+        jobTitleId: data.title,
+        companyId: data.company,
+        locationId: data.location,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        description: data.jobDescription,
+      },
+    });
+    revalidatePath("/dashboard/profile/resume/[id]");
+    return { data: summary, success: true };
+  } catch (error) {
+    const msg = "Failed to update experience.";
     console.error(msg, error);
     if (error instanceof Error) {
       return { success: false, message: error.message };

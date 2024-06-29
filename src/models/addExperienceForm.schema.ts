@@ -2,11 +2,9 @@ import { z } from "zod";
 
 export const AddExperienceFormSchema = z.object({
   id: z.string().optional(),
-  sectionTitle: z
-    .string({
-      required_error: "Section title is required.",
-    })
-    .min(1),
+  resumeId: z.string().optional(),
+  sectionId: z.string().optional(),
+  sectionTitle: z.string().default("Experience").optional(),
   sectionType: z.string().optional(),
   title: z
     .string({
@@ -34,4 +32,5 @@ export const AddExperienceFormSchema = z.object({
   }),
   startDate: z.date(),
   endDate: z.date().optional(),
+  currentJob: z.boolean().default(false).optional(),
 });

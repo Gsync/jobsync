@@ -1,21 +1,34 @@
 "use client";
-import { Resume, SectionType } from "@/models/profile.model";
+import { Resume, ResumeSection, SectionType } from "@/models/profile.model";
 import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import AddResumeSection, { AddResumeSectionRef } from "./AddResumeSection";
 import ContactInfoCard from "./ContactInfoCard";
 import { useRef } from "react";
 import SummarySectionCard from "./SummarySectionCard";
+import ExperienceCard from "./ExperienceCard";
 
 function ResumeContainer({ resume }: { resume: Resume }) {
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
   const summarySection = resume.ResumeSections?.find(
     (section) => section.sectionType === SectionType.SUMMARY
   );
+  const experienceSection = resume.ResumeSections?.find(
+    (section) => section.sectionType === SectionType.EXPERIENCE
+  );
   const openContactInfoDialog = () => {
     resumeSectionRef.current?.openContactInfoDialog(resume.ContactInfo!);
   };
   const openSummaryDialogForEdit = () => {
     resumeSectionRef.current?.openSummaryDialog(summarySection!);
+  };
+  const openExperienceDialogForEdit = (experienceId: string) => {
+    const section: ResumeSection = {
+      ...experienceSection!,
+      workExperiences: experienceSection?.workExperiences?.filter(
+        (exp) => exp.id === experienceId
+      ),
+    };
+    resumeSectionRef.current?.openExperienceDialog(section);
   };
   return (
     <>
@@ -38,6 +51,12 @@ function ResumeContainer({ resume }: { resume: Resume }) {
         <SummarySectionCard
           summarySection={summarySection}
           openDialogForEdit={openSummaryDialogForEdit}
+        />
+      ) : null}
+      {experienceSection ? (
+        <ExperienceCard
+          experienceSection={experienceSection}
+          openDialogForEdit={openExperienceDialogForEdit}
         />
       ) : null}
     </>

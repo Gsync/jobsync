@@ -27,9 +27,15 @@ interface DatePickerProps {
   field: ControllerRenderProps<any, any>;
   presets: boolean;
   isEnabled: boolean;
+  captionLayout?: boolean;
 }
 
-export function DatePicker({ field, presets, isEnabled }: DatePickerProps) {
+export function DatePicker({
+  field,
+  presets,
+  isEnabled,
+  captionLayout,
+}: DatePickerProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
 
   return (
@@ -71,6 +77,9 @@ export function DatePicker({ field, presets, isEnabled }: DatePickerProps) {
         <div className="rounded-md border">
           <Calendar
             mode="single"
+            captionLayout={captionLayout ? "dropdown-buttons" : undefined}
+            fromYear={captionLayout ? 1970 : undefined}
+            toYear={captionLayout ? new Date().getFullYear() : undefined}
             selected={field.value}
             onSelect={(value) => {
               field.onChange(value);

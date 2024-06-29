@@ -1,6 +1,6 @@
 "use client";
 import { AddExperienceFormSchema } from "@/models/addExperienceForm.schema";
-import { WorkExperience } from "@/models/profile.model";
+import { ResumeSection, WorkExperience } from "@/models/profile.model";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,17 +32,25 @@ import { Company, JobLocation, JobTitle } from "@/models/job.model";
 import { getAllCompanies } from "@/actions/company.actions";
 import { getAllJobTitles } from "@/actions/jobtitle.actions";
 import { getAllJobLocations } from "@/actions/jobLocation.actions";
+import { Switch } from "../ui/switch";
+import { addExperience, updateExperience } from "@/actions/profile.actions";
 
 type AddExperienceProps = {
+  resumeId: string | undefined;
+  sectionId: string | undefined;
   dialogOpen: boolean;
   setDialogOpen: (e: boolean) => void;
-  experienceToEdit?: WorkExperience;
+  experienceToEdit?: ResumeSection;
+  resetExperienceToEdit: () => void;
 };
 
 function AddExperience({
+  resumeId,
+  sectionId,
   dialogOpen,
   setDialogOpen,
   experienceToEdit,
+  resetExperienceToEdit,
 }: AddExperienceProps) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [locations, setLocations] = useState<JobLocation[]>([]);
@@ -50,7 +58,6 @@ function AddExperience({
   const pageTitle = experienceToEdit ? "Edit Experience" : "Add Experience";
   const [isPending, startTransition] = useTransition();
   const getTitleCompanyAndLocationData = useCallback(async () => {
-    console.log("get titles, companies and locations");
     const [_companies, _titles, _locations] = await Promise.all([
       getAllCompanies(),
       getAllJobTitles(),
@@ -63,20 +70,50 @@ function AddExperience({
 
   const form = useForm<z.infer<typeof AddExperienceFormSchema>>({
     resolver: zodResolver(AddExperienceFormSchema),
-    defaultValues: {},
+    defaultValues: {
+      resumeId,
+      sectionId,
+    },
   });
 
-  const { setValue, reset, formState, clearErrors } = form;
+  const { setValue, watch, reset, formState, resetField, clearErrors } = form;
+
+  const currentJobValue = watch("currentJob");
 
   useEffect(() => {
     getTitleCompanyAndLocationData();
-  }, [getTitleCompanyAndLocationData]);
+    if (experienceToEdit) {
+      clearErrors();
+      const experience: WorkExperience =
+        experienceToEdit.workExperiences?.pop()!;
+      setValue("id", experience?.id);
+      setValue("title", experience?.jobTitle.id);
+      setValue("company", experience?.Company.id);
+      setValue("location", experience?.location.id);
+      setValue("startDate", experience?.startDate);
+      setValue("endDate", experience?.endDate);
+      setValue("jobDescription", experience?.description);
+      setValue("currentJob", !!!experience?.endDate);
+    } else {
+      reset();
+      resetExperienceToEdit();
+    }
+    setValue("sectionId", sectionId);
+  }, [
+    getTitleCompanyAndLocationData,
+    experienceToEdit,
+    clearErrors,
+    setValue,
+    sectionId,
+    reset,
+    resetExperienceToEdit,
+  ]);
 
   const onSubmit = (data: z.infer<typeof AddExperienceFormSchema>) => {
     startTransition(async () => {
-      const res = { res: experienceToEdit, success: true, message: "" };
-      // ? await updateResumeSummary(data)
-      // : await addResumeSummary(data);
+      const res = experienceToEdit?.workExperiences?.length
+        ? await updateExperience(data)
+        : await addExperience(data);
       if (!res.success) {
         toast({
           variant: "destructive",
@@ -96,9 +133,15 @@ function AddExperience({
     });
   };
 
+  const onCurrentJob = (current: boolean) => {
+    if (current) {
+      resetField("endDate");
+    }
+  };
+
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DialogContent className="h-full lg:max-h-screen md:max-w-[40rem] overflow-y-scroll">
+      <DialogContent className="h-full md:h-[85%] lg:max-h-screen md:max-w-[40rem] overflow-y-scroll">
         <DialogHeader>
           <DialogTitle>{pageTitle}</DialogTitle>
         </DialogHeader>
@@ -108,24 +151,29 @@ function AddExperience({
             className="grid grid-cols-1 md:grid-cols-2 gap-4 p-2"
           >
             {/* SECTION TITLE */}
-            <div className="md:col-span-2">
-              <FormField
-                control={form.control}
-                name="sectionTitle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Section Title</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Ex: Experience" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <hr className="md:col-span-2" />
+            {!sectionId ? (
+              <>
+                <div className="md:col-span-2">
+                  <FormField
+                    control={form.control}
+                    name="sectionTitle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Section Title</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Ex: Experience" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <hr className="md:col-span-2" />
+              </>
+            ) : null}
+
             {/* JOB TITLE */}
-            <div className="md:col-span-2">
+            <div>
               <FormField
                 control={form.control}
                 name="title"
@@ -186,7 +234,32 @@ function AddExperience({
                       field={field}
                       presets={false}
                       isEnabled={true}
+                      captionLayout={true}
                     />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* CURRENT JOB */}
+            <div className="flex items-center">
+              <FormField
+                control={form.control}
+                name="currentJob"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row">
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={(c) => {
+                        field.onChange(c);
+                        onCurrentJob(c);
+                      }}
+                    />
+                    <FormLabel className="flex items-center ml-4 mb-2">
+                      {field.value ? "Current Job" : "Job Ended"}
+                    </FormLabel>
+
                     <FormMessage />
                   </FormItem>
                 )}
@@ -204,7 +277,8 @@ function AddExperience({
                     <DatePicker
                       field={field}
                       presets={false}
-                      isEnabled={true}
+                      isEnabled={!currentJobValue!}
+                      captionLayout={true}
                     />
                     <FormMessage />
                   </FormItem>

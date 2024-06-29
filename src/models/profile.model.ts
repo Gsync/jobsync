@@ -62,9 +62,11 @@ export interface WorkExperience {
   id?: string;
   createdAt?: string;
   updatedAt?: string;
-  company: Company;
-  title: JobTitle;
+  Company: Company;
+  jobTitle: JobTitle;
   location: JobLocation;
   startDate: Date;
   endDate: Date;
+  currentJob?: Boolean;
+  description: string;
 }

@@ -26,6 +26,7 @@ interface AddResumeSectionProps {
 export interface AddResumeSectionRef {
   openContactInfoDialog: (c: ContactInfo) => void;
   openSummaryDialog: (s: ResumeSection) => void;
+  openExperienceDialog: (s: ResumeSection) => void;
 }
 
 const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
@@ -38,6 +39,8 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
     const [summaryToEdit, setSummaryToEdit] = useState<ResumeSection | null>(
       null
     );
+    const [experienceToEdit, setExperienceToEdit] =
+      useState<ResumeSection | null>(null);
     useImperativeHandle(ref, () => ({
       openContactInfoDialog(contactInfo: ContactInfo) {
         setContactInfoDialogOpen(true);
@@ -47,10 +50,20 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
         setSummaryDialogOpen(true);
         setSummaryToEdit({ ...summarySection });
       },
+      openExperienceDialog(experienceSection: ResumeSection) {
+        setExperienceDialogOpen(true);
+        setExperienceToEdit({ ...experienceSection });
+      },
     }));
     const summarySection = resume.ResumeSections?.find(
       (section) => section.sectionType === SectionType.SUMMARY
     );
+    const experienceSection = resume.ResumeSections?.find(
+      (section) => section.sectionType === SectionType.EXPERIENCE
+    );
+    const resetExperienceToEdit = () => {
+      setExperienceToEdit(null);
+    };
     return (
       <>
         <DropdownMenu>
@@ -101,8 +114,12 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
           summaryToEdit={summaryToEdit}
         />
         <AddExperience
+          resumeId={resume.id}
+          sectionId={experienceSection?.id}
           dialogOpen={experienceDialogOpen}
           setDialogOpen={setExperienceDialogOpen}
+          experienceToEdit={experienceToEdit!}
+          resetExperienceToEdit={resetExperienceToEdit}
         />
       </>
     );
