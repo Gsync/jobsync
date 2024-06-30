@@ -56,6 +56,7 @@ export interface ResumeSection {
   sectionType: SectionType;
   summary?: Summary;
   workExperiences?: WorkExperience[];
+  educations?: Education[];
 }
 
 export interface WorkExperience {
@@ -69,4 +70,17 @@ export interface WorkExperience {
   endDate: Date;
   currentJob?: Boolean;
   description: string;
+}
+
+export interface Education {
+  id?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  institution: string;
+  degree: string;
+  fieldOfStudy: string;
+  startDate: Date;
+  endDate?: Date;
+  description?: string;
+  location: JobLocation;
 }

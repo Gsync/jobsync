@@ -1,5 +1,6 @@
 "use server";
 import prisma from "@/lib/db";
+import { AddEducationFormSchema } from "@/models/AddEductionForm.schema";
 import { AddContactInfoFormSchema } from "@/models/addContactInfoForm.schema";
 import { AddExperienceFormSchema } from "@/models/addExperienceForm.schema";
 import { AddSummarySectionFormSchema } from "@/models/addSummaryForm.schema";
@@ -81,7 +82,11 @@ export const getResumeById = async (
                 location: true,
               },
             },
-            educations: true,
+            educations: {
+              include: {
+                location: true,
+              },
+            },
           },
         },
       },
@@ -414,6 +419,97 @@ export const updateExperience = async (
     return { data: summary, success: true };
   } catch (error) {
     const msg = "Failed to update experience.";
+    console.error(msg, error);
+    if (error instanceof Error) {
+      return { success: false, message: error.message };
+    }
+  }
+};
+
+export const addEducation = async (
+  data: z.infer<typeof AddEducationFormSchema>
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+    const section = !data.sectionId
+      ? await prisma.resumeSection.create({
+          data: {
+            resumeId: data.resumeId!,
+            sectionTitle: data.sectionTitle!,
+            sectionType: SectionType.EDUCATION,
+          },
+        })
+      : undefined;
+
+    const education = await prisma.resumeSection.update({
+      where: {
+        id: section ? section.id : data.sectionId,
+      },
+      data: {
+        educations: {
+          create: {
+            institution: data.institution,
+            degree: data.degree,
+            fieldOfStudy: data.fieldOfStudy,
+            locationId: data.location,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            description: data.description,
+          },
+        },
+      },
+    });
+    revalidatePath("/dashboard/profile/resume/[id]");
+    return { data: education, success: true };
+  } catch (error) {
+    const msg = "Failed to create education.";
+    console.error(msg, error);
+    if (error instanceof Error) {
+      return { success: false, message: error.message };
+    }
+  }
+};
+
+export const updateEducation = async (
+  data: z.infer<typeof AddEducationFormSchema>
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+    // const res = await prisma.resumeSection.update({
+    //   where: {
+    //     id: data.id,
+    //   },
+    //   data: {
+    //     sectionTitle: data.sectionTitle!,
+    //   },
+    // });
+
+    const summary = await prisma.education.update({
+      where: {
+        id: data.id,
+      },
+      data: {
+        institution: data.institution,
+        degree: data.degree,
+        fieldOfStudy: data.fieldOfStudy,
+        locationId: data.location,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        description: data.description,
+      },
+    });
+    revalidatePath("/dashboard/profile/resume/[id]");
+    return { data: summary, success: true };
+  } catch (error) {
+    const msg = "Failed to update education.";
     console.error(msg, error);
     if (error instanceof Error) {
       return { success: false, message: error.message };

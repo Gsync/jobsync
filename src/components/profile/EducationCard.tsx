@@ -13,31 +13,31 @@ import { format } from "date-fns";
 import { Editor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
-interface ExperienceCardProps {
-  experienceSection: ResumeSection | undefined;
+interface EducationCardProps {
+  educationSection: ResumeSection | undefined;
   openDialogForEdit: (id: string) => void;
 }
 
-function ExperienceCard({
-  experienceSection,
+function EducationCard({
+  educationSection,
   openDialogForEdit,
-}: ExperienceCardProps) {
+}: EducationCardProps) {
   return (
     <>
       <CardTitle className="pl-6 py-3">
-        {experienceSection?.sectionTitle}
+        {educationSection?.sectionTitle}
       </CardTitle>
-      {experienceSection?.workExperiences?.map((experience) => (
-        <Card key={experience.id}>
+      {educationSection?.educations?.map((education) => (
+        <Card key={education.id}>
           <CardHeader className="p-2 pb-0 flex-row justify-between relative">
             <CardTitle className="text-xl pl-4">
-              {experience.jobTitle.label}
+              {education.institution}
             </CardTitle>
             <Button
               variant="ghost"
               size="sm"
               className="h-8 gap-1 absolute top-0 right-1"
-              onClick={() => openDialogForEdit(experience.id!)}
+              onClick={() => openDialogForEdit(education.id!)}
             >
               <Edit className="h-3.5 w-3.5" />
               <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
@@ -46,25 +46,29 @@ function ExperienceCard({
             </Button>
           </CardHeader>
           <CardContent>
-            <h3>{experience.Company.label}</h3>
+            <h3>
+              {education.degree}, {education.fieldOfStudy}
+            </h3>
             <CardDescription>
-              {format(experience.startDate, "MMM yyyy")} -{" "}
-              {experience.endDate
-                ? format(experience.endDate, "MMM yyyy")
+              {format(education.startDate, "MMM yyyy")} -{" "}
+              {education.endDate
+                ? format(education.endDate, "MMM yyyy")
                 : "Present"}
-              <div>{experience.location.label}</div>
+              <div>{education.location.label}</div>
             </CardDescription>
-            <div className="pt-2">
-              <EditorContent
-                editor={
-                  new Editor({
-                    extensions: [StarterKit],
-                    content: experience.description,
-                    editable: false,
-                  })
-                }
-              />
-            </div>
+            {education.description ? (
+              <div className="pt-2">
+                <EditorContent
+                  editor={
+                    new Editor({
+                      extensions: [StarterKit],
+                      content: education.description,
+                      editable: false,
+                    })
+                  }
+                />
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       ))}
@@ -72,4 +76,4 @@ function ExperienceCard({
   );
 }
 
-export default ExperienceCard;
+export default EducationCard;

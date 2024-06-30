@@ -18,6 +18,7 @@ import {
 } from "@/models/profile.model";
 import AddResumeSummary from "./AddResumeSummary";
 import AddExperience from "./AddExperience";
+import AddEducation from "./AddEducation";
 
 interface AddResumeSectionProps {
   resume: Resume;
@@ -34,6 +35,7 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
     const [contactInfoDialogOpen, setContactInfoDialogOpen] = useState(false);
     const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
     const [experienceDialogOpen, setExperienceDialogOpen] = useState(false);
+    const [educationDialogOpen, setEducationDialogOpen] = useState(false);
     const [contactInfoToEdit, setContactInfoToEdit] =
       useState<ContactInfo | null>(null);
     const [summaryToEdit, setSummaryToEdit] = useState<ResumeSection | null>(
@@ -60,6 +62,9 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
     );
     const experienceSection = resume.ResumeSections?.find(
       (section) => section.sectionType === SectionType.EXPERIENCE
+    );
+    const educationSection = resume.ResumeSections?.find(
+      (section) => section.sectionType === SectionType.EDUCATION
     );
     const resetExperienceToEdit = () => {
       setExperienceToEdit(null);
@@ -97,7 +102,12 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
               >
                 Add Experience
               </DropdownMenuItem>
-              <DropdownMenuItem>Add Education</DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => setEducationDialogOpen(true)}
+              >
+                Add Education
+              </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -120,6 +130,14 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
           setDialogOpen={setExperienceDialogOpen}
           experienceToEdit={experienceToEdit!}
           resetExperienceToEdit={resetExperienceToEdit}
+        />
+        <AddEducation
+          resumeId={resume.id}
+          sectionId={educationSection?.id}
+          dialogOpen={educationDialogOpen}
+          setDialogOpen={setEducationDialogOpen}
+          educationToEdit={experienceToEdit!}
+          resetEducationToEdit={resetExperienceToEdit}
         />
       </>
     );

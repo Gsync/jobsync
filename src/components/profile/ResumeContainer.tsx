@@ -6,6 +6,7 @@ import ContactInfoCard from "./ContactInfoCard";
 import { useRef } from "react";
 import SummarySectionCard from "./SummarySectionCard";
 import ExperienceCard from "./ExperienceCard";
+import EducationCard from "./EducationCard";
 
 function ResumeContainer({ resume }: { resume: Resume }) {
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
@@ -14,6 +15,9 @@ function ResumeContainer({ resume }: { resume: Resume }) {
   );
   const experienceSection = resume.ResumeSections?.find(
     (section) => section.sectionType === SectionType.EXPERIENCE
+  );
+  const educationSection = resume.ResumeSections?.find(
+    (section) => section.sectionType === SectionType.EDUCATION
   );
   const openContactInfoDialog = () => {
     resumeSectionRef.current?.openContactInfoDialog(resume.ContactInfo!);
@@ -29,6 +33,15 @@ function ResumeContainer({ resume }: { resume: Resume }) {
       ),
     };
     resumeSectionRef.current?.openExperienceDialog(section);
+  };
+  const openEducationDialogForEdit = (educationId: string) => {
+    // const section: ResumeSection = {
+    //   ...experienceSection!,
+    //   workExperiences: experienceSection?.workExperiences?.filter(
+    //     (exp) => exp.id === experienceId
+    //   ),
+    // };
+    // resumeSectionRef.current?.openExperienceDialog(section);
   };
   return (
     <>
@@ -57,6 +70,12 @@ function ResumeContainer({ resume }: { resume: Resume }) {
         <ExperienceCard
           experienceSection={experienceSection}
           openDialogForEdit={openExperienceDialogForEdit}
+        />
+      ) : null}
+      {educationSection ? (
+        <EducationCard
+          educationSection={educationSection}
+          openDialogForEdit={openEducationDialogForEdit}
         />
       ) : null}
     </>
