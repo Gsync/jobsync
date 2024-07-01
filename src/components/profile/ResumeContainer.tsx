@@ -35,13 +35,13 @@ function ResumeContainer({ resume }: { resume: Resume }) {
     resumeSectionRef.current?.openExperienceDialog(section);
   };
   const openEducationDialogForEdit = (educationId: string) => {
-    // const section: ResumeSection = {
-    //   ...experienceSection!,
-    //   workExperiences: experienceSection?.workExperiences?.filter(
-    //     (exp) => exp.id === experienceId
-    //   ),
-    // };
-    // resumeSectionRef.current?.openExperienceDialog(section);
+    const section: ResumeSection = {
+      ...educationSection!,
+      educations: educationSection?.educations?.filter(
+        (edu) => edu.id === educationId
+      ),
+    };
+    resumeSectionRef.current?.openEducationDialog(section);
   };
   return (
     <>

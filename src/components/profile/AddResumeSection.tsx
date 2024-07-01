@@ -28,6 +28,7 @@ export interface AddResumeSectionRef {
   openContactInfoDialog: (c: ContactInfo) => void;
   openSummaryDialog: (s: ResumeSection) => void;
   openExperienceDialog: (s: ResumeSection) => void;
+  openEducationDialog: (s: ResumeSection) => void;
 }
 
 const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
@@ -43,6 +44,8 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
     );
     const [experienceToEdit, setExperienceToEdit] =
       useState<ResumeSection | null>(null);
+    const [educationToEdit, setEducationToEdit] =
+      useState<ResumeSection | null>(null);
     useImperativeHandle(ref, () => ({
       openContactInfoDialog(contactInfo: ContactInfo) {
         setContactInfoDialogOpen(true);
@@ -56,6 +59,10 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
         setExperienceDialogOpen(true);
         setExperienceToEdit({ ...experienceSection });
       },
+      openEducationDialog(educationSection: ResumeSection) {
+        setEducationDialogOpen(true);
+        setEducationToEdit({ ...educationSection });
+      },
     }));
     const summarySection = resume.ResumeSections?.find(
       (section) => section.sectionType === SectionType.SUMMARY
@@ -68,6 +75,10 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
     );
     const resetExperienceToEdit = () => {
       setExperienceToEdit(null);
+    };
+    const resetEducationToEdit = () => {
+      console.log("RESET EDUCTION TO EDIT");
+      setEducationToEdit(null);
     };
     return (
       <>
@@ -136,8 +147,8 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
           sectionId={educationSection?.id}
           dialogOpen={educationDialogOpen}
           setDialogOpen={setEducationDialogOpen}
-          educationToEdit={experienceToEdit!}
-          resetEducationToEdit={resetExperienceToEdit}
+          educationToEdit={educationToEdit!}
+          resetEducationToEdit={resetEducationToEdit}
         />
       </>
     );

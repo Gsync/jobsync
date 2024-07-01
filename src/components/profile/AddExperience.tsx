@@ -85,7 +85,7 @@ function AddExperience({
     if (experienceToEdit) {
       clearErrors();
       const experience: WorkExperience =
-        experienceToEdit.workExperiences?.pop()!;
+        experienceToEdit.workExperiences?.at(0)!;
       setValue("id", experience?.id);
       setValue("title", experience?.jobTitle.id);
       setValue("company", experience?.Company.id);

@@ -30,6 +30,6 @@ export const AddEducationFormSchema = z.object({
     }),
   description: z.string().optional(),
   startDate: z.date(),
-  endDate: z.date().optional(),
+  endDate: z.date().nullable().optional(),
   degreeCompleted: z.boolean().default(true).optional(),
 });

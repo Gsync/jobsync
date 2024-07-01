@@ -1,6 +1,6 @@
 "use client";
 import { AddEducationFormSchema } from "@/models/AddEductionForm.schema";
-import { ResumeSection } from "@/models/profile.model";
+import { Education, ResumeSection } from "@/models/profile.model";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -74,31 +74,31 @@ function AddEducation({
 
   useEffect(() => {
     getLocationData();
-    // if (experienceToEdit) {
-    //   clearErrors();
-    //   const experience: WorkExperience =
-    //     experienceToEdit.workExperiences?.pop()!;
-    //   setValue("id", experience?.id);
-    //   setValue("title", experience?.jobTitle.id);
-    //   setValue("company", experience?.Company.id);
-    //   setValue("location", experience?.location.id);
-    //   setValue("startDate", experience?.startDate);
-    //   setValue("endDate", experience?.endDate);
-    //   setValue("jobDescription", experience?.description);
-    //   setValue("currentJob", !!!experience?.endDate);
-    // } else {
-    //   reset();
-    //   resetExperienceToEdit();
-    // }
+    if (educationToEdit) {
+      clearErrors();
+      const education: Education = educationToEdit?.educations?.at(0)!;
+      setValue("id", education?.id);
+      setValue("institution", education?.institution);
+      setValue("degree", education?.degree);
+      setValue("fieldOfStudy", education?.fieldOfStudy);
+      setValue("location", education?.location.id);
+      setValue("startDate", education?.startDate);
+      setValue("endDate", education?.endDate);
+      setValue("description", education?.description);
+      setValue("degreeCompleted", !!!education?.endDate);
+    } else {
+      reset();
+      resetEducationToEdit();
+    }
     setValue("sectionId", sectionId);
   }, [
     getLocationData,
-    // experienceToEdit,
-    // clearErrors,
+    educationToEdit,
+    clearErrors,
     setValue,
     sectionId,
-    // reset,
-    // resetExperienceToEdit,
+    reset,
+    resetEducationToEdit,
   ]);
 
   const onDegreeCompleted = (completed: boolean) => {
@@ -262,7 +262,7 @@ function AddEducation({
                     <DatePicker
                       field={field}
                       presets={false}
-                      isEnabled={true}
+                      isEnabled={degreeCompletedValue!}
                       captionLayout={true}
                     />
                     <FormMessage />
