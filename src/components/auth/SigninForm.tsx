@@ -29,14 +29,7 @@ function SigninForm() {
 
   const { pending } = useFormStatus();
 
-  // const getFormData = (object: Object) =>
-  //   Object.keys(object).reduce((formData, key) => {
-  //     formData.append(key, object[key as keyof object]);
-  //     return formData;
-  //   }, new FormData());
-
   const onSubmit = async (data: z.infer<typeof SigninFormSchema>) => {
-    // const formData = getFormData(data);
     const formData = new FormData();
     formData.set("email", data.email);
     formData.set("password", data.password);
@@ -62,7 +55,7 @@ function SigninForm() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel htmlFor="email">Email</FormLabel>
                     <FormControl>
                       <Input
                         id="email"
@@ -81,7 +74,7 @@ function SigninForm() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel htmlFor="password">Password</FormLabel>
                     <FormControl>
                       <Input id="password" type="password" {...field} />
                     </FormControl>

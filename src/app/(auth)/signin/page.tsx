@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Metadata } from "next";
-import SigninForm from "@/components/SigninForm";
+import SigninForm from "@/components/auth/SigninForm";
 
 export const metadata: Metadata = {
   title: "Signin",
