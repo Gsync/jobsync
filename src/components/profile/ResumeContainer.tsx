@@ -10,17 +10,17 @@ import EducationCard from "./EducationCard";
 
 function ResumeContainer({ resume }: { resume: Resume }) {
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
-  const summarySection = resume.ResumeSections?.find(
+  const summarySection = resume?.ResumeSections?.find(
     (section) => section.sectionType === SectionType.SUMMARY
   );
-  const experienceSection = resume.ResumeSections?.find(
+  const experienceSection = resume?.ResumeSections?.find(
     (section) => section.sectionType === SectionType.EXPERIENCE
   );
-  const educationSection = resume.ResumeSections?.find(
+  const educationSection = resume?.ResumeSections?.find(
     (section) => section.sectionType === SectionType.EDUCATION
   );
   const openContactInfoDialog = () => {
-    resumeSectionRef.current?.openContactInfoDialog(resume.ContactInfo!);
+    resumeSectionRef.current?.openContactInfoDialog(resume?.ContactInfo!);
   };
   const openSummaryDialogForEdit = () => {
     resumeSectionRef.current?.openSummaryDialog(summarySection!);
@@ -48,13 +48,13 @@ function ResumeContainer({ resume }: { resume: Resume }) {
       <Card>
         <CardHeader className="flex-row justify-between items-center">
           <CardTitle>Resume</CardTitle>
-          <CardDescription>{resume.title}</CardDescription>
+          <CardDescription>{resume?.title}</CardDescription>
           <div className="flex items-center">
             <AddResumeSection resume={resume} ref={resumeSectionRef} />
           </div>
         </CardHeader>
       </Card>
-      {resume.ContactInfo ? (
+      {resume?.ContactInfo ? (
         <ContactInfoCard
           contactInfo={resume.ContactInfo}
           openDialog={openContactInfoDialog}
