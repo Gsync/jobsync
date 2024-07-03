@@ -8,7 +8,7 @@ import { ControllerRenderProps } from "react-hook-form";
 import { Toggle } from "./ui/toggle";
 import { Bold, Heading2, Italic, List, ListOrdered } from "lucide-react";
 
-const Tiptap = ({ field }: { field: ControllerRenderProps<JobForm, any> }) => {
+const Tiptap = ({ field }: { field: ControllerRenderProps<any, any> }) => {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({

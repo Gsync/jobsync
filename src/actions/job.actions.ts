@@ -1,6 +1,7 @@
 "use server";
 import prisma from "@/lib/db";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
+import { JobStatus } from "@/models/job.model";
 import { getCurrentUser } from "@/utils/user.utils";
 import { z } from "zod";
 
@@ -66,7 +67,8 @@ export const getJobsList = async (
           description: false,
         },
         orderBy: {
-          appliedDate: "desc",
+          createdAt: "desc",
+          // appliedDate: "desc",
         },
       }),
       prisma.job.count({
@@ -246,6 +248,51 @@ export const updateJob = async (
     return job;
   } catch (error) {
     const msg = "Failed to update job. ";
+    console.error(msg, error);
+    throw new Error(msg);
+  }
+};
+
+export const updateJobStatus = async (
+  jobId: string,
+  status: JobStatus
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+    const dataToUpdate = () => {
+      switch (status.value) {
+        case "applied":
+          return {
+            statusId: status.id,
+            applied: true,
+            appliedDate: new Date(),
+          };
+        case "interview":
+          return {
+            statusId: status.id,
+            applied: true,
+          };
+        default:
+          return {
+            statusId: status.id,
+          };
+      }
+    };
+
+    const job = prisma.job.update({
+      where: {
+        id: jobId,
+        userId: user.id,
+      },
+      data: dataToUpdate(),
+    });
+    return job;
+  } catch (error) {
+    const msg = "Failed to update job status.";
     console.error(msg, error);
     throw new Error(msg);
   }

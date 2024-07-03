@@ -1,4 +1,4 @@
-import ProfileContainer from "@/components/ProfileContainer";
+import ProfileContainer from "@/components/profile/ProfileContainer";
 import React from "react";
 
 function Profile() {

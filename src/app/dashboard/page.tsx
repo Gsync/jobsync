@@ -4,17 +4,17 @@ import {
   getJobsAppliedForPeriod,
   getRecentJobs,
 } from "@/actions/dashboard.actions";
-import ActivityCalendar from "@/components/ActivityCalendar";
-import JobsApplied from "@/components/JobsAppliedCard";
-import NumberCard from "@/components/NumberCard";
-import RecentJobsCard from "@/components/RecentJobsCard";
-import WeeklyBarChart from "@/components/WeeklyBarChart";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
   getMockJobActivityData,
   getMockRecentJobs,
   getRandomInt,
 } from "@/lib/mock.utils";
+import ActivityCalendar from "@/components/dashboard/ActivityCalendar";
+import JobsApplied from "@/components/dashboard/JobsAppliedCard";
+import NumberCard from "@/components/dashboard/NumberCard";
+import RecentJobsCard from "@/components/dashboard/RecentJobsCard";
+import WeeklyBarChart from "@/components/dashboard/WeeklyBarChart";
 
 import { Metadata } from "next";
 
@@ -61,9 +61,6 @@ export default async function Dashboard() {
         </div>
         <div className="flex flex-col justify-center">
           <WeeklyBarChart data={weeklyData} />
-          {/* <WeeklyBarChart
-            data={generateRandomActivityCalendarData(7, 0.3, "PP")}
-          /> */}
         </div>
       </div>
       <div>
@@ -71,7 +68,6 @@ export default async function Dashboard() {
       </div>
       <div className="flex flex-col items-start col-span-3">
         <ActivityCalendar data={activityCalendarData} />
-        {/* <ActivityCalendar data={generateRandomActivityCalendarData(150)} /> */}
       </div>
       <div className="flex flex-col items-start col-span-3">
         <Card>

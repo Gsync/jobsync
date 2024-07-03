@@ -1,43 +1,52 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# JobSync - Job Search Assistant
 
-## Getting Started
+## <a href="https://demo.jobsync.ca">Live Demo</a>
 
-First, run the development server:
+JobSync is a web app companion for managing your job search journey. This free and open-source project is designed to help job seekers efficiently track and organize their job applications. Say goodbye to the chaos of scattered information and hello to a streamlined, intuitive, and powerful job search experience.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Job searching can be overwhelming, with numerous applications to track and deadlines to meet. JobSeeker Assistant is here to simplify this process, allowing you to focus on what really matters: landing your job. JobSync app platform empowers you with the tools you need to stay organized, informed, and proactive throughout your job search.
+
+![App Snapshot](./screenshots/jobsync-dashboard-screenshot.png?raw=true "App Snapshot Image")
+
+## Key Features
+- **Application Tracker:** Keep a detailed record of all your job applications, including company details, job titles, application dates, and current status.
+
+- **Activity Monitoring Dashboard:** Visualize your job search progress with an interactive dashboard that provides insights into your application activities, success rates, and upcoming tasks.
+
+- **Document Management (Coming Soon!):** Store and manage your resumes, cover letters, and other application-related documents in one convenient place.
+
+- **AI Assistant (Coming Soon!):** Leverage the power of AI to improve your resumes and cover letters. Get personalized job matching with scoring to identify the best opportunities tailored to your profile.
+
+
+## Free to Use and Self-Hosted
+JobSync Assistant is completely free to use and open source. Our commitment to providing a powerful job search management tool at no cost ensures that everyone has access to the resources they need. Additionally, JobSeeker Assistant is designed to be self-hosted, giving you full control over your data. By using Docker, you can easily set up and run JobSync Assistant on your own server, ensuring a secure and personalized experience.
+
+
+## Installation
+
+### Using Docker
+
+#### Step 1 - Clone repo
+* **Alternativey you can also download the source code using download link**
+
+```sh
+git clone https://github.com/Gsync/jobsync.git
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+#### Step 2 (Optional) - Change environment variables
+* **Alternativey you can also download the source code using download link**
+  
+#### 2.1 Generate auth secret (Optional) 
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+These methods will generate a random string that you can use as your AUTH_SECRET. Make sure to set this in your environment variables:
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+For example, add it to your .env local file:
 
-## Learn More
+```sh
+AUTH_SECRET="your_generated_secret"
+```
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
-
-## Generate auth secret 
-
-### For npm
+##### For npm
 
 ```sh
     npm exec auth secret
@@ -47,16 +56,35 @@ OR
     npx auth secret
 ```
 
-### Using the openssl command available on Linux and Mac OS X:
+##### Using the openssl command available on Linux and Mac OS X:
 
 ```sh
     openssl rand -base64 33
 ```
 
-These methods will generate a random string that you can use as your AUTH_SECRET. Make sure to set this in your environment variables:
+#### 2.2 Change username and password (Optional) 
 
-For example, add it to your .env local file:
+You can use default username (admin@example) and password (password123) or change it in the Dockerfile
+
+#### Step 3 - Build docker image and run container
+* **Please make sure you have <a href="https://www.docker.com">docker</a> installed, you dont need to know docker to be able to run the following command**
+* Please make sure you are in the root folder in your terminal
 
 ```sh
-AUTH_SECRET="your_generated_secret"
+docker compose up
 ```
+
+#### Step 4 - Access the app
+* **Open [http://localhost:3000](http://localhost:3000) with your browser to access the app.**
+* If you encounter port conflicts, please change it in the docker file
+
+### Thanks to the following libraries to make it easy to build apps
+
+- <a href="https://github.com/facebook/react">React</a>
+- <a href="https://github.com/vercel/next.js">Next</a>
+- <a href="https://github.com/shadcn-ui/ui">Shadcn</a>
+- <a href="https://github.com/prisma/prisma">Prisma</a>
+- <a href="https://github.com/tailwindlabs/tailwindcss">Tailwind</a>
+- <a href="https://github.com/ueberdosis/tiptap">Tiptap</a>
+- <a href="https://github.com/plouc/nivo">Nivo</a>
+- <a href="https://github.com/sqlite/sqlite">Sqlite</a>

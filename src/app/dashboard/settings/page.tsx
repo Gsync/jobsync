@@ -1,4 +1,4 @@
-import DisplaySettings from "@/components/DisplaySettings";
+import DisplaySettings from "@/components/settings/DisplaySettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React from "react";
 
