@@ -64,13 +64,13 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
         setEducationToEdit({ ...educationSection });
       },
     }));
-    const summarySection = resume.ResumeSections?.find(
+    const summarySection = resume?.ResumeSections?.find(
       (section) => section.sectionType === SectionType.SUMMARY
     );
-    const experienceSection = resume.ResumeSections?.find(
+    const experienceSection = resume?.ResumeSections?.find(
       (section) => section.sectionType === SectionType.EXPERIENCE
     );
-    const educationSection = resume.ResumeSections?.find(
+    const educationSection = resume?.ResumeSections?.find(
       (section) => section.sectionType === SectionType.EDUCATION
     );
     const resetExperienceToEdit = () => {
@@ -96,7 +96,7 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
               <DropdownMenuItem
                 className="cursor-pointer"
                 onClick={() => setContactInfoDialogOpen(true)}
-                disabled={!!resume.ContactInfo}
+                disabled={!!resume?.ContactInfo}
               >
                 Add Contact Info
               </DropdownMenuItem>
@@ -123,19 +123,19 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
           </DropdownMenuContent>
         </DropdownMenu>
         <AddContactInfo
-          resumeId={resume.id}
+          resumeId={resume?.id}
           dialogOpen={contactInfoDialogOpen}
           setDialogOpen={setContactInfoDialogOpen}
           contactInfoToEdit={contactInfoToEdit}
         />
         <AddResumeSummary
-          resumeId={resume.id}
+          resumeId={resume?.id}
           dialogOpen={summaryDialogOpen}
           setDialogOpen={setSummaryDialogOpen}
           summaryToEdit={summaryToEdit}
         />
         <AddExperience
-          resumeId={resume.id}
+          resumeId={resume?.id}
           sectionId={experienceSection?.id}
           dialogOpen={experienceDialogOpen}
           setDialogOpen={setExperienceDialogOpen}
@@ -143,7 +143,7 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
           resetExperienceToEdit={resetExperienceToEdit}
         />
         <AddEducation
-          resumeId={resume.id}
+          resumeId={resume?.id}
           sectionId={educationSection?.id}
           dialogOpen={educationDialogOpen}
           setDialogOpen={setEducationDialogOpen}

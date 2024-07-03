@@ -8,6 +8,7 @@ import { MY_JOBS_DATA } from "./data/myJobsData";
 import { addDays, format, subDays } from "date-fns";
 import { JOB_STATUSES } from "./data/jobStatusesData";
 import { JOB_SOURCES } from "./data/jobSourcesData";
+import { resumeData } from "./data/resumeData";
 
 export function getMockJobsList(
   page: number,
@@ -170,5 +171,18 @@ export function getMockJobSources(): Promise<any> {
   return new Promise((resolve) => {
     const data = JOB_SOURCES;
     resolve(data);
+  });
+}
+
+export function getMockResumeList(): Promise<any> {
+  return new Promise((resolve) => {
+    resolve({ data: resumeData, total: resumeData.length, success: true });
+  });
+}
+
+export function getMockResumeById(id: string): Promise<any> {
+  return new Promise((resolve) => {
+    const resume = resumeData.find((resume) => resume.id === id);
+    resolve(resume);
   });
 }

@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { APP_CONSTANTS } from "@/lib/constants";
 import Loading from "../Loading";
 import ResumeTable from "./ResumeTable";
+import { getMockResumeList } from "@/lib/mock.utils";
 
 function ActivitiesContainer() {
   const queryParams = useSearchParams();
@@ -26,10 +27,11 @@ function ActivitiesContainer() {
   const loadResumes = useCallback(
     async (page: number) => {
       setLoading(true);
-      const { data, total, success } = await getResumeList(
-        page,
-        recordsPerPage
-      );
+      // const { data, total, success } = await getResumeList(
+      //   page,
+      //   recordsPerPage
+      // );
+      const { data, total, success } = await getMockResumeList();
       setResumes(data);
       setTotalResumes(total);
       if (success) {
