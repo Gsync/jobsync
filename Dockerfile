@@ -30,8 +30,8 @@ ENV NEXT_TELEMETRY_DISABLED 1
 ENV DATABASE_URL=file:/data/dev.db
 
 # Add the wait script to ensure the database is ready before running migrations
-ADD https://github.com/ufoscout/docker-compose-wait/releases/download/2.9.0/wait /wait
-RUN chmod +x /wait
+# ADD https://github.com/ufoscout/docker-compose-wait/releases/download/2.9.0/wait /wait
+# RUN chmod +x /wait
 
 # Generate Prisma client
 RUN npx prisma generate
