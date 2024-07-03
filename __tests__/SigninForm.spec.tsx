@@ -3,7 +3,6 @@ import SigninForm from "@/components/auth/SigninForm";
 import "@testing-library/jest-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useRouter } from "next/navigation";
-import React from "react";
 
 // Mock the external dependencies
 jest.mock("@/actions/auth.actions", () => ({

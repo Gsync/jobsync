@@ -75,11 +75,11 @@ function AddCompany({
       const res = editCompany
         ? await updateCompany(data)
         : await addCompany(data);
-      if (!res.success) {
+      if (!res?.success) {
         toast({
           variant: "destructive",
           title: "Error!",
-          description: res.message,
+          description: res?.message,
         });
       } else {
         reset();
@@ -97,7 +97,12 @@ function AddCompany({
 
   return (
     <>
-      <Button size="sm" className="h-8 gap-1" onClick={addCompanyForm}>
+      <Button
+        size="sm"
+        className="h-8 gap-1"
+        onClick={addCompanyForm}
+        data-testid="add-company-btn"
+      >
         <PlusCircle className="h-3.5 w-3.5" />
         <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
           Add Company
