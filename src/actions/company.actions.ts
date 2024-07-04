@@ -62,7 +62,9 @@ export const getCompanyList = async (
   } catch (error) {
     const msg = "Failed to fetch company list. ";
     console.error(msg, error);
-    throw new Error(msg);
+    if (error instanceof Error) {
+      return { success: false, message: error.message };
+    }
   }
 };
 
@@ -83,7 +85,9 @@ export const getAllCompanies = async (): Promise<any | undefined> => {
   } catch (error) {
     const msg = "Failed to fetch all companies. ";
     console.error(msg, error);
-    throw new Error(msg);
+    if (error instanceof Error) {
+      return { success: false, message: error.message };
+    }
   }
 };
 
@@ -192,7 +196,7 @@ export const getCompanyById = async (
       throw new Error("Not authenticated");
     }
 
-    const company = prisma.company.findUnique({
+    const company = await prisma.company.findUnique({
       where: {
         id: companyId,
       },
@@ -200,7 +204,9 @@ export const getCompanyById = async (
     return company;
   } catch (error) {
     const msg = "Failed to fetch company by Id. ";
-    console.error(msg, error);
-    throw new Error(msg);
+    console.error(msg);
+    if (error instanceof Error) {
+      return { success: false, message: error.message };
+    }
   }
 };

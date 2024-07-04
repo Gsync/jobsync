@@ -83,7 +83,19 @@ function JobsContainer({
   const loadJobs = useCallback(
     async (page: number, filter?: string) => {
       setLoading(true);
-      const { data, total } = await getJobsList(page, jobsPerPage, filter);
+      const { success, data, total, message } = await getJobsList(
+        page,
+        jobsPerPage,
+        filter
+      );
+      if (!success) {
+        toast({
+          variant: "destructive",
+          title: "Error!",
+          description: message,
+        });
+        return;
+      }
       setJobs(data);
       setTotalJobs(total);
       if (data) {
@@ -109,7 +121,15 @@ function JobsContainer({
   };
 
   const onEditJob = async (jobId: string) => {
-    const job = await getJobDetails(jobId);
+    const { job, success, message } = await getJobDetails(jobId);
+    if (!success) {
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description: message,
+      });
+      return;
+    }
     setEditJob(job);
   };
 

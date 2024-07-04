@@ -12,7 +12,9 @@ export const getStatusList = async (): Promise<any | undefined> => {
   } catch (error) {
     const msg = "Failed to fetch status list. ";
     console.error(msg, error);
-    throw new Error(msg);
+    if (error instanceof Error) {
+      return { success: false, message: error.message };
+    }
   }
 };
 
@@ -23,7 +25,9 @@ export const getJobSourceList = async (): Promise<any | undefined> => {
   } catch (error) {
     const msg = "Failed to fetch job source list. ";
     console.error(msg, error);
-    throw new Error(msg);
+    if (error instanceof Error) {
+      return { success: false, message: error.message };
+    }
   }
 };
 
@@ -78,11 +82,13 @@ export const getJobsList = async (
         },
       }),
     ]);
-    return { data, total };
+    return { success: true, data, total };
   } catch (error) {
     const msg = "Failed to fetch jobs list. ";
     console.error(msg, error);
-    throw new Error(msg);
+    if (error instanceof Error) {
+      return { success: false, message: error.message };
+    }
   }
 };
 
@@ -99,7 +105,7 @@ export const getJobDetails = async (
       throw new Error("Not authenticated");
     }
 
-    const job = prisma.job.findUnique({
+    const job = await prisma.job.findUnique({
       where: {
         id: jobId,
       },
@@ -111,11 +117,13 @@ export const getJobDetails = async (
         Location: true,
       },
     });
-    return job;
+    return { job, success: true };
   } catch (error) {
     const msg = "Failed to fetch job details. ";
     console.error(msg, error);
-    throw new Error(msg);
+    if (error instanceof Error) {
+      return { success: false, message: error.message };
+    }
   }
 };
 
