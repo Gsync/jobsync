@@ -110,11 +110,17 @@ function JobsContainer({
   };
 
   const onDeleteJob = async (jobId: string) => {
-    const res = await deleteJobById(jobId);
-    if (res) {
+    const { res, success, message } = await deleteJobById(jobId);
+    if (success) {
       toast({
         variant: "success",
         description: `Job has been deleted successfully`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description: message,
       });
     }
     reloadJobs();
@@ -134,11 +140,17 @@ function JobsContainer({
   };
 
   const onChangeJobStatus = async (jobId: string, jobStatus: JobStatus) => {
-    const job = await updateJobStatus(jobId, jobStatus);
-    if (job) {
+    const { success, message } = await updateJobStatus(jobId, jobStatus);
+    if (success) {
       toast({
         variant: "success",
         description: `Job has been updated successfully`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description: message,
       });
     }
     reloadJobs();

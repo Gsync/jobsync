@@ -33,3 +33,10 @@ export function formatUrl(url: string) {
   }
   return url;
 }
+
+export function handleError(error: unknown, msg = "Server Error.") {
+  console.error(error, msg);
+  if (error instanceof Error) {
+    return { success: false, message: error.message || msg };
+  }
+}

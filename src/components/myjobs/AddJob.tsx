@@ -108,10 +108,19 @@ export function AddJob({
 
   function onSubmit(data: z.infer<typeof AddJobFormSchema>) {
     startTransition(async () => {
-      const res = editJob ? await updateJob(data) : await addJob(data);
+      const { success, message } = editJob
+        ? await updateJob(data)
+        : await addJob(data);
       reset();
       setDialogOpen(false);
       // reloadJobs();
+      if (!success) {
+        toast({
+          variant: "destructive",
+          title: "Error!",
+          description: message,
+        });
+      }
       redirect("/dashboard/myjobs");
     });
     toast({
