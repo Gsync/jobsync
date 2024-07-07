@@ -70,14 +70,17 @@ export default async function Dashboard() {
         <ActivityCalendar data={activityCalendarData} />
       </div>
       <div className="flex flex-col items-start col-span-3">
-        <Card>
+        <Card className="p-2 w-[100%]">
           <CardContent>
             Souce Code:{" "}
             <a href="https://github.com/Gsync/jobsync" target="_blank">
               https://github.com/Gsync/jobsync
             </a>
           </CardContent>
-          <CardFooter>Note: Data is randomly generated mock data</CardFooter>
+          <CardFooter>
+            Note: Data is randomly generated mock data, For a real experience
+            please install app using the github link
+          </CardFooter>
         </Card>
       </div>
     </>
