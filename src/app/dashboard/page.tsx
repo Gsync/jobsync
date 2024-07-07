@@ -38,7 +38,7 @@ export default async function Dashboard() {
     getRandomInt(5, 15),
     getRandomInt(20, 60),
     getMockRecentJobs(),
-    getMockJobActivityData(7, 0.3, "PP"),
+    getMockJobActivityData(7, 0.3, "MMM-dd"),
     getMockJobActivityData(180),
   ]);
   return (
