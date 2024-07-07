@@ -1,13 +1,7 @@
 import { addCompany, updateCompany } from "@/actions/company.actions";
 import AddCompany from "@/components/admin/AddCompany";
 import "@testing-library/jest-dom";
-import {
-  screen,
-  render,
-  waitFor,
-  fireEvent,
-  act,
-} from "@testing-library/react";
+import { screen, render, waitFor, fireEvent } from "@testing-library/react";
 
 jest.mock("@/actions/company.actions", () => ({
   addCompany: jest.fn(),

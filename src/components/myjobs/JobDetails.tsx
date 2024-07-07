@@ -15,6 +15,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { Badge } from "../ui/badge";
 import { cn, formatUrl } from "@/lib/utils";
 import { JobResponse } from "@/models/job.model";
+import { toast } from "../ui/use-toast";
 
 function JobDetails({ jobId }: { jobId: string }) {
   const [job, setJob] = useState<JobResponse>();
@@ -25,9 +26,16 @@ function JobDetails({ jobId }: { jobId: string }) {
   });
   useEffect(() => {
     const getJob = async (id: string) => {
-      const res = await getJobDetails(id);
-      editor?.commands.setContent(res.description);
-      setJob(res);
+      const { job, success, message } = await getJobDetails(id);
+      if (!success) {
+        return toast({
+          variant: "destructive",
+          title: "Error!",
+          description: message,
+        });
+      }
+      editor?.commands.setContent(job.description);
+      setJob(job);
     };
     getJob(jobId);
   }, [jobId, editor]);

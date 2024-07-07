@@ -50,7 +50,6 @@ type AddJobProps = {
   jobTitles: JobTitle[];
   locations: JobLocation[];
   jobSources: JobSource[];
-  reloadJobs: () => void;
   editJob?: JobResponse | null;
   resetEditJob: () => void;
 };
@@ -61,7 +60,6 @@ export function AddJob({
   jobTitles,
   locations,
   jobSources,
-  reloadJobs,
   editJob,
   resetEditJob,
 }: AddJobProps) {
@@ -113,7 +111,6 @@ export function AddJob({
         : await addJob(data);
       reset();
       setDialogOpen(false);
-      // reloadJobs();
       if (!success) {
         toast({
           variant: "destructive",
@@ -153,18 +150,24 @@ export function AddJob({
 
   return (
     <>
-      <Button size="sm" className="h-8 gap-1" onClick={addJobForm}>
+      <Button
+        size="sm"
+        className="h-8 gap-1"
+        onClick={addJobForm}
+        data-testid="add-job-btn"
+      >
         <PlusCircle className="h-3.5 w-3.5" />
         <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
           Add Job
         </span>
       </Button>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        {/* <DialogTrigger asChild></DialogTrigger> */}
         <DialogOverlay>
           <DialogContent className="h-full xl:h-[85vh] lg:h-[95vh] lg:max-w-screen-lg lg:max-h-screen overflow-y-scroll">
             <DialogHeader>
-              <DialogTitle>{pageTitle}</DialogTitle>
+              <DialogTitle data-testid="add-job-dialog-title">
+                {pageTitle}
+              </DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form
@@ -300,20 +303,27 @@ export function AddJob({
                 </div>
 
                 {/* Applied */}
-                <div className="flex items-center">
+                <div
+                  className="flex items-center"
+                  data-testid="switch-container"
+                >
                   <FormField
                     control={form.control}
                     name="applied"
                     render={({ field }) => (
                       <FormItem className="flex flex-row">
                         <Switch
+                          id="applied-switch"
                           checked={field.value}
                           onCheckedChange={(a) => {
                             field.onChange(a);
                             jobAppliedChange(a);
                           }}
                         />
-                        <FormLabel className="flex items-center ml-4 mb-2">
+                        <FormLabel
+                          htmlFor="applied-switch"
+                          className="flex items-center ml-4 mb-2"
+                        >
                           {field.value ? "Applied" : "Not Applied"}
                         </FormLabel>
 
@@ -431,7 +441,7 @@ export function AddJob({
                         Cancel
                       </Button>
                     </div>
-                    <Button type="submit">
+                    <Button type="submit" data-testid="save-job-btn">
                       Save
                       {isPending ? (
                         <Loader className="h-4 w-4 shrink-0 spinner" />

@@ -209,7 +209,6 @@ function JobsContainer({
                 jobTitles={titles}
                 locations={locations}
                 jobSources={sources}
-                reloadJobs={reloadJobs}
                 editJob={editJob}
                 resetEditJob={resetEditJob}
               />
