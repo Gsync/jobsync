@@ -5,7 +5,7 @@ import { format } from "date-fns";
 
 export default function RecentJobsCard({ jobs }: { jobs: JobResponse[] }) {
   return (
-    <Card>
+    <Card className="mb-2">
       <CardHeader>
         <CardTitle>Recent Jobs Applied</CardTitle>
       </CardHeader>

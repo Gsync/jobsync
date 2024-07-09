@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 export default function WeeklyBarChart({ data }: { data: any[] }) {
   return (
-    <Card>
+    <Card className="mb-2 lg:mb-0">
       <CardHeader className="pb-2">
         <CardTitle>Weekly Activity</CardTitle>
       </CardHeader>
