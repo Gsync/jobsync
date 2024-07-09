@@ -89,7 +89,11 @@ const Tiptap = ({ field }: { field: ControllerRenderProps<any, any> }) => {
           </Toggle>
         </div>
       )}
-      <EditorContent placeholder="enter here..." editor={editor} />
+      <EditorContent
+        aria-labelledby="job-description-label"
+        placeholder="enter here..."
+        editor={editor}
+      />
     </div>
   );
 };
