@@ -20,7 +20,7 @@ function ResumeContainer({ resume }: { resume: Resume }) {
     (section) => section.sectionType === SectionType.EDUCATION
   );
   const openContactInfoDialog = () => {
-    resumeSectionRef.current?.openContactInfoDialog(resume.ContactInfo!);
+    resumeSectionRef.current?.openContactInfoDialog(resume?.ContactInfo!);
   };
   const openSummaryDialogForEdit = () => {
     resumeSectionRef.current?.openSummaryDialog(summarySection!);

@@ -1,5 +1,6 @@
 "use server";
 import prisma from "@/lib/db";
+import { handleError } from "@/lib/utils";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
 import { JobStatus } from "@/models/job.model";
 import { getCurrentUser } from "@/utils/user.utils";
@@ -11,8 +12,7 @@ export const getStatusList = async (): Promise<any | undefined> => {
     return statuses;
   } catch (error) {
     const msg = "Failed to fetch status list. ";
-    console.error(msg, error);
-    throw new Error(msg);
+    return handleError(error, msg);
   }
 };
 
@@ -22,8 +22,7 @@ export const getJobSourceList = async (): Promise<any | undefined> => {
     return list;
   } catch (error) {
     const msg = "Failed to fetch job source list. ";
-    console.error(msg, error);
-    throw new Error(msg);
+    return handleError(error, msg);
   }
 };
 
@@ -78,11 +77,10 @@ export const getJobsList = async (
         },
       }),
     ]);
-    return { data, total };
+    return { success: true, data, total };
   } catch (error) {
     const msg = "Failed to fetch jobs list. ";
-    console.error(msg, error);
-    throw new Error(msg);
+    return handleError(error, msg);
   }
 };
 
@@ -99,7 +97,7 @@ export const getJobDetails = async (
       throw new Error("Not authenticated");
     }
 
-    const job = prisma.job.findUnique({
+    const job = await prisma.job.findUnique({
       where: {
         id: jobId,
       },
@@ -111,11 +109,10 @@ export const getJobDetails = async (
         Location: true,
       },
     });
-    return job;
+    return { job, success: true };
   } catch (error) {
     const msg = "Failed to fetch job details. ";
-    console.error(msg, error);
-    throw new Error(msg);
+    return handleError(error, msg);
   }
 };
 
@@ -131,15 +128,18 @@ export const createLocation = async (
 
     const value = label.trim().toLowerCase();
 
+    if (!value) {
+      throw new Error("Please provide location name");
+    }
+
     const location = await prisma.location.create({
       data: { label, value, createdBy: user.id },
     });
 
-    return location;
+    return { data: location, success: true };
   } catch (error) {
     const msg = "Failed to create job location. ";
-    console.error(msg, error);
-    throw new Error(msg);
+    return handleError(error, msg);
   }
 };
 
@@ -187,11 +187,10 @@ export const addJob = async (
       },
     });
 
-    return job;
+    return { job, success: true };
   } catch (error) {
     const msg = "Failed to create job. ";
-    console.error(msg, error);
-    throw new Error(msg);
+    return handleError(error, msg);
   }
 };
 
@@ -245,11 +244,10 @@ export const updateJob = async (
       },
     });
 
-    return job;
+    return { job, success: true };
   } catch (error) {
     const msg = "Failed to update job. ";
-    console.error(msg, error);
-    throw new Error(msg);
+    return handleError(error, msg);
   }
 };
 
@@ -283,18 +281,17 @@ export const updateJobStatus = async (
       }
     };
 
-    const job = prisma.job.update({
+    const job = await prisma.job.update({
       where: {
         id: jobId,
         userId: user.id,
       },
       data: dataToUpdate(),
     });
-    return job;
+    return { job, success: true };
   } catch (error) {
     const msg = "Failed to update job status.";
-    console.error(msg, error);
-    throw new Error(msg);
+    return handleError(error, msg);
   }
 };
 
@@ -308,16 +305,15 @@ export const deleteJobById = async (
       throw new Error("Not authenticated");
     }
 
-    const res = prisma.job.delete({
+    const res = await prisma.job.delete({
       where: {
         id: jobId,
         userId: user.id,
       },
     });
-    return res;
+    return { res, success: true };
   } catch (error) {
     const msg = "Failed to delete job.";
-    console.error(msg, error);
-    throw new Error(msg);
+    return handleError(error, msg);
   }
 };

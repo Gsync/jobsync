@@ -14,7 +14,12 @@ export function getMockJobsList(
   page: number,
   jobsPerPage: number,
   filter?: string
-): Promise<{ data: JobResponse[]; total: number }> {
+): Promise<{
+  data: JobResponse[];
+  total: number;
+  success: boolean;
+  message?: string;
+}> {
   return new Promise((resolve) => {
     // Filter data by status
     const filteredData = filter
@@ -28,7 +33,11 @@ export function getMockJobsList(
     // Slice the data for the current page
     const paginatedData = filteredData.slice(startIndex, endIndex);
 
-    resolve({ data: paginatedData, total: paginatedData.length });
+    resolve({
+      data: paginatedData,
+      total: paginatedData.length,
+      success: true,
+    });
   });
 }
 
@@ -37,7 +46,7 @@ export function getMockJobDetails(id: string): Promise<any> {
     // Find the job with the given id
     const job = MY_JOBS_DATA.data.find((job) => job.id === id);
 
-    resolve(job);
+    resolve({ job, success: true });
   });
 }
 

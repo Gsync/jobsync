@@ -2,7 +2,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useFormStatus } from "react-dom";
 import { authenticate } from "@/actions/auth.actions";
 import {
   Form,
@@ -14,11 +13,14 @@ import {
 } from "@/components/ui/form";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { SigninFormSchema } from "@/models/signinForm.schema";
+import Loading from "../Loading";
 
 function SigninForm() {
+  const [isPending, startTransition] = useTransition();
+
   const form = useForm<z.infer<typeof SigninFormSchema>>({
     resolver: zodResolver(SigninFormSchema),
     mode: "onChange",
@@ -27,18 +29,18 @@ function SigninForm() {
   const [errorMessage, setError] = useState("");
   const router = useRouter();
 
-  const { pending } = useFormStatus();
-
-  const onSubmit = async (data: z.infer<typeof SigninFormSchema>) => {
-    const formData = new FormData();
-    formData.set("email", data.email);
-    formData.set("password", data.password);
-    const errorResponse = await authenticate("", formData);
-    if (!!errorResponse) {
-      setError(errorResponse);
-    } else {
-      router.push("/dashboard");
-    }
+  const onSubmit = (data: z.infer<typeof SigninFormSchema>) => {
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.set("email", data.email);
+      formData.set("password", data.password);
+      const errorResponse = await authenticate("", formData);
+      if (!!errorResponse) {
+        setError(errorResponse);
+      } else {
+        router.push("/dashboard");
+      }
+    });
   };
 
   return (
@@ -90,8 +92,8 @@ function SigninForm() {
               {/* </div> */}
               {/* <Input id="password" type="password" required /> */}
             </div>
-            <Button type="submit" aria-disabled={pending} className="w-full">
-              Login
+            <Button type="submit" disabled={isPending} className="w-full">
+              {isPending ? <Loading /> : "Login"}
             </Button>
             <div
               className="flex h-8 items-end space-x-1"

@@ -13,11 +13,6 @@ jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
 }));
 
-jest.mock("react-dom", () => ({
-  ...jest.requireActual("react-dom"),
-  useFormStatus: () => ({ pending: false }),
-}));
-
 describe("SigninForm Component", () => {
   const mockPush = jest.fn();
 

@@ -16,6 +16,7 @@ import { Badge } from "../ui/badge";
 import { cn, formatUrl } from "@/lib/utils";
 import { JobResponse } from "@/models/job.model";
 import { getMockJobDetails } from "@/lib/mock.utils";
+import { toast } from "../ui/use-toast";
 
 function JobDetails({ jobId }: { jobId: string }) {
   const [job, setJob] = useState<JobResponse>();
@@ -26,10 +27,19 @@ function JobDetails({ jobId }: { jobId: string }) {
   });
   useEffect(() => {
     const getJob = async (id: string) => {
-      // const res = await getJobDetails(id);
-      const res = await getMockJobDetails(id);
-      editor?.commands.setContent(res.description);
-      setJob(res);
+      // const { job, success, message } = await getJobDetails(id);
+      const { job, success, message } = await getMockJobDetails(id);
+      editor?.commands.setContent(job.description);
+      setJob(job);
+      if (!success) {
+        return toast({
+          variant: "destructive",
+          title: "Error!",
+          description: message,
+        });
+      }
+      editor?.commands.setContent(job.description);
+      setJob(job);
     };
     getJob(jobId);
   }, [jobId, editor]);

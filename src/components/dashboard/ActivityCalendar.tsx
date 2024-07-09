@@ -23,7 +23,7 @@ export default function ActivityCalendar({ data }: { data: any[] }) {
           emptyColor={resolvedTheme === "light" ? "#eeeeee" : "#30363d"}
           colors={["#90e0ef", "#48cae4", "#00b4d8", "#0096c7", "#0077b6"]}
           minValue={2}
-          margin={{ top: 25, right: 40, bottom: 40, left: 0 }}
+          margin={{ top: 20, right: 0, bottom: 20, left: 0 }}
           yearSpacing={40}
           monthBorderColor={borderColor}
           dayBorderWidth={2}

@@ -85,8 +85,24 @@ function JobsContainer({
   const loadJobs = useCallback(
     async (page: number, filter?: string) => {
       setLoading(true);
-      // const { data, total } = await getJobsList(page, jobsPerPage, filter);
-      const { data, total } = await getMockJobsList(page, jobsPerPage, filter);
+      // const { success, data, total, message } = await getJobsList(
+      //   page,
+      //   jobsPerPage,
+      //   filter
+      // );
+      const { data, total, success, message } = await getMockJobsList(
+        page,
+        jobsPerPage,
+        filter
+      );
+      if (!success) {
+        toast({
+          variant: "destructive",
+          title: "Error!",
+          description: message,
+        });
+        return;
+      }
       setJobs(data);
       setTotalJobs(total);
       if (data) {
@@ -101,27 +117,47 @@ function JobsContainer({
   };
 
   const onDeleteJob = async (jobId: string) => {
-    const res = await deleteJobById(jobId);
-    if (res) {
+    const { res, success, message } = await deleteJobById(jobId);
+    if (success) {
       toast({
         variant: "success",
         description: `Job has been deleted successfully`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description: message,
       });
     }
     reloadJobs();
   };
 
   const onEditJob = async (jobId: string) => {
-    const job = await getJobDetails(jobId);
+    const { job, success, message } = await getJobDetails(jobId);
+    if (!success) {
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description: message,
+      });
+      return;
+    }
     setEditJob(job);
   };
 
   const onChangeJobStatus = async (jobId: string, jobStatus: JobStatus) => {
-    const job = await updateJobStatus(jobId, jobStatus);
-    if (job) {
+    const { success, message } = await updateJobStatus(jobId, jobStatus);
+    if (success) {
       toast({
         variant: "success",
         description: `Job has been updated successfully`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description: message,
       });
     }
     reloadJobs();
@@ -180,7 +216,6 @@ function JobsContainer({
                 jobTitles={titles}
                 locations={locations}
                 jobSources={sources}
-                reloadJobs={reloadJobs}
                 editJob={editJob}
                 resetEditJob={resetEditJob}
               />

@@ -134,8 +134,8 @@ export const getActivityCalendarData = async (): Promise<any | undefined> => {
       throw new Error("Not authenticated");
     }
     const today = new Date();
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(today.getDate() - 7);
+    const daysAgo = new Date();
+    daysAgo.setDate(today.getDate() - 356);
     const jobData = await prisma.job.groupBy({
       by: "appliedDate",
       _count: {
@@ -145,7 +145,7 @@ export const getActivityCalendarData = async (): Promise<any | undefined> => {
         userId: user.id,
         applied: true,
         appliedDate: {
-          gte: sevenDaysAgo,
+          gte: daysAgo, // A year of data
           lte: today,
         },
       },

@@ -77,7 +77,6 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
       setExperienceToEdit(null);
     };
     const resetEducationToEdit = () => {
-      console.log("RESET EDUCTION TO EDIT");
       setEducationToEdit(null);
     };
     return (

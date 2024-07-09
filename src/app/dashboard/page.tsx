@@ -70,7 +70,7 @@ export default async function Dashboard() {
         <ActivityCalendar data={activityCalendarData} />
       </div>
       <div className="flex flex-col items-start col-span-3">
-        <Card className="p-2 w-[100%]">
+        <Card className="mt-2 p-2 w-[100%]">
           <CardContent>
             Souce Code:{" "}
             <a href="https://github.com/Gsync/jobsync" target="_blank">

@@ -7,8 +7,8 @@ import {
 } from "@/actions/company.actions";
 import { getCurrentUser } from "@/utils/user.utils";
 import { revalidatePath } from "next/cache";
+import { PrismaClient } from "@prisma/client";
 
-const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 // Mock the Prisma Client
@@ -72,9 +72,10 @@ describe("Company Actions", () => {
     it("should throw an error for unauthenticated user", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(null);
 
-      await expect(getCompanyList(1, 10)).rejects.toThrow(
-        "Failed to fetch company list. "
-      );
+      await expect(getCompanyList(1, 10)).resolves.toStrictEqual({
+        success: false,
+        message: "Not authenticated",
+      });
 
       expect(prisma.company.findMany).not.toHaveBeenCalled();
       expect(prisma.company.count).not.toHaveBeenCalled();
@@ -131,9 +132,10 @@ describe("Company Actions", () => {
         new Error("Database error")
       );
 
-      await expect(getCompanyList(1, 10)).rejects.toThrow(
-        "Failed to fetch company list. "
-      );
+      await expect(getCompanyList(1, 10)).resolves.toStrictEqual({
+        success: false,
+        message: "Database error",
+      });
 
       expect(prisma.company.findMany).not.toHaveBeenCalled();
       expect(prisma.company.count).not.toHaveBeenCalled();
@@ -161,23 +163,23 @@ describe("Company Actions", () => {
     it("should throw an error for unauthenticated user", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(null);
 
-      await expect(getAllCompanies()).rejects.toThrow(
-        "Failed to fetch all companies. "
-      );
+      await expect(getAllCompanies()).resolves.toStrictEqual({
+        success: false,
+        message: "Not authenticated",
+      });
 
       expect(prisma.company.findMany).not.toHaveBeenCalled();
     });
 
-    it("should handle errors", async () => {
+    it("should handle unexpected errors", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
       (prisma.company.findMany as jest.Mock).mockRejectedValue(
-        new Error("Database error")
+        new Error("Unexpected error")
       );
 
-      await expect(getAllCompanies()).rejects.toThrow(
-        "Failed to fetch all companies. "
-      );
+      const result = await getAllCompanies();
 
+      expect(result).toEqual({ success: false, message: "Unexpected error" });
       expect(prisma.company.findMany).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
       });
@@ -381,9 +383,10 @@ describe("Company Actions", () => {
     });
 
     it("should throw error when companyId is not provided", async () => {
-      await expect(getCompanyById("")).rejects.toThrow(
-        "Failed to fetch company by Id. "
-      );
+      await expect(getCompanyById("")).resolves.toStrictEqual({
+        success: false,
+        message: "Please provide company id",
+      });
 
       expect(prisma.company.findUnique).not.toHaveBeenCalled();
     });
@@ -391,11 +394,28 @@ describe("Company Actions", () => {
     it("should throw error when user is not authenticated", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(null);
 
-      await expect(getCompanyById(mockCompanyId)).rejects.toThrow(
-        "Failed to fetch company by Id. "
-      );
+      await expect(getCompanyById(mockCompanyId)).resolves.toStrictEqual({
+        success: false,
+        message: "Not authenticated",
+      });
 
       expect(prisma.company.findUnique).not.toHaveBeenCalled();
+    });
+
+    it("should handle unexpected errors", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (prisma.company.findUnique as jest.Mock).mockRejectedValue(
+        new Error("Unexpected error")
+      );
+
+      await expect(getCompanyById(mockCompanyId)).resolves.toStrictEqual({
+        success: false,
+        message: "Unexpected error",
+      });
+
+      expect(prisma.company.findUnique).toHaveBeenCalledWith({
+        where: { id: mockCompanyId },
+      });
     });
   });
 });

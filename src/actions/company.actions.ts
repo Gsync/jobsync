@@ -1,5 +1,6 @@
 "use server";
 import prisma from "@/lib/db";
+import { handleError } from "@/lib/utils";
 import { AddCompanyFormSchema } from "@/models/addCompanyForm.schema";
 import { getCurrentUser } from "@/utils/user.utils";
 import { revalidatePath } from "next/cache";
@@ -61,8 +62,7 @@ export const getCompanyList = async (
     return { data, total };
   } catch (error) {
     const msg = "Failed to fetch company list. ";
-    console.error(msg, error);
-    throw new Error(msg);
+    return handleError(error, msg);
   }
 };
 
@@ -82,8 +82,7 @@ export const getAllCompanies = async (): Promise<any | undefined> => {
     return comapnies;
   } catch (error) {
     const msg = "Failed to fetch all companies. ";
-    console.error(msg, error);
-    throw new Error(msg);
+    return handleError(error, msg);
   }
 };
 
@@ -123,10 +122,7 @@ export const addCompany = async (
     return { success: true, data: res };
   } catch (error) {
     const msg = "Failed to create company.";
-    console.error(msg, error);
-    if (error instanceof Error) {
-      return { success: false, message: error.message };
-    }
+    return handleError(error, msg);
   }
 };
 
@@ -172,10 +168,7 @@ export const updateCompany = async (
     return { success: true, data: res };
   } catch (error) {
     const msg = "Failed to update company.";
-    console.error(msg, error);
-    if (error instanceof Error) {
-      return { success: false, message: error.message };
-    }
+    return handleError(error, msg);
   }
 };
 
@@ -192,7 +185,7 @@ export const getCompanyById = async (
       throw new Error("Not authenticated");
     }
 
-    const company = prisma.company.findUnique({
+    const company = await prisma.company.findUnique({
       where: {
         id: companyId,
       },
@@ -200,7 +193,9 @@ export const getCompanyById = async (
     return company;
   } catch (error) {
     const msg = "Failed to fetch company by Id. ";
-    console.error(msg, error);
-    throw new Error(msg);
+    console.error(msg);
+    if (error instanceof Error) {
+      return { success: false, message: error.message };
+    }
   }
 };

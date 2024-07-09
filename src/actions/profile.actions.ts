@@ -1,5 +1,6 @@
 "use server";
 import prisma from "@/lib/db";
+import { handleError } from "@/lib/utils";
 import { AddEducationFormSchema } from "@/models/AddEductionForm.schema";
 import { AddContactInfoFormSchema } from "@/models/addContactInfoForm.schema";
 import { AddExperienceFormSchema } from "@/models/addExperienceForm.schema";
@@ -46,10 +47,7 @@ export const getResumeList = async (
     return { data, total, success: true };
   } catch (error) {
     const msg = "Failed to get resume list.";
-    console.error(msg, error);
-    if (error instanceof Error) {
-      return { success: false, message: error.message };
-    }
+    return handleError(error, msg);
   }
 };
 
@@ -94,10 +92,7 @@ export const getResumeById = async (
     return resume;
   } catch (error) {
     const msg = "Failed to get resume.";
-    console.error(msg, error);
-    if (error instanceof Error) {
-      return { success: false, message: error.message };
-    }
+    return handleError(error, msg);
   }
 };
 
@@ -135,10 +130,7 @@ export const addContactInfo = async (
     return { data: res, success: true };
   } catch (error) {
     const msg = "Failed to create contact info.";
-    console.error(msg, error);
-    if (error instanceof Error) {
-      return { success: false, message: error.message };
-    }
+    return handleError(error, msg);
   }
 };
 
@@ -169,10 +161,7 @@ export const updateContactInfo = async (
     return { data: res, success: true };
   } catch (error) {
     const msg = "Failed to update contact info.";
-    console.error(msg, error);
-    if (error instanceof Error) {
-      return { success: false, message: error.message };
-    }
+    return handleError(error, msg);
   }
 };
 
@@ -218,10 +207,7 @@ export const createResumeProfile = async (
     return { success: true, data: res };
   } catch (error) {
     const msg = "Failed to create resume.";
-    console.error(msg, error);
-    if (error instanceof Error) {
-      return { success: false, message: error.message };
-    }
+    return handleError(error, msg);
   }
 };
 
@@ -249,10 +235,7 @@ export const editResume = async (
     return { success: true, data: res };
   } catch (error) {
     const msg = "Failed to update resume.";
-    console.error(msg, error);
-    if (error instanceof Error) {
-      return { success: false, message: error.message };
-    }
+    return handleError(error, msg);
   }
 };
 
@@ -289,10 +272,7 @@ export const addResumeSummary = async (
     return { data: summary, success: true };
   } catch (error) {
     const msg = "Failed to create summary.";
-    console.error(msg, error);
-    if (error instanceof Error) {
-      return { success: false, message: error.message };
-    }
+    return handleError(error, msg);
   }
 };
 
@@ -330,10 +310,7 @@ export const updateResumeSummary = async (
     return { data: summary, success: true };
   } catch (error) {
     const msg = "Failed to update summary.";
-    console.error(msg, error);
-    if (error instanceof Error) {
-      return { success: false, message: error.message };
-    }
+    return handleError(error, msg);
   }
 };
 
@@ -377,10 +354,7 @@ export const addExperience = async (
     return { data: experience, success: true };
   } catch (error) {
     const msg = "Failed to create experience.";
-    console.error(msg, error);
-    if (error instanceof Error) {
-      return { success: false, message: error.message };
-    }
+    return handleError(error, msg);
   }
 };
 
@@ -419,10 +393,7 @@ export const updateExperience = async (
     return { data: summary, success: true };
   } catch (error) {
     const msg = "Failed to update experience.";
-    console.error(msg, error);
-    if (error instanceof Error) {
-      return { success: false, message: error.message };
-    }
+    return handleError(error, msg);
   }
 };
 
@@ -467,10 +438,7 @@ export const addEducation = async (
     return { data: education, success: true };
   } catch (error) {
     const msg = "Failed to create education.";
-    console.error(msg, error);
-    if (error instanceof Error) {
-      return { success: false, message: error.message };
-    }
+    return handleError(error, msg);
   }
 };
 
@@ -510,9 +478,6 @@ export const updateEducation = async (
     return { data: summary, success: true };
   } catch (error) {
     const msg = "Failed to update education.";
-    console.error(msg, error);
-    if (error instanceof Error) {
-      return { success: false, message: error.message };
-    }
+    return handleError(error, msg);
   }
 };
