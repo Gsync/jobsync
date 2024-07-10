@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.4.2",
+    "@langchain/community": "^0.2.18",
+    "@langchain/openai": "^0.2.1",
     "@nivo/bar": "^0.87.0",
     "@nivo/calendar": "^0.87.0",
     "@nivo/core": "^0.87.0",
@@ -41,6 +43,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
+    "langchain": "^0.2.9",
     "lucide-react": "^0.379.0",
     "next": "14.2.3",
     "next-auth": "^5.0.0-beta.18",
