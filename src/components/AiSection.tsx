@@ -1,4 +1,5 @@
-import { PlusCircle } from "lucide-react";
+"use client";
+import { Sparkles } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   Sheet,
@@ -10,43 +11,101 @@ import {
   SheetTitle,
 } from "./ui/sheet";
 import Loading from "./Loading";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "./ui/use-toast";
 
 interface AiSectionProps {
-  aISectionOpen: boolean;
-  setAiSectionOpen: (o: boolean) => void;
   getAiResponse: () => void;
-  aIContent: string;
-  isPending: boolean;
 }
 
-const AiSection = ({
-  aISectionOpen,
-  setAiSectionOpen,
-  getAiResponse,
-  aIContent,
-  isPending,
-}: AiSectionProps) => {
+const AiSection = () => {
+  const [aIContent, setAIContent] = useState("");
+  const [aISectionOpen, setAiSectionOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+  let isStreaming = true;
+  const terminateStream = useCallback(() => {
+    if (reader) {
+      console.log("Stream terminated");
+      isStreaming = false;
+      reader
+        .cancel()
+        .catch((error) => console.error("Stream cancel error:", error));
+    }
+  }, [reader]);
+  useEffect(() => {
+    if (!aISectionOpen) {
+      setAIContent("");
+      terminateStream();
+    }
+  }, [aISectionOpen, terminateStream]);
+
+  const getResumeReview = async () => {
+    try {
+      setAiSectionOpen(true);
+      setLoading(true);
+
+      const response = await fetch("/api/ai", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        // body: JSON.stringify({ text: resume?.title }),
+      });
+
+      if (!response.body) {
+        setLoading(false);
+        throw new Error("No response body");
+      }
+
+      if (!response.ok) {
+        setLoading(false);
+        throw new Error(response.statusText);
+      }
+
+      reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      setLoading(false);
+
+      while (!done && isStreaming) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunk = decoder.decode(value, { stream: !done });
+        setAIContent((prev) => prev + chunk);
+      }
+    } catch (error) {
+      const message = "Error fetching resume review";
+      console.error(message, error);
+      const description = error instanceof Error ? error.message : message;
+      setLoading(false);
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description,
+      });
+    }
+  };
+
   return (
     <Sheet open={aISectionOpen} onOpenChange={setAiSectionOpen}>
       <div className="ml-2">
         <Button
           size="sm"
           className="h-8 gap-1 cursor-pointer"
-          onClick={getAiResponse}
-          disabled={isPending}
+          onClick={getResumeReview}
+          disabled={loading}
         >
-          <PlusCircle className="h-3.5 w-3.5" />
+          <Sparkles className="h-3.5 w-3.5" />
           <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
             Review
           </span>
         </Button>
       </div>
       <SheetPortal>
-        <SheetContent>
+        <SheetContent className="overflow-y-scroll">
           <SheetHeader>
             <SheetTitle>AI Review</SheetTitle>
             <SheetDescription>
-              {isPending ? (
+              {loading ? (
                 <div className="flex items-center flex-col">
                   <Loading />
                   <div>Loading...</div>

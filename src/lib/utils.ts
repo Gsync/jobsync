@@ -37,6 +37,10 @@ export function formatUrl(url: string) {
 export function handleError(error: unknown, msg = "Server Error.") {
   console.error(error, msg);
   if (error instanceof Error) {
+    if (error.message === "fetch failed") {
+      error.message =
+        "Fetch failed, please make sure selected AI service is running.";
+    }
     return { success: false, message: error.message || msg };
   }
 }
