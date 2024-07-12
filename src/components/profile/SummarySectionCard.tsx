@@ -1,12 +1,8 @@
-"use client";
-
 import { Edit } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { ResumeSection } from "@/models/profile.model";
-import { useEffect } from "react";
-import { EditorContent, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
+import { TipTapContentViewer } from "../TipTapContentViewer";
 
 interface SummarySectionCardProps {
   summarySection: ResumeSection | undefined;
@@ -17,14 +13,6 @@ function SummarySectionCard({
   summarySection,
   openDialogForEdit,
 }: SummarySectionCardProps) {
-  const editor = useEditor({
-    extensions: [StarterKit],
-    content: "",
-    editable: false,
-  });
-  useEffect(() => {
-    editor?.commands.setContent(summarySection?.summary?.content!);
-  });
   return (
     <>
       <Card>
@@ -43,7 +31,7 @@ function SummarySectionCard({
           </Button>
         </CardHeader>
         <CardContent>
-          <EditorContent editor={editor} />
+          <TipTapContentViewer content={summarySection?.summary?.content!} />
         </CardContent>
       </Card>
     </>

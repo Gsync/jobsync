@@ -10,8 +10,7 @@ import {
 import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
 import { format } from "date-fns";
-import { Editor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
+import { TipTapContentViewer } from "../TipTapContentViewer";
 
 interface ExperienceCardProps {
   experienceSection: ResumeSection | undefined;
@@ -52,18 +51,11 @@ function ExperienceCard({
               {experience.endDate
                 ? format(experience.endDate, "MMM yyyy")
                 : "Present"}
-              <div>{experience.location.label}</div>
+              <br />
+              {experience.location.label}
             </CardDescription>
             <div className="pt-2">
-              <EditorContent
-                editor={
-                  new Editor({
-                    extensions: [StarterKit],
-                    content: experience.description,
-                    editable: false,
-                  })
-                }
-              />
+              <TipTapContentViewer content={experience.description} />
             </div>
           </CardContent>
         </Card>

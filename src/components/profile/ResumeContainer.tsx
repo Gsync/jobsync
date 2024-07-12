@@ -53,7 +53,7 @@ function ResumeContainer({ resume }: { resume: Resume }) {
           <CardDescription>{resume?.title}</CardDescription>
           <div className="flex items-center">
             <AddResumeSection resume={resume} ref={resumeSectionRef} />
-            <AiSection />
+            <AiSection resume={resume} />
           </div>
         </CardHeader>
       </Card>

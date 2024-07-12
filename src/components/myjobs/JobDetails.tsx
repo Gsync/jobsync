@@ -10,20 +10,14 @@ import {
 } from "../ui/dialog";
 import { getJobDetails } from "@/actions/job.actions";
 import { format } from "date-fns";
-import { EditorContent, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import { Badge } from "../ui/badge";
 import { cn, formatUrl } from "@/lib/utils";
 import { JobResponse } from "@/models/job.model";
 import { toast } from "../ui/use-toast";
+import { TipTapContentViewer } from "../TipTapContentViewer";
 
 function JobDetails({ jobId }: { jobId: string }) {
   const [job, setJob] = useState<JobResponse>();
-  const editor = useEditor({
-    extensions: [StarterKit],
-    content: "",
-    editable: false, // Make it non-editable if you only want to display content
-  });
   useEffect(() => {
     const getJob = async (id: string) => {
       const { job, success, message } = await getJobDetails(id);
@@ -34,11 +28,10 @@ function JobDetails({ jobId }: { jobId: string }) {
           description: message,
         });
       }
-      editor?.commands.setContent(job.description);
       setJob(job);
     };
     getJob(jobId);
-  }, [jobId, editor]);
+  }, [jobId]);
 
   return (
     <>
@@ -82,11 +75,8 @@ function JobDetails({ jobId }: { jobId: string }) {
             </div>
           ) : null}
           <div className="my-4">
-            <EditorContent editor={editor} />
+            <TipTapContentViewer content={job?.description} />
           </div>
-          {/* <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-            <code className="text-white">{JSON.stringify(job, null, 2)}</code>
-          </pre> */}
           <DialogFooter>
             <DialogClose>
               <Button variant="outline" className="mt-2 md:mt-0 w-full">

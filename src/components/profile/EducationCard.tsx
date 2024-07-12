@@ -10,8 +10,7 @@ import {
 import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
 import { format } from "date-fns";
-import { Editor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
+import { TipTapContentViewer } from "../TipTapContentViewer";
 
 interface EducationCardProps {
   educationSection: ResumeSection | undefined;
@@ -54,19 +53,12 @@ function EducationCard({
               {education.endDate
                 ? format(education.endDate, "MMM yyyy")
                 : "Present"}
-              <div>{education.location.label}</div>
+              <br />
+              {education.location.label}
             </CardDescription>
             {education.description ? (
               <div className="pt-2">
-                <EditorContent
-                  editor={
-                    new Editor({
-                      extensions: [StarterKit],
-                      content: education.description,
-                      editable: false,
-                    })
-                  }
-                />
+                <TipTapContentViewer content={education.description} />
               </div>
             ) : null}
           </CardContent>
