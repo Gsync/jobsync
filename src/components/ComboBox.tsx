@@ -85,7 +85,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
             )}
           >
             {field.value
-              ? options.find((option) => option.id === field.value).label
+              ? options.find((option) => option.id === field.value)?.label
               : `Select ${field.name}`}
 
             {isPending ? (
