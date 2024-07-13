@@ -37,7 +37,7 @@ export const getResumeReviewByAi = async (
         summary: Provide a brief summary of the resume.
         strengths: List the strengths of the resume.
         weaknesses: List the weaknesses of the resume.
-        suggestions: Provide suggestions for improvement in a list.
+        suggestions: Provide suggestions for improvement in a list of string.
         score: Provide a score for the resume (0-100).
       `,
     ],

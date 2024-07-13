@@ -15,21 +15,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "./ui/use-toast";
 import { Resume } from "@/models/profile.model";
 import { ResumeReviewResponse } from "@/models/ai.model";
-import { Editor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
+import { parse } from "best-effort-json-parser";
 
 interface AiSectionProps {
   resume: Resume;
 }
 
 const AiSection = ({ resume }: AiSectionProps) => {
-  const [aIContent, setAIContent] = useState<ResumeReviewResponse | any>({
-    summary: "",
-    strengths: [],
-    weaknesses: [],
-    suggestions: [],
-    score: 0,
-  });
+  const [aIContent, setAIContent] = useState<ResumeReviewResponse | any>(" ");
   const [aISectionOpen, setAiSectionOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
@@ -68,7 +61,10 @@ const AiSection = ({ resume }: AiSectionProps) => {
         const { value, done: doneReading } = await reader.read();
         done = doneReading;
         const chunk = decoder.decode(value, { stream: !done });
-        setAIContent((prev: any) => prev + chunk);
+        const parsedChunk = JSON.parse(JSON.stringify(chunk));
+        setAIContent((prev: any) => {
+          return prev + parsedChunk;
+        });
       }
     } catch (error) {
       const message = "Error fetching resume review";
@@ -110,50 +106,68 @@ const AiSection = ({ resume }: AiSectionProps) => {
             ) : (
               <>
                 <div className="pt-2">
-                  <h2>Score: {aIContent.score}</h2>
+                  {aIContent.length > 3 ? (
+                    <>
+                      <h2 className="font-semibold">Summary:</h2>
+                      <SheetDescription>
+                        {parse(aIContent).summary}
+                      </SheetDescription>
+                    </>
+                  ) : null}
                 </div>
                 <div className="pt-2">
-                  <h2 className="font-semibold">Summary: </h2>
-                  <SheetDescription>
-                    <div>{aIContent?.summary}</div>
-                  </SheetDescription>
+                  {aIContent.length > 3 && parse(aIContent).strengths ? (
+                    <>
+                      <h2 className="font-semibold">Strengths:</h2>
+                      <SheetDescription>
+                        {parse(aIContent).strengths.map(
+                          (s: string, i: number) => {
+                            return <li key={i}>{s}</li>;
+                          }
+                        )}
+                      </SheetDescription>
+                    </>
+                  ) : null}
                 </div>
                 <div className="pt-2">
-                  <h2 className="font-semibold">Strengths: </h2>
-                  <SheetDescription>
-                    {/* <div>
-                      {aIContent?.strengths.map((s, i) => {
-                        return <li key={i}>{s}</li>;
-                      })}
-                    </div> */}
-                  </SheetDescription>
+                  {aIContent.length > 3 && parse(aIContent).weaknesses ? (
+                    <>
+                      <h2 className="font-semibold">Weaknesses: </h2>
+                      <SheetDescription>
+                        {parse(aIContent).weaknesses.map(
+                          (w: string, i: number) => {
+                            return <li key={i}>{w}</li>;
+                          }
+                        )}
+                      </SheetDescription>
+                    </>
+                  ) : null}
                 </div>
                 <div className="pt-2">
-                  <h2 className="font-semibold">Weaknesses: </h2>
-                  <SheetDescription>
-                    {/* <div>
-                      {aIContent?.weaknesses.map((w, i) => {
-                        return <li key={i}>{w}</li>;
-                      })}
-                    </div> */}
-                  </SheetDescription>
+                  {aIContent.length > 3 && parse(aIContent).suggestions ? (
+                    <>
+                      <h2 className="font-semibold">Suggestions: </h2>
+                      <SheetDescription>
+                        {parse(aIContent).suggestions.map(
+                          (s: string, i: number) => {
+                            return <li key={i}>{s}</li>;
+                          }
+                        )}
+                      </SheetDescription>
+                    </>
+                  ) : null}
+                  <div className="pt-2">
+                    {aIContent.length > 3 && parse(aIContent).score ? (
+                      <h2>Review Score: {parse(aIContent).score}</h2>
+                    ) : null}
+                  </div>
                 </div>
-                <div className="pt-2">
-                  <h2 className="font-semibold">Suggestions: </h2>
-                  <SheetDescription>
-                    {/* <div>
-                      {aIContent?.suggestions.map((s, i) => {
-                        return <li key={i}>{s}</li>;
-                      })}
-                    </div> */}
-                  </SheetDescription>
-                </div>
-                <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+                {/* <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
                   <code className="text-white">
-                    {/* {JSON.stringify(data, null, 2)} */}
+                    {JSON.stringify(aIContent, null, 2)}
                     {aIContent}
                   </code>
-                </pre>
+                </pre> */}
               </>
             )}
           </SheetHeader>
