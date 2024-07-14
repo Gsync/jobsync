@@ -35,7 +35,7 @@ function JobDetails({ jobId }: { jobId: string }) {
 
   return (
     <>
-      {job?.id ? (
+      {job?.id && (
         <div className="col-span-3">
           <DialogHeader className="mb-4">
             <DialogDescription>{job?.Company?.label}</DialogDescription>
@@ -62,7 +62,7 @@ function JobDetails({ jobId }: { jobId: string }) {
               {format(new Date(job?.appliedDate), "PP")}
             </span>
           </h3>
-          {job.jobUrl ? (
+          {job.jobUrl && (
             <div className="my-3">
               <span className="font-semibold mr-2">Job URL:</span>
               <a
@@ -73,7 +73,7 @@ function JobDetails({ jobId }: { jobId: string }) {
                 {job.jobUrl}
               </a>
             </div>
-          ) : null}
+          )}
           <div className="my-4">
             <TipTapContentViewer content={job?.description} />
           </div>
@@ -85,7 +85,7 @@ function JobDetails({ jobId }: { jobId: string }) {
             </DialogClose>
           </DialogFooter>
         </div>
-      ) : null}
+      )}
     </>
   );
 }

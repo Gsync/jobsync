@@ -114,13 +114,13 @@ function CompaniesTable({
         of
         <strong> {totalCompanies}</strong> companies
       </div>
-      {totalCompanies > recordsPerPage ? (
+      {totalCompanies > recordsPerPage && (
         <TablePagination
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={onPageChange}
         />
-      ) : null}
+      )}
     </>
   );
 }

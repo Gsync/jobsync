@@ -92,13 +92,13 @@ function JobTitlesTable({
         of
         <strong> {totalJobTitles}</strong> titles
       </div>
-      {totalJobTitles > recordsPerPage ? (
+      {totalJobTitles > recordsPerPage && (
         <TablePagination
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={onPageChange}
         />
-      ) : null}
+      )}
     </>
   );
 }

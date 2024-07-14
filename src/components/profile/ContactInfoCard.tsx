@@ -10,16 +10,17 @@ interface ContactInfoCardProps {
 }
 
 function ContactInfoCard({ contactInfo, openDialog }: ContactInfoCardProps) {
+  const { firstName, lastName, headline, email, phone, address } = contactInfo!;
   return (
     <Card>
       <CardHeader className="flex-row justify-between relative">
         <div>
           <CardTitle>
-            {contactInfo?.firstName} {contactInfo?.lastName}
+            {firstName} {lastName}
           </CardTitle>
-          <CardDescription>{contactInfo?.headline}</CardDescription>
+          <CardDescription>{headline}</CardDescription>
           <CardDescription>
-            {contactInfo?.email} - {contactInfo?.phone} - {contactInfo?.address}
+            {email} - {phone} - {address}
           </CardDescription>
         </div>
         <Button

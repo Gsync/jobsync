@@ -3,7 +3,7 @@ import { Resume, ResumeSection, SectionType } from "@/models/profile.model";
 import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import AddResumeSection, { AddResumeSectionRef } from "./AddResumeSection";
 import ContactInfoCard from "./ContactInfoCard";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import SummarySectionCard from "./SummarySectionCard";
 import ExperienceCard from "./ExperienceCard";
 import EducationCard from "./EducationCard";
@@ -11,17 +11,19 @@ import AiSection from "../AiSection";
 
 function ResumeContainer({ resume }: { resume: Resume }) {
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
-  const summarySection = resume?.ResumeSections?.find(
+  const { title, ContactInfo, ResumeSections } = resume;
+
+  const summarySection = ResumeSections?.find(
     (section) => section.sectionType === SectionType.SUMMARY
   );
-  const experienceSection = resume?.ResumeSections?.find(
+  const experienceSection = ResumeSections?.find(
     (section) => section.sectionType === SectionType.EXPERIENCE
   );
-  const educationSection = resume?.ResumeSections?.find(
+  const educationSection = ResumeSections?.find(
     (section) => section.sectionType === SectionType.EDUCATION
   );
   const openContactInfoDialog = () => {
-    resumeSectionRef.current?.openContactInfoDialog(resume?.ContactInfo!);
+    resumeSectionRef.current?.openContactInfoDialog(ContactInfo!);
   };
   const openSummaryDialogForEdit = () => {
     resumeSectionRef.current?.openSummaryDialog(summarySection!);
@@ -50,37 +52,37 @@ function ResumeContainer({ resume }: { resume: Resume }) {
       <Card>
         <CardHeader className="flex-row justify-between items-center">
           <CardTitle>Resume</CardTitle>
-          <CardDescription>{resume?.title}</CardDescription>
+          <CardDescription>{title}</CardDescription>
           <div className="flex items-center">
             <AddResumeSection resume={resume} ref={resumeSectionRef} />
             <AiSection resume={resume} />
           </div>
         </CardHeader>
       </Card>
-      {resume?.ContactInfo ? (
+      {ContactInfo && (
         <ContactInfoCard
-          contactInfo={resume.ContactInfo}
+          contactInfo={ContactInfo}
           openDialog={openContactInfoDialog}
         />
-      ) : null}
-      {summarySection ? (
+      )}
+      {summarySection && (
         <SummarySectionCard
           summarySection={summarySection}
           openDialogForEdit={openSummaryDialogForEdit}
         />
-      ) : null}
-      {experienceSection ? (
+      )}
+      {experienceSection && (
         <ExperienceCard
           experienceSection={experienceSection}
           openDialogForEdit={openExperienceDialogForEdit}
         />
-      ) : null}
-      {educationSection ? (
+      )}
+      {educationSection && (
         <EducationCard
           educationSection={educationSection}
           openDialogForEdit={openEducationDialogForEdit}
         />
-      ) : null}
+      )}
     </>
   );
 }

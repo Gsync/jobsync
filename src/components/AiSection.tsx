@@ -106,17 +106,17 @@ const AiSection = ({ resume }: AiSectionProps) => {
             ) : (
               <>
                 <div className="pt-2">
-                  {aIContent.length > 3 ? (
+                  {aIContent.length > 3 && (
                     <>
                       <h2 className="font-semibold">Summary:</h2>
                       <SheetDescription>
                         {parse(aIContent).summary}
                       </SheetDescription>
                     </>
-                  ) : null}
+                  )}
                 </div>
                 <div className="pt-2">
-                  {aIContent.length > 3 && parse(aIContent).strengths ? (
+                  {aIContent.length > 3 && parse(aIContent).strengths && (
                     <>
                       <h2 className="font-semibold">Strengths:</h2>
                       <SheetDescription>
@@ -127,10 +127,10 @@ const AiSection = ({ resume }: AiSectionProps) => {
                         )}
                       </SheetDescription>
                     </>
-                  ) : null}
+                  )}
                 </div>
                 <div className="pt-2">
-                  {aIContent.length > 3 && parse(aIContent).weaknesses ? (
+                  {aIContent.length > 3 && parse(aIContent).weaknesses && (
                     <>
                       <h2 className="font-semibold">Weaknesses: </h2>
                       <SheetDescription>
@@ -141,10 +141,10 @@ const AiSection = ({ resume }: AiSectionProps) => {
                         )}
                       </SheetDescription>
                     </>
-                  ) : null}
+                  )}
                 </div>
                 <div className="pt-2">
-                  {aIContent.length > 3 && parse(aIContent).suggestions ? (
+                  {aIContent.length > 3 && parse(aIContent).suggestions && (
                     <>
                       <h2 className="font-semibold">Suggestions: </h2>
                       <SheetDescription>
@@ -155,11 +155,11 @@ const AiSection = ({ resume }: AiSectionProps) => {
                         )}
                       </SheetDescription>
                     </>
-                  ) : null}
+                  )}
                   <div className="pt-2">
-                    {aIContent.length > 3 && parse(aIContent).score ? (
+                    {aIContent.length > 3 && parse(aIContent).score && (
                       <h2>Review Score: {parse(aIContent).score}</h2>
-                    ) : null}
+                    )}
                   </div>
                 </div>
                 {/* <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">

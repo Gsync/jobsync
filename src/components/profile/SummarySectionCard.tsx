@@ -13,11 +13,12 @@ function SummarySectionCard({
   summarySection,
   openDialogForEdit,
 }: SummarySectionCardProps) {
+  const { sectionTitle, summary } = summarySection!;
   return (
     <>
       <Card>
         <CardHeader className="flex-row justify-between relative">
-          <CardTitle>{summarySection?.sectionTitle}</CardTitle>
+          <CardTitle>{sectionTitle}</CardTitle>
           <Button
             variant="ghost"
             size="sm"
@@ -31,7 +32,7 @@ function SummarySectionCard({
           </Button>
         </CardHeader>
         <CardContent>
-          <TipTapContentViewer content={summarySection?.summary?.content!} />
+          <TipTapContentViewer content={summary?.content!} />
         </CardContent>
       </Card>
     </>

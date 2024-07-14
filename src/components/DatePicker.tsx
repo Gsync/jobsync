@@ -56,7 +56,7 @@ export function DatePicker({
         </FormControl>
       </PopoverTrigger>
       <PopoverContent className="flex w-auto flex-col space-y-2 p-2">
-        {presets ? (
+        {presets && (
           <Select
             onValueChange={(value) => {
               field.onChange(addDays(new Date(), parseInt(value)));
@@ -73,7 +73,7 @@ export function DatePicker({
               <SelectItem value="7">In a week</SelectItem>
             </SelectContent>
           </Select>
-        ) : null}
+        )}
         <div className="rounded-md border">
           <Calendar
             mode="single"
