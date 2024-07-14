@@ -88,7 +88,7 @@ export function DatePicker({
             //   disabled={(date) =>
             //     field.value > new Date() || field.value < new Date("1900-01-01")
             //   }
-            initialFocus
+            // initialFocus // NOTE: Enabling this cause error in safari browser
           />
         </div>
       </PopoverContent>
