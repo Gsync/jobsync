@@ -56,7 +56,7 @@ export const getResumeReviewByAi = async (
   const inputMessage = await prompt.format({ resume: resumeText });
 
   const model = new ChatOllama({
-    baseUrl: process.env.OLLAMA_BASE_URL || "http://localhost:11434",
+    baseUrl: process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434",
     model: "llama3",
     temperature: 0,
     format: "json",
