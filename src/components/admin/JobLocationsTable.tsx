@@ -95,13 +95,13 @@ function JobLocationsTable({
         of
         <strong> {totalJobLocations}</strong> locations
       </div>
-      {totalJobLocations > recordsPerPage ? (
+      {totalJobLocations > recordsPerPage && (
         <TablePagination
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={onPageChange}
         />
-      ) : null}
+      )}
     </>
   );
 }

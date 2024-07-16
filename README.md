@@ -8,6 +8,8 @@ Job searching can be overwhelming, with numerous applications to track and deadl
 
 ![App Snapshot](./screenshots/jobsync-dashboard-screenshot.png?raw=true "App Snapshot Image")
 
+![JobSync AI Demo](./screenshots/jobsync-ai.gif)
+
 ## Key Features
 - **Application Tracker:** Keep a detailed record of all your job applications, including company details, job titles, application dates, and current status.
 
@@ -88,3 +90,9 @@ docker compose up
 - <a href="https://github.com/ueberdosis/tiptap">Tiptap</a>
 - <a href="https://github.com/plouc/nivo">Nivo</a>
 - <a href="https://github.com/sqlite/sqlite">Sqlite</a>
+
+### AI Integration
+
+Currently only works with ollama https://ollama.com to review the resume.
+
+Please make sure ollama is installed and running to use the resume review.

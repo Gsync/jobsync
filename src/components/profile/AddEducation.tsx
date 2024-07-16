@@ -143,7 +143,7 @@ function AddEducation({
             className="grid grid-cols-1 md:grid-cols-2 gap-4 p-2"
           >
             {/* SECTION TITLE */}
-            {!sectionId ? (
+            {!sectionId && (
               <>
                 <div className="md:col-span-2">
                   <FormField
@@ -162,7 +162,7 @@ function AddEducation({
                 </div>
                 <hr className="md:col-span-2" />
               </>
-            ) : null}
+            )}
 
             {/* INSTITUTION */}
             <div>
@@ -324,9 +324,7 @@ function AddEducation({
                 </DialogClose>
                 <Button type="submit" disabled={!formState.isDirty}>
                   Save
-                  {isPending ? (
-                    <Loader className="h-4 w-4 shrink-0 spinner" />
-                  ) : null}
+                  {isPending && <Loader className="h-4 w-4 shrink-0 spinner" />}
                 </Button>
               </DialogFooter>
             </div>

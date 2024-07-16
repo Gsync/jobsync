@@ -138,9 +138,8 @@ export function AddJob({
 
   const jobAppliedChange = (applied: boolean) => {
     if (applied) {
-      form.getValues("status") === jobStatuses[0].id
-        ? setValue("status", jobStatuses[1].id)
-        : null;
+      form.getValues("status") === jobStatuses[0].id &&
+        setValue("status", jobStatuses[1].id);
       setValue("dateApplied", new Date());
     } else {
       resetField("dateApplied");
@@ -445,9 +444,9 @@ export function AddJob({
                     </div>
                     <Button type="submit" data-testid="save-job-btn">
                       Save
-                      {isPending ? (
+                      {isPending && (
                         <Loader className="h-4 w-4 shrink-0 spinner" />
-                      ) : null}
+                      )}
                     </Button>
                   </DialogFooter>
                 </div>

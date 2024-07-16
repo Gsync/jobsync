@@ -150,9 +150,7 @@ function AddResumeSummary({
                 </DialogClose>
                 <Button type="submit" disabled={!formState.isDirty}>
                   Save
-                  {isPending ? (
-                    <Loader className="h-4 w-4 shrink-0 spinner" />
-                  ) : null}
+                  {isPending && <Loader className="h-4 w-4 shrink-0 spinner" />}
                 </Button>
               </DialogFooter>
             </div>

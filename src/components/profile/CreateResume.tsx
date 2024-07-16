@@ -140,9 +140,9 @@ function CreateResume({
                   </DialogClose>
                   <Button type="submit" disabled={!formState.isDirty}>
                     Save
-                    {isPending ? (
+                    {isPending && (
                       <Loader className="h-4 w-4 shrink-0 spinner" />
-                    ) : null}
+                    )}
                   </Button>
                 </DialogFooter>
               </div>

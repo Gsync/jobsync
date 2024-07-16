@@ -1,4 +1,5 @@
 import { type ClassValue, clsx } from "clsx";
+import { NextApiRequest } from "next";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -37,6 +38,10 @@ export function formatUrl(url: string) {
 export function handleError(error: unknown, msg = "Server Error.") {
   console.error(error, msg);
   if (error instanceof Error) {
+    if (error.message === "fetch failed") {
+      error.message =
+        "Fetch failed, please make sure selected AI service is running.";
+    }
     return { success: false, message: error.message || msg };
   }
 }
