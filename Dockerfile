@@ -58,6 +58,7 @@ ENV USER_PASSWORD=password123
 ENV AUTH_SECRET=Cft42eLmgapfLoot7ByiCL9ToNfbqZ4xaaMuOJsbm+9u
 ENV NEXTAUTH_URL: http://localhost:3000
 ENV AUTH_TRUST_HOST: http://localhost:3000
+ENV OLLAMA_BASE_URL=http://host.docker.internal:11434
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
