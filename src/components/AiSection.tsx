@@ -4,30 +4,32 @@ import { Button } from "./ui/button";
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetOverlay,
   SheetPortal,
   SheetTitle,
+  SheetTrigger,
 } from "./ui/sheet";
 import Loading from "./Loading";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "./ui/use-toast";
 import { Resume } from "@/models/profile.model";
 import { ResumeReviewResponse } from "@/models/ai.model";
-import { parse } from "best-effort-json-parser";
+import { AiResponseContent } from "./AiResponseContent";
 
 interface AiSectionProps {
   resume: Resume;
 }
 
 const AiSection = ({ resume }: AiSectionProps) => {
-  const [aIContent, setAIContent] = useState<ResumeReviewResponse | any>(" ");
+  const [aIContent, setAIContent] = useState<ResumeReviewResponse | any>("");
   const [aISectionOpen, setAiSectionOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+  const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(
+    null
+  );
 
-  useEffect(() => {}, []);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const getResumeReview = async () => {
     try {
@@ -36,10 +38,14 @@ const AiSection = ({ resume }: AiSectionProps) => {
       }
       setAiSectionOpen(true);
       setLoading(true);
+      setAIContent("");
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
       const response = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(resume),
+        signal: abortController.signal,
       });
 
       if (!response.body) {
@@ -52,23 +58,23 @@ const AiSection = ({ resume }: AiSectionProps) => {
         throw new Error(response.statusText);
       }
 
-      reader = response.body.getReader();
+      const reader = response.body.getReader();
+      readerRef.current = reader;
       const decoder = new TextDecoder();
       let done = false;
       setLoading(false);
 
-      while (!done) {
+      while (!done && !abortController.signal.aborted) {
         const { value, done: doneReading } = await reader.read();
+
         done = doneReading;
         const chunk = decoder.decode(value, { stream: !done });
         const parsedChunk = JSON.parse(JSON.stringify(chunk));
-        setAIContent((prev: any) => {
-          return prev + parsedChunk;
-        });
+        setAIContent((prev: any) => prev + parsedChunk);
       }
+      reader.releaseLock();
     } catch (error) {
       const message = "Error fetching resume review";
-      console.error(message, error);
       const description = error instanceof Error ? error.message : message;
       setLoading(false);
       toast({
@@ -79,100 +85,55 @@ const AiSection = ({ resume }: AiSectionProps) => {
     }
   };
 
+  const triggerChange = async (openState: boolean) => {
+    setAiSectionOpen(openState);
+    if (openState === false) {
+      abortStream();
+    }
+  };
+
+  const abortStream = async () => {
+    abortControllerRef.current?.abort();
+    if (readerRef.current && !readerRef?.current.closed) {
+      await readerRef?.current.cancel();
+      console.log("closed reader", aIContent);
+    }
+  };
+
   return (
-    <Sheet open={aISectionOpen} onOpenChange={setAiSectionOpen}>
+    <Sheet open={aISectionOpen} onOpenChange={triggerChange}>
       <div className="ml-2">
-        <Button
-          size="sm"
-          className="h-8 gap-1 cursor-pointer"
-          onClick={getResumeReview}
-          disabled={loading}
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Review
-          </span>
-        </Button>
+        <SheetTrigger asChild>
+          <Button
+            size="sm"
+            className="h-8 gap-1 cursor-pointer"
+            onClick={getResumeReview}
+            disabled={loading}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+              Review
+            </span>
+          </Button>
+        </SheetTrigger>
       </div>
-      <SheetPortal>
-        <SheetContent className="overflow-y-scroll">
-          <SheetHeader>
-            <SheetTitle>AI Review</SheetTitle>
-            {loading ? (
-              <div className="flex items-center flex-col">
-                <Loading />
-                <div>Loading...</div>
-              </div>
-            ) : (
-              <>
-                <div className="pt-2">
-                  {aIContent.length > 3 && (
-                    <>
-                      <h2 className="font-semibold">Summary:</h2>
-                      <SheetDescription>
-                        {parse(aIContent).summary}
-                      </SheetDescription>
-                    </>
-                  )}
+      {
+        <SheetPortal>
+          <SheetContent className="overflow-y-scroll">
+            <SheetHeader>
+              <SheetTitle>AI Review</SheetTitle>
+              {loading ? (
+                <div className="flex items-center flex-col">
+                  <Loading />
+                  <div>Loading...</div>
                 </div>
-                <div className="pt-2">
-                  {aIContent.length > 3 && parse(aIContent).strengths && (
-                    <>
-                      <h2 className="font-semibold">Strengths:</h2>
-                      <SheetDescription>
-                        {parse(aIContent).strengths.map(
-                          (s: string, i: number) => {
-                            return <li key={i}>{s}</li>;
-                          }
-                        )}
-                      </SheetDescription>
-                    </>
-                  )}
-                </div>
-                <div className="pt-2">
-                  {aIContent.length > 3 && parse(aIContent).weaknesses && (
-                    <>
-                      <h2 className="font-semibold">Weaknesses: </h2>
-                      <SheetDescription>
-                        {parse(aIContent).weaknesses.map(
-                          (w: string, i: number) => {
-                            return <li key={i}>{w}</li>;
-                          }
-                        )}
-                      </SheetDescription>
-                    </>
-                  )}
-                </div>
-                <div className="pt-2">
-                  {aIContent.length > 3 && parse(aIContent).suggestions && (
-                    <>
-                      <h2 className="font-semibold">Suggestions: </h2>
-                      <SheetDescription>
-                        {parse(aIContent).suggestions.map(
-                          (s: string, i: number) => {
-                            return <li key={i}>{s}</li>;
-                          }
-                        )}
-                      </SheetDescription>
-                    </>
-                  )}
-                  <div className="pt-2">
-                    {aIContent.length > 3 && parse(aIContent).score && (
-                      <h2>Review Score: {parse(aIContent).score}</h2>
-                    )}
-                  </div>
-                </div>
-                {/* <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-                  <code className="text-white">
-                    {JSON.stringify(aIContent, null, 2)}
-                    {aIContent}
-                  </code>
-                </pre> */}
-              </>
-            )}
-          </SheetHeader>
-        </SheetContent>
-      </SheetPortal>
+              ) : (
+                <AiResponseContent content={aIContent} />
+              )}
+            </SheetHeader>
+          </SheetContent>
+        </SheetPortal>
+      }
     </Sheet>
   );
 };
