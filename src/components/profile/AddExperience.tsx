@@ -80,6 +80,12 @@ function AddExperience({
 
   const currentJobValue = watch("currentJob");
 
+  const resetForm = useCallback(() => {
+    reset();
+    resetExperienceToEdit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     getTitleCompanyAndLocationData();
     if (experienceToEdit) {
@@ -95,8 +101,7 @@ function AddExperience({
       setValue("jobDescription", experience?.description);
       setValue("currentJob", !!!experience?.endDate);
     } else {
-      reset();
-      resetExperienceToEdit();
+      resetForm();
     }
     setValue("sectionId", sectionId);
   }, [
@@ -105,8 +110,7 @@ function AddExperience({
     clearErrors,
     setValue,
     sectionId,
-    reset,
-    resetExperienceToEdit,
+    resetForm,
   ]);
 
   const onSubmit = (data: z.infer<typeof AddExperienceFormSchema>) => {
@@ -181,7 +185,7 @@ function AddExperience({
                   <FormItem className="flex flex-col">
                     <FormLabel>Job Title</FormLabel>
                     <FormControl>
-                      <Combobox options={jobTitles!} field={field} creatable />
+                      <Combobox options={jobTitles} field={field} creatable />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -198,7 +202,7 @@ function AddExperience({
                   <FormItem className="flex flex-col">
                     <FormLabel>Company</FormLabel>
                     <FormControl>
-                      <Combobox options={companies!} field={field} creatable />
+                      <Combobox options={companies} field={field} creatable />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
