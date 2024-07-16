@@ -32,7 +32,7 @@ export const getResumeReviewByAi = async (
     [
       "system",
       `
-      You are an expert resume writer. Format all responses as JSON object in the following format.
+      You are an expert resume writer. You must always return JSON object with following structure.
     
         summary: Provide a brief summary of the resume.
         strengths: List the strengths of the resume.
@@ -41,8 +41,16 @@ export const getResumeReviewByAi = async (
         score: Provide a score for the resume (0-100).
       `,
     ],
-    ["human", `Review the resume {resume} and provide feedback.`],
+    [
+      "human",
+      `
+      Review the resume provided below and and provide feedback in the specified JSON format.
+      
+      {resume}
+      `,
+    ],
   ]);
+
   const resumeText = convertResumeToText(resume);
 
   const inputMessage = await prompt.format({ resume: resumeText });
@@ -50,6 +58,7 @@ export const getResumeReviewByAi = async (
   const model = new ChatOllama({
     baseUrl: process.env.OLLAMA_BASE_URL || "http://localhost:11434",
     model: "llama3",
+    temperature: 0,
     format: "json",
   });
 
@@ -144,7 +153,6 @@ const convertResumeToText = (resume: Resume) => {
   };
 
   const inputMessage = `
-    You are an expert resume reviewer, review the following resume:
 
     Title: ${resume.title}
     ${formatContactInfo(resume.ContactInfo)}

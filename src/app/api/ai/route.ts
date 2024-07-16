@@ -4,14 +4,10 @@ import { auth } from "@/auth";
 import { NextApiRequest, NextApiResponse } from "next";
 import { getResumeReviewByAi } from "@/actions/ai.actions";
 import { NextRequest, NextResponse } from "next/server";
-import { ChatOllama } from "@langchain/community/chat_models/ollama";
-import { StringOutputParser } from "@langchain/core/output_parsers";
-import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { Resume } from "@/models/profile.model";
 
 export const POST = async (req: NextRequest, res: NextApiResponse) => {
   const session = await auth();
-  console.log("SESSION USER: ", session?.user);
   const userId = session?.accessToken.sub;
 
   if (!session || !session.user) {
