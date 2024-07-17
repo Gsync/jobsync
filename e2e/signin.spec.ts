@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test("Login page has title", async ({ page }) => {
+test("Signin page has title", async ({ page }) => {
   await page.goto("localhost:3000");
 
   await expect(page).toHaveTitle("Signin | JobSync");
@@ -12,14 +12,18 @@ test("Login page has title", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Login" })).toBeVisible();
 });
 
-test("get started link", async ({ page }) => {
-  await page.goto("https://playwright.dev/");
+test("Signin and out from app", async ({ page }) => {
+  await page.goto("localhost:3000");
+  await page.getByPlaceholder("id@example.com").click();
+  await page.getByPlaceholder("id@example.com").fill("admin@example.com");
+  await page.getByLabel("Password").click();
+  await page.getByLabel("Password").fill("password123");
+  await page.getByRole("button", { name: "Login" }).click();
 
-  // Click the get started link.
-  await page.getByRole("link", { name: "Get started" }).click();
+  await expect(page).toHaveURL("http://localhost:3000/dashboard");
 
-  // Expects page to have a heading with the name of Installation.
-  await expect(
-    page.getByRole("heading", { name: "Installation" })
-  ).toBeVisible();
+  await page.getByRole("button", { name: "Avatar" }).click();
+  await page.getByRole("button", { name: "Logout" }).click();
+
+  await expect(page.getByRole("heading", { name: "Login" })).toBeVisible();
 });
