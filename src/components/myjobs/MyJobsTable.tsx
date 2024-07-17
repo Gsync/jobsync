@@ -113,11 +113,7 @@ function MyJobsTable({
         <TableBody>
           {jobs.map((job: JobResponse) => {
             return (
-              <TableRow
-                key={job.id}
-                className="cursor-pointer"
-                // onClick={() => viewJobDetails(job?.id)}
-              >
+              <TableRow key={job.id}>
                 <TableCell className="hidden sm:table-cell">
                   <Image
                     alt="Company logo"
@@ -130,7 +126,10 @@ function MyJobsTable({
                 <TableCell className="hidden md:table-cell w-[120px]">
                   {job.appliedDate ? format(job.appliedDate, "PP") : "N/A"}
                 </TableCell>
-                <TableCell className="font-medium">
+                <TableCell
+                  className="font-medium cursor-pointer"
+                  onClick={() => viewJobDetails(job?.id)}
+                >
                   {job.JobTitle?.label}
                 </TableCell>
                 <TableCell className="font-medium">
