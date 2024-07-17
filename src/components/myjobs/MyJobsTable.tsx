@@ -259,13 +259,13 @@ function MyJobsTable({
         of
         <strong> {totalJobs}</strong> jobs
       </div>
-      {totalJobs > jobsPerPage ? (
+      {totalJobs > jobsPerPage && (
         <TablePagination
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={onPageChange}
         />
-      ) : null}
+      )}
       <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

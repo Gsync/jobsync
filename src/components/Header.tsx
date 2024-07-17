@@ -23,7 +23,6 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { ModeToggle } from "./ModeToggle";
 import { SIDEBAR_LINKS } from "@/lib/constants";
 import { signOut } from "@/auth";
 import UserAvatar from "./UserAvatar";
@@ -111,7 +110,6 @@ async function Header() {
           </form>
         </DropdownMenuContent>
       </DropdownMenu>
-      {/* <ModeToggle /> */}
     </header>
   );
 }

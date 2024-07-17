@@ -8,11 +8,6 @@ export const config = {
   matcher: [
     // "/((?!api|_next/static|_next/image|.*\\.png$).*)",
     "/dashboard",
-    "/dashboard/myjobs",
-    "/dashboard/settings",
-    "/dashboard/admin",
-    "/dashboard/activities",
-    "/dashboard/profile",
-    //Note: add more routes here to protect
+    "/dashboard/:path*",
   ],
 };
