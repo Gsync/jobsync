@@ -81,6 +81,39 @@ test.describe("Add New Job", () => {
     ).toBeVisible();
   });
 
+  test("should edit the job created", async ({ page }) => {
+    await page.goto("http://localhost:3000/dashboard/myjobs");
+    await expect(
+      page.getByRole("cell", { name: jobText, exact: true }).first()
+    ).toBeVisible();
+    await page
+      .getByRole("row", { name: jobText })
+      .getByTestId("job-actions-menu-btn")
+      .click();
+    await page.getByRole("menuitem", { name: "Edit Job" }).click();
+    await expect(
+      page.getByPlaceholder("Copy and paste job link here")
+    ).toHaveValue("www.google.com");
+    await expect(page.getByLabel("Job Title")).toContainText(
+      "developer test title"
+    );
+    await expect(page.getByLabel("Company")).toContainText("company test");
+    await expect(page.getByLabel("Job Location")).toContainText(
+      "location test"
+    );
+    await expect(page.getByLabel("Job Source")).toContainText("Indeed");
+    await expect(page.getByLabel("Select Job Status")).toContainText("Draft");
+    await expect(page.getByLabel("Due Date")).toContainText("Jul 25, 2024");
+    await expect(page.getByRole("paragraph")).toContainText("test description");
+    await page.getByText("test description").click();
+    await page
+      .getByLabel("Job Description")
+      .locator("div")
+      .fill("test description edited");
+    await page.getByTestId("save-job-btn").click();
+    await expect(page.getByText("Job has been updated")).toBeVisible();
+  });
+
   test("should delete the job created", async ({ page }) => {
     await page.goto("http://localhost:3000/dashboard/myjobs");
     await expect(
