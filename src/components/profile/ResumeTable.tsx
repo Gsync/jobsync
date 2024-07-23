@@ -114,7 +114,12 @@ ResumeTableProps) {
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button aria-haspopup="true" size="icon" variant="ghost">
+                      <Button
+                        aria-haspopup="true"
+                        size="icon"
+                        variant="ghost"
+                        data-testid="resume-actions-menu-btn"
+                      >
                         <MoreHorizontal className="h-4 w-4" />
                         <span className="sr-only">Toggle menu</span>
                       </Button>

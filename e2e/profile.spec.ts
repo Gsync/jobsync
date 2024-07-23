@@ -26,6 +26,32 @@ test.describe("Profile page", () => {
     await expect(page.locator("tbody")).toContainText("Test Resume 1");
   });
 
-  test("should edit the resume title", async ({ page }) => {});
-  test("should delete a resume", async ({ page }) => {});
+  test("should edit the resume title", async ({ page }) => {
+    await page.getByRole("link", { name: "Profile" }).click();
+    await page.getByTestId("resume-actions-menu-btn").first().click();
+    await page.getByRole("menuitem", { name: "Edit Resume Title" }).click();
+    await page
+      .getByPlaceholder("Ex: Full Stack Developer")
+      .fill("Test Resume 1 edited");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("status")).toHaveText(
+      /Resume title has been updated/
+    );
+    await expect(page.locator("tbody")).toContainText("Test Resume 1 edited");
+  });
+  test("should delete a resume", async ({ page }) => {
+    await page.getByRole("link", { name: "Profile" }).click();
+    await page.getByTestId("resume-actions-menu-btn").first().click();
+    await page.getByRole("menuitem", { name: "Delete" }).click();
+    await expect(page.getByRole("alertdialog")).toContainText(
+      "Are you sure you want to delete this resume?"
+    );
+    await page.getByRole("button", { name: "Delete" }).click();
+    await expect(page.getByRole("status").first()).toContainText(
+      /Resume has been deleted successfully/
+    );
+    await expect(page.locator("tbody")).not.toContainText(
+      "Test Resume 1 edited"
+    );
+  });
 });

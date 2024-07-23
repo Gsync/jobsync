@@ -252,7 +252,7 @@ export const deleteResumeById = async (
     // TODO: Check if resume is associated with any job
 
     await prisma.$transaction(async (prisma) => {
-      await prisma.contactInfo.delete({
+      await prisma.contactInfo.deleteMany({
         where: {
           resumeId: resumeId,
         },
