@@ -328,6 +328,12 @@ export const addResumeSummary = async (
         },
       },
     });
+    /* Warning: a dynamic page path "/dashboard/profile/resume/[id]" was passed 
+      to "revalidatePath", but the "type" parameter is missing. 
+      This has no effect by default, 
+      see more info here https://nextjs.org/docs/app/api-reference/functions/revalidatePath
+      revalidatePath("/dashboard/profile/resume/[id]", "page");
+    */
     revalidatePath("/dashboard/profile/resume/[id]");
     return { data: summary, success: true };
   } catch (error) {
