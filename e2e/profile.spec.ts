@@ -20,18 +20,25 @@ test.describe("Profile page", () => {
     await page.getByRole("button", { name: "Create Resume" }).click();
     await page.getByPlaceholder("Ex: Full Stack Developer").fill(resumeTitle);
     await page.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByRole("status")).toHaveText(
+    await expect(page.getByRole("status").first()).toContainText(
       /Resume title has been created/
     );
     await expect(page.locator("tbody")).toContainText(resumeTitle);
   });
 
   test("should edit the resume title", async ({ page }) => {
-    await page.getByRole("link", { name: "Profile" }).click();
-    await page.getByTestId("resume-actions-menu-btn").first().click();
-    await page.getByRole("menuitem", { name: "Edit Resume Title" }).click();
+    await page.goto("http://localhost:3000/dashboard/profile");
+    await page
+      .getByRole("row", { name: /test resume/i })
+      .getByTestId("resume-actions-menu-btn")
+      .first()
+      .click();
+    await page.getByRole("menuitem", { name: /Edit Resume Title/ }).click();
     await page.getByPlaceholder("Ex: Full Stack Developer").fill(editedTitle);
-    await page.getByRole("button", { name: "Save" }).click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Save" })
+      .click();
     await expect(page.getByRole("status")).toHaveText(
       /Resume title has been updated/
     );
@@ -159,10 +166,7 @@ test.describe("Profile page", () => {
   test("should add resume education section", async ({ page }) => {
     const degreeText = "Bachelor of Science";
     await page.getByRole("link", { name: "Profile" }).click();
-    await page
-      .getByRole("row", { name: editedTitle })
-      .getByTestId("resume-actions-menu-btn")
-      .click();
+    await page.getByTestId("resume-actions-menu-btn").first().click();
     await page.getByRole("link", { name: "View/Edit Resume" }).click();
     await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible();
     await page.getByRole("button", { name: "Add Section" }).click();

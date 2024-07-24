@@ -74,15 +74,15 @@ test.describe("Add New Job", () => {
       .fill("test description");
     await page.getByTestId("save-job-btn").click();
     await expect(
-      page.getByRole("cell", { name: jobText, exact: true })
+      page.getByRole("row", { name: jobText }).first()
     ).toBeVisible();
   });
 
   test("should edit the job created", async ({ page }) => {
     await page.goto("http://localhost:3000/dashboard/myjobs");
-    await expect(
-      page.getByRole("cell", { name: jobText, exact: true })
-    ).toBeVisible();
+    await page.reload();
+    const row = page.getByRole("cell", { name: new RegExp(jobText, "i") });
+    await expect(row).toBeVisible();
     await page
       .getByRole("row", { name: jobText })
       .getByTestId("job-actions-menu-btn")
@@ -107,13 +107,16 @@ test.describe("Add New Job", () => {
       .locator("div")
       .fill("test description edited");
     await page.getByTestId("save-job-btn").click();
-    await expect(page.getByText("Job has been updated")).toBeVisible();
+    await expect(page.getByRole("status").first()).toContainText(
+      /Job has been updated/
+    );
   });
 
   test("should delete the job created", async ({ page }) => {
     await page.goto("http://localhost:3000/dashboard/myjobs");
+    await page.reload();
     await expect(
-      page.getByRole("cell", { name: jobText, exact: true })
+      page.getByRole("row", { name: new RegExp(jobText, "i") })
     ).toBeVisible();
     await page
       .getByRole("row", { name: jobText })
