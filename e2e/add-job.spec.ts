@@ -33,7 +33,7 @@ async function createNewJob(page: Page, jobText: string) {
   if (await jobTitle.isVisible()) {
     await jobTitle.click();
   } else {
-    await page.getByText(jobText).click();
+    await page.getByText(jobText, { exact: true }).click();
   }
   await expect(page.getByLabel("Job Title")).toContainText(jobText);
   await page.getByLabel("Company").click();
