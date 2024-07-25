@@ -11,7 +11,7 @@ import AiSection from "../AiSection";
 
 function ResumeContainer({ resume }: { resume: Resume }) {
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
-  const { title, ContactInfo, ResumeSections } = resume;
+  const { title, ContactInfo, ResumeSections } = resume ?? {};
 
   const summarySection = ResumeSections?.find(
     (section) => section.sectionType === SectionType.SUMMARY
