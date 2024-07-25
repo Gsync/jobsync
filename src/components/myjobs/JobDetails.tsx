@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from "../ui/card";
 import { Button } from "../ui/button";
-import { ChevronLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 function JobDetails({ job }: { job: JobResponse }) {
@@ -20,13 +20,12 @@ function JobDetails({ job }: { job: JobResponse }) {
   const goBack = () => router.back();
   return (
     <>
-      <Button variant="outline" onClick={goBack}>
-        <ChevronLeft />
-        Back
+      <Button title="Go Back" size="sm" variant="outline" onClick={goBack}>
+        <ArrowLeft />
       </Button>
       {job?.id && (
         <Card className="col-span-3">
-          <CardHeader className="mb-4">
+          <CardHeader>
             {job?.Company?.label}
             <CardTitle>{job?.JobTitle?.label}</CardTitle>
             <CardDescription>

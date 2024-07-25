@@ -151,6 +151,7 @@ export function AddJob({
     <>
       <Button
         size="sm"
+        variant="outline"
         className="h-8 gap-1"
         onClick={addJobForm}
         data-testid="add-job-btn"

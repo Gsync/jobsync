@@ -106,6 +106,7 @@ const AiSection = ({ resume }: AiSectionProps) => {
         <SheetTrigger asChild>
           <Button
             size="sm"
+            variant="outline"
             className="h-8 gap-1 cursor-pointer"
             onClick={getResumeReview}
             disabled={loading}

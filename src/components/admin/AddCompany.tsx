@@ -99,6 +99,7 @@ function AddCompany({
     <>
       <Button
         size="sm"
+        variant="outline"
         className="h-8 gap-1"
         onClick={addCompanyForm}
         data-testid="add-company-btn"
