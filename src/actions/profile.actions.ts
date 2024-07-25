@@ -239,6 +239,66 @@ export const editResume = async (
   }
 };
 
+export const deleteResumeById = async (
+  resumeId: string
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    // TODO: Check if resume is associated with any job
+
+    await prisma.$transaction(async (prisma) => {
+      await prisma.contactInfo.deleteMany({
+        where: {
+          resumeId: resumeId,
+        },
+      });
+
+      await prisma.summary.deleteMany({
+        where: {
+          ResumeSection: {
+            resumeId: resumeId,
+          },
+        },
+      });
+
+      await prisma.workExperience.deleteMany({
+        where: {
+          ResumeSection: {
+            resumeId: resumeId,
+          },
+        },
+      });
+
+      await prisma.education.deleteMany({
+        where: {
+          ResumeSection: {
+            resumeId: resumeId,
+          },
+        },
+      });
+
+      await prisma.resumeSection.deleteMany({
+        where: {
+          resumeId: resumeId,
+        },
+      });
+
+      await prisma.resume.delete({
+        where: { id: resumeId },
+      });
+    });
+    return { success: true };
+  } catch (error) {
+    const msg = "Failed to delete resume.";
+    return handleError(error, msg);
+  }
+};
+
 export const addResumeSummary = async (
   data: z.infer<typeof AddSummarySectionFormSchema>
 ): Promise<any | undefined> => {
@@ -268,6 +328,12 @@ export const addResumeSummary = async (
         },
       },
     });
+    /* Warning: a dynamic page path "/dashboard/profile/resume/[id]" was passed 
+      to "revalidatePath", but the "type" parameter is missing. 
+      This has no effect by default, 
+      see more info here https://nextjs.org/docs/app/api-reference/functions/revalidatePath
+      revalidatePath("/dashboard/profile/resume/[id]", "page");
+    */
     revalidatePath("/dashboard/profile/resume/[id]");
     return { data: summary, success: true };
   } catch (error) {

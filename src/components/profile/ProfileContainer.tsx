@@ -78,6 +78,7 @@ function ActivitiesContainer() {
             totalResumes={totalResumes}
             // onPageChange={onPageChange}
             editResume={onEditResume}
+            reloadResumes={reloadResumes}
           />
         ) : (
           <Loading />

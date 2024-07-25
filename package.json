@@ -9,6 +9,7 @@
     "lint": "next lint",
     "seed": "node ./prisma/seed.js",
     "test": "jest",
+    "test:e2e": "npx playwright test",
     "test:watch": "jest --watch"
   },
   "dependencies": {
@@ -58,6 +59,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.45.2",
     "@testing-library/jest-dom": "^6.4.6",
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.5.2",
