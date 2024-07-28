@@ -7,7 +7,7 @@ import { useRef } from "react";
 import SummarySectionCard from "./SummarySectionCard";
 import ExperienceCard from "./ExperienceCard";
 import EducationCard from "./EducationCard";
-import AiSection from "../AiSection";
+import AiResumeReviewSection from "./AiResumeReviewSection";
 
 function ResumeContainer({ resume }: { resume: Resume }) {
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
@@ -55,7 +55,7 @@ function ResumeContainer({ resume }: { resume: Resume }) {
           <CardDescription>{title}</CardDescription>
           <div className="flex items-center">
             <AddResumeSection resume={resume} ref={resumeSectionRef} />
-            <AiSection resume={resume} />
+            <AiResumeReviewSection resume={resume} />
           </div>
         </CardHeader>
       </Card>

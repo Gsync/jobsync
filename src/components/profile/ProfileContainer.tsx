@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { APP_CONSTANTS } from "@/lib/constants";
 import Loading from "../Loading";
 import ResumeTable from "./ResumeTable";
+import { toast } from "../ui/use-toast";
 
 function ActivitiesContainer() {
   const queryParams = useSearchParams();
@@ -26,14 +27,21 @@ function ActivitiesContainer() {
   const loadResumes = useCallback(
     async (page: number) => {
       setLoading(true);
-      const { data, total, success } = await getResumeList(
+      const { data, total, success, message } = await getResumeList(
         page,
         recordsPerPage
       );
-      setResumes(data);
-      setTotalResumes(total);
       if (success) {
+        setResumes(data);
+        setTotalResumes(total);
         setLoading(false);
+      } else {
+        setLoading(false);
+        return toast({
+          variant: "destructive",
+          title: "Error!",
+          description: message,
+        });
       }
     },
     [recordsPerPage]

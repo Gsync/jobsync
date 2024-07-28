@@ -17,7 +17,6 @@ export const getResumeList = async (
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
-
     if (!user) {
       throw new Error("Not authenticated");
     }

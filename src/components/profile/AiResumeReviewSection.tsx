@@ -1,6 +1,6 @@
 "use client";
 import { Sparkles } from "lucide-react";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import {
   Sheet,
   SheetContent,
@@ -9,19 +9,19 @@ import {
   SheetPortal,
   SheetTitle,
   SheetTrigger,
-} from "./ui/sheet";
-import Loading from "./Loading";
+} from "../ui/sheet";
+import Loading from "../Loading";
 import { useRef, useState } from "react";
-import { toast } from "./ui/use-toast";
+import { toast } from "../ui/use-toast";
 import { Resume } from "@/models/profile.model";
 import { ResumeReviewResponse } from "@/models/ai.model";
-import { AiResponseContent } from "./AiResponseContent";
+import { AiResumeReviewResponseContent } from "./AiResumeReviewResponseContent";
 
 interface AiSectionProps {
   resume: Resume;
 }
 
-const AiSection = ({ resume }: AiSectionProps) => {
+const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   const [aIContent, setAIContent] = useState<ResumeReviewResponse | any>("");
   const [aISectionOpen, setAiSectionOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -41,7 +41,7 @@ const AiSection = ({ resume }: AiSectionProps) => {
       setAIContent("");
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
-      const response = await fetch("/api/ai", {
+      const response = await fetch("/api/ai/resume/review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(resume),
@@ -96,7 +96,6 @@ const AiSection = ({ resume }: AiSectionProps) => {
     abortControllerRef.current?.abort();
     if (readerRef.current && !readerRef?.current.closed) {
       await readerRef?.current.cancel();
-      console.log("closed reader", aIContent);
     }
   };
 
@@ -129,7 +128,7 @@ const AiSection = ({ resume }: AiSectionProps) => {
                   <div>Loading...</div>
                 </div>
               ) : (
-                <AiResponseContent content={aIContent} />
+                <AiResumeReviewResponseContent content={aIContent} />
               )}
             </SheetHeader>
           </SheetContent>
@@ -139,4 +138,4 @@ const AiSection = ({ resume }: AiSectionProps) => {
   );
 };
 
-export default AiSection;
+export default AiResumeReviewSection;

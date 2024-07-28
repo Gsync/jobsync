@@ -1,7 +1,11 @@
-import { SheetDescription } from "./ui/sheet";
+import { SheetDescription } from "../ui/sheet";
 import { parse } from "best-effort-json-parser";
 
-export const AiResponseContent = ({ content }: { content: any }) => {
+export const AiResumeReviewResponseContent = ({
+  content,
+}: {
+  content: any;
+}) => {
   return (
     <>
       <div className="pt-2">
