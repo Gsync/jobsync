@@ -1,3 +1,4 @@
+import { RadialChartComponent } from "../RadialChart";
 import { SheetDescription } from "../ui/sheet";
 import { parse } from "best-effort-json-parser";
 
@@ -6,10 +7,10 @@ export const AiJobMatchResponseContent = ({ content }: { content: any }) => {
     <>
       <div className="pt-2">
         {content.length > 1 && parse(content).matching_score && (
-          <h2>Score: {parse(content).matching_score}</h2>
+          <RadialChartComponent score={parse(content).matching_score} />
         )}
       </div>
-      <div className="pt-2">
+      <div>
         {content.length > 1 && parse(content).detailed_analysis && (
           <>
             <h2 className="font-semibold">Detailed Analysis:</h2>

@@ -22,6 +22,7 @@ import {
 import Loading from "../Loading";
 import { JobMatchResponse } from "@/models/ai.model";
 import { AiJobMatchResponseContent } from "./AiJobMatchResponseContent";
+import { RadialChartComponent } from "../RadialChart";
 
 interface AiSectionProps {
   aISectionOpen: boolean;
