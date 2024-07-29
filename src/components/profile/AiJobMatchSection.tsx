@@ -6,7 +6,6 @@ import {
   SheetHeader,
   SheetPortal,
   SheetTitle,
-  SheetTrigger,
 } from "../ui/sheet";
 import { useEffect, useRef, useState } from "react";
 import { Resume } from "@/models/profile.model";
@@ -22,7 +21,6 @@ import {
 import Loading from "../Loading";
 import { JobMatchResponse } from "@/models/ai.model";
 import { AiJobMatchResponseContent } from "./AiJobMatchResponseContent";
-import { RadialChartComponent } from "../RadialChart";
 
 interface AiSectionProps {
   aISectionOpen: boolean;
@@ -37,6 +35,7 @@ export const AiJobMatchSection = ({
 }: AiSectionProps) => {
   const [aIContent, setAIContent] = useState<JobMatchResponse | any>("");
   const [loading, setLoading] = useState(false);
+  const [selectedResumeId, setSelectedResumeId] = useState<string>();
 
   const resumesRef = useRef<Resume[]>([]);
   const getResumes = async () => {
@@ -70,6 +69,12 @@ export const AiJobMatchSection = ({
     try {
       setLoading(true);
       setAIContent("");
+      // if (
+      //   abortControllerRef.current &&
+      //   (await readerRef?.current?.closed) === false
+      // ) {
+      //   return await abortStream();
+      // }
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
 
@@ -116,10 +121,20 @@ export const AiJobMatchSection = ({
       });
     }
   };
+
+  const abortStream = async () => {
+    abortControllerRef.current?.abort();
+    console.log("aborting stream");
+    await readerRef?.current?.cancel();
+  };
+
   const onSelectResume = async (resumeId: string) => {
+    setSelectedResumeId(resumeId);
+    // if getting job match response clear first
     await getJobMatch(resumeId, jobId);
   };
   useEffect(() => {
+    console.log("job match rendered");
     getResumes();
   }, []);
   return (
@@ -129,8 +144,8 @@ export const AiJobMatchSection = ({
           <SheetHeader>
             <SheetTitle>AI Job Match</SheetTitle>
           </SheetHeader>
-          <div className="mt-6">
-            <Select onValueChange={onSelectResume}>
+          <div className="mt-4">
+            <Select value={selectedResumeId} onValueChange={onSelectResume}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select a resume" />
               </SelectTrigger>
@@ -149,7 +164,7 @@ export const AiJobMatchSection = ({
               </SelectContent>
             </Select>
           </div>
-          <div className="mt-6">
+          <div className="mt-2">
             {loading ? (
               <div className="flex items-center flex-col">
                 <Loading />
