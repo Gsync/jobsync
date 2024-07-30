@@ -142,7 +142,6 @@ export const getJobMatchByAi = async (
     resume: resumeText || "No resume provided",
     job_description: jobText,
   });
-  console.log("input message length", inputMessage.length);
   const model = new ChatOllama({
     baseUrl: process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434",
     model: "llama3.1",

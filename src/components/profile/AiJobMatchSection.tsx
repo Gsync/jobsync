@@ -173,9 +173,9 @@ export const AiJobMatchSection = ({
             ) : (
               <>
                 <AiJobMatchResponseContent content={aIContent} />
-                <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+                {/* <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
                   <code className="text-white">{aIContent}</code>
-                </pre>
+                </pre> */}
               </>
             )}
           </div>
