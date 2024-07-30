@@ -97,7 +97,7 @@ docker compose up
 
 Currently only works with ollama https://ollama.com to review the resume.
 
-Please make sure ollama is installed and running to use the resume review and job matching feature.
+Please make sure ollama is installed and running on the same system to use the resume review and job matching feature.
 
 Its making use of llama3.1 model, and only tested with 8B variant, please make sure it is downloaded and included in ollama.
 

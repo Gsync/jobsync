@@ -16,3 +16,21 @@ export type JobMatchAnalysis = {
   category: string;
   value: string[];
 };
+
+export interface AiModel {
+  provider: AiProvider;
+  model: string | undefined;
+}
+
+export enum AiProvider {
+  OLLAMA = "ollama",
+  OPENAI = "openai",
+}
+
+export enum OllamaModel {
+  LLAMA3_1 = "llama3.1",
+}
+
+export enum OpenaiModel {
+  GPT3_5 = "gpt-3.5-turbo",
+}

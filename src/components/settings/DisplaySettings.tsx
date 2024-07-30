@@ -25,11 +25,10 @@ const appearanceFormSchema = z.object({
 
 type AppearanceFormValues = z.infer<typeof appearanceFormSchema>;
 
-const currentTheme = localStorage.getItem("theme") as
-  | "light"
-  | "dark"
-  | "system"
-  | undefined;
+const currentTheme =
+  typeof window !== "undefined"
+    ? (localStorage.getItem("theme") as "light" | "dark" | "system" | undefined)
+    : "system";
 
 // This can come from your database or API.
 const defaultValues: Partial<AppearanceFormValues> = {
@@ -54,85 +53,76 @@ function DisplaySettings() {
     <Card>
       <CardHeader>
         <CardTitle>Appearance</CardTitle>
-        <CardContent>
-          <div className="mt-4">
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-8"
-              >
-                <FormField
-                  control={form.control}
-                  name="theme"
-                  render={({ field }) => (
-                    <FormItem className="space-y-1">
-                      <FormLabel>Theme</FormLabel>
-                      <FormDescription>
-                        Select the theme for the app.
-                      </FormDescription>
-                      <FormMessage />
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="grid max-w-lg md:grid-cols-3 gap-8 pt-2"
-                      >
-                        <FormItem>
-                          <FormLabel className="[&:has([data-state=checked])>div]:border-primary">
-                            <FormControl>
-                              <RadioGroupItem
-                                value="light"
-                                className="sr-only"
-                              />
-                            </FormControl>
-                            <LightThemeElement />
-                            <span className="block w-full p-2 text-center font-normal">
-                              Light
-                            </span>
-                          </FormLabel>
-                        </FormItem>
-                        <FormItem>
-                          <FormLabel className="[&:has([data-state=checked])>div]:border-primary">
-                            <FormControl>
-                              <RadioGroupItem
-                                value="dark"
-                                className="sr-only"
-                              />
-                            </FormControl>
-                            <DarkThemeElement />
-                            <span className="block w-full p-2 text-center font-normal">
-                              Dark
-                            </span>
-                          </FormLabel>
-                        </FormItem>
-                        <FormItem>
-                          <FormLabel className="[&:has([data-state=checked])>div]:border-primary">
-                            <FormControl>
-                              <RadioGroupItem
-                                value="system"
-                                className="sr-only"
-                              />
-                            </FormControl>
-                            {systemTheme === "dark" ? (
-                              <DarkThemeElement />
-                            ) : (
-                              <LightThemeElement />
-                            )}
-                            <span className="block w-full p-2 text-center font-normal">
-                              System
-                            </span>
-                          </FormLabel>
-                        </FormItem>
-                      </RadioGroup>
-                    </FormItem>
-                  )}
-                />
-
-                <Button type="submit">Update preferences</Button>
-              </form>
-            </Form>
-          </div>
-        </CardContent>
       </CardHeader>
+      <CardContent className="ml-4">
+        <div className="mt-4">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <FormField
+                control={form.control}
+                name="theme"
+                render={({ field }) => (
+                  <FormItem className="space-y-1">
+                    <FormLabel>Theme</FormLabel>
+                    <FormDescription>
+                      Select the theme for the app.
+                    </FormDescription>
+                    <FormMessage />
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="grid max-w-lg md:grid-cols-3 gap-8 pt-2"
+                    >
+                      <FormItem>
+                        <FormLabel className="[&:has([data-state=checked])>div]:border-primary">
+                          <FormControl>
+                            <RadioGroupItem value="light" className="sr-only" />
+                          </FormControl>
+                          <LightThemeElement />
+                          <span className="block w-full p-2 text-center font-normal">
+                            Light
+                          </span>
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem>
+                        <FormLabel className="[&:has([data-state=checked])>div]:border-primary">
+                          <FormControl>
+                            <RadioGroupItem value="dark" className="sr-only" />
+                          </FormControl>
+                          <DarkThemeElement />
+                          <span className="block w-full p-2 text-center font-normal">
+                            Dark
+                          </span>
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem>
+                        <FormLabel className="[&:has([data-state=checked])>div]:border-primary">
+                          <FormControl>
+                            <RadioGroupItem
+                              value="system"
+                              className="sr-only"
+                            />
+                          </FormControl>
+                          {systemTheme === "dark" ? (
+                            <DarkThemeElement />
+                          ) : (
+                            <LightThemeElement />
+                          )}
+                          <span className="block w-full p-2 text-center font-normal">
+                            System
+                          </span>
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormItem>
+                )}
+              />
+
+              <Button type="submit">Update preferences</Button>
+            </form>
+          </Form>
+        </div>
+      </CardContent>
     </Card>
   );
 }

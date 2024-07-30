@@ -1,3 +1,4 @@
+import AiSettings from "@/components/settings/AiSettings";
 import DisplaySettings from "@/components/settings/DisplaySettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React from "react";
@@ -11,9 +12,13 @@ function Settings() {
       <Tabs defaultValue="display">
         <TabsList>
           <TabsTrigger value="display">Display</TabsTrigger>
+          <TabsTrigger value="ai">AI</TabsTrigger>
         </TabsList>
         <TabsContent value="display">
           <DisplaySettings />
+        </TabsContent>
+        <TabsContent value="ai">
+          <AiSettings />
         </TabsContent>
       </Tabs>
     </div>
