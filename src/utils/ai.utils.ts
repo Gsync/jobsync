@@ -8,6 +8,11 @@ import {
   WorkExperience,
 } from "@/models/profile.model";
 
+const removeHtmlTags = (description: string | undefined): string => {
+  if (!description) return "N/A";
+  return description.replace(/<[^>]+>/g, "");
+};
+
 export const convertResumeToText = (resume: Resume): Promise<string> => {
   return new Promise((resolve) => {
     const formatContactInfo = (contactInfo?: ContactInfo) => {
@@ -29,7 +34,7 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
          Company: ${experience.Company.label}
          Job Title: ${experience.jobTitle.label}
          Location: ${experience.location.label}
-         Description: ${experience.description}
+         Description: ${removeHtmlTags(experience.description)}
          `
         )
         .join("\n");
@@ -50,8 +55,8 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
              Institution: ${education.institution}
              Degree: ${education.degree}
              Field of Study: ${education.fieldOfStudy}
-             Location: ${education.location}
-             Description: ${education.description || "N/A"}
+             Location: ${education.location.label}
+             Description: ${removeHtmlTags(education.description)}
              `
           )
           // Start Date: ${education.startDate.toLocaleDateString().split("T")[0]}
@@ -70,7 +75,7 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
         .map((section) => {
           switch (section.sectionType) {
             case SectionType.SUMMARY:
-              return `Summary: ${section.summary?.content || "N/A"}`;
+              return `Summary: ${removeHtmlTags(section.summary?.content)}`;
             case SectionType.EXPERIENCE:
               return formatWorkExperiences(section.workExperiences);
             case SectionType.EDUCATION:
@@ -100,14 +105,12 @@ export const convertJobToText = (job: JobResponse): Promise<string> => {
       Company: { label: companyName },
       Location: { label: location },
     } = job;
-    // Remove HTML tags from the description
-    const plainDescription = description.replace(/<[^>]+>/g, "");
 
     const jobText = `
        Job Title: ${jobTitle}
        Company: ${companyName}
        Location: ${location}
-       Description: ${plainDescription}
+       Description: ${removeHtmlTags(description)}
      `;
 
     return resolve(jobText);

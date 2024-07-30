@@ -160,15 +160,16 @@ function AddCompany({
                 <DialogFooter
                 // className="md:col-span
                 >
-                  <DialogClose>
+                  <div>
                     <Button
                       type="reset"
                       variant="outline"
                       className="mt-2 md:mt-0 w-full"
+                      onClick={() => setDialogOpen(false)}
                     >
                       Cancel
                     </Button>
-                  </DialogClose>
+                  </div>
                   <Button type="submit" disabled={!formState.isDirty}>
                     Save
                     {isPending && (

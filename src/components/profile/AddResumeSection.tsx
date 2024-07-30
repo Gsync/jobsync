@@ -112,13 +112,23 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"
-                onClick={() => setExperienceDialogOpen(true)}
+                onClick={() => {
+                  if (experienceToEdit) {
+                    resetExperienceToEdit();
+                  }
+                  setExperienceDialogOpen(true);
+                }}
               >
                 Add Experience
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"
-                onClick={() => setEducationDialogOpen(true)}
+                onClick={() => {
+                  if (educationToEdit) {
+                    resetEducationToEdit();
+                  }
+                  setEducationDialogOpen(true);
+                }}
               >
                 Add Education
               </DropdownMenuItem>

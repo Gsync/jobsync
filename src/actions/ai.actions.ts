@@ -80,17 +80,14 @@ export const getJobMatchByAi = async (
   modelProvider?: string
 ): Promise<any | undefined> => {
   const resumeText = await convertResumeToText(resume);
+
   const jobText = await convertJobToText(job);
 
   const prompt = ChatPromptTemplate.fromMessages([
     [
       "system",
       `
-    You are an expert assistant tasked with matching job seekers' resumes with job descriptions and providing suggestions to improve their resumes. 
-    You will analyze the given resume and job description, provide a matching score between 0 and 100, 
-    score will be based on application tracking system (ATS) friendliness and skill and keywords match, 
-    and suggest improvements to increase the matching score and make the resume more aligned with the job description.
-    Be verbose and highlight details in your response.
+    You are an expert assistant tasked with matching job seekers' resumes with job descriptions and providing suggestions to improve their resumes. You will analyze the given resume and job description, provide a matching score between 0 and 100, score will be based on application tracking system (ATS) friendliness and skill and keywords match, and suggest improvements to increase the matching score and make the resume more aligned with the job description. Be verbose and highlight details in your response.
     
     Your response must always return JSON object with following structure:
 
@@ -114,13 +111,13 @@ export const getJobMatchByAi = async (
                 "value": ["<missing keywords not found in resume>", "<missing skill not found in resume>",...],
               <<example 2>>
                 "category": "Format for clarity and ATS optimization:",
-                "value": ["<suggested_change 1>", "<suggested_change 2>",...],
+                "value": ["<change 1>", "<change 2>",...],
               <<example 3>>
                 "category": "Enhancement for relevant experience:",
-                "value": ["<suggested_change 1>", "<suggested_change 2>",...],
+                "value": ["<change 1>", "<change 2>",...],
         "additional_comments": summary of recommendations as array of strings.
               <<example>>
-                ["<brief summary description>"],
+                ["<comments>"],
   `,
     ],
     [
@@ -142,14 +139,17 @@ export const getJobMatchByAi = async (
   ]);
 
   const inputMessage = await prompt.format({
-    resume: resumeText,
+    resume: resumeText || "No resume provided",
     job_description: jobText,
   });
+  console.log("input message length", inputMessage.length);
   const model = new ChatOllama({
     baseUrl: process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434",
     model: "llama3.1",
     temperature: 0,
     format: "json",
+    maxConcurrency: 1,
+    numCtx: 3000,
   });
 
   const stream = await model

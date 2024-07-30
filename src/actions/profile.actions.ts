@@ -388,6 +388,11 @@ export const addExperience = async (
     if (!user) {
       throw new Error("Not authenticated");
     }
+
+    if (!data.sectionId && !data.sectionTitle) {
+      throw new Error("SectionTitle is required.");
+    }
+
     const section = !data.sectionId
       ? await prisma.resumeSection.create({
           data: {
@@ -415,7 +420,7 @@ export const addExperience = async (
         },
       },
     });
-    revalidatePath("/dashboard/profile/resume/[id]");
+    revalidatePath("/dashboard/profile/resume/[id]", "page");
     return { data: experience, success: true };
   } catch (error) {
     const msg = "Failed to create experience.";

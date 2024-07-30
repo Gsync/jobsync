@@ -68,13 +68,13 @@ export const AiJobMatchSection = ({
   const getJobMatch = async (resumeId: string, jobId: string) => {
     try {
       setLoading(true);
-      setAIContent("");
       // if (
-      //   abortControllerRef.current &&
-      //   (await readerRef?.current?.closed) === false
+      //   abortControllerRef.current
+      //   //   && (await readerRef?.current?.closed) === false
       // ) {
-      //   return await abortStream();
+      //   await abortStream();
       // }
+      setAIContent("");
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
 
@@ -130,11 +130,9 @@ export const AiJobMatchSection = ({
 
   const onSelectResume = async (resumeId: string) => {
     setSelectedResumeId(resumeId);
-    // if getting job match response clear first
     await getJobMatch(resumeId, jobId);
   };
   useEffect(() => {
-    console.log("job match rendered");
     getResumes();
   }, []);
   return (
@@ -144,26 +142,28 @@ export const AiJobMatchSection = ({
           <SheetHeader>
             <SheetTitle>AI Job Match</SheetTitle>
           </SheetHeader>
-          <div className="mt-4">
-            <Select value={selectedResumeId} onValueChange={onSelectResume}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select a resume" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {resumesRef.current.map((resume) => (
-                    <SelectItem
-                      key={resume.id}
-                      value={resume.id!}
-                      className="capitalize"
-                    >
-                      {resume.title}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
+          {!selectedResumeId && (
+            <div className="mt-4">
+              <Select value={selectedResumeId} onValueChange={onSelectResume}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select a resume" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {resumesRef.current.map((resume) => (
+                      <SelectItem
+                        key={resume.id}
+                        value={resume.id!}
+                        className="capitalize"
+                      >
+                        {resume.title}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="mt-2">
             {loading ? (
               <div className="flex items-center flex-col">
@@ -173,6 +173,9 @@ export const AiJobMatchSection = ({
             ) : (
               <>
                 <AiJobMatchResponseContent content={aIContent} />
+                <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+                  <code className="text-white">{aIContent}</code>
+                </pre>
               </>
             )}
           </div>
