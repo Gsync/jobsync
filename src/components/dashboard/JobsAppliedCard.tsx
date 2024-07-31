@@ -20,7 +20,10 @@ export default function JobsAppliedCard() {
         </CardDescription>
       </CardHeader>
       <CardFooter>
-        <Button onClick={() => router.push("/dashboard/myjobs")}>
+        <Button
+          variant="outline"
+          onClick={() => router.push("/dashboard/myjobs")}
+        >
           Add New Job
         </Button>
       </CardFooter>

@@ -1,50 +1,58 @@
 "use client";
-import { useEffect, useState } from "react";
-import { Button } from "../ui/button";
-import {
-  DialogClose,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
-import { getJobDetails } from "@/actions/job.actions";
 import { format } from "date-fns";
 import { Badge } from "../ui/badge";
 import { cn, formatUrl } from "@/lib/utils";
 import { JobResponse } from "@/models/job.model";
-import { toast } from "../ui/use-toast";
 import { TipTapContentViewer } from "../TipTapContentViewer";
+import {
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
+import { Button } from "../ui/button";
+import { ArrowLeft, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AiJobMatchSection } from "../profile/AiJobMatchSection";
+import { useState } from "react";
 
-function JobDetails({ jobId }: { jobId: string }) {
-  const [job, setJob] = useState<JobResponse>();
-  useEffect(() => {
-    const getJob = async (id: string) => {
-      const { job, success, message } = await getJobDetails(id);
-      if (!success) {
-        return toast({
-          variant: "destructive",
-          title: "Error!",
-          description: message,
-        });
-      }
-      setJob(job);
-    };
-    getJob(jobId);
-  }, [jobId]);
-
+function JobDetails({ job }: { job: JobResponse }) {
+  const [aiSectionOpen, setAiSectionOpen] = useState(false);
+  const router = useRouter();
+  const goBack = () => router.back();
+  const getAiJobMatch = async () => {
+    setAiSectionOpen(true);
+  };
   return (
     <>
+      <div className="flex justify-between">
+        <Button title="Go Back" size="sm" variant="outline" onClick={goBack}>
+          <ArrowLeft />
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 gap-1 cursor-pointer"
+          onClick={getAiJobMatch}
+          // disabled={loading}
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+            Match with AI
+          </span>
+        </Button>
+      </div>
       {job?.id && (
-        <div className="col-span-3">
-          <DialogHeader className="mb-4">
-            <DialogDescription>{job?.Company?.label}</DialogDescription>
-            <DialogTitle>{job?.JobTitle?.label}</DialogTitle>
-            <DialogDescription>
+        <Card className="col-span-3">
+          <CardHeader>
+            {job?.Company?.label}
+            <CardTitle>{job?.JobTitle?.label}</CardTitle>
+            <CardDescription>
               {job?.Location?.label} - {job?.jobType}
-            </DialogDescription>
-          </DialogHeader>
-          <h3>
+            </CardDescription>
+          </CardHeader>
+          <h3 className="ml-4">
             {new Date() > job.dueDate && job.Status?.value === "draft" ? (
               <Badge className="bg-red-500">Expired</Badge>
             ) : (
@@ -63,7 +71,7 @@ function JobDetails({ jobId }: { jobId: string }) {
             </span>
           </h3>
           {job.jobUrl && (
-            <div className="my-3">
+            <div className="my-3 ml-4">
               <span className="font-semibold mr-2">Job URL:</span>
               <a
                 href={formatUrl(job.jobUrl)}
@@ -74,18 +82,19 @@ function JobDetails({ jobId }: { jobId: string }) {
               </a>
             </div>
           )}
-          <div className="my-4">
+          <div className="my-4 ml-4">
             <TipTapContentViewer content={job?.description} />
           </div>
-          <DialogFooter>
-            <DialogClose>
-              <Button variant="outline" className="mt-2 md:mt-0 w-full">
-                Cancel
-              </Button>
-            </DialogClose>
-          </DialogFooter>
-        </div>
+          <CardFooter></CardFooter>
+        </Card>
       )}
+      {
+        <AiJobMatchSection
+          jobId={job?.id}
+          aISectionOpen={aiSectionOpen}
+          triggerChange={setAiSectionOpen}
+        />
+      }
     </>
   );
 }

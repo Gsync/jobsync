@@ -34,8 +34,6 @@ import {
 import { Button, buttonVariants } from "../ui/button";
 import { useState } from "react";
 import { TablePagination } from "../TablePagination";
-import { Dialog, DialogContent, DialogTrigger } from "../ui/dialog";
-import JobDetails from "./JobDetails";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,6 +45,8 @@ import {
   AlertDialogTitle,
 } from "../ui/alert-dialog";
 import { JobResponse, JobStatus } from "@/models/job.model";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type MyJobsTableProps = {
   jobs: JobResponse[];
@@ -73,17 +73,14 @@ function MyJobsTable({
   editJob,
   onChangeJobStatus,
 }: MyJobsTableProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
-  const [curJobId, setCurJobId] = useState("");
   const [jobIdToDelete, setJobIdToDelete] = useState("");
 
   const startPostIndex = (currentPage - 1) * jobsPerPage + 1;
   const endPostIndex = Math.min(currentPage * jobsPerPage, totalJobs);
-
+  const router = useRouter();
   const viewJobDetails = (jobId: string) => {
-    setCurJobId(jobId);
-    setDialogOpen(true);
+    router.push(`/dashboard/myjobs/${jobId}`);
   };
 
   const onDeleteJob = (jobId: string) => {
@@ -113,11 +110,7 @@ function MyJobsTable({
         <TableBody>
           {jobs.map((job: JobResponse) => {
             return (
-              <TableRow
-                key={job.id}
-                className="cursor-pointer"
-                // onClick={() => viewJobDetails(job?.id)}
-              >
+              <TableRow key={job.id}>
                 <TableCell className="hidden sm:table-cell">
                   <Image
                     alt="Company logo"
@@ -130,8 +123,13 @@ function MyJobsTable({
                 <TableCell className="hidden md:table-cell w-[120px]">
                   {job.appliedDate ? format(job.appliedDate, "PP") : "N/A"}
                 </TableCell>
-                <TableCell className="font-medium">
-                  {job.JobTitle?.label}
+                <TableCell
+                  className="font-medium cursor-pointer"
+                  // onClick={() => viewJobDetails(job?.id)}
+                >
+                  <Link href={`/dashboard/myjobs/${job?.id}`}>
+                    {job.JobTitle?.label}
+                  </Link>
                 </TableCell>
                 <TableCell className="font-medium">
                   {job.Company?.label}
@@ -245,12 +243,6 @@ function MyJobsTable({
           })}
         </TableBody>
       </Table>
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogTrigger asChild></DialogTrigger>
-        <DialogContent className="lg:max-w-screen-lg lg:max-h-screen overflow-y-scroll">
-          <JobDetails jobId={curJobId} />
-        </DialogContent>
-      </Dialog>
       <div className="text-xs text-muted-foreground">
         Showing{" "}
         <strong>

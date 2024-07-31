@@ -5,14 +5,9 @@ import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { ChatOllama } from "@langchain/community/chat_models/ollama";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
-import {
-  ContactInfo,
-  Education,
-  Resume,
-  ResumeSection,
-  SectionType,
-  WorkExperience,
-} from "@/models/profile.model";
+import { Resume } from "@/models/profile.model";
+import { JobResponse } from "@/models/job.model";
+import { convertJobToText, convertResumeToText } from "@/utils/ai.utils";
 
 export const getResumeReviewByAi = async (
   resume: Resume,
@@ -51,13 +46,13 @@ export const getResumeReviewByAi = async (
     ],
   ]);
 
-  const resumeText = convertResumeToText(resume);
+  const resumeText = await convertResumeToText(resume);
 
   const inputMessage = await prompt.format({ resume: resumeText });
 
   const model = new ChatOllama({
     baseUrl: process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434",
-    model: "llama3",
+    model: "llama3.1",
     temperature: 0,
     format: "json",
   });
@@ -79,84 +74,94 @@ export const getResumeReviewByAi = async (
   });
 };
 
-const convertResumeToText = (resume: Resume) => {
-  const formatContactInfo = (contactInfo?: ContactInfo) => {
-    if (!contactInfo) return "";
-    return `
-      Name: ${contactInfo.firstName} ${contactInfo.lastName}
-      Headline: ${contactInfo.headline}
-      Email: ${contactInfo.email || "N/A"}
-      Phone: ${contactInfo.phone || "N/A"}
-      Address: ${contactInfo.address || "N/A"}
-    `;
-  };
+export const getJobMatchByAi = async (
+  resume: Resume,
+  job: JobResponse,
+  modelProvider?: string
+): Promise<any | undefined> => {
+  const resumeText = await convertResumeToText(resume);
 
-  const formatWorkExperiences = (workExperiences?: WorkExperience[]) => {
-    if (!workExperiences || workExperiences.length === 0) return "";
-    return workExperiences
-      .map(
-        (experience) => `
-      Company: ${experience.Company.label}
-      Job Title: ${experience.jobTitle.label}
-      Location: ${experience.location.label}
-      Description: ${experience.description}
+  const jobText = await convertJobToText(job);
+
+  const prompt = ChatPromptTemplate.fromMessages([
+    [
+      "system",
       `
-      )
-      .join("\n");
-  };
-  // Start Date: ${experience.startDate.toLocaleDateString().split("T")[0]}
-  // End Date: ${
-  //   experience.currentJob
-  //     ? "Present"
-  //     : experience.endDate.toLocaleDateString().split("T")[0]
-  // }
+    You are an expert assistant tasked with matching job seekers' resumes with job descriptions and providing suggestions to improve their resumes. You will analyze the given resume and job description, provide a matching score between 0 and 100, score will be based on application tracking system (ATS) friendliness and skill and keywords match, and suggest improvements to increase the matching score and make the resume more aligned with the job description. Be verbose and highlight details in your response.
+    
+    Your response must always return JSON object with following structure:
 
-  const formatEducation = (educations?: Education[]) => {
-    if (!educations || educations.length === 0) return "";
-    return (
-      educations
-        .map(
-          (education) => `
-      Institution: ${education.institution}
-      Degree: ${education.degree}
-      Field of Study: ${education.fieldOfStudy}
-      Location: ${education.location}
-      Description: ${education.description || "N/A"}
+        "matching_score": <matching_score with single numeric value, be strict with this score with always room for improvement>,
+        "detailed_analysis": an array list of following object structures:
+              <<object structure>>
+                "category": "suggestion category title with score",
+                "value": "an array list of suggestion as strings",
+              <<example 1>>
+                "category": "ATS Friendliness(60/100):",
+                "value": ["<ATS friendliness analysis 1>", "<ATS friendliness analysis 2>",...],
+              <<example 2>>
+                "category": "Skill and Keyword match(65/100):",
+                "value": ["<description of analysis in terms of skill match>", "<description of analysis in terms of keyword match>",...],
+        "suggestions": an array list with following object structures:
+              <<object structure>>
+                "category": "suggestion category title",
+                "value": "an array list of suggestion as strings",
+              <<example 1>>
+                "category": "Emphasize Keywords and Skills:",
+                "value": ["<missing keywords not found in resume>", "<missing skill not found in resume>",...],
+              <<example 2>>
+                "category": "Format for clarity and ATS optimization:",
+                "value": ["<change 1>", "<change 2>",...],
+              <<example 3>>
+                "category": "Enhancement for relevant experience:",
+                "value": ["<change 1>", "<change 2>",...],
+        "additional_comments": summary of recommendations as array of strings.
+              <<example>>
+                ["<comments>"],
+  `,
+    ],
+    [
+      "human",
       `
-        )
-        // Start Date: ${education.startDate.toLocaleDateString().split("T")[0]}
-        // End Date: ${
-        //   education.endDate
-        //     ? education.endDate.toLocaleDateString().split("T")[0]
-        //     : "N/A"
-        // }
-        .join("\n")
-    );
-  };
+      Please analyze the following resume and job description.
 
-  const formatResumeSections = (sections?: ResumeSection[]) => {
-    if (!sections || sections.length === 0) return "";
-    return sections
-      .map((section) => {
-        switch (section.sectionType) {
-          case SectionType.SUMMARY:
-            return `Summary: ${section.summary?.content || "N/A"}`;
-          case SectionType.EXPERIENCE:
-            return formatWorkExperiences(section.workExperiences);
-          case SectionType.EDUCATION:
-            return formatEducation(section.educations);
-          default:
-            return "";
-        }
-      })
-      .join("\n");
-  };
+      Resume:
+      """
+      {resume}
+      """
 
-  const inputMessage = `
+      Job Description:
+      """
+      {job_description}
+      """
+    `,
+    ],
+  ]);
 
-    Title: ${resume.title}
-    ${formatContactInfo(resume.ContactInfo)}
-    ${formatResumeSections(resume.ResumeSections)}
-  `;
-  return inputMessage;
+  const inputMessage = await prompt.format({
+    resume: resumeText || "No resume provided",
+    job_description: jobText,
+  });
+  const model = new ChatOllama({
+    baseUrl: process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434",
+    model: "llama3.1",
+    temperature: 0,
+    format: "json",
+    maxConcurrency: 1,
+    numCtx: 3000,
+  });
+
+  const stream = await model
+    .pipe(new StringOutputParser())
+    .stream(inputMessage);
+  const encoder = new TextEncoder();
+
+  return new ReadableStream({
+    async start(controller) {
+      for await (const chunk of stream) {
+        controller.enqueue(encoder.encode(chunk));
+      }
+      controller.close();
+    },
+  });
 };

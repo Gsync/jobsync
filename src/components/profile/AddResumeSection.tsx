@@ -83,7 +83,11 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
       <>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="sm" className="h-8 gap-1 cursor-pointer">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1 cursor-pointer"
+            >
               <PlusCircle className="h-3.5 w-3.5" />
               <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                 Add Section
@@ -108,13 +112,23 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"
-                onClick={() => setExperienceDialogOpen(true)}
+                onClick={() => {
+                  if (experienceToEdit) {
+                    resetExperienceToEdit();
+                  }
+                  setExperienceDialogOpen(true);
+                }}
               >
                 Add Experience
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"
-                onClick={() => setEducationDialogOpen(true)}
+                onClick={() => {
+                  if (educationToEdit) {
+                    resetEducationToEdit();
+                  }
+                  setEducationDialogOpen(true);
+                }}
               >
                 Add Education
               </DropdownMenuItem>

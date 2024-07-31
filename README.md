@@ -93,6 +93,12 @@ docker compose up
 
 ### AI Integration
 
+#### Ollama (llama3.1)
+
 Currently only works with ollama https://ollama.com to review the resume.
 
-Please make sure ollama is installed and running to use the resume review.
+Please make sure ollama is installed and running on the same system to use the resume review and job matching feature.
+
+Its making use of llama3.1 model, and only tested with 8B variant, please make sure it is downloaded and included in ollama.
+
+***Note:*** The response is based on the resume and job description content input, for an optimal response please make sure the input content does not contain any special characters, and the length of input content is within the context length of the model in use, also avoid including unnecessary details in the job description. Although llama3.1 supports longer context length, this app only support 3000 tokens context length, model might hallicunate and give unexpected response if longer input text content is used.

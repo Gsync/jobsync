@@ -28,6 +28,9 @@ test.describe("Profile page", () => {
     );
     await expect(page.locator("tbody")).toContainText(resumeTitle);
     await deleteResume(page, resumeTitle);
+    await expect(page.getByRole("status").first()).toContainText(
+      /Resume has been deleted successfully/
+    );
   });
 
   test("should edit the resume title", async ({ page, baseURL }) => {
@@ -54,6 +57,9 @@ test.describe("Profile page", () => {
     );
     await expect(page.locator("tbody")).toContainText(editedTitle);
     await deleteResume(page, editedTitle);
+    await expect(page.getByRole("status").first()).toContainText(
+      /Resume has been deleted successfully/
+    );
   });
   test("should add resume contact info", async ({ page }) => {
     const resumeTitle = "Test Resume 3";
@@ -87,6 +93,9 @@ test.describe("Profile page", () => {
     );
     await expect(page.getByRole("heading", { name: "John Doe" })).toBeVisible();
     await deleteResume(page, resumeTitle);
+    await expect(page.getByRole("status").first()).toContainText(
+      /Resume has been deleted successfully/
+    );
   });
 
   test("should add resume summary section", async ({ page }) => {
@@ -112,6 +121,9 @@ test.describe("Profile page", () => {
       /Summary has been created/
     );
     await deleteResume(page, resumeTitle);
+    await expect(page.getByRole("status").first()).toContainText(
+      /Resume has been deleted successfully/
+    );
   });
 
   test("should add resume work experience section", async ({ page }) => {
@@ -119,75 +131,51 @@ test.describe("Profile page", () => {
     const jobText = "Software Developer";
     await page.getByRole("link", { name: "Profile" }).click();
     await createResume(page, resumeTitle);
-    await page
-      .getByRole("row", { name: new RegExp(resumeTitle, "i") })
-      .first()
-      .getByTestId("resume-actions-menu-btn")
-      .click();
-    await page.getByRole("link", { name: "View/Edit Resume" }).click();
-    await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible();
-    await page.getByRole("button", { name: "Add Section" }).click();
-    await page.getByRole("menuitem", { name: "Add Experience" }).click();
-    await page.getByPlaceholder("Ex: Experience").fill("Experience");
-    await page.getByPlaceholder("Ex: Experience").press("Tab");
-    await page.getByLabel("Job Title").click();
-    await page.getByPlaceholder("Create or Search title").click();
-    await page.getByPlaceholder("Create or Search title").fill(jobText);
-    const jobTitle = page.getByRole("option", {
-      name: jobText,
-      exact: true,
-    });
-    if (await jobTitle.isVisible()) {
-      await jobTitle.click();
-    } else {
-      await page.getByText(jobText).click();
-    }
-    await expect(page.getByLabel("Job Title")).toContainText(jobText);
-    await page.getByLabel("Company").click();
-    await page.getByPlaceholder("Create or Search company").click();
-    const companyText = "company test";
-    await page.getByPlaceholder("Create or Search company").fill(companyText);
-    const companyTitle = page.getByRole("option", {
-      name: companyText,
-      exact: true,
-    });
-    if (await companyTitle.isVisible()) {
-      await companyTitle.click();
-    } else {
-      await page.getByText(companyText).click();
-    }
-    await expect(page.getByLabel("Company")).toContainText(companyText);
-    await page.getByLabel("Job Location").click();
-    await page.getByPlaceholder("Create or Search location").click();
-    const locationText = "location test";
-    await page.getByPlaceholder("Create or Search location").fill(locationText);
-    const locationTitle = page.getByRole("option", {
-      name: locationText,
-      exact: true,
-    });
-    if (await locationTitle.isVisible()) {
-      await locationTitle.click();
-    } else {
-      await page.getByText(locationText).click();
-    }
-    await expect(page.getByLabel("Job Location")).toContainText(locationText);
-    await page.getByLabel("Start Date").click();
-    await page
-      .getByRole("gridcell", { name: "2", exact: true })
-      .first()
-      .click();
-    await page.locator("div:nth-child(2) > .tiptap").click();
-    await page.locator("div:nth-child(2) > .tiptap").fill("test description");
-    await page.getByRole("button", { name: "Save" }).click();
+    await addExperience(page, resumeTitle, jobText);
     await expect(page.getByRole("status").first()).toContainText(
       /Experience has been added/
     );
     await expect(page.getByRole("heading", { name: jobText })).toBeVisible();
     await deleteResume(page, resumeTitle);
+    await expect(page.getByRole("status").first()).toContainText(
+      /Resume has been deleted successfully/
+    );
+  });
+
+  test("should add resume work experience after clicking Edit Experience section", async ({
+    page,
+  }) => {
+    const resumeTitle = "Test Resume 6";
+    const jobText = "Software Developer";
+    await page.getByRole("link", { name: "Profile" }).click();
+    await createResume(page, resumeTitle);
+    await addExperience(page, resumeTitle, jobText);
+    await expect(page.getByRole("status").first()).toContainText(
+      /Experience has been added/
+    );
+    await expect(page.getByRole("heading", { name: jobText })).toBeVisible();
+    await page
+      .getByText(jobText + "Edit")
+      .getByRole("button", { name: "Edit" })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Edit Experience" })
+    ).toBeVisible();
+    await page.getByText("Cancel").click();
+    await page.getByRole("button", { name: "Add Section" }).click();
+    await page.getByRole("menuitem", { name: "Add Experience" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Add Experience" })
+    ).toBeVisible();
+    await page.getByText("Cancel").click();
+    await deleteResume(page, resumeTitle);
+    await expect(page.getByRole("status").first()).toContainText(
+      /Resume has been deleted successfully/
+    );
   });
 
   test("should add resume education section", async ({ page }) => {
-    const resumeTitle = "Test Resume 6";
+    const resumeTitle = "Test Resume 7";
     const degreeText = "Bachelor of Science";
     await page.getByRole("link", { name: "Profile" }).click();
     await createResume(page, resumeTitle);
@@ -239,16 +227,71 @@ test.describe("Profile page", () => {
       page.getByRole("heading", { name: "test school" })
     ).toBeVisible();
     await deleteResume(page, resumeTitle);
+    await expect(page.getByRole("status").first()).toContainText(
+      /Resume has been deleted successfully/
+    );
   });
-
-  // test("should delete a resume", async ({ page }) => {
-  //   await deleteResume(page, editedTitle);
-  //   await expect(page.getByRole("status").first()).toContainText(
-  //     /Resume has been deleted successfully/
-  //   );
-  //   await expect(page.locator("tbody")).not.toContainText(editedTitle);
-  // });
 });
+
+async function addExperience(page: Page, resumeTitle: string, jobText: string) {
+  await page
+    .getByRole("row", { name: new RegExp(resumeTitle, "i") })
+    .first()
+    .getByTestId("resume-actions-menu-btn")
+    .click();
+  await page.getByRole("link", { name: "View/Edit Resume" }).click();
+  await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible();
+  await page.getByRole("button", { name: "Add Section" }).click();
+  await page.getByRole("menuitem", { name: "Add Experience" }).click();
+  await page.getByPlaceholder("Ex: Experience").fill("Experience");
+  await page.getByPlaceholder("Ex: Experience").press("Tab");
+  await page.getByLabel("Job Title").click();
+  await page.getByPlaceholder("Create or Search title").click();
+  await page.getByPlaceholder("Create or Search title").fill(jobText);
+  const jobTitle = page.getByRole("option", {
+    name: jobText,
+    exact: true,
+  });
+  if (await jobTitle.isVisible()) {
+    await jobTitle.click();
+  } else {
+    await page.getByText(jobText).click();
+  }
+  await expect(page.getByLabel("Job Title")).toContainText(jobText);
+  await page.getByLabel("Company").click();
+  await page.getByPlaceholder("Create or Search company").click();
+  const companyText = "company test";
+  await page.getByPlaceholder("Create or Search company").fill(companyText);
+  const companyTitle = page.getByRole("option", {
+    name: companyText,
+    exact: true,
+  });
+  if (await companyTitle.isVisible()) {
+    await companyTitle.click();
+  } else {
+    await page.getByText(companyText).click();
+  }
+  await expect(page.getByLabel("Company")).toContainText(companyText);
+  await page.getByLabel("Job Location").click();
+  await page.getByPlaceholder("Create or Search location").click();
+  const locationText = "location test";
+  await page.getByPlaceholder("Create or Search location").fill(locationText);
+  const locationTitle = page.getByRole("option", {
+    name: locationText,
+    exact: true,
+  });
+  if (await locationTitle.isVisible()) {
+    await locationTitle.click();
+  } else {
+    await page.getByText(locationText).click();
+  }
+  await expect(page.getByLabel("Job Location")).toContainText(locationText);
+  await page.getByLabel("Start Date").click();
+  await page.getByRole("gridcell", { name: "2", exact: true }).first().click();
+  await page.locator("div:nth-child(2) > .tiptap").click();
+  await page.locator("div:nth-child(2) > .tiptap").fill("test description");
+  await page.getByRole("button", { name: "Save" }).click();
+}
 
 async function deleteResume(page: Page, title: string) {
   await page.getByRole("link", { name: "Profile" }).click();

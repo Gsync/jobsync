@@ -97,7 +97,11 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
         </FormControl>
       </PopoverTrigger>
       <PopoverContent className="md:w-[240px] lg:w-[280px] p-0">
-        <Command>
+        <Command
+          filter={(value, search) =>
+            value.includes(search.toLowerCase()) ? 1 : 0
+          }
+        >
           <CommandInput
             value={newOption}
             onValueChange={(val: string) => setNewOption(val)}

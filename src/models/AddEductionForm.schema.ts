@@ -28,7 +28,7 @@ export const AddEducationFormSchema = z.object({
     .min(2, {
       message: "Location name must be at least 2 characters.",
     }),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
   startDate: z.date(),
   endDate: z.date().nullable().optional(),
   degreeCompleted: z.boolean().default(true).optional(),
