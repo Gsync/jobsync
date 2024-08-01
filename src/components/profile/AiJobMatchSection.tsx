@@ -19,8 +19,16 @@ import {
   SelectValue,
 } from "../ui/select";
 import Loading from "../Loading";
-import { JobMatchResponse } from "@/models/ai.model";
+import { AiModel, defaultModel, JobMatchResponse } from "@/models/ai.model";
 import { AiJobMatchResponseContent } from "./AiJobMatchResponseContent";
+import { getFromLocalStorage } from "@/utils/localstorage.utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
+import { Info } from "lucide-react";
 
 interface AiSectionProps {
   aISectionOpen: boolean;
@@ -36,6 +44,10 @@ export const AiJobMatchSection = ({
   const [aIContent, setAIContent] = useState<JobMatchResponse | any>("");
   const [loading, setLoading] = useState(false);
   const [selectedResumeId, setSelectedResumeId] = useState<string>();
+  const selectedModel: AiModel = getFromLocalStorage(
+    "aiSettings",
+    defaultModel
+  );
 
   const resumesRef = useRef<Resume[]>([]);
   const getResumes = async () => {
@@ -140,7 +152,20 @@ export const AiJobMatchSection = ({
       <SheetPortal>
         <SheetContent className="overflow-y-scroll">
           <SheetHeader>
-            <SheetTitle>AI Job Match</SheetTitle>
+            <SheetTitle className="flex flex-row items-center">
+              AI Job Match ({selectedModel.provider})
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 text-muted-foreground mx-1" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{`Provider: ${selectedModel.provider}`}</p>
+                    <p>{`Model: ${selectedModel.model}`}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </SheetTitle>
           </SheetHeader>
           {!selectedResumeId && (
             <div className="mt-4">

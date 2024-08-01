@@ -1,5 +1,5 @@
 "use client";
-import { Sparkles } from "lucide-react";
+import { Info, Sparkles } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   Sheet,
@@ -14,8 +14,15 @@ import Loading from "../Loading";
 import { useRef, useState } from "react";
 import { toast } from "../ui/use-toast";
 import { Resume } from "@/models/profile.model";
-import { ResumeReviewResponse } from "@/models/ai.model";
+import { AiModel, defaultModel, ResumeReviewResponse } from "@/models/ai.model";
 import { AiResumeReviewResponseContent } from "./AiResumeReviewResponseContent";
+import { getFromLocalStorage } from "@/utils/localstorage.utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
 
 interface AiSectionProps {
   resume: Resume;
@@ -25,6 +32,10 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   const [aIContent, setAIContent] = useState<ResumeReviewResponse | any>("");
   const [aISectionOpen, setAiSectionOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const selectedModel: AiModel = getFromLocalStorage(
+    "aiSettings",
+    defaultModel
+  );
   const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(
     null
   );
@@ -121,7 +132,20 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
         <SheetPortal>
           <SheetContent className="overflow-y-scroll">
             <SheetHeader>
-              <SheetTitle>AI Review</SheetTitle>
+              <SheetTitle className="flex flex-row items-center">
+                AI Review ({selectedModel.provider})
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground mx-1" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{`Provider: ${selectedModel.provider}`}</p>
+                      <p>{`Model: ${selectedModel.model}`}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </SheetTitle>
               {loading ? (
                 <div className="flex items-center flex-col">
                   <Loading />
@@ -139,3 +163,23 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
 };
 
 export default AiResumeReviewSection;
+// ("use client");
+
+// import { Activity } from "lucide-react";
+
+// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+// export default function Component() {
+//   return (
+//     <Card>
+//       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+//         <CardTitle className="text-sm font-medium">Active Now</CardTitle>
+//         <Activity className="h-4 w-4 text-muted-foreground" />
+//       </CardHeader>
+//       <CardContent>
+//         <div className="text-2xl font-bold">+573</div>
+//         <p className="text-xs text-muted-foreground">+201 since last hour</p>
+//       </CardContent>
+//     </Card>
+//   );
+// }
