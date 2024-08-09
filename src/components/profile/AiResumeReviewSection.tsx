@@ -32,6 +32,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   const [aIContent, setAIContent] = useState<ResumeReviewResponse | any>("");
   const [aISectionOpen, setAiSectionOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const selectedModel: AiModel = getFromLocalStorage(
     "aiSettings",
     defaultModel
@@ -47,7 +48,6 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
       if (!resume || resume.ResumeSections?.length === 0) {
         throw new Error("Resume content is required");
       }
-      setAiSectionOpen(true);
       setLoading(true);
       setAIContent("");
       const abortController = new AbortController();
@@ -55,7 +55,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
       const response = await fetch("/api/ai/resume/review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(resume),
+        body: JSON.stringify({ selectedModel, resume }),
         signal: abortController.signal,
       });
 
@@ -74,7 +74,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
       const decoder = new TextDecoder();
       let done = false;
       setLoading(false);
-
+      setIsStreaming(true);
       while (!done && !abortController.signal.aborted) {
         const { value, done: doneReading } = await reader.read();
 
@@ -84,10 +84,12 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
         setAIContent((prev: any) => prev + parsedChunk);
       }
       reader.releaseLock();
+      setIsStreaming(false);
     } catch (error) {
       const message = "Error fetching resume review";
       const description = error instanceof Error ? error.message : message;
       setLoading(false);
+      setIsStreaming(false);
       toast({
         variant: "destructive",
         title: "Error!",
@@ -96,7 +98,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
     }
   };
 
-  const triggerChange = async (openState: boolean) => {
+  const triggerSheetChange = async (openState: boolean) => {
     setAiSectionOpen(openState);
     if (openState === false) {
       abortStream();
@@ -105,20 +107,21 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
 
   const abortStream = async () => {
     abortControllerRef.current?.abort();
+    setIsStreaming(false);
     if (readerRef.current && !readerRef?.current.closed) {
       await readerRef?.current.cancel();
     }
   };
 
   return (
-    <Sheet open={aISectionOpen} onOpenChange={triggerChange}>
+    <Sheet open={aISectionOpen} onOpenChange={triggerSheetChange}>
       <div className="ml-2">
         <SheetTrigger asChild>
           <Button
             size="sm"
             variant="outline"
             className="h-8 gap-1 cursor-pointer"
-            onClick={getResumeReview}
+            onClick={() => triggerSheetChange(true)}
             disabled={loading}
           >
             <Sparkles className="h-3.5 w-3.5" />
@@ -146,15 +149,29 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
                   </Tooltip>
                 </TooltipProvider>
               </SheetTitle>
-              {loading ? (
-                <div className="flex items-center flex-col">
-                  <Loading />
-                  <div>Loading...</div>
-                </div>
-              ) : (
-                <AiResumeReviewResponseContent content={aIContent} />
-              )}
             </SheetHeader>
+            <div className="mt-4">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1 cursor-pointer"
+                onClick={getResumeReview}
+                disabled={loading || isStreaming}
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                  Generate AI Review
+                </span>
+              </Button>
+            </div>
+            {loading ? (
+              <div className="flex items-center flex-col">
+                <Loading />
+                <div>Loading...</div>
+              </div>
+            ) : (
+              <AiResumeReviewResponseContent content={aIContent} />
+            )}
           </SheetContent>
         </SheetPortal>
       }
@@ -163,23 +180,3 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
 };
 
 export default AiResumeReviewSection;
-// ("use client");
-
-// import { Activity } from "lucide-react";
-
-// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-// export default function Component() {
-//   return (
-//     <Card>
-//       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-//         <CardTitle className="text-sm font-medium">Active Now</CardTitle>
-//         <Activity className="h-4 w-4 text-muted-foreground" />
-//       </CardHeader>
-//       <CardContent>
-//         <div className="text-2xl font-bold">+573</div>
-//         <p className="text-xs text-muted-foreground">+201 since last hour</p>
-//       </CardContent>
-//     </Card>
-//   );
-// }

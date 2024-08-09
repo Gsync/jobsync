@@ -11,17 +11,20 @@ import { convertJobToText, convertResumeToText } from "@/utils/ai.utils";
 
 export const getResumeReviewByAi = async (
   resume: Resume,
-  modelProvider?: string
+  aImodel?: string
 ): Promise<any | undefined> => {
-  //   const model = new ChatOpenAI({
-  //     modelName: "gpt-3.5-turbo",
-  //     openAIApiKey: process.env.OPENAI_API_KEY,
-  //   });
+  // const model2 = new ChatOpenAI({
+  //   modelName: "gpt-3.5-turbo",
+  //   openAIApiKey: process.env.OPENAI_API_KEY,
+  // });
 
-  //   const messages = [
-  //     new SystemMessage("Translate the following from English into Italian"),
-  //     new HumanMessage("hi!"),
-  //   ];
+  // const messages = [
+  //   new SystemMessage("Translate the following from English into Italian"),
+  //   new HumanMessage("hi!"),
+  // ];
+  // const prompt1 = ChatPromptTemplate.fromMessages(messages);
+  // const output1 = await model2.invoke(messages);
+  // console.log({ output1 });
 
   const prompt = ChatPromptTemplate.fromMessages([
     [
@@ -52,7 +55,7 @@ export const getResumeReviewByAi = async (
 
   const model = new ChatOllama({
     baseUrl: process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434",
-    model: "llama3.1",
+    model: aImodel,
     temperature: 0,
     format: "json",
   });
