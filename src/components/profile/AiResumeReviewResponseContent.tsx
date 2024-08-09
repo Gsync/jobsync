@@ -1,4 +1,5 @@
 import { RadialChartComponent } from "../RadialChart";
+import { RadialChartSekeleton } from "../RadialChartSekeleton";
 import { SheetDescription } from "../ui/sheet";
 import { parse } from "best-effort-json-parser";
 
@@ -22,11 +23,14 @@ export const AiResumeReviewResponseContent = ({
 
   const parsedContent = parse(content);
   const { summary, strengths, weaknesses, suggestions, score } = parsedContent;
-
   return (
     <>
-      <div className="pt-2">
-        <RadialChartComponent score={score ?? "-"} />
+      <div className="pt-2 flex justify-center">
+        {score ? (
+          <RadialChartComponent score={score ?? "-"} />
+        ) : (
+          <RadialChartSekeleton />
+        )}
       </div>
       <div className="mt-[-50px]">
         {summary && (
