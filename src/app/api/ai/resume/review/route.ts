@@ -2,10 +2,13 @@ import "server-only";
 
 import { auth } from "@/auth";
 import { NextApiRequest, NextApiResponse } from "next";
-import { getResumeReviewByAi } from "@/actions/ai.actions";
+import {
+  getResumeReviewByOllama,
+  getResumeReviewByOpenAi,
+} from "@/actions/ai.actions";
 import { NextRequest, NextResponse } from "next/server";
 import { Resume } from "@/models/profile.model";
-import { AiModel } from "@/models/ai.model";
+import { AiModel, AiProvider } from "@/models/ai.model";
 
 export const POST = async (req: NextRequest, res: NextApiResponse) => {
   const session = await auth();
@@ -22,7 +25,16 @@ export const POST = async (req: NextRequest, res: NextApiResponse) => {
     if (!resume || !selectedModel) {
       throw new Error("Resume or selected model is required");
     }
-    const response = await getResumeReviewByAi(resume, selectedModel.model);
+
+    let response;
+    switch (selectedModel.provider) {
+      case AiProvider.OPENAI:
+        response = await getResumeReviewByOpenAi(resume, selectedModel.model);
+        break;
+      default:
+        response = await getResumeReviewByOllama(resume, selectedModel.model);
+        break;
+    }
 
     return new NextResponse(response, {
       headers: {

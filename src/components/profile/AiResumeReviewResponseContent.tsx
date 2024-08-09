@@ -39,6 +39,9 @@ export const AiResumeReviewResponseContent = ({
         {weaknesses && <Section title="Weaknesses" items={weaknesses} />}
         {suggestions && <Section title="Suggestions" items={suggestions} />}
       </div>
+      {/* <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+        <code className="text-white">{parse(content)}</code>
+      </pre> */}
     </>
   );
 };

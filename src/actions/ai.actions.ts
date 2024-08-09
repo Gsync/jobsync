@@ -1,40 +1,29 @@
 "use server";
 
 import { ChatOpenAI } from "@langchain/openai";
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { ChatOllama } from "@langchain/community/chat_models/ollama";
-import { StringOutputParser } from "@langchain/core/output_parsers";
+import {
+  StringOutputParser,
+  StructuredOutputParser,
+} from "@langchain/core/output_parsers";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { Resume } from "@/models/profile.model";
 import { JobResponse } from "@/models/job.model";
 import { convertJobToText, convertResumeToText } from "@/utils/ai.utils";
 
-export const getResumeReviewByAi = async (
+export const getResumeReviewByOllama = async (
   resume: Resume,
   aImodel?: string
-): Promise<any | undefined> => {
-  // const model2 = new ChatOpenAI({
-  //   modelName: "gpt-3.5-turbo",
-  //   openAIApiKey: process.env.OPENAI_API_KEY,
-  // });
-
-  // const messages = [
-  //   new SystemMessage("Translate the following from English into Italian"),
-  //   new HumanMessage("hi!"),
-  // ];
-  // const prompt1 = ChatPromptTemplate.fromMessages(messages);
-  // const output1 = await model2.invoke(messages);
-  // console.log({ output1 });
-
+): Promise<ReadableStream | undefined> => {
   const prompt = ChatPromptTemplate.fromMessages([
     [
       "system",
       `
-      You are an expert resume writer. You must always return JSON object with following structure.
+      You are an expert resume writer and career coach. You must always return JSON object with following structure.
     
-        summary: Provide a brief summary of the resume.
-        strengths: List the strengths of the resume.
-        weaknesses: List the weaknesses of the resume.
+        summary: Provide a brief summary of the resume review.
+        strengths: List the strengths in the resume.
+        weaknesses: List the weaknesses in the resume.
         suggestions: Provide suggestions for improvement in a list of string.
         score: Provide a score for the resume (0-100).
       `,
@@ -62,9 +51,62 @@ export const getResumeReviewByAi = async (
 
   const stream = await model
     .pipe(new StringOutputParser())
-    // .invoke(inputMessage);
     .stream(inputMessage);
-  // return response;
+  const encoder = new TextEncoder();
+
+  return new ReadableStream({
+    async start(controller) {
+      for await (const chunk of stream) {
+        controller.enqueue(encoder.encode(chunk));
+      }
+      controller.close();
+    },
+  });
+};
+
+export const getResumeReviewByOpenAi = async (
+  resume: Resume,
+  aImodel?: string
+): Promise<ReadableStream | undefined> => {
+  const prompt = ChatPromptTemplate.fromMessages([
+    [
+      "system",
+      `
+      You are an expert resume writer and career coach. You must only return JSON object with following property structure.
+    
+        summary: Provide a brief summary of the resume review.
+        strengths: List the strengths in the resume.
+        weaknesses: List the weaknesses in the resume.
+        suggestions: Provide suggestions for improvement in a list of string.
+        score: Provide a score for the resume (0-100), scoring should be strict and criteria should include skills, ATS friendliness, and formatting.
+      `,
+    ],
+    [
+      "human",
+      `
+      Review the resume provided below and and provide feedback in the specified JSON format.
+      
+      {resume}
+      `,
+    ],
+  ]);
+
+  const resumeText = await convertResumeToText(resume);
+
+  const inputMessage = await prompt.format({ resume: resumeText });
+
+  const model = new ChatOpenAI({
+    modelName: aImodel,
+    openAIApiKey: process.env.OPENAI_API_KEY,
+    temperature: 0,
+    maxConcurrency: 1,
+    maxTokens: 3000,
+  });
+
+  const stream = await model
+    .pipe(new StringOutputParser())
+    .stream(inputMessage);
+
   const encoder = new TextEncoder();
 
   return new ReadableStream({

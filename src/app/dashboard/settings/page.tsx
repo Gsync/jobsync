@@ -9,10 +9,10 @@ function Settings() {
       <h3 className="text-2xl font-semibold leading-none tracking-tight mb-4">
         Settings
       </h3>
-      <Tabs defaultValue="display">
+      <Tabs defaultValue="ai">
         <TabsList>
-          <TabsTrigger value="display">Display</TabsTrigger>
           <TabsTrigger value="ai">AI</TabsTrigger>
+          <TabsTrigger value="display">Display</TabsTrigger>
         </TabsList>
         <TabsContent value="display">
           <DisplaySettings />
