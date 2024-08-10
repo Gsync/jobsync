@@ -93,7 +93,7 @@ export const AiJobMatchSection = ({
       const response = await fetch("/api/ai/resume/match", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeId, jobId }),
+        body: JSON.stringify({ resumeId, jobId, selectedModel }),
         signal: abortController.signal,
       });
 
