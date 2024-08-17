@@ -24,6 +24,18 @@ function JobDetails({ job }: { job: JobResponse }) {
   const getAiJobMatch = async () => {
     setAiSectionOpen(true);
   };
+  const getJobType = (code: string) => {
+    switch (code) {
+      case "FT":
+        return "Full-time";
+      case "PT":
+        return "Part-time";
+      case "C":
+        return "Contract";
+      default:
+        return "Unknown";
+    }
+  };
   return (
     <>
       <div className="flex justify-between">
@@ -49,7 +61,7 @@ function JobDetails({ job }: { job: JobResponse }) {
             {job?.Company?.label}
             <CardTitle>{job?.JobTitle?.label}</CardTitle>
             <CardDescription>
-              {job?.Location?.label} - {job?.jobType}
+              {job?.Location?.label} - {getJobType(job?.jobType)}
             </CardDescription>
           </CardHeader>
           <h3 className="ml-4">
@@ -67,7 +79,7 @@ function JobDetails({ job }: { job: JobResponse }) {
               </Badge>
             )}
             <span className="ml-2">
-              {format(new Date(job?.appliedDate), "PP")}
+              {job?.appliedDate ? format(new Date(job?.appliedDate), "PP") : ""}
             </span>
           </h3>
           {job.jobUrl && (
