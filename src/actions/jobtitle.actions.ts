@@ -51,9 +51,7 @@ export const getJobTitleList = async (
                   select: {
                     jobs: {
                       where: {
-                        Status: {
-                          value: countBy,
-                        },
+                        applied: true,
                       },
                     },
                   },
