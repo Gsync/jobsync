@@ -112,9 +112,7 @@ describe("Company Actions", () => {
             select: {
               jobsApplied: {
                 where: {
-                  Status: {
-                    value: "applied",
-                  },
+                  applied: true,
                 },
               },
             },
