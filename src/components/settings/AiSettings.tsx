@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import {
   AiModel,
   AiProvider,
+  defaultModel,
   OllamaModel,
   OpenaiModel,
 } from "@/models/ai.model";
@@ -21,10 +22,7 @@ import {
   getFromLocalStorage,
   saveToLocalStorage,
 } from "@/utils/localstorage.utils";
-const defaultModel: AiModel = {
-  provider: AiProvider.OLLAMA,
-  model: OllamaModel.LLAMA3_1,
-};
+import { toast } from "../ui/use-toast";
 
 function AiSettings() {
   const [selectedModel, setSelectedModel] = useState<AiModel>(defaultModel);
@@ -50,6 +48,22 @@ function AiSettings() {
       default:
         return [];
     }
+  };
+  const saveModelSettings = () => {
+    if (!selectedModel.model) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please select a model to save.",
+      });
+      return;
+    }
+    saveToLocalStorage("aiSettings", selectedModel);
+    toast({
+      variant: "success",
+      title: "Saved!",
+      description: "AI Settings saved successfully.",
+    });
   };
   return (
     <Card>
@@ -109,10 +123,7 @@ function AiSettings() {
             </SelectContent>
           </Select>
         </div>
-        <Button
-          className="mt-8"
-          onClick={() => saveToLocalStorage("aiSettings", selectedModel)}
-        >
+        <Button className="mt-8" onClick={saveModelSettings}>
           Save
         </Button>
       </CardContent>

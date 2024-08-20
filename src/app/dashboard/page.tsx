@@ -18,8 +18,8 @@ export const metadata: Metadata = {
 
 export default async function Dashboard() {
   const [
-    jobsAppliedLast7Days,
-    jobsAppliedLast30Days,
+    { count: jobsAppliedLast7Days, trend: trendFor7Days },
+    { count: jobsAppliedLast30Days, trend: trendFor30Days },
     recentJobs,
     weeklyData,
     activityCalendarData,
@@ -38,14 +38,12 @@ export default async function Dashboard() {
           <NumberCard
             label="Last 7 days"
             num={jobsAppliedLast7Days}
-            desc="+35%"
-            progress={45}
+            trend={trendFor7Days}
           />
           <NumberCard
             label="Last 30 days"
             num={jobsAppliedLast30Days}
-            desc="+20%"
-            progress={25}
+            trend={trendFor30Days}
           />
         </div>
         <div className="flex flex-col justify-center">

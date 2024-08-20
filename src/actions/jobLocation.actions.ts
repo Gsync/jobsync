@@ -43,9 +43,7 @@ export const getJobLocationsList = async (
                   select: {
                     jobsApplied: {
                       where: {
-                        Status: {
-                          value: countBy,
-                        },
+                        applied: true,
                       },
                     },
                   },

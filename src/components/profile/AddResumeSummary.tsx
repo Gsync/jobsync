@@ -1,7 +1,6 @@
 import { useForm } from "react-hook-form";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -139,15 +138,16 @@ function AddResumeSummary({
               <DialogFooter
               // className="md:col-span
               >
-                <DialogClose>
+                <div>
                   <Button
                     type="reset"
                     variant="outline"
                     className="mt-2 md:mt-0 w-full"
+                    onClick={() => setDialogOpen(false)}
                   >
                     Cancel
                   </Button>
-                </DialogClose>
+                </div>
                 <Button type="submit" disabled={!formState.isDirty}>
                   Save
                   {isPending && <Loader className="h-4 w-4 shrink-0 spinner" />}

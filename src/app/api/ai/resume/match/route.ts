@@ -4,9 +4,11 @@ import { auth } from "@/auth";
 import { NextApiRequest, NextApiResponse } from "next";
 import { NextRequest, NextResponse } from "next/server";
 import { Resume } from "@/models/profile.model";
-import { getJobMatchByAi } from "@/actions/ai.actions";
+import { getJobMatchByOllama, getJobMatchByOpenAi } from "@/actions/ai.actions";
 import { getResumeById } from "@/actions/profile.actions";
 import { getJobDetails } from "@/actions/job.actions";
+import { AiModel, AiProvider } from "@/models/ai.model";
+import { JobResponse } from "@/models/job.model";
 
 export const POST = async (req: NextRequest, res: NextApiResponse) => {
   const session = await auth();
@@ -15,18 +17,29 @@ export const POST = async (req: NextRequest, res: NextApiResponse) => {
   if (!session || !session.user) {
     return res.status(401).json({ message: "Not Authenticated" });
   }
+  const { resumeId, jobId, selectedModel } = (await req.json()) as {
+    resumeId: string;
+    jobId: string;
+    selectedModel: AiModel;
+  };
   try {
-    if (!req.body) {
-      throw new Error("Resume and Job Id is required");
+    if (!resumeId || !jobId || !selectedModel) {
+      throw new Error("ResumeId, Job Id and selectedModel is required");
     }
-    const { resumeId, jobId } = await req.json();
 
-    const [resume, { job }] = await Promise.all([
-      getResumeById(resumeId),
-      getJobDetails(jobId),
-    ]);
+    const [resume, { job }]: [Resume, { job: JobResponse }] = await Promise.all(
+      [getResumeById(resumeId), getJobDetails(jobId)]
+    );
 
-    const response = await getJobMatchByAi(resume, job);
+    let response;
+    switch (selectedModel.provider) {
+      case AiProvider.OPENAI:
+        response = await getJobMatchByOpenAi(resume, job, selectedModel.model);
+        break;
+      default:
+        response = await getJobMatchByOllama(resume, job, selectedModel.model);
+        break;
+    }
 
     return new NextResponse(response, {
       headers: {
