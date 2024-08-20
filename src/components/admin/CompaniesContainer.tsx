@@ -22,6 +22,7 @@ function CompaniesContainer({
   const [currentPage, setCurrentPage] = useState(
     Number(queryParams.get("page")) || 1
   );
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editCompany, setEditCompany] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -61,6 +62,7 @@ function CompaniesContainer({
   const onEditCompany = async (companyId: string) => {
     const company = await getCompanyById(companyId);
     setEditCompany(company);
+    setDialogOpen(true);
   };
 
   const onPageChange = (page: number) => {
@@ -80,6 +82,8 @@ function CompaniesContainer({
                   editCompany={editCompany}
                   reloadCompanies={reloadCompanies}
                   resetEditCompany={resetEditCompany}
+                  dialogOpen={dialogOpen}
+                  setDialogOpen={setDialogOpen}
                 />
               </div>
             </div>

@@ -3,7 +3,6 @@ import { useTransition, useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -32,14 +31,17 @@ type AddCompanyProps = {
   reloadCompanies: () => void;
   editCompany?: Company | null;
   resetEditCompany: () => void;
+  dialogOpen: boolean;
+  setDialogOpen: (e: boolean) => void;
 };
 
 function AddCompany({
   reloadCompanies,
   editCompany,
   resetEditCompany,
+  dialogOpen,
+  setDialogOpen,
 }: AddCompanyProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const pageTitle = editCompany ? "Edit Company" : "Add Company";
@@ -48,21 +50,22 @@ function AddCompany({
     resolver: zodResolver(AddCompanyFormSchema),
   });
 
-  const { setValue, reset, formState, clearErrors } = form;
+  const { reset, formState } = form;
 
   useEffect(() => {
+    console.log("use effect");
     if (editCompany) {
-      clearErrors();
-      setValue("id", editCompany.id);
-      setValue("company", editCompany.label);
-      setValue("createdBy", editCompany.createdBy);
-      if (editCompany.logoUrl) {
-        setValue("logoUrl", editCompany?.logoUrl);
-      }
-
-      setDialogOpen(true);
+      reset(
+        {
+          id: editCompany?.id,
+          company: editCompany?.label ?? "",
+          createdBy: editCompany?.createdBy,
+          logoUrl: editCompany?.logoUrl ?? "",
+        },
+        { keepDefaultValues: true }
+      );
     }
-  }, [editCompany, setValue, clearErrors]);
+  }, [editCompany, reset]);
 
   const addCompanyForm = () => {
     reset();

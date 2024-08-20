@@ -11,6 +11,7 @@ jest.mock("@/actions/company.actions", () => ({
 describe("AddCompany Component", () => {
   const mockReloadCompanies = jest.fn();
   const mockResetEditCompany = jest.fn();
+  const mockSetDialogOpen = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -21,6 +22,8 @@ describe("AddCompany Component", () => {
       <AddCompany
         reloadCompanies={mockReloadCompanies}
         resetEditCompany={mockResetEditCompany}
+        dialogOpen={false}
+        setDialogOpen={mockSetDialogOpen}
       />
     );
     expect(
@@ -33,6 +36,8 @@ describe("AddCompany Component", () => {
       <AddCompany
         reloadCompanies={mockReloadCompanies}
         resetEditCompany={mockResetEditCompany}
+        dialogOpen={false}
+        setDialogOpen={mockSetDialogOpen}
       />
     );
     const addCompanyButton = screen.getByRole("button", {
@@ -40,8 +45,7 @@ describe("AddCompany Component", () => {
     });
     fireEvent.click(addCompanyButton);
 
-    const dialog = await screen.findByRole("dialog");
-    expect(dialog).toBeInTheDocument();
+    expect(mockSetDialogOpen).toHaveBeenCalledWith(true);
   });
 
   it("should populate form fields when editing a company", async () => {
@@ -58,6 +62,8 @@ describe("AddCompany Component", () => {
         reloadCompanies={mockReloadCompanies}
         resetEditCompany={mockResetEditCompany}
         editCompany={mockEditCompany}
+        dialogOpen={true}
+        setDialogOpen={mockSetDialogOpen}
       />
     );
 
@@ -77,6 +83,8 @@ describe("AddCompany Component", () => {
       <AddCompany
         reloadCompanies={mockReloadCompanies}
         resetEditCompany={mockResetEditCompany}
+        dialogOpen={true}
+        setDialogOpen={mockSetDialogOpen}
       />
     );
 
@@ -117,6 +125,8 @@ describe("AddCompany Component", () => {
         reloadCompanies={mockReloadCompanies}
         resetEditCompany={mockResetEditCompany}
         editCompany={mockEditCompany}
+        dialogOpen={true}
+        setDialogOpen={mockSetDialogOpen}
       />
     );
 
