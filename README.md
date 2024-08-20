@@ -116,3 +116,7 @@ Its making use of llama3.1 model, and only tested with 8B variant, please make s
 #### OpenAI
 
 You must add your valid API key in the docker file, also please make sure openai provider and model is selected from the settings page, ollama is selected as the default provider.
+
+```
+ENV OPENAI_API_KEY=sk-xxx
+```
