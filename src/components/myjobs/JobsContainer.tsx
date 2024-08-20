@@ -142,6 +142,7 @@ function JobsContainer({
   const onChangeJobStatus = async (jobId: string, jobStatus: JobStatus) => {
     const { success, message } = await updateJobStatus(jobId, jobStatus);
     if (success) {
+      router.refresh();
       toast({
         variant: "success",
         description: `Job has been updated successfully`,

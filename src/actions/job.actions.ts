@@ -4,6 +4,7 @@ import { handleError } from "@/lib/utils";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
 import { JobStatus } from "@/models/job.model";
 import { getCurrentUser } from "@/utils/user.utils";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 export const getStatusList = async (): Promise<any | undefined> => {

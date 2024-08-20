@@ -2,9 +2,13 @@ import "server-only";
 
 import { auth } from "@/auth";
 import { NextApiRequest, NextApiResponse } from "next";
-import { getResumeReviewByAi } from "@/actions/ai.actions";
+import {
+  getResumeReviewByOllama,
+  getResumeReviewByOpenAi,
+} from "@/actions/ai.actions";
 import { NextRequest, NextResponse } from "next/server";
 import { Resume } from "@/models/profile.model";
+import { AiModel, AiProvider } from "@/models/ai.model";
 
 export const POST = async (req: NextRequest, res: NextApiResponse) => {
   const session = await auth();
@@ -13,13 +17,24 @@ export const POST = async (req: NextRequest, res: NextApiResponse) => {
   if (!session || !session.user) {
     return res.status(401).json({ message: "Not Authenticated" });
   }
+  const { selectedModel, resume } = (await req.json()) as {
+    selectedModel: AiModel;
+    resume: Resume;
+  };
   try {
-    if (!req.body) {
-      throw new Error("Resume is required");
+    if (!resume || !selectedModel) {
+      throw new Error("Resume or selected model is required");
     }
-    const resume = (await req.json()) as Resume;
 
-    const response = await getResumeReviewByAi(resume);
+    let response;
+    switch (selectedModel.provider) {
+      case AiProvider.OPENAI:
+        response = await getResumeReviewByOpenAi(resume, selectedModel.model);
+        break;
+      default:
+        response = await getResumeReviewByOllama(resume, selectedModel.model);
+        break;
+    }
 
     return new NextResponse(response, {
       headers: {
@@ -33,8 +48,7 @@ export const POST = async (req: NextRequest, res: NextApiResponse) => {
     console.error(message, error);
     if (error instanceof Error) {
       if (error.message === "fetch failed") {
-        error.message =
-          "Fetch failed, please make sure selected AI provider service is running.";
+        error.message = `Fetch failed, please make sure selected AI provider (${selectedModel.provider}) service is running.`;
       }
       return NextResponse.json(
         { error: error.message },

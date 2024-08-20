@@ -1,68 +1,51 @@
+import { RadialChartComponent } from "../RadialChart";
+import { RadialChartSekeleton } from "../RadialChartSekeleton";
 import { SheetDescription } from "../ui/sheet";
 import { parse } from "best-effort-json-parser";
+
+const Section = ({ title, items }: { title: string; items: string[] }) => (
+  <div className="pt-2">
+    <h2 className="font-semibold">{title}:</h2>
+    <SheetDescription>
+      {items.map((item, index) => (
+        <li key={index}>{item}</li>
+      ))}
+    </SheetDescription>
+  </div>
+);
 
 export const AiResumeReviewResponseContent = ({
   content,
 }: {
-  content: any;
+  content: string;
 }) => {
+  if (content.length <= 1) return null;
+
+  const parsedContent = parse(content);
+  const { summary, strengths, weaknesses, suggestions, score } = parsedContent;
   return (
     <>
-      <div className="pt-2">
-        {content.length > 1 && (
-          <>
+      <div className="pt-2 flex justify-center">
+        {score ? (
+          <RadialChartComponent score={score ?? "-"} />
+        ) : (
+          <RadialChartSekeleton />
+        )}
+      </div>
+      <div className="mt-[-50px]">
+        {summary && (
+          <div className="pt-2">
             <h2 className="font-semibold">Summary:</h2>
-            <SheetDescription>{parse(content).summary}</SheetDescription>
-          </>
+            <SheetDescription>{summary}</SheetDescription>
+          </div>
         )}
-      </div>
-      <div className="pt-2">
-        {content.length > 1 && parse(content).strengths && (
-          <>
-            <h2 className="font-semibold">Strengths:</h2>
-            <SheetDescription>
-              {parse(content).strengths.map((s: string, i: number) => {
-                return <li key={i}>{s}</li>;
-              })}
-            </SheetDescription>
-          </>
-        )}
-      </div>
-      <div className="pt-2">
-        {content.length > 1 && parse(content).weaknesses && (
-          <>
-            <h2 className="font-semibold">Weaknesses: </h2>
-            <SheetDescription>
-              {parse(content).weaknesses.map((w: string, i: number) => {
-                return <li key={i}>{w}</li>;
-              })}
-            </SheetDescription>
-          </>
-        )}
-      </div>
-      <div className="pt-2">
-        {content.length > 1 && parse(content).suggestions && (
-          <>
-            <h2 className="font-semibold">Suggestions: </h2>
-            <SheetDescription>
-              {parse(content).suggestions.map((s: string, i: number) => {
-                return <li key={i}>{s}</li>;
-              })}
-            </SheetDescription>
-          </>
-        )}
-        <div className="pt-2">
-          {content.length > 1 && parse(content).score && (
-            <h2>Review Score: {parse(content).score}</h2>
-          )}
-        </div>
+        {strengths && <Section title="Strengths" items={strengths} />}
+        {weaknesses && <Section title="Weaknesses" items={weaknesses} />}
+        {suggestions && <Section title="Suggestions" items={suggestions} />}
       </div>
       {/* <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-     <code className="text-white">
-       {JSON.stringify(aIContent, null, 2)}
-       {aIContent}
-     </code>
-   </pre> */}
+        <code className="text-white">{parse(content)}</code>
+      </pre> */}
     </>
   );
 };
