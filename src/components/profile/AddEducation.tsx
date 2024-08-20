@@ -6,7 +6,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -313,15 +312,16 @@ function AddEducation({
             </div>
             <div className="md:col-span-2 mt-4">
               <DialogFooter>
-                <DialogClose>
+                <div>
                   <Button
                     type="reset"
                     variant="outline"
                     className="mt-2 md:mt-0 w-full"
+                    onClick={() => setDialogOpen(false)}
                   >
                     Cancel
                   </Button>
-                </DialogClose>
+                </div>
                 <Button type="submit" disabled={!formState.isDirty}>
                   Save
                   {isPending && <Loader className="h-4 w-4 shrink-0 spinner" />}
