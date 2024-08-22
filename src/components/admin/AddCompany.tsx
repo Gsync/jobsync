@@ -53,7 +53,6 @@ function AddCompany({
   const { reset, formState } = form;
 
   useEffect(() => {
-    console.log("use effect");
     if (editCompany) {
       reset(
         {
