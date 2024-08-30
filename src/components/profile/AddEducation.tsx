@@ -67,34 +67,40 @@ function AddEducation({
     },
   });
 
-  const { setValue, watch, reset, formState, resetField, clearErrors } = form;
+  const { watch, reset, formState, resetField } = form;
 
   const degreeCompletedValue = watch("degreeCompleted");
 
   useEffect(() => {
     getLocationData();
     if (educationToEdit) {
-      clearErrors();
       const education: Education = educationToEdit?.educations?.at(0)!;
-      setValue("id", education?.id);
-      setValue("institution", education?.institution);
-      setValue("degree", education?.degree);
-      setValue("fieldOfStudy", education?.fieldOfStudy);
-      setValue("location", education?.location.id);
-      setValue("startDate", education?.startDate);
-      setValue("endDate", education?.endDate);
-      setValue("description", education?.description);
-      setValue("degreeCompleted", !!!education?.endDate);
+      reset(
+        {
+          id: education?.id,
+          institution: education?.institution,
+          degree: education?.degree,
+          fieldOfStudy: education?.fieldOfStudy,
+          location: education?.location.id,
+          startDate: education?.startDate,
+          endDate: education?.endDate,
+          description: education?.description,
+          degreeCompleted: !!education?.endDate,
+        },
+        { keepDefaultValues: true }
+      );
     } else {
-      reset();
+      reset(
+        {
+          sectionId,
+        },
+        { keepDefaultValues: true }
+      );
       resetEducationToEdit();
     }
-    setValue("sectionId", sectionId);
   }, [
     getLocationData,
     educationToEdit,
-    clearErrors,
-    setValue,
     sectionId,
     reset,
     resetEducationToEdit,

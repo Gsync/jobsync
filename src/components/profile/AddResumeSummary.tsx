@@ -53,19 +53,23 @@ function AddResumeSummary({
     },
   });
 
-  const { setValue, reset, formState, clearErrors } = form;
+  const { reset, formState } = form;
 
   useEffect(() => {
     if (summaryToEdit) {
-      clearErrors();
-      setValue("id", summaryToEdit.id);
-      setValue("sectionTitle", summaryToEdit.sectionTitle);
-      setValue("sectionType", summaryToEdit.sectionType);
-      setValue("content", summaryToEdit.summary?.content!);
-    } else {
-      reset();
+      reset(
+        {
+          id: summaryToEdit.id,
+          sectionTitle: summaryToEdit.sectionTitle,
+          sectionType: summaryToEdit.sectionType,
+          content: summaryToEdit.summary?.content!,
+        },
+        {
+          keepDefaultValues: true,
+        }
+      );
     }
-  }, [summaryToEdit, setValue, clearErrors, reset, dialogOpen]);
+  }, [summaryToEdit, reset]);
 
   const onSubmit = (data: z.infer<typeof AddSummarySectionFormSchema>) => {
     startTransition(async () => {
