@@ -1,11 +1,11 @@
 "use client";
-import { Loader, PlusCircle } from "lucide-react";
+import { Loader } from "lucide-react";
 import { Button } from "../ui/button";
 import { useForm } from "react-hook-form";
 import { CreateResumeFormSchema } from "@/models/createResumeForm.schema";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useTransition } from "react";
 import {
   Dialog,
   DialogClose,
@@ -28,17 +28,18 @@ import { toast } from "../ui/use-toast";
 import { createResumeProfile, editResume } from "@/actions/profile.actions";
 
 type CreateResumeProps = {
+  resumeDialogOpen: boolean;
+  setResumeDialogOpen: (e: boolean) => void;
   resumeToEdit?: Resume | null;
   reloadResumes: () => void;
-  resetResumeToEdit: () => void;
 };
 
 function CreateResume({
+  resumeDialogOpen,
+  setResumeDialogOpen,
   resumeToEdit,
   reloadResumes,
-  resetResumeToEdit,
 }: CreateResumeProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const pageTitle = resumeToEdit ? "Edit Resume Title" : "Create Resume";
@@ -47,23 +48,21 @@ function CreateResume({
     resolver: zodResolver(CreateResumeFormSchema),
   });
 
-  const { setValue, reset, formState, clearErrors } = form;
+  const { reset, formState } = form;
 
   useEffect(() => {
     if (resumeToEdit) {
-      clearErrors();
-      setValue("id", resumeToEdit.id);
-      setValue("title", resumeToEdit.title);
-
-      setDialogOpen(true);
+      reset(
+        {
+          id: resumeToEdit.id,
+          title: resumeToEdit.title,
+        },
+        { keepDefaultValues: true }
+      );
+    } else {
+      reset();
     }
-  }, [resumeToEdit, setValue, clearErrors]);
-
-  const createResume = () => {
-    reset();
-    resetResumeToEdit();
-    setDialogOpen(true);
-  };
+  }, [resumeToEdit, reset]);
 
   const onSubmit = (data: z.infer<typeof CreateResumeFormSchema>) => {
     startTransition(async () => {
@@ -78,7 +77,7 @@ function CreateResume({
         });
       } else {
         reset();
-        setDialogOpen(false);
+        setResumeDialogOpen(false);
         reloadResumes();
         toast({
           variant: "success",
@@ -91,71 +90,56 @@ function CreateResume({
   };
 
   return (
-    <>
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-8 gap-1"
-        onClick={createResume}
-      >
-        <PlusCircle className="h-3.5 w-3.5" />
-        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-          Create Resume
-        </span>
-      </Button>
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="lg:max-h-screen overflow-y-scroll">
-          <DialogHeader>
-            <DialogTitle>{pageTitle}</DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="grid grid-cols-1 md:grid-cols-2 gap-4 p-2"
-            >
-              {/* RESUME TITLE */}
-              <div className="md:col-span-2">
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Resume Title</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="Ex: Full Stack Developer Angular, Java"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="md:col-span-2 mt-4">
-                <DialogFooter>
-                  <DialogClose>
-                    <Button
-                      type="reset"
-                      variant="outline"
-                      className="mt-2 md:mt-0 w-full"
-                    >
-                      Cancel
-                    </Button>
-                  </DialogClose>
-                  <Button type="submit" disabled={!formState.isDirty}>
-                    Save
-                    {isPending && (
-                      <Loader className="h-4 w-4 shrink-0 spinner" />
-                    )}
+    <Dialog open={resumeDialogOpen} onOpenChange={setResumeDialogOpen}>
+      <DialogContent className="lg:max-h-screen overflow-y-scroll">
+        <DialogHeader>
+          <DialogTitle>{pageTitle}</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="grid grid-cols-1 md:grid-cols-2 gap-4 p-2"
+          >
+            {/* RESUME TITLE */}
+            <div className="md:col-span-2">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Resume Title</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Ex: Full Stack Developer Angular, Java"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="md:col-span-2 mt-4">
+              <DialogFooter>
+                <DialogClose>
+                  <Button
+                    type="reset"
+                    variant="outline"
+                    className="mt-2 md:mt-0 w-full"
+                  >
+                    Cancel
                   </Button>
-                </DialogFooter>
-              </div>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-    </>
+                </DialogClose>
+                <Button type="submit" disabled={!formState.isDirty}>
+                  Save
+                  {isPending && <Loader className="h-4 w-4 shrink-0 spinner" />}
+                </Button>
+              </DialogFooter>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
