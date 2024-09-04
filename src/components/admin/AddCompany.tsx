@@ -72,6 +72,8 @@ function AddCompany({
     setDialogOpen(true);
   };
 
+  const closeDialog = () => setDialogOpen(false);
+
   const onSubmit = (data: z.infer<typeof AddCompanyFormSchema>) => {
     startTransition(async () => {
       const res = editCompany
@@ -167,7 +169,7 @@ function AddCompany({
                       type="reset"
                       variant="outline"
                       className="mt-2 md:mt-0 w-full"
-                      onClick={() => setDialogOpen(false)}
+                      onClick={closeDialog}
                     >
                       Cancel
                     </Button>

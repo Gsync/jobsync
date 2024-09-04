@@ -95,6 +95,8 @@ function AddResumeSummary({
     });
   };
 
+  const closeDialog = () => setDialogOpen(false);
+
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogContent className="lg:max-h-screen overflow-y-scroll">
@@ -147,7 +149,7 @@ function AddResumeSummary({
                     type="reset"
                     variant="outline"
                     className="mt-2 md:mt-0 w-full"
-                    onClick={() => setDialogOpen(false)}
+                    onClick={closeDialog}
                   >
                     Cancel
                   </Button>

@@ -136,6 +136,8 @@ function AddEducation({
     });
   };
 
+  const closeDialog = () => setDialogOpen(false);
+
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogContent className="h-full md:h-[85%] lg:max-h-screen md:max-w-[40rem] overflow-y-scroll">
@@ -323,7 +325,7 @@ function AddEducation({
                     type="reset"
                     variant="outline"
                     className="mt-2 md:mt-0 w-full"
-                    onClick={() => setDialogOpen(false)}
+                    onClick={closeDialog}
                   >
                     Cancel
                   </Button>
