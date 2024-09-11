@@ -157,7 +157,6 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
           dialogOpen={experienceDialogOpen}
           setDialogOpen={setExperienceDialogOpen}
           experienceToEdit={experienceToEdit!}
-          resetExperienceToEdit={resetExperienceToEdit}
         />
         <AddEducation
           resumeId={resume?.id}
@@ -165,7 +164,6 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
           dialogOpen={educationDialogOpen}
           setDialogOpen={setEducationDialogOpen}
           educationToEdit={educationToEdit!}
-          resetEducationToEdit={resetEducationToEdit}
         />
       </>
     );

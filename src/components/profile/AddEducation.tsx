@@ -38,7 +38,6 @@ type AddEducationProps = {
   dialogOpen: boolean;
   setDialogOpen: (e: boolean) => void;
   educationToEdit?: ResumeSection;
-  resetEducationToEdit: () => void;
 };
 
 function AddEducation({
@@ -47,7 +46,6 @@ function AddEducation({
   dialogOpen,
   setDialogOpen,
   educationToEdit,
-  resetEducationToEdit,
 }: AddEducationProps) {
   const pageTitle = educationToEdit ? "Edit Education" : "Add Education";
   const [isPending, startTransition] = useTransition();
@@ -92,19 +90,13 @@ function AddEducation({
     } else {
       reset(
         {
+          resumeId,
           sectionId,
         },
         { keepDefaultValues: true }
       );
-      resetEducationToEdit();
     }
-  }, [
-    getLocationData,
-    educationToEdit,
-    sectionId,
-    reset,
-    resetEducationToEdit,
-  ]);
+  }, [getLocationData, educationToEdit, resumeId, sectionId, reset]);
 
   const onDegreeCompleted = (completed: boolean) => {
     if (completed) {
