@@ -47,8 +47,8 @@ function CompaniesContainer({
     [recordsPerPage]
   );
 
-  const reloadCompanies = () => {
-    loadCompanies(1);
+  const reloadCompanies = (page = 1) => {
+    loadCompanies(page);
   };
 
   const resetEditCompany = () => {
@@ -92,6 +92,7 @@ function CompaniesContainer({
             {!loading ? (
               <CompaniesTable
                 companies={companies}
+                reloadCompanies={reloadCompanies}
                 currentPage={currentPage}
                 totalPages={totalPages}
                 recordsPerPage={recordsPerPage}
