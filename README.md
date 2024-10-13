@@ -77,7 +77,7 @@ OR
 You can use default username (admin@example) and password (password123) or change it in the Dockerfile
 
 #### Step 3 - Build docker image and run container
-* **Please make sure you have <a href="https://www.docker.com">docker</a> installed, you dont need to know docker to be able to run the following command**
+* **Please make sure you have <a href="https://www.docker.com">docker</a> installed and running, you dont need to know docker to be able to run the following command**
 * Please make sure you are in the root folder in your terminal
 
 ```sh
@@ -120,3 +120,7 @@ You must add your valid API key in the docker file, also please make sure openai
 ```
 ENV OPENAI_API_KEY=sk-xxx
 ```
+
+### Note ###
+
+This app is not yet recommended for use on a remote server whether its cloud or local network, it has only been tested in a local environment.

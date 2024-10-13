@@ -79,6 +79,20 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
     const resetEducationToEdit = () => {
       setEducationToEdit(null);
     };
+    const openContactInfoDialog = () => setContactInfoDialogOpen(true);
+    const openSummaryDialog = () => setSummaryDialogOpen(true);
+    const openExperienceDialog = () => {
+      if (experienceToEdit) {
+        resetExperienceToEdit();
+      }
+      setExperienceDialogOpen(true);
+    };
+    const openEducationDialog = () => {
+      if (educationToEdit) {
+        resetEducationToEdit();
+      }
+      setEducationDialogOpen(true);
+    };
     return (
       <>
         <DropdownMenu>
@@ -98,37 +112,27 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
             <DropdownMenuGroup>
               <DropdownMenuItem
                 className="cursor-pointer"
-                onClick={() => setContactInfoDialogOpen(true)}
+                onClick={openContactInfoDialog}
                 disabled={!!resume?.ContactInfo}
               >
                 Add Contact Info
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"
-                onClick={() => setSummaryDialogOpen(true)}
+                onClick={openSummaryDialog}
                 disabled={!!summarySection}
               >
                 Add Summary
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"
-                onClick={() => {
-                  if (experienceToEdit) {
-                    resetExperienceToEdit();
-                  }
-                  setExperienceDialogOpen(true);
-                }}
+                onClick={openExperienceDialog}
               >
                 Add Experience
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"
-                onClick={() => {
-                  if (educationToEdit) {
-                    resetEducationToEdit();
-                  }
-                  setEducationDialogOpen(true);
-                }}
+                onClick={openEducationDialog}
               >
                 Add Education
               </DropdownMenuItem>
@@ -153,7 +157,6 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
           dialogOpen={experienceDialogOpen}
           setDialogOpen={setExperienceDialogOpen}
           experienceToEdit={experienceToEdit!}
-          resetExperienceToEdit={resetExperienceToEdit}
         />
         <AddEducation
           resumeId={resume?.id}
@@ -161,7 +164,6 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
           dialogOpen={educationDialogOpen}
           setDialogOpen={setEducationDialogOpen}
           educationToEdit={educationToEdit!}
-          resetEducationToEdit={resetEducationToEdit}
         />
       </>
     );

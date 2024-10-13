@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "../ui/button";
+import { Button, buttonVariants } from "../ui/button";
 import Image from "next/image";
 
 import {
@@ -18,11 +18,26 @@ import {
   TableRow,
 } from "../ui/table";
 import { Company } from "@/models/job.model";
-import { MoreHorizontal, Pencil } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash } from "lucide-react";
 import { TablePagination } from "../TablePagination";
+import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
+import { deleteCompanyById } from "@/actions/company.actions";
+import { toast } from "../ui/use-toast";
+import { redirect } from "next/navigation";
 
 type CompaniesTableProps = {
   companies: Company[];
+  reloadCompanies: (p: number) => void;
   currentPage: number;
   totalPages: number;
   totalCompanies: number;
@@ -31,8 +46,17 @@ type CompaniesTableProps = {
   editCompany: (id: string) => void;
 };
 
+type AlertDialog = {
+  openState: boolean;
+  title?: string;
+  description?: string;
+  deleteAction: boolean;
+  itemId?: string;
+};
+
 function CompaniesTable({
   companies,
+  reloadCompanies,
   currentPage,
   totalPages,
   totalCompanies,
@@ -40,8 +64,52 @@ function CompaniesTable({
   onPageChange,
   editCompany,
 }: CompaniesTableProps) {
+  const [alert, setAlert] = useState<AlertDialog>({
+    openState: false,
+    deleteAction: false,
+  });
   const startPostIndex = (currentPage - 1) * recordsPerPage + 1;
   const endPostIndex = Math.min(currentPage * recordsPerPage, totalCompanies);
+
+  const onDeleteCompany = (company: Company) => {
+    if (company._count?.jobsApplied! > 0) {
+      setAlert({
+        openState: true,
+        title: "Applied jobs exist!",
+        description:
+          "Associated jobs applied must be 0 to be able to delete this company",
+        deleteAction: false,
+      });
+    } else {
+      setAlert({
+        openState: true,
+        title: "Are you sure you want to delete this job?",
+        description:
+          "This action cannot be undone. This will permanently delete and remove data from server.",
+        deleteAction: true,
+        itemId: company.id,
+      });
+    }
+  };
+
+  const deleteCompany = async (companyId: string | undefined) => {
+    if (companyId) {
+      const { res, success, message } = await deleteCompanyById(companyId);
+      if (success) {
+        toast({
+          variant: "success",
+          description: `Company has been deleted successfully`,
+        });
+        reloadCompanies(currentPage);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error!",
+          description: message,
+        });
+      }
+    }
+  };
 
   return (
     <>
@@ -97,7 +165,13 @@ function CompaniesTable({
                         <Pencil className="mr-2 h-4 w-4" />
                         Edit Company
                       </DropdownMenuItem>
-                      <DropdownMenuItem>Delete</DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-red-600 cursor-pointer"
+                        onClick={() => onDeleteCompany(company)}
+                      >
+                        <Trash className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -121,6 +195,28 @@ function CompaniesTable({
           onPageChange={onPageChange}
         />
       )}
+      <AlertDialog
+        open={alert.openState}
+        onOpenChange={() => setAlert({ openState: false, deleteAction: false })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alert.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alert.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            {alert.deleteAction && (
+              <AlertDialogAction
+                className={buttonVariants({ variant: "destructive" })}
+                onClick={() => deleteCompany(alert.itemId)}
+              >
+                Delete
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

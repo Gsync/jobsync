@@ -38,7 +38,6 @@ type AddEducationProps = {
   dialogOpen: boolean;
   setDialogOpen: (e: boolean) => void;
   educationToEdit?: ResumeSection;
-  resetEducationToEdit: () => void;
 };
 
 function AddEducation({
@@ -47,7 +46,6 @@ function AddEducation({
   dialogOpen,
   setDialogOpen,
   educationToEdit,
-  resetEducationToEdit,
 }: AddEducationProps) {
   const pageTitle = educationToEdit ? "Edit Education" : "Add Education";
   const [isPending, startTransition] = useTransition();
@@ -67,38 +65,38 @@ function AddEducation({
     },
   });
 
-  const { setValue, watch, reset, formState, resetField, clearErrors } = form;
+  const { watch, reset, formState, resetField } = form;
 
   const degreeCompletedValue = watch("degreeCompleted");
 
   useEffect(() => {
     getLocationData();
     if (educationToEdit) {
-      clearErrors();
       const education: Education = educationToEdit?.educations?.at(0)!;
-      setValue("id", education?.id);
-      setValue("institution", education?.institution);
-      setValue("degree", education?.degree);
-      setValue("fieldOfStudy", education?.fieldOfStudy);
-      setValue("location", education?.location.id);
-      setValue("startDate", education?.startDate);
-      setValue("endDate", education?.endDate);
-      setValue("description", education?.description);
-      setValue("degreeCompleted", !!!education?.endDate);
+      reset(
+        {
+          id: education?.id,
+          institution: education?.institution,
+          degree: education?.degree,
+          fieldOfStudy: education?.fieldOfStudy,
+          location: education?.location.id,
+          startDate: education?.startDate,
+          endDate: education?.endDate,
+          description: education?.description,
+          degreeCompleted: !!education?.endDate,
+        },
+        { keepDefaultValues: true }
+      );
     } else {
-      reset();
-      resetEducationToEdit();
+      reset(
+        {
+          resumeId,
+          sectionId,
+        },
+        { keepDefaultValues: true }
+      );
     }
-    setValue("sectionId", sectionId);
-  }, [
-    getLocationData,
-    educationToEdit,
-    clearErrors,
-    setValue,
-    sectionId,
-    reset,
-    resetEducationToEdit,
-  ]);
+  }, [getLocationData, educationToEdit, resumeId, sectionId, reset]);
 
   const onDegreeCompleted = (completed: boolean) => {
     if (completed) {
@@ -129,6 +127,8 @@ function AddEducation({
       }
     });
   };
+
+  const closeDialog = () => setDialogOpen(false);
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -317,7 +317,7 @@ function AddEducation({
                     type="reset"
                     variant="outline"
                     className="mt-2 md:mt-0 w-full"
-                    onClick={() => setDialogOpen(false)}
+                    onClick={closeDialog}
                   >
                     Cancel
                   </Button>

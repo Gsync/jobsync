@@ -22,6 +22,7 @@ function CompaniesContainer({
   const [currentPage, setCurrentPage] = useState(
     Number(queryParams.get("page")) || 1
   );
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editCompany, setEditCompany] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -46,8 +47,8 @@ function CompaniesContainer({
     [recordsPerPage]
   );
 
-  const reloadCompanies = () => {
-    loadCompanies(1);
+  const reloadCompanies = (page = 1) => {
+    loadCompanies(page);
   };
 
   const resetEditCompany = () => {
@@ -61,6 +62,7 @@ function CompaniesContainer({
   const onEditCompany = async (companyId: string) => {
     const company = await getCompanyById(companyId);
     setEditCompany(company);
+    setDialogOpen(true);
   };
 
   const onPageChange = (page: number) => {
@@ -80,6 +82,8 @@ function CompaniesContainer({
                   editCompany={editCompany}
                   reloadCompanies={reloadCompanies}
                   resetEditCompany={resetEditCompany}
+                  dialogOpen={dialogOpen}
+                  setDialogOpen={setDialogOpen}
                 />
               </div>
             </div>
@@ -88,6 +92,7 @@ function CompaniesContainer({
             {!loading ? (
               <CompaniesTable
                 companies={companies}
+                reloadCompanies={reloadCompanies}
                 currentPage={currentPage}
                 totalPages={totalPages}
                 recordsPerPage={recordsPerPage}

@@ -147,6 +147,8 @@ export function AddJob({
     }
   };
 
+  const closeDialog = () => setDialogOpen(false);
+
   return (
     <>
       <Button
@@ -438,7 +440,7 @@ export function AddJob({
                         type="reset"
                         variant="outline"
                         className="mt-2 md:mt-0 w-full"
-                        onClick={() => setDialogOpen(false)}
+                        onClick={closeDialog}
                       >
                         Cancel
                       </Button>

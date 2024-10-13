@@ -40,7 +40,6 @@ type AddExperienceProps = {
   dialogOpen: boolean;
   setDialogOpen: (e: boolean) => void;
   experienceToEdit?: ResumeSection;
-  resetExperienceToEdit: () => void;
 };
 
 function AddExperience({
@@ -49,7 +48,6 @@ function AddExperience({
   dialogOpen,
   setDialogOpen,
   experienceToEdit,
-  resetExperienceToEdit,
 }: AddExperienceProps) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [locations, setLocations] = useState<JobLocation[]>([]);
@@ -75,41 +73,45 @@ function AddExperience({
     },
   });
 
-  const { setValue, watch, reset, formState, resetField, clearErrors } = form;
+  const { watch, reset, formState, resetField } = form;
 
   const currentJobValue = watch("currentJob");
-
-  const resetForm = useCallback(() => {
-    reset();
-    resetExperienceToEdit();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     getTitleCompanyAndLocationData();
     if (experienceToEdit) {
-      clearErrors();
       const experience: WorkExperience =
         experienceToEdit.workExperiences?.at(0)!;
-      setValue("id", experience?.id);
-      setValue("title", experience?.jobTitle.id);
-      setValue("company", experience?.Company.id);
-      setValue("location", experience?.location.id);
-      setValue("startDate", experience?.startDate);
-      setValue("endDate", experience?.endDate);
-      setValue("jobDescription", experience?.description);
-      setValue("currentJob", !!!experience?.endDate);
+      reset(
+        {
+          id: experience?.id,
+          title: experience?.jobTitle.id,
+          company: experience?.Company.id,
+          location: experience?.location.id,
+          startDate: experience?.startDate,
+          endDate: experience?.endDate,
+          jobDescription: experience?.description,
+          currentJob: !!!experience?.endDate,
+        },
+        {
+          keepDefaultValues: true,
+        }
+      );
     } else {
-      resetForm();
+      reset(
+        {
+          resumeId,
+          sectionId,
+        },
+        { keepDefaultValues: true }
+      );
     }
-    setValue("sectionId", sectionId);
   }, [
     getTitleCompanyAndLocationData,
     experienceToEdit,
-    clearErrors,
-    setValue,
+    reset,
+    resumeId,
     sectionId,
-    resetForm,
   ]);
 
   const onSubmit = (data: z.infer<typeof AddExperienceFormSchema>) => {
@@ -141,6 +143,8 @@ function AddExperience({
       resetField("endDate");
     }
   };
+
+  const closeDialog = () => setDialogOpen(false);
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -312,7 +316,7 @@ function AddExperience({
                     type="reset"
                     variant="outline"
                     className="mt-2 md:mt-0 w-full"
-                    onClick={() => setDialogOpen(false)}
+                    onClick={closeDialog}
                   >
                     Cancel
                   </Button>

@@ -3,7 +3,6 @@ import { Loader } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -53,23 +52,27 @@ function AddContactInfo({
     },
   });
 
-  const { setValue, reset, formState, clearErrors } = form;
+  const { reset, formState } = form;
 
   useEffect(() => {
     if (contactInfoToEdit) {
-      clearErrors();
-      setValue("id", contactInfoToEdit.id);
-      setValue("resumeId", contactInfoToEdit.resumeId);
-      setValue("firstName", contactInfoToEdit.firstName);
-      setValue("lastName", contactInfoToEdit.lastName);
-      setValue("headline", contactInfoToEdit.headline);
-      setValue("email", contactInfoToEdit.email);
-      setValue("phone", contactInfoToEdit.phone);
-      setValue("address", contactInfoToEdit.address);
+      reset(
+        {
+          id: contactInfoToEdit.id,
+          resumeId: contactInfoToEdit.resumeId,
+          firstName: contactInfoToEdit.firstName,
+          lastName: contactInfoToEdit.lastName,
+          headline: contactInfoToEdit.headline,
+          email: contactInfoToEdit.email,
+          phone: contactInfoToEdit.phone,
+          address: contactInfoToEdit.address,
+        },
+        { keepDefaultValues: true }
+      );
     } else {
       reset();
     }
-  }, [contactInfoToEdit, setValue, clearErrors, reset, dialogOpen]);
+  }, [contactInfoToEdit, reset]);
 
   const onSubmit = (data: z.infer<typeof AddContactInfoFormSchema>) => {
     startTransition(async () => {
@@ -94,6 +97,8 @@ function AddContactInfo({
       }
     });
   };
+
+  const closeDialog = () => setDialogOpen(false);
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -211,15 +216,16 @@ function AddContactInfo({
               <DialogFooter
               // className="md:col-span
               >
-                <DialogClose>
+                <div>
                   <Button
                     type="reset"
                     variant="outline"
                     className="mt-2 md:mt-0 w-full"
+                    onClick={closeDialog}
                   >
                     Cancel
                   </Button>
-                </DialogClose>
+                </div>
                 <Button type="submit" disabled={!formState.isDirty}>
                   Save
                   {isPending && <Loader className="h-4 w-4 shrink-0 spinner" />}
