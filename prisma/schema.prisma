@@ -42,6 +42,18 @@ model Resume {
   ContactInfo    ContactInfo?
   ResumeSections ResumeSection[]
   profile        Profile         @relation(fields: [profileId], references: [id])
+  File           File?           @relation(fields: [FileId], references: [id])
+  FileId         String?         @unique
+  Job            Job[]
+}
+
+model File {
+  id         String   @id @default(uuid())
+  fileName   String
+  filePath   String
+  fileType   String
+  uploadedAt DateTime @default(now())
+  Resume     Resume?
 }
 
 model ResumeSection {
@@ -224,4 +236,6 @@ model Job {
   Location    Location?   @relation(fields: [locationId], references: [id])
   locationId  String?
   Interview   Interview[]
+  Resume      Resume?     @relation(fields: [resumeId], references: [id])
+  resumeId    String?
 }

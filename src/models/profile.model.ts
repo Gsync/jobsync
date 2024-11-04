@@ -8,6 +8,16 @@ export interface Resume {
   updatedAt?: Date;
   ContactInfo?: ContactInfo;
   ResumeSections?: ResumeSection[];
+  File?: File;
+}
+
+export interface File {
+  id?: string;
+  fileName: string;
+  filePath: string;
+  fileType: string;
+  uploadedAt?: Date;
+  Resume?: Resume;
 }
 
 export interface ContactInfo {

@@ -165,7 +165,9 @@ export const updateContactInfo = async (
 };
 
 export const createResumeProfile = async (
-  data: z.infer<typeof CreateResumeFormSchema>
+  title: string,
+  fileName: string,
+  filePath?: string
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -173,8 +175,6 @@ export const createResumeProfile = async (
     if (!user) {
       throw new Error("Not authenticated");
     }
-
-    const { title } = data;
 
     const profile = await prisma.profile.findFirst({
       where: {
@@ -188,6 +188,9 @@ export const createResumeProfile = async (
             data: {
               profileId: profile!.id,
               title,
+              FileId: fileName
+                ? await createFileEntry(fileName, filePath)
+                : null,
             },
           })
         : await prisma.profile.create({
@@ -197,17 +200,33 @@ export const createResumeProfile = async (
                 create: [
                   {
                     title,
+                    FileId: fileName
+                      ? await createFileEntry(fileName, filePath)
+                      : null,
                   },
                 ],
               },
             },
           });
-    revalidatePath("/dashboard/profile");
     return { success: true, data: res };
   } catch (error) {
     const msg = "Failed to create resume.";
     return handleError(error, msg);
   }
+};
+
+const createFileEntry = async (
+  fileName: string | undefined,
+  filePath: string | undefined
+) => {
+  const newFileEntry = await prisma.file.create({
+    data: {
+      fileName: fileName!,
+      filePath: filePath!,
+      fileType: "resume",
+    },
+  });
+  return newFileEntry.id;
 };
 
 export const editResume = async (
