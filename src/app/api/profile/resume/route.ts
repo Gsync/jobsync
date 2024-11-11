@@ -7,14 +7,23 @@ import fs from "fs";
 import { writeFile } from "fs/promises";
 import { getTimestampedFileName } from "@/lib/utils";
 
-export const POST = async (req: NextRequest, res: NextApiResponse) => {
+export const POST = async (req: NextRequest, res: NextResponse) => {
   const session = await auth();
   const userId = session?.accessToken.sub;
   let filePath;
 
+  // try using same endpoint to edit, use id and fileid to update
+
   try {
     if (!session || !session.user) {
-      return res.status(401).json({ message: "Not Authenticated" });
+      return NextResponse.json(
+        {
+          error: "Not Authenticated",
+        },
+        {
+          status: 401,
+        }
+      );
     }
     const formData = await req.formData();
     const title = formData.get("title") as string;
@@ -24,7 +33,9 @@ export const POST = async (req: NextRequest, res: NextApiResponse) => {
       const bytes = await file.arrayBuffer();
       const buffer = new Uint8Array(bytes);
 
-      const uploadDir = path.join("data", "files", "resumes");
+      const dataPath = process.env.NODE_ENV !== "production" ? "data" : "/data";
+
+      const uploadDir = path.join(dataPath, "files", "resumes");
 
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
@@ -44,13 +55,88 @@ export const POST = async (req: NextRequest, res: NextApiResponse) => {
     return NextResponse.json(response, { status: 201 });
   } catch (error) {
     console.error(error);
-    return NextResponse.json(
-      {
-        error: "File upload failed",
+    if (error instanceof Error) {
+      return NextResponse.json(
+        {
+          error: error.message ?? "File upload failed",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+  }
+};
+
+export const GET = async (req: NextRequest, res: NextApiResponse) => {
+  const session = await auth();
+  const userId = session?.accessToken.sub;
+
+  try {
+    if (!session || !session.user) {
+      return NextResponse.json(
+        {
+          error: "Not Authenticated",
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
+    const { searchParams } = new URL(req.url);
+    const filePath = searchParams.get("filePath");
+
+    if (!filePath) {
+      return NextResponse.json(
+        { error: "File path is required" },
+        { status: 400 }
+      );
+    }
+
+    const fullFilePath = path.join(filePath);
+    if (!fs.existsSync(fullFilePath)) {
+      return NextResponse.json({ error: "File not found" }, { status: 404 });
+    }
+
+    const fileType = path.extname(fullFilePath).toLowerCase();
+    const fileName = path.basename(fullFilePath);
+
+    let contentType;
+
+    if (fileType === ".pdf") {
+      contentType = "application/pdf";
+    } else if (fileType === ".doc" || fileType === ".docx") {
+      contentType =
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    } else {
+      return NextResponse.json(
+        { error: "Unsupported file type" },
+        { status: 400 }
+      );
+    }
+
+    const fileContent = fs.readFileSync(fullFilePath);
+
+    const response = new NextResponse(fileContent, {
+      headers: {
+        "Content-Type": contentType,
+        "Content-Disposition": `attachment; filename="${fileName}"`,
       },
-      {
-        status: 500,
-      }
-    );
+    });
+
+    return response;
+  } catch (error) {
+    console.error(error);
+    if (error instanceof Error) {
+      return NextResponse.json(
+        {
+          error: error.message ?? "File download failed",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
   }
 };

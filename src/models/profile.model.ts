@@ -8,6 +8,7 @@ export interface Resume {
   updatedAt?: Date;
   ContactInfo?: ContactInfo;
   ResumeSections?: ResumeSection[];
+  FileId?: string;
   File?: File;
 }
 

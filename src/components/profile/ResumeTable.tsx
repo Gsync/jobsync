@@ -56,18 +56,23 @@ function ResumeTable({
 ResumeTableProps) {
   const [alertOpen, setAlertOpen] = useState(false);
   const [resumeIdToDelete, setResumeIdToDelete] = useState<string>();
+  const [fileIdToDelete, setFileIdToDelete] = useState<string>();
   const onDeleteResume = useMemo(
-    () => (resumeId: string | undefined) => {
+    () => (resumeId: string | undefined, fileId?: string) => {
       if (!resumeId) return;
       setAlertOpen(true);
       setResumeIdToDelete(resumeId);
+      setFileIdToDelete(fileId);
     },
     []
   );
 
-  const deleteResume = async (resumeId: string | undefined) => {
+  const deleteResume = async (
+    resumeId: string | undefined,
+    fileId?: string
+  ) => {
     if (!resumeId) return;
-    const { success, message } = await deleteResumeById(resumeId);
+    const { success, message } = await deleteResumeById(resumeId, fileId);
     if (success) {
       toast({
         variant: "success",
@@ -141,7 +146,7 @@ ResumeTableProps) {
                       </Link>
                       <DropdownMenuItem
                         className="text-red-600 cursor-pointer"
-                        onClick={() => onDeleteResume(resume.id)}
+                        onClick={() => onDeleteResume(resume.id, resume.FileId)}
                       >
                         <Trash className="mr-2 h-4 w-4" />
                         Delete
@@ -169,7 +174,7 @@ ResumeTableProps) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className={buttonVariants({ variant: "destructive" })}
-              onClick={() => deleteResume(resumeIdToDelete)}
+              onClick={() => deleteResume(resumeIdToDelete, fileIdToDelete)}
             >
               Delete
             </AlertDialogAction>

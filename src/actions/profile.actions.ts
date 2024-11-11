@@ -10,6 +10,8 @@ import { ResumeSection, SectionType, Summary } from "@/models/profile.model";
 import { getCurrentUser } from "@/utils/user.utils";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import path from "path";
+import fs from "fs";
 
 export const getResumeList = async (
   page = 1,
@@ -69,6 +71,7 @@ export const getResumeById = async (
       },
       include: {
         ContactInfo: true,
+        File: true,
         ResumeSections: {
           include: {
             summary: true,
@@ -258,7 +261,8 @@ export const editResume = async (
 };
 
 export const deleteResumeById = async (
-  resumeId: string
+  resumeId: string,
+  fileId?: string
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -266,8 +270,22 @@ export const deleteResumeById = async (
     if (!user) {
       throw new Error("Not authenticated");
     }
+    if (fileId) {
+      const file = await prisma.file.findFirst({
+        where: {
+          id: fileId,
+        },
+      });
 
-    // TODO: Check if resume is associated with any job
+      const filePath = file?.filePath as string;
+
+      const fullFilePath = path.join(filePath);
+      if (!fs.existsSync(filePath)) {
+        throw new Error("File not found");
+      }
+      fs.unlinkSync(filePath);
+      console.log("file deleted successfully!");
+    }
 
     await prisma.$transaction(async (prisma) => {
       await prisma.contactInfo.deleteMany({
@@ -309,6 +327,14 @@ export const deleteResumeById = async (
       await prisma.resume.delete({
         where: { id: resumeId },
       });
+
+      if (fileId) {
+        await prisma.file.delete({
+          where: {
+            id: fileId,
+          },
+        });
+      }
     });
     return { success: true };
   } catch (error) {

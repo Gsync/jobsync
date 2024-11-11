@@ -8,11 +8,11 @@ import SummarySectionCard from "./SummarySectionCard";
 import ExperienceCard from "./ExperienceCard";
 import EducationCard from "./EducationCard";
 import AiResumeReviewSection from "./AiResumeReviewSection";
+import { Paperclip } from "lucide-react";
 
 function ResumeContainer({ resume }: { resume: Resume }) {
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
   const { title, ContactInfo, ResumeSections } = resume ?? {};
-
   const summarySection = ResumeSections?.find(
     (section) => section.sectionType === SectionType.SUMMARY
   );
@@ -47,12 +47,54 @@ function ResumeContainer({ resume }: { resume: Resume }) {
     resumeSectionRef.current?.openEducationDialog(section);
   };
 
+  function DownloadFileButton(filePath: any, fileName: string) {
+    const handleDownload = async () => {
+      const response = await fetch(
+        `/api/profile/resume?filePath=${encodeURIComponent(filePath)}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filePath.split("/").pop(); // Get the file name
+        link.target = "_blank";
+        link.click();
+        window.URL.revokeObjectURL(url); // Clean up
+      } else {
+        console.error("Failed to download file");
+      }
+    };
+
+    return (
+      <button
+        className="flex items-center"
+        onClick={handleDownload}
+        title="Download resume"
+      >
+        <div>{fileName}</div>
+        <Paperclip className="h-3.5 w-3.5 ml-1" />
+      </button>
+    );
+  }
+
   return (
     <>
       <Card>
         <CardHeader className="flex-row justify-between items-center">
           <CardTitle>Resume</CardTitle>
-          <CardDescription>{title}</CardDescription>
+          <CardDescription>
+            {resume.FileId && resume.File?.filePath
+              ? DownloadFileButton(resume.File?.filePath, title)
+              : title}
+          </CardDescription>
           <div className="flex items-center">
             <AddResumeSection resume={resume} ref={resumeSectionRef} />
             <AiResumeReviewSection resume={resume} />

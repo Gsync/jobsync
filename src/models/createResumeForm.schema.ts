@@ -25,4 +25,5 @@ export const CreateResumeFormSchema = z.object({
       message: "File size must be less than 5MB",
     })
     .optional(),
+  fileId: z.string().optional(),
 });

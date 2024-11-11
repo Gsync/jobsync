@@ -46,6 +46,9 @@ function CreateResume({
   const form = useForm<z.infer<typeof CreateResumeFormSchema>>({
     resolver: zodResolver(CreateResumeFormSchema),
     mode: "onChange",
+    defaultValues: {
+      title: "",
+    },
   });
 
   const {
@@ -56,17 +59,14 @@ function CreateResume({
   const closeDialog = () => setResumeDialogOpen(false);
 
   useEffect(() => {
-    if (resumeToEdit) {
-      reset(
-        {
-          id: resumeToEdit.id,
-          title: resumeToEdit.title,
-        },
-        { keepDefaultValues: true }
-      );
-    } else {
-      reset();
-    }
+    reset(
+      {
+        id: resumeToEdit?.id ?? undefined,
+        title: resumeToEdit?.title ?? "",
+        fileId: resumeToEdit?.FileId ?? undefined,
+      },
+      { keepDefaultValues: true }
+    );
   }, [resumeToEdit, reset]);
 
   const onSubmit = (data: z.infer<typeof CreateResumeFormSchema>) => {
@@ -82,12 +82,11 @@ function CreateResume({
             body: formData,
           });
       const response = await res.json();
-      console.log("Response: ", response);
       if (!response.success) {
         toast({
           variant: "destructive",
           title: "Error!",
-          description: response.message,
+          description: response.error,
         });
       } else {
         reset();
@@ -152,7 +151,9 @@ function CreateResume({
                       <Input
                         type="file"
                         accept=".pdf,.doc,.docx"
-                        onChange={(e) => field.onChange(e.target.files?.[0])}
+                        onChange={(e) => {
+                          field.onChange(e.target.files?.[0] || null);
+                        }}
                       />
                     </FormControl>
                     <FormMessage>
