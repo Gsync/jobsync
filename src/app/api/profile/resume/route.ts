@@ -1,18 +1,21 @@
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { NextApiRequest, NextApiResponse } from "next";
-import { createResumeProfile } from "@/actions/profile.actions";
+import {
+  createResumeProfile,
+  deleteFile,
+  editResume,
+  uploadFile,
+} from "@/actions/profile.actions";
 import path from "path";
 import fs from "fs";
-import { writeFile } from "fs/promises";
 import { getTimestampedFileName } from "@/lib/utils";
 
 export const POST = async (req: NextRequest, res: NextResponse) => {
   const session = await auth();
   const userId = session?.accessToken.sub;
+  const dataPath = process.env.NODE_ENV !== "production" ? "data" : "/data";
   let filePath;
-
-  // try using same endpoint to edit, use id and fileid to update
 
   try {
     if (!session || !session.user) {
@@ -28,25 +31,32 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
     const formData = await req.formData();
     const title = formData.get("title") as string;
     const file = formData.get("file") as File;
-
+    const resumeId = (formData.get("id") as string) ?? null;
+    let fileId: string | undefined =
+      (formData.get("fileId") as string) ?? undefined;
     if (file && file.name) {
-      const bytes = await file.arrayBuffer();
-      const buffer = new Uint8Array(bytes);
-
-      const dataPath = process.env.NODE_ENV !== "production" ? "data" : "/data";
-
       const uploadDir = path.join(dataPath, "files", "resumes");
+      const timestampedFileName = getTimestampedFileName(file.name);
+      filePath = path.join(uploadDir, timestampedFileName);
+      await uploadFile(file, uploadDir, filePath);
+    }
 
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
+    if (resumeId && title) {
+      if (fileId && file?.name) {
+        await deleteFile(fileId);
+        fileId = undefined;
       }
 
-      const timestampedFileName = getTimestampedFileName(file.name);
-
-      filePath = path.join(uploadDir, timestampedFileName);
-
-      await writeFile(filePath, buffer);
+      const res = await editResume(
+        resumeId,
+        title,
+        fileId,
+        file?.name,
+        filePath
+      );
+      return NextResponse.json(res, { status: 200 });
     }
+
     const response = await createResumeProfile(
       title,
       file.name ?? null,
@@ -58,7 +68,7 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
     if (error instanceof Error) {
       return NextResponse.json(
         {
-          error: error.message ?? "File upload failed",
+          error: error.message ?? "Resume update or File upload failed",
         },
         {
           status: 500,

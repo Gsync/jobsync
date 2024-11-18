@@ -59,28 +59,29 @@ function CreateResume({
   const closeDialog = () => setResumeDialogOpen(false);
 
   useEffect(() => {
-    reset(
-      {
-        id: resumeToEdit?.id ?? undefined,
-        title: resumeToEdit?.title ?? "",
-        fileId: resumeToEdit?.FileId ?? undefined,
-      },
-      { keepDefaultValues: true }
-    );
+    reset({
+      id: resumeToEdit?.id ?? undefined,
+      title: resumeToEdit?.title ?? "",
+      fileId: resumeToEdit?.FileId ?? undefined,
+    });
   }, [resumeToEdit, reset]);
 
   const onSubmit = (data: z.infer<typeof CreateResumeFormSchema>) => {
     const formData = new FormData();
     formData.append("file", data.file as File);
     formData.append("title", data.title);
+    if (resumeToEdit) {
+      formData.append("id", data.id as string);
+      if (resumeToEdit.FileId) {
+        formData.append("fileId", data.fileId as string);
+      }
+    }
 
     startTransition(async () => {
-      const res = resumeToEdit
-        ? await editResume(data)
-        : await fetch("/api/profile/resume", {
-            method: "POST",
-            body: formData,
-          });
+      const res = await fetch("/api/profile/resume", {
+        method: "POST",
+        body: formData,
+      });
       const response = await res.json();
       if (!response.success) {
         toast({

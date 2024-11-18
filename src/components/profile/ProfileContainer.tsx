@@ -65,7 +65,11 @@ function ActivitiesContainer() {
   };
 
   const onEditResume = (resume: Resume) => {
-    const _resumeToEdit = { id: resume.id, title: resume.title };
+    const _resumeToEdit = {
+      id: resume.id,
+      title: resume.title,
+      FileId: resume.FileId,
+    };
     setResumeToEdit(_resumeToEdit);
     setResumeDialogOpen(true);
   };
