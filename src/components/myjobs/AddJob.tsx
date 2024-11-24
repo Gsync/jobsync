@@ -75,34 +75,34 @@ export function AddJob({
     },
   });
 
-  const { setValue, reset, watch, resetField, clearErrors } = form;
+  const { setValue, reset, watch, resetField } = form;
 
   const appliedValue = watch("applied");
 
   useEffect(() => {
     if (editJob) {
-      clearErrors();
-      setValue("id", editJob.id);
-      setValue("userId", editJob.userId);
-      setValue("title", editJob.JobTitle.id);
-      setValue("company", editJob.Company.id);
-      setValue("location", editJob.Location.id);
-      setValue("type", editJob.jobType);
-      setValue("source", editJob.JobSource.id);
-      setValue("status", editJob.Status.id);
-      setValue("dueDate", editJob.dueDate);
-      setValue("salaryRange", editJob.salaryRange);
-      setValue("jobDescription", editJob.description);
-      setValue("applied", editJob.applied);
-      if (editJob.jobUrl) {
-        setValue("jobUrl", editJob.jobUrl);
-      }
-      if (editJob.appliedDate) {
-        setValue("dateApplied", editJob.appliedDate);
-      }
+      reset(
+        {
+          id: editJob.id,
+          userId: editJob.userId,
+          title: editJob.JobTitle.id,
+          company: editJob.Company.id,
+          location: editJob.Location.id,
+          type: editJob.jobType,
+          source: editJob.JobSource.id,
+          status: editJob.Status.id,
+          dueDate: editJob.dueDate,
+          salaryRange: editJob.salaryRange,
+          jobDescription: editJob.description,
+          applied: editJob.applied,
+          jobUrl: editJob.jobUrl ?? undefined,
+          dateApplied: editJob.appliedDate ?? undefined,
+        },
+        { keepDefaultValues: true }
+      );
       setDialogOpen(true);
     }
-  }, [editJob, setValue, clearErrors]);
+  }, [editJob, reset]);
 
   function onSubmit(data: z.infer<typeof AddJobFormSchema>) {
     startTransition(async () => {
