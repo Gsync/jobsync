@@ -43,6 +43,7 @@ import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
 import { redirect } from "next/navigation";
 import { Combobox } from "../ComboBox";
+import { Resume } from "@/models/profile.model";
 
 type AddJobProps = {
   jobStatuses: JobStatus[];
@@ -50,6 +51,7 @@ type AddJobProps = {
   jobTitles: JobTitle[];
   locations: JobLocation[];
   jobSources: JobSource[];
+  resumes: Resume[];
   editJob?: JobResponse | null;
   resetEditJob: () => void;
 };
@@ -60,6 +62,7 @@ export function AddJob({
   jobTitles,
   locations,
   jobSources,
+  resumes,
   editJob,
   resetEditJob,
 }: AddJobProps) {
@@ -407,6 +410,25 @@ export function AddJob({
                             field={field}
                           />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Resume */}
+                <div>
+                  <FormField
+                    control={form.control}
+                    name="resume"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col [&>button]:capitalize">
+                        <FormLabel>Resume</FormLabel>
+                        <SelectFormCtrl
+                          label="Resume"
+                          options={resumes}
+                          field={field}
+                        />
                         <FormMessage />
                       </FormItem>
                     )}

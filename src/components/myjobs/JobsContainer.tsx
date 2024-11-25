@@ -39,6 +39,7 @@ import Loading from "../Loading";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AddJob } from "./AddJob";
 import MyJobsTable from "./MyJobsTable";
+import { Resume } from "@/models/profile.model";
 
 type MyJobsProps = {
   statuses: JobStatus[];
@@ -46,6 +47,7 @@ type MyJobsProps = {
   titles: JobTitle[];
   locations: JobLocation[];
   sources: JobSource[];
+  resumes: Resume[];
 };
 
 function JobsContainer({
@@ -54,11 +56,11 @@ function JobsContainer({
   titles,
   locations,
   sources,
+  resumes,
 }: MyJobsProps) {
   const router = useRouter();
   const pathname = usePathname();
   const queryParams = useSearchParams();
-
   const createQueryString = useCallback(
     (name: string, value: string) => {
       const params = new URLSearchParams(queryParams.toString());
@@ -88,6 +90,7 @@ function JobsContainer({
         jobsPerPage,
         filter
       );
+      console.log(data);
       if (!success) {
         toast({
           variant: "destructive",
@@ -210,6 +213,7 @@ function JobsContainer({
                 jobTitles={titles}
                 locations={locations}
                 jobSources={sources}
+                resumes={resumes}
                 editJob={editJob}
                 resetEditJob={resetEditJob}
               />

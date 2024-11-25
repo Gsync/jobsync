@@ -39,7 +39,7 @@ function SelectFormCtrl({ label, options, field }: SelectProps) {
                   value={option.id}
                   className="capitalize"
                 >
-                  {option.label ?? option.value}
+                  {option.label ?? option.value ?? option.title}
                 </SelectItem>
               );
             })}

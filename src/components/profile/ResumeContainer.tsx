@@ -8,7 +8,7 @@ import SummarySectionCard from "./SummarySectionCard";
 import ExperienceCard from "./ExperienceCard";
 import EducationCard from "./EducationCard";
 import AiResumeReviewSection from "./AiResumeReviewSection";
-import { Paperclip } from "lucide-react";
+import { DownloadFileButton } from "./DownloadFileButton";
 
 function ResumeContainer({ resume }: { resume: Resume }) {
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
@@ -47,44 +47,6 @@ function ResumeContainer({ resume }: { resume: Resume }) {
     resumeSectionRef.current?.openEducationDialog(section);
   };
 
-  function DownloadFileButton(filePath: any, fileName: string) {
-    const handleDownload = async () => {
-      const response = await fetch(
-        `/api/profile/resume?filePath=${encodeURIComponent(filePath)}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = filePath.split("/").pop(); // Get the file name
-        link.target = "_blank";
-        link.click();
-        window.URL.revokeObjectURL(url); // Clean up
-      } else {
-        console.error("Failed to download file");
-      }
-    };
-
-    return (
-      <button
-        className="flex items-center"
-        onClick={handleDownload}
-        title="Download resume"
-      >
-        <div>{fileName}</div>
-        <Paperclip className="h-3.5 w-3.5 ml-1" />
-      </button>
-    );
-  }
-
   return (
     <>
       <Card>
@@ -92,7 +54,11 @@ function ResumeContainer({ resume }: { resume: Resume }) {
           <CardTitle>Resume</CardTitle>
           <CardDescription>
             {resume.FileId && resume.File?.filePath
-              ? DownloadFileButton(resume.File?.filePath, title)
+              ? DownloadFileButton(
+                  resume.File?.filePath,
+                  title,
+                  resume.File?.fileName
+                )
               : title}
           </CardDescription>
           <div className="flex items-center">
