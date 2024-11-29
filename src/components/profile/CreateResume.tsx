@@ -24,13 +24,13 @@ import {
 import { Input } from "../ui/input";
 import { Resume } from "@/models/profile.model";
 import { toast } from "../ui/use-toast";
-import { createResumeProfile, editResume } from "@/actions/profile.actions";
 
 type CreateResumeProps = {
   resumeDialogOpen: boolean;
   setResumeDialogOpen: (e: boolean) => void;
   resumeToEdit?: Resume | null;
   reloadResumes: () => void;
+  setNewResumeId: (id: string) => void;
 };
 
 function CreateResume({
@@ -38,6 +38,7 @@ function CreateResume({
   setResumeDialogOpen,
   resumeToEdit,
   reloadResumes,
+  setNewResumeId,
 }: CreateResumeProps) {
   const [isPending, startTransition] = useTransition();
 
@@ -83,6 +84,10 @@ function CreateResume({
         body: formData,
       });
       const response = await res.json();
+      console.log(response.data);
+      if (response.data?.id) {
+        setNewResumeId(response.data?.id);
+      }
       if (!response.success) {
         toast({
           variant: "destructive",

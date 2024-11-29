@@ -74,6 +74,8 @@ function ActivitiesContainer() {
     setResumeDialogOpen(true);
   };
 
+  const setResumeId = (id: string) => {};
+
   return (
     <Card>
       <CardHeader className="flex-row justify-between items-center">
@@ -95,6 +97,7 @@ function ActivitiesContainer() {
             setResumeDialogOpen={setResumeDialogOpen}
             reloadResumes={reloadResumes}
             resumeToEdit={resumeToEdit}
+            setNewResumeId={setResumeId}
           />
         </div>
       </CardHeader>

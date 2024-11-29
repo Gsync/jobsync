@@ -195,7 +195,6 @@ export const addJob = async (
         resumeId: resume,
       },
     });
-
     return { job, success: true };
   } catch (error) {
     const msg = "Failed to create job. ";
@@ -230,6 +229,7 @@ export const updateJob = async (
       jobDescription,
       jobUrl,
       applied,
+      resume,
     } = data;
 
     const job = await prisma.job.update({
@@ -250,9 +250,10 @@ export const updateJob = async (
         jobType: type,
         jobUrl,
         applied,
+        resumeId: resume,
       },
     });
-
+    revalidatePath("/dashboard/myjobs", "page");
     return { job, success: true };
   } catch (error) {
     const msg = "Failed to update job. ";

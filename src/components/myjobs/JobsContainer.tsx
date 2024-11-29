@@ -90,7 +90,6 @@ function JobsContainer({
         jobsPerPage,
         filter
       );
-      console.log(data);
       if (!success) {
         toast({
           variant: "destructive",
@@ -213,7 +212,7 @@ function JobsContainer({
                 jobTitles={titles}
                 locations={locations}
                 jobSources={sources}
-                resumes={resumes}
+                initialResumes={resumes}
                 editJob={editJob}
                 resetEditJob={resetEditJob}
               />

@@ -16,7 +16,7 @@ import { writeFile } from "fs/promises";
 
 export const getResumeList = async (
   page = 1,
-  limit = 10
+  limit = 15
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -212,6 +212,7 @@ export const createResumeProfile = async (
               },
             },
           });
+    // revalidatePath("/dashboard/myjobs", "page");
     return { success: true, data: res };
   } catch (error) {
     const msg = "Failed to create resume.";

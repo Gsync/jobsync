@@ -44,6 +44,8 @@ import { Switch } from "../ui/switch";
 import { redirect } from "next/navigation";
 import { Combobox } from "../ComboBox";
 import { Resume } from "@/models/profile.model";
+import CreateResume from "../profile/CreateResume";
+import { getResumeList } from "@/actions/profile.actions";
 
 type AddJobProps = {
   jobStatuses: JobStatus[];
@@ -51,7 +53,7 @@ type AddJobProps = {
   jobTitles: JobTitle[];
   locations: JobLocation[];
   jobSources: JobSource[];
-  resumes: Resume[];
+  initialResumes: Resume[];
   editJob?: JobResponse | null;
   resetEditJob: () => void;
 };
@@ -62,11 +64,13 @@ export function AddJob({
   jobTitles,
   locations,
   jobSources,
-  resumes,
+  initialResumes,
   editJob,
   resetEditJob,
 }: AddJobProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
+  const [resumes, setResumes] = useState<Resume[]>(initialResumes);
   const [isPending, startTransition] = useTransition();
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
     resolver: zodResolver(AddJobFormSchema),
@@ -100,12 +104,24 @@ export function AddJob({
           applied: editJob.applied,
           jobUrl: editJob.jobUrl ?? undefined,
           dateApplied: editJob.appliedDate ?? undefined,
+          resume: editJob.Resume?.id ?? undefined,
         },
         { keepDefaultValues: true }
       );
       setDialogOpen(true);
     }
   }, [editJob, reset]);
+
+  const reloadResumes = async () => {
+    const resumes_ = await getResumeList();
+    setResumes(resumes_.data);
+  };
+
+  const setNewResumeId = (id: string) => {
+    setTimeout(() => {
+      setValue("resume", id);
+    }, 500);
+  };
 
   function onSubmit(data: z.infer<typeof AddJobFormSchema>) {
     startTransition(async () => {
@@ -151,6 +167,10 @@ export function AddJob({
   };
 
   const closeDialog = () => setDialogOpen(false);
+
+  const createResume = () => {
+    setResumeDialogOpen(true);
+  };
 
   return (
     <>
@@ -417,7 +437,7 @@ export function AddJob({
                 </div>
 
                 {/* Resume */}
-                <div>
+                <div className="flex items-end">
                   <FormField
                     control={form.control}
                     name="resume"
@@ -432,6 +452,15 @@ export function AddJob({
                         <FormMessage />
                       </FormItem>
                     )}
+                  />
+                  <Button variant="link" type="button" onClick={createResume}>
+                    Add New
+                  </Button>
+                  <CreateResume
+                    resumeDialogOpen={resumeDialogOpen}
+                    setResumeDialogOpen={setResumeDialogOpen}
+                    reloadResumes={reloadResumes}
+                    setNewResumeId={setNewResumeId}
                   />
                 </div>
 

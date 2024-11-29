@@ -19,7 +19,6 @@ import { useState } from "react";
 import { DownloadFileButton } from "../profile/DownloadFileButton";
 
 function JobDetails({ job }: { job: JobResponse }) {
-  console.log(job);
   const [aiSectionOpen, setAiSectionOpen] = useState(false);
   const router = useRouter();
   const goBack = () => router.back();
