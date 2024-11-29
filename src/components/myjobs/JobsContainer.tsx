@@ -47,7 +47,6 @@ type MyJobsProps = {
   titles: JobTitle[];
   locations: JobLocation[];
   sources: JobSource[];
-  resumes: Resume[];
 };
 
 function JobsContainer({
@@ -56,7 +55,6 @@ function JobsContainer({
   titles,
   locations,
   sources,
-  resumes,
 }: MyJobsProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -212,7 +210,6 @@ function JobsContainer({
                 jobTitles={titles}
                 locations={locations}
                 jobSources={sources}
-                initialResumes={resumes}
                 editJob={editJob}
                 resetEditJob={resetEditJob}
               />

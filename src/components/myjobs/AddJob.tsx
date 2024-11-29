@@ -11,7 +11,7 @@ import { addJob, updateJob } from "@/actions/job.actions";
 import { Loader, PlusCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { useForm } from "react-hook-form";
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -53,7 +53,6 @@ type AddJobProps = {
   jobTitles: JobTitle[];
   locations: JobLocation[];
   jobSources: JobSource[];
-  initialResumes: Resume[];
   editJob?: JobResponse | null;
   resetEditJob: () => void;
 };
@@ -64,13 +63,12 @@ export function AddJob({
   jobTitles,
   locations,
   jobSources,
-  initialResumes,
   editJob,
   resetEditJob,
 }: AddJobProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
-  const [resumes, setResumes] = useState<Resume[]>(initialResumes);
+  const [resumes, setResumes] = useState<Resume[]>([]);
   const [isPending, startTransition] = useTransition();
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
     resolver: zodResolver(AddJobFormSchema),
@@ -85,6 +83,15 @@ export function AddJob({
   const { setValue, reset, watch, resetField } = form;
 
   const appliedValue = watch("applied");
+
+  const loadResumes = useCallback(async () => {
+    try {
+      const resumes = await getResumeList();
+      setResumes(resumes.data);
+    } catch (error) {
+      console.error("Failed to load resumes:", error);
+    }
+  }, [setResumes]);
 
   useEffect(() => {
     if (editJob) {
@@ -112,10 +119,9 @@ export function AddJob({
     }
   }, [editJob, reset]);
 
-  const reloadResumes = async () => {
-    const resumes_ = await getResumeList();
-    setResumes(resumes_.data);
-  };
+  useEffect(() => {
+    loadResumes();
+  }, [loadResumes]);
 
   const setNewResumeId = (id: string) => {
     setTimeout(() => {
@@ -459,7 +465,7 @@ export function AddJob({
                   <CreateResume
                     resumeDialogOpen={resumeDialogOpen}
                     setResumeDialogOpen={setResumeDialogOpen}
-                    reloadResumes={reloadResumes}
+                    reloadResumes={loadResumes}
                     setNewResumeId={setNewResumeId}
                   />
                 </div>
