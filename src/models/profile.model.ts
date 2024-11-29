@@ -10,6 +10,9 @@ export interface Resume {
   ResumeSections?: ResumeSection[];
   FileId?: string;
   File?: File;
+  _count?: {
+    Job?: number;
+  };
 }
 
 export interface File {

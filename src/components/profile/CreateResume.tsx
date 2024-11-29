@@ -84,20 +84,19 @@ function CreateResume({
         body: formData,
       });
       const response = await res.json();
-      console.log(response.data);
-      if (response.data?.id) {
-        setNewResumeId(response.data?.id);
-      }
       if (!response.success) {
         toast({
           variant: "destructive",
           title: "Error!",
-          description: response.error,
+          description: response?.message,
         });
       } else {
         reset();
         setResumeDialogOpen(false);
         reloadResumes();
+        if (response.data?.id) {
+          setNewResumeId(response.data?.id);
+        }
         toast({
           variant: "success",
           description: `Resume title has been ${
@@ -116,7 +115,10 @@ function CreateResume({
         </DialogHeader>
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(onSubmit)}
+            onSubmit={(event) => {
+              event.stopPropagation();
+              form.handleSubmit(onSubmit)(event);
+            }}
             className="grid grid-cols-1 md:grid-cols-2 gap-4 p-2"
           >
             {/* RESUME TITLE */}

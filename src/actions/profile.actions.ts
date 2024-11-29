@@ -34,6 +34,19 @@ export const getResumeList = async (
         },
         skip,
         take: limit,
+        select: {
+          id: true,
+          profileId: true,
+          FileId: true,
+          createdAt: true,
+          updatedAt: true,
+          title: true,
+          _count: {
+            select: {
+              Job: true,
+            },
+          },
+        },
         orderBy: {
           createdAt: "desc",
         },
@@ -178,6 +191,19 @@ export const createResumeProfile = async (
 
     if (!user) {
       throw new Error("Not authenticated");
+    }
+
+    //check if title exists
+    const value = title.trim().toLowerCase();
+
+    const titleExists = await prisma.resume.findFirst({
+      where: {
+        title: value,
+      },
+    });
+
+    if (titleExists) {
+      throw new Error("Title already exists!");
     }
 
     const profile = await prisma.profile.findFirst({
