@@ -57,6 +57,7 @@ describe("AddJob Component", () => {
   const user = userEvent.setup({ skipHover: true });
   window.HTMLElement.prototype.scrollIntoView = jest.fn(); // Fixes the issue with combobox
   window.HTMLElement.prototype.hasPointerCapture = jest.fn();
+
   beforeEach(async () => {
     const mockCompanies = (await getMockList(1, 10, "companies")).data;
     const mockJobTitles = (await getMockList(1, 10, "jobTitles")).data;

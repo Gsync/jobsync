@@ -253,7 +253,7 @@ export const updateJob = async (
         resumeId: resume,
       },
     });
-    revalidatePath("/dashboard/myjobs", "page");
+    // revalidatePath("/dashboard/myjobs", "page");
     return { job, success: true };
   } catch (error) {
     const msg = "Failed to update job. ";
