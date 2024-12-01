@@ -122,7 +122,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
             variant="outline"
             className="h-8 gap-1 cursor-pointer"
             onClick={() => triggerSheetChange(true)}
-            disabled={loading}
+            disabled={loading || resume.ResumeSections?.length! < 2}
           >
             <Sparkles className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">

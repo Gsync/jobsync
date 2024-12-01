@@ -1,3 +1,5 @@
+import { Resume } from "./profile.model";
+
 export interface JobForm {
   id?: string;
   userId?: string;
@@ -31,6 +33,8 @@ export interface JobResponse {
   description: string;
   jobUrl: string;
   applied: boolean;
+  resumeId?: string;
+  Resume?: Resume;
 }
 
 export interface JobTitle {

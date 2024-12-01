@@ -32,17 +32,18 @@ function SelectFormCtrl({ label, options, field }: SelectProps) {
         </FormControl>
         <SelectContent>
           <SelectGroup>
-            {options.map((option) => {
-              return (
-                <SelectItem
-                  key={option.id}
-                  value={option.id}
-                  className="capitalize"
-                >
-                  {option.label ?? option.value}
-                </SelectItem>
-              );
-            })}
+            {options &&
+              options.map((option) => {
+                return (
+                  <SelectItem
+                    key={option.id}
+                    value={option.id}
+                    className="capitalize"
+                  >
+                    {option.label ?? option.value ?? option.title}
+                  </SelectItem>
+                );
+              })}
           </SelectGroup>
         </SelectContent>
       </Select>

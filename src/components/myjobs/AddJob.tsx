@@ -11,7 +11,7 @@ import { addJob, updateJob } from "@/actions/job.actions";
 import { Loader, PlusCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { useForm } from "react-hook-form";
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -43,6 +43,9 @@ import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
 import { redirect } from "next/navigation";
 import { Combobox } from "../ComboBox";
+import { Resume } from "@/models/profile.model";
+import CreateResume from "../profile/CreateResume";
+import { getResumeList } from "@/actions/profile.actions";
 
 type AddJobProps = {
   jobStatuses: JobStatus[];
@@ -64,6 +67,8 @@ export function AddJob({
   resetEditJob,
 }: AddJobProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
+  const [resumes, setResumes] = useState<Resume[]>([]);
   const [isPending, startTransition] = useTransition();
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
     resolver: zodResolver(AddJobFormSchema),
@@ -75,34 +80,54 @@ export function AddJob({
     },
   });
 
-  const { setValue, reset, watch, resetField, clearErrors } = form;
+  const { setValue, reset, watch, resetField } = form;
 
   const appliedValue = watch("applied");
 
+  const loadResumes = useCallback(async () => {
+    try {
+      const resumes = await getResumeList();
+      setResumes(resumes.data);
+    } catch (error) {
+      console.error("Failed to load resumes:", error);
+    }
+  }, [setResumes]);
+
   useEffect(() => {
     if (editJob) {
-      clearErrors();
-      setValue("id", editJob.id);
-      setValue("userId", editJob.userId);
-      setValue("title", editJob.JobTitle.id);
-      setValue("company", editJob.Company.id);
-      setValue("location", editJob.Location.id);
-      setValue("type", editJob.jobType);
-      setValue("source", editJob.JobSource.id);
-      setValue("status", editJob.Status.id);
-      setValue("dueDate", editJob.dueDate);
-      setValue("salaryRange", editJob.salaryRange);
-      setValue("jobDescription", editJob.description);
-      setValue("applied", editJob.applied);
-      if (editJob.jobUrl) {
-        setValue("jobUrl", editJob.jobUrl);
-      }
-      if (editJob.appliedDate) {
-        setValue("dateApplied", editJob.appliedDate);
-      }
+      reset(
+        {
+          id: editJob.id,
+          userId: editJob.userId,
+          title: editJob.JobTitle.id,
+          company: editJob.Company.id,
+          location: editJob.Location.id,
+          type: editJob.jobType,
+          source: editJob.JobSource.id,
+          status: editJob.Status.id,
+          dueDate: editJob.dueDate,
+          salaryRange: editJob.salaryRange,
+          jobDescription: editJob.description,
+          applied: editJob.applied,
+          jobUrl: editJob.jobUrl ?? undefined,
+          dateApplied: editJob.appliedDate ?? undefined,
+          resume: editJob.Resume?.id ?? undefined,
+        },
+        { keepDefaultValues: true }
+      );
       setDialogOpen(true);
     }
-  }, [editJob, setValue, clearErrors]);
+  }, [editJob, reset]);
+
+  useEffect(() => {
+    loadResumes();
+  }, [loadResumes]);
+
+  const setNewResumeId = (id: string) => {
+    setTimeout(() => {
+      setValue("resume", id);
+    }, 500);
+  };
 
   function onSubmit(data: z.infer<typeof AddJobFormSchema>) {
     startTransition(async () => {
@@ -148,6 +173,10 @@ export function AddJob({
   };
 
   const closeDialog = () => setDialogOpen(false);
+
+  const createResume = () => {
+    setResumeDialogOpen(true);
+  };
 
   return (
     <>
@@ -410,6 +439,34 @@ export function AddJob({
                         <FormMessage />
                       </FormItem>
                     )}
+                  />
+                </div>
+
+                {/* Resume */}
+                <div className="flex items-end">
+                  <FormField
+                    control={form.control}
+                    name="resume"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col [&>button]:capitalize">
+                        <FormLabel>Resume</FormLabel>
+                        <SelectFormCtrl
+                          label="Resume"
+                          options={resumes}
+                          field={field}
+                        />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button variant="link" type="button" onClick={createResume}>
+                    Add New
+                  </Button>
+                  <CreateResume
+                    resumeDialogOpen={resumeDialogOpen}
+                    setResumeDialogOpen={setResumeDialogOpen}
+                    reloadResumes={loadResumes}
+                    setNewResumeId={setNewResumeId}
                   />
                 </div>
 

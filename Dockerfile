@@ -1,5 +1,5 @@
 # Use the official Node.js 18 image as the base image
-FROM node:18.20-alpine AS base
+FROM node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -66,6 +66,9 @@ RUN addgroup --system --gid 1001 nodejs && \
 # Set the correct permission for prerender cache
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
+
+# Set up /data directory with the right permissions
+RUN mkdir -p /data/files/resumes && chown -R nextjs:nodejs /data/files/resumes
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing

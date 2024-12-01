@@ -45,3 +45,15 @@ export function handleError(error: unknown, msg = "Server Error.") {
     return { success: false, message: error.message || msg };
   }
 }
+
+export function getTimestampedFileName(originalName: string): string {
+  const timestamp = new Date()
+    .toISOString()
+    .replace(/:/g, "-") // Replace colons with dashes for file system compatibility
+    .replace(/\..+/, ""); // Remove milliseconds
+
+  const extension = originalName.split(".").pop();
+  const baseName = originalName.replace(`.${extension}`, "");
+
+  return `${baseName}_${timestamp}.${extension}`;
+}

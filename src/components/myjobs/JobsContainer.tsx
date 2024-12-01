@@ -39,6 +39,7 @@ import Loading from "../Loading";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AddJob } from "./AddJob";
 import MyJobsTable from "./MyJobsTable";
+import { Resume } from "@/models/profile.model";
 
 type MyJobsProps = {
   statuses: JobStatus[];
@@ -58,7 +59,6 @@ function JobsContainer({
   const router = useRouter();
   const pathname = usePathname();
   const queryParams = useSearchParams();
-
   const createQueryString = useCallback(
     (name: string, value: string) => {
       const params = new URLSearchParams(queryParams.toString());

@@ -10,10 +10,13 @@ import { ResumeSection, SectionType, Summary } from "@/models/profile.model";
 import { getCurrentUser } from "@/utils/user.utils";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import path from "path";
+import fs from "fs";
+import { writeFile } from "fs/promises";
 
 export const getResumeList = async (
   page = 1,
-  limit = 10
+  limit = 15
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -31,6 +34,19 @@ export const getResumeList = async (
         },
         skip,
         take: limit,
+        select: {
+          id: true,
+          profileId: true,
+          FileId: true,
+          createdAt: true,
+          updatedAt: true,
+          title: true,
+          _count: {
+            select: {
+              Job: true,
+            },
+          },
+        },
         orderBy: {
           createdAt: "desc",
         },
@@ -69,6 +85,7 @@ export const getResumeById = async (
       },
       include: {
         ContactInfo: true,
+        File: true,
         ResumeSections: {
           include: {
             summary: true,
@@ -165,7 +182,9 @@ export const updateContactInfo = async (
 };
 
 export const createResumeProfile = async (
-  data: z.infer<typeof CreateResumeFormSchema>
+  title: string,
+  fileName: string,
+  filePath?: string
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -174,7 +193,18 @@ export const createResumeProfile = async (
       throw new Error("Not authenticated");
     }
 
-    const { title } = data;
+    //check if title exists
+    const value = title.trim().toLowerCase();
+
+    const titleExists = await prisma.resume.findFirst({
+      where: {
+        title: value,
+      },
+    });
+
+    if (titleExists) {
+      throw new Error("Title already exists!");
+    }
 
     const profile = await prisma.profile.findFirst({
       where: {
@@ -188,6 +218,9 @@ export const createResumeProfile = async (
             data: {
               profileId: profile!.id,
               title,
+              FileId: fileName
+                ? await createFileEntry(fileName, filePath)
+                : null,
             },
           })
         : await prisma.profile.create({
@@ -197,12 +230,15 @@ export const createResumeProfile = async (
                 create: [
                   {
                     title,
+                    FileId: fileName
+                      ? await createFileEntry(fileName, filePath)
+                      : null,
                   },
                 ],
               },
             },
           });
-    revalidatePath("/dashboard/profile");
+    // revalidatePath("/dashboard/myjobs", "page");
     return { success: true, data: res };
   } catch (error) {
     const msg = "Failed to create resume.";
@@ -210,36 +246,63 @@ export const createResumeProfile = async (
   }
 };
 
+const createFileEntry = async (
+  fileName: string | undefined,
+  filePath: string | undefined
+) => {
+  const newFileEntry = await prisma.file.create({
+    data: {
+      fileName: fileName!,
+      filePath: filePath!,
+      fileType: "resume",
+    },
+  });
+  return newFileEntry.id;
+};
+
 export const editResume = async (
-  data: z.infer<typeof CreateResumeFormSchema>
+  id: string,
+  title: string,
+  fileId?: string,
+  fileName?: string,
+  filePath?: string
 ): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
+    let resolvedFileId = fileId;
 
-    if (!user) {
-      throw new Error("Not authenticated");
+    if (!fileId && fileName && filePath) {
+      resolvedFileId = await createFileEntry(fileName, filePath);
     }
 
-    const { id, title } = data;
+    if (resolvedFileId) {
+      const isValidFileId = await prisma.file.findFirst({
+        where: { id: resolvedFileId },
+      });
+
+      if (!isValidFileId) {
+        throw new Error(
+          `The provided FileId "${resolvedFileId}" does not exist.`
+        );
+      }
+    }
 
     const res = await prisma.resume.update({
-      where: {
-        id,
-      },
+      where: { id },
       data: {
         title,
+        FileId: resolvedFileId || null,
       },
     });
-
     return { success: true, data: res };
   } catch (error) {
-    const msg = "Failed to update resume.";
+    const msg = "Failed to update resume or file.";
     return handleError(error, msg);
   }
 };
 
 export const deleteResumeById = async (
-  resumeId: string
+  resumeId: string,
+  fileId?: string
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -247,8 +310,9 @@ export const deleteResumeById = async (
     if (!user) {
       throw new Error("Not authenticated");
     }
-
-    // TODO: Check if resume is associated with any job
+    if (fileId) {
+      await deleteFile(fileId);
+    }
 
     await prisma.$transaction(async (prisma) => {
       await prisma.contactInfo.deleteMany({
@@ -294,6 +358,46 @@ export const deleteResumeById = async (
     return { success: true };
   } catch (error) {
     const msg = "Failed to delete resume.";
+    return handleError(error, msg);
+  }
+};
+
+export const uploadFile = async (file: File, dir: string, path: string) => {
+  const bytes = await file.arrayBuffer();
+  const buffer = new Uint8Array(bytes);
+
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  await writeFile(path, buffer);
+};
+
+export const deleteFile = async (fileId: string) => {
+  try {
+    const file = await prisma.file.findFirst({
+      where: {
+        id: fileId,
+      },
+    });
+
+    const filePath = file?.filePath as string;
+
+    const fullFilePath = path.join(filePath);
+    if (!fs.existsSync(filePath)) {
+      throw new Error("File not found");
+    }
+    fs.unlinkSync(filePath);
+
+    await prisma.file.delete({
+      where: {
+        id: fileId,
+      },
+    });
+
+    console.log("file deleted successfully!");
+  } catch (error) {
+    const msg = "Failed to delete file.";
     return handleError(error, msg);
   }
 };
