@@ -16,6 +16,7 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AiJobMatchSection } from "../profile/AiJobMatchSection";
 import { useState } from "react";
+import { DownloadFileButton } from "../profile/DownloadFileButton";
 
 function JobDetails({ job }: { job: JobResponse }) {
   const [aiSectionOpen, setAiSectionOpen] = useState(false);
@@ -57,12 +58,23 @@ function JobDetails({ job }: { job: JobResponse }) {
       </div>
       {job?.id && (
         <Card className="col-span-3">
-          <CardHeader>
-            {job?.Company?.label}
-            <CardTitle>{job?.JobTitle?.label}</CardTitle>
-            <CardDescription>
-              {job?.Location?.label} - {getJobType(job?.jobType)}
-            </CardDescription>
+          <CardHeader className="flex-row justify-between relative">
+            <div>
+              {job?.Company?.label}
+              <CardTitle>{job?.JobTitle?.label}</CardTitle>
+              <CardDescription>
+                {job?.Location?.label} - {getJobType(job?.jobType)}
+              </CardDescription>
+            </div>
+            <div>
+              {job?.Resume && job?.Resume?.File && job.Resume?.File?.filePath
+                ? DownloadFileButton(
+                    job?.Resume?.File?.filePath,
+                    job?.Resume?.title,
+                    job?.Resume?.File?.fileName
+                  )
+                : null}
+            </div>
           </CardHeader>
           <h3 className="ml-4">
             {new Date() > job.dueDate && job.Status?.value === "draft" ? (

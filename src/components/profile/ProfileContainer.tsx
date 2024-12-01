@@ -65,10 +65,16 @@ function ActivitiesContainer() {
   };
 
   const onEditResume = (resume: Resume) => {
-    const _resumeToEdit = { id: resume.id, title: resume.title };
+    const _resumeToEdit = {
+      id: resume.id,
+      title: resume.title,
+      FileId: resume.FileId,
+    };
     setResumeToEdit(_resumeToEdit);
     setResumeDialogOpen(true);
   };
+
+  const setResumeId = (id: string) => {};
 
   return (
     <Card>
@@ -91,6 +97,7 @@ function ActivitiesContainer() {
             setResumeDialogOpen={setResumeDialogOpen}
             reloadResumes={reloadResumes}
             resumeToEdit={resumeToEdit}
+            setNewResumeId={setResumeId}
           />
         </div>
       </CardHeader>

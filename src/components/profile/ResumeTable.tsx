@@ -1,5 +1,11 @@
 "use client";
-import { FilePenLine, MoreHorizontal, Pencil, Trash } from "lucide-react";
+import {
+  FilePenLine,
+  MoreHorizontal,
+  Paperclip,
+  Pencil,
+  Trash,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,19 +61,28 @@ function ResumeTable({
 }: //   onPageChange,
 ResumeTableProps) {
   const [alertOpen, setAlertOpen] = useState(false);
-  const [resumeIdToDelete, setResumeIdToDelete] = useState<string>();
+  const [resumeToDelete, setResumeToDelete] = useState<Resume>();
   const onDeleteResume = useMemo(
-    () => (resumeId: string | undefined) => {
-      if (!resumeId) return;
+    () => (resume: Resume) => {
+      if (!resume.id) return;
       setAlertOpen(true);
-      setResumeIdToDelete(resumeId);
+      setResumeToDelete(resume);
     },
     []
   );
 
-  const deleteResume = async (resumeId: string | undefined) => {
-    if (!resumeId) return;
-    const { success, message } = await deleteResumeById(resumeId);
+  const deleteResume = async (resume: Resume) => {
+    if (!resume.id) return;
+    if (resume._count?.Job! > 0)
+      return toast({
+        variant: "destructive",
+        title: "Error!",
+        description: "Number of jobs using resume must be 0!",
+      });
+    const { success, message } = await deleteResumeById(
+      resume.id,
+      resume.FileId
+    );
     if (success) {
       toast({
         variant: "success",
@@ -90,6 +105,7 @@ ResumeTableProps) {
             <TableHead>Resume Title</TableHead>
             <TableHead>Created</TableHead>
             <TableHead className="hidden md:table-cell">Updated</TableHead>
+            <TableHead>Jobs</TableHead>
             <TableHead>Actions</TableHead>
             <TableHead>
               <span className="sr-only">Actions</span>
@@ -101,8 +117,14 @@ ResumeTableProps) {
             return (
               <TableRow key={resume.id}>
                 <TableCell className="font-medium">
-                  <Link href={`/dashboard/profile/resume/${resume.id}`}>
+                  <Link
+                    href={`/dashboard/profile/resume/${resume.id}`}
+                    className="flex items-center"
+                  >
                     {resume.title}
+                    {resume.FileId ? (
+                      <Paperclip className="h-3.5 w-3.5 ml-1" />
+                    ) : null}
                   </Link>
                 </TableCell>
                 <TableCell>
@@ -110,6 +132,9 @@ ResumeTableProps) {
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {resume.updatedAt && format(resume.updatedAt, "PP")}
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {resume._count?.Job}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
@@ -141,7 +166,7 @@ ResumeTableProps) {
                       </Link>
                       <DropdownMenuItem
                         className="text-red-600 cursor-pointer"
-                        onClick={() => onDeleteResume(resume.id)}
+                        onClick={() => onDeleteResume(resume)}
                       >
                         <Trash className="mr-2 h-4 w-4" />
                         Delete
@@ -169,7 +194,7 @@ ResumeTableProps) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className={buttonVariants({ variant: "destructive" })}
-              onClick={() => deleteResume(resumeIdToDelete)}
+              onClick={() => deleteResume(resumeToDelete!)}
             >
               Delete
             </AlertDialogAction>

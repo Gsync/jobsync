@@ -8,11 +8,11 @@ import SummarySectionCard from "./SummarySectionCard";
 import ExperienceCard from "./ExperienceCard";
 import EducationCard from "./EducationCard";
 import AiResumeReviewSection from "./AiResumeReviewSection";
+import { DownloadFileButton } from "./DownloadFileButton";
 
 function ResumeContainer({ resume }: { resume: Resume }) {
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
   const { title, ContactInfo, ResumeSections } = resume ?? {};
-
   const summarySection = ResumeSections?.find(
     (section) => section.sectionType === SectionType.SUMMARY
   );
@@ -52,7 +52,15 @@ function ResumeContainer({ resume }: { resume: Resume }) {
       <Card>
         <CardHeader className="flex-row justify-between items-center">
           <CardTitle>Resume</CardTitle>
-          <CardDescription>{title}</CardDescription>
+          <CardDescription>
+            {resume.FileId && resume.File?.filePath
+              ? DownloadFileButton(
+                  resume.File?.filePath,
+                  title,
+                  resume.File?.fileName
+                )
+              : title}
+          </CardDescription>
           <div className="flex items-center">
             <AddResumeSection resume={resume} ref={resumeSectionRef} />
             <AiResumeReviewSection resume={resume} />
