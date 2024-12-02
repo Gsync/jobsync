@@ -75,7 +75,6 @@ describe("AddJob Component", () => {
       />
     );
     const addJobButton = screen.getByTestId("add-job-btn");
-    console.log(addJobButton);
     await user.click(addJobButton);
   });
 

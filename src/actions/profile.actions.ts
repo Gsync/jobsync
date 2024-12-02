@@ -437,7 +437,7 @@ export const addResumeSummary = async (
       see more info here https://nextjs.org/docs/app/api-reference/functions/revalidatePath
       revalidatePath("/dashboard/profile/resume/[id]", "page");
     */
-    revalidatePath("/dashboard/profile/resume/[id]");
+    revalidatePath("/dashboard/profile/resume/[id]", "page");
     return { data: summary, success: true };
   } catch (error) {
     const msg = "Failed to create summary.";
@@ -475,7 +475,7 @@ export const updateResumeSummary = async (
         },
       },
     });
-    revalidatePath("/dashboard/profile/resume/[id]");
+    revalidatePath("/dashboard/profile/resume/[id]", "page");
     return { data: summary, success: true };
   } catch (error) {
     const msg = "Failed to update summary.";
@@ -563,7 +563,7 @@ export const updateExperience = async (
         description: data.jobDescription,
       },
     });
-    revalidatePath("/dashboard/profile/resume/[id]");
+    revalidatePath("/dashboard/profile/resume/[id]", "page");
     return { data: summary, success: true };
   } catch (error) {
     const msg = "Failed to update experience.";
@@ -608,7 +608,7 @@ export const addEducation = async (
         },
       },
     });
-    revalidatePath("/dashboard/profile/resume/[id]");
+    revalidatePath("/dashboard/profile/resume/[id]", "page");
     return { data: education, success: true };
   } catch (error) {
     const msg = "Failed to create education.";
@@ -648,7 +648,7 @@ export const updateEducation = async (
         description: data.description,
       },
     });
-    revalidatePath("/dashboard/profile/resume/[id]");
+    revalidatePath("/dashboard/profile/resume/[id]", "page");
     return { data: summary, success: true };
   } catch (error) {
     const msg = "Failed to update education.";
