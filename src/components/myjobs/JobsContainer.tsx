@@ -195,6 +195,7 @@ function JobsContainer({
                     <SelectItem value="interview">Interview</SelectItem>
                     <SelectItem value="draft">Draft</SelectItem>
                     <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="PT">Part-time</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>

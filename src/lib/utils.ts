@@ -1,4 +1,5 @@
 import { type ClassValue, clsx } from "clsx";
+import { parse } from "date-fns";
 import { NextApiRequest } from "next";
 import { twMerge } from "tailwind-merge";
 
@@ -57,3 +58,17 @@ export function getTimestampedFileName(originalName: string): string {
 
   return `${baseName}_${timestamp}.${extension}`;
 }
+
+export const combineDateAndTime = (date: Date, time: string): Date => {
+  // Parse the time string into a `Date` object using a reference date
+  const parsedTime = parse(time, "hh:mm a", new Date());
+  // if (isNaN(parsedTime.getTime())) throw new Error("Invalid time format");
+
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    parsedTime.getHours(),
+    parsedTime.getMinutes()
+  );
+};

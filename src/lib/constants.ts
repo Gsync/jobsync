@@ -8,6 +8,7 @@ import {
 
 export enum APP_CONSTANTS {
   RECORDS_PER_PAGE = 10,
+  ACTIVITY_MAX_DURATION_MINUTES = 8 * 60, // 8 Hours
 }
 
 export const SIDEBAR_LINKS = [
