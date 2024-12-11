@@ -34,6 +34,7 @@ import { combineDateAndTime } from "@/lib/utils";
 
 interface ActivityFormProps {
   onClose: () => void;
+  reloadActivities: () => void;
 }
 
 type Duration = {
@@ -41,7 +42,7 @@ type Duration = {
   minutes: number;
 };
 
-export function ActivityForm({ onClose }: ActivityFormProps) {
+export function ActivityForm({ onClose, reloadActivities }: ActivityFormProps) {
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [duration, setDuration] = useState<Duration | null>(null);
   const defaultValues = useMemo(() => {
@@ -131,6 +132,7 @@ export function ActivityForm({ onClose }: ActivityFormProps) {
       };
       const response = await createActivity(payload);
       onClose();
+      reloadActivities();
     } catch (error) {
       console.error("Error parsing date and time:", error);
     }

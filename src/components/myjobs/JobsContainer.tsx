@@ -218,22 +218,19 @@ function JobsContainer({
           </div>
         </CardHeader>
         <CardContent>
-          {!loading ? (
-            <MyJobsTable
-              jobs={jobs}
-              jobStatuses={statuses}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              jobsPerPage={jobsPerPage}
-              totalJobs={totalJobs}
-              onPageChange={onPageChange}
-              deleteJob={onDeleteJob}
-              editJob={onEditJob}
-              onChangeJobStatus={onChangeJobStatus}
-            />
-          ) : (
-            <Loading />
-          )}
+          {loading && <Loading />}
+          <MyJobsTable
+            jobs={jobs}
+            jobStatuses={statuses}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            jobsPerPage={jobsPerPage}
+            totalJobs={totalJobs}
+            onPageChange={onPageChange}
+            deleteJob={onDeleteJob}
+            editJob={onEditJob}
+            onChangeJobStatus={onChangeJobStatus}
+          />
         </CardContent>
         <CardFooter></CardFooter>
       </Card>

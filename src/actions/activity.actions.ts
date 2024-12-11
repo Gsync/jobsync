@@ -121,3 +121,26 @@ export const createActivity = async (
     return handleError(error, msg);
   }
 };
+
+export const deleteActivityById = async (
+  activityId: string
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const res = await prisma.activity.delete({
+      where: {
+        id: activityId,
+        userId: user.id,
+      },
+    });
+    return { res, success: true };
+  } catch (error) {
+    const msg = "Failed to delete job.";
+    return handleError(error, msg);
+  }
+};
