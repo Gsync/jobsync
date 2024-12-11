@@ -16,19 +16,17 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-import { activitiesData } from "@/lib/data/activitiesData";
-import { differenceInMinutes, format, fromUnixTime } from "date-fns";
+import { differenceInMinutes, format } from "date-fns";
+import { Activity, ActivityType } from "@/models/activity.model";
 
-function ActivitiesTable() {
-  const activities: any = activitiesData;
-  const calculateDuration = (start: number, end: number) => {
-    // Convert Unix timestamps to JavaScript Date objects
-    const startDate = fromUnixTime(start);
-    const endDate = fromUnixTime(end);
-    // Calculate the difference in minutes
-    const totalMinutes = differenceInMinutes(endDate, startDate);
+interface ActivitiesTableProps {
+  activities: Activity[];
+}
 
-    // Convert total minutes to hours and remaining minutes
+function ActivitiesTable({ activities }: ActivitiesTableProps) {
+  const calculateDuration = (start: Date, end: Date) => {
+    const totalMinutes = differenceInMinutes(end, start);
+
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     return `${hours}h ${minutes}min`;
@@ -49,31 +47,28 @@ function ActivitiesTable() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {activities.map((activity: any) => {
+        {activities.map((activity: Activity) => {
           return (
             <TableRow key={activity.id} className="cursor-pointer">
               <TableCell className="hidden md:table-cell w-[120px]">
-                {activity.startDateTime
-                  ? format(fromUnixTime(activity.startDateTime), "PP")
-                  : "N/A"}
+                {activity.startTime ? format(activity.startTime, "PP") : "N/A"}
               </TableCell>
               <TableCell className="font-medium">
                 {activity.activityName}
               </TableCell>
               <TableCell className="font-medium">
-                {activity.activityType}
+                {(activity.activityType as ActivityType)?.label}
               </TableCell>
               <TableCell className="hidden md:table-cell">
-                {format(fromUnixTime(activity.startDateTime), "p")}
+                {format(activity.startTime, "p")}
               </TableCell>
               <TableCell className="hidden md:table-cell">
-                {format(fromUnixTime(activity.endDateTime), "p")}
+                {format(activity.endTime!, "p")}
               </TableCell>
               <TableCell className="hidden md:table-cell">
-                {calculateDuration(
-                  activity.startDateTime,
-                  activity.endDateTime
-                )}
+                {activity.startTime &&
+                  activity.endTime &&
+                  calculateDuration(activity.startTime, activity.endTime!)}
               </TableCell>
               <TableCell>
                 <DropdownMenu>

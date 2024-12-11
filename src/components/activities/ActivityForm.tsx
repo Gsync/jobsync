@@ -15,54 +15,126 @@ import {
   FormMessage,
 } from "../ui/form";
 import { Input } from "../ui/input";
-import { format } from "date-fns";
+import {
+  addMinutes,
+  differenceInHours,
+  differenceInMinutes,
+  format,
+} from "date-fns";
 import { DatePicker } from "../DatePicker";
 import TiptapEditor from "../TiptapEditor";
 import { Combobox } from "../ComboBox";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityType } from "@/models/activity.model";
-import { getAllActivityTypes } from "@/actions/activity.actions";
+import {
+  createActivity,
+  getAllActivityTypes,
+} from "@/actions/activity.actions";
+import { combineDateAndTime } from "@/lib/utils";
 
 interface ActivityFormProps {
   onClose: () => void;
 }
 
+type Duration = {
+  hours: number;
+  minutes: number;
+};
+
 export function ActivityForm({ onClose }: ActivityFormProps) {
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
-  const now = new Date();
-  const currentDate = now;
-  const currentTime = format(now, "hh:mm a");
-  const form = useForm<z.infer<typeof AddActivityFormSchema>>({
-    resolver: zodResolver(AddActivityFormSchema),
-    defaultValues: {
+  const [duration, setDuration] = useState<Duration | null>(null);
+  const defaultValues = useMemo(() => {
+    const now = new Date();
+    const currentTime = format(now, "hh:mm a");
+    const nowPlus5mins = addMinutes(now, 5);
+    const estimatedEndTime = format(nowPlus5mins, "hh:mm a");
+
+    return {
       activityName: "",
       activityType: "",
-      startDate: currentDate,
+      startDate: now,
       startTime: currentTime,
-      endDate: currentDate,
-      endTime: "",
-    },
+      endDate: now,
+      endTime: estimatedEndTime,
+    };
+  }, []);
+  const form = useForm<z.infer<typeof AddActivityFormSchema>>({
+    resolver: zodResolver(AddActivityFormSchema),
+    defaultValues,
   });
 
   const {
     reset,
+    getValues,
+    watch,
     formState: { errors, isValid },
   } = form;
 
-  const loadActivityTypes = async () => {
-    try {
-      const activityTypes = await getAllActivityTypes();
-      setActivityTypes(activityTypes);
-    } catch (error) {
-      console.error("Error loading activity types");
+  const loadActivityTypes = useCallback(async () => {
+    const activityTypes = await getAllActivityTypes();
+    setActivityTypes(activityTypes);
+  }, []);
+
+  const calculateDuration = useCallback(() => {
+    const startDateTime =
+      getValues("startDate") && getValues("startTime")
+        ? combineDateAndTime(getValues("startDate"), getValues("startTime"))
+        : null;
+
+    const endDateTime =
+      getValues("endDate") && getValues("endTime")
+        ? combineDateAndTime(getValues("endDate")!, getValues("endTime")!)
+        : null;
+
+    if (startDateTime && endDateTime) {
+      const hours = differenceInHours(endDateTime, startDateTime);
+      const totalMinutes = differenceInMinutes(endDateTime, startDateTime);
+      const minutes = totalMinutes % 60;
+
+      setDuration({ hours, minutes });
+    } else {
+      setDuration(null);
     }
-  };
+  }, [getValues]);
 
   useEffect(() => {
     loadActivityTypes();
-  }, []);
+  }, [loadActivityTypes]);
 
-  const onSubmit = (data: z.infer<typeof AddActivityFormSchema>) => {};
+  useEffect(() => {
+    const subscription = watch((value, { name }) => {
+      if (
+        ["startDate", "startTime", "endDate", "endTime"].includes(name || "")
+      ) {
+        calculateDuration();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [calculateDuration, watch]);
+
+  const onSubmit = async (data: z.infer<typeof AddActivityFormSchema>) => {
+    const { startDate, startTime, endDate, endTime, ...rest } = data;
+    try {
+      const startDateTime = combineDateAndTime(startDate, startTime);
+      const endDateTime =
+        endDate && endTime ? combineDateAndTime(endDate, endTime) : null;
+      const totalMinutes = endDateTime
+        ? differenceInMinutes(endDateTime, startDateTime)
+        : undefined;
+      const payload = {
+        ...rest,
+        startTime: startDateTime,
+        endTime: endDateTime ?? undefined,
+        duration: totalMinutes,
+      };
+      const response = await createActivity(payload);
+      onClose();
+    } catch (error) {
+      console.error("Error parsing date and time:", error);
+    }
+  };
   return (
     <Form {...form}>
       <form
@@ -172,7 +244,23 @@ export function ActivityForm({ onClose }: ActivityFormProps) {
             name="endTime"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>End Time</FormLabel>
+                <FormLabel>
+                  End Time
+                  <span className="text-sm">
+                    {duration && (
+                      <span>
+                        {" "}
+                        ({duration.hours > 0 ? `${duration.hours} h` : ""}
+                        {duration.minutes > 0
+                          ? `${duration.hours > 0 ? " " : ""}${
+                              duration.minutes
+                            } min`
+                          : ""}
+                        {!duration.hours && !duration.minutes ? "0 mins" : ""})
+                      </span>
+                    )}
+                  </span>
+                </FormLabel>
                 <FormControl>
                   <Input {...field} placeholder="hh:mm AM/PM" />
                 </FormControl>
