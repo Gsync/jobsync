@@ -36,11 +36,13 @@ import {
 interface ActivitiesTableProps {
   activities: Activity[];
   reloadActivities: () => void;
+  onStartActivity: (activityId: string) => void;
 }
 
 function ActivitiesTable({
   activities,
   reloadActivities,
+  onStartActivity,
 }: ActivitiesTableProps) {
   const [alertOpen, setAlertOpen] = useState(false);
   const [activityIdToDelete, setActivityIdToDelete] = useState<string>();
@@ -129,7 +131,10 @@ function ActivitiesTable({
                     <DropdownMenuContent align="end" className="w-[200px]">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuGroup>
-                        <DropdownMenuItem className="cursor-pointer text-green-400">
+                        <DropdownMenuItem
+                          className="cursor-pointer text-green-400"
+                          onClick={() => onStartActivity(activity.id!)}
+                        >
                           <CirclePlay className="mr-2 h-4 w-4" />
                           Start Activity
                         </DropdownMenuItem>

@@ -63,6 +63,9 @@ export const getActivitiesList = async (): Promise<any | undefined> => {
     const data = await prisma.activity.findMany({
       where: {
         userId: user.id,
+        endTime: {
+          not: null,
+        },
       },
       select: {
         id: true,
@@ -141,6 +144,117 @@ export const deleteActivityById = async (
     return { res, success: true };
   } catch (error) {
     const msg = "Failed to delete job.";
+    return handleError(error, msg);
+  }
+};
+
+export const startActivityById = async (
+  activityId: string
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const activity = await prisma.activity.findFirst({
+      where: {
+        id: activityId,
+        userId: user.id,
+      },
+    });
+
+    if (!activity) {
+      throw new Error("Activity not found");
+    }
+    const { activityName, activityTypeId, description } = activity;
+
+    const newActivity = await prisma.activity.create({
+      data: {
+        activityName,
+        activityTypeId,
+        userId: user.id,
+        startTime: new Date(),
+        endTime: null,
+        description,
+      },
+      select: {
+        id: true,
+        activityName: true,
+        startTime: true,
+        endTime: true,
+        description: true,
+        createdAt: true,
+        activityType: true,
+      },
+    });
+    return { newActivity, success: true };
+  } catch (error) {
+    const msg = "Failed to start activity. ";
+    return handleError(error, msg);
+  }
+};
+
+export const stopActivityById = async (
+  activityId: string,
+  endTime: Date,
+  duration: number
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const activity = await prisma.activity.update({
+      where: {
+        id: activityId,
+        userId: user.id,
+      },
+      data: {
+        endTime,
+        duration,
+      },
+    });
+    return { activity, success: true };
+  } catch (error) {
+    const msg = "Failed to start activity. ";
+    return handleError(error, msg);
+  }
+};
+
+export const getCurrentActivity = async (): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const activity = await prisma.activity.findFirst({
+      where: {
+        userId: user.id,
+        endTime: null,
+      },
+      select: {
+        id: true,
+        activityName: true,
+        startTime: true,
+        description: true,
+        createdAt: true,
+        activityType: true,
+      },
+    });
+
+    if (!activity) {
+      return { success: false };
+    }
+
+    return { activity, success: true };
+  } catch (error) {
+    const msg = "Failed to get current activity. ";
     return handleError(error, msg);
   }
 };
