@@ -1,7 +1,6 @@
 "use client";
 import { Button, buttonVariants } from "../ui/button";
 import Image from "next/image";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,19 +20,11 @@ import { Company } from "@/models/job.model";
 import { MoreHorizontal, Pencil, Trash } from "lucide-react";
 import { TablePagination } from "../TablePagination";
 import { useState } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "../ui/alert-dialog";
+import { AlertDialog } from "../ui/alert-dialog";
 import { deleteCompanyById } from "@/actions/company.actions";
 import { toast } from "../ui/use-toast";
 import { redirect } from "next/navigation";
+import { DeleteAlertDialog } from "../DeleteAlertDialog";
 
 type CompaniesTableProps = {
   companies: Company[];
@@ -195,28 +186,12 @@ function CompaniesTable({
           onPageChange={onPageChange}
         />
       )}
-      <AlertDialog
+      <DeleteAlertDialog
+        pageTitle="company"
         open={alert.openState}
         onOpenChange={() => setAlert({ openState: false, deleteAction: false })}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{alert.title}</AlertDialogTitle>
-            <AlertDialogDescription>{alert.description}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            {alert.deleteAction && (
-              <AlertDialogAction
-                className={buttonVariants({ variant: "destructive" })}
-                onClick={() => deleteCompany(alert.itemId)}
-              >
-                Delete
-              </AlertDialogAction>
-            )}
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onDelete={() => deleteCompany(alert.itemId)}
+      />
     </>
   );
 }

@@ -22,6 +22,7 @@ import { Activity, ActivityType } from "@/models/activity.model";
 import { toast } from "../ui/use-toast";
 import Loading from "../Loading";
 import { ActivityBanner } from "./ActivityBanner";
+import { differenceInMinutes } from "date-fns";
 
 function ActivitiesContainer() {
   const [activityFormOpen, setActivityFormOpen] = useState<boolean>(false);
@@ -30,6 +31,9 @@ function ActivitiesContainer() {
   const [timeElapsed, setTimeElapsed] = useState<number>(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const closeActivityForm = () => setActivityFormOpen(false);
+
   const loadActivities = useCallback(async () => {
     setLoading(true);
     try {
@@ -57,25 +61,25 @@ function ActivitiesContainer() {
     await loadActivities();
   }, [loadActivities]);
 
-  useEffect(() => {
-    loadActivities();
-  }, [loadActivities]);
+  const fetchActiveActivity = useCallback(async () => {
+    const { activity, success } = await getCurrentActivity();
+    if (success && activity) {
+      setCurrentActivity(activity);
+      startTimer(activity.startTime);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchActiveActivity = async () => {
-      const { activity, success } = await getCurrentActivity();
-      if (success) {
-        setCurrentActivity(activity);
-        startTimer(activity.startTime);
-      }
-    };
+    loadActivities();
     fetchActiveActivity();
     return () => {
       stopTimer(); // Cleanup the timer on unmount
     };
-  }, []);
+  }, [loadActivities, fetchActiveActivity]);
 
   const startTimer = (startTime: number) => {
+    // TODO: Check and validate the following at the change of date
+    // ALSO: Stop activity when max duration is reached, i.e. 8 hours
     const initialElapsed = Date.now() - startTime;
     setTimeElapsed(initialElapsed);
 
@@ -121,11 +125,11 @@ function ActivitiesContainer() {
 
   const stopActivity = async () => {
     if (!currentActivity) return;
-    const totalSeconds = Math.floor(timeElapsed / 1000);
-    const duration = Math.floor((totalSeconds % 3600) / 60);
+    const now = new Date();
+    const duration = differenceInMinutes(now, currentActivity.startTime);
     const { success, message } = await stopActivityById(
       currentActivity.id!,
-      new Date(),
+      now,
       duration
     );
     if (success) {
@@ -159,14 +163,16 @@ function ActivitiesContainer() {
               </span>
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[725px]">
+          <DialogContent className="sm:max-w-[725px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Activity</DialogTitle>
             </DialogHeader>
-            <ActivityForm
-              onClose={() => setActivityFormOpen(false)}
-              reloadActivities={reloadActivities}
-            />
+            <div className="p-4">
+              <ActivityForm
+                onClose={closeActivityForm}
+                reloadActivities={reloadActivities}
+              />
+            </div>
           </DialogContent>
         </Dialog>
       </CardHeader>
@@ -185,6 +191,7 @@ function ActivitiesContainer() {
           activities={activitiesList}
           reloadActivities={reloadActivities}
           onStartActivity={startActivity}
+          activityExist={Boolean(currentActivity)}
         />
       </CardContent>
     </Card>

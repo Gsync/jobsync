@@ -24,7 +24,7 @@ import {
 import { DatePicker } from "../DatePicker";
 import TiptapEditor from "../TiptapEditor";
 import { Combobox } from "../ComboBox";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityType } from "@/models/activity.model";
 import {
   createActivity,
@@ -42,7 +42,10 @@ type Duration = {
   minutes: number;
 };
 
-export function ActivityForm({ onClose, reloadActivities }: ActivityFormProps) {
+const ActivityFormComponent = ({
+  onClose,
+  reloadActivities,
+}: ActivityFormProps) => {
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [duration, setDuration] = useState<Duration | null>(null);
   const defaultValues = useMemo(() => {
@@ -78,15 +81,17 @@ export function ActivityForm({ onClose, reloadActivities }: ActivityFormProps) {
   }, []);
 
   const calculateDuration = useCallback(() => {
+    const [startDate, startTime, endDate, endTime] = getValues([
+      "startDate",
+      "startTime",
+      "endDate",
+      "endTime",
+    ]);
     const startDateTime =
-      getValues("startDate") && getValues("startTime")
-        ? combineDateAndTime(getValues("startDate"), getValues("startTime"))
-        : null;
+      startDate && startTime ? combineDateAndTime(startDate, startTime) : null;
 
     const endDateTime =
-      getValues("endDate") && getValues("endTime")
-        ? combineDateAndTime(getValues("endDate")!, getValues("endTime")!)
-        : null;
+      endDate && endTime ? combineDateAndTime(endDate!, endTime!) : null;
 
     if (startDateTime && endDateTime) {
       const hours = differenceInHours(endDateTime, startDateTime);
@@ -101,9 +106,6 @@ export function ActivityForm({ onClose, reloadActivities }: ActivityFormProps) {
 
   useEffect(() => {
     loadActivityTypes();
-  }, [loadActivityTypes]);
-
-  useEffect(() => {
     const subscription = watch((value, { name }) => {
       if (
         ["startDate", "startTime", "endDate", "endTime"].includes(name || "")
@@ -113,7 +115,7 @@ export function ActivityForm({ onClose, reloadActivities }: ActivityFormProps) {
     });
 
     return () => subscription.unsubscribe();
-  }, [calculateDuration, watch]);
+  }, [calculateDuration, loadActivityTypes, watch]);
 
   const onSubmit = async (data: z.infer<typeof AddActivityFormSchema>) => {
     const { startDate, startTime, endDate, endTime, ...rest } = data;
@@ -316,4 +318,7 @@ export function ActivityForm({ onClose, reloadActivities }: ActivityFormProps) {
       </form>
     </Form>
   );
-}
+};
+
+export const ActivityForm = memo(ActivityFormComponent);
+ActivityForm.displayName = "ActivityForm";

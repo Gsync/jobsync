@@ -16,40 +16,33 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { Button, buttonVariants } from "../ui/button";
+import { Button } from "../ui/button";
 import { format } from "date-fns";
 import { Activity, ActivityType } from "@/models/activity.model";
 import { deleteActivityById } from "@/actions/activity.actions";
 import { toast } from "../ui/use-toast";
 import { useMemo, useState } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "../ui/alert-dialog";
+import { DeleteAlertDialog } from "../DeleteAlertDialog";
 
 interface ActivitiesTableProps {
   activities: Activity[];
   reloadActivities: () => void;
   onStartActivity: (activityId: string) => void;
+  activityExist: boolean;
 }
 
 function ActivitiesTable({
   activities,
   reloadActivities,
   onStartActivity,
+  activityExist,
 }: ActivitiesTableProps) {
   const [alertOpen, setAlertOpen] = useState(false);
   const [activityIdToDelete, setActivityIdToDelete] = useState<string>();
   const calculateDuration = (totalMinutes: number) => {
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
-    return totalMinutes === 0 ? "" : `${hours}h ${minutes}min`;
+    return totalMinutes === 0 ? "0min" : `${hours}h ${minutes}min`;
   };
 
   const onDeleteActivity = useMemo(
@@ -60,8 +53,8 @@ function ActivitiesTable({
     []
   );
 
-  const deleteActivity = async (activityId: string) => {
-    const { success, message } = await deleteActivityById(activityId);
+  const deleteActivity = async () => {
+    const { success, message } = await deleteActivityById(activityIdToDelete!);
     if (success) {
       toast({
         variant: "success",
@@ -97,7 +90,7 @@ function ActivitiesTable({
         <TableBody>
           {activities?.map((activity: Activity) => {
             return (
-              <TableRow key={activity.id} className="cursor-pointer">
+              <TableRow key={activity.id} className="cursor-pointer group">
                 <TableCell className="hidden md:table-cell w-[120px]">
                   {activity.startTime
                     ? format(activity.startTime, "PP")
@@ -132,8 +125,9 @@ function ActivitiesTable({
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuGroup>
                         <DropdownMenuItem
-                          className="cursor-pointer text-green-400"
+                          className="cursor-pointer text-green-600"
                           onClick={() => onStartActivity(activity.id!)}
+                          disabled={activityExist}
                         >
                           <CirclePlay className="mr-2 h-4 w-4" />
                           Start Activity
@@ -148,34 +142,31 @@ function ActivitiesTable({
                       </DropdownMenuGroup>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  {!activityExist && (
+                    <Button
+                      title="Start Activity"
+                      aria-haspopup="true"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => onStartActivity(activity.id!)}
+                    >
+                      <span className="hidden group-hover:block">
+                        <CirclePlay className="text-green-600" />
+                      </span>
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             );
           })}
         </TableBody>
       </Table>
-      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Are you sure you want to delete this activity?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete and
-              remove data from server.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className={buttonVariants({ variant: "destructive" })}
-              onClick={() => deleteActivity(activityIdToDelete!)}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteAlertDialog
+        pageTitle="activity"
+        open={alertOpen}
+        onOpenChange={setAlertOpen}
+        onDelete={deleteActivity}
+      />
     </>
   );
 }
