@@ -90,7 +90,10 @@ function ActivitiesTable({
         <TableBody>
           {activities?.map((activity: Activity) => {
             return (
-              <TableRow key={activity.id} className="cursor-pointer group">
+              <TableRow
+                key={activity.id}
+                className="cursor-pointer group relative"
+              >
                 <TableCell className="hidden md:table-cell w-[120px]">
                   {activity.startTime
                     ? format(activity.startTime, "PP")
@@ -149,8 +152,9 @@ function ActivitiesTable({
                       size="icon"
                       variant="ghost"
                       onClick={() => onStartActivity(activity.id!)}
+                      className="opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300"
                     >
-                      <span className="hidden group-hover:block">
+                      <span>
                         <CirclePlay className="text-green-600" />
                       </span>
                     </Button>

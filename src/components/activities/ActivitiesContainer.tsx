@@ -30,16 +30,20 @@ function ActivitiesContainer() {
   const [currentActivity, setCurrentActivity] = useState<Activity>();
   const [timeElapsed, setTimeElapsed] = useState<number>(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const [totalActivities, setTotalActivities] = useState<number>(0);
   const [loading, setLoading] = useState(false);
 
   const closeActivityForm = () => setActivityFormOpen(false);
 
-  const loadActivities = useCallback(async () => {
+  const loadActivities = useCallback(async (page: number) => {
     setLoading(true);
     try {
-      const { data, success, message } = await getActivitiesList();
+      const { data, success, message, total } = await getActivitiesList(page);
       if (success) {
-        setActivitiesList(data);
+        setActivitiesList((prev) => (page === 1 ? data : [...prev, ...data]));
+        setTotalActivities(total);
+        setPage(page);
       } else {
         toast({
           variant: "destructive",
@@ -58,7 +62,7 @@ function ActivitiesContainer() {
     }
   }, []);
   const reloadActivities = useCallback(async () => {
-    await loadActivities();
+    await loadActivities(1);
   }, [loadActivities]);
 
   const fetchActiveActivity = useCallback(async () => {
@@ -70,7 +74,7 @@ function ActivitiesContainer() {
   }, []);
 
   useEffect(() => {
-    loadActivities();
+    loadActivities(1);
     fetchActiveActivity();
     return () => {
       stopTimer(); // Cleanup the timer on unmount
@@ -193,6 +197,19 @@ function ActivitiesContainer() {
           onStartActivity={startActivity}
           activityExist={Boolean(currentActivity)}
         />
+        {activitiesList.length < totalActivities && (
+          <div className="flex justify-center p-4">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => loadActivities(page + 1)}
+              disabled={loading}
+              className="btn btn-primary"
+            >
+              {loading ? "Loading..." : "Load More"}
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

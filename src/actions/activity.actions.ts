@@ -52,7 +52,10 @@ export const createActivityType = async (
   }
 };
 
-export const getActivitiesList = async (): Promise<any | undefined> => {
+export const getActivitiesList = async (
+  page: number = 1,
+  limit: number = 10
+): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
 
@@ -60,28 +63,47 @@ export const getActivitiesList = async (): Promise<any | undefined> => {
       throw new Error("Not authenticated");
     }
 
-    const data = await prisma.activity.findMany({
-      where: {
-        userId: user.id,
-        endTime: {
-          not: null,
+    const offset = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      prisma.activity.findMany({
+        where: {
+          userId: user.id,
+          endTime: {
+            not: null,
+          },
         },
-      },
-      select: {
-        id: true,
-        activityName: true,
-        startTime: true,
-        endTime: true,
-        duration: true,
-        description: true,
-        createdAt: true,
-        activityType: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-    return { success: true, data };
+        select: {
+          id: true,
+          activityName: true,
+          startTime: true,
+          endTime: true,
+          duration: true,
+          description: true,
+          createdAt: true,
+          activityType: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        skip: offset,
+        take: limit,
+      }),
+      prisma.activity.count({
+        where: {
+          userId: user.id,
+          endTime: {
+            not: null,
+          },
+        },
+      }),
+    ]);
+
+    return {
+      success: true,
+      data,
+      total,
+    };
   } catch (error) {
     const msg = "Failed to fetch activities list. ";
     return handleError(error, msg);
