@@ -7,7 +7,7 @@ type BannerVariant = "success" | "warning" | "error" | "info";
 interface BannerProps {
   message: string;
   variant?: BannerVariant;
-  onStopActivity: () => void;
+  onStopActivity: (autoStop: boolean) => void;
   elapsedTime: number;
   className?: string;
 }
@@ -57,7 +57,7 @@ export function ActivityBanner({
               "focus:ring-blue-500": variant === "info",
             }
           )}
-          onClick={onStopActivity}
+          onClick={() => onStopActivity(false)}
         >
           <span className="sr-only">Stop Activity</span>
           <CircleStop className="text-red-500" />

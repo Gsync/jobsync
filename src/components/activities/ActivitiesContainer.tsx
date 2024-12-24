@@ -23,6 +23,7 @@ import { toast } from "../ui/use-toast";
 import Loading from "../Loading";
 import { ActivityBanner } from "./ActivityBanner";
 import { differenceInMinutes } from "date-fns";
+import { APP_CONSTANTS } from "@/lib/constants";
 
 function ActivitiesContainer() {
   const [activityFormOpen, setActivityFormOpen] = useState<boolean>(false);
@@ -35,6 +36,15 @@ function ActivitiesContainer() {
   const [loading, setLoading] = useState(false);
 
   const closeActivityForm = () => setActivityFormOpen(false);
+
+  const stopTimer = useCallback(() => {
+    // Clear the timer and reset elapsed time
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setTimeElapsed(0);
+  }, []);
 
   const loadActivities = useCallback(async (page: number) => {
     setLoading(true);
@@ -61,59 +71,86 @@ function ActivitiesContainer() {
       setLoading(false);
     }
   }, []);
+
   const reloadActivities = useCallback(async () => {
     await loadActivities(1);
   }, [loadActivities]);
 
-  const fetchActiveActivity = useCallback(async () => {
-    const { activity, success } = await getCurrentActivity();
-    if (success && activity) {
-      setCurrentActivity(activity);
-      startTimer(activity.startTime);
-    }
-  }, []);
+  const stopActivity = useCallback(
+    async (autoStop: boolean = false) => {
+      if (!currentActivity) return;
+      const now = new Date();
+      const maxDurationMinutes =
+        APP_CONSTANTS.ACTIVITY_MAX_DURATION_MS / (1000 * 60);
+      const duration = Math.min(
+        differenceInMinutes(now, currentActivity.startTime),
+        maxDurationMinutes
+      );
+      const { success, message } = await stopActivityById(
+        currentActivity.id!,
+        now,
+        duration
+      );
+      if (success) {
+        stopTimer();
+        setCurrentActivity(undefined);
+        reloadActivities();
+        toast({
+          variant: "success",
+          description: autoStop
+            ? `Activity auto-stopped after reaching maximum duration of ${
+                maxDurationMinutes / 60
+              } hours`
+            : "Activity stopped successfully",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error!",
+          description: message,
+        });
+      }
+    },
+    [currentActivity, reloadActivities, stopTimer]
+  );
 
-  useEffect(() => {
-    loadActivities(1);
-    fetchActiveActivity();
-    return () => {
-      stopTimer(); // Cleanup the timer on unmount
-    };
-  }, [loadActivities, fetchActiveActivity]);
+  const startTimer = useCallback(
+    (startTime: number) => {
+      const initialElapsed = Date.now() - startTime;
 
-  const startTimer = (startTime: number) => {
-    // TODO: Check and validate the following at the change of date
-    // ALSO: Stop activity when max duration is reached, i.e. 8 hours
-    const initialElapsed = Date.now() - startTime;
-    setTimeElapsed(initialElapsed);
+      // Check if the initial elapsed time already exceeds the MAX duration
+      if (initialElapsed >= APP_CONSTANTS.ACTIVITY_MAX_DURATION_MS) {
+        setTimeout(() => stopActivity(true), 0);
+        return;
+      }
 
-    // Clear any existing timer to avoid duplicates
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
+      stopTimer(); // Clear any existing timer to avoid duplicates
+      setTimeElapsed(initialElapsed);
 
-    // Start the interval timer
-    timerRef.current = setInterval(() => {
-      setTimeElapsed((prev) => prev + 1000);
-    }, 1000);
-  };
-
-  const stopTimer = () => {
-    // Clear the timer and reset elapsed time
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    setTimeElapsed(0);
-  };
+      // Start the interval timer
+      timerRef.current = setInterval(() => {
+        setTimeElapsed((prev) => {
+          const newElapsed = prev + 1000;
+          if (newElapsed >= APP_CONSTANTS.ACTIVITY_MAX_DURATION_MS) {
+            clearInterval(timerRef.current!);
+            timerRef.current = null;
+            setTimeout(() => stopActivity(true), 0);
+            return APP_CONSTANTS.ACTIVITY_MAX_DURATION_MS;
+          }
+          return newElapsed;
+        });
+      }, 1000);
+    },
+    [stopActivity, stopTimer]
+  );
 
   const startActivity = async (activityId: string) => {
     const { newActivity, success, message } = await startActivityById(
       activityId
     );
-    if (success) {
-      setCurrentActivity(newActivity);
-      startTimer(newActivity.startTime);
+    if (success && newActivity) {
+      setCurrentActivity(newActivity as Activity);
+      // startTimer(newActivity.startTime); // this happens in useeffect upon currentActivity change
       toast({
         variant: "success",
         description: "Activity started successfully",
@@ -127,27 +164,31 @@ function ActivitiesContainer() {
     }
   };
 
-  const stopActivity = async () => {
-    if (!currentActivity) return;
-    const now = new Date();
-    const duration = differenceInMinutes(now, currentActivity.startTime);
-    const { success, message } = await stopActivityById(
-      currentActivity.id!,
-      now,
-      duration
-    );
-    if (success) {
-      stopTimer();
-      setCurrentActivity(undefined);
-      reloadActivities();
-      toast({
-        variant: "success",
-        description: "Activity stopped successfully",
-      });
-    } else {
-      toast({ variant: "destructive", title: "Error!", description: message });
+  const fetchActiveActivity = useCallback(async () => {
+    const { activity, success } = await getCurrentActivity();
+    if (success && activity) {
+      setCurrentActivity(activity);
+      startTimer(activity.startTime.getTime());
     }
-  };
+  }, [startTimer]);
+
+  useEffect(() => {
+    const init = async () => {
+      await Promise.all([loadActivities(1), fetchActiveActivity()]);
+    };
+    init();
+    return () => {
+      stopTimer(); // Cleanup the timer on unmount
+    };
+    // Need to run this once, so no dependency trigger
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (currentActivity) {
+      startTimer(currentActivity.startTime.getTime());
+    }
+  }, [currentActivity, startTimer]);
 
   return (
     <Card>
@@ -191,12 +232,24 @@ function ActivitiesContainer() {
             elapsedTime={timeElapsed}
           />
         )}
-        <ActivitiesTable
-          activities={activitiesList}
-          reloadActivities={reloadActivities}
-          onStartActivity={startActivity}
-          activityExist={Boolean(currentActivity)}
-        />
+        {activitiesList.length && (
+          <>
+            <ActivitiesTable
+              activities={activitiesList}
+              reloadActivities={reloadActivities}
+              onStartActivity={startActivity}
+              activityExist={Boolean(currentActivity)}
+            />
+            <div className="text-xs text-muted-foreground">
+              Showing{" "}
+              <strong>
+                {1} to {activitiesList.length}
+              </strong>{" "}
+              of
+              <strong> {totalActivities}</strong> activities
+            </div>
+          </>
+        )}
         {activitiesList.length < totalActivities && (
           <div className="flex justify-center p-4">
             <Button
