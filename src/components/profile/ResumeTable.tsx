@@ -24,20 +24,11 @@ import {
 import { Resume } from "@/models/profile.model";
 import { format } from "date-fns";
 import Link from "next/link";
-import { Button, buttonVariants } from "../ui/button";
+import { Button } from "../ui/button";
 import { useMemo, useState } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "../ui/alert-dialog";
 import { toast } from "../ui/use-toast";
 import { deleteResumeById } from "@/actions/profile.actions";
+import { DeleteAlertDialog } from "../DeleteAlertDialog";
 
 type ResumeTableProps = {
   resumes: Resume[];
@@ -179,28 +170,12 @@ ResumeTableProps) {
           })}
         </TableBody>
       </Table>
-      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Are you sure you want to delete this resume?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete and
-              remove data from server.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className={buttonVariants({ variant: "destructive" })}
-              onClick={() => deleteResume(resumeToDelete!)}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteAlertDialog
+        pageTitle="resume"
+        open={alertOpen}
+        onOpenChange={setAlertOpen}
+        onDelete={() => deleteResume(resumeToDelete!)}
+      />
     </>
   );
 }

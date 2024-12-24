@@ -102,20 +102,17 @@ function ActivitiesContainer() {
         </div>
       </CardHeader>
       <CardContent>
-        {!loading ? (
-          <ResumeTable
-            resumes={resumes}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            recordsPerPage={recordsPerPage}
-            totalResumes={totalResumes}
-            // onPageChange={onPageChange}
-            editResume={onEditResume}
-            reloadResumes={reloadResumes}
-          />
-        ) : (
-          <Loading />
-        )}
+        {loading && <Loading />}
+        <ResumeTable
+          resumes={resumes}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          recordsPerPage={recordsPerPage}
+          totalResumes={totalResumes}
+          // onPageChange={onPageChange}
+          editResume={onEditResume}
+          reloadResumes={reloadResumes}
+        />
       </CardContent>
     </Card>
   );

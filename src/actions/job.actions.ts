@@ -2,7 +2,7 @@
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
-import { JobStatus } from "@/models/job.model";
+import { JOB_TYPES, JobStatus } from "@/models/job.model";
 import { getCurrentUser } from "@/utils/user.utils";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -41,11 +41,15 @@ export const getJobsList = async (
     const skip = (page - 1) * limit;
 
     const filterBy = filter
-      ? {
-          Status: {
-            value: filter,
-          },
-        }
+      ? filter === Object.keys(JOB_TYPES)[1]
+        ? {
+            jobType: filter,
+          }
+        : {
+            Status: {
+              value: filter,
+            },
+          }
       : {};
     const [data, total] = await Promise.all([
       prisma.job.findMany({
@@ -59,6 +63,7 @@ export const getJobsList = async (
           id: true,
           JobSource: true,
           JobTitle: true,
+          jobType: true,
           Company: true,
           Status: true,
           Location: true,

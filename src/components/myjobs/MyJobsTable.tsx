@@ -34,19 +34,10 @@ import {
 import { Button, buttonVariants } from "../ui/button";
 import { useState } from "react";
 import { TablePagination } from "../TablePagination";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "../ui/alert-dialog";
 import { JobResponse, JobStatus } from "@/models/job.model";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { DeleteAlertDialog } from "../DeleteAlertDialog";
 
 type MyJobsTableProps = {
   jobs: JobResponse[];
@@ -258,28 +249,12 @@ function MyJobsTable({
           onPageChange={onPageChange}
         />
       )}
-      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Are you sure you want to delete this job?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete and
-              remove data from server.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className={buttonVariants({ variant: "destructive" })}
-              onClick={() => deleteJob(jobIdToDelete)}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteAlertDialog
+        pageTitle="job"
+        open={alertOpen}
+        onOpenChange={setAlertOpen}
+        onDelete={() => deleteJob(jobIdToDelete)}
+      />
     </>
   );
 }
