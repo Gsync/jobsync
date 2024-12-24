@@ -13,17 +13,19 @@ datasource db {
 }
 
 model User {
-  id          String     @id @default(uuid())
-  name        String
-  email       String     @unique
-  password    String
-  createdAt   DateTime   @default(now())
-  jobsApplied Job[]
-  JobTitle    JobTitle[]
-  Location    Location[]
-  Company     Company[]
-  Contact     Contact[]
-  Profile     Profile[]
+  id           String         @id @default(uuid())
+  name         String
+  email        String         @unique
+  password     String
+  createdAt    DateTime       @default(now())
+  jobsApplied  Job[]
+  JobTitle     JobTitle[]
+  Location     Location[]
+  Company      Company[]
+  Contact      Contact[]
+  Profile      Profile[]
+  Activity     Activity[]
+  ActivityType ActivityType[]
 }
 
 model Profile {
@@ -238,4 +240,33 @@ model Job {
   Interview   Interview[]
   Resume      Resume?     @relation(fields: [resumeId], references: [id])
   resumeId    String?
+}
+
+model ActivityType {
+  id          String   @id @default(uuid())
+  label       String
+  value       String   @unique
+  description String?
+  createdBy   String // userId
+  user        User     @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  Activities Activity[]
+}
+
+model Activity {
+  id           String    @id @default(uuid())
+  userId       String
+  User         User      @relation(fields: [userId], references: [id])
+  activityName String
+  startTime    DateTime
+  endTime      DateTime?
+  duration     Int?
+  description  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  activityType   ActivityType @relation(fields: [activityTypeId], references: [id])
+  activityTypeId String
 }

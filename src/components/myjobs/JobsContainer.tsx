@@ -195,6 +195,7 @@ function JobsContainer({
                     <SelectItem value="interview">Interview</SelectItem>
                     <SelectItem value="draft">Draft</SelectItem>
                     <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="PT">Part-time</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -217,22 +218,19 @@ function JobsContainer({
           </div>
         </CardHeader>
         <CardContent>
-          {!loading ? (
-            <MyJobsTable
-              jobs={jobs}
-              jobStatuses={statuses}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              jobsPerPage={jobsPerPage}
-              totalJobs={totalJobs}
-              onPageChange={onPageChange}
-              deleteJob={onDeleteJob}
-              editJob={onEditJob}
-              onChangeJobStatus={onChangeJobStatus}
-            />
-          ) : (
-            <Loading />
-          )}
+          {loading && <Loading />}
+          <MyJobsTable
+            jobs={jobs}
+            jobStatuses={statuses}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            jobsPerPage={jobsPerPage}
+            totalJobs={totalJobs}
+            onPageChange={onPageChange}
+            deleteJob={onDeleteJob}
+            editJob={onEditJob}
+            onChangeJobStatus={onChangeJobStatus}
+          />
         </CardContent>
         <CardFooter></CardFooter>
       </Card>

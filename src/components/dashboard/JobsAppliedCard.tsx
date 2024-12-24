@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { PlusCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function JobsAppliedCard() {
@@ -24,7 +25,10 @@ export default function JobsAppliedCard() {
           variant="outline"
           onClick={() => router.push("/dashboard/myjobs")}
         >
-          Add New Job
+          <PlusCircle className="h-3.5 w-3.5 mr-1" />
+          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+            Add New Job
+          </span>
         </Button>
       </CardFooter>
     </Card>

@@ -1,36 +1,38 @@
-export const activitiesData = [
+import { Activity } from "@/models/activity.model";
+
+export const activitiesData: Activity[] = [
   {
     id: "1",
-    startDateTime: 1717849899,
-    endDateTime: 1717851339,
+    startTime: new Date(1717849899 * 1000),
+    endTime: new Date(1717851339 * 1000),
     activityName: "Deep Learning",
     activityType: "Learning",
   },
   {
     id: "2",
-    startDateTime: 1717386692,
-    endDateTime: 1717397492,
+    startTime: new Date(1717386692 * 1000),
+    endTime: new Date(1717397492 * 1000),
     activityName: "Job Search",
     activityType: "Job Search",
   },
   {
     id: "3",
-    startDateTime: 1718864409,
-    endDateTime: 1718878809,
+    startTime: new Date(1718864409 * 1000),
+    endTime: new Date(1718878809 * 1000),
     activityName: "Web Project",
     activityType: "Coding",
   },
   {
     id: "4",
-    startDateTime: 1719189923,
-    endDateTime: 1719204323,
+    startTime: new Date(1719189923 * 1000),
+    endTime: new Date(1719204323 * 1000),
     activityName: "Puppeteer",
     activityType: "Learning",
   },
   {
     id: "5",
-    startDateTime: 1718394188,
-    endDateTime: 1718397788,
+    startTime: new Date(1718394188 * 1000),
+    endTime: new Date(1718397788 * 1000),
     activityName: "Job Search",
     activityType: "Job Search",
   },
