@@ -75,7 +75,7 @@ function CompaniesContainer() {
           </CardHeader>
           <CardContent>
             {loading && <Loading />}
-            {companies.length && (
+            {companies.length > 0 && (
               <>
                 <CompaniesTable
                   companies={companies}

@@ -232,7 +232,7 @@ function ActivitiesContainer() {
             elapsedTime={timeElapsed}
           />
         )}
-        {activitiesList.length && (
+        {activitiesList.length > 0 && (
           <>
             <ActivitiesTable
               activities={activitiesList}

@@ -56,7 +56,7 @@ function JobTitlesContainer() {
           </CardHeader>
           <CardContent>
             {loading && <Loading />}
-            {titles.length && (
+            {titles.length > 0 && (
               <>
                 <JobTitlesTable
                   jobTitles={titles}

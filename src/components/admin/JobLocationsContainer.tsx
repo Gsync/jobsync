@@ -56,7 +56,7 @@ function JobLocationsContainer() {
           </CardHeader>
           <CardContent>
             {loading && <Loading />}
-            {locations.length && (
+            {locations.length > 0 && (
               <>
                 <JobLocationsTable
                   jobLocations={locations}
