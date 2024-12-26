@@ -5,41 +5,42 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import { JobTitle } from "@prisma/client";
 import JobLocationsTable from "./JobLocationsTable";
 import { getJobLocationsList } from "@/actions/jobLocation.actions";
+import Loading from "../Loading";
+import { Button } from "../ui/button";
 
 function JobLocationsContainer() {
-  const [Locations, setLocations] = useState<JobTitle[]>([]);
-  const [totalJobLocations, setTotalJobLocations] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [editJobLocation, setEditJobLocation] = useState(null);
+  const [locations, setLocations] = useState<JobTitle[]>([]);
+  const [totalJobLocations, setTotalJobLocations] = useState<number>(0);
+  const [page, setPage] = useState<number>(1);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const recordsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
 
-  const totalPages = Math.ceil(totalJobLocations / recordsPerPage);
-
   const loadJobLocations = useCallback(
     async (page: number) => {
+      setLoading(true);
       const { data, total } = await getJobLocationsList(
         page,
         recordsPerPage,
         "applied"
       );
-      setLocations(data);
-      setTotalJobLocations(total);
+      if (data) {
+        setLocations((prev) => (page === 1 ? data : [...prev, ...data]));
+        setTotalJobLocations(total);
+        setPage(page);
+        setLoading(false);
+      }
     },
     [recordsPerPage]
   );
 
-  const reloadJobLocations = () => {
-    loadJobLocations(1);
-  };
-
-  const resetEditJobLocation = () => {
-    setEditJobLocation(null);
-  };
+  const reloadJobLocations = useCallback(async () => {
+    await loadJobLocations(1);
+  }, [loadJobLocations]);
 
   useEffect(() => {
-    loadJobLocations(currentPage);
-  }, [currentPage, loadJobLocations]);
+    (async () => await loadJobLocations(1))();
+  }, [loadJobLocations]);
 
   return (
     <>
@@ -54,14 +55,36 @@ function JobLocationsContainer() {
             </div>
           </CardHeader>
           <CardContent>
-            <JobLocationsTable
-              jobLocations={Locations}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              recordsPerPage={recordsPerPage}
-              totalJobLocations={totalJobLocations}
-              onPageChange={setCurrentPage}
-            />
+            {loading && <Loading />}
+            {locations.length && (
+              <>
+                <JobLocationsTable
+                  jobLocations={locations}
+                  reloadJobLocations={reloadJobLocations}
+                />
+                <div className="text-xs text-muted-foreground">
+                  Showing{" "}
+                  <strong>
+                    {1} to {locations.length}
+                  </strong>{" "}
+                  of
+                  <strong> {totalJobLocations}</strong> job locations
+                </div>
+              </>
+            )}
+            {locations.length < totalJobLocations && (
+              <div className="flex justify-center p-4">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => loadJobLocations(page + 1)}
+                  disabled={loading}
+                  className="btn btn-primary"
+                >
+                  {loading ? "Loading..." : "Load More"}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

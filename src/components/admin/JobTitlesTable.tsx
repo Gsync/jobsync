@@ -17,29 +17,14 @@ import {
   TableRow,
 } from "../ui/table";
 import { JobTitle } from "@/models/job.model";
-import { MoreHorizontal, Pencil } from "lucide-react";
-import { TablePagination } from "../TablePagination";
+import { MoreHorizontal } from "lucide-react";
 
 type JobTitlesTableProps = {
   jobTitles: JobTitle[];
-  currentPage: number;
-  totalPages: number;
-  totalJobTitles: number;
-  recordsPerPage: number;
-  onPageChange: (n: number) => void;
+  reloadJobTitles: () => void;
 };
 
-function JobTitlesTable({
-  jobTitles,
-  currentPage,
-  totalPages,
-  totalJobTitles,
-  recordsPerPage,
-  onPageChange,
-}: JobTitlesTableProps) {
-  const startPostIndex = (currentPage - 1) * recordsPerPage + 1;
-  const endPostIndex = Math.min(currentPage * recordsPerPage, totalJobTitles);
-
+function JobTitlesTable({ jobTitles, reloadJobTitles }: JobTitlesTableProps) {
   return (
     <>
       <Table>
@@ -84,21 +69,6 @@ function JobTitlesTable({
           })}
         </TableBody>
       </Table>
-      <div className="text-xs text-muted-foreground">
-        Showing{" "}
-        <strong>
-          {startPostIndex} to {endPostIndex}
-        </strong>{" "}
-        of
-        <strong> {totalJobTitles}</strong> titles
-      </div>
-      {totalJobTitles > recordsPerPage && (
-        <TablePagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-        />
-      )}
     </>
   );
 }

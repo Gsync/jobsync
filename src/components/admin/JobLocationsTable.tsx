@@ -16,33 +16,18 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { JobLocation, JobTitle } from "@/models/job.model";
+import { JobLocation } from "@/models/job.model";
 import { MoreHorizontal } from "lucide-react";
-import { TablePagination } from "../TablePagination";
 
 type JobLocationsTableProps = {
   jobLocations: JobLocation[];
-  currentPage: number;
-  totalPages: number;
-  totalJobLocations: number;
-  recordsPerPage: number;
-  onPageChange: (n: number) => void;
+  reloadJobLocations: () => void;
 };
 
 function JobLocationsTable({
   jobLocations,
-  currentPage,
-  totalPages,
-  totalJobLocations,
-  recordsPerPage,
-  onPageChange,
+  reloadJobLocations,
 }: JobLocationsTableProps) {
-  const startPostIndex = (currentPage - 1) * recordsPerPage + 1;
-  const endPostIndex = Math.min(
-    currentPage * recordsPerPage,
-    totalJobLocations
-  );
-
   return (
     <>
       <Table>
@@ -87,21 +72,6 @@ function JobLocationsTable({
           })}
         </TableBody>
       </Table>
-      <div className="text-xs text-muted-foreground">
-        Showing{" "}
-        <strong>
-          {startPostIndex} to {endPostIndex}
-        </strong>{" "}
-        of
-        <strong> {totalJobLocations}</strong> locations
-      </div>
-      {totalJobLocations > recordsPerPage && (
-        <TablePagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-        />
-      )}
     </>
   );
 }

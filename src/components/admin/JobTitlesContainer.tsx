@@ -5,41 +5,42 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import { JobTitle } from "@prisma/client";
 import JobTitlesTable from "./JobTitlesTable";
 import { getJobTitleList } from "@/actions/jobtitle.actions";
+import Loading from "../Loading";
+import { Button } from "../ui/button";
 
 function JobTitlesContainer() {
   const [titles, setTitles] = useState<JobTitle[]>([]);
-  const [totalJobTitles, setTotalJobTitles] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [editJobTitle, setEditJobTitle] = useState(null);
+  const [totalJobTitles, setTotalJobTitles] = useState<number>(0);
+  const [page, setPage] = useState<number>(1);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const recordsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
 
-  const totalPages = Math.ceil(totalJobTitles / recordsPerPage);
-
   const loadJobTitles = useCallback(
     async (page: number) => {
+      setLoading(true);
       const { data, total } = await getJobTitleList(
         page,
         recordsPerPage,
         "applied"
       );
-      setTitles(data);
-      setTotalJobTitles(total);
+      if (data) {
+        setTitles((prev) => (page === 1 ? data : [...prev, ...data]));
+        setTotalJobTitles(total);
+        setPage(page);
+        setLoading(false);
+      }
     },
     [recordsPerPage]
   );
 
-  const reloadJobTitles = () => {
-    loadJobTitles(1);
-  };
-
-  const resetEditJobTitle = () => {
-    setEditJobTitle(null);
-  };
+  const reloadJobTitles = useCallback(async () => {
+    await loadJobTitles(1);
+  }, [loadJobTitles]);
 
   useEffect(() => {
-    loadJobTitles(currentPage);
-  }, [currentPage, loadJobTitles]);
+    (async () => await loadJobTitles(1))();
+  }, [loadJobTitles]);
 
   return (
     <>
@@ -54,14 +55,36 @@ function JobTitlesContainer() {
             </div>
           </CardHeader>
           <CardContent>
-            <JobTitlesTable
-              jobTitles={titles}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              recordsPerPage={recordsPerPage}
-              totalJobTitles={totalJobTitles}
-              onPageChange={setCurrentPage}
-            />
+            {loading && <Loading />}
+            {titles.length && (
+              <>
+                <JobTitlesTable
+                  jobTitles={titles}
+                  reloadJobTitles={reloadJobTitles}
+                />
+                <div className="text-xs text-muted-foreground">
+                  Showing{" "}
+                  <strong>
+                    {1} to {titles.length}
+                  </strong>{" "}
+                  of
+                  <strong> {totalJobTitles}</strong> job titles
+                </div>
+              </>
+            )}
+            {titles.length < totalJobTitles && (
+              <div className="flex justify-center p-4">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => loadJobTitles(page + 1)}
+                  disabled={loading}
+                  className="btn btn-primary"
+                >
+                  {loading ? "Loading..." : "Load More"}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
