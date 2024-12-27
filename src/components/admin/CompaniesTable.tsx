@@ -19,23 +19,15 @@ import {
 import { Company } from "@/models/job.model";
 import { MoreHorizontal, Pencil, Trash } from "lucide-react";
 import { useState } from "react";
-import { AlertDialog } from "../ui/alert-dialog";
 import { deleteCompanyById } from "@/actions/company.actions";
 import { toast } from "../ui/use-toast";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
+import { AlertDialog } from "@/models/alertDialog.model";
 
 type CompaniesTableProps = {
   companies: Company[];
   reloadCompanies: () => void;
   editCompany: (id: string) => void;
-};
-
-type AlertDialog = {
-  openState: boolean;
-  title?: string;
-  description?: string;
-  deleteAction: boolean;
-  itemId?: string;
 };
 
 function CompaniesTable({
@@ -60,9 +52,6 @@ function CompaniesTable({
     } else {
       setAlert({
         openState: true,
-        title: "Are you sure you want to delete this job?",
-        description:
-          "This action cannot be undone. This will permanently delete and remove data from server.",
         deleteAction: true,
         itemId: company.id,
       });
@@ -162,6 +151,9 @@ function CompaniesTable({
         open={alert.openState}
         onOpenChange={() => setAlert({ openState: false, deleteAction: false })}
         onDelete={() => deleteCompany(alert.itemId)}
+        alertTitle={alert.title}
+        alertDescription={alert.description}
+        deleteAction={alert.deleteAction}
       />
     </>
   );
