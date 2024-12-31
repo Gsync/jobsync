@@ -91,6 +91,55 @@ export const getJobsList = async (
   }
 };
 
+export async function* getJobsIterator(filter?: string, pageSize = 200) {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+  let page = 1;
+  let fetchedCount = 0;
+
+  while (true) {
+    const skip = (page - 1) * pageSize;
+    const filterBy = filter
+      ? filter === Object.keys(JOB_TYPES)[1]
+        ? { status: filter }
+        : { type: filter }
+      : {};
+
+    const chunk = await prisma.job.findMany({
+      where: {
+        userId: user.id,
+        ...filterBy,
+      },
+      select: {
+        id: true,
+        createdAt: true,
+        JobSource: true,
+        JobTitle: true,
+        jobType: true,
+        Company: true,
+        Status: true,
+        Location: true,
+        dueDate: true,
+        applied: true,
+        appliedDate: true,
+      },
+      skip,
+      take: pageSize,
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!chunk.length) {
+      break;
+    }
+
+    yield chunk;
+    fetchedCount += chunk.length;
+    page++;
+  }
+}
+
 export const getJobDetails = async (
   jobId: string
 ): Promise<any | undefined> => {

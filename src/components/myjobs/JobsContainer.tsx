@@ -39,6 +39,7 @@ import Loading from "../Loading";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AddJob } from "./AddJob";
 import MyJobsTable from "./MyJobsTable";
+import { format } from "date-fns";
 
 type MyJobsProps = {
   statuses: JobStatus[];
@@ -174,6 +175,39 @@ function JobsContainer({
     }
   };
 
+  const downloadJobsList = async () => {
+    try {
+      const res = await fetch("/api/jobs/export", {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/csv",
+        },
+      });
+      if (!res.ok) {
+        throw new Error("Failed to download jobs!");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `jobsync-${format(new Date(), "yyyy-MM-dd")}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({
+        variant: "success",
+        title: "Downloaded successfully!",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description:
+          error instanceof Error ? error.message : "Unknown error occurred.",
+      });
+    }
+  };
+
   return (
     <>
       <Card x-chunk="dashboard-06-chunk-0">
@@ -199,7 +233,13 @@ function JobsContainer({
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <Button size="sm" variant="outline" className="h-8 gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1"
+                disabled={loading}
+                onClick={downloadJobsList}
+              >
                 <File className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                   Export
