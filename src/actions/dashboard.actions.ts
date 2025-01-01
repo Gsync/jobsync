@@ -99,6 +99,65 @@ const getLast7Days = (dateType = "PP") => {
   return dates;
 };
 
+export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+    const today = new Date();
+    const sevenDaysAgo = subDays(today, 6);
+    const activities = await prisma.activity.findMany({
+      where: {
+        userId: user.id,
+        endTime: {
+          gte: sevenDaysAgo,
+          lte: today,
+        },
+      },
+      select: {
+        endTime: true,
+        duration: true,
+        activityType: {
+          select: {
+            label: true,
+          },
+        },
+      },
+      orderBy: {
+        endTime: "asc",
+      },
+    });
+    const groupedData = activities.reduce((acc: any, activity: any) => {
+      const day = format(new Date(activity.endTime), "PP");
+      const activityTypeLabel = activity.activityType?.label || "Unknown";
+
+      if (!acc[day]) {
+        acc[day] = { day: day.split(",")[0] };
+      }
+
+      const durationInHours = (activity.duration || 0) / 60;
+      acc[day][activityTypeLabel] = (
+        (parseFloat(acc[day][activityTypeLabel]) || 0) + durationInHours
+      ).toFixed(2);
+
+      return acc;
+    }, {});
+    const last7Days = getLast7Days();
+    const result = last7Days.map((date) => ({
+      day: date.split(",")[0],
+      ...groupedData[date],
+    }));
+
+    return result;
+  } catch (error) {
+    const msg = "Failed to fetch activities data.";
+    console.error(msg, error);
+    throw new Error(msg);
+  }
+};
+
 export const getJobsActivityForPeriod = async (): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();

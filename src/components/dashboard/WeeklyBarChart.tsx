@@ -1,18 +1,27 @@
 "use client";
 import { barChartData } from "@/lib/data/barChartData";
 import { ResponsiveBar } from "@nivo/bar";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent } from "../ui/card";
 
-export default function WeeklyBarChart({ data }: { data: any[] }) {
+type WeeklyBarChartProps = {
+  data: any[];
+  keys: string[];
+  groupMode?: "grouped" | "stacked";
+  axisLeftLegend: string;
+};
+
+export default function WeeklyBarChart({
+  data,
+  keys,
+  groupMode,
+  axisLeftLegend,
+}: WeeklyBarChartProps) {
   return (
     <Card className="mb-2 lg:mb-0">
-      <CardHeader className="pb-2">
-        <CardTitle>Weekly Activity</CardTitle>
-      </CardHeader>
       <CardContent className="h-[240px] p-3">
         <ResponsiveBar
           data={data}
-          keys={["value"]}
+          keys={keys}
           indexBy="day"
           margin={{
             top: 10,
@@ -21,8 +30,8 @@ export default function WeeklyBarChart({ data }: { data: any[] }) {
             left: 45,
           }}
           padding={0.6}
-          groupMode="grouped"
-          colors="#2a7ef0"
+          groupMode={groupMode}
+          colors={groupMode === "stacked" ? { scheme: "nivo" } : "#2a7ef0"}
           theme={{
             text: {
               fill: "#9ca3af",
@@ -56,7 +65,7 @@ export default function WeeklyBarChart({ data }: { data: any[] }) {
             tickSize: 5,
             tickPadding: 5,
             tickRotation: 0,
-            legend: "NUMBER OF JOBS APPLIED",
+            legend: axisLeftLegend,
             legendPosition: "middle",
             legendOffset: -40,
             truncateTickAt: 0,
