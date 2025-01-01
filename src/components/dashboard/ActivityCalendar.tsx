@@ -13,7 +13,7 @@ export default function ActivityCalendar({ data }: { data: any[] }) {
   return (
     <Card className="w-[100%]">
       <CardHeader>
-        <CardTitle>Activity Calendar</CardTitle>
+        <CardTitle>Activity Calendar (Jobs Applied)</CardTitle>
       </CardHeader>
       <CardContent className="h-[200px]">
         <ResponsiveCalendar

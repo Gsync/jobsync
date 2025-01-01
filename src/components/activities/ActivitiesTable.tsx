@@ -76,14 +76,12 @@ function ActivitiesTable({
           <TableRow>
             <TableHead className="hidden md:table-cell">Date</TableHead>
             <TableHead>Activity</TableHead>
-            <TableHead className="hidden md:table-cell">
-              Activity Type
-            </TableHead>
-            <TableHead>Start Time</TableHead>
-            <TableHead>End Time</TableHead>
-            <TableHead className="hidden md:table-cell">Duration</TableHead>
+            <TableHead>Activity Type</TableHead>
+            <TableHead className="hidden md:table-cell">Start Time</TableHead>
+            <TableHead className="hidden md:table-cell">End Time</TableHead>
+            <TableHead>Duration</TableHead>
             <TableHead>
-              <span className="sr-only">Actions</span>
+              <span>Actions</span>
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -111,7 +109,7 @@ function ActivitiesTable({
                 <TableCell className="hidden md:table-cell">
                   {format(activity.endTime!, "p")}
                 </TableCell>
-                <TableCell className="hidden md:table-cell">
+                <TableCell>
                   {activity.startTime &&
                     activity.endTime &&
                     calculateDuration(activity.duration ?? 0)}

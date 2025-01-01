@@ -24,7 +24,7 @@ export default function WeeklyBarChart({
           keys={keys}
           indexBy="day"
           margin={{
-            top: 10,
+            top: 20,
             right: 10,
             bottom: 40,
             left: 45,
@@ -32,6 +32,7 @@ export default function WeeklyBarChart({
           padding={0.6}
           groupMode={groupMode}
           colors={groupMode === "stacked" ? { scheme: "nivo" } : "#2a7ef0"}
+          enableTotals={groupMode === "stacked" ? true : false}
           theme={{
             text: {
               fill: "#9ca3af",

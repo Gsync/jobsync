@@ -110,9 +110,7 @@ function ResumeTable({ resumes, editResume, reloadResumes }: ResumeTableProps) {
                 <TableCell className="hidden md:table-cell">
                   {resume.updatedAt && format(resume.updatedAt, "PP")}
                 </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  {resume._count?.Job}
-                </TableCell>
+                <TableCell>{resume._count?.Job}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
