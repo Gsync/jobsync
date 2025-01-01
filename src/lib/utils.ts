@@ -1,5 +1,5 @@
 import { type ClassValue, clsx } from "clsx";
-import { parse } from "date-fns";
+import { format, parse } from "date-fns";
 import { NextApiRequest } from "next";
 import { twMerge } from "tailwind-merge";
 
@@ -80,4 +80,29 @@ export const formatElapsedTime = (ms: number) => {
   const seconds = totalSeconds % 60;
 
   return `${hours > 0 ? `${hours}h ` : ""}${minutes}m ${seconds}s`;
+};
+
+export const calculatePercentageDifference = (
+  value1: number,
+  value2: number
+): number | null => {
+  if (value1 === 0 && value2 === 0) {
+    return 0;
+  }
+  if (value1 === 0) {
+    return value2 !== 0 ? 100 : 0;
+  }
+
+  const difference = ((value2 - value1) / Math.abs(value1)) * 100;
+  return Math.round(difference);
+};
+
+export const getLast7Days = (dateType = "PP") => {
+  const dates = [];
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    dates.push(format(date, dateType));
+  }
+  return dates;
 };

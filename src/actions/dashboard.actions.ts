@@ -1,4 +1,5 @@
 import prisma from "@/lib/db";
+import { calculatePercentageDifference, getLast7Days } from "@/lib/utils";
 import { getCurrentUser } from "@/utils/user.utils";
 import { Prisma } from "@prisma/client";
 import { addMinutes, format, subDays } from "date-fns";
@@ -41,21 +42,6 @@ export const getJobsAppliedForPeriod = async (
   }
 };
 
-const calculatePercentageDifference = (
-  value1: number,
-  value2: number
-): number | null => {
-  if (value1 === 0 && value2 === 0) {
-    return 0;
-  }
-  if (value1 === 0) {
-    return value2 !== 0 ? 100 : 0;
-  }
-
-  const difference = ((value2 - value1) / Math.abs(value1)) * 100;
-  return Math.round(difference);
-};
-
 export const getRecentJobs = async (): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -86,17 +72,6 @@ export const getRecentJobs = async (): Promise<any | undefined> => {
     console.error(msg, error);
     throw new Error(msg);
   }
-};
-
-// Helper function to get an array of dates for the last 7 days
-const getLast7Days = (dateType = "PP") => {
-  const dates = [];
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    dates.push(format(date, dateType));
-  }
-  return dates;
 };
 
 export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
