@@ -1,7 +1,7 @@
 import prisma from "@/lib/db";
 import { getCurrentUser } from "@/utils/user.utils";
 import { Prisma } from "@prisma/client";
-import { format, subDays } from "date-fns";
+import { addMinutes, format, subDays } from "date-fns";
 
 export const getJobsAppliedForPeriod = async (
   daysAgo: number
@@ -106,7 +106,7 @@ export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
     if (!user) {
       throw new Error("Not authenticated");
     }
-    const today = new Date();
+    const today = addMinutes(new Date(), 5);
     const sevenDaysAgo = subDays(today, 6);
     const activities = await prisma.activity.findMany({
       where: {
@@ -140,7 +140,7 @@ export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
       const durationInHours = (activity.duration || 0) / 60;
       acc[day][activityTypeLabel] = (
         (parseFloat(acc[day][activityTypeLabel]) || 0) + durationInHours
-      ).toFixed(2);
+      ).toFixed(1);
 
       return acc;
     }, {});
