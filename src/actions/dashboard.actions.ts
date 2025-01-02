@@ -1,7 +1,8 @@
 import prisma from "@/lib/db";
+import { calculatePercentageDifference, getLast7Days } from "@/lib/utils";
 import { getCurrentUser } from "@/utils/user.utils";
 import { Prisma } from "@prisma/client";
-import { format, subDays } from "date-fns";
+import { addMinutes, format, subDays } from "date-fns";
 
 export const getJobsAppliedForPeriod = async (
   daysAgo: number
@@ -41,21 +42,6 @@ export const getJobsAppliedForPeriod = async (
   }
 };
 
-const calculatePercentageDifference = (
-  value1: number,
-  value2: number
-): number | null => {
-  if (value1 === 0 && value2 === 0) {
-    return 0;
-  }
-  if (value1 === 0) {
-    return value2 !== 0 ? 100 : 0;
-  }
-
-  const difference = ((value2 - value1) / Math.abs(value1)) * 100;
-  return Math.round(difference);
-};
-
 export const getRecentJobs = async (): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -88,15 +74,63 @@ export const getRecentJobs = async (): Promise<any | undefined> => {
   }
 };
 
-// Helper function to get an array of dates for the last 7 days
-const getLast7Days = (dateType = "PP") => {
-  const dates = [];
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    dates.push(format(date, dateType));
+export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+    const today = addMinutes(new Date(), 5);
+    const sevenDaysAgo = subDays(today, 6);
+    const activities = await prisma.activity.findMany({
+      where: {
+        userId: user.id,
+        endTime: {
+          gte: sevenDaysAgo,
+          lte: today,
+        },
+      },
+      select: {
+        endTime: true,
+        duration: true,
+        activityType: {
+          select: {
+            label: true,
+          },
+        },
+      },
+      orderBy: {
+        endTime: "asc",
+      },
+    });
+    const groupedData = activities.reduce((acc: any, activity: any) => {
+      const day = format(new Date(activity.endTime), "PP");
+      const activityTypeLabel = activity.activityType?.label || "Unknown";
+
+      if (!acc[day]) {
+        acc[day] = { day: day.split(",")[0] };
+      }
+
+      const durationInHours = (activity.duration || 0) / 60;
+      acc[day][activityTypeLabel] = (
+        (parseFloat(acc[day][activityTypeLabel]) || 0) + durationInHours
+      ).toFixed(1);
+
+      return acc;
+    }, {});
+    const last7Days = getLast7Days();
+    const result = last7Days.map((date) => ({
+      day: date.split(",")[0],
+      ...groupedData[date],
+    }));
+
+    return result;
+  } catch (error) {
+    const msg = "Failed to fetch activities data.";
+    console.error(msg, error);
+    throw new Error(msg);
   }
-  return dates;
 };
 
 export const getJobsActivityForPeriod = async (): Promise<any | undefined> => {

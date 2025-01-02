@@ -39,7 +39,7 @@ import Loading from "../Loading";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AddJob } from "./AddJob";
 import MyJobsTable from "./MyJobsTable";
-import { Resume } from "@/models/profile.model";
+import { format } from "date-fns";
 
 type MyJobsProps = {
   statuses: JobStatus[];
@@ -69,16 +69,13 @@ function JobsContainer({
     [queryParams]
   );
   const [jobs, setJobs] = useState<JobResponse[]>([]);
-  const [currentPage, setCurrentPage] = useState(
-    Number(queryParams.get("page")) || 1
-  );
+  const [page, setPage] = useState(1);
   const [totalJobs, setTotalJobs] = useState(0);
+  const [filterKey, setFilterKey] = useState<string>();
   const [editJob, setEditJob] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const jobsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
-
-  const totalPages = Math.ceil(totalJobs / jobsPerPage);
 
   const loadJobs = useCallback(
     async (page: number, filter?: string) => {
@@ -88,26 +85,30 @@ function JobsContainer({
         jobsPerPage,
         filter
       );
-      if (!success) {
+      if (success && data) {
+        setJobs((prev) => (page === 1 ? data : [...prev, ...data]));
+        setTotalJobs(total);
+        setPage(page);
+        setLoading(false);
+      } else {
         toast({
           variant: "destructive",
           title: "Error!",
           description: message,
         });
-        return;
-      }
-      setJobs(data);
-      setTotalJobs(total);
-      if (data) {
         setLoading(false);
+        return;
       }
     },
     [jobsPerPage]
   );
 
-  const reloadJobs = () => {
-    loadJobs(1);
-  };
+  const reloadJobs = useCallback(async () => {
+    await loadJobs(1);
+    if (filterKey !== "none") {
+      setFilterKey("none");
+    }
+  }, [loadJobs, filterKey]);
 
   const onDeleteJob = async (jobId: string) => {
     const { res, success, message } = await deleteJobById(jobId);
@@ -162,16 +163,49 @@ function JobsContainer({
   };
 
   useEffect(() => {
-    loadJobs(currentPage);
-  }, [currentPage, loadJobs]);
+    (async () => await loadJobs(1))();
+  }, [loadJobs]);
 
   const onFilterChange = (filterBy: string) => {
-    filterBy === "none" ? reloadJobs() : loadJobs(1, filterBy);
+    if (filterBy === "none") {
+      reloadJobs();
+    } else {
+      setFilterKey(filterBy);
+      loadJobs(1, filterBy);
+    }
   };
 
-  const onPageChange = (page: number) => {
-    setCurrentPage(page);
-    router.push(pathname + "?" + createQueryString("page", page.toString()));
+  const downloadJobsList = async () => {
+    try {
+      const res = await fetch("/api/jobs/export", {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/csv",
+        },
+      });
+      if (!res.ok) {
+        throw new Error("Failed to download jobs!");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `jobsync-${format(new Date(), "yyyy-MM-dd")}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({
+        variant: "success",
+        title: "Downloaded successfully!",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description:
+          error instanceof Error ? error.message : "Unknown error occurred.",
+      });
+    }
   };
 
   return (
@@ -181,7 +215,7 @@ function JobsContainer({
           <CardTitle>My Jobs</CardTitle>
           <div className="flex items-center">
             <div className="ml-auto flex items-center gap-2">
-              <Select onValueChange={onFilterChange}>
+              <Select value={filterKey} onValueChange={onFilterChange}>
                 <SelectTrigger className="w-[120px] h-8">
                   <ListFilter className="h-3.5 w-3.5" />
                   <SelectValue placeholder="Filter" />
@@ -199,7 +233,13 @@ function JobsContainer({
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <Button size="sm" variant="outline" className="h-8 gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1"
+                disabled={loading}
+                onClick={downloadJobsList}
+              >
                 <File className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                   Export
@@ -219,18 +259,38 @@ function JobsContainer({
         </CardHeader>
         <CardContent>
           {loading && <Loading />}
-          <MyJobsTable
-            jobs={jobs}
-            jobStatuses={statuses}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            jobsPerPage={jobsPerPage}
-            totalJobs={totalJobs}
-            onPageChange={onPageChange}
-            deleteJob={onDeleteJob}
-            editJob={onEditJob}
-            onChangeJobStatus={onChangeJobStatus}
-          />
+          {jobs.length > 0 && (
+            <>
+              <MyJobsTable
+                jobs={jobs}
+                jobStatuses={statuses}
+                deleteJob={onDeleteJob}
+                editJob={onEditJob}
+                onChangeJobStatus={onChangeJobStatus}
+              />
+              <div className="text-xs text-muted-foreground">
+                Showing{" "}
+                <strong>
+                  {1} to {jobs.length}
+                </strong>{" "}
+                of
+                <strong> {totalJobs}</strong> jobs
+              </div>
+            </>
+          )}
+          {jobs.length < totalJobs && (
+            <div className="flex justify-center p-4">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => loadJobs(page + 1, filterKey)}
+                disabled={loading}
+                className="btn btn-primary"
+              >
+                {loading ? "Loading..." : "Load More"}
+              </Button>
+            </div>
+          )}
         </CardContent>
         <CardFooter></CardFooter>
       </Card>

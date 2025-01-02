@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Button } from "../ui/button";
 
 import {
@@ -17,28 +18,58 @@ import {
   TableRow,
 } from "../ui/table";
 import { JobTitle } from "@/models/job.model";
-import { MoreHorizontal, Pencil } from "lucide-react";
-import { TablePagination } from "../TablePagination";
+import { MoreHorizontal, Trash } from "lucide-react";
+import { AlertDialog } from "@/models/alertDialog.model";
+import { DeleteAlertDialog } from "../DeleteAlertDialog";
+import { deleteJobTitleById } from "@/actions/jobtitle.actions";
+import { toast } from "../ui/use-toast";
 
 type JobTitlesTableProps = {
   jobTitles: JobTitle[];
-  currentPage: number;
-  totalPages: number;
-  totalJobTitles: number;
-  recordsPerPage: number;
-  onPageChange: (n: number) => void;
+  reloadJobTitles: () => void;
 };
 
-function JobTitlesTable({
-  jobTitles,
-  currentPage,
-  totalPages,
-  totalJobTitles,
-  recordsPerPage,
-  onPageChange,
-}: JobTitlesTableProps) {
-  const startPostIndex = (currentPage - 1) * recordsPerPage + 1;
-  const endPostIndex = Math.min(currentPage * recordsPerPage, totalJobTitles);
+function JobTitlesTable({ jobTitles, reloadJobTitles }: JobTitlesTableProps) {
+  const [alert, setAlert] = useState<AlertDialog>({
+    openState: false,
+    deleteAction: false,
+  });
+
+  const onDeleteJobTitle = (title: JobTitle) => {
+    if (title._count?.jobs! > 0) {
+      setAlert({
+        openState: true,
+        title: "Applied jobs exist!",
+        description:
+          "Associated jobs applied must be 0 to be able to delete this job title",
+        deleteAction: false,
+      });
+    } else {
+      setAlert({
+        openState: true,
+        deleteAction: true,
+        itemId: title.id,
+      });
+    }
+  };
+  const deleteJobTitle = async (titleId: string) => {
+    if (titleId) {
+      const { success, message } = await deleteJobTitleById(titleId);
+      if (success) {
+        toast({
+          variant: "success",
+          description: `Job title has been deleted successfully`,
+        });
+        reloadJobTitles();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error!",
+          description: message,
+        });
+      }
+    }
+  };
 
   return (
     <>
@@ -75,7 +106,13 @@ function JobTitlesTable({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem>Delete</DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-red-600 cursor-pointer"
+                        onClick={() => onDeleteJobTitle(title)}
+                      >
+                        <Trash className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -84,21 +121,15 @@ function JobTitlesTable({
           })}
         </TableBody>
       </Table>
-      <div className="text-xs text-muted-foreground">
-        Showing{" "}
-        <strong>
-          {startPostIndex} to {endPostIndex}
-        </strong>{" "}
-        of
-        <strong> {totalJobTitles}</strong> titles
-      </div>
-      {totalJobTitles > recordsPerPage && (
-        <TablePagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-        />
-      )}
+      <DeleteAlertDialog
+        pageTitle="title"
+        open={alert.openState}
+        onOpenChange={() => setAlert({ openState: false, deleteAction: false })}
+        onDelete={() => deleteJobTitle(alert.itemId!)}
+        alertTitle={alert.title}
+        alertDescription={alert.description}
+        deleteAction={alert.deleteAction}
+      />
     </>
   );
 }

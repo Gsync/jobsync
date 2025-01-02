@@ -31,9 +31,8 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { Button, buttonVariants } from "../ui/button";
+import { Button } from "../ui/button";
 import { useState } from "react";
-import { TablePagination } from "../TablePagination";
 import { JobResponse, JobStatus } from "@/models/job.model";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -42,11 +41,6 @@ import { DeleteAlertDialog } from "../DeleteAlertDialog";
 type MyJobsTableProps = {
   jobs: JobResponse[];
   jobStatuses: JobStatus[];
-  currentPage: number;
-  totalPages: number;
-  totalJobs: number;
-  jobsPerPage: number;
-  onPageChange: (n: number) => void;
   deleteJob: (id: string) => void;
   editJob: (id: string) => void;
   onChangeJobStatus: (id: string, status: JobStatus) => void;
@@ -55,11 +49,6 @@ type MyJobsTableProps = {
 function MyJobsTable({
   jobs,
   jobStatuses,
-  currentPage,
-  totalPages,
-  totalJobs,
-  jobsPerPage,
-  onPageChange,
   deleteJob,
   editJob,
   onChangeJobStatus,
@@ -67,8 +56,6 @@ function MyJobsTable({
   const [alertOpen, setAlertOpen] = useState(false);
   const [jobIdToDelete, setJobIdToDelete] = useState("");
 
-  const startPostIndex = (currentPage - 1) * jobsPerPage + 1;
-  const endPostIndex = Math.min(currentPage * jobsPerPage, totalJobs);
   const router = useRouter();
   const viewJobDetails = (jobId: string) => {
     router.push(`/dashboard/myjobs/${jobId}`);
@@ -234,21 +221,6 @@ function MyJobsTable({
           })}
         </TableBody>
       </Table>
-      <div className="text-xs text-muted-foreground">
-        Showing{" "}
-        <strong>
-          {startPostIndex} to {endPostIndex}
-        </strong>{" "}
-        of
-        <strong> {totalJobs}</strong> jobs
-      </div>
-      {totalJobs > jobsPerPage && (
-        <TablePagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-        />
-      )}
       <DeleteAlertDialog
         pageTitle="job"
         open={alertOpen}

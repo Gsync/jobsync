@@ -1,5 +1,5 @@
 "use client";
-import { Button, buttonVariants } from "../ui/button";
+import { Button } from "../ui/button";
 import Image from "next/image";
 import {
   DropdownMenu,
@@ -18,49 +18,27 @@ import {
 } from "../ui/table";
 import { Company } from "@/models/job.model";
 import { MoreHorizontal, Pencil, Trash } from "lucide-react";
-import { TablePagination } from "../TablePagination";
 import { useState } from "react";
-import { AlertDialog } from "../ui/alert-dialog";
 import { deleteCompanyById } from "@/actions/company.actions";
 import { toast } from "../ui/use-toast";
-import { redirect } from "next/navigation";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
+import { AlertDialog } from "@/models/alertDialog.model";
 
 type CompaniesTableProps = {
   companies: Company[];
-  reloadCompanies: (p: number) => void;
-  currentPage: number;
-  totalPages: number;
-  totalCompanies: number;
-  recordsPerPage: number;
-  onPageChange: (n: number) => void;
+  reloadCompanies: () => void;
   editCompany: (id: string) => void;
-};
-
-type AlertDialog = {
-  openState: boolean;
-  title?: string;
-  description?: string;
-  deleteAction: boolean;
-  itemId?: string;
 };
 
 function CompaniesTable({
   companies,
   reloadCompanies,
-  currentPage,
-  totalPages,
-  totalCompanies,
-  recordsPerPage,
-  onPageChange,
   editCompany,
 }: CompaniesTableProps) {
   const [alert, setAlert] = useState<AlertDialog>({
     openState: false,
     deleteAction: false,
   });
-  const startPostIndex = (currentPage - 1) * recordsPerPage + 1;
-  const endPostIndex = Math.min(currentPage * recordsPerPage, totalCompanies);
 
   const onDeleteCompany = (company: Company) => {
     if (company._count?.jobsApplied! > 0) {
@@ -74,9 +52,6 @@ function CompaniesTable({
     } else {
       setAlert({
         openState: true,
-        title: "Are you sure you want to delete this job?",
-        description:
-          "This action cannot be undone. This will permanently delete and remove data from server.",
         deleteAction: true,
         itemId: company.id,
       });
@@ -91,7 +66,7 @@ function CompaniesTable({
           variant: "success",
           description: `Company has been deleted successfully`,
         });
-        reloadCompanies(currentPage);
+        reloadCompanies();
       } else {
         toast({
           variant: "destructive",
@@ -171,26 +146,14 @@ function CompaniesTable({
           })}
         </TableBody>
       </Table>
-      <div className="text-xs text-muted-foreground">
-        Showing{" "}
-        <strong>
-          {startPostIndex} to {endPostIndex}
-        </strong>{" "}
-        of
-        <strong> {totalCompanies}</strong> companies
-      </div>
-      {totalCompanies > recordsPerPage && (
-        <TablePagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-        />
-      )}
       <DeleteAlertDialog
         pageTitle="company"
         open={alert.openState}
         onOpenChange={() => setAlert({ openState: false, deleteAction: false })}
         onDelete={() => deleteCompany(alert.itemId)}
+        alertTitle={alert.title}
+        alertDescription={alert.description}
+        deleteAction={alert.deleteAction}
       />
     </>
   );

@@ -7,28 +7,17 @@ import { Company } from "@/models/job.model";
 import { getCompanyById, getCompanyList } from "@/actions/company.actions";
 import { APP_CONSTANTS } from "@/lib/constants";
 import Loading from "../Loading";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Button } from "../ui/button";
 
-function CompaniesContainer({
-  createQueryString,
-}: {
-  createQueryString: (name: string, value: string) => void;
-}) {
-  const queryParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
+function CompaniesContainer() {
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [totalCompanies, setTotalCompanies] = useState(0);
-  const [currentPage, setCurrentPage] = useState(
-    Number(queryParams.get("page")) || 1
-  );
+  const [totalCompanies, setTotalCompanies] = useState<number>(0);
+  const [page, setPage] = useState<number>(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editCompany, setEditCompany] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const recordsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
-
-  const totalPages = Math.ceil(totalCompanies / recordsPerPage);
 
   const loadCompanies = useCallback(
     async (page: number) => {
@@ -38,36 +27,32 @@ function CompaniesContainer({
         recordsPerPage,
         "applied"
       );
-      setCompanies(data);
-      setTotalCompanies(total);
       if (data) {
+        setCompanies((prev) => (page === 1 ? data : [...prev, ...data]));
+        setTotalCompanies(total);
+        setPage(page);
         setLoading(false);
       }
     },
     [recordsPerPage]
   );
 
-  const reloadCompanies = (page = 1) => {
-    loadCompanies(page);
-  };
+  const reloadCompanies = useCallback(async () => {
+    await loadCompanies(1);
+  }, [loadCompanies]);
 
   const resetEditCompany = () => {
     setEditCompany(null);
   };
 
   useEffect(() => {
-    loadCompanies(currentPage);
-  }, [currentPage, loadCompanies]);
+    (async () => await loadCompanies(1))();
+  }, [loadCompanies]);
 
   const onEditCompany = async (companyId: string) => {
     const company = await getCompanyById(companyId);
     setEditCompany(company);
     setDialogOpen(true);
-  };
-
-  const onPageChange = (page: number) => {
-    setCurrentPage(page);
-    router.push(pathname + "?" + createQueryString("page", page.toString()));
   };
 
   return (
@@ -89,19 +74,36 @@ function CompaniesContainer({
             </div>
           </CardHeader>
           <CardContent>
-            {!loading ? (
-              <CompaniesTable
-                companies={companies}
-                reloadCompanies={reloadCompanies}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                recordsPerPage={recordsPerPage}
-                totalCompanies={totalCompanies}
-                onPageChange={onPageChange}
-                editCompany={onEditCompany}
-              />
-            ) : (
-              <Loading />
+            {loading && <Loading />}
+            {companies.length > 0 && (
+              <>
+                <CompaniesTable
+                  companies={companies}
+                  reloadCompanies={reloadCompanies}
+                  editCompany={onEditCompany}
+                />
+                <div className="text-xs text-muted-foreground">
+                  Showing{" "}
+                  <strong>
+                    {1} to {companies.length}
+                  </strong>{" "}
+                  of
+                  <strong> {totalCompanies}</strong> companies
+                </div>
+              </>
+            )}
+            {companies.length < totalCompanies && (
+              <div className="flex justify-center p-4">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => loadCompanies(page + 1)}
+                  disabled={loading}
+                  className="btn btn-primary"
+                >
+                  {loading ? "Loading..." : "Load More"}
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>

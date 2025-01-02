@@ -22,7 +22,7 @@ function AdminTabsContainer() {
   );
 
   const onTabChange = (tab: string) => {
-    router.push(pathname + "?" + createQueryString("page", "1"));
+    router.push(pathname + "?" + createQueryString("tab", tab));
   };
   return (
     <Tabs
@@ -31,13 +31,13 @@ function AdminTabsContainer() {
     >
       <TabsList>
         <TabsTrigger value="companies">Companies</TabsTrigger>
-        <TabsTrigger value="titles">Job Titles</TabsTrigger>
+        <TabsTrigger value="job-titles">Job Titles</TabsTrigger>
         <TabsTrigger value="locations">Locations</TabsTrigger>
       </TabsList>
       <TabsContent value="companies">
-        <CompaniesContainer createQueryString={createQueryString} />
+        <CompaniesContainer />
       </TabsContent>
-      <TabsContent value="titles">
+      <TabsContent value="job-titles">
         <JobTitlesContainer />
       </TabsContent>
       <TabsContent value="locations">

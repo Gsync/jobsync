@@ -1,5 +1,6 @@
 "use server";
 import prisma from "@/lib/db";
+import { handleError } from "@/lib/utils";
 import { getCurrentUser } from "@/utils/user.utils";
 
 export const getAllJobTitles = async (): Promise<any | undefined> => {
@@ -16,8 +17,7 @@ export const getAllJobTitles = async (): Promise<any | undefined> => {
     return list;
   } catch (error) {
     const msg = "Failed to fetch job title list. ";
-    console.error(msg, error);
-    throw new Error(msg);
+    return handleError(error, msg);
   }
 };
 
@@ -74,8 +74,7 @@ export const getJobTitleList = async (
     return { data, total };
   } catch (error) {
     const msg = "Failed to fetch job title list. ";
-    console.error(msg, error);
-    throw new Error(msg);
+    return handleError(error, msg);
   }
 };
 
@@ -100,7 +99,51 @@ export const createJobTitle = async (
     return upsertedTitle;
   } catch (error) {
     const msg = "Failed to create job title. ";
-    console.error(msg, error);
-    throw new Error(msg);
+    return handleError(error, msg);
+  }
+};
+
+export const deleteJobTitleById = async (
+  jobTitleId: string
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const experiences = await prisma.workExperience.count({
+      where: {
+        jobTitleId,
+      },
+    });
+    if (experiences > 0) {
+      throw new Error(
+        `Job title cannot be deleted due to its use in experience section of one of the resume! `
+      );
+    }
+    const jobs = await prisma.job.count({
+      where: {
+        jobTitleId,
+      },
+    });
+
+    if (jobs > 0) {
+      throw new Error(
+        `Job title cannot be deleted due to ${jobs} number of associated jobs! `
+      );
+    }
+
+    const res = await prisma.jobTitle.delete({
+      where: {
+        id: jobTitleId,
+        createdBy: user.id,
+      },
+    });
+    return { res, success: true };
+  } catch (error) {
+    const msg = "Failed to delete job title.";
+    return handleError(error, msg);
   }
 };

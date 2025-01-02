@@ -4,7 +4,6 @@ import CreateResume from "./CreateResume";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { getResumeList } from "@/actions/profile.actions";
 import { Resume } from "@/models/profile.model";
-import { useSearchParams } from "next/navigation";
 import { APP_CONSTANTS } from "@/lib/constants";
 import Loading from "../Loading";
 import ResumeTable from "./ResumeTable";
@@ -13,20 +12,15 @@ import { PlusCircle } from "lucide-react";
 import { Button } from "../ui/button";
 
 function ActivitiesContainer() {
-  const queryParams = useSearchParams();
   const recordsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
 
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
 
   const [resumeToEdit, setResumeToEdit] = useState<Resume | null>(null);
-  const [totalResumes, setTotalResumes] = useState(0);
-  const [currentPage, setCurrentPage] = useState(
-    Number(queryParams.get("page")) || 1
-  );
+  const [totalResumes, setTotalResumes] = useState<number>(0);
+  const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState(false);
-
-  const totalPages = Math.ceil(totalResumes / recordsPerPage);
 
   const loadResumes = useCallback(
     async (page: number) => {
@@ -35,9 +29,10 @@ function ActivitiesContainer() {
         page,
         recordsPerPage
       );
-      if (success) {
-        setResumes(data);
+      if (success && data) {
+        setResumes((prev) => (page === 1 ? data : [...prev, ...data]));
         setTotalResumes(total);
+        setPage(page);
         setLoading(false);
       } else {
         setLoading(false);
@@ -51,13 +46,13 @@ function ActivitiesContainer() {
     [recordsPerPage]
   );
 
-  const reloadResumes = async () => {
+  const reloadResumes = useCallback(async () => {
     await loadResumes(1);
-  };
+  }, [loadResumes]);
 
   useEffect(() => {
-    loadResumes(currentPage);
-  }, [currentPage, loadResumes]);
+    (async () => await loadResumes(1))();
+  }, [loadResumes]);
 
   const createResume = () => {
     setResumeToEdit(null);
@@ -103,16 +98,36 @@ function ActivitiesContainer() {
       </CardHeader>
       <CardContent>
         {loading && <Loading />}
-        <ResumeTable
-          resumes={resumes}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          recordsPerPage={recordsPerPage}
-          totalResumes={totalResumes}
-          // onPageChange={onPageChange}
-          editResume={onEditResume}
-          reloadResumes={reloadResumes}
-        />
+        {resumes.length > 0 && (
+          <>
+            <ResumeTable
+              resumes={resumes}
+              editResume={onEditResume}
+              reloadResumes={reloadResumes}
+            />
+            <div className="text-xs text-muted-foreground">
+              Showing{" "}
+              <strong>
+                {1} to {resumes.length}
+              </strong>{" "}
+              of
+              <strong> {totalResumes}</strong> resumes
+            </div>
+          </>
+        )}
+        {resumes.length < totalResumes && (
+          <div className="flex justify-center p-4">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => loadResumes(page + 1)}
+              disabled={loading}
+              className="btn btn-primary"
+            >
+              {loading ? "Loading..." : "Load More"}
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

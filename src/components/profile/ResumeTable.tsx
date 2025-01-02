@@ -32,25 +32,11 @@ import { DeleteAlertDialog } from "../DeleteAlertDialog";
 
 type ResumeTableProps = {
   resumes: Resume[];
-  currentPage: number;
-  totalPages: number;
-  totalResumes: number;
-  recordsPerPage: number;
-  //   onPageChange: (n: number) => void;
   editResume: (resume: Resume) => void;
   reloadResumes: () => void;
 };
 
-function ResumeTable({
-  resumes,
-  currentPage,
-  totalPages,
-  totalResumes,
-  recordsPerPage,
-  editResume,
-  reloadResumes,
-}: //   onPageChange,
-ResumeTableProps) {
+function ResumeTable({ resumes, editResume, reloadResumes }: ResumeTableProps) {
   const [alertOpen, setAlertOpen] = useState(false);
   const [resumeToDelete, setResumeToDelete] = useState<Resume>();
   const onDeleteResume = useMemo(
@@ -124,9 +110,7 @@ ResumeTableProps) {
                 <TableCell className="hidden md:table-cell">
                   {resume.updatedAt && format(resume.updatedAt, "PP")}
                 </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  {resume._count?.Job}
-                </TableCell>
+                <TableCell>{resume._count?.Job}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
