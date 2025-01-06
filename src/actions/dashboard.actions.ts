@@ -226,16 +226,19 @@ export const getActivityCalendarData = async (): Promise<any | undefined> => {
       return acc;
     }, {});
 
-    const convertToDateValueArray = (input: InputObject): OutputObject[] => {
-      return Object.entries(input).map(([key, value]) => ({
-        day: key,
-        value: value,
-      }));
-    };
+    const groupedByYear = Object.entries(groupedJobs).reduce(
+      (acc: any, [date, value]) => {
+        const year = date.split("-")[0];
+        if (!acc[year]) {
+          acc[year] = [];
+        }
+        acc[year].push({ day: date, value });
+        return acc;
+      },
+      {}
+    );
 
-    const result = convertToDateValueArray(groupedJobs);
-
-    return result;
+    return groupedByYear;
   } catch (error) {
     const msg = "Failed to fetch jobs list. ";
     console.error(msg, error);

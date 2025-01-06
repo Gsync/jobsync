@@ -34,6 +34,7 @@ export default async function Dashboard() {
     getActivityDataForPeriod(),
     getActivityCalendarData(),
   ]);
+  const activityCalendarDataKeys = Object.keys(activityCalendarData);
   const activitiesDataKeys = (data: string[]) =>
     Array.from(
       new Set(
@@ -83,8 +84,21 @@ export default async function Dashboard() {
       <div>
         <RecentJobsCard jobs={recentJobs} />
       </div>
-      <div className="flex flex-col items-start col-span-3">
-        <ActivityCalendar data={activityCalendarData} />
+      <div className="w-full col-span-3">
+        <Tabs defaultValue={activityCalendarDataKeys.at(-1)}>
+          <TabsList>
+            {activityCalendarDataKeys.map((year) => (
+              <TabsTrigger key={year} value={year}>
+                {year}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {activityCalendarDataKeys.map((year) => (
+            <TabsContent key={year} value={year}>
+              <ActivityCalendar year={year} data={activityCalendarData[year]} />
+            </TabsContent>
+          ))}
+        </Tabs>
       </div>
     </>
   );

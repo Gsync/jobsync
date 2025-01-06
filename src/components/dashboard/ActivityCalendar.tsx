@@ -7,7 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 // no chart will be rendered.
 // website examples showcase many properties,
 // you'll often use just a few of them.
-export default function ActivityCalendar({ data }: { data: any[] }) {
+export default function ActivityCalendar({
+  year,
+  data,
+}: {
+  year: string;
+  data: any[];
+}) {
   const { resolvedTheme } = useTheme();
   const borderColor = resolvedTheme === "light" ? "#ffffff" : "#0e1117";
   return (
@@ -18,8 +24,8 @@ export default function ActivityCalendar({ data }: { data: any[] }) {
       <CardContent className="h-[200px]">
         <ResponsiveCalendar
           data={data}
-          from="2024-04-02"
-          to="2024-12-30"
+          from={`${year}-04-02`}
+          to={`${year}-04-02`}
           emptyColor={resolvedTheme === "light" ? "#eeeeee" : "#30363d"}
           colors={["#90e0ef", "#48cae4", "#00b4d8", "#0096c7", "#0077b6"]}
           minValue={2}
