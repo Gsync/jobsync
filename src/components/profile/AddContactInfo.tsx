@@ -65,7 +65,7 @@ function AddContactInfo({
           headline: contactInfoToEdit.headline,
           email: contactInfoToEdit.email,
           phone: contactInfoToEdit.phone,
-          address: contactInfoToEdit.address,
+          address: contactInfoToEdit.address ?? undefined,
         },
         { keepDefaultValues: true }
       );
