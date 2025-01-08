@@ -1,4 +1,4 @@
-# Use the official Node.js 18 image as the base image
+# Use the official Node.js 20 image as the base image
 FROM node:20.1.0-alpine AS base
 
 # Install dependencies only when needed
@@ -69,6 +69,8 @@ RUN chown nextjs:nodejs .next
 
 # Set up /data directory with the right permissions
 RUN mkdir -p /data/files/resumes && chown -R nextjs:nodejs /data/files/resumes
+
+RUN npm install prisma@5.14.0 --no-save
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
