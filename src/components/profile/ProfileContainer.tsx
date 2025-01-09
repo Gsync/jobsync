@@ -11,7 +11,7 @@ import { toast } from "../ui/use-toast";
 import { PlusCircle } from "lucide-react";
 import { Button } from "../ui/button";
 
-function ActivitiesContainer() {
+const ProfileContainer = () => {
   const recordsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
 
   const [resumes, setResumes] = useState<Resume[]>([]);
@@ -131,6 +131,6 @@ function ActivitiesContainer() {
       </CardContent>
     </Card>
   );
-}
+};
 
-export default ActivitiesContainer;
+export default ProfileContainer;
