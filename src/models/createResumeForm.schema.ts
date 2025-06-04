@@ -5,6 +5,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const SUPPORTED_MIME_TYPES = [
   "application/pdf", // PDF
   "application/msword", // Word .doc
+  "application/x-zip-compressed", // Windows .zip
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // Word .docx
 ];
 

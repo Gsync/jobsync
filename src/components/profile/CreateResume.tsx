@@ -158,7 +158,7 @@ function CreateResume({
                     <FormControl>
                       <Input
                         type="file"
-                        accept=".pdf,.doc,.docx"
+                        accept=".pdf,.doc,.docx,.zip"
                         onChange={(e) => {
                           field.onChange(e.target.files?.[0] || null);
                         }}

@@ -119,7 +119,10 @@ export const GET = async (req: NextRequest, res: NextApiResponse) => {
     } else if (fileType === ".doc" || fileType === ".docx") {
       contentType =
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-    } else {
+    } else if (fileType === ".zip") {
+      contentType = "application/x-zip-compressed";
+    }  
+     else {
       return NextResponse.json(
         { error: "Unsupported file type" },
         { status: 400 }
