@@ -127,4 +127,4 @@ ENV OPENAI_API_KEY=sk-xxx
 
 ### Note ###
 
-This app is not yet recommended for use on a remote server whether its cloud or local network, it has only been tested in a local environment with ollama running locally.
+This app is not yet recommended for use on a remote server whether its cloud or local network, it has only been tested in a local environment with ollama, running locally on Windows 11 Pro via Docker. Confirmed not working yet on Ubuntu 22.04 Server/Desktop or Fedora Linux 40.
