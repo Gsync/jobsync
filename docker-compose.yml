@@ -1,5 +1,16 @@
 services:
   app:
+    user: root               
+    command: >
+      sh -c "
+        mkdir -p /data &&
+        chown -R nextjs:nodejs /data &&
+        su-exec nextjs \
+          npx prisma migrate deploy &&
+          npm run seed &&
+          node server.js
+      "
+
     container_name: jobsync_app
     build:
       context: .
