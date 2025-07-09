@@ -47,6 +47,12 @@ RUN \
 FROM base AS runner
 WORKDIR /app
 
+# 1) install su-exec so `su-exec nextjs does not trigger a "sh: su-exec: not found" error. 
+RUN apk add --no-cache su-exec
+
+# 2) prepare /data (for named volumes it’ll persist; for bind-mounts,
+RUN mkdir -p /data && chown -R 1001:1001 /data
+
 # Uncomment the following line in case you want to disable telemetry during runtime.
 ENV NEXT_TELEMETRY_DISABLED 1
 # Set environment variables
