@@ -47,12 +47,6 @@ RUN \
 FROM base AS runner
 WORKDIR /app
 
-# 1) install su-exec so `su-exec nextjs does not trigger a "sh: su-exec: not found" error. 
-RUN apk add --no-cache su-exec
-
-# 2) prepare /data (for named volumes it’ll persist; for bind-mounts,
-RUN mkdir -p /data && chown -R 1001:1001 /data
-
 # Uncomment the following line in case you want to disable telemetry during runtime.
 ENV NEXT_TELEMETRY_DISABLED 1
 # Set environment variables
@@ -66,8 +60,8 @@ ENV NEXTAUTH_URL: http://localhost:3000
 ENV AUTH_TRUST_HOST: http://localhost:3000
 ENV OLLAMA_BASE_URL=http://host.docker.internal:11434
 ENV OPENAI_API_KEY=sk-xxx
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs \
+ && adduser --system --uid 1001 --ingroup nodejs nextjs
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
@@ -87,6 +81,7 @@ COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Switch to non-root user
 USER nextjs
 
 EXPOSE 3000
