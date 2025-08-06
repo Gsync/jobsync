@@ -60,8 +60,9 @@ ENV NEXTAUTH_URL: http://localhost:3000
 ENV AUTH_TRUST_HOST: http://localhost:3000
 ENV OLLAMA_BASE_URL=http://host.docker.internal:11434
 ENV OPENAI_API_KEY=sk-xxx
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+# Add user to group nodejs as the non-root user nextjs
+RUN addgroup --system --gid 1001 nodejs \
+ && adduser --system --uid 1001 --ingroup nodejs nextjs
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
