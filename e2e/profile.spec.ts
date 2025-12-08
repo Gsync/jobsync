@@ -191,15 +191,13 @@ test.describe("Profile page", () => {
     await page.getByPlaceholder("Create or Search location").click();
     const locationText = "location test";
     await page.getByPlaceholder("Create or Search location").fill(locationText);
+    await page.waitForTimeout(500); // Wait for debounce and list to stabilize
     const locationTitle = page.getByRole("option", {
       name: locationText,
       exact: true,
     });
-    if (await locationTitle.isVisible()) {
-      await locationTitle.click();
-    } else {
-      await page.getByText(locationText).click();
-    }
+    await locationTitle.waitFor({ state: "visible", timeout: 5000 });
+    await locationTitle.click({ force: true });
     await expect(page.getByLabel("Location")).toContainText(locationText);
     await page.getByPlaceholder("Ex: Bachelor's").click();
     await page.getByPlaceholder("Ex: Bachelor's").fill("degree text");
@@ -208,11 +206,17 @@ test.describe("Profile page", () => {
       .getByPlaceholder("Ex: Computer Science")
       .fill("computer science");
     await page.getByLabel("Start Date").click();
+    // Wait for popover to be visible and calendar to render
+    await page.getByRole("grid").waitFor({ state: "visible", timeout: 5000 });
+    await page.waitForTimeout(500); // Additional wait for calendar to stabilize
     await page
       .getByRole("gridcell", { name: "2", exact: true })
       .first()
       .click();
     await page.getByLabel("End Date").click();
+    // Wait for popover to be visible and calendar to render
+    await page.getByRole("grid").waitFor({ state: "visible", timeout: 5000 });
+    await page.waitForTimeout(500); // Additional wait for calendar to stabilize
     await page
       .getByRole("gridcell", { name: "3", exact: true })
       .first()
@@ -248,45 +252,42 @@ async function addExperience(page: Page, resumeTitle: string, jobText: string) {
   await page.getByLabel("Job Title").click();
   await page.getByPlaceholder("Create or Search title").click();
   await page.getByPlaceholder("Create or Search title").fill(jobText);
+  await page.waitForTimeout(500); // Wait for debounce and list to stabilize
   const jobTitle = page.getByRole("option", {
     name: jobText,
     exact: true,
   });
-  if (await jobTitle.isVisible()) {
-    await jobTitle.click();
-  } else {
-    await page.getByText(jobText).click();
-  }
+  await jobTitle.waitFor({ state: "visible", timeout: 5000 });
+  await jobTitle.click({ force: true });
   await expect(page.getByLabel("Job Title")).toContainText(jobText);
   await page.getByLabel("Company").click();
   await page.getByPlaceholder("Create or Search company").click();
   const companyText = "company test";
   await page.getByPlaceholder("Create or Search company").fill(companyText);
+  await page.waitForTimeout(500); // Wait for debounce and list to stabilize
   const companyTitle = page.getByRole("option", {
     name: companyText,
     exact: true,
   });
-  if (await companyTitle.isVisible()) {
-    await companyTitle.click();
-  } else {
-    await page.getByText(companyText).click();
-  }
+  await companyTitle.waitFor({ state: "visible", timeout: 5000 });
+  await companyTitle.click({ force: true });
   await expect(page.getByLabel("Company")).toContainText(companyText);
   await page.getByLabel("Job Location").click();
   await page.getByPlaceholder("Create or Search location").click();
   const locationText = "location test";
   await page.getByPlaceholder("Create or Search location").fill(locationText);
+  await page.waitForTimeout(500); // Wait for debounce and list to stabilize
   const locationTitle = page.getByRole("option", {
     name: locationText,
     exact: true,
   });
-  if (await locationTitle.isVisible()) {
-    await locationTitle.click();
-  } else {
-    await page.getByText(locationText).click();
-  }
+  await locationTitle.waitFor({ state: "visible", timeout: 5000 });
+  await locationTitle.click({ force: true });
   await expect(page.getByLabel("Job Location")).toContainText(locationText);
   await page.getByLabel("Start Date").click();
+  // Wait for popover to be visible and calendar to render
+  await page.getByRole("grid").waitFor({ state: "visible", timeout: 5000 });
+  await page.waitForTimeout(500); // Additional wait for calendar to stabilize
   await page.getByRole("gridcell", { name: "2", exact: true }).first().click();
   await page.locator("div:nth-child(2) > .tiptap").click();
   await page.locator("div:nth-child(2) > .tiptap").fill("test description");

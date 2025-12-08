@@ -26,43 +26,37 @@ async function createNewJob(page: Page, jobText: string) {
   await page.getByLabel("Job Title").click();
   await page.getByPlaceholder("Create or Search title").click();
   await page.getByPlaceholder("Create or Search title").fill(jobText);
+  await page.waitForTimeout(500); // Wait for debounce and list to stabilize
   const jobTitle = page.getByRole("option", {
     name: jobText,
     exact: true,
   });
-  if (await jobTitle.isVisible()) {
-    await jobTitle.click();
-  } else {
-    await page.getByText(jobText, { exact: true }).click();
-  }
+  await jobTitle.waitFor({ state: "visible", timeout: 5000 });
+  await jobTitle.click({ force: true });
   await expect(page.getByLabel("Job Title")).toContainText(jobText);
   await page.getByLabel("Company").click();
   await page.getByPlaceholder("Create or Search company").click();
   const companyText = "company test";
   await page.getByPlaceholder("Create or Search company").fill(companyText);
+  await page.waitForTimeout(500); // Wait for debounce and list to stabilize
   const companyTitle = page.getByRole("option", {
     name: companyText,
     exact: true,
   });
-  if (await companyTitle.isVisible()) {
-    await companyTitle.click();
-  } else {
-    await page.getByText(companyText).click();
-  }
+  await companyTitle.waitFor({ state: "visible", timeout: 5000 });
+  await companyTitle.click({ force: true });
   await expect(page.getByLabel("Company")).toContainText(companyText);
   await page.getByLabel("Job Location").click();
   await page.getByPlaceholder("Create or Search location").click();
   const locationText = "location test";
   await page.getByPlaceholder("Create or Search location").fill(locationText);
+  await page.waitForTimeout(500); // Wait for debounce and list to stabilize
   const locationTitle = page.getByRole("option", {
     name: locationText,
     exact: true,
   });
-  if (await locationTitle.isVisible()) {
-    await locationTitle.click();
-  } else {
-    await page.getByText(locationText).click();
-  }
+  await locationTitle.waitFor({ state: "visible", timeout: 5000 });
+  await locationTitle.click({ force: true });
   await expect(page.getByLabel("Job Location")).toContainText(locationText);
   await page.getByText("Part-time").click();
   await page.getByLabel("Job Source").click();
