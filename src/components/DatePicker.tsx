@@ -74,23 +74,22 @@ export function DatePicker({
             </SelectContent>
           </Select>
         )}
-        <div className="rounded-md border">
-          <Calendar
-            mode="single"
-            captionLayout={captionLayout ? "dropdown-buttons" : undefined}
-            fromYear={captionLayout ? 1970 : undefined}
-            toYear={captionLayout ? new Date().getFullYear() : undefined}
-            selected={field.value}
-            onSelect={(value) => {
-              field.onChange(value);
-              setIsPopoverOpen(false);
-            }}
-            //   disabled={(date) =>
-            //     field.value > new Date() || field.value < new Date("1900-01-01")
-            //   }
-            // initialFocus // NOTE: Enabling this cause error in safari browser
-          />
-        </div>
+        <Calendar
+          mode="single"
+          captionLayout={captionLayout ? "dropdown" : "label"}
+          startMonth={captionLayout ? new Date(1970, 0) : undefined}
+          endMonth={captionLayout ? new Date() : undefined}
+          selected={field.value}
+          onSelect={(value) => {
+            field.onChange(value);
+            setIsPopoverOpen(false);
+          }}
+          className="rounded-md border"
+          //   disabled={(date) =>
+          //     field.value > new Date() || field.value < new Date("1900-01-01")
+          //   }
+          // initialFocus // NOTE: Enabling this cause error in safari browser
+        />
       </PopoverContent>
     </Popover>
   );
