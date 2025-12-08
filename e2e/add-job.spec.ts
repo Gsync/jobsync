@@ -26,42 +26,51 @@ async function createNewJob(page: Page, jobText: string) {
   await page.getByLabel("Job Title").click();
   await page.getByPlaceholder("Create or Search title").click();
   await page.getByPlaceholder("Create or Search title").fill(jobText);
-  const jobTitle = page.getByRole("option", {
+  await page.waitForTimeout(500); // Wait for debounce
+  // Check if item exists in list or needs to be created
+  const existingOption = page.getByRole("option", {
     name: jobText,
     exact: true,
   });
-  if (await jobTitle.isVisible()) {
-    await jobTitle.click();
-  } else {
-    await page.getByText(jobText, { exact: true }).click();
+  const createOption = page.getByText(`Create: ${jobText}`);
+  if (await existingOption.isVisible()) {
+    await existingOption.click();
+  } else if (await createOption.isVisible()) {
+    await createOption.click();
   }
   await expect(page.getByLabel("Job Title")).toContainText(jobText);
   await page.getByLabel("Company").click();
   await page.getByPlaceholder("Create or Search company").click();
   const companyText = "company test";
   await page.getByPlaceholder("Create or Search company").fill(companyText);
-  const companyTitle = page.getByRole("option", {
+  await page.waitForTimeout(500); // Wait for debounce
+  // Check if item exists in list or needs to be created
+  const existingCompany = page.getByRole("option", {
     name: companyText,
     exact: true,
   });
-  if (await companyTitle.isVisible()) {
-    await companyTitle.click();
-  } else {
-    await page.getByText(companyText).click();
+  const createCompany = page.getByText(`Create: ${companyText}`);
+  if (await existingCompany.isVisible()) {
+    await existingCompany.click();
+  } else if (await createCompany.isVisible()) {
+    await createCompany.click();
   }
   await expect(page.getByLabel("Company")).toContainText(companyText);
   await page.getByLabel("Job Location").click();
   await page.getByPlaceholder("Create or Search location").click();
   const locationText = "location test";
   await page.getByPlaceholder("Create or Search location").fill(locationText);
-  const locationTitle = page.getByRole("option", {
+  await page.waitForTimeout(500); // Wait for debounce
+  // Check if item exists in list or needs to be created
+  const existingLocation = page.getByRole("option", {
     name: locationText,
     exact: true,
   });
-  if (await locationTitle.isVisible()) {
-    await locationTitle.click();
-  } else {
-    await page.getByText(locationText).click();
+  const createLocation = page.getByText(`Create: ${locationText}`);
+  if (await existingLocation.isVisible()) {
+    await existingLocation.click();
+  } else if (await createLocation.isVisible()) {
+    await createLocation.click();
   }
   await expect(page.getByLabel("Job Location")).toContainText(locationText);
   await page.getByText("Part-time").click();

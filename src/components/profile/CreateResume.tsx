@@ -133,6 +133,7 @@ function CreateResume({
                       <Input
                         {...field}
                         placeholder="Ex: Full Stack Developer Angular, Java"
+                        data-testid="resume-title-input"
                       />
                     </FormControl>
                     <FormMessage>

@@ -1,7 +1,6 @@
 import "server-only";
 
 import { auth } from "@/auth";
-import { NextApiRequest, NextApiResponse } from "next";
 import { NextRequest, NextResponse } from "next/server";
 import { Resume } from "@/models/profile.model";
 import { getJobMatchByOllama, getJobMatchByOpenAi } from "@/actions/ai.actions";
@@ -10,12 +9,12 @@ import { getJobDetails } from "@/actions/job.actions";
 import { AiModel, AiProvider } from "@/models/ai.model";
 import { JobResponse } from "@/models/job.model";
 
-export const POST = async (req: NextRequest, res: NextApiResponse) => {
+export const POST = async (req: NextRequest) => {
   const session = await auth();
   const userId = session?.accessToken.sub;
 
   if (!session || !session.user) {
-    return res.status(401).json({ message: "Not Authenticated" });
+    return NextResponse.json({ message: "Not Authenticated" }, { status: 401 });
   }
   const { resumeId, jobId, selectedModel } = (await req.json()) as {
     resumeId: string;

@@ -431,13 +431,7 @@ export const addResumeSummary = async (
         },
       },
     });
-    /* Warning: a dynamic page path "/dashboard/profile/resume/[id]" was passed 
-      to "revalidatePath", but the "type" parameter is missing. 
-      This has no effect by default, 
-      see more info here https://nextjs.org/docs/app/api-reference/functions/revalidatePath
-      revalidatePath("/dashboard/profile/resume/[id]", "page");
-    */
-    revalidatePath("/dashboard/profile/resume/[id]", "page");
+    revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
     return { data: summary, success: true };
   } catch (error) {
     const msg = "Failed to create summary.";
@@ -475,7 +469,7 @@ export const updateResumeSummary = async (
         },
       },
     });
-    revalidatePath("/dashboard/profile/resume/[id]", "page");
+    revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
     return { data: summary, success: true };
   } catch (error) {
     const msg = "Failed to update summary.";
@@ -524,7 +518,7 @@ export const addExperience = async (
         },
       },
     });
-    revalidatePath("/dashboard/profile/resume/[id]", "page");
+    revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
     return { data: experience, success: true };
   } catch (error) {
     const msg = "Failed to create experience.";
@@ -563,7 +557,7 @@ export const updateExperience = async (
         description: data.jobDescription,
       },
     });
-    revalidatePath("/dashboard/profile/resume/[id]", "page");
+    revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
     return { data: summary, success: true };
   } catch (error) {
     const msg = "Failed to update experience.";
@@ -608,7 +602,7 @@ export const addEducation = async (
         },
       },
     });
-    revalidatePath("/dashboard/profile/resume/[id]", "page");
+    revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
     return { data: education, success: true };
   } catch (error) {
     const msg = "Failed to create education.";
@@ -648,7 +642,7 @@ export const updateEducation = async (
         description: data.description,
       },
     });
-    revalidatePath("/dashboard/profile/resume/[id]", "page");
+    revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
     return { data: summary, success: true };
   } catch (error) {
     const msg = "Failed to update education.";

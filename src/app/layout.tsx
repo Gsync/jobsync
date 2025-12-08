@@ -2,19 +2,9 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import dynamicImport from "next/dynamic";
-export const dynamic = "force-dynamic";
+import { ThemeProvider } from "@/components/theme-provider";
 
-const ThemeProvider = dynamicImport(
-  () => import("@/components/theme-provider").then((mod) => mod.ThemeProvider),
-  {
-    ssr: false,
-    loading: () => (
-      // Optional: Add skeleton loader here
-      <div className="min-h-screen bg-background" />
-    ),
-  }
-);
+export const dynamic = "force-dynamic";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -35,7 +25,7 @@ interface Props {
 
 export default function RootLayout({ children }: Readonly<Props>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
