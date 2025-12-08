@@ -1,6 +1,7 @@
 // components/Banner.tsx
 import { AlertCircle, CheckCircle2, CircleStop, XCircle } from "lucide-react";
 import { cn, formatElapsedTime } from "@/lib/utils";
+import React from "react";
 
 type BannerVariant = "success" | "warning" | "error" | "info";
 
@@ -19,7 +20,7 @@ const variantStyles: Record<BannerVariant, string> = {
   info: "bg-blue-50 text-blue-700 border-blue-200",
 };
 
-const variantIcons: Record<BannerVariant, JSX.Element> = {
+const variantIcons: Record<BannerVariant, React.ReactElement> = {
   success: <CheckCircle2 className=" text-green-800" />,
   warning: <AlertCircle className="h-5 w-5 text-yellow-400" />,
   error: <XCircle className="h-5 w-5 text-red-400" />,

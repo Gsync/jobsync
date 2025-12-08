@@ -12,11 +12,12 @@ const createJestConfig = nextJest({
 });
 
 const config: Config = {
-  preset: "ts-jest",
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
+    "^@prisma/client$": "<rootDir>/node_modules/@prisma/client",
   },
-  // setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"], // when you have setup file
+  setupFiles: ["<rootDir>/jest.polyfills.ts"],
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   // All imported modules in your tests should be mocked automatically
   // automock: false,
 
@@ -38,6 +39,9 @@ const config: Config = {
   // The directory where Jest should output its coverage files
   coverageDirectory: "coverage",
   testEnvironment: "jsdom",
+  testEnvironmentOptions: {
+    customExportConditions: [""],
+  },
   // An array of regexp pattern strings used to skip coverage collection
   // coveragePathIgnorePatterns: [
   //   "/node_modules/"
@@ -187,10 +191,7 @@ const config: Config = {
   // transform: undefined,
 
   // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
-  // transformIgnorePatterns: [
-  //   "/node_modules/",
-  //   "\\.pnp\\.[^\\/]+$"
-  // ],
+  transformIgnorePatterns: ["/node_modules/(?!@prisma)"],
 
   // An array of regexp pattern strings that are matched against all modules before the module loader will automatically return a mock for them
   // unmockedModulePathPatterns: undefined,

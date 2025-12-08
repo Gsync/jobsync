@@ -24,18 +24,23 @@ function SigninForm() {
   const form = useForm<z.infer<typeof SigninFormSchema>>({
     resolver: zodResolver(SigninFormSchema),
     mode: "onChange",
+    defaultValues: {
+      email: "",
+      password: "",
+    },
   });
 
   const [errorMessage, setError] = useState("");
   const router = useRouter();
 
-  const onSubmit = (data: z.infer<typeof SigninFormSchema>) => {
+  const onSubmit = async (data: z.infer<typeof SigninFormSchema>) => {
     startTransition(async () => {
+      setError("");
       const formData = new FormData();
       formData.set("email", data.email);
       formData.set("password", data.password);
       const errorResponse = await authenticate("", formData);
-      if (!!errorResponse) {
+      if (errorResponse) {
         setError(errorResponse);
       } else {
         router.push("/dashboard");

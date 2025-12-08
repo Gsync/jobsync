@@ -1,6 +1,5 @@
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
-import { NextApiRequest, NextApiResponse } from "next";
 import {
   createResumeProfile,
   deleteFile,
@@ -11,7 +10,7 @@ import path from "path";
 import fs from "fs";
 import { getTimestampedFileName } from "@/lib/utils";
 
-export const POST = async (req: NextRequest, res: NextResponse) => {
+export const POST = async (req: NextRequest) => {
   const session = await auth();
   const userId = session?.accessToken.sub;
   const dataPath = process.env.NODE_ENV !== "production" ? "data" : "/data";
@@ -78,7 +77,7 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
   }
 };
 
-export const GET = async (req: NextRequest, res: NextApiResponse) => {
+export const GET = async (req: NextRequest) => {
   const session = await auth();
   const userId = session?.accessToken.sub;
 
