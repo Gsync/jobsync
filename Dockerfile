@@ -24,9 +24,6 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Next.js collects completely anonymous telemetry data about general usage.
-# Learn more here: https://nextjs.org/telemetry
-ENV NEXT_TELEMETRY_DISABLED 1
 ENV DATABASE_URL=file:/data/dev.db
 
 # Add the wait script to ensure the database is ready before running migrations
@@ -47,19 +44,11 @@ RUN \
 FROM base AS runner
 WORKDIR /app
 
-# Uncomment the following line in case you want to disable telemetry during runtime.
-ENV NEXT_TELEMETRY_DISABLED 1
 # Set environment variables
 ENV NODE_ENV=production
-ENV DATABASE_URL=file:./data/dev.db
-ENV USER_EMAIL=admin@example.com
-ENV USER_PASSWORD=password123
-# Refer to readme to generate auth secret
-ENV AUTH_SECRET=Cft42eLmgapfLoot7ByiCL9ToNfbqZ4xaaMuOJsbm+9u
-ENV NEXTAUTH_URL: http://localhost:3000
-ENV AUTH_TRUST_HOST: http://localhost:3000
-ENV OLLAMA_BASE_URL=http://host.docker.internal:11434
-ENV OPENAI_API_KEY=sk-xxx
+# Comment the following line in case you do not want to disable telemetry during runtime.
+ENV NEXT_TELEMETRY_DISABLED=1
+
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
