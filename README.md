@@ -125,3 +125,7 @@ You must add your valid API key in the docker file, also please make sure openai
 ENV OPENAI_API_KEY=sk-xxx
 ```
 
+### Note
+
+- If you are updating from an old version and already logged in, please try logging out and login again.
+
