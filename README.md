@@ -48,7 +48,7 @@ git clone https://github.com/Gsync/jobsync.git
 ```
 
 #### Step 2 (Optional) - Change environment variables
-* **Alternativey you can also download the source code using download link**
+* **Refer to .env.example and change to .env with your environment variables**
   
 #### 2.1 Generate auth secret (Optional) 
 
@@ -78,11 +78,11 @@ OR
 
 #### 2.2 Change username and password (Optional) 
 
-You can use default username (admin@example) and password (password123) or change it in the Dockerfile
+You can use default username (admin@example) and password (password123) or change it in you .env file
 
 #### Step 3 - Build docker image and run container
 * **Please make sure you have <a href="https://www.docker.com">docker</a> installed and running**
-* Please make sure you are in the root folder in your terminal
+* Please make sure you are in you project directory in your terminal
 
 ```sh
 docker compose up
@@ -125,6 +125,3 @@ You must add your valid API key in the docker file, also please make sure openai
 ENV OPENAI_API_KEY=sk-xxx
 ```
 
-### Note ###
-
-This app is not yet recommended for use on a remote server whether its cloud or local network, it has only been tested in a local environment with ollama running locally.
