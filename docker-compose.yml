@@ -4,7 +4,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: jobsync_app_image
     ports:
       - "3000:3000"
     environment:

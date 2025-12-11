@@ -7,8 +7,14 @@ const prisma = new PrismaClient();
 
 async function seedUser() {
   try {
-    const password = await bcrypt.hash(process.env.USER_PASSWORD, 10);
     const email = process.env.USER_EMAIL;
+    if (!email || email.trim() === "") {
+      console.warn(
+        "\x1b[33m[WARNING] USER_EMAIL environment variable is blank or not set. Please set USER_EMAIL in your .env file. Seeding will continue, but user will not be created.\x1b[0m"
+      );
+      return;
+    }
+    const password = await bcrypt.hash(process.env.USER_PASSWORD, 10);
     // Check if the user already exists
     const existingUser = await prisma.user.findUnique({
       where: {

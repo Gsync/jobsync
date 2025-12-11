@@ -47,8 +47,8 @@ JobSync Assistant is completely free to use and open source. It provides a power
 git clone https://github.com/Gsync/jobsync.git
 ```
 
-#### Step 2 (Optional) - Change environment variables
-* **Refer to .env.example and change to .env with your environment variables**
+#### Step 2 - Change environment variables
+* ** You must create a .env file before proceeding. Refer to .env.example and create or change to .env with your environment variables**
   
 #### 2.1 Generate auth secret (Optional) 
 
