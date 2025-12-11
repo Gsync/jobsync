@@ -4,18 +4,19 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: jobsync_app_image
     ports:
       - "3000:3000"
     environment:
-      NODE_ENV: production
-      DATABASE_URL: file:/data/dev.db
-      # Change your initial username and password here
-      USER_EMAIL: admin@example.com
-      USER_PASSWORD: password123
-      # Refer to readme to generate auth secret
-      AUTH_SECRET: Cft42eLmgapfLoot7ByiCL9ToNfbqZ4xaaMuOJsbm+9u
-      NEXTAUTH_URL: http://localhost:3000
-      AUTH_TRUST_HOST: http://localhost:3000
+      # Please do not forget to create and update your .env file
+      - NODE_ENV=production
+      - DATABASE_URL=file:/data/dev.db
+      - USER_EMAIL=${USER_EMAIL}
+      - USER_PASSWORD=${USER_PASSWORD}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - AUTH_TRUST_HOST=${AUTH_TRUST_HOST}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
       - ./jobsyncdb/data:/data
+    restart: unless-stopped

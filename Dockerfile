@@ -1,5 +1,5 @@
-# Use the official Node.js 20 image as the base image
-FROM node:20.1.0-alpine AS base
+# Use the official Node.js 22 LTS image as the base image
+FROM node:20.18.0-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -24,14 +24,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Next.js collects completely anonymous telemetry data about general usage.
-# Learn more here: https://nextjs.org/telemetry
-ENV NEXT_TELEMETRY_DISABLED 1
 ENV DATABASE_URL=file:/data/dev.db
-
-# Add the wait script to ensure the database is ready before running migrations
-# ADD https://github.com/ufoscout/docker-compose-wait/releases/download/2.9.0/wait /wait
-# RUN chmod +x /wait
 
 # Generate Prisma client
 RUN npx prisma generate
@@ -47,19 +40,11 @@ RUN \
 FROM base AS runner
 WORKDIR /app
 
-# Uncomment the following line in case you want to disable telemetry during runtime.
-ENV NEXT_TELEMETRY_DISABLED 1
 # Set environment variables
 ENV NODE_ENV=production
-ENV DATABASE_URL=file:./data/dev.db
-ENV USER_EMAIL=admin@example.com
-ENV USER_PASSWORD=password123
-# Refer to readme to generate auth secret
-ENV AUTH_SECRET=Cft42eLmgapfLoot7ByiCL9ToNfbqZ4xaaMuOJsbm+9u
-ENV NEXTAUTH_URL: http://localhost:3000
-ENV AUTH_TRUST_HOST: http://localhost:3000
-ENV OLLAMA_BASE_URL=http://host.docker.internal:11434
-ENV OPENAI_API_KEY=sk-xxx
+# Comment the following line in case you do not want to disable telemetry during runtime.
+ENV NEXT_TELEMETRY_DISABLED=1
+
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
@@ -70,7 +55,7 @@ RUN chown nextjs:nodejs .next
 # Set up /data directory with the right permissions
 RUN mkdir -p /data/files/resumes && chown -R nextjs:nodejs /data/files/resumes
 
-RUN npm install prisma@5.14.0 --no-save
+RUN npm install prisma@6.19.0 --no-save
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
@@ -81,11 +66,11 @@ COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-USER nextjs
-
 EXPOSE 3000
 
-ENV PORT 3000
+ENV PORT=3000
 
-# Start the jobsync application
-CMD npx prisma migrate deploy && npm run seed && node server.js
+# Start as root, fix /data permissions, then run app as nextjs user
+# Using 'su' which is built into Alpine base image
+CMD chown -R nextjs:nodejs /data && \
+    exec su -s /bin/sh nextjs -c "npx prisma migrate deploy && npm run seed && node server.js"
