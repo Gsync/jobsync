@@ -1,5 +1,5 @@
 "use client";
-import { Info, Sparkles } from "lucide-react";
+import { Info, Sparkles, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   Sheet,
@@ -23,6 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
+import { checkIfModelIsRunning } from "@/utils/ai.utils";
 
 interface AiSectionProps {
   resume: Resume;
@@ -33,6 +34,8 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   const [aISectionOpen, setAiSectionOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [runningModelName, setRunningModelName] = useState<string>("");
+  const [runningModelError, setRunningModelError] = useState<string>("");
   const selectedModel: AiModel = getFromLocalStorage(
     "aiSettings",
     defaultModel
@@ -48,6 +51,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
       if (!resume || resume.ResumeSections?.length === 0) {
         throw new Error("Resume content is required");
       }
+
       setLoading(true);
       setAIContent("");
       const abortController = new AbortController();
@@ -102,6 +106,23 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
     setAiSectionOpen(openState);
     if (openState === false) {
       abortStream();
+    } else if (openState && selectedModel.provider === "ollama") {
+      // Check model status when sheet opens for Ollama
+      await checkModelStatus();
+    }
+  };
+
+  const checkModelStatus = async () => {
+    setRunningModelName("");
+    setRunningModelError("");
+    const result = await checkIfModelIsRunning(
+      selectedModel.model,
+      selectedModel.provider
+    );
+    if (result.isRunning && result.runningModelName) {
+      setRunningModelName(result.runningModelName);
+    } else if (result.error) {
+      setRunningModelError(result.error);
     }
   };
 
@@ -150,13 +171,33 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
                 </TooltipProvider>
               </SheetTitle>
             </SheetHeader>
+            {selectedModel.provider === "ollama" && (
+              <>
+                {runningModelName && (
+                  <div className="flex items-center gap-1 text-green-600 text-sm mt-4">
+                    <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>{runningModelName} is running</span>
+                  </div>
+                )}
+                {runningModelError && (
+                  <div className="flex items-center gap-1 text-red-600 text-sm mt-4">
+                    <XCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>{runningModelError}</span>
+                  </div>
+                )}
+              </>
+            )}
             <div className="mt-4">
               <Button
                 size="sm"
                 variant="outline"
                 className="h-8 gap-1 cursor-pointer"
                 onClick={getResumeReview}
-                disabled={loading || isStreaming}
+                disabled={
+                  loading ||
+                  isStreaming ||
+                  (selectedModel.provider === "ollama" && !runningModelName)
+                }
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
