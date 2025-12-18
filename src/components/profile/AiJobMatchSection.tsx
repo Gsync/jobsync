@@ -7,7 +7,7 @@ import {
   SheetPortal,
   SheetTitle,
 } from "../ui/sheet";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Resume } from "@/models/profile.model";
 import { toast } from "../ui/use-toast";
 import {
@@ -28,7 +28,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
-import { Info } from "lucide-react";
+import { Info, CheckCircle, XCircle } from "lucide-react";
+import { checkIfModelIsRunning } from "@/utils/ai.utils";
 
 interface AiSectionProps {
   aISectionOpen: boolean;
@@ -44,6 +45,8 @@ export const AiJobMatchSection = ({
   const [aIContent, setAIContent] = useState<JobMatchResponse | any>("");
   const [loading, setLoading] = useState(false);
   const [selectedResumeId, setSelectedResumeId] = useState<string>();
+  const [runningModelName, setRunningModelName] = useState<string>("");
+  const [runningModelError, setRunningModelError] = useState<string>("");
   const selectedModel: AiModel = getFromLocalStorage(
     "aiSettings",
     defaultModel
@@ -140,15 +143,50 @@ export const AiJobMatchSection = ({
     await readerRef?.current?.cancel();
   };
 
+  const checkModelStatus = useCallback(async () => {
+    setRunningModelName("");
+    setRunningModelError("");
+    const result = await checkIfModelIsRunning(
+      selectedModel.model,
+      selectedModel.provider
+    );
+    if (result.isRunning && result.runningModelName) {
+      setRunningModelName(result.runningModelName);
+    } else if (result.error) {
+      setRunningModelError(result.error);
+    }
+  }, [selectedModel.model, selectedModel.provider]);
+
+  const onOpenChange = async (openState: boolean) => {
+    triggerChange(openState);
+    if (openState && selectedModel.provider === "ollama") {
+      // Check model status when sheet opens for Ollama
+      await checkModelStatus();
+    } else if (openState === false) {
+      // Clear status when closing
+      setRunningModelName("");
+      setRunningModelError("");
+    }
+  };
+
   const onSelectResume = async (resumeId: string) => {
     setSelectedResumeId(resumeId);
     await getJobMatch(resumeId, jobId);
   };
+
   useEffect(() => {
     getResumes();
   }, []);
+
+  useEffect(() => {
+    // Check model status when sheet is open (handles initial mount)
+    if (aISectionOpen && selectedModel.provider === "ollama") {
+      checkModelStatus();
+    }
+  }, [aISectionOpen, selectedModel.provider, checkModelStatus]);
+
   return (
-    <Sheet open={aISectionOpen} onOpenChange={triggerChange}>
+    <Sheet open={aISectionOpen} onOpenChange={onOpenChange}>
       <SheetPortal>
         <SheetContent className="overflow-y-scroll">
           <SheetHeader>
@@ -167,9 +205,32 @@ export const AiJobMatchSection = ({
               </TooltipProvider>
             </SheetTitle>
           </SheetHeader>
+          {selectedModel.provider === "ollama" && (
+            <>
+              {runningModelName && (
+                <div className="flex items-center gap-1 text-green-600 text-sm mt-4">
+                  <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{runningModelName} is running</span>
+                </div>
+              )}
+              {runningModelError && (
+                <div className="flex items-center gap-1 text-red-600 text-sm mt-4">
+                  <XCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{runningModelError}</span>
+                </div>
+              )}
+            </>
+          )}
           {!selectedResumeId && (
             <div className="mt-4">
-              <Select value={selectedResumeId} onValueChange={onSelectResume}>
+              <Select
+                value={selectedResumeId}
+                onValueChange={onSelectResume}
+                disabled={
+                  loading ||
+                  (selectedModel.provider === "ollama" && !runningModelName)
+                }
+              >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Select a resume" />
                 </SelectTrigger>
