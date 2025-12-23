@@ -156,6 +156,8 @@ describe("AI Actions", () => {
         model: "llama3.1",
         temperature: 0,
         format: "json",
+        maxConcurrency: 1,
+        numCtx: undefined,
       });
     });
 

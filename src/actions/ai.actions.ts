@@ -7,25 +7,60 @@ import { Resume } from "@/models/profile.model";
 import { JobResponse } from "@/models/job.model";
 import { convertJobToText, convertResumeToText } from "@/utils/ai.utils";
 
-export const getResumeReviewByOllama = async (
-  resume: Resume,
-  aImodel?: string
-): Promise<ReadableStream | undefined> => {
-  const resumeText = await convertResumeToText(resume);
-  const inputMessage = await resumeReviewPrompt.format({
-    resume: resumeText,
-  });
+// --- Helpers ---
+type ModelType = "ollama" | "openai";
 
-  const model = new ChatOllama({
-    baseUrl: process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434",
-    model: aImodel,
-    temperature: 0,
-    format: "json",
-  });
+interface ModelOptions {
+  modelType: ModelType;
+  modelName?: string;
+  baseUrl?: string;
+  apiKey?: string;
+  temperature?: number;
+  format?: string;
+  maxConcurrency?: number;
+  maxTokens?: number;
+  numCtx?: number;
+}
 
+function createModel(options: ModelOptions) {
+  const {
+    modelType,
+    modelName,
+    baseUrl,
+    apiKey,
+    temperature = 0,
+    format,
+    maxConcurrency = 1,
+    maxTokens,
+    numCtx,
+  } = options;
+  if (modelType === "ollama") {
+    return new ChatOllama({
+      baseUrl:
+        baseUrl || process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434",
+      model: modelName,
+      temperature,
+      format,
+      maxConcurrency,
+      numCtx,
+    });
+  } else {
+    return new ChatOpenAI({
+      model: modelName,
+      openAIApiKey: apiKey || process.env.OPENAI_API_KEY,
+      temperature,
+      maxConcurrency,
+      maxTokens,
+    });
+  }
+}
+
+async function streamResponse(
+  model: any,
+  inputMessage: any
+): Promise<ReadableStream> {
   const stream = await model.stream(inputMessage);
   const encoder = new TextEncoder();
-
   return new ReadableStream({
     async start(controller) {
       for await (const chunk of stream) {
@@ -38,41 +73,36 @@ export const getResumeReviewByOllama = async (
       controller.close();
     },
   });
+}
+
+// --- Main Functions ---
+
+export const getResumeReviewByOllama = async (
+  resume: Resume,
+  aiModel?: string
+): Promise<ReadableStream | undefined> => {
+  const resumeText = await convertResumeToText(resume);
+  const inputMessage = await resumeReviewPrompt.format({ resume: resumeText });
+  const model = createModel({
+    modelType: "ollama",
+    modelName: aiModel,
+    format: "json",
+  });
+  return streamResponse(model, inputMessage);
 };
 
 export const getResumeReviewByOpenAi = async (
   resume: Resume,
-  aImodel?: string
+  aiModel?: string
 ): Promise<ReadableStream | undefined> => {
   const resumeText = await convertResumeToText(resume);
-  const inputMessage = await resumeReviewPrompt.format({
-    resume: resumeText,
-  });
-
-  const model = new ChatOpenAI({
-    model: aImodel,
-    openAIApiKey: process.env.OPENAI_API_KEY,
-    temperature: 0,
-    maxConcurrency: 1,
+  const inputMessage = await resumeReviewPrompt.format({ resume: resumeText });
+  const model = createModel({
+    modelType: "openai",
+    modelName: aiModel,
     maxTokens: 3000,
   });
-
-  const stream = await model.stream(inputMessage);
-
-  const encoder = new TextEncoder();
-
-  return new ReadableStream({
-    async start(controller) {
-      for await (const chunk of stream) {
-        const content =
-          typeof chunk.content === "string"
-            ? chunk.content
-            : JSON.stringify(chunk.content);
-        controller.enqueue(encoder.encode(content));
-      }
-      controller.close();
-    },
-  });
+  return streamResponse(model, inputMessage);
 };
 
 export const getJobMatchByOllama = async (
@@ -86,30 +116,13 @@ export const getJobMatchByOllama = async (
     resume: resumeText || "No resume provided",
     job_description: jobText,
   });
-  const model = new ChatOllama({
-    baseUrl: process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434",
-    model: aiModel,
-    temperature: 0,
+  const model = createModel({
+    modelType: "ollama",
+    modelName: aiModel,
     format: "json",
-    maxConcurrency: 1,
     numCtx: 3000,
   });
-
-  const stream = await model.stream(inputMessage);
-  const encoder = new TextEncoder();
-
-  return new ReadableStream({
-    async start(controller) {
-      for await (const chunk of stream) {
-        const content =
-          typeof chunk.content === "string"
-            ? chunk.content
-            : JSON.stringify(chunk.content);
-        controller.enqueue(encoder.encode(content));
-      }
-      controller.close();
-    },
-  });
+  return streamResponse(model, inputMessage);
 };
 
 export const getJobMatchByOpenAi = async (
@@ -123,27 +136,10 @@ export const getJobMatchByOpenAi = async (
     resume: resumeText || "No resume provided",
     job_description: jobText,
   });
-  const model = new ChatOpenAI({
-    model: aiModel,
-    openAIApiKey: process.env.OPENAI_API_KEY,
-    temperature: 0,
-    maxConcurrency: 1,
+  const model = createModel({
+    modelType: "openai",
+    modelName: aiModel,
     maxTokens: 3000,
   });
-
-  const stream = await model.stream(inputMessage);
-  const encoder = new TextEncoder();
-
-  return new ReadableStream({
-    async start(controller) {
-      for await (const chunk of stream) {
-        const content =
-          typeof chunk.content === "string"
-            ? chunk.content
-            : JSON.stringify(chunk.content);
-        controller.enqueue(encoder.encode(content));
-      }
-      controller.close();
-    },
-  });
+  return streamResponse(model, inputMessage);
 };
