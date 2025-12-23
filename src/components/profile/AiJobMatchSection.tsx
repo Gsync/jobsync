@@ -44,6 +44,7 @@ export const AiJobMatchSection = ({
 }: AiSectionProps) => {
   const [aIContent, setAIContent] = useState<JobMatchResponse | any>("");
   const [loading, setLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [selectedResumeId, setSelectedResumeId] = useState<string>();
   const [runningModelName, setRunningModelName] = useState<string>("");
   const [runningModelError, setRunningModelError] = useState<string>("");
@@ -115,7 +116,7 @@ export const AiJobMatchSection = ({
       const decoder = new TextDecoder();
       let done = false;
       setLoading(false);
-
+      setIsStreaming(true);
       while (!done && !abortController.signal.aborted) {
         const { value, done: doneReading } = await reader.read();
 
@@ -125,10 +126,12 @@ export const AiJobMatchSection = ({
         setAIContent((prev: any) => prev + parsedChunk);
       }
       reader.releaseLock();
+      setIsStreaming(false);
     } catch (error) {
       const message = "Error fetching job matching response";
       const description = error instanceof Error ? error.message : message;
       setLoading(false);
+      setIsStreaming(false);
       toast({
         variant: "destructive",
         title: "Error!",
@@ -140,7 +143,10 @@ export const AiJobMatchSection = ({
   const abortStream = async () => {
     abortControllerRef.current?.abort();
     console.log("aborting stream");
-    await readerRef?.current?.cancel();
+    setIsStreaming(false);
+    if (readerRef.current && !readerRef?.current.closed) {
+      await readerRef?.current.cancel();
+    }
   };
 
   const checkModelStatus = useCallback(async () => {
@@ -163,6 +169,7 @@ export const AiJobMatchSection = ({
       // Check model status when sheet opens for Ollama
       await checkModelStatus();
     } else if (openState === false) {
+      abortStream();
       // Clear status when closing
       setRunningModelName("");
       setRunningModelError("");
@@ -251,7 +258,7 @@ export const AiJobMatchSection = ({
             </div>
           )}
           <div className="mt-2">
-            {loading ? (
+            {loading || (isStreaming && aIContent.length <= 1) ? (
               <div className="flex items-center flex-col">
                 <Loading />
                 <div>Loading...</div>

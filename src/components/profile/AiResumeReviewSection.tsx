@@ -205,7 +205,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
                 </span>
               </Button>
             </div>
-            {loading ? (
+            {loading || (isStreaming && aIContent.length <= 1) ? (
               <div className="flex items-center flex-col">
                 <Loading />
                 <div>Loading...</div>
