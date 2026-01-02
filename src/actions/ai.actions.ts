@@ -77,37 +77,25 @@ async function streamResponse(
 
 // --- Main Functions ---
 
-export const getResumeReviewByOllama = async (
+export const getResumeReview = async (
   resume: Resume,
+  modelType: ModelType,
   aiModel?: string
 ): Promise<ReadableStream | undefined> => {
   const resumeText = await convertResumeToText(resume);
   const inputMessage = await resumeReviewPrompt.format({ resume: resumeText });
   const model = createModel({
-    modelType: "ollama",
+    modelType,
     modelName: aiModel,
-    format: "json",
+    ...(modelType === "ollama" ? { format: "json" } : { maxTokens: 3000 }),
   });
   return streamResponse(model, inputMessage);
 };
 
-export const getResumeReviewByOpenAi = async (
-  resume: Resume,
-  aiModel?: string
-): Promise<ReadableStream | undefined> => {
-  const resumeText = await convertResumeToText(resume);
-  const inputMessage = await resumeReviewPrompt.format({ resume: resumeText });
-  const model = createModel({
-    modelType: "openai",
-    modelName: aiModel,
-    maxTokens: 3000,
-  });
-  return streamResponse(model, inputMessage);
-};
-
-export const getJobMatchByOllama = async (
+export const getJobMatch = async (
   resume: Resume,
   job: JobResponse,
+  modelType: ModelType,
   aiModel?: string
 ): Promise<ReadableStream | undefined> => {
   const resumeText = await convertResumeToText(resume);
@@ -117,29 +105,11 @@ export const getJobMatchByOllama = async (
     job_description: jobText,
   });
   const model = createModel({
-    modelType: "ollama",
+    modelType,
     modelName: aiModel,
-    format: "json",
-    numCtx: 3000,
-  });
-  return streamResponse(model, inputMessage);
-};
-
-export const getJobMatchByOpenAi = async (
-  resume: Resume,
-  job: JobResponse,
-  aiModel?: string
-): Promise<ReadableStream | undefined> => {
-  const resumeText = await convertResumeToText(resume);
-  const jobText = await convertJobToText(job);
-  const inputMessage = await jobMatchPrompt.format({
-    resume: resumeText || "No resume provided",
-    job_description: jobText,
-  });
-  const model = createModel({
-    modelType: "openai",
-    modelName: aiModel,
-    maxTokens: 3000,
+    ...(modelType === "ollama"
+      ? { format: "json", numCtx: 3000 }
+      : { maxTokens: 3000 }),
   });
   return streamResponse(model, inputMessage);
 };

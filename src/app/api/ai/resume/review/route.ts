@@ -1,10 +1,7 @@
 import "server-only";
 
 import { auth } from "@/auth";
-import {
-  getResumeReviewByOllama,
-  getResumeReviewByOpenAi,
-} from "@/actions/ai.actions";
+import { getResumeReview } from "@/actions/ai.actions";
 import { NextRequest, NextResponse } from "next/server";
 import { Resume } from "@/models/profile.model";
 import { AiModel, AiProvider } from "@/models/ai.model";
@@ -25,15 +22,13 @@ export const POST = async (req: NextRequest) => {
       throw new Error("Resume or selected model is required");
     }
 
-    let response;
-    switch (selectedModel.provider) {
-      case AiProvider.OPENAI:
-        response = await getResumeReviewByOpenAi(resume, selectedModel.model);
-        break;
-      default:
-        response = await getResumeReviewByOllama(resume, selectedModel.model);
-        break;
-    }
+    const modelType =
+      selectedModel.provider === AiProvider.OPENAI ? "openai" : "ollama";
+    const response = await getResumeReview(
+      resume,
+      modelType,
+      selectedModel.model
+    );
 
     return new NextResponse(response, {
       headers: {

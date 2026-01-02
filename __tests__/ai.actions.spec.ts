@@ -19,12 +19,7 @@ jest.mock("@/lib/ai.prompts", () => ({
   },
 }));
 
-import {
-  getResumeReviewByOllama,
-  getResumeReviewByOpenAi,
-  getJobMatchByOllama,
-  getJobMatchByOpenAi,
-} from "@/actions/ai.actions";
+import { getResumeReview, getJobMatch } from "@/actions/ai.actions";
 import { Resume, SectionType } from "@/models/profile.model";
 import { JobResponse } from "@/models/job.model";
 import { ChatOpenAI } from "@langchain/openai";
@@ -138,276 +133,290 @@ describe("AI Actions", () => {
     delete process.env.OLLAMA_BASE_URL;
   });
 
-  describe("getResumeReviewByOllama", () => {
-    it("should create ChatOllama model with correct configuration", async () => {
-      const mockStream = createMockAsyncIterator([
-        '{"summary": "Good resume"',
-        ', "score": 85}',
-      ]);
+  describe("getResumeReview", () => {
+    describe("with ollama model", () => {
+      it("should create ChatOllama model with correct configuration", async () => {
+        const mockStream = createMockAsyncIterator([
+          '{"summary": "Good resume"',
+          ', "score": 85}',
+        ]);
 
-      MockedChatOllama.mockImplementation(() => ({
-        stream: jest.fn().mockResolvedValue(mockStream),
-      }));
+        MockedChatOllama.mockImplementation(() => ({
+          stream: jest.fn().mockResolvedValue(mockStream),
+        }));
 
-      await getResumeReviewByOllama(mockResume, "llama3.1");
+        await getResumeReview(mockResume, "ollama", "llama3.1");
 
-      expect(ChatOllama).toHaveBeenCalledWith({
-        baseUrl: "http://localhost:11434",
-        model: "llama3.1",
-        temperature: 0,
-        format: "json",
-        maxConcurrency: 1,
-        numCtx: undefined,
+        expect(ChatOllama).toHaveBeenCalledWith({
+          baseUrl: "http://localhost:11434",
+          model: "llama3.1",
+          temperature: 0,
+          format: "json",
+          maxConcurrency: 1,
+          numCtx: undefined,
+        });
+      });
+
+      it("should use default baseUrl when OLLAMA_BASE_URL is not set", async () => {
+        delete process.env.OLLAMA_BASE_URL;
+
+        const mockStream = createMockAsyncIterator(['{"summary": "test"}']);
+
+        MockedChatOllama.mockImplementation(() => ({
+          stream: jest.fn().mockResolvedValue(mockStream),
+        }));
+
+        await getResumeReview(mockResume, "ollama", "llama3.1");
+
+        expect(ChatOllama).toHaveBeenCalledWith(
+          expect.objectContaining({
+            baseUrl: "http://127.0.0.1:11434",
+          })
+        );
+      });
+
+      it("should return a ReadableStream with encoded chunks", async () => {
+        const mockChunkStrings = [
+          '{"summary":',
+          ' "Good resume",',
+          ' "score": 85}',
+        ];
+        const mockChunks = mockChunkStrings.map((content) => ({ content }));
+        const mockStream = createMockAsyncIterator(mockChunks);
+
+        MockedChatOllama.mockImplementation(() => ({
+          stream: jest.fn().mockResolvedValue(mockStream),
+        }));
+
+        const result = await getResumeReview(mockResume, "ollama", "llama3.1");
+
+        expect(result).toBeInstanceOf(ReadableStream);
+
+        // Verify streaming functionality
+        const reader = result!.getReader();
+        const decoder = new TextDecoder();
+        let fullText = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          fullText += decoder.decode(value);
+        }
+
+        expect(fullText).toBe(mockChunkStrings.join(""));
+      });
+
+      it("should convert resume to text before processing", async () => {
+        const mockStream = createMockAsyncIterator(['{"summary": "test"}']);
+
+        MockedChatOllama.mockImplementation(() => ({
+          stream: jest.fn().mockResolvedValue(mockStream),
+        }));
+
+        await getResumeReview(mockResume, "ollama", "llama3.1");
+
+        expect(convertResumeToText).toHaveBeenCalledWith(mockResume);
       });
     });
 
-    it("should use default baseUrl when OLLAMA_BASE_URL is not set", async () => {
-      delete process.env.OLLAMA_BASE_URL;
+    describe("with openai model", () => {
+      it("should create ChatOpenAI model with correct configuration", async () => {
+        const mockStream = createMockAsyncIterator(['{"summary": "test"}']);
 
-      const mockStream = createMockAsyncIterator(['{"summary": "test"}']);
+        MockedChatOpenAI.mockImplementation(() => ({
+          stream: jest.fn().mockResolvedValue(mockStream),
+        }));
 
-      MockedChatOllama.mockImplementation(() => ({
-        stream: jest.fn().mockResolvedValue(mockStream),
-      }));
+        await getResumeReview(mockResume, "openai", "gpt-4");
 
-      await getResumeReviewByOllama(mockResume, "llama3.1");
+        expect(ChatOpenAI).toHaveBeenCalledWith({
+          model: "gpt-4",
+          openAIApiKey: "test-openai-key",
+          temperature: 0,
+          maxConcurrency: 1,
+          maxTokens: 3000,
+        });
+      });
 
-      expect(ChatOllama).toHaveBeenCalledWith(
-        expect.objectContaining({
-          baseUrl: "http://127.0.0.1:11434",
-        })
-      );
-    });
+      it("should return a ReadableStream with encoded chunks", async () => {
+        const mockChunkStrings = ['{"summary":', ' "Excellent resume"}'];
+        const mockChunks = mockChunkStrings.map((content) => ({ content }));
+        const mockStream = createMockAsyncIterator(mockChunks);
 
-    it("should return a ReadableStream with encoded chunks", async () => {
-      const mockChunkStrings = [
-        '{"summary":',
-        ' "Good resume",',
-        ' "score": 85}',
-      ];
-      const mockChunks = mockChunkStrings.map((content) => ({ content }));
-      const mockStream = createMockAsyncIterator(mockChunks);
+        MockedChatOpenAI.mockImplementation(() => ({
+          stream: jest.fn().mockResolvedValue(mockStream),
+        }));
 
-      MockedChatOllama.mockImplementation(() => ({
-        stream: jest.fn().mockResolvedValue(mockStream),
-      }));
+        const result = await getResumeReview(mockResume, "openai", "gpt-4");
 
-      const result = await getResumeReviewByOllama(mockResume, "llama3.1");
+        expect(result).toBeInstanceOf(ReadableStream);
 
-      expect(result).toBeInstanceOf(ReadableStream);
+        const reader = result!.getReader();
+        const decoder = new TextDecoder();
+        let fullText = "";
 
-      // Verify streaming functionality
-      const reader = result!.getReader();
-      const decoder = new TextDecoder();
-      let fullText = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          fullText += decoder.decode(value);
+        }
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        fullText += decoder.decode(value);
-      }
-
-      expect(fullText).toBe(mockChunkStrings.join(""));
-    });
-
-    it("should convert resume to text before processing", async () => {
-      const mockStream = createMockAsyncIterator(['{"summary": "test"}']);
-
-      MockedChatOllama.mockImplementation(() => ({
-        stream: jest.fn().mockResolvedValue(mockStream),
-      }));
-
-      await getResumeReviewByOllama(mockResume, "llama3.1");
-
-      expect(convertResumeToText).toHaveBeenCalledWith(mockResume);
+        expect(fullText).toBe(mockChunkStrings.join(""));
+      });
     });
   });
 
-  describe("getResumeReviewByOpenAi", () => {
-    it("should create ChatOpenAI model with correct configuration", async () => {
-      const mockStream = createMockAsyncIterator(['{"summary": "test"}']);
+  describe("getJobMatch", () => {
+    describe("with ollama model", () => {
+      it("should create ChatOllama model with correct configuration", async () => {
+        const mockStream = createMockAsyncIterator(['{"matching_score": 75}']);
 
-      MockedChatOpenAI.mockImplementation(() => ({
-        stream: jest.fn().mockResolvedValue(mockStream),
-      }));
+        MockedChatOllama.mockImplementation(() => ({
+          stream: jest.fn().mockResolvedValue(mockStream),
+        }));
 
-      await getResumeReviewByOpenAi(mockResume, "gpt-4");
+        await getJobMatch(mockResume, mockJob, "ollama", "llama3.1");
 
-      expect(ChatOpenAI).toHaveBeenCalledWith({
-        model: "gpt-4",
-        openAIApiKey: "test-openai-key",
-        temperature: 0,
-        maxConcurrency: 1,
-        maxTokens: 3000,
+        expect(ChatOllama).toHaveBeenCalledWith({
+          baseUrl: "http://localhost:11434",
+          model: "llama3.1",
+          temperature: 0,
+          format: "json",
+          maxConcurrency: 1,
+          numCtx: 3000,
+        });
+      });
+
+      it("should convert both resume and job to text", async () => {
+        const mockStream = createMockAsyncIterator(['{"matching_score": 80}']);
+
+        MockedChatOllama.mockImplementation(() => ({
+          stream: jest.fn().mockResolvedValue(mockStream),
+        }));
+
+        await getJobMatch(mockResume, mockJob, "ollama", "llama3.1");
+
+        expect(convertResumeToText).toHaveBeenCalledWith(mockResume);
+        expect(convertJobToText).toHaveBeenCalledWith(mockJob);
+      });
+
+      it("should return a ReadableStream with job match results", async () => {
+        const mockChunkStrings = [
+          '{"matching_score":',
+          " 85,",
+          ' "suggestions": []}',
+        ];
+        const mockChunks = mockChunkStrings.map((content) => ({ content }));
+        const mockStream = createMockAsyncIterator(mockChunks);
+
+        MockedChatOllama.mockImplementation(() => ({
+          stream: jest.fn().mockResolvedValue(mockStream),
+        }));
+
+        const result = await getJobMatch(
+          mockResume,
+          mockJob,
+          "ollama",
+          "llama3.1"
+        );
+
+        expect(result).toBeInstanceOf(ReadableStream);
+
+        const reader = result!.getReader();
+        const decoder = new TextDecoder();
+        let fullText = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          fullText += decoder.decode(value);
+        }
+
+        expect(fullText).toBe(mockChunkStrings.join(""));
       });
     });
 
-    it("should return a ReadableStream with encoded chunks", async () => {
-      const mockChunkStrings = ['{"summary":', ' "Excellent resume"}'];
-      const mockChunks = mockChunkStrings.map((content) => ({ content }));
-      const mockStream = createMockAsyncIterator(mockChunks);
+    describe("with openai model", () => {
+      it("should create ChatOpenAI model with correct configuration", async () => {
+        const mockStream = createMockAsyncIterator(['{"matching_score": 90}']);
 
-      MockedChatOpenAI.mockImplementation(() => ({
-        stream: jest.fn().mockResolvedValue(mockStream),
-      }));
+        MockedChatOpenAI.mockImplementation(() => ({
+          stream: jest.fn().mockResolvedValue(mockStream),
+        }));
 
-      const result = await getResumeReviewByOpenAi(mockResume, "gpt-4");
+        await getJobMatch(mockResume, mockJob, "openai", "gpt-4");
 
-      expect(result).toBeInstanceOf(ReadableStream);
-
-      const reader = result!.getReader();
-      const decoder = new TextDecoder();
-      let fullText = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        fullText += decoder.decode(value);
-      }
-
-      expect(fullText).toBe(mockChunkStrings.join(""));
-    });
-  });
-
-  describe("getJobMatchByOllama", () => {
-    it("should create ChatOllama model with correct configuration", async () => {
-      const mockStream = createMockAsyncIterator(['{"matching_score": 75}']);
-
-      MockedChatOllama.mockImplementation(() => ({
-        stream: jest.fn().mockResolvedValue(mockStream),
-      }));
-
-      await getJobMatchByOllama(mockResume, mockJob, "llama3.1");
-
-      expect(ChatOllama).toHaveBeenCalledWith({
-        baseUrl: "http://localhost:11434",
-        model: "llama3.1",
-        temperature: 0,
-        format: "json",
-        maxConcurrency: 1,
-        numCtx: 3000,
+        expect(ChatOpenAI).toHaveBeenCalledWith({
+          model: "gpt-4",
+          openAIApiKey: "test-openai-key",
+          temperature: 0,
+          maxConcurrency: 1,
+          maxTokens: 3000,
+        });
       });
-    });
 
-    it("should convert both resume and job to text", async () => {
-      const mockStream = createMockAsyncIterator(['{"matching_score": 80}']);
+      it("should convert both resume and job to text", async () => {
+        const mockStream = createMockAsyncIterator(['{"matching_score": 88}']);
 
-      MockedChatOllama.mockImplementation(() => ({
-        stream: jest.fn().mockResolvedValue(mockStream),
-      }));
+        MockedChatOpenAI.mockImplementation(() => ({
+          stream: jest.fn().mockResolvedValue(mockStream),
+        }));
 
-      await getJobMatchByOllama(mockResume, mockJob, "llama3.1");
+        await getJobMatch(mockResume, mockJob, "openai", "gpt-4");
 
-      expect(convertResumeToText).toHaveBeenCalledWith(mockResume);
-      expect(convertJobToText).toHaveBeenCalledWith(mockJob);
-    });
-
-    it("should return a ReadableStream with job match results", async () => {
-      const mockChunkStrings = [
-        '{"matching_score":',
-        " 85,",
-        ' "suggestions": []}',
-      ];
-      const mockChunks = mockChunkStrings.map((content) => ({ content }));
-      const mockStream = createMockAsyncIterator(mockChunks);
-
-      MockedChatOllama.mockImplementation(() => ({
-        stream: jest.fn().mockResolvedValue(mockStream),
-      }));
-
-      const result = await getJobMatchByOllama(mockResume, mockJob, "llama3.1");
-
-      expect(result).toBeInstanceOf(ReadableStream);
-
-      const reader = result!.getReader();
-      const decoder = new TextDecoder();
-      let fullText = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        fullText += decoder.decode(value);
-      }
-
-      expect(fullText).toBe(mockChunkStrings.join(""));
-    });
-  });
-
-  describe("getJobMatchByOpenAi", () => {
-    it("should create ChatOpenAI model with correct configuration", async () => {
-      const mockStream = createMockAsyncIterator(['{"matching_score": 90}']);
-
-      MockedChatOpenAI.mockImplementation(() => ({
-        stream: jest.fn().mockResolvedValue(mockStream),
-      }));
-
-      await getJobMatchByOpenAi(mockResume, mockJob, "gpt-4");
-
-      expect(ChatOpenAI).toHaveBeenCalledWith({
-        model: "gpt-4",
-        openAIApiKey: "test-openai-key",
-        temperature: 0,
-        maxConcurrency: 1,
-        maxTokens: 3000,
+        expect(convertResumeToText).toHaveBeenCalledWith(mockResume);
+        expect(convertJobToText).toHaveBeenCalledWith(mockJob);
       });
-    });
 
-    it("should convert both resume and job to text", async () => {
-      const mockStream = createMockAsyncIterator(['{"matching_score": 88}']);
+      it("should format prompt with resume and job description", async () => {
+        const mockStream = createMockAsyncIterator(['{"matching_score": 92}']);
 
-      MockedChatOpenAI.mockImplementation(() => ({
-        stream: jest.fn().mockResolvedValue(mockStream),
-      }));
+        MockedChatOpenAI.mockImplementation(() => ({
+          stream: jest.fn().mockResolvedValue(mockStream),
+        }));
 
-      await getJobMatchByOpenAi(mockResume, mockJob, "gpt-4");
+        await getJobMatch(mockResume, mockJob, "openai", "gpt-4");
 
-      expect(convertResumeToText).toHaveBeenCalledWith(mockResume);
-      expect(convertJobToText).toHaveBeenCalledWith(mockJob);
-    });
-
-    it("should format prompt with resume and job description", async () => {
-      const mockStream = createMockAsyncIterator(['{"matching_score": 92}']);
-
-      MockedChatOpenAI.mockImplementation(() => ({
-        stream: jest.fn().mockResolvedValue(mockStream),
-      }));
-
-      await getJobMatchByOpenAi(mockResume, mockJob, "gpt-4");
-
-      expect(MockedJobMatchPrompt.format).toHaveBeenCalledWith({
-        resume: mockResumeText,
-        job_description: mockJobText,
+        expect(MockedJobMatchPrompt.format).toHaveBeenCalledWith({
+          resume: mockResumeText,
+          job_description: mockJobText,
+        });
       });
-    });
 
-    it("should return a ReadableStream with job match results", async () => {
-      const mockChunkStrings = [
-        '{"matching_score": 95,',
-        ' "detailed_analysis": [],',
-        ' "suggestions": []}',
-      ];
-      const mockChunks = mockChunkStrings.map((content) => ({ content }));
-      const mockStream = createMockAsyncIterator(mockChunks);
+      it("should return a ReadableStream with job match results", async () => {
+        const mockChunkStrings = [
+          '{"matching_score": 95,',
+          ' "detailed_analysis": [],',
+          ' "suggestions": []}',
+        ];
+        const mockChunks = mockChunkStrings.map((content) => ({ content }));
+        const mockStream = createMockAsyncIterator(mockChunks);
 
-      MockedChatOpenAI.mockImplementation(() => ({
-        stream: jest.fn().mockResolvedValue(mockStream),
-      }));
+        MockedChatOpenAI.mockImplementation(() => ({
+          stream: jest.fn().mockResolvedValue(mockStream),
+        }));
 
-      const result = await getJobMatchByOpenAi(mockResume, mockJob, "gpt-4");
+        const result = await getJobMatch(
+          mockResume,
+          mockJob,
+          "openai",
+          "gpt-4"
+        );
 
-      expect(result).toBeInstanceOf(ReadableStream);
+        expect(result).toBeInstanceOf(ReadableStream);
 
-      const reader = result!.getReader();
-      const decoder = new TextDecoder();
-      let fullText = "";
+        const reader = result!.getReader();
+        const decoder = new TextDecoder();
+        let fullText = "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        fullText += decoder.decode(value);
-      }
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          fullText += decoder.decode(value);
+        }
 
-      expect(fullText).toBe(mockChunkStrings.join(""));
+        expect(fullText).toBe(mockChunkStrings.join(""));
+      });
     });
   });
 
@@ -422,11 +431,11 @@ describe("AI Actions", () => {
         stream: jest.fn().mockResolvedValue(mockStream),
       }));
 
-      // Test all four functions
-      await getResumeReviewByOllama(mockResume, "llama3.1");
-      await getResumeReviewByOpenAi(mockResume, "gpt-4");
-      await getJobMatchByOllama(mockResume, mockJob, "llama3.1");
-      await getJobMatchByOpenAi(mockResume, mockJob, "gpt-4");
+      // Test all functions
+      await getResumeReview(mockResume, "ollama", "llama3.1");
+      await getResumeReview(mockResume, "openai", "gpt-4");
+      await getJobMatch(mockResume, mockJob, "ollama", "llama3.1");
+      await getJobMatch(mockResume, mockJob, "openai", "gpt-4");
 
       // Resume review should be called 2 times (Ollama and OpenAI)
       expect(MockedResumeReviewPrompt.format).toHaveBeenCalledTimes(2);

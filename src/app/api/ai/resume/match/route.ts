@@ -3,7 +3,7 @@ import "server-only";
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { Resume } from "@/models/profile.model";
-import { getJobMatchByOllama, getJobMatchByOpenAi } from "@/actions/ai.actions";
+import { getJobMatch } from "@/actions/ai.actions";
 import { getResumeById } from "@/actions/profile.actions";
 import { getJobDetails } from "@/actions/job.actions";
 import { AiModel, AiProvider } from "@/models/ai.model";
@@ -30,15 +30,14 @@ export const POST = async (req: NextRequest) => {
       [getResumeById(resumeId), getJobDetails(jobId)]
     );
 
-    let response;
-    switch (selectedModel.provider) {
-      case AiProvider.OPENAI:
-        response = await getJobMatchByOpenAi(resume, job, selectedModel.model);
-        break;
-      default:
-        response = await getJobMatchByOllama(resume, job, selectedModel.model);
-        break;
-    }
+    const modelType =
+      selectedModel.provider === AiProvider.OPENAI ? "openai" : "ollama";
+    const response = await getJobMatch(
+      resume,
+      job,
+      modelType,
+      selectedModel.model
+    );
 
     return new NextResponse(response, {
       headers: {
