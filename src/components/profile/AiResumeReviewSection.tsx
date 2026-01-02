@@ -1,17 +1,18 @@
 "use client";
+
+import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { Info, Sparkles, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
-  SheetOverlay,
   SheetPortal,
   SheetTitle,
   SheetTrigger,
 } from "../ui/sheet";
 import Loading from "../Loading";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "../ui/use-toast";
 import { Resume } from "@/models/profile.model";
 import { AiModel, defaultModel, ResumeReviewResponse } from "@/models/ai.model";
@@ -24,90 +25,81 @@ import {
   TooltipTrigger,
 } from "../ui/tooltip";
 import { checkIfModelIsRunning } from "@/utils/ai.utils";
+import { ResumeReviewSchema } from "@/lib/ai/schemas";
+import { useCollaborativeAnalysis } from "@/hooks/useCollaborativeAnalysis";
+import { MultiAgentProgress } from "./MultiAgentProgress";
 
 interface AiSectionProps {
   resume: Resume;
 }
 
 const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
-  const [aIContent, setAIContent] = useState<ResumeReviewResponse | any>("");
   const [aISectionOpen, setAiSectionOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(false);
   const [runningModelName, setRunningModelName] = useState<string>("");
   const [runningModelError, setRunningModelError] = useState<string>("");
+  const [useCollaboration, setUseCollaboration] = useState<boolean>(false);
+
   const selectedModel: AiModel = getFromLocalStorage(
     "aiSettings",
     defaultModel
   );
-  const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(
-    null
-  );
 
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  const getResumeReview = async () => {
-    try {
-      if (!resume || resume.ResumeSections?.length === 0) {
-        throw new Error("Resume content is required");
-      }
-
-      setLoading(true);
-      setAIContent("");
-      const abortController = new AbortController();
-      abortControllerRef.current = abortController;
-      const response = await fetch("/api/ai/resume/review", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selectedModel, resume }),
-        signal: abortController.signal,
-      });
-
-      if (!response.body) {
-        setLoading(false);
-        throw new Error("No response body");
-      }
-
-      if (!response.ok) {
-        setLoading(false);
-        throw new Error(response.statusText);
-      }
-
-      const reader = response.body.getReader();
-      readerRef.current = reader;
-      const decoder = new TextDecoder();
-      let done = false;
-      setLoading(false);
-      setIsStreaming(true);
-      while (!done && !abortController.signal.aborted) {
-        const { value, done: doneReading } = await reader.read();
-
-        done = doneReading;
-        const chunk = decoder.decode(value, { stream: !done });
-        const parsedChunk = JSON.parse(JSON.stringify(chunk));
-        setAIContent((prev: any) => prev + parsedChunk);
-      }
-      reader.releaseLock();
-      setIsStreaming(false);
-    } catch (error) {
-      const message = "Error fetching resume review";
-      const description = error instanceof Error ? error.message : message;
-      setLoading(false);
-      setIsStreaming(false);
+  // Standard single-agent mode
+  const {
+    object,
+    submit,
+    isLoading: singleAgentLoading,
+    stop,
+  } = useObject({
+    api: "/api/ai/resume/review",
+    schema: ResumeReviewSchema,
+    onError: (err) => {
       toast({
         variant: "destructive",
         title: "Error!",
-        description,
+        description: err.message || "Failed to get AI review",
       });
+    },
+  });
+
+  // Multi-agent collaborative mode
+  const {
+    isLoading: multiAgentLoading,
+    result: collaborativeResult,
+    error: collaborativeError,
+    start: startCollaborative,
+    stop: stopCollaborative,
+  } = useCollaborativeAnalysis<ResumeReviewResponse>("resume-review");
+
+  const isLoading = useCollaboration ? multiAgentLoading : singleAgentLoading;
+  const displayObject = useCollaboration ? collaborativeResult : object;
+
+  const getResumeReview = () => {
+    if (!resume || resume.ResumeSections?.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description: "Resume content is required",
+      });
+      return;
+    }
+
+    if (useCollaboration) {
+      startCollaborative({ selectedModel, resume });
+    } else {
+      submit({ selectedModel, resume });
     }
   };
 
   const triggerSheetChange = async (openState: boolean) => {
     setAiSectionOpen(openState);
-    if (openState === false) {
-      abortStream();
+    if (!openState && isLoading) {
+      if (useCollaboration) {
+        stopCollaborative();
+      } else {
+        stop();
+      }
     } else if (openState && selectedModel.provider === "ollama") {
-      // Check model status when sheet opens for Ollama
       await checkModelStatus();
     }
   };
@@ -126,13 +118,10 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
     }
   };
 
-  const abortStream = async () => {
-    abortControllerRef.current?.abort();
-    setIsStreaming(false);
-    if (readerRef.current && !readerRef?.current.closed) {
-      await readerRef?.current.cancel();
-    }
-  };
+  // Check if we have any content to show
+  const hasContent =
+    displayObject &&
+    (displayObject.score !== undefined || displayObject.summary);
 
   return (
     <Sheet open={aISectionOpen} onOpenChange={triggerSheetChange}>
@@ -143,7 +132,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
             variant="outline"
             className="h-8 gap-1 cursor-pointer"
             onClick={() => triggerSheetChange(true)}
-            disabled={loading || resume.ResumeSections?.length! < 2}
+            disabled={isLoading || resume.ResumeSections?.length! < 2}
           >
             <Sparkles className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
@@ -152,70 +141,132 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
           </Button>
         </SheetTrigger>
       </div>
-      {
-        <SheetPortal>
-          <SheetContent className="overflow-y-scroll">
-            <SheetHeader>
-              <SheetTitle className="flex flex-row items-center">
-                AI Review ({selectedModel.provider})
+      <SheetPortal>
+        <SheetContent className="overflow-y-scroll">
+          <SheetHeader>
+            <SheetTitle className="flex flex-row items-center">
+              AI Review ({selectedModel.provider})
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 text-muted-foreground mx-1" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{`Provider: ${selectedModel.provider}`}</p>
+                    <p>{`Model: ${selectedModel.model}`}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </SheetTitle>
+          </SheetHeader>
+
+          {selectedModel.provider === "ollama" && (
+            <>
+              {runningModelName && (
+                <div className="flex items-center gap-1 text-green-600 text-sm mt-4">
+                  <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{runningModelName} is running</span>
+                </div>
+              )}
+              {runningModelError && (
+                <div className="flex items-center gap-1 text-red-600 text-sm mt-4">
+                  <XCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{runningModelError}</span>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Multi-Agent Mode Toggle */}
+          <div className="mt-4 p-3 border rounded-lg bg-muted/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="collaboration-mode-review"
+                  className="text-sm font-medium"
+                >
+                  Multi-Agent Collaboration
+                </label>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 text-muted-foreground mx-1" />
+                      <Info className="h-4 w-4 text-muted-foreground" />
                     </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{`Provider: ${selectedModel.provider}`}</p>
-                      <p>{`Model: ${selectedModel.model}`}</p>
+                    <TooltipContent className="max-w-xs">
+                      <p className="font-semibold mb-1">
+                        Phase 3: Multi-Agent System
+                      </p>
+                      <p className="text-xs mb-2">
+                        Uses 5 specialized AI agents working together:
+                      </p>
+                      <ul className="text-xs space-y-1">
+                        <li>• Data Analyzer (extracts metrics)</li>
+                        <li>• Keyword Expert (ATS optimization)</li>
+                        <li>• Scoring Specialist (fair scoring)</li>
+                        <li>• Feedback Expert (actionable advice)</li>
+                        <li>• Synthesis Coordinator (combines insights)</li>
+                      </ul>
+                      <p className="text-xs mt-2 text-yellow-500">
+                        ⚠️ Slower but significantly more accurate
+                      </p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-              </SheetTitle>
-            </SheetHeader>
-            {selectedModel.provider === "ollama" && (
-              <>
-                {runningModelName && (
-                  <div className="flex items-center gap-1 text-green-600 text-sm mt-4">
-                    <CheckCircle className="h-4 w-4 flex-shrink-0" />
-                    <span>{runningModelName} is running</span>
-                  </div>
-                )}
-                {runningModelError && (
-                  <div className="flex items-center gap-1 text-red-600 text-sm mt-4">
-                    <XCircle className="h-4 w-4 flex-shrink-0" />
-                    <span>{runningModelError}</span>
-                  </div>
-                )}
-              </>
-            )}
-            <div className="mt-4">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 gap-1 cursor-pointer"
-                onClick={getResumeReview}
-                disabled={
-                  loading ||
-                  isStreaming ||
-                  (selectedModel.provider === "ollama" && !runningModelName)
-                }
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Generate AI Review
-                </span>
-              </Button>
-            </div>
-            {loading || (isStreaming && aIContent.length <= 1) ? (
-              <div className="flex items-center flex-col">
-                <Loading />
-                <div>Loading...</div>
               </div>
-            ) : (
-              <AiResumeReviewResponseContent content={aIContent} />
+              <input
+                id="collaboration-mode-review"
+                type="checkbox"
+                checked={useCollaboration}
+                onChange={(e) => setUseCollaboration(e.target.checked)}
+                disabled={isLoading}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+            </div>
+            {useCollaboration && (
+              <p className="text-xs text-muted-foreground mt-2">
+                🤖 Multiple AI agents will review your resume together
+              </p>
             )}
-          </SheetContent>
-        </SheetPortal>
-      }
+          </div>
+
+          {/* Multi-Agent Progress Indicator */}
+          <MultiAgentProgress isActive={useCollaboration && isLoading} />
+
+          <div className="mt-4">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1 cursor-pointer"
+              onClick={getResumeReview}
+              disabled={
+                isLoading ||
+                (selectedModel.provider === "ollama" && !runningModelName)
+              }
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                Generate AI Review
+              </span>
+            </Button>
+          </div>
+
+          {isLoading && !hasContent ? (
+            <div className="flex items-center flex-col mt-4">
+              <Loading />
+              <div className="mt-2">
+                {useCollaboration
+                  ? "Agents collaborating..."
+                  : "Analyzing resume..."}
+              </div>
+            </div>
+          ) : (
+            <AiResumeReviewResponseContent
+              content={displayObject}
+              isStreaming={isLoading}
+            />
+          )}
+        </SheetContent>
+      </SheetPortal>
     </Sheet>
   );
 };

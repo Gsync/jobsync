@@ -1,4 +1,6 @@
 "use client";
+
+import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { getResumeList } from "@/actions/profile.actions";
 import {
   Sheet,
@@ -19,7 +21,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import Loading from "../Loading";
-import { AiModel, defaultModel, JobMatchResponse } from "@/models/ai.model";
+import { AiModel, defaultModel } from "@/models/ai.model";
 import { AiJobMatchResponseContent } from "./AiJobMatchResponseContent";
 import { getFromLocalStorage } from "@/utils/localstorage.utils";
 import {
@@ -30,6 +32,10 @@ import {
 } from "../ui/tooltip";
 import { Info, CheckCircle, XCircle } from "lucide-react";
 import { checkIfModelIsRunning } from "@/utils/ai.utils";
+import { JobMatchSchema } from "@/lib/ai/schemas";
+import { useCollaborativeAnalysis } from "@/hooks/useCollaborativeAnalysis";
+import { MultiAgentProgress } from "./MultiAgentProgress";
+import { JobMatchResponse } from "@/models/ai.model";
 
 interface AiSectionProps {
   aISectionOpen: boolean;
@@ -42,96 +48,60 @@ export const AiJobMatchSection = ({
   triggerChange,
   jobId,
 }: AiSectionProps) => {
-  const [aIContent, setAIContent] = useState<JobMatchResponse | any>("");
-  const [loading, setLoading] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(false);
   const [selectedResumeId, setSelectedResumeId] = useState<string>();
   const [runningModelName, setRunningModelName] = useState<string>("");
   const [runningModelError, setRunningModelError] = useState<string>("");
+  const [useCollaboration, setUseCollaboration] = useState<boolean>(false);
+
   const selectedModel: AiModel = getFromLocalStorage(
     "aiSettings",
     defaultModel
   );
-
   const resumesRef = useRef<Resume[]>([]);
+
+  // Standard single-agent mode
+  const {
+    object,
+    submit,
+    isLoading: singleAgentLoading,
+    stop,
+  } = useObject({
+    api: "/api/ai/resume/match",
+    schema: JobMatchSchema,
+    onError: (err) => {
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description: err.message || "Failed to get job match analysis",
+      });
+    },
+  });
+
+  // Multi-agent collaborative mode
+  const {
+    isLoading: multiAgentLoading,
+    result: collaborativeResult,
+    error: collaborativeError,
+    start: startCollaborative,
+    stop: stopCollaborative,
+  } = useCollaborativeAnalysis<JobMatchResponse>("job-match");
+
+  const isLoading = useCollaboration ? multiAgentLoading : singleAgentLoading;
+  const displayObject = useCollaboration ? collaborativeResult : object;
+
   const getResumes = async () => {
     try {
-      const { data, total, success, message } = await getResumeList();
-      if (!data || data.ResumeSections?.length === 0) {
-        throw new Error("Resume content is required");
+      const { data, success, message } = await getResumeList();
+      if (!data || data.length === 0) {
+        return;
       }
       resumesRef.current = data;
       if (!success) {
-        setLoading(false);
         throw new Error(message);
       }
     } catch (error) {
       const message = "Error fetching resume list";
       const description = error instanceof Error ? error.message : message;
-      setLoading(false);
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description,
-      });
-    }
-  };
-  const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(
-    null
-  );
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  const getJobMatch = async (resumeId: string, jobId: string) => {
-    try {
-      setLoading(true);
-      // if (
-      //   abortControllerRef.current
-      //   //   && (await readerRef?.current?.closed) === false
-      // ) {
-      //   await abortStream();
-      // }
-      setAIContent("");
-      const abortController = new AbortController();
-      abortControllerRef.current = abortController;
-
-      const response = await fetch("/api/ai/resume/match", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeId, jobId, selectedModel }),
-        signal: abortController.signal,
-      });
-
-      if (!response.body) {
-        setLoading(false);
-        throw new Error("No response body");
-      }
-
-      if (!response.ok) {
-        setLoading(false);
-        throw new Error(response.statusText);
-      }
-
-      const reader = response.body.getReader();
-      readerRef.current = reader;
-      const decoder = new TextDecoder();
-      let done = false;
-      setLoading(false);
-      setIsStreaming(true);
-      while (!done && !abortController.signal.aborted) {
-        const { value, done: doneReading } = await reader.read();
-
-        done = doneReading;
-        const chunk = decoder.decode(value, { stream: !done });
-        const parsedChunk = JSON.parse(JSON.stringify(chunk));
-        setAIContent((prev: any) => prev + parsedChunk);
-      }
-      reader.releaseLock();
-      setIsStreaming(false);
-    } catch (error) {
-      const message = "Error fetching job matching response";
-      const description = error instanceof Error ? error.message : message;
-      setLoading(false);
-      setIsStreaming(false);
       toast({
         variant: "destructive",
         title: "Error!",
@@ -140,12 +110,11 @@ export const AiJobMatchSection = ({
     }
   };
 
-  const abortStream = async () => {
-    abortControllerRef.current?.abort();
-    console.log("aborting stream");
-    setIsStreaming(false);
-    if (readerRef.current && !readerRef?.current.closed) {
-      await readerRef?.current.cancel();
+  const getJobMatch = (resumeId: string, jobId: string) => {
+    if (useCollaboration) {
+      startCollaborative({ resumeId, jobId, selectedModel });
+    } else {
+      submit({ resumeId, jobId, selectedModel });
     }
   };
 
@@ -165,20 +134,25 @@ export const AiJobMatchSection = ({
 
   const onOpenChange = async (openState: boolean) => {
     triggerChange(openState);
+    if (!openState && isLoading) {
+      if (useCollaboration) {
+        stopCollaborative();
+      } else {
+        stop();
+      }
+    }
     if (openState && selectedModel.provider === "ollama") {
-      // Check model status when sheet opens for Ollama
       await checkModelStatus();
-    } else if (openState === false) {
-      abortStream();
-      // Clear status when closing
+    } else if (!openState) {
       setRunningModelName("");
       setRunningModelError("");
+      setSelectedResumeId(undefined);
     }
   };
 
-  const onSelectResume = async (resumeId: string) => {
+  const onSelectResume = (resumeId: string) => {
     setSelectedResumeId(resumeId);
-    await getJobMatch(resumeId, jobId);
+    getJobMatch(resumeId, jobId);
   };
 
   useEffect(() => {
@@ -186,11 +160,16 @@ export const AiJobMatchSection = ({
   }, []);
 
   useEffect(() => {
-    // Check model status when sheet is open (handles initial mount)
     if (aISectionOpen && selectedModel.provider === "ollama") {
       checkModelStatus();
     }
   }, [aISectionOpen, selectedModel.provider, checkModelStatus]);
+
+  // Check if we have any content to show
+  const hasContent =
+    displayObject &&
+    (displayObject.matching_score !== undefined ||
+      displayObject.detailed_analysis);
 
   return (
     <Sheet open={aISectionOpen} onOpenChange={onOpenChange}>
@@ -212,6 +191,7 @@ export const AiJobMatchSection = ({
               </TooltipProvider>
             </SheetTitle>
           </SheetHeader>
+
           {selectedModel.provider === "ollama" && (
             <>
               {runningModelName && (
@@ -228,13 +208,69 @@ export const AiJobMatchSection = ({
               )}
             </>
           )}
+
+          {/* Multi-Agent Mode Toggle */}
+          <div className="mt-4 p-3 border rounded-lg bg-muted/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="collaboration-mode"
+                  className="text-sm font-medium"
+                >
+                  Multi-Agent Collaboration
+                </label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="font-semibold mb-1">
+                        Phase 3: Multi-Agent System
+                      </p>
+                      <p className="text-xs mb-2">
+                        Uses 5 specialized AI agents working together:
+                      </p>
+                      <ul className="text-xs space-y-1">
+                        <li>• Data Analyzer (extracts metrics)</li>
+                        <li>• Keyword Expert (ATS optimization)</li>
+                        <li>• Scoring Specialist (fair scoring)</li>
+                        <li>• Feedback Expert (actionable advice)</li>
+                        <li>• Synthesis Coordinator (combines insights)</li>
+                      </ul>
+                      <p className="text-xs mt-2 text-yellow-500">
+                        ⚠️ Slower but significantly more accurate
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <input
+                id="collaboration-mode"
+                type="checkbox"
+                checked={useCollaboration}
+                onChange={(e) => setUseCollaboration(e.target.checked)}
+                disabled={isLoading}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+            </div>
+            {useCollaboration && (
+              <p className="text-xs text-muted-foreground mt-2">
+                🤖 Multiple AI agents will analyze this job match together
+              </p>
+            )}
+          </div>
+
+          {/* Multi-Agent Progress Indicator */}
+          <MultiAgentProgress isActive={useCollaboration && isLoading} />
+
           {!selectedResumeId && (
             <div className="mt-4">
               <Select
                 value={selectedResumeId}
                 onValueChange={onSelectResume}
                 disabled={
-                  loading ||
+                  isLoading ||
                   (selectedModel.provider === "ollama" && !runningModelName)
                 }
               >
@@ -257,19 +293,27 @@ export const AiJobMatchSection = ({
               </Select>
             </div>
           )}
+
           <div className="mt-2">
-            {loading || (isStreaming && aIContent.length <= 1) ? (
-              <div className="flex items-center flex-col">
+            {isLoading && !hasContent ? (
+              <div className="flex items-center flex-col mt-4">
                 <Loading />
-                <div>Loading...</div>
+                <div className="mt-2">
+                  {useCollaboration
+                    ? "Agents collaborating..."
+                    : "Analyzing job match..."}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {useCollaboration
+                    ? "Multiple agents are analyzing qualifications"
+                    : "Agent is comparing qualifications"}
+                </div>
               </div>
             ) : (
-              <>
-                <AiJobMatchResponseContent content={aIContent} />
-                {/* <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-                  <code className="text-white">{aIContent}</code>
-                </pre> */}
-              </>
+              <AiJobMatchResponseContent
+                content={displayObject}
+                isStreaming={isLoading}
+              />
             )}
           </div>
         </SheetContent>

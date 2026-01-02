@@ -1,51 +1,61 @@
 import { RadialChartComponent } from "../RadialChart";
-import { RadialChartSekeleton } from "../RadialChartSekeleton";
 import { SheetDescription } from "../ui/sheet";
-import { parse } from "best-effort-json-parser";
+import { ResumeReviewResponse } from "@/models/ai.model";
+import type { DeepPartial } from "ai";
 
-const Section = ({ title, items }: { title: string; items: string[] }) => (
-  <div className="pt-2">
-    <h2 className="font-semibold">{title}:</h2>
-    <SheetDescription>
-      {items.map((item, index) => (
-        <li key={index}>{item}</li>
-      ))}
-    </SheetDescription>
-  </div>
-);
+const Section = ({
+  title,
+  items,
+}: {
+  title: string;
+  items?: (string | undefined)[];
+}) => {
+  if (!items || items.length === 0) return null;
+  return (
+    <div className="pt-2">
+      <h2 className="font-semibold">{title}:</h2>
+      <SheetDescription>
+        {items.map((item, index) => item && <li key={index}>{item}</li>)}
+      </SheetDescription>
+    </div>
+  );
+};
 
 export const AiResumeReviewResponseContent = ({
   content,
+  isStreaming,
 }: {
-  content: string;
+  content: DeepPartial<ResumeReviewResponse> | null | undefined;
+  isStreaming?: boolean;
 }) => {
-  if (content.length <= 1) return null;
+  if (!content) return null;
 
-  const parsedContent = parse(content);
-  const { summary, strengths, weaknesses, suggestions, score } = parsedContent;
+  const { summary, strengths, weaknesses, suggestions, score } = content;
+
   return (
     <>
-      <div className="pt-2 flex justify-center">
-        {score ? (
-          <RadialChartComponent score={score ?? "-"} />
-        ) : (
-          <RadialChartSekeleton />
-        )}
-      </div>
-      <div className="mt-[-50px]">
+      {score !== undefined && (
+        <div className="pt-2 flex justify-center">
+          <RadialChartComponent score={score} />
+        </div>
+      )}
+      <div className={score !== undefined ? "mt-[-50px]" : ""}>
         {summary && (
           <div className="pt-2">
             <h2 className="font-semibold">Summary:</h2>
             <SheetDescription>{summary}</SheetDescription>
           </div>
         )}
-        {strengths && <Section title="Strengths" items={strengths} />}
-        {weaknesses && <Section title="Weaknesses" items={weaknesses} />}
-        {suggestions && <Section title="Suggestions" items={suggestions} />}
+        <Section title="Strengths" items={strengths} />
+        <Section title="Weaknesses" items={weaknesses} />
+        <Section title="Suggestions" items={suggestions} />
       </div>
-      {/* <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-        <code className="text-white">{parse(content)}</code>
-      </pre> */}
+      {isStreaming && (
+        <div className="flex items-center gap-2 text-muted-foreground text-sm mt-4 animate-pulse">
+          <div className="h-2 w-2 bg-primary rounded-full"></div>
+          <span>Streaming response...</span>
+        </div>
+      )}
     </>
   );
 };

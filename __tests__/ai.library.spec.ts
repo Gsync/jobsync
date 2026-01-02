@@ -1,13 +1,14 @@
 /**
  * AI Library Tests - Multi-Agent System
- * Tests for the new mathematical scoring and multi-agent collaboration system
+ * Tests for analysis tools, mathematical scoring, and validation functions
+ *
+ * Note: This tests the AI library functions used by the API routes, not server actions.
+ * The AI functionality is implemented in API routes:
+ * - /api/ai/resume/review (single-agent)
+ * - /api/ai/resume/review-collaborative (multi-agent)
+ * - /api/ai/resume/match (single-agent job matching)
+ * - /api/ai/resume/match-collaborative (multi-agent job matching)
  */
-
-// Mock AI utility functions
-jest.mock("@/utils/ai.utils", () => ({
-  convertResumeToText: jest.fn(),
-  convertJobToText: jest.fn(),
-}));
 
 import {
   countQuantifiedAchievements,
@@ -20,8 +21,6 @@ import {
   calculateJobMatchScore,
   validateScore,
 } from "@/lib/ai";
-import { Resume, SectionType } from "@/models/profile.model";
-import { convertResumeToText, convertJobToText } from "@/utils/ai.utils";
 
 describe("AI Library - Analysis Tools", () => {
   describe("countQuantifiedAchievements", () => {
