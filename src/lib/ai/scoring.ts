@@ -205,6 +205,37 @@ export function validateScore(
 }
 
 /**
+ * Calculate context-aware allowed variance based on baseline score
+ * Mid-range scores get more variance since subjective factors matter more
+ * Extreme scores get tighter variance since they're more objectively determined
+ */
+export function calculateAllowedVariance(
+  baselineScore: number,
+  analysisType: "resume" | "job-match"
+): number {
+  // Mid-range scores (40-60) allow more variance for subjective interpretation
+  if (baselineScore >= 40 && baselineScore <= 60) {
+    return analysisType === "resume" ? 12 : 15;
+  }
+
+  // Slightly above/below average (30-40, 60-70)
+  if (
+    (baselineScore >= 30 && baselineScore < 40) ||
+    (baselineScore > 60 && baselineScore <= 70)
+  ) {
+    return 10;
+  }
+
+  // Extreme scores are more objectively determined, tighter variance
+  if (baselineScore < 30 || baselineScore > 80) {
+    return 7;
+  }
+
+  // Default variance
+  return 10;
+}
+
+/**
  * Scoring guidelines for AI agents
  */
 export const SCORING_GUIDELINES = {

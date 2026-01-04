@@ -19,51 +19,73 @@ export interface ProgressUpdate {
   timestamp: number;
   agentNumber?: number;
   totalAgents?: number;
+  /** Start time of this step (for timeout tracking on client) */
+  startTime?: number;
+  /** Estimated duration in milliseconds for this step */
+  estimatedDurationMs?: number;
 }
+
+// Estimated durations for each agent step (in milliseconds)
+const ESTIMATED_DURATIONS: Record<AgentStep, number> = {
+  "data-analyzer": 8000, // 8 seconds (runs in parallel with keyword-expert)
+  "keyword-expert": 8000, // 8 seconds (runs in parallel with data-analyzer)
+  "scoring-specialist": 10000, // 10 seconds
+  "feedback-expert": 8000, // 8 seconds
+  "synthesis-coordinator": 12000, // 12 seconds
+  validation: 2000, // 2 seconds
+  complete: 0,
+};
 
 export const AGENT_STEPS: Record<
   AgentStep,
-  { name: string; description: string; emoji: string }
+  { name: string; description: string; emoji: string; estimatedDurationMs: number }
 > = {
   "data-analyzer": {
     name: "Data Analyzer",
     description: "Extracting objective metrics and counting achievements",
     emoji: "📊",
+    estimatedDurationMs: ESTIMATED_DURATIONS["data-analyzer"],
   },
   "keyword-expert": {
     name: "Keyword Expert",
     description: "Analyzing ATS optimization and keyword strategy",
     emoji: "🔑",
+    estimatedDurationMs: ESTIMATED_DURATIONS["keyword-expert"],
   },
   "scoring-specialist": {
     name: "Scoring Specialist",
     description: "Calculating fair, calibrated scores",
     emoji: "📈",
+    estimatedDurationMs: ESTIMATED_DURATIONS["scoring-specialist"],
   },
   "feedback-expert": {
     name: "Feedback Expert",
     description: "Creating actionable recommendations",
     emoji: "💡",
+    estimatedDurationMs: ESTIMATED_DURATIONS["feedback-expert"],
   },
   "synthesis-coordinator": {
     name: "Synthesis Coordinator",
     description: "Combining insights from all agents",
     emoji: "🔄",
+    estimatedDurationMs: ESTIMATED_DURATIONS["synthesis-coordinator"],
   },
   validation: {
     name: "Quality Assurance",
     description: "Validating output consistency",
     emoji: "✅",
+    estimatedDurationMs: ESTIMATED_DURATIONS["validation"],
   },
   complete: {
     name: "Complete",
     description: "Analysis ready",
     emoji: "🎉",
+    estimatedDurationMs: ESTIMATED_DURATIONS["complete"],
   },
 };
 
 /**
- * Creates a progress update message
+ * Creates a progress update message with timing information
  */
 export function createProgressUpdate(
   step: AgentStep,
@@ -72,6 +94,7 @@ export function createProgressUpdate(
   totalAgents: number = 5
 ): ProgressUpdate {
   const stepInfo = AGENT_STEPS[step];
+  const now = Date.now();
   const message =
     status === "started"
       ? `${stepInfo.emoji} ${stepInfo.name}: ${stepInfo.description}...`
@@ -81,9 +104,14 @@ export function createProgressUpdate(
     step,
     status,
     message,
-    timestamp: Date.now(),
+    timestamp: now,
     agentNumber,
     totalAgents,
+    // Include start time for timeout tracking on the client
+    startTime: status === "started" ? now : undefined,
+    // Include estimated duration so client can show progress/warning
+    estimatedDurationMs:
+      status === "started" ? stepInfo.estimatedDurationMs : undefined,
   };
 }
 

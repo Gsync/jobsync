@@ -33,80 +33,345 @@ export function countQuantifiedAchievements(text: string): {
   return { count: matches.size, examples };
 }
 
+// ============================================================================
+// DOMAIN-SPECIFIC KEYWORD SETS
+// ============================================================================
+
+const TECH_KEYWORDS = [
+  // Programming languages
+  "javascript",
+  "typescript",
+  "python",
+  "java",
+  "c#",
+  "c++",
+  "ruby",
+  "go",
+  "golang",
+  "rust",
+  "php",
+  "swift",
+  "kotlin",
+  "scala",
+  "r",
+  "matlab",
+  "perl",
+  "bash",
+  "shell",
+  "powershell",
+  // Frontend
+  "react",
+  "angular",
+  "vue",
+  "svelte",
+  "next.js",
+  "nextjs",
+  "nuxt",
+  "gatsby",
+  "webpack",
+  "vite",
+  "tailwind",
+  "css",
+  "sass",
+  "less",
+  "html",
+  "redux",
+  "mobx",
+  "zustand",
+  // Backend
+  "node",
+  "nodejs",
+  "express",
+  "fastify",
+  "nestjs",
+  "django",
+  "flask",
+  "fastapi",
+  "spring",
+  "spring boot",
+  "rails",
+  "ruby on rails",
+  ".net",
+  "asp.net",
+  "laravel",
+  // Cloud/DevOps
+  "aws",
+  "amazon web services",
+  "azure",
+  "gcp",
+  "google cloud",
+  "docker",
+  "kubernetes",
+  "k8s",
+  "ci/cd",
+  "jenkins",
+  "github actions",
+  "gitlab ci",
+  "terraform",
+  "ansible",
+  "puppet",
+  "chef",
+  "cloudformation",
+  "helm",
+  "argocd",
+  // Databases
+  "sql",
+  "postgresql",
+  "postgres",
+  "mysql",
+  "mariadb",
+  "mongodb",
+  "redis",
+  "dynamodb",
+  "cassandra",
+  "elasticsearch",
+  "neo4j",
+  "sqlite",
+  "oracle",
+  "mssql",
+  // Data/ML
+  "machine learning",
+  "deep learning",
+  "neural network",
+  "tensorflow",
+  "pytorch",
+  "keras",
+  "scikit-learn",
+  "pandas",
+  "numpy",
+  "jupyter",
+  "spark",
+  "hadoop",
+  "airflow",
+  "dbt",
+  "snowflake",
+  "databricks",
+  "mlops",
+  // API/Architecture
+  "api",
+  "rest",
+  "restful",
+  "graphql",
+  "grpc",
+  "microservices",
+  "serverless",
+  "lambda",
+  "event-driven",
+  "message queue",
+  "rabbitmq",
+  "kafka",
+  "sqs",
+  // Testing
+  "unit testing",
+  "integration testing",
+  "e2e",
+  "jest",
+  "mocha",
+  "cypress",
+  "playwright",
+  "selenium",
+  "pytest",
+  // Methodologies
+  "agile",
+  "scrum",
+  "kanban",
+  "tdd",
+  "bdd",
+  "devops",
+  "sre",
+  "gitops",
+];
+
+const HEALTHCARE_KEYWORDS = [
+  "hipaa",
+  "hl7",
+  "fhir",
+  "epic",
+  "cerner",
+  "emr",
+  "ehr",
+  "clinical",
+  "patient care",
+  "healthcare",
+  "medical",
+  "pharmacy",
+  "telemedicine",
+  "icd-10",
+  "cms",
+  "medicare",
+  "medicaid",
+  "hitech",
+  "meaningful use",
+  "clinical trials",
+  "fda",
+  "phi",
+  "healthcare analytics",
+];
+
+const FINANCE_KEYWORDS = [
+  "sox",
+  "sarbanes-oxley",
+  "kyc",
+  "aml",
+  "anti-money laundering",
+  "basel",
+  "sec",
+  "finra",
+  "pci",
+  "pci-dss",
+  "financial services",
+  "banking",
+  "trading",
+  "risk management",
+  "portfolio",
+  "investment",
+  "fintech",
+  "blockchain",
+  "cryptocurrency",
+  "quantitative",
+  "algorithmic trading",
+  "hedge fund",
+  "private equity",
+  "wealth management",
+];
+
+const SOFT_SKILLS = [
+  "leadership",
+  "communication",
+  "collaboration",
+  "teamwork",
+  "problem-solving",
+  "analytical",
+  "strategic",
+  "mentoring",
+  "coaching",
+  "stakeholder management",
+  "project management",
+  "cross-functional",
+  "presentation",
+  "negotiation",
+  "conflict resolution",
+  "time management",
+  "prioritization",
+  "decision making",
+];
+
+const ALL_KEYWORDS = [
+  ...TECH_KEYWORDS,
+  ...HEALTHCARE_KEYWORDS,
+  ...FINANCE_KEYWORDS,
+  ...SOFT_SKILLS,
+];
+
 /**
- * Extract technical keywords and skills
+ * Extract technical keywords and skills from text
+ * Uses comprehensive keyword lists across multiple domains
  */
 export function extractKeywords(text: string): {
   keywords: string[];
   count: number;
 } {
-  // Common tech keywords, frameworks, methodologies
-  const techTerms = [
-    // Programming languages
-    "javascript",
-    "typescript",
-    "python",
-    "java",
-    "c#",
-    "ruby",
-    "go",
-    "rust",
-    "php",
-    "swift",
-    "kotlin",
-    // Frameworks
-    "react",
-    "angular",
-    "vue",
-    "node",
-    "express",
-    "django",
-    "flask",
-    "spring",
-    "rails",
-    ".net",
-    "next.js",
-    // Cloud/DevOps
-    "aws",
-    "azure",
-    "gcp",
-    "docker",
-    "kubernetes",
-    "ci/cd",
-    "jenkins",
-    "terraform",
-    // Databases
-    "sql",
-    "postgresql",
-    "mysql",
-    "mongodb",
-    "redis",
-    "dynamodb",
-    // Methodologies
-    "agile",
-    "scrum",
-    "kanban",
-    "tdd",
-    "ci/cd",
-    // Other
-    "api",
-    "rest",
-    "graphql",
-    "microservices",
-    "machine learning",
-    "ai",
-    "data analysis",
-  ];
-
   const lowerText = text.toLowerCase();
-  const foundKeywords = techTerms.filter((term) =>
+
+  // Find matching keywords from our comprehensive lists
+  const foundKeywords = ALL_KEYWORDS.filter((term) =>
     lowerText.includes(term.toLowerCase())
   );
 
+  // Remove duplicates (e.g., "node" and "nodejs" both match)
+  const uniqueKeywords = [...new Set(foundKeywords)];
+
   return {
-    keywords: foundKeywords,
-    count: foundKeywords.length,
+    keywords: uniqueKeywords,
+    count: uniqueKeywords.length,
   };
+}
+
+/**
+ * Extract keywords dynamically from text (for job descriptions)
+ * This extracts potential skill terms that aren't in our predefined lists
+ */
+export function extractDynamicKeywords(text: string): {
+  keywords: string[];
+  technicalTerms: string[];
+  tools: string[];
+} {
+  // Extract potential technical terms using patterns
+  const technicalPatterns = [
+    // Capitalized words that might be tools/technologies (e.g., "Docker", "Kubernetes")
+    /\b[A-Z][a-z]+(?:\.[A-Z][a-z]+)?\b/g,
+    // Terms with version numbers (e.g., "Python 3.x", "React 18")
+    /\b[A-Za-z]+\s*\d+(?:\.\d+)*\b/g,
+    // Acronyms (e.g., "AWS", "GCP", "CI/CD")
+    /\b[A-Z]{2,5}\b/g,
+  ];
+
+  const extractedTerms = new Set<string>();
+  technicalPatterns.forEach((pattern) => {
+    const matches = text.match(pattern);
+    if (matches) {
+      matches.forEach((m) => {
+        const term = m.trim().toLowerCase();
+        // Filter out common words that aren't tech terms
+        if (
+          term.length >= 2 &&
+          !["the", "and", "for", "with", "from", "this", "that", "will", "are"].includes(term)
+        ) {
+          extractedTerms.add(m.trim());
+        }
+      });
+    }
+  });
+
+  // Separate into categories
+  const keywords: string[] = [];
+  const technicalTerms: string[] = [];
+  const tools: string[] = [];
+
+  extractedTerms.forEach((term) => {
+    const lower = term.toLowerCase();
+    if (ALL_KEYWORDS.includes(lower)) {
+      keywords.push(lower);
+    } else if (/^[A-Z]{2,5}$/.test(term)) {
+      // Acronyms are likely tools/platforms
+      tools.push(term);
+    } else {
+      technicalTerms.push(term);
+    }
+  });
+
+  return {
+    keywords: [...new Set(keywords)],
+    technicalTerms: [...new Set(technicalTerms)],
+    tools: [...new Set(tools)],
+  };
+}
+
+/**
+ * Get domain-specific keywords based on detected industry
+ */
+export function getDomainKeywords(text: string): {
+  domain: string | null;
+  keywords: string[];
+} {
+  const lowerText = text.toLowerCase();
+
+  // Detect domain based on keyword frequency
+  const healthcareScore = HEALTHCARE_KEYWORDS.filter((k) =>
+    lowerText.includes(k)
+  ).length;
+  const financeScore = FINANCE_KEYWORDS.filter((k) =>
+    lowerText.includes(k)
+  ).length;
+
+  if (healthcareScore >= 2) {
+    return { domain: "healthcare", keywords: HEALTHCARE_KEYWORDS };
+  }
+  if (financeScore >= 2) {
+    return { domain: "finance", keywords: FINANCE_KEYWORDS };
+  }
+
+  return { domain: null, keywords: TECH_KEYWORDS };
 }
 
 /**

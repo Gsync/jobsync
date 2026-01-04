@@ -54,9 +54,19 @@ export const AiJobMatchResponseContent = ({
         </div>
       )}
       <div className={matching_score !== undefined ? "mt-[-50px]" : ""}>
-        <AnalysisSection title="Detailed Analysis:" items={detailed_analysis} />
+        <AnalysisSection
+          title="Detailed Analysis:"
+          items={detailed_analysis?.filter(
+            (item): item is DeepPartial<JobMatchAnalysis> => Boolean(item)
+          )}
+        />
       </div>
-      <AnalysisSection title="Suggestions:" items={suggestions} />
+      <AnalysisSection
+        title="Suggestions:"
+        items={suggestions?.filter(
+          (item): item is DeepPartial<JobMatchAnalysis> => Boolean(item)
+        )}
+      />
       {additional_comments && additional_comments.length > 0 && (
         <div className="pt-2">
           <h2 className="font-semibold mb-2">Additional Comments:</h2>

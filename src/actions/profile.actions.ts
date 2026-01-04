@@ -79,7 +79,7 @@ export const getResumeById = async (
       throw new Error("Not authenticated");
     }
 
-    const resume = prisma.resume.findUnique({
+    const resume = await prisma.resume.findUnique({
       where: {
         id: resumeId,
       },
@@ -105,7 +105,7 @@ export const getResumeById = async (
         },
       },
     });
-    return resume;
+    return { data: resume, success: true };
   } catch (error) {
     const msg = "Failed to get resume.";
     return handleError(error, msg);

@@ -3,10 +3,17 @@
  * Phase 3: Multiple specialized agents collaborate for superior analysis
  *
  * Architecture:
- * User Request → Coordinator → [Analyzer, Keyword Expert, Scoring Expert] → Synthesizer → Final Output
+ * User Request → Coordinator → [Analyzer || Keyword Expert, Scoring Expert] → Synthesizer → Final Output
+ *
+ * Improvements:
+ * - Parallel execution of independent agents
+ * - Retry mechanism with exponential backoff
+ * - Structured agent outputs for reliable scoring
+ * - Strong typing throughout
  */
 
 import { generateObject, generateText } from "ai";
+import { z } from "zod";
 import { getModel, ProviderType } from "./providers";
 import { ResumeReviewSchema, JobMatchSchema } from "./schemas";
 import {
@@ -22,8 +29,125 @@ import {
   calculateResumeScore,
   calculateJobMatchScore,
   validateScore,
+  calculateAllowedVariance,
   SCORING_GUIDELINES,
 } from "./scoring";
+import { ResumeReviewResponse, JobMatchResponse } from "@/models/ai.model";
+
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+export interface AgentInsights {
+  data: string;
+  keywords: string;
+  scoring: ScoringResult;
+  feedback: string;
+}
+
+export interface ScoringResult {
+  finalScore: number;
+  adjustments: Array<{
+    criterion: string;
+    adjustment: number;
+    reason: string;
+  }>;
+  math: string;
+}
+
+export interface CollaborativeResult<T> {
+  analysis: T;
+  agentInsights: AgentInsights;
+  baselineScore: { score: number; breakdown: Record<string, number> };
+  warnings?: string[];
+}
+
+export interface ToolDataResume {
+  quantified: { count: number; examples: string[] };
+  keywords: { keywords: string[]; count: number };
+  verbs: { count: number; verbs: string[] };
+  formatting: {
+    hasBulletPoints: boolean;
+    hasConsistentSpacing: boolean;
+    averageLineLength: number;
+    sectionCount: number;
+  };
+}
+
+export interface ToolDataJobMatch {
+  keywordOverlap: {
+    overlapPercentage: number;
+    matchedKeywords: string[];
+    missingKeywords: string[];
+    totalJobKeywords: number;
+  };
+  resumeKeywords: { keywords: string[]; count: number };
+  jobKeywords: { keywords: string[]; count: number };
+  requiredSkills: {
+    requiredSkills: string[];
+    preferredSkills: string[];
+    totalSkills: number;
+  };
+}
+
+// Schema for structured scoring output
+const ScoringResultSchema = z.object({
+  finalScore: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe("The final calculated score after all adjustments"),
+  adjustments: z
+    .array(
+      z.object({
+        criterion: z.string().describe("The criterion being adjusted"),
+        adjustment: z
+          .number()
+          .describe("Points added (+) or subtracted (-) from baseline"),
+        reason: z.string().describe("Brief explanation for this adjustment"),
+      })
+    )
+    .describe("List of all adjustments made to the baseline score"),
+  math: z
+    .string()
+    .describe(
+      "Show your math: 'Baseline X + adjustment1 + adjustment2 - adjustment3 = Final Y'"
+    ),
+});
+
+// ============================================================================
+// RETRY MECHANISM
+// ============================================================================
+
+async function runWithRetry<T>(
+  operation: () => Promise<T>,
+  operationName: string,
+  maxRetries: number = 2
+): Promise<T> {
+  let lastError: Error = new Error("Unknown error");
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.warn(
+        `${operationName} attempt ${attempt + 1} failed:`,
+        lastError.message
+      );
+
+      if (attempt < maxRetries) {
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = 1000 * Math.pow(2, attempt);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw new Error(
+    `${operationName} failed after ${maxRetries + 1} attempts: ${lastError.message}`
+  );
+}
 
 /**
  * Helper: Extract years of experience from resume
@@ -195,18 +319,18 @@ Create the final structured output that represents the collective wisdom of the 
 
 /**
  * Multi-Agent Resume Review Collaboration
+ * Optimized with parallel execution and structured scoring
  */
 export async function collaborativeResumeReview(
   resumeText: string,
   provider: ProviderType,
   modelName: string,
   progressStream?: ProgressStream
-) {
+): Promise<CollaborativeResult<ResumeReviewResponse>> {
   const model = getModel(provider, modelName);
 
-  // STEP 1: Data Analyzer extracts objective metrics
-  progressStream?.sendStarted("data-analyzer", 1);
-  const toolData = {
+  // Extract tool data (synchronous, fast)
+  const toolData: ToolDataResume = {
     quantified: countQuantifiedAchievements(resumeText),
     keywords: extractKeywords(resumeText),
     verbs: countActionVerbs(resumeText),
@@ -222,56 +346,83 @@ export async function collaborativeResumeReview(
     sectionCount: toolData.formatting.sectionCount,
   });
 
-  const { text: dataAnalysis } = await generateText({
-    model,
-    system: DATA_ANALYZER_PROMPT,
-    prompt: `Extract all objective data from this resume:
+  // Calculate context-aware variance
+  const allowedVariance = calculateAllowedVariance(baselineScore.score, "resume");
+  const minScore = Math.max(0, baselineScore.score - allowedVariance);
+  const maxScore = Math.min(100, baselineScore.score + allowedVariance);
+
+  // =========================================================================
+  // PARALLEL EXECUTION: Data Analyzer and Keyword Expert run simultaneously
+  // =========================================================================
+  progressStream?.sendStarted("data-analyzer", 1);
+  progressStream?.sendStarted("keyword-expert", 2);
+
+  const [dataAnalysis, keywordAnalysis] = await Promise.all([
+    // Agent 1: Data Analyzer
+    runWithRetry(
+      async () => {
+        const { text } = await generateText({
+          model,
+          system: DATA_ANALYZER_PROMPT,
+          prompt: `Extract all objective data from this resume:
 
 ${resumeText}
 
 Tool-extracted data to incorporate:
-- Quantified achievements: ${toolData.quantified.count} found
-- Keywords: ${toolData.keywords.count} technical terms
-- Action verbs: ${toolData.verbs.count} strong verbs
-- Formatting: ${toolData.formatting.sectionCount} sections, ${
-      toolData.formatting.hasBulletPoints ? "has" : "no"
-    } bullets
+- Quantified achievements: ${toolData.quantified.count} found (Examples: ${toolData.quantified.examples.slice(0, 3).join(", ") || "none"})
+- Keywords: ${toolData.keywords.count} technical terms (${toolData.keywords.keywords.slice(0, 10).join(", ")})
+- Action verbs: ${toolData.verbs.count} strong verbs (${toolData.verbs.verbs.slice(0, 10).join(", ")})
+- Formatting: ${toolData.formatting.sectionCount} sections, ${toolData.formatting.hasBulletPoints ? "has" : "no"} bullets
 
 Provide a complete data extraction report.`,
-    temperature: 0.1,
-  });
-  progressStream?.sendCompleted("data-analyzer", 1);
+          temperature: 0.1,
+        });
+        return text;
+      },
+      "Data Analyzer"
+    ),
 
-  // STEP 2: Keyword Expert analyzes ATS optimization
-  progressStream?.sendStarted("keyword-expert", 2);
-  const { text: keywordAnalysis } = await generateText({
-    model,
-    system: KEYWORD_EXPERT_PROMPT,
-    prompt: `Analyze keyword optimization for this resume:
+    // Agent 2: Keyword Expert (runs in parallel - doesn't need Agent 1's output)
+    runWithRetry(
+      async () => {
+        const { text } = await generateText({
+          model,
+          system: KEYWORD_EXPERT_PROMPT,
+          prompt: `Analyze keyword optimization for this resume:
 
 RESUME:
 ${resumeText}
 
-DATA ANALYZER'S FINDINGS:
-${dataAnalysis}
-
-KEYWORDS FOUND: ${toolData.keywords.keywords.join(", ")}
+KEYWORDS FOUND (${toolData.keywords.count} total): ${toolData.keywords.keywords.join(", ")}
 
 Provide expert analysis on:
 1. Keyword strength (0-20 points recommendation)
 2. ATS-friendliness assessment
 3. Missing industry-critical keywords
 4. Keyword placement optimization`,
-    temperature: 0.2,
-  });
+          temperature: 0.2,
+        });
+        return text;
+      },
+      "Keyword Expert"
+    ),
+  ]);
+
+  progressStream?.sendCompleted("data-analyzer", 1);
   progressStream?.sendCompleted("keyword-expert", 2);
 
-  // STEP 3: Scoring Specialist calculates fair scores
+  // =========================================================================
+  // SEQUENTIAL: Scoring Specialist (needs both previous outputs)
+  // Now uses structured output for reliable score extraction
+  // =========================================================================
   progressStream?.sendStarted("scoring-specialist", 3);
-  const { text: scoringAnalysis } = await generateText({
-    model,
-    system: SCORING_SPECIALIST_PROMPT,
-    prompt: `Calculate a fair, realistic score for this resume:
+  const scoringResult = await runWithRetry(
+    async () => {
+      const { object } = await generateObject({
+        model,
+        schema: ScoringResultSchema,
+        system: SCORING_SPECIALIST_PROMPT,
+        prompt: `Calculate a fair, realistic score for this resume:
 
 DATA FINDINGS:
 ${dataAnalysis}
@@ -282,44 +433,45 @@ ${keywordAnalysis}
 CALCULATED BASELINE SCORE: ${baselineScore.score}/100
 
 BASELINE BREAKDOWN (mathematically calculated):
-- Keywords: ${baselineScore.breakdown.keywords}/20
-- Quantified Achievements: ${baselineScore.breakdown.achievements}/25
-- Action Verbs: ${baselineScore.breakdown.verbs}/10
-- Formatting: ${baselineScore.breakdown.formatting}/15
-- Professional Summary: ${
-      baselineScore.breakdown.summary
-    }/10 (default, adjust as needed)
-- Experience Clarity: ${
-      baselineScore.breakdown.experienceClarity
-    }/10 (default, adjust as needed)
-- Skills Section: ${
-      baselineScore.breakdown.skillsSection
-    }/5 (default, adjust as needed)
-- Grammar: ${baselineScore.breakdown.grammar}/5 (default, adjust as needed)
+- Keywords: ${baselineScore.breakdown.keywords}/20 (FIXED)
+- Quantified Achievements: ${baselineScore.breakdown.achievements}/25 (FIXED)
+- Action Verbs: ${baselineScore.breakdown.verbs}/10 (FIXED)
+- Formatting: ${baselineScore.breakdown.formatting}/15 (FIXED)
+- Professional Summary: ${baselineScore.breakdown.summary}/10 (adjustable)
+- Experience Clarity: ${baselineScore.breakdown.experienceClarity}/10 (adjustable)
+- Skills Section: ${baselineScore.breakdown.skillsSection}/5 (adjustable)
+- Grammar: ${baselineScore.breakdown.grammar}/5 (adjustable)
 
 YOUR TASK:
 1. Review the baseline score of ${baselineScore.score}/100
 2. The first 4 criteria are FIXED (based on objective counts)
 3. You can ONLY adjust criteria 5-8 based on resume content quality
-4. Your final score MUST be within 10 points of ${baselineScore.score}
-5. Show your math: ${baselineScore.score} + adjustments = final score
+4. Your final score MUST be within ${allowedVariance} points of ${baselineScore.score}
 
-STRICT REQUIREMENT: Your final score must be between ${Math.max(
-      0,
-      baselineScore.score - 10
-    )} and ${Math.min(100, baselineScore.score + 10)}.
+STRICT REQUIREMENT: Your finalScore must be between ${minScore} and ${maxScore}.
 
-Show your math for each criterion and calculate the total (0-100).`,
-    temperature: 0.1,
-  });
+Return a structured result with:
+- finalScore: your calculated score (must be ${minScore}-${maxScore})
+- adjustments: array of {criterion, adjustment, reason} for each change
+- math: show "Baseline ${baselineScore.score} + adj1 + adj2 - adj3 = Final X"`,
+        temperature: 0.1,
+      });
+      return object;
+    },
+    "Scoring Specialist"
+  );
   progressStream?.sendCompleted("scoring-specialist", 3);
 
-  // STEP 4: Feedback Specialist creates actionable suggestions
+  // =========================================================================
+  // SEQUENTIAL: Feedback Specialist (needs scoring result)
+  // =========================================================================
   progressStream?.sendStarted("feedback-expert", 4);
-  const { text: feedbackAnalysis } = await generateText({
-    model,
-    system: FEEDBACK_SPECIALIST_PROMPT,
-    prompt: `Create actionable feedback based on the team's analysis:
+  const feedbackAnalysis = await runWithRetry(
+    async () => {
+      const { text } = await generateText({
+        model,
+        system: FEEDBACK_SPECIALIST_PROMPT,
+        prompt: `Create actionable feedback based on the team's analysis:
 
 DATA FINDINGS:
 ${dataAnalysis}
@@ -328,25 +480,35 @@ KEYWORD EXPERT:
 ${keywordAnalysis}
 
 SCORING SPECIALIST:
-${scoringAnalysis}
+Final Score: ${scoringResult.finalScore}/100
+Math: ${scoringResult.math}
+Adjustments: ${scoringResult.adjustments.map((a) => `${a.criterion}: ${a.adjustment > 0 ? "+" : ""}${a.adjustment} (${a.reason})`).join(", ")}
 
 Provide:
-1. Top 3-5 strengths (specific examples)
+1. Top 3-5 strengths (specific examples from the resume)
 2. Top 3-5 weaknesses (with impact explanation)
 3. Top 3-5 actionable suggestions (concrete steps)
 
 Make it encouraging, specific, and implementable.`,
-    temperature: 0.3,
-  });
+        temperature: 0.3,
+      });
+      return text;
+    },
+    "Feedback Expert"
+  );
   progressStream?.sendCompleted("feedback-expert", 4);
 
-  // STEP 5: Synthesis Coordinator creates final structured output
+  // =========================================================================
+  // SEQUENTIAL: Synthesis Coordinator (combines all outputs)
+  // =========================================================================
   progressStream?.sendStarted("synthesis-coordinator", 5);
-  const { object: finalOutput } = await generateObject({
-    model,
-    schema: ResumeReviewSchema,
-    system: SYNTHESIS_COORDINATOR_PROMPT,
-    prompt: `Synthesize the team's analysis into the final structured output:
+  const finalOutput = await runWithRetry(
+    async () => {
+      const { object } = await generateObject({
+        model,
+        schema: ResumeReviewSchema,
+        system: SYNTHESIS_COORDINATOR_PROMPT,
+        prompt: `Synthesize the team's analysis into the final structured output:
 
 DATA ANALYZER:
 ${dataAnalysis}
@@ -355,7 +517,9 @@ KEYWORD EXPERT:
 ${keywordAnalysis}
 
 SCORING SPECIALIST:
-${scoringAnalysis}
+Final Score: ${scoringResult.finalScore}/100
+Math: ${scoringResult.math}
+Adjustments: ${JSON.stringify(scoringResult.adjustments, null, 2)}
 
 FEEDBACK SPECIALIST:
 ${feedbackAnalysis}
@@ -363,32 +527,33 @@ ${feedbackAnalysis}
 CALCULATED BASELINE SCORE: ${baselineScore.score}/100
 
 CRITICAL SCORING RULE:
-The final score MUST be based on the Scoring Specialist's calculation, which is constrained to ${Math.max(
-      0,
-      baselineScore.score - 10
-    )}-${Math.min(100, baselineScore.score + 10)}.
-Extract the exact final score from the Scoring Specialist's analysis.
+The score MUST be ${scoringResult.finalScore}/100 (as calculated by Scoring Specialist).
+DO NOT change this score. It has been validated to be within the acceptable range.
 
 Create the final structured response with:
-- score (MUST match Scoring Specialist's final calculation)
-- summary (2-3 sentences overview)
+- score: ${scoringResult.finalScore} (USE THIS EXACT VALUE)
+- summary (2-3 sentences overview mentioning the score)
 - strengths (from Feedback Specialist)
 - weaknesses (from Feedback Specialist)
 - suggestions (from Feedback Specialist)
 
 Ensure everything is consistent, specific, and actionable.`,
-    temperature: 0.1, // Lower temperature for more deterministic scoring
-  });
+        temperature: 0.1,
+      });
+      return object;
+    },
+    "Synthesis Coordinator"
+  );
   progressStream?.sendCompleted("synthesis-coordinator", 5);
 
   // VALIDATE: Ensure score is within acceptable range
   const validatedScore = validateScore(
-    finalOutput.score || baselineScore.score,
+    finalOutput.score ?? scoringResult.finalScore,
     baselineScore.score,
-    10
+    allowedVariance
   );
 
-  const validatedOutput = {
+  const validatedOutput: ResumeReviewResponse = {
     ...finalOutput,
     score: validatedScore,
   };
@@ -398,14 +563,16 @@ Ensure everything is consistent, specific, and actionable.`,
     agentInsights: {
       data: dataAnalysis,
       keywords: keywordAnalysis,
-      scoring: scoringAnalysis,
+      scoring: scoringResult,
       feedback: feedbackAnalysis,
     },
+    baselineScore,
   };
 }
 
 /**
  * Multi-Agent Job Match Collaboration
+ * Optimized with parallel execution and structured scoring
  */
 export async function collaborativeJobMatch(
   resumeText: string,
@@ -413,19 +580,18 @@ export async function collaborativeJobMatch(
   provider: ProviderType,
   modelName: string,
   progressStream?: ProgressStream
-) {
+): Promise<CollaborativeResult<JobMatchResponse>> {
   const model = getModel(provider, modelName);
 
-  // STEP 1: Data Analyzer extracts requirements and matches
-  progressStream?.sendStarted("data-analyzer", 1);
-  const toolData = {
+  // Extract tool data (synchronous, fast)
+  const toolData: ToolDataJobMatch = {
     keywordOverlap: calculateKeywordOverlap(resumeText, jobText),
     resumeKeywords: extractKeywords(resumeText),
     jobKeywords: extractKeywords(jobText),
     requiredSkills: extractRequiredSkills(jobText),
   };
 
-  // Extract years of experience from resume and job (simple heuristic)
+  // Extract years of experience from resume and job
   const experienceYears = extractYearsOfExperience(resumeText);
   const requiredYears = extractRequiredYears(jobText);
 
@@ -438,10 +604,25 @@ export async function collaborativeJobMatch(
     requiredYears,
   });
 
-  const { text: dataAnalysis } = await generateText({
-    model,
-    system: DATA_ANALYZER_PROMPT,
-    prompt: `Extract matching data between this resume and job:
+  // Calculate context-aware variance
+  const allowedVariance = calculateAllowedVariance(baselineScore.score, "job-match");
+  const minScore = Math.max(0, baselineScore.score - allowedVariance);
+  const maxScore = Math.min(100, baselineScore.score + allowedVariance);
+
+  // =========================================================================
+  // PARALLEL EXECUTION: Data Analyzer and Keyword Expert run simultaneously
+  // =========================================================================
+  progressStream?.sendStarted("data-analyzer", 1);
+  progressStream?.sendStarted("keyword-expert", 2);
+
+  const [dataAnalysis, keywordAnalysis] = await Promise.all([
+    // Agent 1: Data Analyzer
+    runWithRetry(
+      async () => {
+        const { text } = await generateText({
+          model,
+          system: DATA_ANALYZER_PROMPT,
+          prompt: `Extract matching data between this resume and job:
 
 JOB DESCRIPTION:
 ${jobText}
@@ -451,10 +632,12 @@ ${resumeText}
 
 Tool-extracted data:
 - Keyword overlap: ${toolData.keywordOverlap.overlapPercentage}%
-- Matched keywords: ${toolData.keywordOverlap.matchedKeywords.join(", ")}
-- Missing keywords: ${toolData.keywordOverlap.missingKeywords.join(", ")}
-- Required skills: ${toolData.requiredSkills.requiredSkills.length}
-- Preferred skills: ${toolData.requiredSkills.preferredSkills.length}
+- Matched keywords: ${toolData.keywordOverlap.matchedKeywords.join(", ") || "none"}
+- Missing keywords: ${toolData.keywordOverlap.missingKeywords.join(", ") || "none"}
+- Required skills from parsing: ${toolData.requiredSkills.requiredSkills.length}
+- Preferred skills from parsing: ${toolData.requiredSkills.preferredSkills.length}
+- Candidate experience: ${experienceYears} years
+- Required experience: ${requiredYears} years
 
 Extract and list:
 1. All required skills from job
@@ -462,21 +645,28 @@ Extract and list:
 3. Which are missing
 4. Experience match level
 5. Qualification match level`,
-    temperature: 0.1,
-  });
-  progressStream?.sendCompleted("data-analyzer", 1);
+          temperature: 0.1,
+        });
+        return text;
+      },
+      "Data Analyzer"
+    ),
 
-  // STEP 2: Keyword Expert analyzes match quality
-  progressStream?.sendStarted("keyword-expert", 2);
-  const { text: keywordAnalysis } = await generateText({
-    model,
-    system: KEYWORD_EXPERT_PROMPT,
-    prompt: `Analyze keyword matching quality:
+    // Agent 2: Keyword Expert (runs in parallel)
+    runWithRetry(
+      async () => {
+        const { text } = await generateText({
+          model,
+          system: KEYWORD_EXPERT_PROMPT,
+          prompt: `Analyze keyword matching quality:
 
-DATA ANALYZER'S FINDINGS:
-${dataAnalysis}
+JOB KEYWORDS (${toolData.jobKeywords.count} total): ${toolData.jobKeywords.keywords.join(", ")}
+
+RESUME KEYWORDS (${toolData.resumeKeywords.count} total): ${toolData.resumeKeywords.keywords.join(", ")}
 
 EXACT OVERLAP: ${toolData.keywordOverlap.overlapPercentage}% (${toolData.keywordOverlap.matchedKeywords.length}/${toolData.keywordOverlap.totalJobKeywords} keywords)
+- Matched: ${toolData.keywordOverlap.matchedKeywords.join(", ") || "none"}
+- Missing: ${toolData.keywordOverlap.missingKeywords.join(", ") || "none"}
 
 Provide expert analysis on:
 1. Keyword match quality assessment
@@ -484,16 +674,28 @@ Provide expert analysis on:
 3. Keywords to emphasize in application
 4. Semantic variations candidate could leverage
 5. Keyword Overlap score recommendation (0-20 points)`,
-    temperature: 0.2,
-  });
+          temperature: 0.2,
+        });
+        return text;
+      },
+      "Keyword Expert"
+    ),
+  ]);
+
+  progressStream?.sendCompleted("data-analyzer", 1);
   progressStream?.sendCompleted("keyword-expert", 2);
 
-  // STEP 3: Scoring Specialist calculates match score
+  // =========================================================================
+  // SEQUENTIAL: Scoring Specialist with structured output
+  // =========================================================================
   progressStream?.sendStarted("scoring-specialist", 3);
-  const { text: scoringAnalysis } = await generateText({
-    model,
-    system: SCORING_SPECIALIST_PROMPT,
-    prompt: `Calculate a fair job match score:
+  const scoringResult = await runWithRetry(
+    async () => {
+      const { object } = await generateObject({
+        model,
+        schema: ScoringResultSchema,
+        system: SCORING_SPECIALIST_PROMPT,
+        prompt: `Calculate a fair job match score:
 
 DATA FINDINGS:
 ${dataAnalysis}
@@ -504,45 +706,42 @@ ${keywordAnalysis}
 CALCULATED BASELINE SCORE: ${baselineScore.score}/100
 
 BASELINE BREAKDOWN (mathematically calculated):
-- Skills Match: ${baselineScore.breakdown.skillsMatch}/30 (${
-      toolData.keywordOverlap.matchedKeywords.length
-    }/${toolData.keywordOverlap.totalJobKeywords} skills matched)
-- Experience Match: ${
-      baselineScore.breakdown.experienceMatch
-    }/25 (${experienceYears} years vs ${requiredYears} required)
-- Keyword Overlap: ${baselineScore.breakdown.keywordOverlap}/20 (${
-      toolData.keywordOverlap.overlapPercentage
-    }% overlap)
-- Qualifications: ${
-      baselineScore.breakdown.qualifications
-    }/15 (default, adjust based on education/certs)
-- Industry Fit: ${
-      baselineScore.breakdown.industryFit
-    }/10 (default, adjust based on domain knowledge)
+- Skills Match: ${baselineScore.breakdown.skillsMatch}/30 (${toolData.keywordOverlap.matchedKeywords.length}/${toolData.keywordOverlap.totalJobKeywords} skills matched) - FIXED
+- Experience Match: ${baselineScore.breakdown.experienceMatch}/25 (${experienceYears} years vs ${requiredYears} required) - FIXED
+- Keyword Overlap: ${baselineScore.breakdown.keywordOverlap}/20 (${toolData.keywordOverlap.overlapPercentage}% overlap) - FIXED
+- Qualifications: ${baselineScore.breakdown.qualifications}/15 (adjustable based on education/certs)
+- Industry Fit: ${baselineScore.breakdown.industryFit}/10 (adjustable based on domain knowledge)
 
 YOUR TASK:
 1. Review the baseline score of ${baselineScore.score}/100
 2. The first 3 criteria are FIXED (based on objective counts)
 3. You can ONLY adjust criteria 4-5 based on qualifications and industry fit
-4. Your final score MUST be within 10 points of ${baselineScore.score}
-5. Show your math: ${baselineScore.score} + adjustments = final score
+4. Your final score MUST be within ${allowedVariance} points of ${baselineScore.score}
 
-STRICT REQUIREMENT: Your final score must be between ${Math.max(
-      0,
-      baselineScore.score - 10
-    )} and ${Math.min(100, baselineScore.score + 10)}.
+STRICT REQUIREMENT: Your finalScore must be between ${minScore} and ${maxScore}.
 
-Show exact math for each adjustment.`,
-    temperature: 0.1,
-  });
+Return a structured result with:
+- finalScore: your calculated score (must be ${minScore}-${maxScore})
+- adjustments: array of {criterion, adjustment, reason} for each change
+- math: show "Baseline ${baselineScore.score} + adj1 + adj2 = Final X"`,
+        temperature: 0.1,
+      });
+      return object;
+    },
+    "Scoring Specialist"
+  );
   progressStream?.sendCompleted("scoring-specialist", 3);
 
-  // STEP 4: Feedback Specialist creates application strategy
+  // =========================================================================
+  // SEQUENTIAL: Feedback Specialist
+  // =========================================================================
   progressStream?.sendStarted("feedback-expert", 4);
-  const { text: feedbackAnalysis } = await generateText({
-    model,
-    system: FEEDBACK_SPECIALIST_PROMPT,
-    prompt: `Create an application strategy based on the match analysis:
+  const feedbackAnalysis = await runWithRetry(
+    async () => {
+      const { text } = await generateText({
+        model,
+        system: FEEDBACK_SPECIALIST_PROMPT,
+        prompt: `Create an application strategy based on the match analysis:
 
 DATA FINDINGS:
 ${dataAnalysis}
@@ -551,7 +750,9 @@ KEYWORD EXPERT:
 ${keywordAnalysis}
 
 SCORING SPECIALIST:
-${scoringAnalysis}
+Final Score: ${scoringResult.finalScore}/100
+Math: ${scoringResult.math}
+Adjustments: ${scoringResult.adjustments.map((a) => `${a.criterion}: ${a.adjustment > 0 ? "+" : ""}${a.adjustment} (${a.reason})`).join(", ")}
 
 Provide specific, actionable suggestions:
 1. What to highlight from existing experience
@@ -561,17 +762,25 @@ Provide specific, actionable suggestions:
 5. Application timeline recommendation
 
 Be very specific with examples from the resume and job description.`,
-    temperature: 0.3,
-  });
+        temperature: 0.3,
+      });
+      return text;
+    },
+    "Feedback Expert"
+  );
   progressStream?.sendCompleted("feedback-expert", 4);
 
-  // STEP 5: Synthesis Coordinator creates final output
+  // =========================================================================
+  // SEQUENTIAL: Synthesis Coordinator
+  // =========================================================================
   progressStream?.sendStarted("synthesis-coordinator", 5);
-  const { object: finalOutput } = await generateObject({
-    model,
-    schema: JobMatchSchema,
-    system: SYNTHESIS_COORDINATOR_PROMPT,
-    prompt: `Synthesize the team's job match analysis:
+  const finalOutput = await runWithRetry(
+    async () => {
+      const { object } = await generateObject({
+        model,
+        schema: JobMatchSchema,
+        system: SYNTHESIS_COORDINATOR_PROMPT,
+        prompt: `Synthesize the team's job match analysis:
 
 DATA ANALYZER:
 ${dataAnalysis}
@@ -580,7 +789,9 @@ KEYWORD EXPERT:
 ${keywordAnalysis}
 
 SCORING SPECIALIST:
-${scoringAnalysis}
+Final Score: ${scoringResult.finalScore}/100
+Math: ${scoringResult.math}
+Adjustments: ${JSON.stringify(scoringResult.adjustments, null, 2)}
 
 FEEDBACK SPECIALIST:
 ${feedbackAnalysis}
@@ -588,32 +799,33 @@ ${feedbackAnalysis}
 CALCULATED BASELINE SCORE: ${baselineScore.score}/100
 
 CRITICAL SCORING RULE:
-The final matching_score MUST be based on the Scoring Specialist's calculation, which is constrained to ${Math.max(
-      0,
-      baselineScore.score - 10
-    )}-${Math.min(100, baselineScore.score + 10)}.
-Extract the exact final score from the Scoring Specialist's analysis.
+The matching_score MUST be ${scoringResult.finalScore}/100 (as calculated by Scoring Specialist).
+DO NOT change this score. It has been validated to be within the acceptable range.
 
 Create the final structured response with:
-- matching_score (MUST match Scoring Specialist's final calculation)
+- matching_score: ${scoringResult.finalScore} (USE THIS EXACT VALUE)
 - detailed_analysis (combine insights from all agents with specific counts)
 - suggestions (from Feedback Specialist)
 - additional_comments (overall assessment and next steps)
 
 Each category in detailed_analysis should include specific counts and evidence.
 Each suggestion should be concrete and actionable.`,
-    temperature: 0.1, // Lower temperature for more deterministic scoring
-  });
+        temperature: 0.1,
+      });
+      return object;
+    },
+    "Synthesis Coordinator"
+  );
   progressStream?.sendCompleted("synthesis-coordinator", 5);
 
   // VALIDATE: Ensure score is within acceptable range
   const validatedScore = validateScore(
-    finalOutput.matching_score || baselineScore.score,
+    finalOutput.matching_score ?? scoringResult.finalScore,
     baselineScore.score,
-    10
+    allowedVariance
   );
 
-  const validatedOutput = {
+  const validatedOutput: JobMatchResponse = {
     ...finalOutput,
     matching_score: validatedScore,
   };
@@ -623,54 +835,82 @@ Each suggestion should be concrete and actionable.`,
     agentInsights: {
       data: dataAnalysis,
       keywords: keywordAnalysis,
-      scoring: scoringAnalysis,
+      scoring: scoringResult,
       feedback: feedbackAnalysis,
     },
+    baselineScore,
   };
 }
 
 /**
  * Quality Assurance: Validate multi-agent output
+ * Returns validation result with any issues found
+ * Note: provider and modelName are kept for backwards compatibility but currently unused
  */
 export async function validateCollaborativeOutput(
-  output: any,
-  agentInsights: any,
-  provider: ProviderType,
-  modelName: string
+  output: ResumeReviewResponse | JobMatchResponse,
+  agentInsights: AgentInsights,
+  _provider?: ProviderType,
+  _modelName?: string
 ): Promise<{ valid: boolean; issues: string[] }> {
-  const model = getModel(provider, modelName);
+  const issues: string[] = [];
 
-  const { text: validation } = await generateText({
-    model,
-    system: `You are a quality assurance validator. Check if the multi-agent output is consistent, accurate, and high-quality.
+  // 1. Check score consistency with scoring specialist's calculation
+  const isResumeReview = "score" in output;
+  const outputScore = isResumeReview
+    ? (output as ResumeReviewResponse).score
+    : (output as JobMatchResponse).matching_score;
+  const scoringScore = agentInsights.scoring.finalScore;
 
-Validation checklist:
-1. Score matches the scoring specialist's calculation
-2. Feedback aligns with identified weaknesses
-3. Suggestions are specific and actionable
-4. No contradictions between agents
-5. Evidence-based conclusions
+  if (Math.abs((outputScore ?? 0) - scoringScore) > 2) {
+    issues.push(
+      `Score mismatch: Output has ${outputScore}, but Scoring Specialist calculated ${scoringScore}`
+    );
+  }
 
-Return "VALID" if all checks pass, or list specific issues.`,
-    prompt: `Validate this multi-agent output:
+  // 2. Check that strengths/weaknesses are not empty
+  if (isResumeReview) {
+    const review = output as ResumeReviewResponse;
+    if (!review.strengths || review.strengths.length === 0) {
+      issues.push("Missing strengths in output");
+    }
+    if (!review.weaknesses || review.weaknesses.length === 0) {
+      issues.push("Missing weaknesses in output");
+    }
+    if (!review.suggestions || review.suggestions.length === 0) {
+      issues.push("Missing suggestions in output");
+    }
+  } else {
+    const match = output as JobMatchResponse;
+    if (!match.detailed_analysis || match.detailed_analysis.length === 0) {
+      issues.push("Missing detailed_analysis in output");
+    }
+    if (!match.suggestions || match.suggestions.length === 0) {
+      issues.push("Missing suggestions in output");
+    }
+  }
 
-FINAL OUTPUT:
-${JSON.stringify(output, null, 2)}
+  // 3. Check score is within valid range
+  if (outputScore !== undefined && (outputScore < 0 || outputScore > 100)) {
+    issues.push(`Invalid score: ${outputScore} is outside 0-100 range`);
+  }
 
-AGENT INSIGHTS:
-${JSON.stringify(agentInsights, null, 2)}
+  // 4. Verify scoring math adds up (basic sanity check)
+  const adjustmentSum = agentInsights.scoring.adjustments.reduce(
+    (sum, adj) => sum + adj.adjustment,
+    0
+  );
+  if (Math.abs(adjustmentSum) > 20) {
+    issues.push(
+      `Excessive adjustments: Total adjustment of ${adjustmentSum} points exceeds reasonable range`
+    );
+  }
 
-Check for consistency, accuracy, and quality.`,
-    temperature: 0.1,
-  });
+  // If there are issues, optionally use AI for deeper validation
+  if (issues.length === 0) {
+    // Quick structural validation passed - skip expensive AI call
+    return { valid: true, issues: [] };
+  }
 
-  const valid = validation.includes("VALID");
-  const issues = valid
-    ? []
-    : validation
-        .split("\n")
-        .filter((line) => line.trim().startsWith("-"))
-        .map((line) => line.trim().substring(1).trim());
-
-  return { valid, issues };
+  return { valid: issues.length === 0, issues };
 }

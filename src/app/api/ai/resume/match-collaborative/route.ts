@@ -62,7 +62,7 @@ export const POST = async (req: NextRequest) => {
     }
 
     const resumeText = await convertResumeToText(resume.data!);
-    const jobText = await convertJobToText(job.data!);
+    const jobText = await convertJobToText(job.job!);
 
     // Create a ReadableStream for SSE
     const stream = new ReadableStream({

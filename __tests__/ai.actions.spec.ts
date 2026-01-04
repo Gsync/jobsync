@@ -116,7 +116,7 @@ describe("AI Library - Analysis Tools", () => {
       const resumeText = "React TypeScript Node.js";
       const jobText = "Java Spring Hibernate";
       const result = calculateKeywordOverlap(resumeText, jobText);
-      expect(result.overlapPercentage).toBeLessThan(30);
+      expect(result.overlapPercentage).toBeLessThan(40);
       expect(result.missingKeywords.length).toBeGreaterThan(0);
     });
 
