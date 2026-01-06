@@ -19,8 +19,5 @@ export function getModel(provider: ProviderType, modelName: string) {
     baseURL: (process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434") + "/api",
   });
 
-  // Return model with structured outputs enabled
-  return ollama(modelName, {
-    structuredOutputs: true,
-  });
+  return ollama(modelName);
 }
