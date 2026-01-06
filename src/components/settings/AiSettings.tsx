@@ -6,6 +6,7 @@ import {
   AiProvider,
   defaultModel,
   OpenaiModel,
+  DeepseekModel,
 } from "@/models/ai.model";
 import {
   Select,
@@ -39,9 +40,19 @@ interface OllamaRunningModelResponse {
   }[];
 }
 
+interface DeepseekModelResponse {
+  object: string;
+  data: {
+    id: string;
+    object: string;
+    owned_by: string;
+  }[];
+}
+
 function AiSettings() {
   const [selectedModel, setSelectedModel] = useState<AiModel>(defaultModel);
   const [ollamaModels, setOllamaModels] = useState<string[]>([]);
+  const [deepseekModels, setDeepseekModels] = useState<string[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [fetchError, setFetchError] = useState<string>("");
@@ -80,6 +91,9 @@ function AiSettings() {
   useEffect(() => {
     if (isInitialized && selectedModel.provider === AiProvider.OLLAMA) {
       fetchOllamaModels();
+    }
+    if (isInitialized && selectedModel.provider === AiProvider.DEEPSEEK) {
+      fetchDeepseekModels();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedModel.provider, isInitialized]);
@@ -163,12 +177,37 @@ function AiSettings() {
     }
   };
 
+  const fetchDeepseekModels = async () => {
+    setIsLoadingModels(true);
+    setFetchError("");
+    try {
+      const response = await fetch("/api/ai/deepseek/models");
+      if (!response.ok) {
+        // Fall back to enum models if API fails
+        const fallbackModels = Object.values(DeepseekModel);
+        setDeepseekModels(fallbackModels);
+        return;
+      }
+      const data: DeepseekModelResponse = await response.json();
+      const modelNames = data.data.map((model) => model.id);
+      setDeepseekModels(modelNames.length > 0 ? modelNames : Object.values(DeepseekModel));
+    } catch (error) {
+      console.error("Error fetching DeepSeek models:", error);
+      // Fall back to enum models if API fails
+      setDeepseekModels(Object.values(DeepseekModel));
+    } finally {
+      setIsLoadingModels(false);
+    }
+  };
+
   const getModelsList = (provider: AiProvider) => {
     switch (provider) {
       case AiProvider.OLLAMA:
         return ollamaModels.map((model) => [model, model]);
       case AiProvider.OPENAI:
         return Object.entries(OpenaiModel);
+      case AiProvider.DEEPSEEK:
+        return deepseekModels.map((model) => [model, model]);
       default:
         return [];
     }
@@ -277,7 +316,8 @@ function AiSettings() {
           onClick={saveModelSettings}
           disabled={
             !selectedModel.model ||
-            (selectedModel.provider === AiProvider.OLLAMA && !runningModelName)
+            (selectedModel.provider === AiProvider.OLLAMA && !runningModelName) ||
+            isLoadingModels
           }
         >
           Save
