@@ -11,7 +11,20 @@ import { AiProvider } from "@/models/ai.model";
 
 const removeHtmlTags = (description: string | undefined): string => {
   if (!description) return "N/A";
-  return description.replace(/<[^>]+>/g, "");
+
+  return (
+    description
+      // Convert list items to bullet points before stripping tags
+      .replace(/<li[^>]*>/gi, "• ")
+      // Add line breaks after block elements
+      .replace(/<\/(li|p|div|br)[^>]*>/gi, "\n")
+      .replace(/<br\s*\/?>/gi, "\n")
+      // Remove all remaining HTML tags
+      .replace(/<[^>]+>/g, "")
+      // Clean up excessive whitespace while preserving structure
+      .replace(/\n\s*\n/g, "\n")
+      .trim()
+  );
 };
 
 export interface ModelCheckResult {
