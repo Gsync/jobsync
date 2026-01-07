@@ -154,9 +154,14 @@ export class ProgressStream {
   ) {
     if (!this.controller) return;
 
-    const update = createProgressUpdate(step, status, agentNumber);
-    const message = encodeProgressMessage(update);
-    this.controller.enqueue(new TextEncoder().encode(message));
+    try {
+      const update = createProgressUpdate(step, status, agentNumber);
+      const message = encodeProgressMessage(update);
+      this.controller.enqueue(new TextEncoder().encode(message));
+    } catch {
+      // Controller may be closed (client disconnected, timeout, etc.)
+      // Silently ignore as this is expected when the stream ends
+    }
   }
 
   sendStarted(step: AgentStep, agentNumber?: number) {

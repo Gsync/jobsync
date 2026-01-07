@@ -122,7 +122,7 @@ const ScoringResultSchema = z.object({
 async function runWithRetry<T>(
   operation: () => Promise<T>,
   operationName: string,
-  maxRetries: number = 2
+  maxRetries: number = 1  // Reduced from 2 for faster failure (max 3s overhead vs 7s)
 ): Promise<T> {
   let lastError: Error = new Error("Unknown error");
 
@@ -147,6 +147,167 @@ async function runWithRetry<T>(
   throw new Error(
     `${operationName} failed after ${maxRetries + 1} attempts: ${lastError.message}`
   );
+}
+
+// ============================================================================
+// TIMEOUT WRAPPER WITH ABORT CONTROLLER
+// ============================================================================
+
+function createAbortableTimeout(timeoutMs: number): { signal: AbortSignal; cleanup: () => void } {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  return {
+    signal: controller.signal,
+    cleanup: () => clearTimeout(timeoutId),
+  };
+}
+
+// ============================================================================
+// TOKEN ESTIMATION (rough approximation: ~4 chars per token)
+// ============================================================================
+
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
+function logContextSize(agentName: string, systemPrompt: string, userPrompt: string): number {
+  const systemTokens = estimateTokens(systemPrompt);
+  const userTokens = estimateTokens(userPrompt);
+  const totalTokens = systemTokens + userTokens;
+  console.log(`[${agentName}] Context size: ~${totalTokens} tokens (system: ${systemTokens}, user: ${userTokens})`);
+  return totalTokens;
+}
+
+// ============================================================================
+// TEXT COMPACTION (removes redundancy while preserving key info)
+// ============================================================================
+
+function compactAgentOutput(text: string): string {
+  return text
+    // Remove excessive whitespace
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]+/g, ' ')
+    // Remove markdown formatting but keep structure
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/#{1,6}\s*/g, '')
+    // Remove redundant phrases
+    .replace(/^[-•]\s*/gm, '- ')
+    .replace(/\n- \n/g, '\n')
+    // Compact lists
+    .replace(/:\n- /g, ': ')
+    .trim();
+}
+
+// ============================================================================
+// FALLBACK RESPONSE BUILDERS
+// ============================================================================
+
+function buildFallbackJobMatchResponse(
+  scoringResult: ScoringResult,
+  toolData: ToolDataJobMatch,
+  feedbackAnalysis: string
+): JobMatchResponse {
+  // Extract suggestions from feedback analysis text
+  const suggestionMatches = feedbackAnalysis.match(/\d+\.\s+\*\*[^*]+\*\*[^]*?(?=\d+\.\s+\*\*|$)/g) || [];
+  const suggestions = suggestionMatches.slice(0, 3).map((match, i) => {
+    const titleMatch = match.match(/\*\*([^*]+)\*\*/);
+    return {
+      category: titleMatch ? titleMatch[1].trim() : `Suggestion ${i + 1}`,
+      value: match.replace(/\*\*[^*]+\*\*/, "").trim().split("\n").filter(Boolean).slice(0, 4),
+    };
+  });
+
+  // Build default suggestions if none extracted
+  if (suggestions.length < 2) {
+    suggestions.push(
+      {
+        category: "Keywords to Add",
+        value: toolData.keywordOverlap.missingKeywords.slice(0, 4).map(k => `Add "${k}" to your resume`),
+      },
+      {
+        category: "Skills to Highlight",
+        value: toolData.keywordOverlap.matchedKeywords.slice(0, 4).map(k => `Emphasize your ${k} experience`),
+      }
+    );
+  }
+
+  return {
+    matching_score: scoringResult.finalScore,
+    detailed_analysis: [
+      {
+        category: `Skills Match (${Math.round(toolData.keywordOverlap.matchedKeywords.length / Math.max(toolData.keywordOverlap.totalJobKeywords, 1) * 30)}/30 pts)`,
+        value: [
+          `Matched ${toolData.keywordOverlap.matchedKeywords.length} of ${toolData.keywordOverlap.totalJobKeywords} required skills`,
+          ...toolData.keywordOverlap.matchedKeywords.slice(0, 3).map(k => `✅ ${k}`),
+          ...toolData.keywordOverlap.missingKeywords.slice(0, 2).map(k => `❌ Missing: ${k}`),
+        ],
+      },
+      {
+        category: `Keyword Overlap (${Math.round(toolData.keywordOverlap.overlapPercentage * 0.2)}/20 pts)`,
+        value: [
+          `${Math.round(toolData.keywordOverlap.overlapPercentage)}% keyword overlap detected`,
+          `Found: ${toolData.keywordOverlap.matchedKeywords.slice(0, 5).join(", ") || "None"}`,
+          `Missing: ${toolData.keywordOverlap.missingKeywords.slice(0, 5).join(", ") || "None"}`,
+        ],
+      },
+      {
+        category: "Experience Assessment",
+        value: [
+          `Resume contains ${toolData.resumeKeywords.count} technical keywords`,
+          `Job requires ${toolData.jobKeywords.count} technical keywords`,
+          scoringResult.adjustments.find(a => a.criterion.toLowerCase().includes("experience"))?.reason || "Experience level assessed",
+        ],
+      },
+    ],
+    suggestions: suggestions.slice(0, 3),
+    additional_comments: [
+      `Match score: ${scoringResult.finalScore}/100 - ${scoringResult.finalScore >= 65 ? "Strong match" : scoringResult.finalScore >= 50 ? "Moderate match" : "Consider improvements"}`,
+      `Priority: ${toolData.keywordOverlap.missingKeywords[0] ? `Add ${toolData.keywordOverlap.missingKeywords[0]} to your resume` : "Highlight your matched skills"}`,
+      `Recommendation: ${scoringResult.finalScore >= 65 ? "Apply with confidence" : scoringResult.finalScore >= 50 ? "Apply after tailoring resume" : "Consider upskilling first"}`,
+    ],
+  };
+}
+
+function buildFallbackResumeReviewResponse(
+  scoringResult: ScoringResult,
+  toolData: ToolDataResume,
+  feedbackAnalysis: string
+): ResumeReviewResponse {
+  // Extract strengths/weaknesses from feedback analysis
+  const extractPoints = (section: string): string[] => {
+    const regex = new RegExp(`${section}[\\s\\S]*?(?=###|$)`, "i");
+    const match = feedbackAnalysis.match(regex);
+    if (!match) return [];
+    return match[0]
+      .split("\n")
+      .filter(line => line.match(/^\d+\.|^-|^\*/))
+      .slice(0, 4)
+      .map(line => line.replace(/^[\d\.\-\*\s]+/, "").trim());
+  };
+
+  const strengths = extractPoints("STRENGTHS");
+  const weaknesses = extractPoints("WEAKNESSES");
+  const suggestions = extractPoints("SUGGESTIONS");
+
+  return {
+    score: scoringResult.finalScore,
+    summary: `Your resume scores ${scoringResult.finalScore}/100. ${toolData.quantified.count > 0 ? `Contains ${toolData.quantified.count} quantified achievements. ` : ""}${toolData.keywords.count} technical keywords detected.`,
+    strengths: strengths.length > 0 ? strengths : [
+      toolData.quantified.count > 3 ? "Good use of quantified achievements" : "Resume structure is clear",
+      `Contains ${toolData.keywords.count} technical keywords`,
+      toolData.formatting.hasBulletPoints ? "Uses bullet points effectively" : "Organized layout",
+    ],
+    weaknesses: weaknesses.length > 0 ? weaknesses : [
+      toolData.quantified.count < 3 ? "Could use more quantified achievements" : "Some sections could be more concise",
+      toolData.verbs.count < 10 ? "Consider using more strong action verbs" : "Minor formatting improvements possible",
+    ],
+    suggestions: suggestions.length > 0 ? suggestions : [
+      toolData.quantified.count < 5 ? "Add more metrics and numbers to demonstrate impact" : "Continue emphasizing measurable achievements",
+      "Tailor keywords to specific job descriptions",
+      "Ensure consistent formatting throughout",
+    ],
+  };
 }
 
 /**
@@ -204,455 +365,142 @@ function extractRequiredYears(jobText: string): number {
  * AGENT 1: Data Analyzer Agent
  * Specializes in extracting and counting objective data
  */
-const DATA_ANALYZER_PROMPT = `You are a forensic data extraction specialist. Your job is to extract ONLY objective, countable facts from documents. No opinions, no judgments, no interpretations.
+const DATA_ANALYZER_PROMPT = `Extract ONLY objective, countable facts. No opinions or interpretations.
 
-## YOUR ROLE
-You are the "eyes" of the analysis team. Other agents depend on your accurate counts to make decisions. Errors in your counts cascade into wrong scores.
+## RESUME ANALYSIS - Extract:
 
-## FOR RESUME ANALYSIS
+1. QUANTIFIED ACHIEVEMENTS (%, $, numbers, time savings, growth)
+   Format: "Found [X] quantified achievements: [quote each]"
 
-Extract these metrics EXACTLY:
+2. TECHNICAL KEYWORDS (technologies, tools, methodologies, certs)
+   Format: "Found [X] keywords: [list]"
 
-### 1. QUANTIFIED ACHIEVEMENTS
-Count bullets/statements that contain:
-- Percentages (%)
-- Dollar amounts ($)
-- Numbers (team size, users, transactions)
-- Time savings
-- Growth metrics
+3. ACTION VERBS
+   Strong: Led, Architected, Delivered, Spearheaded, Optimized, Built
+   Weak: Responsible for, Helped, Assisted, Worked on
+   Format: "[X] strong, [Y] weak verbs"
 
-Format: "Found [X] quantified achievements:
-1. [Quote exact text]
-2. [Quote exact text]
-..."
+4. STRUCTURE: sections count, bullet points (yes/no), summary (yes/no), positions count
 
-### 2. TECHNICAL KEYWORDS
-Count industry-specific terms:
-- Technologies (React, Python, AWS)
-- Tools (JIRA, Figma, Salesforce)
-- Methodologies (Agile, Scrum, CI/CD)
-- Certifications mentioned
+## JOB MATCH ANALYSIS - Extract:
 
-Format: "Found [X] technical keywords: [list them]"
+1. REQUIREMENTS: required skills, preferred skills, years needed, education, certs
 
-### 3. ACTION VERBS
-Separate strong from weak:
-- Strong: Led, Architected, Delivered, Spearheaded, Optimized, Drove, Built, Designed
-- Weak: Responsible for, Helped, Assisted, Worked on, Participated
+2. MATCH CHECKLIST: For each requirement → Found/Missing with evidence quote
 
-Format: "Found [X] strong action verbs: [list]
-Found [Y] weak action verbs: [list]"
+3. KEYWORD OVERLAP: job keywords, resume keywords, missing, overlap %
 
-### 4. STRUCTURAL ELEMENTS
-- Number of distinct sections (Education, Experience, Skills, etc.)
-- Presence of bullet points (yes/no)
-- Presence of professional summary (yes/no)
-- Total job positions listed
-
-## FOR JOB MATCH ANALYSIS
-
-### 1. JOB REQUIREMENTS EXTRACTION
-List every requirement mentioned:
-- Required skills (explicitly stated as required)
-- Preferred skills (stated as nice-to-have)
-- Years of experience needed
-- Education requirements
-- Certifications needed
-
-### 2. MATCH CHECKLIST
-For each requirement, check if resume has it:
-| Requirement | Found in Resume | Evidence |
-| [Skill 1]   | Yes/No/Partial | "Quote"  |
-
-### 3. KEYWORD COMPARISON
-- Keywords in job description: [count and list]
-- Keywords found in resume: [count and list]
-- Missing keywords: [list]
-- Overlap percentage: X%
-
-## CRITICAL RULES
-- COUNT, don't estimate
-- QUOTE, don't paraphrase
-- Report FACTS, not opinions
-- If uncertain, say "Unable to determine" rather than guess`;
+RULES: COUNT don't estimate. QUOTE don't paraphrase. FACTS not opinions.`;
 
 /**
  * AGENT 2: Keyword Expert Agent
  * Specializes in ATS optimization and keyword strategy
  */
-const KEYWORD_EXPERT_PROMPT = `You are an ATS (Applicant Tracking System) optimization expert who has reverse-engineered how major ATS platforms (Workday, Greenhouse, Lever, Taleo) parse and score resumes.
+const KEYWORD_EXPERT_PROMPT = `You are an ATS optimization expert. Analyze keyword quality and ATS compatibility.
 
-## YOUR ROLE
-You are the "translator" between human resumes and ATS algorithms. You understand both what machines scan for AND what human recruiters look for after ATS filtering.
+## ATS SCORING
+- Exact Match: 100% | Synonym: 70-90% | Partial: 30-50% | Missing: 0%
 
-## ATS INTELLIGENCE
+## KEYWORD TIERS
+- Tier 1 (Critical): Job title/first paragraph skills
+- Tier 2 (Important): Requirements section
+- Tier 3 (Nice-to-have): Preferred/bonus section
 
-### How ATS Systems Score Keywords:
-1. **Exact Match** (100% credit): "React" matches "React"
-2. **Synonym Match** (70-90% credit): "JavaScript" may match "JS"
-3. **Partial Match** (30-50% credit): "SQL Server" partially matches "SQL"
-4. **No Match** (0%): Completely different terms
+## ATS-HOSTILE PATTERNS (flag these)
+- Skills in paragraphs not skills section
+- Missing acronym OR full name (need both)
+- Creative titles ATS won't recognize
 
-### Keyword Priority Tiers:
-- **Tier 1 (Critical)**: Skills in job title and first paragraph
-- **Tier 2 (Important)**: Skills in requirements section
-- **Tier 3 (Nice-to-have)**: Skills in preferred/bonus section
-- **Tier 4 (Background)**: Industry terms mentioned once
-
-### ATS-Hostile Patterns to Flag:
-- Skills buried in paragraphs (not in skills section)
-- Acronyms without spelled-out versions (or vice versa)
-- Creative titles that ATS won't recognize
-- Skills in images/graphics (ATS can't read)
-- Uncommon keyword variations
-
-## YOUR ANALYSIS FRAMEWORK
-
-### For Resume Keyword Analysis:
-
-1. **Keyword Inventory:**
-   - List all technical/industry keywords found
-   - Note placement (skills section, experience, summary)
-   - Flag any ATS-hostile patterns
-
-2. **Keyword Quality Assessment:**
-   - Are keywords specific enough? ("Python 3.x" > "programming")
-   - Are both acronyms and full names present? ("AWS" AND "Amazon Web Services")
-   - Are keywords in high-visibility locations?
-
-3. **Keyword Score Recommendation:**
-   - 18-20/20: Comprehensive, well-placed keywords
-   - 14-17/20: Good coverage, minor gaps
-   - 10-13/20: Adequate but missing key terms
-   - 5-9/20: Significant gaps, poor placement
-   - 0-4/20: Critical keyword deficiency
-
-### For Job Match Keyword Analysis:
-
-1. **Job Keyword Extraction:**
-   - Extract ALL keywords from job description
-   - Categorize by tier (critical/important/nice-to-have)
-   - Note frequency (keywords mentioned 3x are more important)
-
-2. **Match Analysis:**
-   - For each job keyword, check resume for:
-     - Exact match
-     - Synonym/related term
-     - Completely missing
-
-3. **Gap Analysis:**
-   - Critical missing keywords (Tier 1 gaps)
-   - Important missing keywords (Tier 2 gaps)
-   - Easy-to-add keywords (resume has skill, just not the exact term)
-
-4. **Optimization Recommendations:**
-   - Specific keywords to add (with placement suggestions)
-   - Terms to add both acronym and full name
-   - Semantic variations to include
+## SCORING SCALE (0-20 points)
+18-20: Comprehensive, well-placed | 14-17: Good, minor gaps | 10-13: Adequate, missing terms | 5-9: Significant gaps | 0-4: Critical deficiency
 
 ## OUTPUT FORMAT
-
-**Keyword Count:** X total keywords found
-
-**Keyword Strength:** X/20 points
-
-**Tier 1 Keywords (Critical):**
-- ✅ Found: [list]
-- ❌ Missing: [list]
-
-**Tier 2 Keywords (Important):**
-- ✅ Found: [list]
-- ❌ Missing: [list]
-
-**ATS Optimization Issues:**
-- [Issue 1]
-- [Issue 2]
-
-**Specific Recommendations:**
-1. Add "[keyword]" to skills section
-2. Include "[full name]" alongside "[acronym]"
-3. Move "[keyword]" from experience to skills section for visibility`;
+**Keyword Count:** X found
+**Keyword Strength:** X/20
+**Tier 1:** ✅ Found: [list] | ❌ Missing: [list]
+**Tier 2:** ✅ Found: [list] | ❌ Missing: [list]
+**ATS Issues:** [list problems]
+**Recommendations:** [specific keywords to add with placement]`;
 
 /**
  * AGENT 3: Scoring Specialist Agent
  * Specializes in fair, calibrated scoring
  */
-const SCORING_SPECIALIST_PROMPT = `You are a scoring calibration expert who ensures fair, accurate, and defensible scores. You bridge objective metrics with qualitative assessment.
+const SCORING_SPECIALIST_PROMPT = `Calculate fair, defensible scores by combining objective metrics with limited subjective adjustments.
 
-## YOUR ROLE
-You are the "judge" of the analysis team. Your job is to take the Data Analyzer's counts and the Keyword Expert's assessment, then calibrate a final score that is both mathematically grounded and contextually appropriate.
+## RULES
+1. BASELINE IS FIXED - calculated from objective counts (keywords, achievements, verbs, formatting)
+2. ADJUSTABLE CRITERIA ONLY: Summary (0-10), Experience Clarity (0-10), Skills Section (0-5), Grammar (0-5)
+3. MAX ADJUSTMENT: ±10 points from baseline total
 
-## SCORING PHILOSOPHY
-
-### The Baseline is Sacred
-The mathematical baseline score is calculated from objective counts:
-- Keywords found → X/20 points
-- Quantified achievements → Y/25 points
-- Action verbs → Z/10 points
-- Formatting elements → A/15 points
-
-**You cannot change these objective scores.** They are calculated, not judged.
-
-### Subjective Adjustments are Limited
-You can ONLY adjust these criteria based on your qualitative assessment:
-- Professional Summary (0-10 pts): Quality, not just presence
-- Experience Clarity (0-10 pts): STAR format, progression visibility
-- Skills Section (0-5 pts): Organization, relevance
-- Grammar/Polish (0-5 pts): Errors, consistency
-
-**Maximum total adjustment: ±10 points from baseline**
-
-## CALIBRATION FRAMEWORK
-
-### Step 1: Accept the Baseline
-"Baseline score: [X] (calculated from objective metrics)"
-
-### Step 2: Assess Subjective Criteria
-For each adjustable criterion, assess:
-- Current default value: [X]
-- Your assessment: [better/same/worse than default]
-- Adjustment: [+N, 0, or -N]
-- Justification: [specific reason]
-
-### Step 3: Calculate Final Score
-Show your math explicitly:
-"Baseline [X] + Summary adj [+/-Y] + Clarity adj [+/-Z] + Skills adj [+/-A] + Grammar adj [+/-B] = Final [Total]"
-
-### Step 4: Reality Check
-Before finalizing, verify:
-- Is this score realistic for the career stage?
-  - Entry-level: typically 35-50
-  - Mid-level: typically 45-65
-  - Senior: typically 55-75
-  - Exceptional: rarely >80
-- Does the score match the feedback sentiment?
-- Would a professional recruiter agree?
+## CAREER STAGE EXPECTATIONS
+Entry: 35-50 | Mid: 45-65 | Senior: 55-75 | Exceptional: >80 (rare)
 
 ## SCORING GUIDELINES
-
 ${SCORING_GUIDELINES.resume.excellent}
 ${SCORING_GUIDELINES.resume.good}
 ${SCORING_GUIDELINES.resume.average}
-${SCORING_GUIDELINES.resume.fair}
-${SCORING_GUIDELINES.resume.poor}
-
-## COMMON SCORING MISTAKES TO AVOID
-
-❌ Inflating scores because the resume "seems good"
-❌ Deflating scores for stylistic preferences
-❌ Adjusting more than 10 points from baseline
-❌ Not showing the math
-❌ Giving identical scores regardless of content
 
 ## OUTPUT FORMAT
-
-**Baseline Score:** [X]/100 (from objective metrics)
-
-**Subjective Adjustments:**
-| Criterion | Default | Assessment | Adjustment | Reason |
-|-----------|---------|------------|------------|--------|
-| Summary   | 6       | Good       | +2         | Clear value proposition |
-| Clarity   | 6       | Average    | 0          | Standard format |
-| Skills    | 3       | Weak       | -1         | Disorganized list |
-| Grammar   | 4       | Perfect    | +1         | Zero errors |
-
-**Calculation:**
-Baseline [X] + 2 + 0 - 1 + 1 = [Final]
-
-**Final Score:** [X]/100
-
-**Confidence:** High/Medium/Low
-**Rationale:** [1-2 sentences explaining why this score is appropriate]`;
+**Baseline:** X/100
+**Adjustments:** criterion → adjustment (reason)
+**Math:** Baseline X + adj1 + adj2 = Final Y
+**Final Score:** Y/100`;
 
 /**
  * AGENT 4: Feedback Specialist Agent
  * Specializes in actionable, constructive feedback
  */
-const FEEDBACK_SPECIALIST_PROMPT = `You are an elite career coach who has helped 10,000+ professionals land their dream jobs. You transform cold analysis into warm, actionable guidance.
+const FEEDBACK_SPECIALIST_PROMPT = `Transform analysis into actionable feedback. Be specific, evidence-based, and prioritized.
 
-## YOUR ROLE
-You are the "translator" who converts technical analysis into human-friendly advice. Your job is to take the Data Analyzer's facts and the Scoring Specialist's assessment, then craft feedback that motivates action.
+## STRENGTHS FORMAT (3-5)
+- Name the strength category
+- Quote exact text from resume
+- Explain why it works
 
-## FEEDBACK PHILOSOPHY
+## WEAKNESSES FORMAT (3-5)
+- Name the gap
+- Quote/describe the issue
+- Explain impact (recruiter/ATS perspective)
 
-### The SPECIFIC Framework
-Every piece of feedback must be:
-- **S**pecific: Name exact items from the resume
-- **P**rioritized: High-impact first
-- **E**vidence-based: Quote or reference actual content
-- **C**onstructive: Frame as opportunity, not failure
-- **I**mplementable: Give exact steps
-- **F**resh: Tailored to this resume, not generic
-- **I**mpactful: Focus on what moves the needle
-- **C**oncise: No fluff
+## SUGGESTIONS FORMAT (3-5, prioritized)
+- Start with action verb (Add, Replace, Move, Quantify)
+- Specify exact target (which bullet/section)
+- Give specific solution with before/after example
 
-### The 80/20 Rule
-80% of improvement comes from 20% of changes. Identify the vital few improvements that will make the biggest difference.
+## PRIORITY LEVELS
+HIGH: Quantified achievements, professional summary, critical keywords
+MEDIUM: Action verbs, skills organization, formatting
+LOW: Word choice, soft skills, visual polish
 
-## FEEDBACK GENERATION FRAMEWORK
-
-### STRENGTHS (what's working)
-
-For each strength:
-1. **Name it:** "[Category] strength"
-2. **Quote it:** "[Exact text from resume]"
-3. **Explain impact:** "This works because..."
-
-**Examples of GOOD strength feedback:**
-- "Strong quantified impact: Your bullet 'Reduced API latency by 60%' demonstrates measurable business value. This specific metric will catch recruiters' attention."
-- "Clear career progression: Promotion from Developer to Senior Developer to Tech Lead shows consistent growth over 5 years."
-
-**Examples of BAD strength feedback (avoid):**
-- "Good experience" (too vague)
-- "Nice formatting" (no specifics)
-- "Strong skills" (which ones?)
-
-### WEAKNESSES (what needs work)
-
-For each weakness:
-1. **Name it:** "[Category] gap"
-2. **Quote it (if applicable):** "For example, '[text]'..."
-3. **Explain why it matters:** "Recruiters/ATS will..."
-
-**Examples of GOOD weakness feedback:**
-- "Missing metrics in key bullets: 'Improved team productivity' doesn't tell how much. Recruiters scan for numbers - without them, your impact is invisible."
-- "Weak action verbs: 'Was responsible for managing projects' uses passive voice. 'Managed 5 concurrent projects' is more powerful."
-
-**Examples of BAD weakness feedback (avoid):**
-- "Needs improvement" (how?)
-- "Could be stronger" (vague)
-- "Not great" (not actionable)
-
-### SUGGESTIONS (exactly what to do)
-
-For each suggestion:
-1. **Action verb:** Start with "Add", "Replace", "Move", "Quantify", etc.
-2. **Exact target:** Which bullet/section to change
-3. **Specific solution:** What to write
-4. **Example:** Show before/after if possible
-
-**Examples of GOOD suggestions:**
-- "Quantify your 'Improved sales' bullet: Add the percentage and timeframe. Example: 'Improved sales by 35% YoY through targeted email campaigns'"
-- "Add a professional summary: Place at the top with format: '[Title] with [X years] in [specialty]. Known for [top achievement]. Seeking [target role].'"
-- "Replace 'Responsible for managing' with 'Led' or 'Directed' - active voice conveys ownership"
-
-**Examples of BAD suggestions (avoid):**
-- "Add more numbers" (where? what kind?)
-- "Improve the summary" (how specifically?)
-- "Use better words" (which ones?)
-
-## PRIORITIZATION FRAMEWORK
-
-Rank suggestions by impact:
-
-**HIGH IMPACT (do first):**
-- Adding quantified achievements
-- Adding/improving professional summary
-- Adding missing critical keywords
-
-**MEDIUM IMPACT:**
-- Improving action verbs
-- Better organizing skills section
-- Fixing formatting inconsistencies
-
-**LOW IMPACT (nice to have):**
-- Minor word choice improvements
-- Adding soft skills
-- Visual polish
-
-## OUTPUT FORMAT
-
-### STRENGTHS (Top 3-5)
-1. **[Category]:** "[Quote from resume]" - [Why it works]
-2. **[Category]:** "[Quote from resume]" - [Why it works]
-...
-
-### WEAKNESSES (Top 3-5)
-1. **[Category]:** "[Quote or description]" - [Why it matters]
-2. **[Category]:** "[Quote or description]" - [Why it matters]
-...
-
-### SUGGESTIONS (Prioritized, Top 3-5)
-1. **[HIGH IMPACT] [Action]:** [Exact what to do with example]
-2. **[HIGH IMPACT] [Action]:** [Exact what to do with example]
-3. **[MEDIUM IMPACT] [Action]:** [Exact what to do]
-...
-
-### OVERALL ASSESSMENT
-[1-2 sentences: What's the single most important thing to fix?]`;
+## OUTPUT
+### STRENGTHS: [Category]: "[quote]" - [why it works]
+### WEAKNESSES: [Category]: "[issue]" - [why it matters]
+### SUGGESTIONS: [HIGH/MED] [Action]: [specific fix with example]
+### OVERALL: [Single most important thing to fix]`;
 
 /**
  * AGENT 5: Synthesis Coordinator Agent
  * Combines insights from all agents into coherent output
  */
-const SYNTHESIS_COORDINATOR_PROMPT = `You are the Synthesis Coordinator - the final quality gate that produces user-facing output. You receive insights from 4 specialized agents and create a unified, polished analysis.
+const SYNTHESIS_COORDINATOR_PROMPT = `Combine agent outputs into final user-facing response.
 
-## YOUR ROLE
-You are the "editor-in-chief" who takes raw expert analysis and produces a coherent, user-friendly final product. Your output is what the user sees.
+## CRITICAL RULES
+1. USE EXACT SCORE from Scoring Specialist - DO NOT recalculate
+2. Select 3-5 best strengths, weaknesses, suggestions from Feedback Specialist
+3. Ensure summary sentiment matches score
 
-## YOUR RESPONSIBILITIES
+## OUTPUT REQUIREMENTS
+**Summary:** 2-3 sentences with exact score, top strength, key improvement area
+**Strengths:** Specific with evidence, not generic
+**Weaknesses:** Specific and fixable, explain impact
+**Suggestions:** Actionable with examples, prioritized
 
-### 1. VALIDATE CONSISTENCY
-Check that all agent outputs align:
-- Does the Data Analyzer's count support the Scoring Specialist's score?
-- Do the Keyword Expert's findings align with the Feedback Specialist's suggestions?
-- Are there any contradictions to resolve?
-
-### 2. ENFORCE THE SCORE
-**CRITICAL:** The score from the Scoring Specialist is FINAL.
-- Do NOT recalculate or adjust the score
-- Simply use the exact score provided
-- Ensure the summary and feedback MATCH the score sentiment
-
-### 3. CURATE THE BEST INSIGHTS
-From all agent outputs, select:
-- The 3-5 most impactful strengths (with evidence)
-- The 3-5 most important weaknesses (that matter)
-- The 3-5 highest-priority suggestions (most actionable)
-
-### 4. ENSURE OUTPUT QUALITY
-
-**Summary must:**
-- State the exact score with interpretation
-- Mention the single biggest strength
-- Mention the single most impactful improvement area
-- Be 2-3 sentences total
-
-**Strengths must:**
-- Each reference specific resume content
-- Explain why it's a strength
-- Not be generic
-
-**Weaknesses must:**
-- Each be specific and fixable
-- Explain why it matters (recruiter/ATS impact)
-- Not be demoralizing
-
-**Suggestions must:**
-- Each be immediately actionable
-- Include specific examples where possible
-- Be prioritized by impact
-
-### 5. FINAL QUALITY CHECKLIST
-
-Before outputting, verify:
-□ Score matches what Scoring Specialist calculated
-□ Every strength has evidence from the resume
-□ Every weakness has a "why it matters"
-□ Every suggestion has a specific action
-□ Summary mentions the score
-□ No contradictions between score and feedback sentiment
-□ No generic feedback (everything is specific to THIS resume)
-
-## TONE GUIDANCE
-
-- Professional but encouraging
-- Direct but not harsh
-- Specific but not overwhelming
-- Honest about gaps while acknowledging strengths
-- Focus on opportunity, not failure
-
-Remember: Your output directly impacts someone's job search. Make it count.`;
+## QUALITY CHECK
+□ Score matches Scoring Specialist exactly
+□ All items reference specific resume content
+□ No contradictions between score and feedback
+□ Nothing generic - everything specific to THIS resume`;
 
 /**
  * Multi-Agent Resume Review Collaboration
@@ -836,22 +684,25 @@ Make it encouraging, specific, and implementable.`,
   progressStream?.sendCompleted("feedback-expert", 4);
 
   // =========================================================================
-  // SEQUENTIAL: Synthesis Coordinator (combines all outputs)
+  // SEQUENTIAL: Synthesis Coordinator (with timeout and fallback)
   // =========================================================================
   progressStream?.sendStarted("synthesis-coordinator", 5);
-  const finalOutput = await runWithRetry(
-    async () => {
-      const { object } = await generateObject({
-        model,
-        schema: ResumeReviewSchema,
-        system: SYNTHESIS_COORDINATOR_PROMPT,
-        prompt: `Synthesize the team's analysis into the final structured output:
+
+  let finalOutput: ResumeReviewResponse;
+  let usedFallback = false;
+
+  // Compact agent outputs to reduce token count while preserving key info
+  const compactedDataAnalysis = compactAgentOutput(dataAnalysis);
+  const compactedKeywordAnalysis = compactAgentOutput(keywordAnalysis);
+  const compactedFeedbackAnalysis = compactAgentOutput(feedbackAnalysis);
+
+  const synthesisPrompt = `Synthesize the team's analysis into the final structured output:
 
 DATA ANALYZER:
-${dataAnalysis}
+${compactedDataAnalysis}
 
 KEYWORD EXPERT:
-${keywordAnalysis}
+${compactedKeywordAnalysis}
 
 SCORING SPECIALIST:
 Final Score: ${scoringResult.finalScore}/100
@@ -859,7 +710,7 @@ Math: ${scoringResult.math}
 Adjustments: ${JSON.stringify(scoringResult.adjustments, null, 2)}
 
 FEEDBACK SPECIALIST:
-${feedbackAnalysis}
+${compactedFeedbackAnalysis}
 
 CALCULATED BASELINE SCORE: ${baselineScore.score}/100
 
@@ -874,13 +725,40 @@ Create the final structured response with:
 - weaknesses (from Feedback Specialist)
 - suggestions (from Feedback Specialist)
 
-Ensure everything is consistent, specific, and actionable.`,
+Ensure everything is consistent, specific, and actionable.`;
+
+  logContextSize("Resume Review Synthesis", SYNTHESIS_COORDINATOR_PROMPT, synthesisPrompt);
+
+  // DeepSeek has issues with generateObject JSON schema mode - use fallback directly
+  if (provider === "deepseek") {
+    console.log("[Resume Review Synthesis] Using fallback for DeepSeek (JSON schema compatibility issue)");
+    finalOutput = buildFallbackResumeReviewResponse(scoringResult, toolData, feedbackAnalysis);
+    usedFallback = true;
+  } else {
+    // Create abort controller for 45 second timeout
+    const { signal, cleanup } = createAbortableTimeout(30000);  // Reduced from 45s for faster fallback
+
+    try {
+      const { object } = await generateObject({
+        model,
+        schema: ResumeReviewSchema,
+        system: SYNTHESIS_COORDINATOR_PROMPT,
+        prompt: synthesisPrompt,
         temperature: 0.1,
+        abortSignal: signal,
       });
-      return object;
-    },
-    "Synthesis Coordinator"
-  );
+      cleanup();
+      finalOutput = object;
+    } catch (error) {
+      cleanup();
+      const isAborted = error instanceof Error && error.name === 'AbortError';
+      console.warn(`Synthesis Coordinator ${isAborted ? 'timed out (30s)' : 'failed'}, using fallback:`,
+        isAborted ? 'timeout' : error);
+      finalOutput = buildFallbackResumeReviewResponse(scoringResult, toolData, feedbackAnalysis);
+      usedFallback = true;
+    }
+  }
+
   progressStream?.sendCompleted("synthesis-coordinator", 5);
 
   // VALIDATE: Ensure score is within acceptable range
@@ -904,6 +782,7 @@ Ensure everything is consistent, specific, and actionable.`,
       feedback: feedbackAnalysis,
     },
     baselineScore,
+    warnings: usedFallback ? ["Synthesis timed out - using simplified response"] : undefined,
   };
 }
 
@@ -1108,22 +987,25 @@ Be very specific with examples from the resume and job description.`,
   progressStream?.sendCompleted("feedback-expert", 4);
 
   // =========================================================================
-  // SEQUENTIAL: Synthesis Coordinator
+  // SEQUENTIAL: Synthesis Coordinator (with timeout and fallback)
   // =========================================================================
   progressStream?.sendStarted("synthesis-coordinator", 5);
-  const finalOutput = await runWithRetry(
-    async () => {
-      const { object } = await generateObject({
-        model,
-        schema: JobMatchSchema,
-        system: SYNTHESIS_COORDINATOR_PROMPT,
-        prompt: `Synthesize the team's job match analysis:
+
+  let finalOutput: JobMatchResponse;
+  let usedFallback = false;
+
+  // Compact agent outputs to reduce token count while preserving key info
+  const compactedDataAnalysis = compactAgentOutput(dataAnalysis);
+  const compactedKeywordAnalysis = compactAgentOutput(keywordAnalysis);
+  const compactedFeedbackAnalysis = compactAgentOutput(feedbackAnalysis);
+
+  const synthesisPrompt = `Synthesize the team's job match analysis:
 
 DATA ANALYZER:
-${dataAnalysis}
+${compactedDataAnalysis}
 
 KEYWORD EXPERT:
-${keywordAnalysis}
+${compactedKeywordAnalysis}
 
 SCORING SPECIALIST:
 Final Score: ${scoringResult.finalScore}/100
@@ -1131,7 +1013,7 @@ Math: ${scoringResult.math}
 Adjustments: ${JSON.stringify(scoringResult.adjustments, null, 2)}
 
 FEEDBACK SPECIALIST:
-${feedbackAnalysis}
+${compactedFeedbackAnalysis}
 
 CALCULATED BASELINE SCORE: ${baselineScore.score}/100
 
@@ -1146,13 +1028,40 @@ Create the final structured response with:
 - additional_comments (overall assessment and next steps)
 
 Each category in detailed_analysis should include specific counts and evidence.
-Each suggestion should be concrete and actionable.`,
+Each suggestion should be concrete and actionable.`;
+
+  logContextSize("Job Match Synthesis", SYNTHESIS_COORDINATOR_PROMPT, synthesisPrompt);
+
+  // DeepSeek has issues with generateObject JSON schema mode - use fallback directly
+  if (provider === "deepseek") {
+    console.log("[Job Match Synthesis] Using fallback for DeepSeek (JSON schema compatibility issue)");
+    finalOutput = buildFallbackJobMatchResponse(scoringResult, toolData, feedbackAnalysis);
+    usedFallback = true;
+  } else {
+    // Create abort controller for 45 second timeout
+    const { signal, cleanup } = createAbortableTimeout(30000);  // Reduced from 45s for faster fallback
+
+    try {
+      const { object } = await generateObject({
+        model,
+        schema: JobMatchSchema,
+        system: SYNTHESIS_COORDINATOR_PROMPT,
+        prompt: synthesisPrompt,
         temperature: 0.1,
+        abortSignal: signal,
       });
-      return object;
-    },
-    "Synthesis Coordinator"
-  );
+      cleanup();
+      finalOutput = object;
+    } catch (error) {
+      cleanup();
+      const isAborted = error instanceof Error && error.name === 'AbortError';
+      console.warn(`Synthesis Coordinator ${isAborted ? 'timed out (30s)' : 'failed'}, using fallback:`,
+        isAborted ? 'timeout' : error);
+      finalOutput = buildFallbackJobMatchResponse(scoringResult, toolData, feedbackAnalysis);
+      usedFallback = true;
+    }
+  }
+
   progressStream?.sendCompleted("synthesis-coordinator", 5);
 
   // VALIDATE: Ensure score is within acceptable range
@@ -1176,6 +1085,7 @@ Each suggestion should be concrete and actionable.`,
       feedback: feedbackAnalysis,
     },
     baselineScore,
+    warnings: usedFallback ? ["Synthesis timed out - using simplified response"] : undefined,
   };
 }
 

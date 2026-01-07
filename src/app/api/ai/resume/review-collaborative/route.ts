@@ -13,6 +13,10 @@ import { convertResumeToText } from "@/utils/ai.utils";
 import { Resume } from "@/models/profile.model";
 import { AiModel } from "@/models/ai.model";
 
+// Extend timeout for multi-agent collaboration (3 minutes)
+// With 60s synthesis timeout fallback, actual time is ~2 minutes max
+export const maxDuration = 180;
+
 export const POST = async (req: NextRequest) => {
   const session = await auth();
   const userId = session?.accessToken?.sub;
@@ -73,26 +77,38 @@ export const POST = async (req: NextRequest) => {
 
           // Send completion and final result
           const completeUpdate = createProgressUpdate("complete", "completed");
-          controller.enqueue(
-            new TextEncoder().encode(encodeProgressMessage(completeUpdate))
-          );
+          try {
+            controller.enqueue(
+              new TextEncoder().encode(encodeProgressMessage(completeUpdate))
+            );
 
-          // Send the final analysis as the last message
-          const finalMessage = `data: ${JSON.stringify({
-            type: "result",
-            data: analysis,
-          })}\n\n`;
-          controller.enqueue(new TextEncoder().encode(finalMessage));
+            // Send the final analysis as the last message
+            const finalMessage = `data: ${JSON.stringify({
+              type: "result",
+              data: analysis,
+            })}\n\n`;
+            controller.enqueue(new TextEncoder().encode(finalMessage));
+          } catch {
+            // Controller may already be closed (client disconnected)
+          }
 
-          controller.close();
+          try {
+            controller.close();
+          } catch {
+            // Already closed
+          }
         } catch (error) {
           console.error("Collaborative review error:", error);
-          const errorMessage = `data: ${JSON.stringify({
-            type: "error",
-            message: error instanceof Error ? error.message : "Analysis failed",
-          })}\n\n`;
-          controller.enqueue(new TextEncoder().encode(errorMessage));
-          controller.close();
+          try {
+            const errorMessage = `data: ${JSON.stringify({
+              type: "error",
+              message: error instanceof Error ? error.message : "Analysis failed",
+            })}\n\n`;
+            controller.enqueue(new TextEncoder().encode(errorMessage));
+            controller.close();
+          } catch {
+            // Controller may already be closed
+          }
         }
       },
     });
