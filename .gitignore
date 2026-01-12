@@ -45,3 +45,5 @@ dev.db-journal
 /blob-report/
 /playwright/.cache/
 data/files/resumes
+CLAUDE.md
+/docs
