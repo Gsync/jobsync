@@ -23,6 +23,12 @@ import {
   calculateKeywordOverlap,
   analyzeFormatting,
   extractRequiredSkills,
+  // New semantic extraction functions (Phase 1)
+  extractSemanticKeywords,
+  analyzeActionVerbs,
+  performSemanticSkillMatch,
+  getKeywordCountFromSemantic,
+  getVerbCountFromSemantic,
 } from "./tools";
 import { ProgressStream } from "./progress-stream";
 import {
@@ -33,6 +39,15 @@ import {
   SCORING_GUIDELINES,
 } from "./scoring";
 import { ResumeReviewResponse, JobMatchResponse } from "@/models/ai.model";
+
+// ============================================================================
+// SEMANTIC EXTRACTION (Default)
+// ============================================================================
+
+/**
+ * Uses LLM-based semantic extraction for keywords, verbs, and skill matching
+ * Replaces hard-coded keyword lists for more intelligent, context-aware analysis
+ */
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -122,7 +137,7 @@ const ScoringResultSchema = z.object({
 async function runWithRetry<T>(
   operation: () => Promise<T>,
   operationName: string,
-  maxRetries: number = 1  // Reduced from 2 for faster failure (max 3s overhead vs 7s)
+  maxRetries: number = 1 // Reduced from 2 for faster failure (max 3s overhead vs 7s)
 ): Promise<T> {
   let lastError: Error = new Error("Unknown error");
 
@@ -145,7 +160,9 @@ async function runWithRetry<T>(
   }
 
   throw new Error(
-    `${operationName} failed after ${maxRetries + 1} attempts: ${lastError.message}`
+    `${operationName} failed after ${maxRetries + 1} attempts: ${
+      lastError.message
+    }`
   );
 }
 
@@ -153,7 +170,10 @@ async function runWithRetry<T>(
 // TIMEOUT WRAPPER WITH ABORT CONTROLLER
 // ============================================================================
 
-function createAbortableTimeout(timeoutMs: number): { signal: AbortSignal; cleanup: () => void } {
+function createAbortableTimeout(timeoutMs: number): {
+  signal: AbortSignal;
+  cleanup: () => void;
+} {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   return {
@@ -170,11 +190,17 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
-function logContextSize(agentName: string, systemPrompt: string, userPrompt: string): number {
+function logContextSize(
+  agentName: string,
+  systemPrompt: string,
+  userPrompt: string
+): number {
   const systemTokens = estimateTokens(systemPrompt);
   const userTokens = estimateTokens(userPrompt);
   const totalTokens = systemTokens + userTokens;
-  console.log(`[${agentName}] Context size: ~${totalTokens} tokens (system: ${systemTokens}, user: ${userTokens})`);
+  console.log(
+    `[${agentName}] Context size: ~${totalTokens} tokens (system: ${systemTokens}, user: ${userTokens})`
+  );
   return totalTokens;
 }
 
@@ -183,20 +209,22 @@ function logContextSize(agentName: string, systemPrompt: string, userPrompt: str
 // ============================================================================
 
 function compactAgentOutput(text: string): string {
-  return text
-    // Remove excessive whitespace
-    .replace(/\n{3,}/g, '\n\n')
-    .replace(/[ \t]+/g, ' ')
-    // Remove markdown formatting but keep structure
-    .replace(/\*\*([^*]+)\*\*/g, '$1')
-    .replace(/\*([^*]+)\*/g, '$1')
-    .replace(/#{1,6}\s*/g, '')
-    // Remove redundant phrases
-    .replace(/^[-•]\s*/gm, '- ')
-    .replace(/\n- \n/g, '\n')
-    // Compact lists
-    .replace(/:\n- /g, ': ')
-    .trim();
+  return (
+    text
+      // Remove excessive whitespace
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/[ \t]+/g, " ")
+      // Remove markdown formatting but keep structure
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/#{1,6}\s*/g, "")
+      // Remove redundant phrases
+      .replace(/^[-•]\s*/gm, "- ")
+      .replace(/\n- \n/g, "\n")
+      // Compact lists
+      .replace(/:\n- /g, ": ")
+      .trim()
+  );
 }
 
 // ============================================================================
@@ -209,12 +237,19 @@ function buildFallbackJobMatchResponse(
   feedbackAnalysis: string
 ): JobMatchResponse {
   // Extract suggestions from feedback analysis text
-  const suggestionMatches = feedbackAnalysis.match(/\d+\.\s+\*\*[^*]+\*\*[^]*?(?=\d+\.\s+\*\*|$)/g) || [];
+  const suggestionMatches =
+    feedbackAnalysis.match(/\d+\.\s+\*\*[^*]+\*\*[^]*?(?=\d+\.\s+\*\*|$)/g) ||
+    [];
   const suggestions = suggestionMatches.slice(0, 3).map((match, i) => {
     const titleMatch = match.match(/\*\*([^*]+)\*\*/);
     return {
       category: titleMatch ? titleMatch[1].trim() : `Suggestion ${i + 1}`,
-      value: match.replace(/\*\*[^*]+\*\*/, "").trim().split("\n").filter(Boolean).slice(0, 4),
+      value: match
+        .replace(/\*\*[^*]+\*\*/, "")
+        .trim()
+        .split("\n")
+        .filter(Boolean)
+        .slice(0, 4),
     };
   });
 
@@ -223,11 +258,15 @@ function buildFallbackJobMatchResponse(
     suggestions.push(
       {
         category: "Keywords to Add",
-        value: toolData.keywordOverlap.missingKeywords.slice(0, 4).map(k => `Add "${k}" to your resume`),
+        value: toolData.keywordOverlap.missingKeywords
+          .slice(0, 4)
+          .map((k) => `Add "${k}" to your resume`),
       },
       {
         category: "Skills to Highlight",
-        value: toolData.keywordOverlap.matchedKeywords.slice(0, 4).map(k => `Emphasize your ${k} experience`),
+        value: toolData.keywordOverlap.matchedKeywords
+          .slice(0, 4)
+          .map((k) => `Emphasize your ${k} experience`),
       }
     );
   }
@@ -236,19 +275,37 @@ function buildFallbackJobMatchResponse(
     matching_score: scoringResult.finalScore,
     detailed_analysis: [
       {
-        category: `Skills Match (${Math.round(toolData.keywordOverlap.matchedKeywords.length / Math.max(toolData.keywordOverlap.totalJobKeywords, 1) * 30)}/30 pts)`,
+        category: `Skills Match (${Math.round(
+          (toolData.keywordOverlap.matchedKeywords.length /
+            Math.max(toolData.keywordOverlap.totalJobKeywords, 1)) *
+            30
+        )}/30 pts)`,
         value: [
           `Matched ${toolData.keywordOverlap.matchedKeywords.length} of ${toolData.keywordOverlap.totalJobKeywords} required skills`,
-          ...toolData.keywordOverlap.matchedKeywords.slice(0, 3).map(k => `✅ ${k}`),
-          ...toolData.keywordOverlap.missingKeywords.slice(0, 2).map(k => `❌ Missing: ${k}`),
+          ...toolData.keywordOverlap.matchedKeywords
+            .slice(0, 3)
+            .map((k) => `✅ ${k}`),
+          ...toolData.keywordOverlap.missingKeywords
+            .slice(0, 2)
+            .map((k) => `❌ Missing: ${k}`),
         ],
       },
       {
-        category: `Keyword Overlap (${Math.round(toolData.keywordOverlap.overlapPercentage * 0.2)}/20 pts)`,
+        category: `Keyword Overlap (${Math.round(
+          toolData.keywordOverlap.overlapPercentage * 0.2
+        )}/20 pts)`,
         value: [
-          `${Math.round(toolData.keywordOverlap.overlapPercentage)}% keyword overlap detected`,
-          `Found: ${toolData.keywordOverlap.matchedKeywords.slice(0, 5).join(", ") || "None"}`,
-          `Missing: ${toolData.keywordOverlap.missingKeywords.slice(0, 5).join(", ") || "None"}`,
+          `${Math.round(
+            toolData.keywordOverlap.overlapPercentage
+          )}% keyword overlap detected`,
+          `Found: ${
+            toolData.keywordOverlap.matchedKeywords.slice(0, 5).join(", ") ||
+            "None"
+          }`,
+          `Missing: ${
+            toolData.keywordOverlap.missingKeywords.slice(0, 5).join(", ") ||
+            "None"
+          }`,
         ],
       },
       {
@@ -256,15 +313,33 @@ function buildFallbackJobMatchResponse(
         value: [
           `Resume contains ${toolData.resumeKeywords.count} technical keywords`,
           `Job requires ${toolData.jobKeywords.count} technical keywords`,
-          scoringResult.adjustments.find(a => a.criterion.toLowerCase().includes("experience"))?.reason || "Experience level assessed",
+          scoringResult.adjustments.find((a) =>
+            a.criterion.toLowerCase().includes("experience")
+          )?.reason || "Experience level assessed",
         ],
       },
     ],
     suggestions: suggestions.slice(0, 3),
     additional_comments: [
-      `Match score: ${scoringResult.finalScore}/100 - ${scoringResult.finalScore >= 65 ? "Strong match" : scoringResult.finalScore >= 50 ? "Moderate match" : "Consider improvements"}`,
-      `Priority: ${toolData.keywordOverlap.missingKeywords[0] ? `Add ${toolData.keywordOverlap.missingKeywords[0]} to your resume` : "Highlight your matched skills"}`,
-      `Recommendation: ${scoringResult.finalScore >= 65 ? "Apply with confidence" : scoringResult.finalScore >= 50 ? "Apply after tailoring resume" : "Consider upskilling first"}`,
+      `Match score: ${scoringResult.finalScore}/100 - ${
+        scoringResult.finalScore >= 65
+          ? "Strong match"
+          : scoringResult.finalScore >= 50
+          ? "Moderate match"
+          : "Consider improvements"
+      }`,
+      `Priority: ${
+        toolData.keywordOverlap.missingKeywords[0]
+          ? `Add ${toolData.keywordOverlap.missingKeywords[0]} to your resume`
+          : "Highlight your matched skills"
+      }`,
+      `Recommendation: ${
+        scoringResult.finalScore >= 65
+          ? "Apply with confidence"
+          : scoringResult.finalScore >= 50
+          ? "Apply after tailoring resume"
+          : "Consider upskilling first"
+      }`,
     ],
   };
 }
@@ -281,9 +356,9 @@ function buildFallbackResumeReviewResponse(
     if (!match) return [];
     return match[0]
       .split("\n")
-      .filter(line => line.match(/^\d+\.|^-|^\*/))
+      .filter((line) => line.match(/^\d+\.|^-|^\*/))
       .slice(0, 4)
-      .map(line => line.replace(/^[\d\.\-\*\s]+/, "").trim());
+      .map((line) => line.replace(/^[\d\.\-\*\s]+/, "").trim());
   };
 
   const strengths = extractPoints("STRENGTHS");
@@ -292,21 +367,44 @@ function buildFallbackResumeReviewResponse(
 
   return {
     score: scoringResult.finalScore,
-    summary: `Your resume scores ${scoringResult.finalScore}/100. ${toolData.quantified.count > 0 ? `Contains ${toolData.quantified.count} quantified achievements. ` : ""}${toolData.keywords.count} technical keywords detected.`,
-    strengths: strengths.length > 0 ? strengths : [
-      toolData.quantified.count > 3 ? "Good use of quantified achievements" : "Resume structure is clear",
-      `Contains ${toolData.keywords.count} technical keywords`,
-      toolData.formatting.hasBulletPoints ? "Uses bullet points effectively" : "Organized layout",
-    ],
-    weaknesses: weaknesses.length > 0 ? weaknesses : [
-      toolData.quantified.count < 3 ? "Could use more quantified achievements" : "Some sections could be more concise",
-      toolData.verbs.count < 10 ? "Consider using more strong action verbs" : "Minor formatting improvements possible",
-    ],
-    suggestions: suggestions.length > 0 ? suggestions : [
-      toolData.quantified.count < 5 ? "Add more metrics and numbers to demonstrate impact" : "Continue emphasizing measurable achievements",
-      "Tailor keywords to specific job descriptions",
-      "Ensure consistent formatting throughout",
-    ],
+    summary: `Your resume scores ${scoringResult.finalScore}/100. ${
+      toolData.quantified.count > 0
+        ? `Contains ${toolData.quantified.count} quantified achievements. `
+        : ""
+    }${toolData.keywords.count} technical keywords detected.`,
+    strengths:
+      strengths.length > 0
+        ? strengths
+        : [
+            toolData.quantified.count > 3
+              ? "Good use of quantified achievements"
+              : "Resume structure is clear",
+            `Contains ${toolData.keywords.count} technical keywords`,
+            toolData.formatting.hasBulletPoints
+              ? "Uses bullet points effectively"
+              : "Organized layout",
+          ],
+    weaknesses:
+      weaknesses.length > 0
+        ? weaknesses
+        : [
+            toolData.quantified.count < 3
+              ? "Could use more quantified achievements"
+              : "Some sections could be more concise",
+            toolData.verbs.count < 10
+              ? "Consider using more strong action verbs"
+              : "Minor formatting improvements possible",
+          ],
+    suggestions:
+      suggestions.length > 0
+        ? suggestions
+        : [
+            toolData.quantified.count < 5
+              ? "Add more metrics and numbers to demonstrate impact"
+              : "Continue emphasizing measurable achievements",
+            "Tailor keywords to specific job descriptions",
+            "Ensure consistent formatting throughout",
+          ],
   };
 }
 
@@ -514,12 +612,36 @@ export async function collaborativeResumeReview(
 ): Promise<CollaborativeResult<ResumeReviewResponse>> {
   const model = getModel(provider, modelName);
 
-  // Extract tool data (synchronous, fast)
+  // =========================================================================
+  // EXTRACTION PHASE: Use semantic LLM-based extraction
+  // =========================================================================
+  console.log("[Multi-Agent] Using semantic LLM-based extraction");
+
+  // Use LLM-based semantic extraction for intelligent, context-aware analysis
+  const [semanticKeywords, semanticVerbs] = await Promise.all([
+    extractSemanticKeywords(resumeText, provider, modelName),
+    analyzeActionVerbs(resumeText, provider, modelName),
+  ]);
+
+  // Convert semantic results to compatible format for scoring
+  const keywordCount = getKeywordCountFromSemantic(semanticKeywords);
+  const verbCount = getVerbCountFromSemantic(semanticVerbs);
+
   const toolData: ToolDataResume = {
-    quantified: countQuantifiedAchievements(resumeText),
-    keywords: extractKeywords(resumeText),
-    verbs: countActionVerbs(resumeText),
-    formatting: analyzeFormatting(resumeText),
+    quantified: countQuantifiedAchievements(resumeText), // Still use counting for achievements
+    keywords: {
+      keywords: [
+        ...semanticKeywords.technical_skills,
+        ...semanticKeywords.tools_platforms,
+        ...semanticKeywords.methodologies,
+      ],
+      count: keywordCount,
+    },
+    verbs: {
+      verbs: semanticVerbs.strong_verbs.map((v) => v.verb),
+      count: verbCount,
+    },
+    formatting: analyzeFormatting(resumeText), // Still use structural analysis
   };
 
   // Calculate baseline score using mathematical formula
@@ -532,7 +654,10 @@ export async function collaborativeResumeReview(
   });
 
   // Calculate context-aware variance
-  const allowedVariance = calculateAllowedVariance(baselineScore.score, "resume");
+  const allowedVariance = calculateAllowedVariance(
+    baselineScore.score,
+    "resume"
+  );
   const minScore = Math.max(0, baselineScore.score - allowedVariance);
   const maxScore = Math.min(100, baselineScore.score + allowedVariance);
 
@@ -544,53 +669,59 @@ export async function collaborativeResumeReview(
 
   const [dataAnalysis, keywordAnalysis] = await Promise.all([
     // Agent 1: Data Analyzer
-    runWithRetry(
-      async () => {
-        const { text } = await generateText({
-          model,
-          system: DATA_ANALYZER_PROMPT,
-          prompt: `Extract all objective data from this resume:
+    runWithRetry(async () => {
+      const { text } = await generateText({
+        model,
+        system: DATA_ANALYZER_PROMPT,
+        prompt: `Extract all objective data from this resume:
 
 ${resumeText}
 
 Tool-extracted data to incorporate:
-- Quantified achievements: ${toolData.quantified.count} found (Examples: ${toolData.quantified.examples.slice(0, 3).join(", ") || "none"})
-- Keywords: ${toolData.keywords.count} technical terms (${toolData.keywords.keywords.slice(0, 10).join(", ")})
-- Action verbs: ${toolData.verbs.count} strong verbs (${toolData.verbs.verbs.slice(0, 10).join(", ")})
-- Formatting: ${toolData.formatting.sectionCount} sections, ${toolData.formatting.hasBulletPoints ? "has" : "no"} bullets
+- Quantified achievements: ${toolData.quantified.count} found (Examples: ${
+          toolData.quantified.examples.slice(0, 3).join(", ") || "none"
+        })
+- Keywords: ${
+          toolData.keywords.count
+        } technical terms (${toolData.keywords.keywords
+          .slice(0, 10)
+          .join(", ")})
+- Action verbs: ${toolData.verbs.count} strong verbs (${toolData.verbs.verbs
+          .slice(0, 10)
+          .join(", ")})
+- Formatting: ${toolData.formatting.sectionCount} sections, ${
+          toolData.formatting.hasBulletPoints ? "has" : "no"
+        } bullets
 
 Provide a complete data extraction report.`,
-          temperature: 0.1,
-        });
-        return text;
-      },
-      "Data Analyzer"
-    ),
+        temperature: 0.1,
+      });
+      return text;
+    }, "Data Analyzer"),
 
     // Agent 2: Keyword Expert (runs in parallel - doesn't need Agent 1's output)
-    runWithRetry(
-      async () => {
-        const { text } = await generateText({
-          model,
-          system: KEYWORD_EXPERT_PROMPT,
-          prompt: `Analyze keyword optimization for this resume:
+    runWithRetry(async () => {
+      const { text } = await generateText({
+        model,
+        system: KEYWORD_EXPERT_PROMPT,
+        prompt: `Analyze keyword optimization for this resume:
 
 RESUME:
 ${resumeText}
 
-KEYWORDS FOUND (${toolData.keywords.count} total): ${toolData.keywords.keywords.join(", ")}
+KEYWORDS FOUND (${
+          toolData.keywords.count
+        } total): ${toolData.keywords.keywords.join(", ")}
 
 Provide expert analysis on:
 1. Keyword strength (0-20 points recommendation)
 2. ATS-friendliness assessment
 3. Missing industry-critical keywords
 4. Keyword placement optimization`,
-          temperature: 0.2,
-        });
-        return text;
-      },
-      "Keyword Expert"
-    ),
+        temperature: 0.2,
+      });
+      return text;
+    }, "Keyword Expert"),
   ]);
 
   progressStream?.sendCompleted("data-analyzer", 1);
@@ -601,13 +732,12 @@ Provide expert analysis on:
   // Now uses structured output for reliable score extraction
   // =========================================================================
   progressStream?.sendStarted("scoring-specialist", 3);
-  const scoringResult = await runWithRetry(
-    async () => {
-      const { object } = await generateObject({
-        model,
-        schema: ScoringResultSchema,
-        system: SCORING_SPECIALIST_PROMPT,
-        prompt: `Calculate a fair, realistic score for this resume:
+  const scoringResult = await runWithRetry(async () => {
+    const { object } = await generateObject({
+      model,
+      schema: ScoringResultSchema,
+      system: SCORING_SPECIALIST_PROMPT,
+      prompt: `Calculate a fair, realistic score for this resume:
 
 DATA FINDINGS:
 ${dataAnalysis}
@@ -639,24 +769,21 @@ Return a structured result with:
 - finalScore: your calculated score (must be ${minScore}-${maxScore})
 - adjustments: array of {criterion, adjustment, reason} for each change
 - math: show "Baseline ${baselineScore.score} + adj1 + adj2 - adj3 = Final X"`,
-        temperature: 0.1,
-      });
-      return object;
-    },
-    "Scoring Specialist"
-  );
+      temperature: 0.1,
+    });
+    return object;
+  }, "Scoring Specialist");
   progressStream?.sendCompleted("scoring-specialist", 3);
 
   // =========================================================================
   // SEQUENTIAL: Feedback Specialist (needs scoring result)
   // =========================================================================
   progressStream?.sendStarted("feedback-expert", 4);
-  const feedbackAnalysis = await runWithRetry(
-    async () => {
-      const { text } = await generateText({
-        model,
-        system: FEEDBACK_SPECIALIST_PROMPT,
-        prompt: `Create actionable feedback based on the team's analysis:
+  const feedbackAnalysis = await runWithRetry(async () => {
+    const { text } = await generateText({
+      model,
+      system: FEEDBACK_SPECIALIST_PROMPT,
+      prompt: `Create actionable feedback based on the team's analysis:
 
 DATA FINDINGS:
 ${dataAnalysis}
@@ -667,7 +794,14 @@ ${keywordAnalysis}
 SCORING SPECIALIST:
 Final Score: ${scoringResult.finalScore}/100
 Math: ${scoringResult.math}
-Adjustments: ${scoringResult.adjustments.map((a) => `${a.criterion}: ${a.adjustment > 0 ? "+" : ""}${a.adjustment} (${a.reason})`).join(", ")}
+Adjustments: ${scoringResult.adjustments
+        .map(
+          (a) =>
+            `${a.criterion}: ${a.adjustment > 0 ? "+" : ""}${a.adjustment} (${
+              a.reason
+            })`
+        )
+        .join(", ")}
 
 Provide:
 1. Top 3-5 strengths (specific examples from the resume)
@@ -675,12 +809,10 @@ Provide:
 3. Top 3-5 actionable suggestions (concrete steps)
 
 Make it encouraging, specific, and implementable.`,
-        temperature: 0.3,
-      });
-      return text;
-    },
-    "Feedback Expert"
-  );
+      temperature: 0.3,
+    });
+    return text;
+  }, "Feedback Expert");
   progressStream?.sendCompleted("feedback-expert", 4);
 
   // =========================================================================
@@ -715,7 +847,9 @@ ${compactedFeedbackAnalysis}
 CALCULATED BASELINE SCORE: ${baselineScore.score}/100
 
 CRITICAL SCORING RULE:
-The score MUST be ${scoringResult.finalScore}/100 (as calculated by Scoring Specialist).
+The score MUST be ${
+    scoringResult.finalScore
+  }/100 (as calculated by Scoring Specialist).
 DO NOT change this score. It has been validated to be within the acceptable range.
 
 Create the final structured response with:
@@ -727,16 +861,26 @@ Create the final structured response with:
 
 Ensure everything is consistent, specific, and actionable.`;
 
-  logContextSize("Resume Review Synthesis", SYNTHESIS_COORDINATOR_PROMPT, synthesisPrompt);
+  logContextSize(
+    "Resume Review Synthesis",
+    SYNTHESIS_COORDINATOR_PROMPT,
+    synthesisPrompt
+  );
 
   // DeepSeek has issues with generateObject JSON schema mode - use fallback directly
   if (provider === "deepseek") {
-    console.log("[Resume Review Synthesis] Using fallback for DeepSeek (JSON schema compatibility issue)");
-    finalOutput = buildFallbackResumeReviewResponse(scoringResult, toolData, feedbackAnalysis);
+    console.log(
+      "[Resume Review Synthesis] Using fallback for DeepSeek (JSON schema compatibility issue)"
+    );
+    finalOutput = buildFallbackResumeReviewResponse(
+      scoringResult,
+      toolData,
+      feedbackAnalysis
+    );
     usedFallback = true;
   } else {
     // Create abort controller for 45 second timeout
-    const { signal, cleanup } = createAbortableTimeout(30000);  // Reduced from 45s for faster fallback
+    const { signal, cleanup } = createAbortableTimeout(30000); // Reduced from 45s for faster fallback
 
     try {
       const { object } = await generateObject({
@@ -751,10 +895,18 @@ Ensure everything is consistent, specific, and actionable.`;
       finalOutput = object;
     } catch (error) {
       cleanup();
-      const isAborted = error instanceof Error && error.name === 'AbortError';
-      console.warn(`Synthesis Coordinator ${isAborted ? 'timed out (30s)' : 'failed'}, using fallback:`,
-        isAborted ? 'timeout' : error);
-      finalOutput = buildFallbackResumeReviewResponse(scoringResult, toolData, feedbackAnalysis);
+      const isAborted = error instanceof Error && error.name === "AbortError";
+      console.warn(
+        `Synthesis Coordinator ${
+          isAborted ? "timed out (30s)" : "failed"
+        }, using fallback:`,
+        isAborted ? "timeout" : error
+      );
+      finalOutput = buildFallbackResumeReviewResponse(
+        scoringResult,
+        toolData,
+        feedbackAnalysis
+      );
       usedFallback = true;
     }
   }
@@ -782,7 +934,9 @@ Ensure everything is consistent, specific, and actionable.`;
       feedback: feedbackAnalysis,
     },
     baselineScore,
-    warnings: usedFallback ? ["Synthesis timed out - using simplified response"] : undefined,
+    warnings: usedFallback
+      ? ["Synthesis timed out - using simplified response"]
+      : undefined,
   };
 }
 
@@ -799,15 +953,72 @@ export async function collaborativeJobMatch(
 ): Promise<CollaborativeResult<JobMatchResponse>> {
   const model = getModel(provider, modelName);
 
-  // Extract tool data (synchronous, fast)
+  // =========================================================================
+  // EXTRACTION PHASE: Choose between legacy (hard-coded) or semantic (LLM)
+  // =========================================================================
+  console.log("[Multi-Agent] Using semantic LLM-based skill matching");
+
+  // Use LLM-based semantic skill matching for intelligent analysis
+  const semanticSkillMatch = await performSemanticSkillMatch(
+    resumeText,
+    jobText,
+    provider,
+    modelName
+  );
+
+  // Extract semantic keywords for both resume and job
+  const [resumeSemanticKeywords, jobSemanticKeywords] = await Promise.all([
+    extractSemanticKeywords(resumeText, provider, modelName),
+    extractSemanticKeywords(jobText, provider, modelName, "job description"),
+  ]);
+
+  // Calculate keyword overlap from semantic results
+  const matchedCount =
+    semanticSkillMatch.exact_matches.length +
+    Math.floor(semanticSkillMatch.related_matches.length * 0.7); // Count related as 70%
+  const totalJobSkills = jobSemanticKeywords.total_count;
+  const overlapPercentage = semanticSkillMatch.overall_match_percentage;
+
   const toolData: ToolDataJobMatch = {
-    keywordOverlap: calculateKeywordOverlap(resumeText, jobText),
-    resumeKeywords: extractKeywords(resumeText),
-    jobKeywords: extractKeywords(jobText),
-    requiredSkills: extractRequiredSkills(jobText),
+    keywordOverlap: {
+      overlapPercentage: Math.round(overlapPercentage),
+      matchedKeywords: [
+        ...semanticSkillMatch.exact_matches.map((m) => m.skill),
+        ...semanticSkillMatch.related_matches.map((m) => m.job_skill),
+      ],
+      missingKeywords: semanticSkillMatch.missing_skills.map((m) => m.skill),
+      totalJobKeywords: totalJobSkills,
+    },
+    resumeKeywords: {
+      keywords: [
+        ...resumeSemanticKeywords.technical_skills,
+        ...resumeSemanticKeywords.tools_platforms,
+      ],
+      count: resumeSemanticKeywords.total_count,
+    },
+    jobKeywords: {
+      keywords: [
+        ...jobSemanticKeywords.technical_skills,
+        ...jobSemanticKeywords.tools_platforms,
+        ...jobSemanticKeywords.methodologies,
+      ],
+      count: jobSemanticKeywords.total_count,
+    },
+    requiredSkills: {
+      requiredSkills: semanticSkillMatch.missing_skills
+        .filter((s) => s.importance === "critical")
+        .map((s) => s.skill),
+      preferredSkills: semanticSkillMatch.missing_skills
+        .filter((s) => s.importance !== "critical")
+        .map((s) => s.skill),
+      totalSkills:
+        semanticSkillMatch.exact_matches.length +
+        semanticSkillMatch.related_matches.length +
+        semanticSkillMatch.missing_skills.length,
+    },
   };
 
-  // Extract years of experience from resume and job
+  // Extract years (still use helper functions)
   const experienceYears = extractYearsOfExperience(resumeText);
   const requiredYears = extractRequiredYears(jobText);
 
@@ -821,7 +1032,10 @@ export async function collaborativeJobMatch(
   });
 
   // Calculate context-aware variance
-  const allowedVariance = calculateAllowedVariance(baselineScore.score, "job-match");
+  const allowedVariance = calculateAllowedVariance(
+    baselineScore.score,
+    "job-match"
+  );
   const minScore = Math.max(0, baselineScore.score - allowedVariance);
   const maxScore = Math.min(100, baselineScore.score + allowedVariance);
 
@@ -833,12 +1047,11 @@ export async function collaborativeJobMatch(
 
   const [dataAnalysis, keywordAnalysis] = await Promise.all([
     // Agent 1: Data Analyzer
-    runWithRetry(
-      async () => {
-        const { text } = await generateText({
-          model,
-          system: DATA_ANALYZER_PROMPT,
-          prompt: `Extract matching data between this resume and job:
+    runWithRetry(async () => {
+      const { text } = await generateText({
+        model,
+        system: DATA_ANALYZER_PROMPT,
+        prompt: `Extract matching data between this resume and job:
 
 JOB DESCRIPTION:
 ${jobText}
@@ -848,10 +1061,16 @@ ${resumeText}
 
 Tool-extracted data:
 - Keyword overlap: ${toolData.keywordOverlap.overlapPercentage}%
-- Matched keywords: ${toolData.keywordOverlap.matchedKeywords.join(", ") || "none"}
-- Missing keywords: ${toolData.keywordOverlap.missingKeywords.join(", ") || "none"}
+- Matched keywords: ${
+          toolData.keywordOverlap.matchedKeywords.join(", ") || "none"
+        }
+- Missing keywords: ${
+          toolData.keywordOverlap.missingKeywords.join(", ") || "none"
+        }
 - Required skills from parsing: ${toolData.requiredSkills.requiredSkills.length}
-- Preferred skills from parsing: ${toolData.requiredSkills.preferredSkills.length}
+- Preferred skills from parsing: ${
+          toolData.requiredSkills.preferredSkills.length
+        }
 - Candidate experience: ${experienceYears} years
 - Required experience: ${requiredYears} years
 
@@ -861,26 +1080,29 @@ Extract and list:
 3. Which are missing
 4. Experience match level
 5. Qualification match level`,
-          temperature: 0.1,
-        });
-        return text;
-      },
-      "Data Analyzer"
-    ),
+        temperature: 0.1,
+      });
+      return text;
+    }, "Data Analyzer"),
 
     // Agent 2: Keyword Expert (runs in parallel)
-    runWithRetry(
-      async () => {
-        const { text } = await generateText({
-          model,
-          system: KEYWORD_EXPERT_PROMPT,
-          prompt: `Analyze keyword matching quality:
+    runWithRetry(async () => {
+      const { text } = await generateText({
+        model,
+        system: KEYWORD_EXPERT_PROMPT,
+        prompt: `Analyze keyword matching quality:
 
-JOB KEYWORDS (${toolData.jobKeywords.count} total): ${toolData.jobKeywords.keywords.join(", ")}
+JOB KEYWORDS (${
+          toolData.jobKeywords.count
+        } total): ${toolData.jobKeywords.keywords.join(", ")}
 
-RESUME KEYWORDS (${toolData.resumeKeywords.count} total): ${toolData.resumeKeywords.keywords.join(", ")}
+RESUME KEYWORDS (${
+          toolData.resumeKeywords.count
+        } total): ${toolData.resumeKeywords.keywords.join(", ")}
 
-EXACT OVERLAP: ${toolData.keywordOverlap.overlapPercentage}% (${toolData.keywordOverlap.matchedKeywords.length}/${toolData.keywordOverlap.totalJobKeywords} keywords)
+EXACT OVERLAP: ${toolData.keywordOverlap.overlapPercentage}% (${
+          toolData.keywordOverlap.matchedKeywords.length
+        }/${toolData.keywordOverlap.totalJobKeywords} keywords)
 - Matched: ${toolData.keywordOverlap.matchedKeywords.join(", ") || "none"}
 - Missing: ${toolData.keywordOverlap.missingKeywords.join(", ") || "none"}
 
@@ -890,12 +1112,10 @@ Provide expert analysis on:
 3. Keywords to emphasize in application
 4. Semantic variations candidate could leverage
 5. Keyword Overlap score recommendation (0-20 points)`,
-          temperature: 0.2,
-        });
-        return text;
-      },
-      "Keyword Expert"
-    ),
+        temperature: 0.2,
+      });
+      return text;
+    }, "Keyword Expert"),
   ]);
 
   progressStream?.sendCompleted("data-analyzer", 1);
@@ -905,13 +1125,12 @@ Provide expert analysis on:
   // SEQUENTIAL: Scoring Specialist with structured output
   // =========================================================================
   progressStream?.sendStarted("scoring-specialist", 3);
-  const scoringResult = await runWithRetry(
-    async () => {
-      const { object } = await generateObject({
-        model,
-        schema: ScoringResultSchema,
-        system: SCORING_SPECIALIST_PROMPT,
-        prompt: `Calculate a fair job match score:
+  const scoringResult = await runWithRetry(async () => {
+    const { object } = await generateObject({
+      model,
+      schema: ScoringResultSchema,
+      system: SCORING_SPECIALIST_PROMPT,
+      prompt: `Calculate a fair job match score:
 
 DATA FINDINGS:
 ${dataAnalysis}
@@ -940,24 +1159,21 @@ Return a structured result with:
 - finalScore: your calculated score (must be ${minScore}-${maxScore})
 - adjustments: array of {criterion, adjustment, reason} for each change
 - math: show "Baseline ${baselineScore.score} + adj1 + adj2 = Final X"`,
-        temperature: 0.1,
-      });
-      return object;
-    },
-    "Scoring Specialist"
-  );
+      temperature: 0.1,
+    });
+    return object;
+  }, "Scoring Specialist");
   progressStream?.sendCompleted("scoring-specialist", 3);
 
   // =========================================================================
   // SEQUENTIAL: Feedback Specialist
   // =========================================================================
   progressStream?.sendStarted("feedback-expert", 4);
-  const feedbackAnalysis = await runWithRetry(
-    async () => {
-      const { text } = await generateText({
-        model,
-        system: FEEDBACK_SPECIALIST_PROMPT,
-        prompt: `Create an application strategy based on the match analysis:
+  const feedbackAnalysis = await runWithRetry(async () => {
+    const { text } = await generateText({
+      model,
+      system: FEEDBACK_SPECIALIST_PROMPT,
+      prompt: `Create an application strategy based on the match analysis:
 
 DATA FINDINGS:
 ${dataAnalysis}
@@ -968,7 +1184,14 @@ ${keywordAnalysis}
 SCORING SPECIALIST:
 Final Score: ${scoringResult.finalScore}/100
 Math: ${scoringResult.math}
-Adjustments: ${scoringResult.adjustments.map((a) => `${a.criterion}: ${a.adjustment > 0 ? "+" : ""}${a.adjustment} (${a.reason})`).join(", ")}
+Adjustments: ${scoringResult.adjustments
+        .map(
+          (a) =>
+            `${a.criterion}: ${a.adjustment > 0 ? "+" : ""}${a.adjustment} (${
+              a.reason
+            })`
+        )
+        .join(", ")}
 
 Provide specific, actionable suggestions:
 1. What to highlight from existing experience
@@ -978,12 +1201,10 @@ Provide specific, actionable suggestions:
 5. Application timeline recommendation
 
 Be very specific with examples from the resume and job description.`,
-        temperature: 0.3,
-      });
-      return text;
-    },
-    "Feedback Expert"
-  );
+      temperature: 0.3,
+    });
+    return text;
+  }, "Feedback Expert");
   progressStream?.sendCompleted("feedback-expert", 4);
 
   // =========================================================================
@@ -1018,7 +1239,9 @@ ${compactedFeedbackAnalysis}
 CALCULATED BASELINE SCORE: ${baselineScore.score}/100
 
 CRITICAL SCORING RULE:
-The matching_score MUST be ${scoringResult.finalScore}/100 (as calculated by Scoring Specialist).
+The matching_score MUST be ${
+    scoringResult.finalScore
+  }/100 (as calculated by Scoring Specialist).
 DO NOT change this score. It has been validated to be within the acceptable range.
 
 Create the final structured response with:
@@ -1030,16 +1253,26 @@ Create the final structured response with:
 Each category in detailed_analysis should include specific counts and evidence.
 Each suggestion should be concrete and actionable.`;
 
-  logContextSize("Job Match Synthesis", SYNTHESIS_COORDINATOR_PROMPT, synthesisPrompt);
+  logContextSize(
+    "Job Match Synthesis",
+    SYNTHESIS_COORDINATOR_PROMPT,
+    synthesisPrompt
+  );
 
   // DeepSeek has issues with generateObject JSON schema mode - use fallback directly
   if (provider === "deepseek") {
-    console.log("[Job Match Synthesis] Using fallback for DeepSeek (JSON schema compatibility issue)");
-    finalOutput = buildFallbackJobMatchResponse(scoringResult, toolData, feedbackAnalysis);
+    console.log(
+      "[Job Match Synthesis] Using fallback for DeepSeek (JSON schema compatibility issue)"
+    );
+    finalOutput = buildFallbackJobMatchResponse(
+      scoringResult,
+      toolData,
+      feedbackAnalysis
+    );
     usedFallback = true;
   } else {
     // Create abort controller for 45 second timeout
-    const { signal, cleanup } = createAbortableTimeout(30000);  // Reduced from 45s for faster fallback
+    const { signal, cleanup } = createAbortableTimeout(30000); // Reduced from 45s for faster fallback
 
     try {
       const { object } = await generateObject({
@@ -1054,10 +1287,18 @@ Each suggestion should be concrete and actionable.`;
       finalOutput = object;
     } catch (error) {
       cleanup();
-      const isAborted = error instanceof Error && error.name === 'AbortError';
-      console.warn(`Synthesis Coordinator ${isAborted ? 'timed out (30s)' : 'failed'}, using fallback:`,
-        isAborted ? 'timeout' : error);
-      finalOutput = buildFallbackJobMatchResponse(scoringResult, toolData, feedbackAnalysis);
+      const isAborted = error instanceof Error && error.name === "AbortError";
+      console.warn(
+        `Synthesis Coordinator ${
+          isAborted ? "timed out (30s)" : "failed"
+        }, using fallback:`,
+        isAborted ? "timeout" : error
+      );
+      finalOutput = buildFallbackJobMatchResponse(
+        scoringResult,
+        toolData,
+        feedbackAnalysis
+      );
       usedFallback = true;
     }
   }
@@ -1085,7 +1326,9 @@ Each suggestion should be concrete and actionable.`;
       feedback: feedbackAnalysis,
     },
     baselineScore,
-    warnings: usedFallback ? ["Synthesis timed out - using simplified response"] : undefined,
+    warnings: usedFallback
+      ? ["Synthesis timed out - using simplified response"]
+      : undefined,
   };
 }
 

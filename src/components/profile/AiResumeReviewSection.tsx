@@ -194,20 +194,17 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
                       <p className="font-semibold mb-1">
-                        Phase 3: Multi-Agent System
+                        Phase 2: Consolidated Multi-Agent System
                       </p>
                       <p className="text-xs mb-2">
-                        Uses 5 specialized AI agents working together:
+                        Uses 2 specialized AI agents working together:
                       </p>
                       <ul className="text-xs space-y-1">
-                        <li>• Data Analyzer (extracts metrics)</li>
-                        <li>• Keyword Expert (ATS optimization)</li>
-                        <li>• Scoring Specialist (fair scoring)</li>
-                        <li>• Feedback Expert (actionable advice)</li>
-                        <li>• Synthesis Coordinator (combines insights)</li>
+                        <li>• Analysis Agent (data, keywords, scoring)</li>
+                        <li>• Feedback Agent (actionable recommendations)</li>
                       </ul>
-                      <p className="text-xs mt-2 text-yellow-500">
-                        ⚠️ Slower but significantly more accurate
+                      <p className="text-xs mt-2 text-green-500">
+                        ✨ 40-50% faster, same accuracy
                       </p>
                     </TooltipContent>
                   </Tooltip>
@@ -224,7 +221,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
             </div>
             {useCollaboration && (
               <p className="text-xs text-muted-foreground mt-2">
-                🤖 Multiple AI agents will review your resume together
+                🤖 2 AI agents will analyze your resume together
               </p>
             )}
           </div>
@@ -255,7 +252,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
               <Loading />
               <div className="mt-2">
                 {useCollaboration
-                  ? "Agents collaborating..."
+                  ? "2 agents analyzing..."
                   : "Analyzing resume..."}
               </div>
             </div>

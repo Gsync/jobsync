@@ -3,7 +3,7 @@ import "server-only";
 import { auth } from "@/auth";
 import { NextRequest } from "next/server";
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
-import { collaborativeJobMatch } from "@/lib/ai/multi-agent";
+import { adaptiveJobMatch } from "@/lib/ai/adaptive-selector";
 import {
   ProgressStream,
   encodeProgressMessage,
@@ -14,9 +14,9 @@ import { getResumeById } from "@/actions/profile.actions";
 import { getJobDetails } from "@/actions/job.actions";
 import { AiModel } from "@/models/ai.model";
 
-// Extend timeout for multi-agent collaboration (3 minutes)
-// With 60s synthesis timeout fallback, actual time is ~2 minutes max
-export const maxDuration = 180;
+// Extend timeout for multi-agent collaboration (2 minutes)
+// V2 is faster: ~18s typical, allowing 2min for safety
+export const maxDuration = 120;
 
 export const POST = async (req: NextRequest) => {
   const session = await auth();
@@ -74,19 +74,14 @@ export const POST = async (req: NextRequest) => {
         const progressStream = new ProgressStream(controller);
 
         try {
-          // Run collaborative analysis with progress updates
-          const { analysis } = await collaborativeJobMatch(
+          // Run V2 collaborative analysis with progress updates
+          const { analysis } = await adaptiveJobMatch(
             resumeText,
             jobText,
             selectedModel.provider,
             selectedModel.model || "llama3.2",
             progressStream
           );
-
-          // Send validation progress
-          progressStream.sendStarted("validation");
-          // Validation would go here if needed
-          progressStream.sendCompleted("validation");
 
           // Send completion and final result
           const completeUpdate = createProgressUpdate("complete", "completed");
@@ -115,7 +110,8 @@ export const POST = async (req: NextRequest) => {
           try {
             const errorMessage = `data: ${JSON.stringify({
               type: "error",
-              message: error instanceof Error ? error.message : "Analysis failed",
+              message:
+                error instanceof Error ? error.message : "Analysis failed",
             })}\n\n`;
             controller.enqueue(new TextEncoder().encode(errorMessage));
             controller.close();

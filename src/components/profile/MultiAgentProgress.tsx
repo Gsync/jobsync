@@ -6,32 +6,32 @@ import {
   type AgentStep,
   type ProgressUpdate,
 } from "@/lib/ai/progress-stream";
-import { CheckCircle2, Circle, Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Circle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MultiAgentProgressProps {
   isActive: boolean;
 }
 
+// V2: Consolidated 2-agent system (3 steps total)
 const AGENT_ORDER: AgentStep[] = [
-  "data-analyzer",
-  "keyword-expert",
-  "scoring-specialist",
-  "feedback-expert",
-  "synthesis-coordinator",
-  "validation",
+  "tool-extraction",
+  "analysis-agent",
+  "feedback-agent",
 ];
 
 export function MultiAgentProgress({ isActive }: MultiAgentProgressProps) {
-  const [currentStep, setCurrentStep] = useState<AgentStep | null>(null);
+  const [currentSteps, setCurrentSteps] = useState<Set<AgentStep>>(new Set());
   const [completedSteps, setCompletedSteps] = useState<Set<AgentStep>>(
     new Set()
   );
+  const [warningMessage, setWarningMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isActive) {
-      setCurrentStep(null);
+      setCurrentSteps(new Set());
       setCompletedSteps(new Set());
+      setWarningMessage(null);
     }
   }, [isActive]);
 
@@ -39,12 +39,19 @@ export function MultiAgentProgress({ isActive }: MultiAgentProgressProps) {
   useEffect(() => {
     const handleProgress = (update: ProgressUpdate) => {
       if (update.status === "started") {
-        setCurrentStep(update.step);
+        setCurrentSteps((prev) => new Set([...prev, update.step]));
       } else if (update.status === "completed") {
+        setCurrentSteps((prev) => {
+          const next = new Set(prev);
+          next.delete(update.step);
+          return next;
+        });
         setCompletedSteps((prev) => new Set([...prev, update.step]));
         if (update.step === "complete") {
-          setCurrentStep(null);
+          setCurrentSteps(new Set());
         }
+      } else if (update.status === "warning" && update.warningMessage) {
+        setWarningMessage(update.warningMessage);
       }
     };
 
@@ -81,7 +88,7 @@ export function MultiAgentProgress({ isActive }: MultiAgentProgressProps) {
         {AGENT_ORDER.map((step, index) => {
           const stepInfo = AGENT_STEPS[step];
           const isCompleted = completedSteps.has(step);
-          const isCurrent = currentStep === step;
+          const isCurrent = currentSteps.has(step);
           const isPending = !isCompleted && !isCurrent;
 
           return (
@@ -135,7 +142,18 @@ export function MultiAgentProgress({ isActive }: MultiAgentProgressProps) {
         })}
       </div>
 
-      {completedSteps.size > 0 && currentStep && (
+      {warningMessage && (
+        <div className="mt-3 p-2 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500 flex-shrink-0" />
+            <p className="text-xs text-amber-700 dark:text-amber-400">
+              {warningMessage}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {completedSteps.size > 0 && currentSteps.size > 0 && (
         <div className="mt-3 pt-3 border-t">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Progress:</span>

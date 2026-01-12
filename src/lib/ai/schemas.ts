@@ -28,16 +28,14 @@ export const ResumeReviewSchema = z.object({
       Realistic ranges: Entry-level 35-50, Mid 45-65, Senior 55-75, Exceptional >75.
       NEVER return 0 unless resume is blank. Most resumes score 45-65.`
     ),
-  summary: z
-    .string()
-    .describe(
-      `2-3 sentences that MUST include:
+  summary: z.string().describe(
+    `2-3 sentences that MUST include:
       1. The score with interpretation (e.g., "This resume scores 58/100, placing it in the average range")
       2. The single biggest strength (with brief evidence)
       3. The single most impactful area to improve
 
       Example: "This resume scores 62/100, which is above average. The standout strength is the 6 quantified achievements including '40% cost reduction' and '$2M revenue impact'. The highest-impact improvement would be adding a stronger professional summary that clearly articulates your value proposition."`
-    ),
+  ),
   strengths: z
     .array(z.string())
     .min(2)
@@ -103,10 +101,8 @@ export type ResumeReviewResponse = z.infer<typeof ResumeReviewSchema>;
  * Schema for analysis category used in job match response.
  */
 const AnalysisCategorySchema = z.object({
-  category: z
-    .string()
-    .describe(
-      `Category title with score breakdown.
+  category: z.string().describe(
+    `Category title with score breakdown.
 
       Format: "[Category Name] ([X]/[Max] pts)"
 
@@ -116,11 +112,9 @@ const AnalysisCategorySchema = z.object({
       - "Keyword Overlap (14/20 pts)"
       - "Qualifications (10/15 pts)"
       - "Industry Fit (7/10 pts)"`
-    ),
-  value: z
-    .array(z.string())
-    .describe(
-      `List of specific observations with EVIDENCE.
+  ),
+  value: z.array(z.string()).describe(
+    `List of specific observations with EVIDENCE.
 
       For Skills Match:
       - "✅ React: Found 'Led React migration to v18' in resume"
@@ -136,7 +130,7 @@ const AnalysisCategorySchema = z.object({
       For Keyword Overlap:
       - "Found: React, TypeScript, Node.js, AWS, Docker, Agile, REST API (7 of 10)"
       - "Missing: Kubernetes, Redis, GraphQL (3 of 10)"`
-    ),
+  ),
 });
 
 export type JobMatchAnalysis = z.infer<typeof AnalysisCategorySchema>;
@@ -240,3 +234,253 @@ export const JobMatchSchema = z.object({
 });
 
 export type JobMatchResponse = z.infer<typeof JobMatchSchema>;
+
+// ============================================================================
+// SEMANTIC EXTRACTION SCHEMAS (Phase 1 Improvements)
+// ============================================================================
+
+/**
+ * Schema for LLM-based keyword/skill extraction
+ * Replaces hard-coded keyword lists with dynamic extraction
+ */
+export const SemanticKeywordSchema = z.object({
+  technical_skills: z.array(z.string()).describe(
+    `Programming languages, frameworks, libraries extracted from text.
+      Examples: ["Python", "React", "TypeScript", "Django", "TensorFlow"]
+      Be comprehensive - extract ALL technical skills mentioned.`
+  ),
+  tools_platforms: z.array(z.string()).describe(
+    `Development tools, platforms, services, and cloud providers.
+      Examples: ["Docker", "Kubernetes", "AWS", "GitHub Actions", "JIRA", "Figma"]
+      Include both infrastructure and productivity tools.`
+  ),
+  methodologies: z.array(z.string()).describe(
+    `Development methodologies, practices, and processes.
+      Examples: ["Agile", "Scrum", "TDD", "CI/CD", "DevOps", "Microservices"]
+      Include architectural patterns and best practices.`
+  ),
+  domain_knowledge: z.array(z.string()).describe(
+    `Industry-specific knowledge and compliance frameworks.
+      Examples: ["Healthcare", "HIPAA", "FinTech", "SOX", "GDPR", "FDA regulations"]
+      Include certifications and domain expertise.`
+  ),
+  soft_skills: z.array(z.string()).describe(
+    `Leadership and interpersonal skills mentioned.
+      Examples: ["Team leadership", "Cross-functional collaboration", "Mentoring"]
+      Only include if explicitly stated or clearly demonstrated.`
+  ),
+  total_count: z
+    .number()
+    .describe("Total unique keywords across all categories"),
+});
+
+export type SemanticKeywordExtraction = z.infer<typeof SemanticKeywordSchema>;
+
+/**
+ * Schema for action verb analysis
+ * Replaces hard-coded verb lists with semantic strength assessment
+ */
+export const ActionVerbAnalysisSchema = z.object({
+  strong_verbs: z
+    .array(
+      z.object({
+        verb: z.string().describe("The action verb found"),
+        context: z
+          .string()
+          .describe("Brief context where it was used (max 50 chars)"),
+        impact_level: z
+          .enum(["high", "medium"])
+          .describe(
+            "High: Led, Architected, Spearheaded, Delivered. Medium: Managed, Developed, Implemented"
+          ),
+      })
+    )
+    .describe(
+      `Strong action verbs that demonstrate ownership and impact.
+      High impact: Led, Architected, Spearheaded, Delivered, Drove, Built, Scaled, Transformed
+      Medium impact: Managed, Developed, Implemented, Created, Designed, Coordinated`
+    ),
+  weak_verbs: z
+    .array(
+      z.object({
+        verb: z.string().describe("The weak verb/phrase found"),
+        context: z
+          .string()
+          .describe("Brief context where it was used (max 50 chars)"),
+        suggestion: z
+          .string()
+          .describe("Stronger alternative verb to use instead"),
+      })
+    )
+    .describe(
+      `Weak verbs/phrases that reduce impact.
+      Examples: "Responsible for", "Helped with", "Assisted in", "Worked on", "Involved in"
+      These should be replaced with action-oriented alternatives.`
+    ),
+  verb_strength_score: z
+    .number()
+    .min(0)
+    .max(10)
+    .describe(
+      `Overall verb strength score 0-10:
+      0-3: Mostly passive language
+      4-6: Mix of strong and weak verbs
+      7-8: Predominantly strong verbs
+      9-10: Exceptional action-oriented language throughout`
+    ),
+});
+
+export type ActionVerbAnalysis = z.infer<typeof ActionVerbAnalysisSchema>;
+
+/**
+ * Schema for skill matching between resume and job
+ * Provides semantic similarity scoring, not just string matching
+ */
+export const SemanticSkillMatchSchema = z.object({
+  exact_matches: z
+    .array(
+      z.object({
+        skill: z.string().min(1).describe("The skill that matches exactly"),
+        resume_evidence: z
+          .string()
+          .min(1)
+          .describe("Quote from resume showing this skill"),
+        job_requirement: z
+          .string()
+          .min(1)
+          .describe("Quote from job showing this requirement"),
+      })
+    )
+    .describe("Skills that match exactly between resume and job"),
+  related_matches: z
+    .array(
+      z.object({
+        job_skill: z.string().min(1).describe("Skill required by job"),
+        resume_skill: z.string().min(1).describe("Related skill in resume"),
+        similarity: z
+          .number()
+          .min(0)
+          .max(100)
+          .describe("Similarity percentage (e.g., PostgreSQL vs MySQL = 85%)"),
+        explanation: z
+          .string()
+          .min(1)
+          .describe("Why these skills are related/transferable"),
+      })
+    )
+    .describe(
+      "Skills that are related/similar but not exact matches (e.g., React vs Vue, PostgreSQL vs MySQL)"
+    ),
+  missing_skills: z
+    .array(
+      z.object({
+        skill: z.string().min(1).describe("Required skill not found in resume"),
+        importance: z
+          .enum(["critical", "important", "nice-to-have"])
+          .describe("How important this skill is for the role"),
+        learnability: z
+          .enum(["quick", "moderate", "significant"])
+          .describe(
+            "How quickly this could be learned: quick (<1 month), moderate (1-3 months), significant (3+ months)"
+          ),
+      })
+    )
+    .describe("Skills required by job but not found in resume"),
+  overall_match_percentage: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe(
+      "Overall skill match percentage considering exact + related matches"
+    ),
+});
+
+export type SemanticSkillMatch = z.infer<typeof SemanticSkillMatchSchema>;
+
+// ============================================================================
+// PHASE 3: SEMANTIC SIMILARITY SCHEMA
+// Complete semantic understanding with explanations
+// ============================================================================
+
+/**
+ * Schema for comprehensive semantic similarity analysis
+ * Replaces keyword overlap with true semantic understanding
+ */
+export const SemanticSimilaritySchema = z.object({
+  similarity_score: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe(
+      `Overall semantic similarity score (0-100) based on:
+      - Skills alignment (exact + transferable)
+      - Experience relevance (years, seniority, industry)
+      - Role fit (career trajectory alignment)
+      - Culture signals (values, working style)
+
+      Guidelines:
+      80-100: Exceptional fit
+      65-79: Strong fit
+      50-64: Moderate fit
+      35-49: Weak fit
+      0-34: Poor fit`
+    ),
+
+  match_explanation: z
+    .string()
+    .describe(
+      `2-3 sentence explanation of why this candidate is/isn't a good fit.
+      Start with the key reason (e.g., "Strong technical alignment with 80% skill match...")
+      Include both positives and concerns.`
+    ),
+
+  key_matches: z
+    .array(z.string())
+    .min(1)
+    .max(5)
+    .describe(
+      `Top 3-5 areas where candidate strongly matches requirements.
+      Examples: "5+ years React experience matches requirement",
+      "Led team of 8 engineers, exceeds leadership requirement"`
+    ),
+
+  key_gaps: z
+    .array(
+      z.object({
+        skill: z.string().describe("The skill or requirement that's missing"),
+        note: z.string().describe("Brief note on gap severity or how to address"),
+      })
+    )
+    .max(5)
+    .describe(
+      `Top 3-5 gaps between resume and job requirements.
+      Include severity/importance of each gap.`
+    ),
+
+  transferable_skills: z
+    .array(
+      z.object({
+        resume_skill: z.string().describe("Skill the candidate has"),
+        job_skill: z.string().describe("Required skill it could transfer to"),
+        how_it_transfers: z.string().describe("Brief explanation of transferability"),
+      })
+    )
+    .max(4)
+    .describe(
+      `Skills in resume that could apply to missing requirements.
+      Example: MySQL knowledge transfers to PostgreSQL (both SQL databases)`
+    ),
+
+  application_recommendation: z
+    .string()
+    .describe(
+      `Clear, actionable recommendation.
+      Examples:
+      - "Apply now - strong match, highlight your React migration project"
+      - "Apply after adding Docker basics - critical gap for this role"
+      - "Consider upskilling in Kubernetes before applying - key requirement"
+      - "May not be the best fit - role requires senior-level system design"`
+    ),
+});
+
+export type SemanticSimilarityResult = z.infer<typeof SemanticSimilaritySchema>;

@@ -4,17 +4,20 @@
  */
 
 export type AgentStep =
+  | "tool-extraction"
   | "data-analyzer"
   | "keyword-expert"
   | "scoring-specialist"
   | "feedback-expert"
   | "synthesis-coordinator"
+  | "analysis-agent"
+  | "feedback-agent"
   | "validation"
   | "complete";
 
 export interface ProgressUpdate {
   step: AgentStep;
-  status: "started" | "completed";
+  status: "started" | "completed" | "warning";
   message: string;
   timestamp: number;
   agentNumber?: number;
@@ -23,23 +26,39 @@ export interface ProgressUpdate {
   startTime?: number;
   /** Estimated duration in milliseconds for this step */
   estimatedDurationMs?: number;
+  /** User-friendly warning message when something goes wrong */
+  warningMessage?: string;
 }
 
 // Estimated durations for each agent step (in milliseconds)
 const ESTIMATED_DURATIONS: Record<AgentStep, number> = {
+  "tool-extraction": 3000, // 3 seconds (V2 only)
   "data-analyzer": 8000, // 8 seconds (runs in parallel with keyword-expert)
   "keyword-expert": 8000, // 8 seconds (runs in parallel with data-analyzer)
   "scoring-specialist": 10000, // 10 seconds
   "feedback-expert": 8000, // 8 seconds
   "synthesis-coordinator": 12000, // 12 seconds
+  "analysis-agent": 12000, // 12 seconds (V2 - combines data + keyword + scoring)
+  "feedback-agent": 10000, // 10 seconds (V2 - combines feedback + synthesis)
   validation: 2000, // 2 seconds
   complete: 0,
 };
 
 export const AGENT_STEPS: Record<
   AgentStep,
-  { name: string; description: string; emoji: string; estimatedDurationMs: number }
+  {
+    name: string;
+    description: string;
+    emoji: string;
+    estimatedDurationMs: number;
+  }
 > = {
+  "tool-extraction": {
+    name: "Tool Extraction",
+    description: "Extracting objective metrics and keywords",
+    emoji: "🔧",
+    estimatedDurationMs: ESTIMATED_DURATIONS["tool-extraction"],
+  },
   "data-analyzer": {
     name: "Data Analyzer",
     description: "Extracting objective metrics and counting achievements",
@@ -69,6 +88,18 @@ export const AGENT_STEPS: Record<
     description: "Combining insights from all agents",
     emoji: "🔄",
     estimatedDurationMs: ESTIMATED_DURATIONS["synthesis-coordinator"],
+  },
+  "analysis-agent": {
+    name: "Analysis Agent",
+    description: "Comprehensive analysis with scoring",
+    emoji: "🧠",
+    estimatedDurationMs: ESTIMATED_DURATIONS["analysis-agent"],
+  },
+  "feedback-agent": {
+    name: "Feedback Agent",
+    description: "Generating actionable recommendations",
+    emoji: "💬",
+    estimatedDurationMs: ESTIMATED_DURATIONS["feedback-agent"],
   },
   validation: {
     name: "Quality Assurance",
@@ -170,5 +201,24 @@ export class ProgressStream {
 
   sendCompleted(step: AgentStep, agentNumber?: number) {
     this.sendProgress(step, "completed", agentNumber);
+  }
+
+  sendWarning(step: AgentStep, warningMessage: string, agentNumber?: number) {
+    if (!this.controller) return;
+
+    try {
+      const update: ProgressUpdate = {
+        step,
+        status: "warning",
+        message: `⚠️ ${warningMessage}`,
+        timestamp: Date.now(),
+        agentNumber,
+        warningMessage,
+      };
+      const message = encodeProgressMessage(update);
+      this.controller.enqueue(new TextEncoder().encode(message));
+    } catch {
+      // Controller may be closed
+    }
   }
 }
