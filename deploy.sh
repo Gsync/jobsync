@@ -29,6 +29,19 @@ cd "$SCRIPT_DIR"
 echo -e "${GREEN}[1/5]${NC} Current directory: $SCRIPT_DIR"
 echo ""
 
+# Detect Docker Compose command
+if command -v docker compose &> /dev/null; then
+    COMPOSE_CMD="docker compose"
+elif command -v docker-compose &> /dev/null; then
+    COMPOSE_CMD="docker-compose"
+else
+    echo -e "${RED}Error: Neither 'docker compose' nor 'docker-compose' found${NC}"
+    exit 1
+fi
+
+echo -e "Using: ${YELLOW}$COMPOSE_CMD${NC}"
+echo ""
+
 # Check if git repository
 if [ ! -d ".git" ]; then
     echo -e "${RED}Error: Not a git repository${NC}"
@@ -48,11 +61,11 @@ git pull origin "$BRANCH"
 
 # Stop existing containers
 echo -e "${GREEN}[4/5]${NC} Stopping existing containers..."
-docker compose down
+$COMPOSE_CMD down
 
 # Build and start containers
 echo -e "${GREEN}[5/5]${NC} Building and starting containers..."
-docker compose up -d --build
+$COMPOSE_CMD up -d --build
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
@@ -64,11 +77,11 @@ echo -e "Checking container status..."
 echo ""
 
 # Show running containers
-docker compose ps
+$COMPOSE_CMD ps
 
 echo ""
 echo -e "${GREEN}Deployment logs (last 20 lines):${NC}"
-docker compose logs --tail=20
+$COMPOSE_CMD logs --tail=20
 
 echo ""
-echo -e "${YELLOW}Tip:${NC} View live logs with: ${YELLOW}docker compose logs -f${NC}"
+echo -e "${YELLOW}Tip:${NC} View live logs with: ${YELLOW}$COMPOSE_CMD logs -f${NC}"
