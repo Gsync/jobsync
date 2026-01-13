@@ -26,6 +26,7 @@ model User {
   Profile      Profile[]
   Activity     Activity[]
   ActivityType ActivityType[]
+  Task         Task[]
 }
 
 model Profile {
@@ -253,6 +254,7 @@ model ActivityType {
   updatedAt   DateTime @updatedAt
 
   Activities Activity[]
+  Tasks      Task[]
 }
 
 model Activity {
@@ -269,4 +271,33 @@ model Activity {
 
   activityType   ActivityType @relation(fields: [activityTypeId], references: [id])
   activityTypeId String
+
+  taskId String? @unique
+  task   Task?   @relation(fields: [taskId], references: [id])
+}
+
+model Task {
+  id              String        @id @default(uuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+
+  title           String
+  description     String?
+  status          String        @default("in-progress")
+  priority        Int           @default(5)
+  percentComplete Int           @default(0)
+  dueDate         DateTime?
+
+  activityTypeId  String?
+  activityType    ActivityType? @relation(fields: [activityTypeId], references: [id])
+
+  activity        Activity?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([userId, activityTypeId])
+  @@index([userId, dueDate])
 }

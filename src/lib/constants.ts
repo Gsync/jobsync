@@ -1,5 +1,6 @@
 import {
   LayoutDashboard,
+  SquareCheckBig,
   BriefcaseBusiness,
   CalendarClock,
   UserRound,
@@ -22,6 +23,11 @@ export const SIDEBAR_LINKS = [
     icon: BriefcaseBusiness,
     route: "/dashboard/myjobs",
     label: "My Jobs",
+  },
+  {
+    icon: SquareCheckBig,
+    route: "/dashboard/tasks",
+    label: "Tasks",
   },
   {
     icon: CalendarClock,
