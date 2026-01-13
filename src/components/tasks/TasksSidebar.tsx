@@ -22,7 +22,7 @@ function TasksSidebar({
   onFilterChange,
 }: TasksSidebarProps) {
   return (
-    <div className="w-48 border-r p-4 hidden md:block">
+    <div className="w-48 border-r p-4 hidden md:block h-full">
       <h3 className="font-semibold mb-4 text-sm">Activity Types</h3>
       <ul className="space-y-1">
         <li>

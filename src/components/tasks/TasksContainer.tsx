@@ -199,7 +199,7 @@ function TasksContainer({
 
   return (
     <>
-      <Card x-chunk="dashboard-tasks-chunk-0">
+      <Card x-chunk="dashboard-tasks-chunk-0" className="h-full">
         <CardHeader className="flex-row justify-between items-center">
           <CardTitle>My Tasks</CardTitle>
           <div className="flex items-center">

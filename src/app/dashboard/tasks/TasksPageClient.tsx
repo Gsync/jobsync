@@ -29,7 +29,7 @@ function TasksPageClient({
   };
 
   return (
-    <div className="col-span-3 flex">
+    <div className="col-span-3 flex h-full">
       <TasksSidebar
         activityTypes={activityTypesWithCounts}
         totalTasks={totalTasks}
