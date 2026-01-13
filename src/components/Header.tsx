@@ -1,22 +1,7 @@
 import Link from "next/link";
-import {
-  PanelLeft,
-  Briefcase,
-  Search,
-  PowerIcon,
-  Settings,
-  Info,
-} from "lucide-react";
+import { PanelLeft, Briefcase } from "lucide-react";
 
 import { Button } from "./ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuItem,
-} from "./ui/dropdown-menu";
 import {
   Sheet,
   SheetClose,
@@ -26,9 +11,8 @@ import {
 } from "@/components/ui/sheet";
 import { SIDEBAR_LINKS } from "@/lib/constants";
 import { signOut } from "@/auth";
-import UserAvatar from "./UserAvatar";
 import { getCurrentUser } from "@/utils/user.utils";
-import { redirect } from "next/navigation";
+import { ProfileDropdown } from "./ProfileDropdown";
 
 async function Header() {
   // const session = await auth();
@@ -81,37 +65,13 @@ async function Header() {
         /> */}
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger>
-          <UserAvatar user={user} />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuLabel>My Account</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            <Settings className="w-5 mr-2" />
-            <Link href="/dashboard/settings">Settings</Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <Info className="w-5 mr-2" />
-            Support
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <form
-            action={async () => {
-              "use server";
-              await signOut();
-            }}
-          >
-            <DropdownMenuItem>
-              <Button variant="ghost" className="w-full">
-                <PowerIcon className="w-5" />
-                <div className="hidden md:block mx-2">Logout</div>
-              </Button>
-            </DropdownMenuItem>
-          </form>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <ProfileDropdown
+        user={user}
+        signOutAction={async () => {
+          "use server";
+          await signOut();
+        }}
+      />
     </header>
   );
 }
