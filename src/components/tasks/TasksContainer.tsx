@@ -47,6 +47,7 @@ type TasksContainerProps = {
   activityTypes: ActivityType[];
   filterKey?: string;
   onFilterChange?: (filter: string | undefined) => void;
+  onTasksChanged?: () => void;
 };
 
 const DEFAULT_STATUS_FILTER: TaskStatus[] = ["in-progress", "needs-attention"];
@@ -55,6 +56,7 @@ function TasksContainer({
   activityTypes,
   filterKey,
   onFilterChange,
+  onTasksChanged,
 }: TasksContainerProps) {
   const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -100,7 +102,8 @@ function TasksContainer({
 
   const reloadTasks = useCallback(async () => {
     await loadTasks(1, filterKey, statusFilter);
-  }, [loadTasks, filterKey, statusFilter]);
+    onTasksChanged?.();
+  }, [loadTasks, filterKey, statusFilter, onTasksChanged]);
 
   const onDeleteTask = async (taskId: string) => {
     const { success, message } = await deleteTaskById(taskId);
@@ -150,6 +153,7 @@ function TasksContainer({
         variant: "success",
         description: "Task status updated successfully",
       });
+      onTasksChanged?.();
     } else {
       setTasks(originalTasks);
       toast({

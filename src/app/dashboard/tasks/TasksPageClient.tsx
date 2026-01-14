@@ -2,7 +2,8 @@
 import TasksContainer from "@/components/tasks/TasksContainer";
 import TasksSidebar from "@/components/tasks/TasksSidebar";
 import { ActivityType } from "@/models/activity.model";
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { getActivityTypesWithTaskCounts } from "@/actions/task.actions";
 
 type ActivityTypeWithCount = {
   id: string;
@@ -23,16 +24,27 @@ function TasksPageClient({
   totalTasks,
 }: TasksPageClientProps) {
   const [filterKey, setFilterKey] = useState<string | undefined>(undefined);
+  const [sidebarCounts, setSidebarCounts] =
+    useState<ActivityTypeWithCount[]>(activityTypesWithCounts);
+  const [sidebarTotal, setSidebarTotal] = useState<number>(totalTasks);
 
   const onFilterChange = (filter: string | undefined) => {
     setFilterKey(filter);
   };
 
+  const refreshSidebarCounts = useCallback(async () => {
+    const result = await getActivityTypesWithTaskCounts();
+    if (result?.success) {
+      setSidebarCounts(result.data);
+      setSidebarTotal(result.totalTasks);
+    }
+  }, []);
+
   return (
     <div className="col-span-3 flex h-full">
       <TasksSidebar
-        activityTypes={activityTypesWithCounts}
-        totalTasks={totalTasks}
+        activityTypes={sidebarCounts}
+        totalTasks={sidebarTotal}
         selectedFilter={filterKey}
         onFilterChange={onFilterChange}
       />
@@ -41,6 +53,7 @@ function TasksPageClient({
           activityTypes={activityTypes}
           filterKey={filterKey}
           onFilterChange={onFilterChange}
+          onTasksChanged={refreshSidebarCounts}
         />
       </div>
     </div>
