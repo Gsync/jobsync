@@ -86,6 +86,8 @@ async function createNewJob(page: Page, jobText: string) {
 }
 
 async function deleteJob(page: Page, jobText: string) {
+  // Wait for any pending navigations to complete before navigating
+  await page.waitForLoadState("load");
   await page.goto("/dashboard/myjobs");
   const cells = page.getByText(new RegExp(jobText, "i"));
   await expect(cells.first()).toBeVisible();
