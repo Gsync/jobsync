@@ -147,7 +147,7 @@ test.describe("Profile page", () => {
   test("should add resume work experience after clicking Edit Experience section", async ({
     page,
   }) => {
-    const resumeTitle = "Test Resume 6";
+    const resumeTitle = `Test Resume 6 ${Date.now()}`;
     const jobText = "Software Developer";
     await page.getByRole("link", { name: "Profile" }).click();
     await createResume(page, resumeTitle);

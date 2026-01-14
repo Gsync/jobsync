@@ -86,7 +86,7 @@ async function createNewJob(page: Page, jobText: string) {
 }
 
 async function deleteJob(page: Page, jobText: string) {
-  await page.goto("localhost:3000/dashboard/myjobs");
+  await page.goto("/dashboard/myjobs");
   const cells = page.getByText(new RegExp(jobText, "i"));
   await expect(cells.first()).toBeVisible();
   await page
