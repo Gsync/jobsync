@@ -29,13 +29,13 @@ cd "$SCRIPT_DIR"
 echo -e "${GREEN}[1/5]${NC} Current directory: $SCRIPT_DIR"
 echo ""
 
-# Detect Docker Compose command
-if docker compose version &> /dev/null; then
-    COMPOSE_CMD="docker compose"
-elif command -v docker-compose &> /dev/null; then
+# Detect Docker Compose (standalone v2 or plugin)
+if command -v docker-compose >/dev/null 2>&1; then
     COMPOSE_CMD="docker-compose"
+elif docker compose version >/dev/null 2>&1; then
+    COMPOSE_CMD="docker compose"
 else
-    echo -e "${RED}Error: Neither 'docker compose' nor 'docker-compose' found${NC}"
+    echo -e "${RED}Error: Docker Compose not found${NC}"
     exit 1
 fi
 
