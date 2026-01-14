@@ -42,7 +42,7 @@ export const getTasksList = async (
             select: { id: true },
           },
         },
-        orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+        orderBy: [{ priority: "desc" }, { createdAt: "desc" }, { updatedAt: "desc" }],
         skip: offset,
         take: limit,
       }),
