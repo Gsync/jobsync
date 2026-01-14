@@ -7,7 +7,14 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { MoreHorizontal, Pencil, Tags, Trash, CirclePlay, Check } from "lucide-react";
+import {
+  MoreHorizontal,
+  Pencil,
+  Tags,
+  Trash,
+  CirclePlay,
+  Check,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { format, isToday, isTomorrow, isPast, isThisWeek } from "date-fns";
@@ -114,9 +121,12 @@ function TasksTable({
   const renderTaskRow = (task: Task) => (
     <TableRow
       key={task.id}
-      className={cn("group relative", task.status === "complete" && "opacity-60")}
+      className={cn(
+        "group relative h-9",
+        task.status === "complete" && "opacity-60"
+      )}
     >
-      <TableCell className="w-[24px] pl-1">
+      <TableCell className="w-[24px] py-1 pl-1 pr-1">
         <button
           onClick={() =>
             onChangeTaskStatus(
@@ -141,14 +151,16 @@ function TasksTable({
       </TableCell>
       <TableCell
         className={cn(
-          "font-medium",
+          "py-1 px-2 font-medium",
           task.status === "complete" && "line-through"
         )}
       >
         {task.title}
       </TableCell>
-      <TableCell>{task.activityType?.label || "—"}</TableCell>
-      <TableCell className="hidden md:table-cell">
+      <TableCell className="py-1 px-2">
+        {task.activityType?.label || "—"}
+      </TableCell>
+      <TableCell className="hidden md:table-cell py-1 px-2">
         <Badge
           className={cn(
             "min-w-[120px] whitespace-nowrap justify-center",
@@ -158,13 +170,13 @@ function TasksTable({
           {TASK_STATUSES[task.status]}
         </Badge>
       </TableCell>
-      <TableCell className="hidden md:table-cell text-center">
+      <TableCell className="hidden md:table-cell py-1 px-2 text-center">
         {task.priority}
       </TableCell>
-      <TableCell className="hidden md:table-cell text-center">
+      <TableCell className="hidden md:table-cell py-1 px-2 text-center">
         {task.percentComplete}%
       </TableCell>
-      <TableCell>
+      <TableCell className="py-1 px-1">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -231,7 +243,7 @@ function TasksTable({
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>
-      <TableCell>
+      <TableCell className="py-1 px-1">
         {!task.activity && (
           <Button
             title="Start Activity"
@@ -254,22 +266,22 @@ function TasksTable({
   const renderTableHeader = () => (
     <TableHeader>
       <TableRow>
-        <TableHead className="w-[24px] pl-1">
+        <TableHead className="w-[24px] h-9 px-1">
           <span className="sr-only">Complete</span>
         </TableHead>
-        <TableHead>Title</TableHead>
-        <TableHead>Activity Type</TableHead>
-        <TableHead className="hidden md:table-cell">Status</TableHead>
-        <TableHead className="hidden md:table-cell text-center">
+        <TableHead className="h-9 px-2">Title</TableHead>
+        <TableHead className="h-9 px-2">Activity Type</TableHead>
+        <TableHead className="hidden md:table-cell h-9 px-2">Status</TableHead>
+        <TableHead className="hidden md:table-cell h-9 px-2 text-center">
           Priority
         </TableHead>
-        <TableHead className="hidden md:table-cell text-center">
+        <TableHead className="hidden md:table-cell h-9 px-2 text-center">
           % Complete
         </TableHead>
-        <TableHead>
+        <TableHead className="h-9 px-1">
           <span className="sr-only">Actions</span>
         </TableHead>
-        <TableHead>
+        <TableHead className="h-9 px-1">
           <span className="sr-only">Start Activity</span>
         </TableHead>
       </TableRow>
