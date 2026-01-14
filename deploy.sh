@@ -30,7 +30,7 @@ echo -e "${GREEN}[1/5]${NC} Current directory: $SCRIPT_DIR"
 echo ""
 
 # Detect Docker Compose command
-if command -v docker compose &> /dev/null; then
+if docker compose version &> /dev/null; then
     COMPOSE_CMD="docker compose"
 elif command -v docker-compose &> /dev/null; then
     COMPOSE_CMD="docker-compose"
