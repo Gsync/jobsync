@@ -22,7 +22,7 @@ function TasksSidebar({
   onFilterChange,
 }: TasksSidebarProps) {
   return (
-    <div className="w-48 border-r p-4 hidden md:block h-full">
+    <div className="w-48 border-r py-4 hidden md:block h-full">
       <h3 className="font-semibold mb-4 text-sm">Activity Types</h3>
       <ul className="space-y-1">
         <li>
@@ -36,7 +36,9 @@ function TasksSidebar({
           >
             <span className="flex justify-between items-center">
               <span>All</span>
-              <span className="text-muted-foreground text-xs">{totalTasks}</span>
+              <span className="text-muted-foreground text-xs">
+                {totalTasks}
+              </span>
             </span>
           </button>
         </li>
@@ -47,12 +49,15 @@ function TasksSidebar({
               className={cn(
                 "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
                 "hover:bg-accent hover:text-accent-foreground",
-                selectedFilter === type.id && "bg-accent text-accent-foreground font-medium"
+                selectedFilter === type.id &&
+                  "bg-accent text-accent-foreground font-medium"
               )}
             >
               <span className="flex justify-between items-center">
                 <span className="truncate">{type.label}</span>
-                <span className="text-muted-foreground text-xs">{type.taskCount}</span>
+                <span className="text-muted-foreground text-xs">
+                  {type.taskCount}
+                </span>
               </span>
             </button>
           </li>

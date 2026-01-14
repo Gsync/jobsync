@@ -782,12 +782,21 @@ describe("taskActions", () => {
         },
         include: {
           _count: {
-            select: { Tasks: true },
+            select: {
+              Tasks: {
+                where: {
+                  status: { notIn: ["complete", "cancelled"] },
+                },
+              },
+            },
           },
         },
       });
       expect(prisma.task.count).toHaveBeenCalledWith({
-        where: { userId: mockUser.id },
+        where: {
+          userId: mockUser.id,
+          status: { notIn: ["complete", "cancelled"] },
+        },
       });
     });
 

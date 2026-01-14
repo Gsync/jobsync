@@ -344,13 +344,21 @@ export const getActivityTypesWithTaskCounts = async (): Promise<
       throw new Error("Not authenticated");
     }
 
+    const excludedStatuses = ["complete", "cancelled"];
+
     const activityTypes = await prisma.activityType.findMany({
       where: {
         createdBy: user.id,
       },
       include: {
         _count: {
-          select: { Tasks: true },
+          select: {
+            Tasks: {
+              where: {
+                status: { notIn: excludedStatuses },
+              },
+            },
+          },
         },
       },
     });
@@ -363,7 +371,10 @@ export const getActivityTypesWithTaskCounts = async (): Promise<
     }));
 
     const totalTasks = await prisma.task.count({
-      where: { userId: user.id },
+      where: {
+        userId: user.id,
+        status: { notIn: excludedStatuses },
+      },
     });
 
     return { success: true, data, totalTasks };
