@@ -829,10 +829,10 @@ OBJECTIVE METRICS (from tools):
 CALCULATED BASELINE SCORE: ${baselineScore.score}/100
 
 BASELINE BREAKDOWN:
-- Skills: ${baselineScore.breakdown.skills}/30 (FIXED based on match ratio)
-- Keywords: ${baselineScore.breakdown.keywords}/20 (FIXED based on overlap)
+- Skills: ${baselineScore.breakdown.skillsMatch}/30 (FIXED based on match ratio)
+- Keywords: ${baselineScore.breakdown.keywordOverlap}/20 (FIXED based on overlap)
 - Experience: ${
-        baselineScore.breakdown.experience
+        baselineScore.breakdown.experienceMatch
       }/25 (adjustable - assess from text)
 - Qualifications: ${baselineScore.breakdown.qualifications}/15 (adjustable)
 - Industry Fit: ${baselineScore.breakdown.industryFit}/10 (adjustable)
@@ -972,7 +972,7 @@ YOUR TASKS:
     const missingCount = semanticData.skillMatch.missing_skills.length;
 
     detailedAnalysis.push({
-      category: `Skills Match (${baselineScore.breakdown.skills}/30 pts)`,
+      category: `Skills Match (${baselineScore.breakdown.skillsMatch}/30 pts)`,
       value: [
         `${exactCount} exact matches, ${relatedCount} transferable skills, ${missingCount} gaps`,
         ...semanticData.skillMatch.exact_matches
@@ -994,7 +994,7 @@ YOUR TASKS:
     });
   } else {
     detailedAnalysis.push({
-      category: `Skills Match (${baselineScore.breakdown.skills}/30 pts)`,
+      category: `Skills Match (${baselineScore.breakdown.skillsMatch}/30 pts)`,
       value: [
         `Matched ${matchedSkillsCount} of ${requiredSkillsCount} required skills`,
         ...toolData.keywordOverlap.matchedKeywords
@@ -1010,7 +1010,7 @@ YOUR TASKS:
   // Semantic Similarity - Phase 3 replacement for keyword overlap
   if (semanticData.similarity) {
     detailedAnalysis.push({
-      category: `Semantic Fit (${baselineScore.breakdown.keywords}/20 pts)`,
+      category: `Semantic Fit (${baselineScore.breakdown.keywordOverlap}/20 pts)`,
       value: [
         `${Math.round(
           semanticData.similarity.similarity_score
@@ -1021,7 +1021,7 @@ YOUR TASKS:
     });
   } else {
     detailedAnalysis.push({
-      category: `Keyword Overlap (${baselineScore.breakdown.keywords}/20 pts)`,
+      category: `Keyword Overlap (${baselineScore.breakdown.keywordOverlap}/20 pts)`,
       value: [
         `${Math.round(
           toolData.keywordOverlap.overlapPercentage
