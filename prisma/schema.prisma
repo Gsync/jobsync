@@ -9,6 +9,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -276,24 +277,24 @@ model Activity {
 }
 
 model Task {
-  id              String        @id @default(uuid())
-  userId          String
-  user            User          @relation(fields: [userId], references: [id])
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   title           String
   description     String?
-  status          String        @default("in-progress")
-  priority        Int           @default(5)
-  percentComplete Int           @default(0)
+  status          String    @default("in-progress")
+  priority        Int       @default(5)
+  percentComplete Int       @default(0)
   dueDate         DateTime?
 
-  activityTypeId  String?
-  activityType    ActivityType? @relation(fields: [activityTypeId], references: [id])
+  activityTypeId String?
+  activityType   ActivityType? @relation(fields: [activityTypeId], references: [id])
 
-  activity        Activity?
+  activity Activity?
 
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([userId, status])
