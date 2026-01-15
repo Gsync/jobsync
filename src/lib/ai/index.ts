@@ -7,30 +7,13 @@ export {
   type JobMatchAnalysis,
 } from "@/models/ai.schemas";
 
-// Export both original and enhanced prompts
-export {
-  RESUME_REVIEW_SYSTEM_PROMPT,
-  JOB_MATCH_SYSTEM_PROMPT,
-  buildResumeReviewPrompt,
-  buildJobMatchPrompt,
-} from "./prompts/prompts";
-
-// Phase 1 & 2: Export enhanced prompts and agents
+// Enhanced prompts (Phase 2) - used by non-collaborative endpoints
 export {
   RESUME_REVIEW_SYSTEM_PROMPT as ENHANCED_RESUME_REVIEW_SYSTEM_PROMPT,
   JOB_MATCH_SYSTEM_PROMPT as ENHANCED_JOB_MATCH_SYSTEM_PROMPT,
   buildResumeReviewPrompt as buildEnhancedResumeReviewPrompt,
   buildJobMatchPrompt as buildEnhancedJobMatchPrompt,
-  CRITIC_SYSTEM_PROMPT,
 } from "./prompts/prompts.enhanced";
-
-export {
-  enhancedResumeReviewAgent,
-  enhancedJobMatchAgent,
-  multiAgentResumeReview,
-  multiAgentJobMatch,
-  criticAgent,
-} from "./agents.enhanced";
 
 // Consolidated Multi-agent (V2 - 2 agents)
 export {
@@ -100,5 +83,4 @@ export {
   SCORING_GUIDELINES,
 } from "./scoring";
 
-export { reviewResumeAgent, matchJobAgent } from "./agents";
 export { checkRateLimit } from "./rate-limiter";

@@ -12,9 +12,12 @@ import { ProgressStream } from "./progress-stream";
 import {
   consolidatedMultiAgentResumeReview,
   consolidatedMultiAgentJobMatch,
-  CollaborativeResultV2,
 } from "./multi-agent-v2";
-import { ResumeReviewResponse, JobMatchResponse } from "@/models/ai.model";
+import {
+  ResumeReviewResponse,
+  JobMatchResponse,
+  CollaborativeResultV2,
+} from "@/models/ai.model";
 
 /**
  * Resume review using V2 multi-agent system

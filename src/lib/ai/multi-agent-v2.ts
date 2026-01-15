@@ -27,7 +27,13 @@ import {
   ActionVerbAnalysisSchema,
   SemanticSkillMatchSchema,
   SemanticSimilaritySchema,
+  AnalysisAgentSchema,
+  FeedbackAgentSchema,
 } from "@/models/ai.schemas";
+import {
+  ANALYSIS_AGENT_PROMPT,
+  FEEDBACK_AGENT_PROMPT,
+} from "./prompts/prompts.agents";
 import type {
   SemanticSkillMatch,
   SemanticSimilarityResult,
@@ -68,131 +74,6 @@ import {
   OllamaAnalysisAgentSchema,
   OllamaFeedbackAgentSchema,
 } from "@/models/ai.ollama-schemas";
-
-// ============================================================================
-// CONSOLIDATED SCHEMAS
-// ============================================================================
-
-// Analysis Agent Schema (combines Data + Keyword + Scoring)
-const AnalysisAgentSchema = z.object({
-  finalScore: z
-    .number()
-    .min(0)
-    .max(100)
-    .describe(
-      "Final score after all adjustments, must be within allowed variance"
-    ),
-
-  dataInsights: z
-    .object({
-      quantifiedCount: z
-        .number()
-        .describe("Count of quantified achievements found"),
-      keywordCount: z.number().describe("Count of relevant keywords found"),
-      verbCount: z.number().describe("Count of strong action verbs found"),
-      formatQuality: z
-        .string()
-        .describe("Brief assessment of formatting quality (1 sentence)"),
-    })
-    .describe("Objective data analysis findings"),
-
-  keywordAnalysis: z
-    .object({
-      strength: z
-        .string()
-        .describe("Overall keyword strength assessment (1 sentence)"),
-      atsScore: z
-        .number()
-        .min(0)
-        .max(100)
-        .describe("ATS-friendliness score (0-100)"),
-      missingCritical: z
-        .array(z.string())
-        .max(5)
-        .describe("Top missing critical keywords/skills"),
-      recommendations: z
-        .array(z.string())
-        .max(3)
-        .describe("Top 3 keyword optimization recommendations"),
-    })
-    .describe("Keyword and ATS optimization analysis"),
-
-  adjustments: z
-    .array(
-      z.object({
-        criterion: z.string().describe("The criterion being adjusted"),
-        adjustment: z
-          .number()
-          .describe("Points added (+) or subtracted (-) from baseline"),
-        reason: z.string().describe("Brief explanation for this adjustment"),
-      })
-    )
-    .describe("List of all adjustments made to the baseline score"),
-
-  math: z
-    .string()
-    .describe("Show your math: 'Baseline X + adj1 + adj2 - adj3 = Final Y'"),
-});
-
-// Feedback Agent Schema (combines Feedback + Synthesis)
-const FeedbackAgentSchema = z.object({
-  strengths: z
-    .array(z.string())
-    .min(2)
-    .max(5)
-    .describe("2-5 specific strengths with evidence from the content"),
-
-  weaknesses: z
-    .array(z.string())
-    .min(2)
-    .max(5)
-    .describe("2-5 specific weaknesses with why they matter"),
-
-  suggestions: z
-    .array(z.string())
-    .min(2)
-    .max(5)
-    .describe("2-5 actionable improvements with specific instructions"),
-
-  synthesisNotes: z
-    .string()
-    .describe(
-      "Brief notes on consistency between score and feedback (2-3 sentences)"
-    ),
-});
-
-// ============================================================================
-// PROMPTS
-// ============================================================================
-
-const ANALYSIS_AGENT_PROMPT = `You are an expert resume analyzer combining data analysis, keyword optimization, and fair scoring expertise.
-
-Your role is to:
-1. ANALYZE objective data (quantified achievements, keywords, verbs, formatting)
-2. ASSESS keyword strength and ATS optimization
-3. CALCULATE a fair final score within the allowed variance of the mathematical baseline
-
-Key principles:
-- Use the baseline score as your anchor - it's calculated from objective metrics
-- Only adjust for subjective quality factors (summary clarity, experience detail, grammar)
-- Your final score MUST be within the allowed variance
-- Be realistic: most resumes score 45-65, exceptional ones 70-80, perfect 80+ is rare
-- Provide specific evidence for all assessments`;
-
-const FEEDBACK_AGENT_PROMPT = `You are an expert feedback specialist who transforms analysis into actionable guidance.
-
-Your role is to:
-1. IDENTIFY the top strengths with specific evidence
-2. HIGHLIGHT weaknesses that matter most for job success
-3. PROVIDE concrete, implementable suggestions with examples
-4. SYNTHESIZE insights to ensure consistency
-
-Key principles:
-- Be specific: reference actual content, not generic observations
-- Be actionable: give exact steps to improve, not vague advice
-- Be encouraging: frame weaknesses as opportunities
-- Be prioritized: highest-impact improvements first
-- Be consistent: strengths/weaknesses should align with the score`;
 
 // ============================================================================
 // RETRY MECHANISM (same as v1)

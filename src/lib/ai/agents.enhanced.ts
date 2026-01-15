@@ -1,18 +1,19 @@
 /**
- * Enhanced AI Agents with Chain-of-Thought Reasoning and Multi-Agent Validation
- * Phase 1 & 2: Improved workflow with analyzer + critic agents
+ * Enhanced AI Agents with Chain-of-Thought Reasoning
+ * Phase 2: Improved workflow with tool-assisted analysis
+ *
+ * Note: These agents are used internally by the multi-agent system.
+ * The public API is through adaptiveResumeReview/adaptiveJobMatch.
  */
 
-import { generateObject, generateText } from "ai";
+import { generateObject } from "ai";
 import { getModel, ProviderType } from "./providers";
 import { ResumeReviewSchema, JobMatchSchema } from "@/models/ai.schemas";
 import {
   RESUME_REVIEW_SYSTEM_PROMPT,
   JOB_MATCH_SYSTEM_PROMPT,
-  CRITIC_SYSTEM_PROMPT,
   buildResumeReviewPrompt,
   buildJobMatchPrompt,
-  buildCriticPrompt,
 } from "./prompts/prompts.enhanced";
 import {
   countQuantifiedAchievements,
@@ -129,11 +130,15 @@ export async function criticAgent(
 
   const analysisText = JSON.stringify(analysis, null, 2);
 
+  const { generateText } = await import("ai");
+  const { buildCriticPrompt } = await import("./prompts/prompts.enhanced");
+  const { CRITIC_SYSTEM_PROMPT } = await import("./prompts/prompts.enhanced");
+
   const { text: criticFeedback } = await generateText({
     model,
     system: CRITIC_SYSTEM_PROMPT,
     prompt: buildCriticPrompt(analysisText, originalContent),
-    temperature: 0.1, // Lower temperature for consistent validation
+    temperature: 0.1,
   });
 
   const approved = criticFeedback.includes("APPROVED");
@@ -150,105 +155,3 @@ export async function criticAgent(
     issues,
   };
 }
-
-/**
- * Phase 2: Multi-Agent Pipeline - Analyzer + Critic
- * If critic rejects, logs the issue but still returns analysis (fail-safe)
- */
-export async function multiAgentResumeReview(
-  resumeText: string,
-  provider: ProviderType,
-  modelName: string,
-  enableCritic = true
-) {
-  // Step 1: Primary analysis
-  const analysis = await enhancedResumeReviewAgent(
-    resumeText,
-    provider,
-    modelName
-  );
-
-  if (!enableCritic) {
-    return { analysis, validated: false, criticFeedback: null };
-  }
-
-  // Step 2: Critic validation
-  try {
-    const validation = await criticAgent(
-      analysis,
-      resumeText,
-      provider,
-      modelName
-    );
-
-    if (!validation.approved) {
-      console.warn("Critic found issues:", validation.issues);
-      // In production, you might retry with corrections
-      // For now, we log and continue
-    }
-
-    return {
-      analysis,
-      validated: validation.approved,
-      criticFeedback: validation.feedback,
-      issues: validation.issues,
-    };
-  } catch (error) {
-    console.error("Critic agent failed:", error);
-    // Fail-safe: return analysis even if critic fails
-    return { analysis, validated: false, criticFeedback: null };
-  }
-}
-
-/**
- * Phase 2: Multi-Agent Pipeline for Job Matching
- */
-export async function multiAgentJobMatch(
-  resumeText: string,
-  jobText: string,
-  provider: ProviderType,
-  modelName: string,
-  enableCritic = true
-) {
-  // Step 1: Primary analysis
-  const analysis = await enhancedJobMatchAgent(
-    resumeText,
-    jobText,
-    provider,
-    modelName
-  );
-
-  if (!enableCritic) {
-    return { analysis, validated: false, criticFeedback: null };
-  }
-
-  // Step 2: Critic validation
-  try {
-    const validation = await criticAgent(
-      analysis,
-      `${resumeText}\n\n---JOB---\n\n${jobText}`,
-      provider,
-      modelName
-    );
-
-    if (!validation.approved) {
-      console.warn("Critic found issues:", validation.issues);
-    }
-
-    return {
-      analysis,
-      validated: validation.approved,
-      criticFeedback: validation.feedback,
-      issues: validation.issues,
-    };
-  } catch (error) {
-    console.error("Critic agent failed:", error);
-    return { analysis, validated: false, criticFeedback: null };
-  }
-}
-
-// Export original agents for backward compatibility
-export {
-  enhancedResumeReviewAgent as reviewResumeAgent,
-  enhancedJobMatchAgent as matchJobAgent,
-};

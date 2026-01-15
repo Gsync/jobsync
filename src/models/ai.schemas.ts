@@ -426,13 +426,11 @@ export const SemanticSimilaritySchema = z.object({
       0-34: Poor fit`
     ),
 
-  match_explanation: z
-    .string()
-    .describe(
-      `2-3 sentence explanation of why this candidate is/isn't a good fit.
+  match_explanation: z.string().describe(
+    `2-3 sentence explanation of why this candidate is/isn't a good fit.
       Start with the key reason (e.g., "Strong technical alignment with 80% skill match...")
       Include both positives and concerns.`
-    ),
+  ),
 
   key_matches: z
     .array(z.string())
@@ -448,7 +446,9 @@ export const SemanticSimilaritySchema = z.object({
     .array(
       z.object({
         skill: z.string().describe("The skill or requirement that's missing"),
-        note: z.string().describe("Brief note on gap severity or how to address"),
+        note: z
+          .string()
+          .describe("Brief note on gap severity or how to address"),
       })
     )
     .max(5)
@@ -462,7 +462,9 @@ export const SemanticSimilaritySchema = z.object({
       z.object({
         resume_skill: z.string().describe("Skill the candidate has"),
         job_skill: z.string().describe("Required skill it could transfer to"),
-        how_it_transfers: z.string().describe("Brief explanation of transferability"),
+        how_it_transfers: z
+          .string()
+          .describe("Brief explanation of transferability"),
       })
     )
     .max(4)
@@ -471,16 +473,115 @@ export const SemanticSimilaritySchema = z.object({
       Example: MySQL knowledge transfers to PostgreSQL (both SQL databases)`
     ),
 
-  application_recommendation: z
-    .string()
-    .describe(
-      `Clear, actionable recommendation.
+  application_recommendation: z.string().describe(
+    `Clear, actionable recommendation.
       Examples:
       - "Apply now - strong match, highlight your React migration project"
       - "Apply after adding Docker basics - critical gap for this role"
       - "Consider upskilling in Kubernetes before applying - key requirement"
       - "May not be the best fit - role requires senior-level system design"`
-    ),
+  ),
 });
 
 export type SemanticSimilarityResult = z.infer<typeof SemanticSimilaritySchema>;
+// ============================================================================
+// MULTI-AGENT V2 CONSOLIDATED SCHEMAS
+// ============================================================================
+
+/**
+ * Analysis Agent Schema (combines Data + Keyword + Scoring)
+ * Used in the consolidated multi-agent V2 system for resume review and job matching
+ */
+export const AnalysisAgentSchema = z.object({
+  finalScore: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe(
+      "Final score after all adjustments, must be within allowed variance"
+    ),
+
+  dataInsights: z
+    .object({
+      quantifiedCount: z
+        .number()
+        .describe("Count of quantified achievements found"),
+      keywordCount: z.number().describe("Count of relevant keywords found"),
+      verbCount: z.number().describe("Count of strong action verbs found"),
+      formatQuality: z
+        .string()
+        .describe("Brief assessment of formatting quality (1 sentence)"),
+    })
+    .describe("Objective data analysis findings"),
+
+  keywordAnalysis: z
+    .object({
+      strength: z
+        .string()
+        .describe("Overall keyword strength assessment (1 sentence)"),
+      atsScore: z
+        .number()
+        .min(0)
+        .max(100)
+        .describe("ATS-friendliness score (0-100)"),
+      missingCritical: z
+        .array(z.string())
+        .max(5)
+        .describe("Top missing critical keywords/skills"),
+      recommendations: z
+        .array(z.string())
+        .max(3)
+        .describe("Top 3 keyword optimization recommendations"),
+    })
+    .describe("Keyword and ATS optimization analysis"),
+
+  adjustments: z
+    .array(
+      z.object({
+        criterion: z.string().describe("The criterion being adjusted"),
+        adjustment: z
+          .number()
+          .describe("Points added (+) or subtracted (-) from baseline"),
+        reason: z.string().describe("Brief explanation for this adjustment"),
+      })
+    )
+    .describe("List of all adjustments made to the baseline score"),
+
+  math: z
+    .string()
+    .describe("Show your math: 'Baseline X + adj1 + adj2 - adj3 = Final Y'"),
+});
+
+export type AnalysisAgentResult = z.infer<typeof AnalysisAgentSchema>;
+
+/**
+ * Feedback Agent Schema (combines Feedback + Synthesis)
+ * Used in the consolidated multi-agent V2 system for actionable recommendations
+ */
+export const FeedbackAgentSchema = z.object({
+  strengths: z
+    .array(z.string())
+    .min(2)
+    .max(5)
+    .describe("2-5 specific strengths with evidence from the content"),
+
+  weaknesses: z
+    .array(z.string())
+    .min(2)
+    .max(5)
+    .describe("2-5 specific weaknesses with why they matter"),
+
+  suggestions: z
+    .array(z.string())
+    .min(2)
+    .max(5)
+    .describe("2-5 actionable improvements with specific instructions"),
+
+  synthesisNotes: z
+    .string()
+    .describe(
+      "Brief notes on consistency between score and feedback (2-3 sentences)"
+    ),
+});
+
+export type FeedbackAgentResult = z.infer<typeof FeedbackAgentSchema>;
