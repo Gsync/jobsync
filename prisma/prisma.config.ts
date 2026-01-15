@@ -1,9 +1,8 @@
-const config = {
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL || 'file:./dev.db',
-    },
-  },
-};
+import { defineConfig } from "prisma/config";
 
-export default config;
+export default defineConfig({
+  schema: "./schema.prisma",
+  migrations: {
+    path: "./migrations",
+  },
+});

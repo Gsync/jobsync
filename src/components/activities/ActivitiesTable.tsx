@@ -76,7 +76,7 @@ function ActivitiesTable({
           <TableRow>
             <TableHead className="hidden md:table-cell">Date</TableHead>
             <TableHead>Activity</TableHead>
-            <TableHead>Activity Type</TableHead>
+            <TableHead>Project(Activity Type)</TableHead>
             <TableHead className="hidden md:table-cell">Start Time</TableHead>
             <TableHead className="hidden md:table-cell">End Time</TableHead>
             <TableHead>Duration</TableHead>
