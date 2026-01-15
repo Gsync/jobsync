@@ -10,7 +10,7 @@ import {
 import { AiProvider } from "@/models/ai.model";
 
 const removeHtmlTags = (description: string | undefined): string => {
-  if (!description) return "N/A";
+  if (!description) return "";
 
   return (
     description
@@ -20,8 +20,9 @@ const removeHtmlTags = (description: string | undefined): string => {
       .replace(/<\/(li|p|div|br)[^>]*>/gi, "\n")
       .replace(/<br\s*\/?>/gi, "\n")
       // Remove all remaining HTML tags
-      .replace(/<[^>]+>/g, "")
+      .replace(/<[^>]+>/g, " ")
       // Clean up excessive whitespace while preserving structure
+      .replace(/\s+/g, " ")
       .replace(/\n\s*\n/g, "\n")
       .trim()
   );
@@ -135,27 +136,30 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
   return new Promise((resolve) => {
     const formatContactInfo = (contactInfo?: ContactInfo) => {
       if (!contactInfo) return "";
-      return `
-       Name: ${contactInfo.firstName} ${contactInfo.lastName}
-       Headline: ${contactInfo.headline}
-       Email: ${contactInfo.email || "N/A"}
-       Phone: ${contactInfo.phone || "N/A"}
-       Address: ${contactInfo.address || "N/A"}
-       `;
+      const parts = [
+        `Name: ${contactInfo.firstName} ${contactInfo.lastName}`,
+        contactInfo.headline ? `Headline: ${contactInfo.headline}` : "",
+        contactInfo.email ? `Email: ${contactInfo.email}` : "",
+        contactInfo.phone ? `Phone: ${contactInfo.phone}` : "",
+        contactInfo.address ? `Address: ${contactInfo.address}` : "",
+      ].filter(Boolean);
+      return parts.join("\n");
     };
 
     const formatWorkExperiences = (workExperiences?: WorkExperience[]) => {
       if (!workExperiences || workExperiences.length === 0) return "";
       return workExperiences
-        .map(
-          (experience) => `
-         Company: ${experience.Company.label}
-         Job Title: ${experience.jobTitle.label}
-         Location: ${experience.location.label}
-         Description: ${removeHtmlTags(experience.description)}
-         `
-        )
-        .join("\n");
+        .map((experience) => {
+          const desc = removeHtmlTags(experience.description);
+          const parts = [
+            `Company: ${experience.Company.label}`,
+            `Job Title: ${experience.jobTitle.label}`,
+            `Location: ${experience.location.label}`,
+            desc ? `Description: ${desc}` : "",
+          ].filter(Boolean);
+          return parts.join("\n");
+        })
+        .join("\n\n");
     };
     // Start Date: ${experience.startDate.toLocaleDateString().split("T")[0]}
     // End Date: ${
@@ -166,25 +170,19 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
 
     const formatEducation = (educations?: Education[]) => {
       if (!educations || educations.length === 0) return "";
-      return (
-        educations
-          .map(
-            (education) => `
-             Institution: ${education.institution}
-             Degree: ${education.degree}
-             Field of Study: ${education.fieldOfStudy}
-             Location: ${education.location.label}
-             Description: ${removeHtmlTags(education.description)}
-             `
-          )
-          // Start Date: ${education.startDate.toLocaleDateString().split("T")[0]}
-          // End Date: ${
-          //   education.endDate
-          //     ? education.endDate.toLocaleDateString().split("T")[0]
-          //     : "N/A"
-          // }
-          .join("\n")
-      );
+      return educations
+        .map((education) => {
+          const desc = removeHtmlTags(education.description);
+          const parts = [
+            `Institution: ${education.institution}`,
+            `Degree: ${education.degree}`,
+            `Field of Study: ${education.fieldOfStudy}`,
+            `Location: ${education.location.label}`,
+            desc ? `Description: ${desc}` : "",
+          ].filter(Boolean);
+          return parts.join("\n");
+        })
+        .join("\n\n");
     };
 
     const formatResumeSections = (sections?: ResumeSection[]) => {
