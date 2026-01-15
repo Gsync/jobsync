@@ -4,6 +4,14 @@
  */
 
 /**
+ * Baseline score result type
+ */
+export type BaselineScore = {
+  score: number;
+  breakdown: Record<string, number>;
+};
+
+/**
  * Resume Review Scoring Calculator
  * Returns exact scores based on objective metrics
  */
