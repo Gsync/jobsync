@@ -32,14 +32,7 @@ export {
   criticAgent,
 } from "./agents.enhanced";
 
-// Phase 3: Multi-agent collaboration (V1 - 5 agents)
-export {
-  collaborativeResumeReview,
-  collaborativeJobMatch,
-  validateCollaborativeOutput,
-} from "./multi-agent";
-
-// Phase 2: Consolidated Multi-agent (V2 - 2 agents)
+// Consolidated Multi-agent (V2 - 2 agents)
 export {
   consolidatedMultiAgentResumeReview,
   consolidatedMultiAgentJobMatch,
