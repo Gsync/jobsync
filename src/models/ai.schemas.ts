@@ -485,12 +485,12 @@ export const SemanticSimilaritySchema = z.object({
 
 export type SemanticSimilarityResult = z.infer<typeof SemanticSimilaritySchema>;
 // ============================================================================
-// MULTI-AGENT V2 CONSOLIDATED SCHEMAS
+// MULTI-AGENT SCHEMAS
 // ============================================================================
 
 /**
  * Analysis Agent Schema (combines Data + Keyword + Scoring)
- * Used in the consolidated multi-agent V2 system for resume review and job matching
+ * Used in the multi-agent system for resume review and job matching
  */
 export const AnalysisAgentSchema = z.object({
   finalScore: z
@@ -556,7 +556,7 @@ export type AnalysisAgentResult = z.infer<typeof AnalysisAgentSchema>;
 
 /**
  * Feedback Agent Schema (combines Feedback + Synthesis)
- * Used in the consolidated multi-agent V2 system for actionable recommendations
+ * Used in the multi-agent system for actionable recommendations
  */
 export const FeedbackAgentSchema = z.object({
   strengths: z

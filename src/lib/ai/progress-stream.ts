@@ -32,14 +32,14 @@ export interface ProgressUpdate {
 
 // Estimated durations for each agent step (in milliseconds)
 const ESTIMATED_DURATIONS: Record<AgentStep, number> = {
-  "tool-extraction": 3000, // 3 seconds (V2 only)
-  "data-analyzer": 8000, // 8 seconds (runs in parallel with keyword-expert)
-  "keyword-expert": 8000, // 8 seconds (runs in parallel with data-analyzer)
-  "scoring-specialist": 10000, // 10 seconds
-  "feedback-expert": 8000, // 8 seconds
-  "synthesis-coordinator": 12000, // 12 seconds
-  "analysis-agent": 12000, // 12 seconds (V2 - combines data + keyword + scoring)
-  "feedback-agent": 10000, // 10 seconds (V2 - combines feedback + synthesis)
+  "tool-extraction": 3000, // 3 seconds
+  "data-analyzer": 8000, // 8 seconds (legacy)
+  "keyword-expert": 8000, // 8 seconds (legacy)
+  "scoring-specialist": 10000, // 10 seconds (legacy)
+  "feedback-expert": 8000, // 8 seconds (legacy)
+  "synthesis-coordinator": 12000, // 12 seconds (legacy)
+  "analysis-agent": 12000, // 12 seconds (combines data + keyword + scoring)
+  "feedback-agent": 10000, // 10 seconds (combines feedback + synthesis)
   validation: 2000, // 2 seconds
   complete: 0,
 };

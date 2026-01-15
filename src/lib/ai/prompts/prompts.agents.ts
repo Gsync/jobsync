@@ -1,9 +1,7 @@
 /**
- * System prompts for the Multi-Agent V2 Consolidated System
+ * System prompts for the Multi-Agent System
  *
- * These prompts guide the Analysis Agent and Feedback Agent in the
- * consolidated multi-agent system that's 40-50% faster and 60% cheaper
- * than the original 5-agent system.
+ * These prompts guide the Analysis Agent and Feedback Agent.
  */
 
 /**

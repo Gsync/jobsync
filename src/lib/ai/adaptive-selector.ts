@@ -1,26 +1,25 @@
 /**
  * Multi-Agent Analysis Functions
- * Uses V2 (2 agents) - consolidated system that's 40-50% faster and 60% cheaper
  *
- * V2 Architecture:
- * - Analysis Agent: Combines data analysis, keyword optimization, and scoring
- * - Feedback Agent: Generates actionable recommendations with synthesis
+ * Architecture:
+ * - Analysis Agent: Data analysis, keyword optimization, and scoring
+ * - Feedback Agent: Actionable recommendations with synthesis
  */
 
 import { ProviderType } from "./providers";
 import { ProgressStream } from "./progress-stream";
 import {
-  consolidatedMultiAgentResumeReview,
-  consolidatedMultiAgentJobMatch,
-} from "./multi-agent-v2";
+  multiAgentResumeReview,
+  multiAgentJobMatch,
+} from "./multi-agent";
 import {
   ResumeReviewResponse,
   JobMatchResponse,
-  CollaborativeResultV2,
+  CollaborativeResult,
 } from "@/models/ai.model";
 
 /**
- * Resume review using V2 multi-agent system
+ * Resume review using multi-agent system
  *
  * @param resumeText - The resume content to review
  * @param provider - AI provider to use
@@ -33,9 +32,9 @@ export async function adaptiveResumeReview(
   provider: ProviderType,
   modelName: string,
   progressStream?: ProgressStream
-): Promise<CollaborativeResultV2<ResumeReviewResponse>> {
-  console.log("[Multi-Agent V2] Using 2-agent system for resume review");
-  return consolidatedMultiAgentResumeReview(
+): Promise<CollaborativeResult<ResumeReviewResponse>> {
+  console.log("[Multi-Agent] Running resume review");
+  return multiAgentResumeReview(
     resumeText,
     provider,
     modelName,
@@ -44,7 +43,7 @@ export async function adaptiveResumeReview(
 }
 
 /**
- * Job match analysis using V2 multi-agent system
+ * Job match analysis using multi-agent system
  *
  * @param resumeText - The resume content
  * @param jobDescription - The job description
@@ -59,9 +58,9 @@ export async function adaptiveJobMatch(
   provider: ProviderType,
   modelName: string,
   progressStream?: ProgressStream
-): Promise<CollaborativeResultV2<JobMatchResponse>> {
-  console.log("[Multi-Agent V2] Using 2-agent system for job match");
-  return consolidatedMultiAgentJobMatch(
+): Promise<CollaborativeResult<JobMatchResponse>> {
+  console.log("[Multi-Agent] Running job match");
+  return multiAgentJobMatch(
     resumeText,
     jobDescription,
     provider,
@@ -73,18 +72,14 @@ export async function adaptiveJobMatch(
 /**
  * Get information about the multi-agent system
  */
-export function getActiveVersion(): {
-  version: "v2";
+export function getSystemInfo(): {
   agentCount: number;
   description: string;
   estimatedLatency: string;
-  improvements: string;
 } {
   return {
-    version: "v2",
     agentCount: 2,
-    description: "Consolidated Multi-Agent System (Analysis + Feedback)",
+    description: "Multi-Agent System (Analysis + Feedback)",
     estimatedLatency: "15-20s",
-    improvements: "40-50% faster, 60% cheaper than previous 5-agent system",
   };
 }

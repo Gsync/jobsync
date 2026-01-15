@@ -1,35 +1,19 @@
 /**
- * Multi-Agent Collaboration System V2 (Consolidated)
- * Phase 2: Consolidate from 5 agents to 2 agents
+ * Multi-Agent Collaboration System
  *
  * Architecture:
  * User Request → Tools → Baseline → [Analysis Agent, Feedback Agent] → Validation → Output
  *
- * Benefits:
- * - 40% latency reduction (30s → 18s)
- * - 60% cost reduction (5 calls → 2 calls)
- * - Simpler orchestration
- * - Structured output reduces parsing errors
- *
- * Changes from V1:
- * - Data Analyzer + Keyword Expert + Scoring Specialist → Analysis Agent
- * - Feedback Expert + Synthesis Coordinator → Feedback Agent
+ * Agents:
+ * - Analysis Agent: Data analysis, keyword optimization, and scoring
+ * - Feedback Agent: Actionable recommendations and synthesis
  * - Both agents run in parallel (independent of each other)
  */
 
-import { generateObject, generateText } from "ai";
+import { generateObject } from "ai";
 import { z } from "zod";
 import { getModel, ProviderType } from "./providers";
-import {
-  ResumeReviewSchema,
-  JobMatchSchema,
-  SemanticKeywordSchema,
-  ActionVerbAnalysisSchema,
-  SemanticSkillMatchSchema,
-  SemanticSimilaritySchema,
-  AnalysisAgentSchema,
-  FeedbackAgentSchema,
-} from "@/models/ai.schemas";
+import { AnalysisAgentSchema, FeedbackAgentSchema } from "@/models/ai.schemas";
 import {
   ANALYSIS_AGENT_PROMPT,
   FEEDBACK_AGENT_PROMPT,
@@ -40,11 +24,7 @@ import type {
 } from "@/models/ai.schemas";
 import {
   countQuantifiedAchievements,
-  extractKeywords,
-  countActionVerbs,
-  calculateKeywordOverlap,
   analyzeFormatting,
-  extractRequiredSkills,
   extractSemanticKeywords,
   analyzeActionVerbs,
   performSemanticSkillMatch,
@@ -52,6 +32,7 @@ import {
   generateMatchExplanation,
   getKeywordCountFromSemantic,
   getVerbCountFromSemantic,
+  AIUnavailableError,
 } from "./tools";
 import { ProgressStream } from "./progress-stream";
 import {
@@ -63,10 +44,10 @@ import {
 import {
   ResumeReviewResponse,
   JobMatchResponse,
-  AgentInsightsV2,
+  AgentInsights,
   AnalysisResult,
   FeedbackResult,
-  CollaborativeResultV2,
+  CollaborativeResult,
   ToolDataResume,
   ToolDataJobMatch,
 } from "@/models/ai.model";
@@ -76,7 +57,7 @@ import {
 } from "@/models/ai.ollama-schemas";
 
 // ============================================================================
-// RETRY MECHANISM (same as v1)
+// RETRY MECHANISM
 // ============================================================================
 
 async function runWithRetry<T>(
@@ -144,15 +125,15 @@ async function withTimeout<T>(
 }
 
 // ============================================================================
-// RESUME REVIEW (Consolidated 2-Agent System)
+// RESUME REVIEW
 // ============================================================================
 
-export async function consolidatedMultiAgentResumeReview(
+export async function multiAgentResumeReview(
   resumeText: string,
   provider: ProviderType,
   modelName: string,
   progressStream?: ProgressStream
-): Promise<CollaborativeResultV2<ResumeReviewResponse>> {
+): Promise<CollaborativeResult<ResumeReviewResponse>> {
   const model = getModel(provider, modelName);
 
   // =========================================================================
@@ -199,33 +180,22 @@ export async function consolidatedMultiAgentResumeReview(
       formatting,
     };
 
-    console.log("[Resume Review V2] Using semantic extraction (Phase 3)");
+    console.log("[Resume Review] Using semantic extraction (Phase 3)");
   } catch (error) {
-    // Fallback to legacy extraction if semantic fails
     const errorMessage = error instanceof Error ? error.message : String(error);
     const isTimeout = errorMessage.includes("timed out");
 
-    console.warn(
-      "[Resume Review V2] Semantic extraction failed, using legacy fallback:",
-      error
-    );
+    console.error("[Resume Review] Semantic extraction failed:", error);
 
-    // Send user-friendly warning message
+    // Send user-friendly error message
     if (progressStream) {
       const warningMsg = isTimeout
-        ? `AI model is taking longer than expected. Using faster analysis method...`
-        : "Advanced analysis unavailable. Using standard analysis...";
+        ? "AI model is taking too long. Please try again or use a different model."
+        : "AI unavailable for resume analysis. Please try again later.";
       progressStream.sendWarning("tool-extraction", warningMsg, 0);
     }
 
-    const [quantified, keywords, verbs, formatting] = await Promise.all([
-      Promise.resolve(countQuantifiedAchievements(resumeText)),
-      Promise.resolve(extractKeywords(resumeText)),
-      Promise.resolve(countActionVerbs(resumeText)),
-      Promise.resolve(analyzeFormatting(resumeText)),
-    ]);
-
-    toolData = { quantified, keywords, verbs, formatting };
+    throw new AIUnavailableError("resume analysis");
   }
 
   progressStream?.sendCompleted("tool-extraction", 0);
@@ -249,7 +219,7 @@ export async function consolidatedMultiAgentResumeReview(
   const maxScore = Math.min(100, baselineScore.score + allowedVariance);
 
   console.log(
-    `[Resume Review V2] Baseline: ${baselineScore.score}, Allowed variance: ±${allowedVariance} (${minScore}-${maxScore})`
+    `[Resume Review] Baseline: ${baselineScore.score}, Allowed variance: ±${allowedVariance} (${minScore}-${maxScore})`
   );
 
   // =========================================================================
@@ -435,7 +405,7 @@ Be specific, actionable, and encouraging. Reference actual resume content.`;
     const errorMessage = error instanceof Error ? error.message : String(error);
     const isTimeout = errorMessage.includes("timed out");
 
-    console.error("[Resume Review V2] Agent execution failed:", error);
+    console.error("[Resume Review] Agent execution failed:", error);
 
     // Send user-friendly error message
     if (progressStream) {
@@ -489,7 +459,7 @@ Be specific, actionable, and encouraging. Reference actual resume content.`;
     suggestions: feedbackResult.suggestions,
   };
 
-  const agentInsights: AgentInsightsV2 = {
+  const agentInsights: AgentInsights = {
     analysis: analysisResult,
     feedback: feedbackResult,
   };
@@ -503,16 +473,16 @@ Be specific, actionable, and encouraging. Reference actual resume content.`;
 }
 
 // ============================================================================
-// JOB MATCH (Consolidated 2-Agent System)
+// JOB MATCH
 // ============================================================================
 
-export async function consolidatedMultiAgentJobMatch(
+export async function multiAgentJobMatch(
   resumeText: string,
   jobDescription: string,
   provider: ProviderType,
   modelName: string,
   progressStream?: ProgressStream
-): Promise<CollaborativeResultV2<JobMatchResponse>> {
+): Promise<CollaborativeResult<JobMatchResponse>> {
   const model = getModel(provider, modelName);
 
   // =========================================================================
@@ -601,41 +571,24 @@ export async function consolidatedMultiAgentJobMatch(
     };
 
     console.log(
-      "[Job Match V2] Using semantic similarity (Phase 3):",
+      "[Job Match] Using semantic similarity (Phase 3):",
       semanticSimilarity.similarity_score
     );
   } catch (error) {
-    // Fallback to legacy extraction if semantic fails
     const errorMessage = error instanceof Error ? error.message : String(error);
     const isTimeout = errorMessage.includes("timed out");
 
-    console.warn(
-      "[Job Match V2] Semantic extraction failed, using legacy fallback:",
-      error
-    );
+    console.error("[Job Match] Semantic extraction failed:", error);
 
-    // Send user-friendly warning message
+    // Send user-friendly error message
     if (progressStream) {
       const warningMsg = isTimeout
-        ? "AI model is taking longer than expected. Using faster analysis method..."
-        : "Advanced analysis unavailable. Using standard matching...";
+        ? "AI model is taking too long. Please try again or use a different model."
+        : "AI unavailable for job matching. Please try again later.";
       progressStream.sendWarning("tool-extraction", warningMsg, 0);
     }
 
-    const [resumeKeywords, jobKeywords, requiredSkills] = await Promise.all([
-      Promise.resolve(extractKeywords(resumeText)),
-      Promise.resolve(extractKeywords(jobDescription)),
-      Promise.resolve(extractRequiredSkills(jobDescription)),
-    ]);
-
-    const keywordOverlap = calculateKeywordOverlap(resumeText, jobDescription);
-
-    toolData = {
-      keywordOverlap,
-      resumeKeywords,
-      jobKeywords,
-      requiredSkills,
-    };
+    throw new AIUnavailableError("job matching");
   }
 
   progressStream?.sendCompleted("tool-extraction", 0);
@@ -665,7 +618,7 @@ export async function consolidatedMultiAgentJobMatch(
   const maxScore = Math.min(100, baselineScore.score + allowedVariance);
 
   console.log(
-    `[Job Match V2] Baseline: ${baselineScore.score}, Allowed variance: ±${allowedVariance} (${minScore}-${maxScore})`
+    `[Job Match] Baseline: ${baselineScore.score}, Allowed variance: ±${allowedVariance} (${minScore}-${maxScore})`
   );
 
   // =========================================================================
@@ -860,7 +813,7 @@ YOUR TASKS:
     const errorMessage = error instanceof Error ? error.message : String(error);
     const isTimeout = errorMessage.includes("timed out");
 
-    console.error("[Job Match V2] Agent execution failed:", error);
+    console.error("[Job Match] Agent execution failed:", error);
 
     // Send user-friendly error message
     if (progressStream) {
@@ -1047,7 +1000,7 @@ YOUR TASKS:
     ],
   };
 
-  const agentInsights: AgentInsightsV2 = {
+  const agentInsights: AgentInsights = {
     analysis: analysisResult,
     feedback: feedbackResult,
   };

@@ -7,26 +7,26 @@ export {
   type JobMatchAnalysis,
 } from "@/models/ai.schemas";
 
-// Enhanced prompts (Phase 2) - used by non-collaborative endpoints
+// Prompts - used by non-collaborative endpoints
 export {
-  RESUME_REVIEW_SYSTEM_PROMPT as ENHANCED_RESUME_REVIEW_SYSTEM_PROMPT,
-  JOB_MATCH_SYSTEM_PROMPT as ENHANCED_JOB_MATCH_SYSTEM_PROMPT,
-  buildResumeReviewPrompt as buildEnhancedResumeReviewPrompt,
-  buildJobMatchPrompt as buildEnhancedJobMatchPrompt,
-} from "./prompts/prompts.enhanced";
+  RESUME_REVIEW_SYSTEM_PROMPT,
+  JOB_MATCH_SYSTEM_PROMPT,
+  buildResumeReviewPrompt,
+  buildJobMatchPrompt,
+} from "./prompts/prompts";
 
-// Consolidated Multi-agent (V2 - 2 agents)
+// Multi-agent system
 export {
-  consolidatedMultiAgentResumeReview,
-  consolidatedMultiAgentJobMatch,
-} from "./multi-agent-v2";
-export type { AgentInsightsV2, CollaborativeResultV2 } from "@/models/ai.model";
+  multiAgentResumeReview,
+  multiAgentJobMatch,
+} from "./multi-agent";
+export type { AgentInsights, CollaborativeResult } from "@/models/ai.model";
 
-// Adaptive selector (automatically chooses V1 or V2 based on env var)
+// Multi-agent wrapper functions
 export {
   adaptiveResumeReview,
   adaptiveJobMatch,
-  getActiveVersion,
+  getSystemInfo,
 } from "./adaptive-selector";
 
 // Progress streaming
@@ -38,17 +38,14 @@ export {
   ProgressStream,
 } from "./progress-stream";
 
-// Analysis tools (legacy - prefer semantic functions below)
+// Analysis tools
 export {
   countQuantifiedAchievements,
-  extractKeywords,
-  countActionVerbs,
-  calculateKeywordOverlap,
   analyzeFormatting,
-  extractRequiredSkills,
+  AIUnavailableError,
 } from "./tools";
 
-// Phase 3: Semantic extraction and similarity functions (preferred)
+// Semantic extraction and similarity functions
 export {
   extractSemanticKeywords,
   analyzeActionVerbs,
@@ -57,10 +54,6 @@ export {
   generateMatchExplanation,
   getKeywordCountFromSemantic,
   getVerbCountFromSemantic,
-  // Deprecated legacy exports (for backwards compatibility)
-  extractKeywordsLegacy,
-  countActionVerbsLegacy,
-  calculateKeywordOverlapLegacy,
 } from "./tools";
 
 // Phase 3: Semantic schemas

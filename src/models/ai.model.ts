@@ -21,7 +21,7 @@ export {
 // MULTI-AGENT TYPES
 // ============================================================================
 
-export interface AgentInsightsV2 {
+export interface AgentInsights {
   analysis: AnalysisResult;
   feedback: FeedbackResult;
 }
@@ -55,9 +55,9 @@ export interface FeedbackResult {
   synthesisNotes: string;
 }
 
-export interface CollaborativeResultV2<T> {
+export interface CollaborativeResult<T> {
   analysis: T;
-  agentInsights: AgentInsightsV2;
+  agentInsights: AgentInsights;
   baselineScore: { score: number; breakdown: Record<string, number> };
   warnings?: string[];
 }

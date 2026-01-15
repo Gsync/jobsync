@@ -7,12 +7,15 @@ import { getModel } from "@/lib/ai/providers";
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
 import {
   ResumeReviewSchema,
-  ENHANCED_RESUME_REVIEW_SYSTEM_PROMPT,
-  buildEnhancedResumeReviewPrompt,
+  RESUME_REVIEW_SYSTEM_PROMPT,
+  buildResumeReviewPrompt,
   countQuantifiedAchievements,
-  extractKeywords,
-  countActionVerbs,
   analyzeFormatting,
+  extractSemanticKeywords,
+  analyzeActionVerbs,
+  getKeywordCountFromSemantic,
+  getVerbCountFromSemantic,
+  AIUnavailableError,
 } from "@/lib/ai";
 import { convertResumeToText } from "@/utils/ai.utils";
 import { Resume } from "@/models/profile.model";
@@ -58,25 +61,43 @@ export const POST = async (req: NextRequest) => {
   try {
     const resumeText = await convertResumeToText(resume);
 
-    // Extract tool data for enhanced prompting
+    // Extract tool data for enhanced prompting using semantic AI functions
     const quantified = countQuantifiedAchievements(resumeText);
-    const keywords = extractKeywords(resumeText);
-    const verbs = countActionVerbs(resumeText);
     const formatting = analyzeFormatting(resumeText);
 
-    const basePrompt = buildEnhancedResumeReviewPrompt(resumeText);
-    const enhancedPrompt = `${basePrompt}
+    // Use semantic extraction for keywords and verbs
+    const [semanticKeywords, semanticVerbs] = await Promise.all([
+      extractSemanticKeywords(
+        resumeText,
+        selectedModel.provider,
+        selectedModel.model || "llama3.2"
+      ),
+      analyzeActionVerbs(
+        resumeText,
+        selectedModel.provider,
+        selectedModel.model || "llama3.2"
+      ),
+    ]);
+
+    const keywordCount = getKeywordCountFromSemantic(semanticKeywords);
+    const verbCount = getVerbCountFromSemantic(semanticVerbs);
+    const allKeywords = [
+      ...semanticKeywords.technical_skills,
+      ...semanticKeywords.tools_platforms,
+    ];
+    const allVerbs = semanticVerbs.strong_verbs.map((v) => v.verb);
+
+    const basePrompt = buildResumeReviewPrompt(resumeText);
+    const fullPrompt = `${basePrompt}
 
 TOOL ANALYSIS RESULTS (use these in your evaluation):
 - Quantified achievements found: ${quantified.count} (Examples: ${
       quantified.examples.join(", ") || "none"
     })
-- Technical keywords found: ${keywords.count} (${
-      keywords.keywords.slice(0, 10).join(", ") || "none"
+- Technical keywords found: ${keywordCount} (${
+      allKeywords.slice(0, 10).join(", ") || "none"
     })
-- Action verbs found: ${verbs.count} (${
-      verbs.verbs.slice(0, 10).join(", ") || "none"
-    })
+- Action verbs found: ${verbCount} (${allVerbs.slice(0, 10).join(", ") || "none"})
 - Formatting quality: ${
       formatting.hasBulletPoints ? "Has bullet points" : "No bullets"
     }, ${formatting.sectionCount} sections detected
@@ -91,14 +112,22 @@ Use these concrete counts in your Step 1 (SCAN & COUNT) and scoring decisions.`;
     const result = streamObject({
       model,
       schema: ResumeReviewSchema,
-      system: ENHANCED_RESUME_REVIEW_SYSTEM_PROMPT,
-      prompt: enhancedPrompt,
+      system: RESUME_REVIEW_SYSTEM_PROMPT,
+      prompt: fullPrompt,
       temperature: 0.3,
     });
 
     return result.toTextStreamResponse();
   } catch (error) {
     console.error("Resume review error:", error);
+
+    if (error instanceof AIUnavailableError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 503 }
+      );
+    }
+
     const message =
       error instanceof Error ? error.message : "AI request failed";
 

@@ -13,7 +13,7 @@ interface MultiAgentProgressProps {
   isActive: boolean;
 }
 
-// V2: Consolidated 2-agent system (3 steps total)
+// 2-agent system (3 steps total)
 const AGENT_ORDER: AgentStep[] = [
   "tool-extraction",
   "analysis-agent",

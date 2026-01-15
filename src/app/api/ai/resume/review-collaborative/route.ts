@@ -14,7 +14,7 @@ import { Resume } from "@/models/profile.model";
 import { AiModel } from "@/models/ai.model";
 
 // Extend timeout for multi-agent collaboration (2 minutes)
-// V2 is faster: ~18s typical, allowing 2min for safety
+// Typical: ~18s, allowing 2min for safety
 export const maxDuration = 120;
 
 export const POST = async (req: NextRequest) => {
@@ -62,7 +62,7 @@ export const POST = async (req: NextRequest) => {
         const progressStream = new ProgressStream(controller);
 
         try {
-          // Run V2 collaborative analysis with progress updates
+          // Run collaborative analysis with progress updates
           const { analysis } = await adaptiveResumeReview(
             resumeText,
             selectedModel.provider,

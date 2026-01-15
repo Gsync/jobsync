@@ -7,10 +7,11 @@ import { getModel } from "@/lib/ai/providers";
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
 import {
   JobMatchSchema,
-  ENHANCED_JOB_MATCH_SYSTEM_PROMPT,
-  buildEnhancedJobMatchPrompt,
-  calculateKeywordOverlap,
-  extractKeywords,
+  JOB_MATCH_SYSTEM_PROMPT,
+  buildJobMatchPrompt,
+  performSemanticSkillMatch,
+  calculateSemanticSimilarity,
+  AIUnavailableError,
 } from "@/lib/ai";
 import { convertResumeToText, convertJobToText } from "@/utils/ai.utils";
 import { getResumeById } from "@/actions/profile.actions";
@@ -64,24 +65,37 @@ export const POST = async (req: NextRequest) => {
     const resumeText = await convertResumeToText(resume);
     const jobText = await convertJobToText(job);
 
-    // Extract keyword analysis for enhanced prompting
-    const keywordOverlap = calculateKeywordOverlap(resumeText, jobText);
-    const resumeKeywords = extractKeywords(resumeText);
-    const jobKeywords = extractKeywords(jobText);
+    // Use semantic analysis for skill matching
+    const [skillMatch, similarity] = await Promise.all([
+      performSemanticSkillMatch(
+        resumeText,
+        jobText,
+        selectedModel.provider,
+        selectedModel.model || "llama3.2"
+      ),
+      calculateSemanticSimilarity(
+        resumeText,
+        jobText,
+        selectedModel.provider,
+        selectedModel.model || "llama3.2"
+      ),
+    ]);
 
-    const basePrompt = buildEnhancedJobMatchPrompt(resumeText, jobText);
-    const enhancedPrompt = `${basePrompt}
+    const matchedSkills = skillMatch.exact_matches.map((m) => m.skill);
+    const missingSkills = skillMatch.missing_skills.map((s) => s.skill);
+    const totalSkills = matchedSkills.length + missingSkills.length;
+
+    const basePrompt = buildJobMatchPrompt(resumeText, jobText);
+    const fullPrompt = `${basePrompt}
 
 TOOL ANALYSIS RESULTS (use these in your evaluation):
-- Keyword overlap: ${keywordOverlap.overlapPercentage}% (${
-      keywordOverlap.matchedKeywords.length
-    } of ${keywordOverlap.totalJobKeywords} job keywords found)
-- Matched keywords: ${keywordOverlap.matchedKeywords.join(", ") || "none"}
-- Missing keywords: ${keywordOverlap.missingKeywords.join(", ") || "none"}
-- Resume has ${resumeKeywords.count} technical terms
-- Job requires ${jobKeywords.count} technical terms
+- Semantic similarity: ${similarity.similarity_score}% match
+- Skills matched: ${matchedSkills.length} of ${totalSkills} required skills
+- Matched skills: ${matchedSkills.slice(0, 10).join(", ") || "none"}
+- Missing skills: ${missingSkills.slice(0, 10).join(", ") || "none"}
+- Match explanation: ${similarity.match_explanation}
 
-Use these exact counts in your Step 3 (CALCULATE POINTS) for the Keyword Overlap score.`;
+Use these results in your scoring decisions.`;
 
     const model = getModel(
       selectedModel.provider,
@@ -91,14 +105,22 @@ Use these exact counts in your Step 3 (CALCULATE POINTS) for the Keyword Overlap
     const result = streamObject({
       model,
       schema: JobMatchSchema,
-      system: ENHANCED_JOB_MATCH_SYSTEM_PROMPT,
-      prompt: enhancedPrompt,
+      system: JOB_MATCH_SYSTEM_PROMPT,
+      prompt: fullPrompt,
       temperature: 0.3,
     });
 
     return result.toTextStreamResponse();
   } catch (error) {
     console.error("Job match error:", error);
+
+    if (error instanceof AIUnavailableError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 503 }
+      );
+    }
+
     const message =
       error instanceof Error ? error.message : "AI request failed";
 
