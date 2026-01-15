@@ -47,3 +47,8 @@ dev.db-journal
 data/files/resumes
 CLAUDE.md
 /docs
+.github
+.claude
+.specify
+/specs
+.vscode
