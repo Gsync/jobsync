@@ -32,7 +32,7 @@ import {
 } from "../ui/tooltip";
 import { Info, CheckCircle, XCircle } from "lucide-react";
 import { checkIfModelIsRunning } from "@/utils/ai.utils";
-import { JobMatchSchema } from "@/lib/ai/schemas";
+import { JobMatchSchema } from "@/models/ai.schemas";
 import { useCollaborativeAnalysis } from "@/hooks/useCollaborativeAnalysis";
 import { MultiAgentProgress } from "./MultiAgentProgress";
 import { JobMatchResponse } from "@/models/ai.model";

@@ -5,7 +5,7 @@ export {
   type ResumeReviewResponse,
   type JobMatchResponse,
   type JobMatchAnalysis,
-} from "./schemas";
+} from "@/models/ai.schemas";
 
 // Export both original and enhanced prompts
 export {
@@ -13,7 +13,7 @@ export {
   JOB_MATCH_SYSTEM_PROMPT,
   buildResumeReviewPrompt,
   buildJobMatchPrompt,
-} from "./prompts";
+} from "./prompts/prompts";
 
 // Phase 1 & 2: Export enhanced prompts and agents
 export {
@@ -22,7 +22,7 @@ export {
   buildResumeReviewPrompt as buildEnhancedResumeReviewPrompt,
   buildJobMatchPrompt as buildEnhancedJobMatchPrompt,
   CRITIC_SYSTEM_PROMPT,
-} from "./prompts.enhanced";
+} from "./prompts/prompts.enhanced";
 
 export {
   enhancedResumeReviewAgent,
@@ -37,7 +37,7 @@ export {
   consolidatedMultiAgentResumeReview,
   consolidatedMultiAgentJobMatch,
 } from "./multi-agent-v2";
-export type { AgentInsightsV2, CollaborativeResultV2 } from "./multi-agent-v2";
+export type { AgentInsightsV2, CollaborativeResultV2 } from "@/models/ai.model";
 
 // Adaptive selector (automatically chooses V1 or V2 based on env var)
 export {
@@ -90,7 +90,7 @@ export {
   type ActionVerbAnalysis,
   type SemanticSkillMatch,
   type SemanticSimilarityResult,
-} from "./schemas";
+} from "@/models/ai.schemas";
 
 // Scoring calculators
 export {

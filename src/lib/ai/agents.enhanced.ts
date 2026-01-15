@@ -5,7 +5,7 @@
 
 import { generateObject, generateText } from "ai";
 import { getModel, ProviderType } from "./providers";
-import { ResumeReviewSchema, JobMatchSchema } from "./schemas";
+import { ResumeReviewSchema, JobMatchSchema } from "@/models/ai.schemas";
 import {
   RESUME_REVIEW_SYSTEM_PROMPT,
   JOB_MATCH_SYSTEM_PROMPT,
@@ -13,7 +13,7 @@ import {
   buildResumeReviewPrompt,
   buildJobMatchPrompt,
   buildCriticPrompt,
-} from "./prompts.enhanced";
+} from "./prompts/prompts.enhanced";
 import {
   countQuantifiedAchievements,
   extractKeywords,

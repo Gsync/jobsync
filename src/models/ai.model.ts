@@ -3,7 +3,96 @@ export type {
   ResumeReviewResponse,
   JobMatchResponse,
   JobMatchAnalysis,
-} from "@/lib/ai/schemas";
+  SemanticKeywordExtraction,
+  ActionVerbAnalysis,
+  SemanticSkillMatch,
+  SemanticSimilarityResult,
+} from "./ai.schemas";
+export {
+  ResumeReviewSchema,
+  JobMatchSchema,
+  SemanticKeywordSchema,
+  ActionVerbAnalysisSchema,
+  SemanticSkillMatchSchema,
+  SemanticSimilaritySchema,
+} from "./ai.schemas";
+
+// ============================================================================
+// MULTI-AGENT TYPES
+// ============================================================================
+
+export interface AgentInsightsV2 {
+  analysis: AnalysisResult;
+  feedback: FeedbackResult;
+}
+
+export interface AnalysisResult {
+  finalScore: number;
+  dataInsights: {
+    quantifiedCount: number;
+    keywordCount: number;
+    verbCount: number;
+    formatQuality: string;
+  };
+  keywordAnalysis: {
+    strength: string;
+    atsScore: number;
+    missingCritical: string[];
+    recommendations: string[];
+  };
+  adjustments: Array<{
+    criterion: string;
+    adjustment: number;
+    reason: string;
+  }>;
+  math: string;
+}
+
+export interface FeedbackResult {
+  strengths: string[];
+  weaknesses: string[];
+  suggestions: string[];
+  synthesisNotes: string;
+}
+
+export interface CollaborativeResultV2<T> {
+  analysis: T;
+  agentInsights: AgentInsightsV2;
+  baselineScore: { score: number; breakdown: Record<string, number> };
+  warnings?: string[];
+}
+
+export interface ToolDataResume {
+  quantified: { count: number; examples: string[] };
+  keywords: { keywords: string[]; count: number };
+  verbs: { count: number; verbs: string[] };
+  formatting: {
+    hasBulletPoints: boolean;
+    hasConsistentSpacing: boolean;
+    averageLineLength: number;
+    sectionCount: number;
+  };
+}
+
+export interface ToolDataJobMatch {
+  keywordOverlap: {
+    overlapPercentage: number;
+    matchedKeywords: string[];
+    missingKeywords: string[];
+    totalJobKeywords: number;
+  };
+  resumeKeywords: { keywords: string[]; count: number };
+  jobKeywords: { keywords: string[]; count: number };
+  requiredSkills: {
+    requiredSkills: string[];
+    preferredSkills: string[];
+    totalSkills: number;
+  };
+}
+
+// ============================================================================
+// AI MODEL
+// ============================================================================
 
 export interface AiModel {
   provider: AiProvider;

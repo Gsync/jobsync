@@ -1,12 +1,12 @@
 import { generateObject } from "ai";
 import { getModel, ProviderType } from "./providers";
-import { ResumeReviewSchema, JobMatchSchema } from "./schemas";
+import { ResumeReviewSchema, JobMatchSchema } from "@/models/ai.schemas";
 import {
   RESUME_REVIEW_SYSTEM_PROMPT,
   JOB_MATCH_SYSTEM_PROMPT,
   buildResumeReviewPrompt,
   buildJobMatchPrompt,
-} from "./prompts";
+} from "./prompts/prompts";
 
 /**
  * Resume review agent - analyzes resume and returns structured feedback.

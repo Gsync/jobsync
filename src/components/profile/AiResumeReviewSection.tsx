@@ -25,7 +25,7 @@ import {
   TooltipTrigger,
 } from "../ui/tooltip";
 import { checkIfModelIsRunning } from "@/utils/ai.utils";
-import { ResumeReviewSchema } from "@/lib/ai/schemas";
+import { ResumeReviewSchema } from "@/models/ai.schemas";
 import { useCollaborativeAnalysis } from "@/hooks/useCollaborativeAnalysis";
 import { MultiAgentProgress } from "./MultiAgentProgress";
 

@@ -580,7 +580,7 @@ import {
   type SemanticKeywordExtraction,
   type ActionVerbAnalysis,
   type SemanticSkillMatch,
-} from "./schemas";
+} from "@/models/ai.schemas";
 import {
   getKeywordPrompt,
   getVerbPrompt,
@@ -592,7 +592,7 @@ import {
   OllamaActionVerbSchema,
   OllamaSkillMatchSchema,
   OllamaSemanticSimilaritySchema,
-} from "./prompts/ollama-schemas";
+} from "@/models/ai.ollama-schemas";
 
 /**
  * Check if provider is Ollama (local models that need simplified prompts)
@@ -873,7 +873,10 @@ export function getVerbCountFromSemantic(analysis: ActionVerbAnalysis): number {
 // Complete semantic understanding of resume-job fit, replacing keyword overlap
 // ============================================================================
 
-import { SemanticSimilaritySchema, type SemanticSimilarityResult } from "./schemas";
+import {
+  SemanticSimilaritySchema,
+  type SemanticSimilarityResult,
+} from "@/models/ai.schemas";
 
 /**
  * Calculate semantic similarity between resume and job description
@@ -943,8 +946,12 @@ export async function calculateSemanticSimilarity(
     return {
       similarity_score: fallbackOverlap.overlapPercentage,
       match_explanation: `Based on keyword analysis: ${fallbackOverlap.matchedKeywords.length} of ${fallbackOverlap.totalJobKeywords} keywords matched (${fallbackOverlap.overlapPercentage}% overlap).`,
-      key_matches: fallbackOverlap.matchedKeywords.slice(0, 5).map((k) => `Has ${k}`),
-      key_gaps: fallbackOverlap.missingKeywords.slice(0, 5).map((k) => ({ skill: k, note: "Not found in resume" })),
+      key_matches: fallbackOverlap.matchedKeywords
+        .slice(0, 5)
+        .map((k) => `Has ${k}`),
+      key_gaps: fallbackOverlap.missingKeywords
+        .slice(0, 5)
+        .map((k) => ({ skill: k, note: "Not found in resume" })),
       transferable_skills: [],
       application_recommendation:
         fallbackOverlap.overlapPercentage >= 60
@@ -979,13 +986,18 @@ export function generateMatchExplanation(
   // Generate strengths explanation from exact and related matches
   const strengthsExplanation: string[] = [];
 
-  skillMatch.exact_matches.slice(0, 3).forEach(match => {
+  skillMatch.exact_matches.slice(0, 3).forEach((match) => {
     strengthsExplanation.push(
-      `✅ **${match.skill}**: Directly matches requirement - "${match.resume_evidence.substring(0, 60)}..."`
+      `✅ **${
+        match.skill
+      }**: Directly matches requirement - "${match.resume_evidence.substring(
+        0,
+        60
+      )}..."`
     );
   });
 
-  skillMatch.related_matches.slice(0, 2).forEach(match => {
+  skillMatch.related_matches.slice(0, 2).forEach((match) => {
     strengthsExplanation.push(
       `⚡ **${match.resume_skill}** transfers to **${match.job_skill}** (${match.similarity}% similar): ${match.explanation}`
     );
@@ -994,37 +1006,65 @@ export function generateMatchExplanation(
   // Generate gaps explanation with learnability context
   const gapsExplanation: string[] = [];
 
-  skillMatch.missing_skills.slice(0, 4).forEach(skill => {
-    const urgencyIcon = skill.importance === "critical" ? "🔴" : skill.importance === "important" ? "🟡" : "🟢";
-    const learnTime = skill.learnability === "quick" ? "<1 month" : skill.learnability === "moderate" ? "1-3 months" : "3+ months";
+  skillMatch.missing_skills.slice(0, 4).forEach((skill) => {
+    const urgencyIcon =
+      skill.importance === "critical"
+        ? "🔴"
+        : skill.importance === "important"
+        ? "🟡"
+        : "🟢";
+    const learnTime =
+      skill.learnability === "quick"
+        ? "<1 month"
+        : skill.learnability === "moderate"
+        ? "1-3 months"
+        : "3+ months";
     gapsExplanation.push(
       `${urgencyIcon} **${skill.skill}** (${skill.importance}): Learning time ~${learnTime}`
     );
   });
 
   // Generate transferable skills explanation
-  const transferableExplanation: string[] = similarity.transferable_skills.map(skill =>
-    `💡 ${skill.resume_skill} → ${skill.job_skill}: ${skill.how_it_transfers}`
+  const transferableExplanation: string[] = similarity.transferable_skills.map(
+    (skill) =>
+      `💡 ${skill.resume_skill} → ${skill.job_skill}: ${skill.how_it_transfers}`
   );
 
   // Generate prioritized action items
   const actionItems: string[] = [];
 
   // Critical missing skills first
-  const criticalMissing = skillMatch.missing_skills.filter(s => s.importance === "critical");
+  const criticalMissing = skillMatch.missing_skills.filter(
+    (s) => s.importance === "critical"
+  );
   if (criticalMissing.length > 0) {
-    actionItems.push(`🔴 Address critical gaps first: ${criticalMissing.map(s => s.skill).join(", ")}`);
+    actionItems.push(
+      `🔴 Address critical gaps first: ${criticalMissing
+        .map((s) => s.skill)
+        .join(", ")}`
+    );
   }
 
   // Quick wins
-  const quickLearns = skillMatch.missing_skills.filter(s => s.learnability === "quick" && s.importance !== "nice-to-have");
+  const quickLearns = skillMatch.missing_skills.filter(
+    (s) => s.learnability === "quick" && s.importance !== "nice-to-have"
+  );
   if (quickLearns.length > 0) {
-    actionItems.push(`⚡ Quick wins (learn in <1 month): ${quickLearns.map(s => s.skill).join(", ")}`);
+    actionItems.push(
+      `⚡ Quick wins (learn in <1 month): ${quickLearns
+        .map((s) => s.skill)
+        .join(", ")}`
+    );
   }
 
   // Highlight existing transferable skills in application
   if (skillMatch.related_matches.length > 0) {
-    actionItems.push(`📝 Highlight transferable skills in cover letter: ${skillMatch.related_matches.slice(0, 3).map(m => m.resume_skill).join(", ")}`);
+    actionItems.push(
+      `📝 Highlight transferable skills in cover letter: ${skillMatch.related_matches
+        .slice(0, 3)
+        .map((m) => m.resume_skill)
+        .join(", ")}`
+    );
   }
 
   // Fit assessment based on scores
@@ -1035,11 +1075,14 @@ export function generateMatchExplanation(
   } else if (score >= 60) {
     fitAssessment = "Good fit - You match most requirements with minor gaps.";
   } else if (score >= 45) {
-    fitAssessment = "Moderate fit - Some gaps exist but may be worth applying with a tailored resume.";
+    fitAssessment =
+      "Moderate fit - Some gaps exist but may be worth applying with a tailored resume.";
   } else if (score >= 30) {
-    fitAssessment = "Weak fit - Significant gaps; consider upskilling before applying.";
+    fitAssessment =
+      "Weak fit - Significant gaps; consider upskilling before applying.";
   } else {
-    fitAssessment = "Poor fit - This role may not align with your current skills and experience.";
+    fitAssessment =
+      "Poor fit - This role may not align with your current skills and experience.";
   }
 
   return {
@@ -1048,7 +1091,10 @@ export function generateMatchExplanation(
     strengths_explanation: strengthsExplanation,
     gaps_explanation: gapsExplanation,
     transferable_explanation: transferableExplanation,
-    action_items: actionItems.length > 0 ? actionItems : ["No critical actions needed - proceed with application"],
+    action_items:
+      actionItems.length > 0
+        ? actionItems
+        : ["No critical actions needed - proceed with application"],
   };
 }
 

@@ -20,7 +20,18 @@
 import { generateObject, generateText } from "ai";
 import { z } from "zod";
 import { getModel, ProviderType } from "./providers";
-import { ResumeReviewSchema, JobMatchSchema } from "./schemas";
+import {
+  ResumeReviewSchema,
+  JobMatchSchema,
+  SemanticKeywordSchema,
+  ActionVerbAnalysisSchema,
+  SemanticSkillMatchSchema,
+  SemanticSimilaritySchema,
+} from "@/models/ai.schemas";
+import type {
+  SemanticSkillMatch,
+  SemanticSimilarityResult,
+} from "@/models/ai.schemas";
 import {
   countQuantifiedAchievements,
   extractKeywords,
@@ -36,7 +47,6 @@ import {
   getKeywordCountFromSemantic,
   getVerbCountFromSemantic,
 } from "./tools";
-import type { SemanticSimilarityResult, SemanticSkillMatch } from "./schemas";
 import { ProgressStream } from "./progress-stream";
 import {
   calculateResumeScore,
@@ -44,80 +54,20 @@ import {
   validateScore,
   calculateAllowedVariance,
 } from "./scoring";
-import { ResumeReviewResponse, JobMatchResponse } from "@/models/ai.model";
-
-// ============================================================================
-// TYPE DEFINITIONS
-// ============================================================================
-
-export interface AgentInsightsV2 {
-  analysis: AnalysisResult;
-  feedback: FeedbackResult;
-}
-
-export interface AnalysisResult {
-  finalScore: number;
-  dataInsights: {
-    quantifiedCount: number;
-    keywordCount: number;
-    verbCount: number;
-    formatQuality: string;
-  };
-  keywordAnalysis: {
-    strength: string;
-    atsScore: number;
-    missingCritical: string[];
-    recommendations: string[];
-  };
-  adjustments: Array<{
-    criterion: string;
-    adjustment: number;
-    reason: string;
-  }>;
-  math: string;
-}
-
-export interface FeedbackResult {
-  strengths: string[];
-  weaknesses: string[];
-  suggestions: string[];
-  synthesisNotes: string;
-}
-
-export interface CollaborativeResultV2<T> {
-  analysis: T;
-  agentInsights: AgentInsightsV2;
-  baselineScore: { score: number; breakdown: Record<string, number> };
-  warnings?: string[];
-}
-
-export interface ToolDataResume {
-  quantified: { count: number; examples: string[] };
-  keywords: { keywords: string[]; count: number };
-  verbs: { count: number; verbs: string[] };
-  formatting: {
-    hasBulletPoints: boolean;
-    hasConsistentSpacing: boolean;
-    averageLineLength: number;
-    sectionCount: number;
-  };
-}
-
-export interface ToolDataJobMatch {
-  keywordOverlap: {
-    overlapPercentage: number;
-    matchedKeywords: string[];
-    missingKeywords: string[];
-    totalJobKeywords: number;
-  };
-  resumeKeywords: { keywords: string[]; count: number };
-  jobKeywords: { keywords: string[]; count: number };
-  requiredSkills: {
-    requiredSkills: string[];
-    preferredSkills: string[];
-    totalSkills: number;
-  };
-}
+import {
+  ResumeReviewResponse,
+  JobMatchResponse,
+  AgentInsightsV2,
+  AnalysisResult,
+  FeedbackResult,
+  CollaborativeResultV2,
+  ToolDataResume,
+  ToolDataJobMatch,
+} from "@/models/ai.model";
+import {
+  OllamaAnalysisAgentSchema,
+  OllamaFeedbackAgentSchema,
+} from "@/models/ai.ollama-schemas";
 
 // ============================================================================
 // CONSOLIDATED SCHEMAS
@@ -513,15 +463,31 @@ Be specific, actionable, and encouraging. Reference actual resume content.`;
   let analysisResult: AnalysisResult;
   let feedbackResult: FeedbackResult;
 
+  // Select schema based on provider
+  const analysisSchema = isOllama
+    ? OllamaAnalysisAgentSchema
+    : AnalysisAgentSchema;
+  const feedbackSchema = isOllama
+    ? OllamaFeedbackAgentSchema
+    : FeedbackAgentSchema;
+
+  // Simplified system prompts for Ollama
+  const analysisSystemPrompt = isOllama
+    ? "You are a resume analyzer. Analyze the resume and provide a score with explanation."
+    : ANALYSIS_AGENT_PROMPT;
+  const feedbackSystemPrompt = isOllama
+    ? "You are a resume feedback expert. Provide strengths, weaknesses, and suggestions."
+    : FEEDBACK_AGENT_PROMPT;
+
   try {
-    [analysisResult, feedbackResult] = await Promise.all([
+    const [rawAnalysis, rawFeedback] = await Promise.all([
       // Analysis Agent with timeout
       withTimeout(
         runWithRetry(async () => {
           const { object } = await generateObject({
             model,
-            schema: AnalysisAgentSchema,
-            system: ANALYSIS_AGENT_PROMPT,
+            schema: analysisSchema,
+            system: analysisSystemPrompt,
             prompt: analysisPrompt,
             temperature: 0.1,
           });
@@ -536,8 +502,8 @@ Be specific, actionable, and encouraging. Reference actual resume content.`;
         runWithRetry(async () => {
           const { object } = await generateObject({
             model,
-            schema: FeedbackAgentSchema,
-            system: FEEDBACK_AGENT_PROMPT,
+            schema: feedbackSchema,
+            system: feedbackSystemPrompt,
             prompt: feedbackPrompt,
             temperature: 0.3,
           });
@@ -547,6 +513,43 @@ Be specific, actionable, and encouraging. Reference actual resume content.`;
         "Feedback Agent"
       ),
     ]);
+
+    // Normalize Ollama results to full format
+    if (isOllama) {
+      const ollamaAnalysis = rawAnalysis as z.infer<
+        typeof OllamaAnalysisAgentSchema
+      >;
+      analysisResult = {
+        finalScore: ollamaAnalysis.finalScore,
+        dataInsights: {
+          quantifiedCount: ollamaAnalysis.quantifiedCount,
+          keywordCount: ollamaAnalysis.keywordCount,
+          verbCount: toolData.verbs.count,
+          formatQuality: "Analyzed by Ollama",
+        },
+        keywordAnalysis: {
+          strength: "Analyzed",
+          atsScore: ollamaAnalysis.atsScore,
+          missingCritical: ollamaAnalysis.missingKeywords,
+          recommendations: [],
+        },
+        adjustments: [],
+        math: ollamaAnalysis.scoreExplanation,
+      };
+
+      const ollamaFeedback = rawFeedback as z.infer<
+        typeof OllamaFeedbackAgentSchema
+      >;
+      feedbackResult = {
+        strengths: ollamaFeedback.strengths,
+        weaknesses: ollamaFeedback.weaknesses,
+        suggestions: ollamaFeedback.suggestions,
+        synthesisNotes: ollamaFeedback.summary,
+      };
+    } else {
+      analysisResult = rawAnalysis as AnalysisResult;
+      feedbackResult = rawFeedback as FeedbackResult;
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     const isTimeout = errorMessage.includes("timed out");
@@ -830,7 +833,9 @@ CALCULATED BASELINE SCORE: ${baselineScore.score}/100
 
 BASELINE BREAKDOWN:
 - Skills: ${baselineScore.breakdown.skillsMatch}/30 (FIXED based on match ratio)
-- Keywords: ${baselineScore.breakdown.keywordOverlap}/20 (FIXED based on overlap)
+- Keywords: ${
+        baselineScore.breakdown.keywordOverlap
+      }/20 (FIXED based on overlap)
 - Experience: ${
         baselineScore.breakdown.experienceMatch
       }/25 (adjustable - assess from text)
@@ -883,15 +888,31 @@ YOUR TASKS:
   let analysisResult: AnalysisResult;
   let feedbackResult: FeedbackResult;
 
+  // Select schema based on provider
+  const analysisSchema = isOllama
+    ? OllamaAnalysisAgentSchema
+    : AnalysisAgentSchema;
+  const feedbackSchema = isOllama
+    ? OllamaFeedbackAgentSchema
+    : FeedbackAgentSchema;
+
+  // Simplified system prompts for Ollama
+  const analysisSystemPrompt = isOllama
+    ? "You are a job match analyzer. Score how well the resume matches the job."
+    : ANALYSIS_AGENT_PROMPT;
+  const feedbackSystemPrompt = isOllama
+    ? "You are a job match expert. Provide strengths, gaps, and suggestions."
+    : FEEDBACK_AGENT_PROMPT;
+
   try {
-    [analysisResult, feedbackResult] = await Promise.all([
+    const [rawAnalysis, rawFeedback] = await Promise.all([
       // Analysis Agent with timeout
       withTimeout(
         runWithRetry(async () => {
           const { object } = await generateObject({
             model,
-            schema: AnalysisAgentSchema,
-            system: ANALYSIS_AGENT_PROMPT,
+            schema: analysisSchema,
+            system: analysisSystemPrompt,
             prompt: analysisPrompt,
             temperature: 0.1,
           });
@@ -906,8 +927,8 @@ YOUR TASKS:
         runWithRetry(async () => {
           const { object } = await generateObject({
             model,
-            schema: FeedbackAgentSchema,
-            system: FEEDBACK_AGENT_PROMPT,
+            schema: feedbackSchema,
+            system: feedbackSystemPrompt,
             prompt: feedbackPrompt,
             temperature: 0.3,
           });
@@ -917,6 +938,43 @@ YOUR TASKS:
         "Feedback Agent"
       ),
     ]);
+
+    // Normalize Ollama results to full format
+    if (isOllama) {
+      const ollamaAnalysis = rawAnalysis as z.infer<
+        typeof OllamaAnalysisAgentSchema
+      >;
+      analysisResult = {
+        finalScore: ollamaAnalysis.finalScore,
+        dataInsights: {
+          quantifiedCount: ollamaAnalysis.quantifiedCount,
+          keywordCount: ollamaAnalysis.keywordCount,
+          verbCount: 0,
+          formatQuality: "Analyzed by Ollama",
+        },
+        keywordAnalysis: {
+          strength: "Analyzed",
+          atsScore: ollamaAnalysis.atsScore,
+          missingCritical: ollamaAnalysis.missingKeywords,
+          recommendations: [],
+        },
+        adjustments: [],
+        math: ollamaAnalysis.scoreExplanation,
+      };
+
+      const ollamaFeedback = rawFeedback as z.infer<
+        typeof OllamaFeedbackAgentSchema
+      >;
+      feedbackResult = {
+        strengths: ollamaFeedback.strengths,
+        weaknesses: ollamaFeedback.weaknesses,
+        suggestions: ollamaFeedback.suggestions,
+        synthesisNotes: ollamaFeedback.summary,
+      };
+    } else {
+      analysisResult = rawAnalysis as AnalysisResult;
+      feedbackResult = rawFeedback as FeedbackResult;
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     const isTimeout = errorMessage.includes("timed out");
