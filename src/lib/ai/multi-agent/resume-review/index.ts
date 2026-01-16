@@ -4,12 +4,12 @@
  * Handles resume analysis using the multi-agent collaboration system.
  */
 
-import { getModel, ProviderType } from "../providers";
+import { getModel, ProviderType } from "../../providers";
 import { AnalysisAgentSchema, FeedbackAgentSchema } from "@/models/ai.schemas";
 import {
   ANALYSIS_AGENT_PROMPT,
   FEEDBACK_AGENT_PROMPT,
-} from "../prompts/prompts.agents";
+} from "../../prompts/prompts.agents";
 import {
   countQuantifiedAchievements,
   analyzeFormatting,
@@ -17,13 +17,13 @@ import {
   analyzeActionVerbs,
   getKeywordCountFromSemantic,
   getVerbCountFromSemantic,
-} from "../tools";
-import { ProgressStream } from "../progress-stream";
+} from "../../tools";
+import { ProgressStream } from "../../progress-stream";
 import {
   calculateResumeScore,
   validateScore,
   calculateAllowedVariance,
-} from "../scoring";
+} from "../../scoring";
 import {
   ResumeReviewResponse,
   AgentInsights,
@@ -39,17 +39,16 @@ import {
   OLLAMA_FEEDBACK_SYSTEM_PROMPT,
   buildOllamaResumeAnalysisPrompt,
   buildOllamaResumeFeedbackPrompt,
-} from "../ollama";
-import { withTimeout } from "./utils";
+} from "../../ollama";
+import { withTimeout } from "../utils";
 import {
   executeAgents,
   handleExtractionError,
   handleAgentError,
-} from "./shared";
+} from "../shared";
+import { buildResumeReviewResponse } from "./response-builder";
 
-// ============================================================================
 // RESUME REVIEW
-// ============================================================================
 
 export async function multiAgentResumeReview(
   resumeText: string,
@@ -59,9 +58,8 @@ export async function multiAgentResumeReview(
 ): Promise<CollaborativeResult<ResumeReviewResponse>> {
   const model = getModel(provider, modelName);
 
-  // =========================================================================
-  // STEP 1: Tool Extraction - Semantic Extraction is now the default (Phase 3)
-  // =========================================================================
+  // STEP 1: Tool Extraction -
+
   progressStream?.sendStarted("tool-extraction", 0);
 
   let toolData: ToolDataResume;
@@ -107,9 +105,8 @@ export async function multiAgentResumeReview(
 
   progressStream?.sendCompleted("tool-extraction", 0);
 
-  // =========================================================================
   // STEP 2: Calculate Baseline Score
-  // =========================================================================
+
   const baselineScore = calculateResumeScore({
     quantifiedCount: toolData.quantified.count,
     keywordCount: toolData.keywords.count,
@@ -129,9 +126,8 @@ export async function multiAgentResumeReview(
     `[Resume Review] Baseline: ${baselineScore.score}, Allowed variance: ±${allowedVariance} (${minScore}-${maxScore})`
   );
 
-  // =========================================================================
   // STEP 3: PARALLEL - Analysis Agent & Feedback Agent
-  // =========================================================================
+
   progressStream?.sendStarted("analysis-agent", 1);
   progressStream?.sendStarted("feedback-agent", 2);
 
@@ -155,7 +151,12 @@ export async function multiAgentResumeReview(
 
   const feedbackPrompt = isOllama
     ? buildOllamaResumeFeedbackPrompt(resumeText, baselineScore)
-    : buildFullResumeFeedbackPrompt(resumeText, baselineScore, minScore, maxScore);
+    : buildFullResumeFeedbackPrompt(
+        resumeText,
+        baselineScore,
+        minScore,
+        maxScore
+      );
 
   let analysisResult;
   let feedbackResult;
@@ -166,13 +167,17 @@ export async function multiAgentResumeReview(
       provider,
       analysis: {
         schema: isOllama ? OllamaAnalysisAgentSchema : AnalysisAgentSchema,
-        systemPrompt: isOllama ? OLLAMA_ANALYSIS_SYSTEM_PROMPT : ANALYSIS_AGENT_PROMPT,
+        systemPrompt: isOllama
+          ? OLLAMA_ANALYSIS_SYSTEM_PROMPT
+          : ANALYSIS_AGENT_PROMPT,
         prompt: analysisPrompt,
         temperature: 0.1,
       },
       feedback: {
         schema: isOllama ? OllamaFeedbackAgentSchema : FeedbackAgentSchema,
-        systemPrompt: isOllama ? OLLAMA_FEEDBACK_SYSTEM_PROMPT : FEEDBACK_AGENT_PROMPT,
+        systemPrompt: isOllama
+          ? OLLAMA_FEEDBACK_SYSTEM_PROMPT
+          : FEEDBACK_AGENT_PROMPT,
         prompt: feedbackPrompt,
         temperature: 0.3,
       },
@@ -188,9 +193,8 @@ export async function multiAgentResumeReview(
   progressStream?.sendCompleted("analysis-agent", 1);
   progressStream?.sendCompleted("feedback-agent", 2);
 
-  // =========================================================================
   // STEP 4: Validation
-  // =========================================================================
+
   const validatedScore = validateScore(
     analysisResult.finalScore,
     baselineScore.score,
@@ -204,22 +208,12 @@ export async function multiAgentResumeReview(
     );
   }
 
-  // =========================================================================
   // STEP 5: Build Final Response
-  // =========================================================================
-  const finalResponse: ResumeReviewResponse = {
-    score: validatedScore,
-    summary: `This resume scores ${validatedScore}/100, which is ${
-      validatedScore >= 70
-        ? "above average"
-        : validatedScore >= 50
-        ? "average"
-        : "below average"
-    }. ${feedbackResult.strengths[0] || "Multiple strengths identified."}`,
-    strengths: feedbackResult.strengths,
-    weaknesses: feedbackResult.weaknesses,
-    suggestions: feedbackResult.suggestions,
-  };
+
+  const finalResponse = buildResumeReviewResponse(
+    validatedScore,
+    feedbackResult
+  );
 
   const agentInsights: AgentInsights = {
     analysis: analysisResult,
@@ -234,9 +228,7 @@ export async function multiAgentResumeReview(
   };
 }
 
-// ============================================================================
 // PROMPT BUILDERS
-// ============================================================================
 
 function buildFullResumeAnalysisPrompt(
   resumeText: string,
@@ -265,12 +257,18 @@ CALCULATED BASELINE SCORE: ${baselineScore.score}/100
 
 BASELINE BREAKDOWN (mathematically calculated):
 - Keywords: ${baselineScore.breakdown.keywords}/20 (FIXED based on count)
-- Achievements: ${baselineScore.breakdown.achievements}/25 (FIXED based on count)
+- Achievements: ${
+    baselineScore.breakdown.achievements
+  }/25 (FIXED based on count)
 - Action Verbs: ${baselineScore.breakdown.verbs}/10 (FIXED based on count)
 - Formatting: ${baselineScore.breakdown.formatting}/15 (FIXED based on analysis)
 - Summary: ${baselineScore.breakdown.summary}/10 (adjustable based on quality)
-- Experience: ${baselineScore.breakdown.experienceClarity}/10 (adjustable based on clarity)
-- Skills: ${baselineScore.breakdown.skillsSection}/5 (adjustable based on organization)
+- Experience: ${
+    baselineScore.breakdown.experienceClarity
+  }/10 (adjustable based on clarity)
+- Skills: ${
+    baselineScore.breakdown.skillsSection
+  }/5 (adjustable based on organization)
 - Grammar: ${baselineScore.breakdown.grammar}/5 (adjustable based on errors)
 
 YOUR TASKS:
