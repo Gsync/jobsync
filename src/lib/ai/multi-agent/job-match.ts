@@ -4,22 +4,17 @@
  * Handles job matching analysis using the multi-agent collaboration system.
  */
 
-import { generateObject } from "ai";
 import { getModel, ProviderType } from "../providers";
 import { AnalysisAgentSchema, FeedbackAgentSchema } from "@/models/ai.schemas";
 import {
   ANALYSIS_AGENT_PROMPT,
   FEEDBACK_AGENT_PROMPT,
 } from "../prompts/prompts.agents";
-import type {
-  SemanticSkillMatch,
-  SemanticSimilarityResult,
-} from "@/models/ai.schemas";
+
 import {
   performSemanticSkillMatch,
   calculateSemanticSimilarity,
   generateMatchExplanation,
-  AIUnavailableError,
 } from "../tools";
 import { ProgressStream } from "../progress-stream";
 import {
@@ -30,31 +25,28 @@ import {
 import {
   JobMatchResponse,
   AgentInsights,
-  AnalysisResult,
-  FeedbackResult,
   CollaborativeResult,
   ToolDataJobMatch,
+  SemanticData,
 } from "@/models/ai.model";
 import {
   isOllamaProvider,
   SEMANTIC_TIMEOUT_MS,
-  AGENT_TIMEOUT_MS,
   OllamaAnalysisAgentSchema,
   OllamaFeedbackAgentSchema,
-  normalizeAnalysisResult,
-  normalizeFeedbackResult,
   OLLAMA_JOB_MATCH_ANALYSIS_SYSTEM_PROMPT,
   OLLAMA_JOB_MATCH_FEEDBACK_SYSTEM_PROMPT,
   buildOllamaJobMatchAnalysisPrompt,
   buildOllamaJobMatchFeedbackPrompt,
-  type OllamaAnalysisAgent,
-  type OllamaFeedbackAgent,
 } from "../ollama";
-import { runWithRetry, withTimeout } from "./utils";
+import { withTimeout } from "./utils";
+import {
+  executeAgents,
+  handleExtractionError,
+  handleAgentError,
+} from "./shared";
 
-// ============================================================================
 // JOB MATCH
-// ============================================================================
 
 export async function multiAgentJobMatch(
   resumeText: string,
@@ -65,22 +57,18 @@ export async function multiAgentJobMatch(
 ): Promise<CollaborativeResult<JobMatchResponse>> {
   const model = getModel(provider, modelName);
 
-  // =========================================================================
-  // STEP 1: Tool Extraction - Full Semantic Analysis (Phase 3)
-  // =========================================================================
+  // STEP 1: Tool Extraction - Full Semantic Analysis
+
   progressStream?.sendStarted("tool-extraction", 0);
 
-  // Phase 3: Full semantic matching is now the default
-  // Includes semantic skill matching AND semantic similarity calculation
   let toolData: ToolDataJobMatch;
-  let semanticData: {
-    skillMatch: SemanticSkillMatch | null;
-    similarity: SemanticSimilarityResult | null;
-    matchExplanation: ReturnType<typeof generateMatchExplanation> | null;
-  } = { skillMatch: null, similarity: null, matchExplanation: null };
+  let semanticData: SemanticData = {
+    skillMatch: null,
+    similarity: null,
+    matchExplanation: null,
+  };
 
   try {
-    // Phase 4: Wrap semantic extraction with timeout to prevent small model hangs
     const [semanticMatch, semanticSimilarity] = await Promise.all([
       withTimeout(
         performSemanticSkillMatch(
@@ -104,7 +92,6 @@ export async function multiAgentJobMatch(
       ),
     ]);
 
-    // Generate comprehensive match explanation
     const matchExplanation = generateMatchExplanation(
       semanticMatch,
       semanticSimilarity
@@ -116,17 +103,15 @@ export async function multiAgentJobMatch(
     ];
     const missingKeywords = semanticMatch.missing_skills.map((s) => s.skill);
 
-    // Store semantic data for enhanced output
     semanticData = {
       skillMatch: semanticMatch,
       similarity: semanticSimilarity,
       matchExplanation,
     };
 
-    // Use semantic similarity score instead of simple keyword overlap percentage
     toolData = {
       keywordOverlap: {
-        overlapPercentage: semanticSimilarity.similarity_score, // Use semantic similarity!
+        overlapPercentage: semanticSimilarity.similarity_score,
         matchedKeywords,
         missingKeywords,
         totalJobKeywords: matchedKeywords.length + missingKeywords.length,
@@ -155,27 +140,13 @@ export async function multiAgentJobMatch(
       semanticSimilarity.similarity_score
     );
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const isTimeout = errorMessage.includes("timed out");
-
-    console.error("[Job Match] Semantic extraction failed:", error);
-
-    // Send user-friendly error message
-    if (progressStream) {
-      const warningMsg = isTimeout
-        ? "AI model is taking too long. Please try again or use a different model."
-        : "AI unavailable for job matching. Please try again later.";
-      progressStream.sendWarning("tool-extraction", warningMsg, 0);
-    }
-
-    throw new AIUnavailableError("job matching");
+    handleExtractionError(error, progressStream, "job matching");
   }
 
   progressStream?.sendCompleted("tool-extraction", 0);
 
-  // =========================================================================
   // STEP 2: Calculate Baseline Score
-  // =========================================================================
+
   const matchedSkillsCount = toolData.keywordOverlap.matchedKeywords.length;
   const requiredSkillsCount = Math.max(
     toolData.requiredSkills.totalSkills,
@@ -186,8 +157,8 @@ export async function multiAgentJobMatch(
     keywordOverlapPercent: toolData.keywordOverlap.overlapPercentage,
     matchedSkillsCount,
     requiredSkillsCount,
-    experienceYears: 0, // Will be assessed by AI
-    requiredYears: 0, // Will be assessed by AI
+    experienceYears: 0,
+    requiredYears: 0,
   });
 
   const allowedVariance = calculateAllowedVariance(
@@ -201,15 +172,13 @@ export async function multiAgentJobMatch(
     `[Job Match] Baseline: ${baselineScore.score}, Allowed variance: ±${allowedVariance} (${minScore}-${maxScore})`
   );
 
-  // =========================================================================
   // STEP 3: PARALLEL - Analysis Agent & Feedback Agent
-  // =========================================================================
+
   progressStream?.sendStarted("analysis-agent", 1);
   progressStream?.sendStarted("feedback-agent", 2);
 
   const isOllama = isOllamaProvider(provider);
 
-  // Build prompts - simpler for Ollama
   const analysisPrompt = isOllama
     ? buildOllamaJobMatchAnalysisPrompt(
         resumeText,
@@ -219,42 +188,16 @@ export async function multiAgentJobMatch(
         minScore,
         maxScore
       )
-    : `Analyze how well this resume matches the job description:
-
-RESUME:
-${resumeText}
-
-JOB DESCRIPTION:
-${jobDescription}
-
-OBJECTIVE METRICS (from tools):
-- Skills matched: ${matchedSkillsCount} of ${requiredSkillsCount} (${Math.round(
-        (matchedSkillsCount / Math.max(requiredSkillsCount, 1)) * 100
-      )}%)
-- Matched: ${toolData.keywordOverlap.matchedKeywords.slice(0, 10).join(", ")}
-- Missing: ${toolData.keywordOverlap.missingKeywords.slice(0, 10).join(", ")}
-- Keyword overlap: ${Math.round(toolData.keywordOverlap.overlapPercentage)}%
-
-CALCULATED BASELINE SCORE: ${baselineScore.score}/100
-
-BASELINE BREAKDOWN:
-- Skills: ${baselineScore.breakdown.skillsMatch}/30 (FIXED based on match ratio)
-- Keywords: ${
-        baselineScore.breakdown.keywordOverlap
-      }/20 (FIXED based on overlap)
-- Experience: ${
-        baselineScore.breakdown.experienceMatch
-      }/25 (adjustable - assess from text)
-- Qualifications: ${baselineScore.breakdown.qualifications}/15 (adjustable)
-- Industry Fit: ${baselineScore.breakdown.industryFit}/10 (adjustable)
-
-YOUR TASKS:
-1. Verify the skills and keyword matching
-2. Assess experience match and quality from the texts
-3. Evaluate qualifications and industry fit
-4. Calculate final score (must be ${minScore}-${maxScore})
-
-Adjust only the last 3 criteria based on your assessment.`;
+    : buildFullJobMatchAnalysisPrompt(
+        resumeText,
+        jobDescription,
+        toolData,
+        baselineScore,
+        matchedSkillsCount,
+        requiredSkillsCount,
+        minScore,
+        maxScore
+      );
 
   const feedbackPrompt = isOllama
     ? buildOllamaJobMatchFeedbackPrompt(
@@ -263,124 +206,51 @@ Adjust only the last 3 criteria based on your assessment.`;
         toolData,
         baselineScore
       )
-    : `Generate match feedback comparing resume to job description:
+    : buildFullJobMatchFeedbackPrompt(
+        resumeText,
+        jobDescription,
+        toolData,
+        baselineScore,
+        minScore,
+        maxScore
+      );
 
-RESUME:
-${resumeText}
-
-JOB DESCRIPTION:
-${jobDescription}
-
-CONTEXT:
-- Baseline score: ${baselineScore.score}/100
-- Expected range: ${minScore}-${maxScore}
-- Matched skills: ${toolData.keywordOverlap.matchedKeywords
-        .slice(0, 5)
-        .join(", ")}
-- Missing skills: ${toolData.keywordOverlap.missingKeywords
-        .slice(0, 5)
-        .join(", ")}
-
-YOUR TASKS:
-1. Identify strengths that make this candidate a good fit
-2. Identify gaps or weaknesses in the match
-3. Provide specific suggestions to improve the match (keywords, skills, experience to highlight)
-4. Add synthesis notes on overall fit assessment`;
-
-  let analysisResult: AnalysisResult;
-  let feedbackResult: FeedbackResult;
-
-  // Select schema based on provider
-  const analysisSchema = isOllama
-    ? OllamaAnalysisAgentSchema
-    : AnalysisAgentSchema;
-  const feedbackSchema = isOllama
-    ? OllamaFeedbackAgentSchema
-    : FeedbackAgentSchema;
-
-  // System prompts - simplified for Ollama
-  const analysisSystemPrompt = isOllama
-    ? OLLAMA_JOB_MATCH_ANALYSIS_SYSTEM_PROMPT
-    : ANALYSIS_AGENT_PROMPT;
-  const feedbackSystemPrompt = isOllama
-    ? OLLAMA_JOB_MATCH_FEEDBACK_SYSTEM_PROMPT
-    : FEEDBACK_AGENT_PROMPT;
+  let analysisResult;
+  let feedbackResult;
 
   try {
-    const [rawAnalysis, rawFeedback] = await Promise.all([
-      // Analysis Agent with timeout
-      withTimeout(
-        runWithRetry(async () => {
-          const { object } = await generateObject({
-            model,
-            schema: analysisSchema,
-            system: analysisSystemPrompt,
-            prompt: analysisPrompt,
-            temperature: 0.1,
-          });
-          return object;
-        }, "Analysis Agent"),
-        AGENT_TIMEOUT_MS,
-        "Analysis Agent"
-      ),
+    const result = await executeAgents({
+      model,
+      provider,
+      analysis: {
+        schema: isOllama ? OllamaAnalysisAgentSchema : AnalysisAgentSchema,
+        systemPrompt: isOllama
+          ? OLLAMA_JOB_MATCH_ANALYSIS_SYSTEM_PROMPT
+          : ANALYSIS_AGENT_PROMPT,
+        prompt: analysisPrompt,
+        temperature: 0.1,
+      },
+      feedback: {
+        schema: isOllama ? OllamaFeedbackAgentSchema : FeedbackAgentSchema,
+        systemPrompt: isOllama
+          ? OLLAMA_JOB_MATCH_FEEDBACK_SYSTEM_PROMPT
+          : FEEDBACK_AGENT_PROMPT,
+        prompt: feedbackPrompt,
+        temperature: 0.3,
+      },
+    });
 
-      // Feedback Agent with timeout
-      withTimeout(
-        runWithRetry(async () => {
-          const { object } = await generateObject({
-            model,
-            schema: feedbackSchema,
-            system: feedbackSystemPrompt,
-            prompt: feedbackPrompt,
-            temperature: 0.3,
-          });
-          return object;
-        }, "Feedback Agent"),
-        AGENT_TIMEOUT_MS,
-        "Feedback Agent"
-      ),
-    ]);
-
-    // Normalize Ollama results to full format
-    if (isOllama) {
-      analysisResult = normalizeAnalysisResult(
-        rawAnalysis as OllamaAnalysisAgent
-      );
-      feedbackResult = normalizeFeedbackResult(
-        rawFeedback as OllamaFeedbackAgent
-      );
-    } else {
-      analysisResult = rawAnalysis as AnalysisResult;
-      feedbackResult = rawFeedback as FeedbackResult;
-    }
+    analysisResult = result.analysisResult;
+    feedbackResult = result.feedbackResult;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const isTimeout = errorMessage.includes("timed out");
-
-    console.error("[Job Match] Agent execution failed:", error);
-
-    // Send user-friendly error message
-    if (progressStream) {
-      const warningMsg = isTimeout
-        ? "Analysis is taking too long. Please try again or use a faster model."
-        : "Analysis failed. Please try again.";
-      progressStream.sendWarning("analysis-agent", warningMsg, 1);
-    }
-
-    // Throw to let caller handle the error
-    throw new Error(
-      isTimeout
-        ? "Job match analysis timed out. The AI model may be overloaded. Please try again."
-        : `Job match analysis failed: ${errorMessage}`
-    );
+    handleAgentError(error, progressStream, "job matching");
   }
 
   progressStream?.sendCompleted("analysis-agent", 1);
   progressStream?.sendCompleted("feedback-agent", 2);
 
-  // =========================================================================
   // STEP 4: Validation
-  // =========================================================================
+
   const validatedScore = validateScore(
     analysisResult.finalScore,
     baselineScore.score,
@@ -394,11 +264,129 @@ YOUR TASKS:
     );
   }
 
-  // =========================================================================
-  // STEP 5: Build Final Response (Enhanced with Phase 3 Semantic Data)
-  // =========================================================================
+  // STEP 5: Build Final Response
 
-  // Build enhanced detailed analysis using semantic data when available
+  const finalResponse = buildJobMatchResponse(
+    validatedScore,
+    baselineScore,
+    toolData,
+    semanticData,
+    analysisResult,
+    feedbackResult,
+    matchedSkillsCount,
+    requiredSkillsCount
+  );
+
+  const agentInsights: AgentInsights = {
+    analysis: analysisResult,
+    feedback: feedbackResult,
+  };
+
+  return {
+    analysis: finalResponse,
+    agentInsights,
+    baselineScore,
+    warnings: warnings.length > 0 ? warnings : undefined,
+  };
+}
+
+// PROMPT BUILDERS
+
+function buildFullJobMatchAnalysisPrompt(
+  resumeText: string,
+  jobDescription: string,
+  toolData: ToolDataJobMatch,
+  baselineScore: { score: number; breakdown: Record<string, number> },
+  matchedSkillsCount: number,
+  requiredSkillsCount: number,
+  minScore: number,
+  maxScore: number
+): string {
+  return `Analyze how well this resume matches the job description:
+
+RESUME:
+${resumeText}
+
+JOB DESCRIPTION:
+${jobDescription}
+
+OBJECTIVE METRICS (from tools):
+- Skills matched: ${matchedSkillsCount} of ${requiredSkillsCount} (${Math.round(
+    (matchedSkillsCount / Math.max(requiredSkillsCount, 1)) * 100
+  )}%)
+- Matched: ${toolData.keywordOverlap.matchedKeywords.slice(0, 10).join(", ")}
+- Missing: ${toolData.keywordOverlap.missingKeywords.slice(0, 10).join(", ")}
+- Keyword overlap: ${Math.round(toolData.keywordOverlap.overlapPercentage)}%
+
+CALCULATED BASELINE SCORE: ${baselineScore.score}/100
+
+BASELINE BREAKDOWN:
+- Skills: ${baselineScore.breakdown.skillsMatch}/30 (FIXED based on match ratio)
+- Keywords: ${
+    baselineScore.breakdown.keywordOverlap
+  }/20 (FIXED based on overlap)
+- Experience: ${
+    baselineScore.breakdown.experienceMatch
+  }/25 (adjustable - assess from text)
+- Qualifications: ${baselineScore.breakdown.qualifications}/15 (adjustable)
+- Industry Fit: ${baselineScore.breakdown.industryFit}/10 (adjustable)
+
+YOUR TASKS:
+1. Verify the skills and keyword matching
+2. Assess experience match and quality from the texts
+3. Evaluate qualifications and industry fit
+4. Calculate final score (must be ${minScore}-${maxScore})
+
+Adjust only the last 3 criteria based on your assessment.`;
+}
+
+function buildFullJobMatchFeedbackPrompt(
+  resumeText: string,
+  jobDescription: string,
+  toolData: ToolDataJobMatch,
+  baselineScore: { score: number; breakdown: Record<string, number> },
+  minScore: number,
+  maxScore: number
+): string {
+  return `Generate match feedback comparing resume to job description:
+
+RESUME:
+${resumeText}
+
+JOB DESCRIPTION:
+${jobDescription}
+
+CONTEXT:
+- Baseline score: ${baselineScore.score}/100
+- Expected range: ${minScore}-${maxScore}
+- Matched skills: ${toolData.keywordOverlap.matchedKeywords
+    .slice(0, 5)
+    .join(", ")}
+- Missing skills: ${toolData.keywordOverlap.missingKeywords
+    .slice(0, 5)
+    .join(", ")}
+
+YOUR TASKS:
+1. Identify strengths that make this candidate a good fit
+2. Identify gaps or weaknesses in the match
+3. Provide specific suggestions to improve the match (keywords, skills, experience to highlight)
+4. Add synthesis notes on overall fit assessment`;
+}
+
+// RESPONSE BUILDER
+
+function buildJobMatchResponse(
+  validatedScore: number,
+  baselineScore: { score: number; breakdown: Record<string, number> },
+  toolData: ToolDataJobMatch,
+  semanticData: SemanticData,
+  analysisResult: {
+    keywordAnalysis: { strength: string; missingCritical: string[] };
+  },
+  feedbackResult: { suggestions: string[]; synthesisNotes: string },
+  matchedSkillsCount: number,
+  requiredSkillsCount: number
+): JobMatchResponse {
   const detailedAnalysis = [];
 
   // Skills Match - use semantic skill match data if available
@@ -414,18 +402,25 @@ YOUR TASKS:
         ...semanticData.skillMatch.exact_matches
           .slice(0, 3)
           .map(
-            (m) => `✅ ${m.skill}: "${m.resume_evidence.substring(0, 40)}..."`
+            (m: { skill: string; resume_evidence: string }) =>
+              `✅ ${m.skill}: "${m.resume_evidence.substring(0, 40)}..."`
           ),
         ...semanticData.skillMatch.related_matches
           .slice(0, 2)
           .map(
-            (m) =>
+            (m: {
+              resume_skill: string;
+              job_skill: string;
+              similarity: number;
+            }) =>
               `⚡ ${m.resume_skill} → ${m.job_skill} (${m.similarity}% similar)`
           ),
         ...semanticData.skillMatch.missing_skills
-          .filter((s) => s.importance === "critical")
+          .filter((s: any) => s.importance === "critical")
           .slice(0, 2)
-          .map((s) => `❌ ${s.skill} (critical, ${s.learnability} to learn)`),
+          .map(
+            (s: any) => `❌ ${s.skill} (critical, ${s.learnability} to learn)`
+          ),
       ],
     });
   } else {
@@ -443,7 +438,8 @@ YOUR TASKS:
     });
   }
 
-  // Semantic Similarity - Phase 3 replacement for keyword overlap
+  // Semantic Similarity
+
   if (semanticData.similarity) {
     detailedAnalysis.push({
       category: `Semantic Fit (${baselineScore.breakdown.keywordOverlap}/20 pts)`,
@@ -467,7 +463,7 @@ YOUR TASKS:
     });
   }
 
-  // Transferable Skills (Phase 3 - new section)
+  // Transferable Skills
   if (
     semanticData.similarity &&
     semanticData.similarity.transferable_skills.length > 0
@@ -477,7 +473,8 @@ YOUR TASKS:
       value: semanticData.similarity.transferable_skills
         .slice(0, 3)
         .map(
-          (s) => `💡 ${s.resume_skill} → ${s.job_skill}: ${s.how_it_transfers}`
+          (s: any) =>
+            `💡 ${s.resume_skill} → ${s.job_skill}: ${s.how_it_transfers}`
         ),
     });
   }
@@ -526,7 +523,7 @@ YOUR TASKS:
       ? "Apply after addressing key gaps"
       : "Consider upskilling before applying");
 
-  const finalResponse: JobMatchResponse = {
+  return {
     matching_score: validatedScore,
     detailed_analysis: detailedAnalysis,
     suggestions,
@@ -542,17 +539,5 @@ YOUR TASKS:
         feedbackResult.synthesisNotes,
       `Recommendation: ${recommendation}`,
     ],
-  };
-
-  const agentInsights: AgentInsights = {
-    analysis: analysisResult,
-    feedback: feedbackResult,
-  };
-
-  return {
-    analysis: finalResponse,
-    agentInsights,
-    baselineScore,
-    warnings: warnings.length > 0 ? warnings : undefined,
   };
 }

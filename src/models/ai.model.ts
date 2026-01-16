@@ -1,3 +1,9 @@
+// Import types needed in this file
+import type {
+  SemanticSkillMatch,
+  SemanticSimilarityResult,
+} from "./ai.schemas";
+
 // Re-export types from new schemas
 export type {
   ResumeReviewResponse,
@@ -17,9 +23,7 @@ export {
   SemanticSimilaritySchema,
 } from "./ai.schemas";
 
-// ============================================================================
 // MULTI-AGENT TYPES
-// ============================================================================
 
 export interface AgentInsights {
   analysis: AnalysisResult;
@@ -62,6 +66,43 @@ export interface CollaborativeResult<T> {
   warnings?: string[];
 }
 
+// AGENT EXECUTOR TYPES
+
+export interface AgentConfig {
+  schema: import("zod").ZodSchema;
+  systemPrompt: string;
+  prompt: string;
+  temperature: number;
+}
+
+export interface AgentExecutorParams {
+  model: import("ai").LanguageModel;
+  provider: import("../lib/ai/providers").ProviderType;
+  analysis: AgentConfig;
+  feedback: AgentConfig;
+  verbCount?: number; // For Ollama normalization in resume review
+}
+
+export interface AgentExecutorResult {
+  analysisResult: AnalysisResult;
+  feedbackResult: FeedbackResult;
+}
+
+// JOB MATCH TYPES
+
+export interface SemanticData {
+  skillMatch: SemanticSkillMatch | null;
+  similarity: SemanticSimilarityResult | null;
+  matchExplanation: {
+    summary: string;
+    fit_assessment: string;
+    strengths_explanation: string[];
+    gaps_explanation: string[];
+    transferable_explanation: string[];
+    action_items: string[];
+  } | null;
+}
+
 export interface ToolDataResume {
   quantified: { count: number; examples: string[] };
   keywords: { keywords: string[]; count: number };
@@ -90,9 +131,7 @@ export interface ToolDataJobMatch {
   };
 }
 
-// ============================================================================
 // AI MODEL
-// ============================================================================
 
 export interface AiModel {
   provider: AiProvider;
