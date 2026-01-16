@@ -5,14 +5,8 @@
 
 export type AgentStep =
   | "tool-extraction"
-  | "data-analyzer"
-  | "keyword-expert"
-  | "scoring-specialist"
-  | "feedback-expert"
-  | "synthesis-coordinator"
   | "analysis-agent"
   | "feedback-agent"
-  | "validation"
   | "complete";
 
 export interface ProgressUpdate {
@@ -32,15 +26,9 @@ export interface ProgressUpdate {
 
 // Estimated durations for each agent step (in milliseconds)
 const ESTIMATED_DURATIONS: Record<AgentStep, number> = {
-  "tool-extraction": 3000, // 3 seconds
-  "data-analyzer": 8000, // 8 seconds (legacy)
-  "keyword-expert": 8000, // 8 seconds (legacy)
-  "scoring-specialist": 10000, // 10 seconds (legacy)
-  "feedback-expert": 8000, // 8 seconds (legacy)
-  "synthesis-coordinator": 12000, // 12 seconds (legacy)
-  "analysis-agent": 12000, // 12 seconds (combines data + keyword + scoring)
-  "feedback-agent": 10000, // 10 seconds (combines feedback + synthesis)
-  validation: 2000, // 2 seconds
+  "tool-extraction": 3000,
+  "analysis-agent": 12000,
+  "feedback-agent": 10000,
   complete: 0,
 };
 
@@ -59,36 +47,6 @@ export const AGENT_STEPS: Record<
     emoji: "🔧",
     estimatedDurationMs: ESTIMATED_DURATIONS["tool-extraction"],
   },
-  "data-analyzer": {
-    name: "Data Analyzer",
-    description: "Extracting objective metrics and counting achievements",
-    emoji: "📊",
-    estimatedDurationMs: ESTIMATED_DURATIONS["data-analyzer"],
-  },
-  "keyword-expert": {
-    name: "Keyword Expert",
-    description: "Analyzing ATS optimization and keyword strategy",
-    emoji: "🔑",
-    estimatedDurationMs: ESTIMATED_DURATIONS["keyword-expert"],
-  },
-  "scoring-specialist": {
-    name: "Scoring Specialist",
-    description: "Calculating fair, calibrated scores",
-    emoji: "📈",
-    estimatedDurationMs: ESTIMATED_DURATIONS["scoring-specialist"],
-  },
-  "feedback-expert": {
-    name: "Feedback Expert",
-    description: "Creating actionable recommendations",
-    emoji: "💡",
-    estimatedDurationMs: ESTIMATED_DURATIONS["feedback-expert"],
-  },
-  "synthesis-coordinator": {
-    name: "Synthesis Coordinator",
-    description: "Combining insights from all agents",
-    emoji: "🔄",
-    estimatedDurationMs: ESTIMATED_DURATIONS["synthesis-coordinator"],
-  },
   "analysis-agent": {
     name: "Analysis Agent",
     description: "Comprehensive analysis with scoring",
@@ -100,12 +58,6 @@ export const AGENT_STEPS: Record<
     description: "Generating actionable recommendations",
     emoji: "💬",
     estimatedDurationMs: ESTIMATED_DURATIONS["feedback-agent"],
-  },
-  validation: {
-    name: "Quality Assurance",
-    description: "Validating output consistency",
-    emoji: "✅",
-    estimatedDurationMs: ESTIMATED_DURATIONS["validation"],
   },
   complete: {
     name: "Complete",
@@ -122,7 +74,7 @@ export function createProgressUpdate(
   step: AgentStep,
   status: "started" | "completed",
   agentNumber?: number,
-  totalAgents: number = 5
+  totalAgents: number = 3
 ): ProgressUpdate {
   const stepInfo = AGENT_STEPS[step];
   const now = Date.now();
