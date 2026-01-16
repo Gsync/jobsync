@@ -7,7 +7,7 @@
  * - Ollama result normalization
  */
 
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import {
   AnalysisResult,
   FeedbackResult,
@@ -33,14 +33,14 @@ export async function executeAgents(
   const [rawAnalysis, rawFeedback] = await Promise.all([
     withTimeout(
       runWithRetry(async () => {
-        const { object } = await generateObject({
+        const { output } = await generateText({
           model,
-          schema: analysis.schema,
+          output: Output.object({ schema: analysis.schema }),
           system: analysis.systemPrompt,
           prompt: analysis.prompt,
           temperature: analysis.temperature,
         });
-        return object;
+        return output;
       }, "Analysis Agent"),
       AGENT_TIMEOUT_MS,
       "Analysis Agent"
@@ -48,14 +48,14 @@ export async function executeAgents(
 
     withTimeout(
       runWithRetry(async () => {
-        const { object } = await generateObject({
+        const { output } = await generateText({
           model,
-          schema: feedback.schema,
+          output: Output.object({ schema: feedback.schema }),
           system: feedback.systemPrompt,
           prompt: feedback.prompt,
           temperature: feedback.temperature,
         });
-        return object;
+        return output;
       }, "Feedback Agent"),
       AGENT_TIMEOUT_MS,
       "Feedback Agent"

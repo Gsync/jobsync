@@ -3,7 +3,7 @@
  * Complete semantic understanding of resume-job fit, replacing keyword overlap
  */
 
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { getModel, ProviderType } from "../providers";
 import {
   SemanticSimilaritySchema,
@@ -42,25 +42,27 @@ export async function calculateSemanticSimilarity(
   modelName: string = "llama3.2"
 ): Promise<SemanticSimilarityResult> {
   const model = getModel(provider, modelName);
-  const schema = isOllamaProvider(provider)
-    ? OllamaSemanticSimilaritySchema
-    : SemanticSimilaritySchema;
   const prompt = getSimilarityPrompt(provider, resumeText, jobDescription);
 
   try {
-    const { object } = await generateObject({
+    if (isOllamaProvider(provider)) {
+      const { output } = await generateText({
+        model,
+        output: Output.object({ schema: OllamaSemanticSimilaritySchema }),
+        prompt,
+        temperature: 0.2,
+      });
+      return normalizeSemanticSimilarity(output);
+    }
+
+    const { output } = await generateText({
       model,
-      schema,
+      output: Output.object({ schema: SemanticSimilaritySchema }),
       prompt,
       temperature: 0.2,
     });
 
-    // Normalize Ollama result to full schema format
-    if (isOllamaProvider(provider)) {
-      return normalizeSemanticSimilarity(object as OllamaSemanticSimilarity);
-    }
-
-    return object as SemanticSimilarityResult;
+    return output;
   } catch (error) {
     console.error("Semantic similarity calculation failed:", error);
     throw new AIUnavailableError("similarity calculation");

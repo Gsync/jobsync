@@ -194,7 +194,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
                       <p className="font-semibold mb-1">
-                        Phase 2: Consolidated Multi-Agent System
+                        Consolidated Multi-Agent System
                       </p>
                       <p className="text-xs mb-2">
                         Uses 2 specialized AI agents working together:
@@ -204,7 +204,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
                         <li>• Feedback Agent (actionable recommendations)</li>
                       </ul>
                       <p className="text-xs mt-2 text-green-500">
-                        ✨ 40-50% faster, same accuracy
+                        ✨ Slower but refined response
                       </p>
                     </TooltipContent>
                   </Tooltip>

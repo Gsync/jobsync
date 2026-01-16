@@ -4,7 +4,7 @@
  * Provider-aware prompts for Ollama vs Cloud optimization
  */
 
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { getModel, ProviderType } from "../providers";
 import {
   SemanticKeywordSchema,
@@ -55,27 +55,27 @@ export async function extractSemanticKeywords(
   contextHint?: string
 ): Promise<SemanticKeywordExtraction> {
   const model = getModel(provider, modelName);
-  const schema = isOllamaProvider(provider)
-    ? OllamaSemanticKeywordSchema
-    : SemanticKeywordSchema;
   const prompt = getKeywordPrompt(provider, text, contextHint);
 
   try {
-    const { object } = await generateObject({
+    if (isOllamaProvider(provider)) {
+      const { output } = await generateText({
+        model,
+        output: Output.object({ schema: OllamaSemanticKeywordSchema }),
+        prompt,
+        temperature: 0.1,
+      });
+      return normalizeKeywordExtraction(output);
+    }
+
+    const { output } = await generateText({
       model,
-      schema,
+      output: Output.object({ schema: SemanticKeywordSchema }),
       prompt,
       temperature: 0.1,
     });
 
-    // Normalize Ollama result to full schema format
-    if (isOllamaProvider(provider)) {
-      return normalizeKeywordExtraction(
-        object as OllamaSemanticKeywordExtraction
-      );
-    }
-
-    return object as SemanticKeywordExtraction;
+    return output;
   } catch (error) {
     console.error("Semantic keyword extraction failed:", error);
     throw new AIUnavailableError("keyword extraction");
@@ -102,25 +102,27 @@ export async function analyzeActionVerbs(
   modelName: string = "llama3.2"
 ): Promise<ActionVerbAnalysis> {
   const model = getModel(provider, modelName);
-  const schema = isOllamaProvider(provider)
-    ? OllamaActionVerbSchema
-    : ActionVerbAnalysisSchema;
   const prompt = getVerbPrompt(provider, text);
 
   try {
-    const { object } = await generateObject({
+    if (isOllamaProvider(provider)) {
+      const { output } = await generateText({
+        model,
+        output: Output.object({ schema: OllamaActionVerbSchema }),
+        prompt,
+        temperature: 0.2,
+      });
+      return normalizeActionVerbAnalysis(output);
+    }
+
+    const { output } = await generateText({
       model,
-      schema,
+      output: Output.object({ schema: ActionVerbAnalysisSchema }),
       prompt,
       temperature: 0.2,
     });
 
-    // Normalize Ollama result to full schema format
-    if (isOllamaProvider(provider)) {
-      return normalizeActionVerbAnalysis(object as OllamaActionVerbAnalysis);
-    }
-
-    return object as ActionVerbAnalysis;
+    return output;
   } catch (error) {
     console.error("Action verb analysis failed:", error);
     throw new AIUnavailableError("action verb analysis");
@@ -149,26 +151,28 @@ export async function performSemanticSkillMatch(
   modelName: string = "llama3.2"
 ): Promise<SemanticSkillMatch> {
   const model = getModel(provider, modelName);
-  const schema = isOllamaProvider(provider)
-    ? OllamaSkillMatchSchema
-    : SemanticSkillMatchSchema;
   const prompt = getSkillMatchPrompt(provider, resumeText, jobText);
 
   try {
-    const { object } = await generateObject({
+    if (isOllamaProvider(provider)) {
+      const { output } = await generateText({
+        model,
+        output: Output.object({ schema: OllamaSkillMatchSchema }),
+        prompt,
+        temperature: 0.2,
+      });
+      return normalizeSkillMatch(output);
+    }
+
+    const { output } = await generateText({
       model,
-      schema,
+      output: Output.object({ schema: SemanticSkillMatchSchema }),
       prompt,
       temperature: 0.2,
     });
 
-    // Normalize Ollama result to full schema format
-    if (isOllamaProvider(provider)) {
-      return normalizeSkillMatch(object as OllamaSkillMatch);
-    }
-
     // Post-process cloud result to remove empty strings and duplicates
-    const cloudResult = object as SemanticSkillMatch;
+    const cloudResult = output;
     const cleanedResult = {
       exact_matches: cloudResult.exact_matches.filter(
         (match) =>
