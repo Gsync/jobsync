@@ -18,7 +18,7 @@ import {
   getKeywordPrompt,
   getVerbPrompt,
   getSkillMatchPrompt,
-} from "../prompts/semantic-prompts";
+} from "../prompts";
 import {
   isOllamaProvider,
   OllamaSemanticKeywordSchema,

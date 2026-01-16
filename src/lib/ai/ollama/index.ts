@@ -8,10 +8,13 @@
  */
 
 import type { ProviderType } from "../providers";
+import {
+  SEMANTIC_TIMEOUT_MS,
+  AGENT_TIMEOUT_MS,
+} from "../config";
 
-// Timeouts for Ollama (local models need more time)
-export const SEMANTIC_TIMEOUT_MS = 60000; // 60 seconds for semantic extraction
-export const AGENT_TIMEOUT_MS = 120000; // 120 seconds for agent calls
+// Re-export timeouts for backward compatibility
+export { SEMANTIC_TIMEOUT_MS, AGENT_TIMEOUT_MS };
 
 /**
  * Check if provider is Ollama (local models that need simplified prompts/schemas)
@@ -40,7 +43,7 @@ export {
   buildOllamaResumeFeedbackPrompt,
   buildOllamaJobMatchAnalysisPrompt,
   buildOllamaJobMatchFeedbackPrompt,
-} from "../prompts/ollama.prompts";
+} from "../prompts";
 
 // Re-export schemas from models for convenience
 export {

@@ -3,6 +3,8 @@
  * Limits requests per user per time window.
  */
 
+import { RATE_LIMITS } from "./config";
+
 interface RateLimitEntry {
   count: number;
   resetTime: number;
@@ -10,8 +12,7 @@ interface RateLimitEntry {
 
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
-const WINDOW_MS = 60 * 1000; // 1 minute window
-const MAX_REQUESTS = 5; // 5 requests per minute per user
+const { WINDOW_MS, MAX_REQUESTS, STORE_CLEANUP_THRESHOLD } = RATE_LIMITS;
 
 /**
  * Check if a user is rate limited.
@@ -27,7 +28,7 @@ export function checkRateLimit(userId: string): {
   const entry = rateLimitStore.get(userId);
 
   // Clean up expired entries periodically
-  if (rateLimitStore.size > 1000) {
+  if (rateLimitStore.size > STORE_CLEANUP_THRESHOLD) {
     for (const [key, value] of rateLimitStore) {
       if (now > value.resetTime) {
         rateLimitStore.delete(key);

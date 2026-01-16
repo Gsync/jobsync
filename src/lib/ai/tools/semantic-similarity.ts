@@ -10,7 +10,7 @@ import {
   type SemanticSimilarityResult,
   type SemanticSkillMatch,
 } from "@/models/ai.schemas";
-import { getSimilarityPrompt } from "../prompts/semantic-prompts";
+import { getSimilarityPrompt } from "../prompts";
 import {
   isOllamaProvider,
   OllamaSemanticSimilaritySchema,

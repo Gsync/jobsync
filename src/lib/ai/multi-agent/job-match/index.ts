@@ -9,7 +9,7 @@ import { AnalysisAgentSchema, FeedbackAgentSchema } from "@/models/ai.schemas";
 import {
   ANALYSIS_AGENT_PROMPT,
   FEEDBACK_AGENT_PROMPT,
-} from "../../prompts/prompts.agents";
+} from "../../prompts/resume-review";
 
 import {
   performSemanticSkillMatch,
@@ -29,6 +29,7 @@ import {
   ToolDataJobMatch,
   SemanticData,
 } from "@/models/ai.model";
+import { TEMPERATURES } from "../../config";
 import {
   isOllamaProvider,
   SEMANTIC_TIMEOUT_MS,
@@ -229,7 +230,7 @@ export async function multiAgentJobMatch(
           ? OLLAMA_JOB_MATCH_ANALYSIS_SYSTEM_PROMPT
           : ANALYSIS_AGENT_PROMPT,
         prompt: analysisPrompt,
-        temperature: 0.1,
+        temperature: TEMPERATURES.ANALYSIS,
       },
       feedback: {
         schema: isOllama ? OllamaFeedbackAgentSchema : FeedbackAgentSchema,
@@ -237,7 +238,7 @@ export async function multiAgentJobMatch(
           ? OLLAMA_JOB_MATCH_FEEDBACK_SYSTEM_PROMPT
           : FEEDBACK_AGENT_PROMPT,
         prompt: feedbackPrompt,
-        temperature: 0.3,
+        temperature: TEMPERATURES.FEEDBACK,
       },
     });
 

@@ -1,7 +1,7 @@
 /**
- * System prompts for the Multi-Agent System
+ * Resume Review Agent Prompts
  *
- * These prompts guide the Analysis Agent and Feedback Agent.
+ * System prompts for the Multi-Agent Resume Review System.
  */
 
 /**

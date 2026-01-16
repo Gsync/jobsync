@@ -13,7 +13,7 @@ export {
   JOB_MATCH_SYSTEM_PROMPT,
   buildResumeReviewPrompt,
   buildJobMatchPrompt,
-} from "./prompts/prompts";
+} from "./prompts";
 
 // Multi-agent system
 export {

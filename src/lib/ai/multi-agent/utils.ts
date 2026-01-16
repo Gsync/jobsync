@@ -4,14 +4,14 @@
  * Common utilities used by both resume review and job match agents.
  */
 
-// ============================================================================
+import { RETRY } from "../config";
+
 // RETRY MECHANISM
-// ============================================================================
 
 export async function runWithRetry<T>(
   operation: () => Promise<T>,
   operationName: string,
-  maxRetries: number = 1
+  maxRetries: number = RETRY.MAX_ATTEMPTS
 ): Promise<T> {
   let lastError: Error = new Error("Unknown error");
 
@@ -26,7 +26,8 @@ export async function runWithRetry<T>(
       );
 
       if (attempt < maxRetries) {
-        const delay = 1000 * Math.pow(2, attempt);
+        const delay =
+          RETRY.BASE_DELAY_MS * Math.pow(RETRY.BACKOFF_MULTIPLIER, attempt);
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
@@ -39,9 +40,7 @@ export async function runWithRetry<T>(
   );
 }
 
-// ============================================================================
-// TIMEOUT WRAPPER (Phase 4: Prevent small model hangs)
-// ============================================================================
+// TIMEOUT WRAPPER
 
 export async function withTimeout<T>(
   promise: Promise<T>,
