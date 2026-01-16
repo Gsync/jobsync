@@ -225,18 +225,14 @@ export const AiJobMatchSection = ({
                       <Info className="h-4 w-4 text-muted-foreground" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
-                      <p className="font-semibold mb-1">
-                        Phase 3: Multi-Agent System
-                      </p>
+                      <p className="font-semibold mb-1">Multi-Agent System</p>
                       <p className="text-xs mb-2">
-                        Uses 5 specialized AI agents working together:
+                        Uses 3 specialized AI agents working together:
                       </p>
                       <ul className="text-xs space-y-1">
-                        <li>• Data Analyzer (extracts metrics)</li>
-                        <li>• Keyword Expert (ATS optimization)</li>
-                        <li>• Scoring Specialist (fair scoring)</li>
+                        <li>• Tool Extraction (extracts metrics)</li>
+                        <li>• Data Analyzer (combines insights)</li>
                         <li>• Feedback Expert (actionable advice)</li>
-                        <li>• Synthesis Coordinator (combines insights)</li>
                       </ul>
                       <p className="text-xs mt-2 text-yellow-500">
                         ⚠️ Slower but significantly more accurate

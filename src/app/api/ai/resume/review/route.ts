@@ -2,7 +2,7 @@ import "server-only";
 
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
-import { streamObject } from "ai";
+import { streamText, Output } from "ai";
 import { getModel } from "@/lib/ai/providers";
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
 import {
@@ -97,7 +97,9 @@ TOOL ANALYSIS RESULTS (use these in your evaluation):
 - Technical keywords found: ${keywordCount} (${
       allKeywords.slice(0, 10).join(", ") || "none"
     })
-- Action verbs found: ${verbCount} (${allVerbs.slice(0, 10).join(", ") || "none"})
+- Action verbs found: ${verbCount} (${
+      allVerbs.slice(0, 10).join(", ") || "none"
+    })
 - Formatting quality: ${
       formatting.hasBulletPoints ? "Has bullet points" : "No bullets"
     }, ${formatting.sectionCount} sections detected
@@ -109,9 +111,11 @@ Use these concrete counts in your Step 1 (SCAN & COUNT) and scoring decisions.`;
       selectedModel.model || "llama3.2"
     );
 
-    const result = streamObject({
+    const result = streamText({
       model,
-      schema: ResumeReviewSchema,
+      output: Output.object({
+        schema: ResumeReviewSchema,
+      }),
       system: RESUME_REVIEW_SYSTEM_PROMPT,
       prompt: fullPrompt,
       temperature: 0.3,
@@ -122,10 +126,7 @@ Use these concrete counts in your Step 1 (SCAN & COUNT) and scoring decisions.`;
     console.error("Resume review error:", error);
 
     if (error instanceof AIUnavailableError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 503 });
     }
 
     const message =

@@ -2,7 +2,7 @@ import "server-only";
 
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
-import { streamObject } from "ai";
+import { streamText, Output } from "ai";
 import { getModel } from "@/lib/ai/providers";
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
 import {
@@ -102,9 +102,11 @@ Use these results in your scoring decisions.`;
       selectedModel.model || "llama3.2"
     );
 
-    const result = streamObject({
+    const result = streamText({
       model,
-      schema: JobMatchSchema,
+      output: Output.object({
+        schema: JobMatchSchema,
+      }),
       system: JOB_MATCH_SYSTEM_PROMPT,
       prompt: fullPrompt,
       temperature: 0.3,
@@ -115,10 +117,7 @@ Use these results in your scoring decisions.`;
     console.error("Job match error:", error);
 
     if (error instanceof AIUnavailableError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 503 });
     }
 
     const message =
