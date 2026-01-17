@@ -26,8 +26,6 @@ import {
 } from "../ui/tooltip";
 import { checkIfModelIsRunning } from "@/utils/ai.utils";
 import { ResumeReviewSchema } from "@/models/ai.schemas";
-import { useCollaborativeAnalysis } from "@/hooks/useCollaborativeAnalysis";
-import { MultiAgentProgress } from "./MultiAgentProgress";
 
 interface AiSectionProps {
   resume: Resume;
@@ -37,7 +35,6 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   const [aISectionOpen, setAiSectionOpen] = useState(false);
   const [runningModelName, setRunningModelName] = useState<string>("");
   const [runningModelError, setRunningModelError] = useState<string>("");
-  const [useCollaboration, setUseCollaboration] = useState<boolean>(false);
 
   const selectedModel: AiModel = getFromLocalStorage(
     "aiSettings",
@@ -45,12 +42,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   );
 
   // Standard single-agent mode
-  const {
-    object,
-    submit,
-    isLoading: singleAgentLoading,
-    stop,
-  } = useObject({
+  const { object, submit, isLoading, stop } = useObject({
     api: "/api/ai/resume/review",
     schema: ResumeReviewSchema,
     onError: (err) => {
@@ -62,18 +54,6 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
     },
   });
 
-  // Multi-agent collaborative mode
-  const {
-    isLoading: multiAgentLoading,
-    result: collaborativeResult,
-    error: collaborativeError,
-    start: startCollaborative,
-    stop: stopCollaborative,
-  } = useCollaborativeAnalysis<ResumeReviewResponse>("resume-review");
-
-  const isLoading = useCollaboration ? multiAgentLoading : singleAgentLoading;
-  const displayObject = useCollaboration ? collaborativeResult : object;
-
   const getResumeReview = () => {
     if (!resume || resume.ResumeSections?.length === 0) {
       toast({
@@ -84,21 +64,13 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
       return;
     }
 
-    if (useCollaboration) {
-      startCollaborative({ selectedModel, resume });
-    } else {
-      submit({ selectedModel, resume });
-    }
+    submit({ selectedModel, resume });
   };
 
   const triggerSheetChange = async (openState: boolean) => {
     setAiSectionOpen(openState);
     if (!openState && isLoading) {
-      if (useCollaboration) {
-        stopCollaborative();
-      } else {
-        stop();
-      }
+      stop();
     } else if (openState && selectedModel.provider === "ollama") {
       await checkModelStatus();
     }
@@ -119,9 +91,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   };
 
   // Check if we have any content to show
-  const hasContent =
-    displayObject &&
-    (displayObject.score !== undefined || displayObject.summary);
+  const hasContent = object && (object.score !== undefined || object.summary);
 
   return (
     <Sheet open={aISectionOpen} onOpenChange={triggerSheetChange}>
@@ -177,58 +147,6 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
             </>
           )}
 
-          {/* Multi-Agent Mode Toggle */}
-          <div className="mt-4 p-3 border rounded-lg bg-muted/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <label
-                  htmlFor="collaboration-mode-review"
-                  className="text-sm font-medium"
-                >
-                  Multi-Agent Collaboration
-                </label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="font-semibold mb-1">
-                        Consolidated Multi-Agent System
-                      </p>
-                      <p className="text-xs mb-2">
-                        Uses 2 specialized AI agents working together:
-                      </p>
-                      <ul className="text-xs space-y-1">
-                        <li>• Analysis Agent (data, keywords, scoring)</li>
-                        <li>• Feedback Agent (actionable recommendations)</li>
-                      </ul>
-                      <p className="text-xs mt-2 text-green-500">
-                        ✨ Slower but refined response
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <input
-                id="collaboration-mode-review"
-                type="checkbox"
-                checked={useCollaboration}
-                onChange={(e) => setUseCollaboration(e.target.checked)}
-                disabled={isLoading}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-              />
-            </div>
-            {useCollaboration && (
-              <p className="text-xs text-muted-foreground mt-2">
-                🤖 2 AI agents will analyze your resume together
-              </p>
-            )}
-          </div>
-
-          {/* Multi-Agent Progress Indicator */}
-          <MultiAgentProgress isActive={useCollaboration && isLoading} />
-
           <div className="mt-4">
             <Button
               size="sm"
@@ -250,15 +168,11 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
           {isLoading && !hasContent ? (
             <div className="flex items-center flex-col mt-4">
               <Loading />
-              <div className="mt-2">
-                {useCollaboration
-                  ? "2 agents analyzing..."
-                  : "Analyzing resume..."}
-              </div>
+              <div className="mt-2">Analyzing resume...</div>
             </div>
           ) : (
             <AiResumeReviewResponseContent
-              content={displayObject}
+              content={object}
               isStreaming={isLoading}
             />
           )}

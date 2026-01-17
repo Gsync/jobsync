@@ -10,8 +10,6 @@ import type {
   OllamaActionVerbAnalysis,
   OllamaSkillMatch,
   OllamaSemanticSimilarity,
-  OllamaAnalysisAgent,
-  OllamaFeedbackAgent,
 } from "@/models/ai.ollama-schemas";
 import type {
   SemanticKeywordExtraction,
@@ -19,7 +17,6 @@ import type {
   SemanticSkillMatch,
   SemanticSimilarityResult,
 } from "@/models/ai.schemas";
-import type { AnalysisResult, FeedbackResult } from "@/models/ai.model";
 
 /**
  * Normalize Ollama keyword extraction to full schema format
@@ -103,45 +100,5 @@ export function normalizeSemanticSimilarity(
       ollamaResult.similarity_score >= 60
         ? "Consider applying - good fit"
         : "Consider upskilling before applying",
-  };
-}
-
-/**
- * Normalize Ollama analysis agent result to full format
- */
-export function normalizeAnalysisResult(
-  ollamaResult: OllamaAnalysisAgent,
-  verbCount: number = 0
-): AnalysisResult {
-  return {
-    finalScore: ollamaResult.finalScore,
-    dataInsights: {
-      quantifiedCount: ollamaResult.quantifiedCount,
-      keywordCount: ollamaResult.keywordCount,
-      verbCount,
-      formatQuality: "Analyzed by Ollama",
-    },
-    keywordAnalysis: {
-      strength: "Analyzed",
-      atsScore: ollamaResult.atsScore,
-      missingCritical: ollamaResult.missingKeywords,
-      recommendations: [],
-    },
-    adjustments: [],
-    math: ollamaResult.scoreExplanation,
-  };
-}
-
-/**
- * Normalize Ollama feedback agent result to full format
- */
-export function normalizeFeedbackResult(
-  ollamaResult: OllamaFeedbackAgent
-): FeedbackResult {
-  return {
-    strengths: ollamaResult.strengths,
-    weaknesses: ollamaResult.weaknesses,
-    suggestions: ollamaResult.suggestions,
-    synthesisNotes: ollamaResult.summary,
   };
 }

@@ -1,6 +1,6 @@
 /**
- * AI Library Tests - Multi-Agent System
- * Tests for the new mathematical scoring and multi-agent collaboration system
+ * AI Library Tests
+ * Tests for the mathematical scoring and analysis system
  */
 
 import {

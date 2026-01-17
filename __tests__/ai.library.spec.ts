@@ -1,13 +1,11 @@
 /**
- * AI Library Tests - Multi-Agent System
+ * AI Library Tests
  * Tests for analysis tools, mathematical scoring, and validation functions
  *
- * Note: This tests the AI library functions used by the API routes, not server actions.
+ * Note: This tests the AI library functions used by the API routes.
  * The AI functionality is implemented in API routes:
- * - /api/ai/resume/review (single-agent)
- * - /api/ai/resume/review-collaborative (multi-agent)
- * - /api/ai/resume/match (single-agent job matching)
- * - /api/ai/resume/match-collaborative (multi-agent job matching)
+ * - /api/ai/resume/review (resume analysis)
+ * - /api/ai/resume/match (job matching)
  */
 
 import {

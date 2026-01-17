@@ -19,8 +19,7 @@ import { getJobDetails } from "@/actions/job.actions";
 import { AiModel } from "@/models/ai.model";
 
 /**
- * Single-Agent Job Match Endpoint
- * For multi-agent collaborative analysis, use /api/ai/resume/match-collaborative
+ * Job Match Endpoint
  */
 export const POST = async (req: NextRequest) => {
   const session = await auth();

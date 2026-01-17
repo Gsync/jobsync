@@ -62,33 +62,6 @@ export const OllamaSemanticSimilaritySchema = z.object({
   key_gaps: z.array(z.string()).max(3).describe("Top missing skills"),
 });
 
-/**
- * Simplified Analysis Agent schema for Ollama
- * Flatter structure with fewer nested objects
- */
-export const OllamaAnalysisAgentSchema = z.object({
-  finalScore: z.number().min(0).max(100).describe("Final score 0-100"),
-  quantifiedCount: z.number().describe("Achievements found"),
-  keywordCount: z.number().describe("Keywords found"),
-  atsScore: z.number().min(0).max(100).describe("ATS score 0-100"),
-  missingKeywords: z
-    .array(z.string())
-    .max(3)
-    .describe("Top 3 missing keywords"),
-  scoreExplanation: z.string().describe("Brief score explanation"),
-});
-
-/**
- * Simplified Feedback Agent schema for Ollama
- * Reduced array sizes and simpler structure
- */
-export const OllamaFeedbackAgentSchema = z.object({
-  strengths: z.array(z.string()).max(3).describe("Top 3 strengths"),
-  weaknesses: z.array(z.string()).max(3).describe("Top 3 weaknesses"),
-  suggestions: z.array(z.string()).max(3).describe("Top 3 suggestions"),
-  summary: z.string().describe("Brief summary (1-2 sentences)"),
-});
-
 // Type exports for use in normalizer functions
 export type OllamaSemanticKeywordExtraction = z.infer<
   typeof OllamaSemanticKeywordSchema
@@ -98,5 +71,3 @@ export type OllamaSkillMatch = z.infer<typeof OllamaSkillMatchSchema>;
 export type OllamaSemanticSimilarity = z.infer<
   typeof OllamaSemanticSimilaritySchema
 >;
-export type OllamaAnalysisAgent = z.infer<typeof OllamaAnalysisAgentSchema>;
-export type OllamaFeedbackAgent = z.infer<typeof OllamaFeedbackAgentSchema>;

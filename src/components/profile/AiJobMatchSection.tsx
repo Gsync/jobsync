@@ -33,9 +33,6 @@ import {
 import { Info, CheckCircle, XCircle } from "lucide-react";
 import { checkIfModelIsRunning } from "@/utils/ai.utils";
 import { JobMatchSchema } from "@/models/ai.schemas";
-import { useCollaborativeAnalysis } from "@/hooks/useCollaborativeAnalysis";
-import { MultiAgentProgress } from "./MultiAgentProgress";
-import { JobMatchResponse } from "@/models/ai.model";
 
 interface AiSectionProps {
   aISectionOpen: boolean;
@@ -51,7 +48,6 @@ export const AiJobMatchSection = ({
   const [selectedResumeId, setSelectedResumeId] = useState<string>();
   const [runningModelName, setRunningModelName] = useState<string>("");
   const [runningModelError, setRunningModelError] = useState<string>("");
-  const [useCollaboration, setUseCollaboration] = useState<boolean>(false);
 
   const selectedModel: AiModel = getFromLocalStorage(
     "aiSettings",
@@ -60,12 +56,7 @@ export const AiJobMatchSection = ({
   const resumesRef = useRef<Resume[]>([]);
 
   // Standard single-agent mode
-  const {
-    object,
-    submit,
-    isLoading: singleAgentLoading,
-    stop,
-  } = useObject({
+  const { object, submit, isLoading, stop } = useObject({
     api: "/api/ai/resume/match",
     schema: JobMatchSchema,
     onError: (err) => {
@@ -76,18 +67,6 @@ export const AiJobMatchSection = ({
       });
     },
   });
-
-  // Multi-agent collaborative mode
-  const {
-    isLoading: multiAgentLoading,
-    result: collaborativeResult,
-    error: collaborativeError,
-    start: startCollaborative,
-    stop: stopCollaborative,
-  } = useCollaborativeAnalysis<JobMatchResponse>("job-match");
-
-  const isLoading = useCollaboration ? multiAgentLoading : singleAgentLoading;
-  const displayObject = useCollaboration ? collaborativeResult : object;
 
   const getResumes = async () => {
     try {
@@ -111,11 +90,7 @@ export const AiJobMatchSection = ({
   };
 
   const getJobMatch = (resumeId: string, jobId: string) => {
-    if (useCollaboration) {
-      startCollaborative({ resumeId, jobId, selectedModel });
-    } else {
-      submit({ resumeId, jobId, selectedModel });
-    }
+    submit({ resumeId, jobId, selectedModel });
   };
 
   const checkModelStatus = useCallback(async () => {
@@ -135,11 +110,7 @@ export const AiJobMatchSection = ({
   const onOpenChange = async (openState: boolean) => {
     triggerChange(openState);
     if (!openState && isLoading) {
-      if (useCollaboration) {
-        stopCollaborative();
-      } else {
-        stop();
-      }
+      stop();
     }
     if (openState && selectedModel.provider === "ollama") {
       await checkModelStatus();
@@ -167,9 +138,7 @@ export const AiJobMatchSection = ({
 
   // Check if we have any content to show
   const hasContent =
-    displayObject &&
-    (displayObject.matching_score !== undefined ||
-      displayObject.detailed_analysis);
+    object && (object.matching_score !== undefined || object.detailed_analysis);
 
   return (
     <Sheet open={aISectionOpen} onOpenChange={onOpenChange}>
@@ -209,57 +178,6 @@ export const AiJobMatchSection = ({
             </>
           )}
 
-          {/* Multi-Agent Mode Toggle */}
-          <div className="mt-4 p-3 border rounded-lg bg-muted/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <label
-                  htmlFor="collaboration-mode"
-                  className="text-sm font-medium"
-                >
-                  Multi-Agent Collaboration
-                </label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="font-semibold mb-1">Multi-Agent System</p>
-                      <p className="text-xs mb-2">
-                        Uses 3 specialized AI agents working together:
-                      </p>
-                      <ul className="text-xs space-y-1">
-                        <li>• Tool Extraction (extracts metrics)</li>
-                        <li>• Data Analyzer (combines insights)</li>
-                        <li>• Feedback Expert (actionable advice)</li>
-                      </ul>
-                      <p className="text-xs mt-2 text-yellow-500">
-                        ⚠️ Slower but significantly more accurate
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <input
-                id="collaboration-mode"
-                type="checkbox"
-                checked={useCollaboration}
-                onChange={(e) => setUseCollaboration(e.target.checked)}
-                disabled={isLoading}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-              />
-            </div>
-            {useCollaboration && (
-              <p className="text-xs text-muted-foreground mt-2">
-                🤖 Multiple AI agents will analyze this job match together
-              </p>
-            )}
-          </div>
-
-          {/* Multi-Agent Progress Indicator */}
-          <MultiAgentProgress isActive={useCollaboration && isLoading} />
-
           {!selectedResumeId && (
             <div className="mt-4">
               <Select
@@ -294,20 +212,14 @@ export const AiJobMatchSection = ({
             {isLoading && !hasContent ? (
               <div className="flex items-center flex-col mt-4">
                 <Loading />
-                <div className="mt-2">
-                  {useCollaboration
-                    ? "Agents collaborating..."
-                    : "Analyzing job match..."}
-                </div>
+                <div className="mt-2">Analyzing job match...</div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  {useCollaboration
-                    ? "Multiple agents are analyzing qualifications"
-                    : "Agent is comparing qualifications"}
+                  Agent is comparing qualifications
                 </div>
               </div>
             ) : (
               <AiJobMatchResponseContent
-                content={displayObject}
+                content={object}
                 isStreaming={isLoading}
               />
             )}

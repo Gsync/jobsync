@@ -15,12 +15,6 @@ export {
   RESUME_CALIBRATION_EXAMPLES,
   SCORING_PHASES,
   SCORE_INTERPRETATION_GUIDE,
-  ANALYSIS_AGENT_PROMPT,
-  FEEDBACK_AGENT_PROMPT,
-  OLLAMA_ANALYSIS_SYSTEM_PROMPT,
-  OLLAMA_FEEDBACK_SYSTEM_PROMPT,
-  buildOllamaResumeAnalysisPrompt,
-  buildOllamaResumeFeedbackPrompt,
   getKeywordPrompt,
   getVerbPrompt,
 } from "./resume-review";
@@ -30,10 +24,6 @@ export {
   JOB_MATCH_SYSTEM_PROMPT,
   buildJobMatchPrompt,
   JOB_MATCH_SCORE_GUIDE,
-  OLLAMA_JOB_MATCH_ANALYSIS_SYSTEM_PROMPT,
-  OLLAMA_JOB_MATCH_FEEDBACK_SYSTEM_PROMPT,
-  buildOllamaJobMatchAnalysisPrompt,
-  buildOllamaJobMatchFeedbackPrompt,
   getSkillMatchPrompt,
   getSimilarityPrompt,
 } from "./job-match";

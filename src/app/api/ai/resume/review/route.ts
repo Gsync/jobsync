@@ -22,8 +22,7 @@ import { Resume } from "@/models/profile.model";
 import { AiModel } from "@/models/ai.model";
 
 /**
- * Single-Agent Resume Review Endpoint
- * For multi-agent collaborative analysis, use /api/ai/resume/review-collaborative
+ * Resume Review Endpoint
  */
 export const POST = async (req: NextRequest) => {
   const session = await auth();
