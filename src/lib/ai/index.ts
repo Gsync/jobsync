@@ -7,7 +7,7 @@ export {
   type JobMatchAnalysis,
 } from "@/models/ai.schemas";
 
-// Prompts - used by non-collaborative endpoints
+// Prompts
 export {
   RESUME_REVIEW_SYSTEM_PROMPT,
   JOB_MATCH_SYSTEM_PROMPT,
@@ -27,25 +27,17 @@ export {
   type PreprocessedResume,
 } from "./tools";
 
-// Semantic extraction and similarity functions
+// Semantic extraction for job matching (still used)
 export {
-  extractSemanticKeywords,
-  analyzeActionVerbs,
   performSemanticSkillMatch,
   calculateSemanticSimilarity,
   generateMatchExplanation,
-  getKeywordCountFromSemantic,
-  getVerbCountFromSemantic,
 } from "./tools";
 
-// Phase 3: Semantic schemas
+// Schemas for job matching
 export {
-  SemanticKeywordSchema,
-  ActionVerbAnalysisSchema,
   SemanticSkillMatchSchema,
   SemanticSimilaritySchema,
-  type SemanticKeywordExtraction,
-  type ActionVerbAnalysis,
   type SemanticSkillMatch,
   type SemanticSimilarityResult,
 } from "@/models/ai.schemas";

@@ -36,6 +36,14 @@ export const OllamaActionVerbSchema = z.object({
 });
 
 /**
+ * Combined schema for Ollama resume analysis (keywords + verbs)
+ */
+export const OllamaCombinedResumeAnalysisSchema = z.object({
+  keywords: OllamaSemanticKeywordSchema.describe("Skills and keywords"),
+  verbs: OllamaActionVerbSchema.describe("Action verb analysis"),
+});
+
+/**
  * Simplified skill matching schema for Ollama
  * Flatter structure with simpler matched_skills array
  */
@@ -45,7 +53,7 @@ export const OllamaSkillMatchSchema = z.object({
       z.object({
         skill: z.string(),
         evidence: z.string(),
-      })
+      }),
     )
     .describe("Skills found in both"),
   missing_skills: z.array(z.string()).describe("Required but not in resume"),
@@ -67,6 +75,9 @@ export type OllamaSemanticKeywordExtraction = z.infer<
   typeof OllamaSemanticKeywordSchema
 >;
 export type OllamaActionVerbAnalysis = z.infer<typeof OllamaActionVerbSchema>;
+export type OllamaCombinedResumeAnalysis = z.infer<
+  typeof OllamaCombinedResumeAnalysisSchema
+>;
 export type OllamaSkillMatch = z.infer<typeof OllamaSkillMatchSchema>;
 export type OllamaSemanticSimilarity = z.infer<
   typeof OllamaSemanticSimilaritySchema

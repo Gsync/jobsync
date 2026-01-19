@@ -8,12 +8,14 @@
 import type {
   OllamaSemanticKeywordExtraction,
   OllamaActionVerbAnalysis,
+  OllamaCombinedResumeAnalysis,
   OllamaSkillMatch,
   OllamaSemanticSimilarity,
 } from "@/models/ai.ollama-schemas";
 import type {
   SemanticKeywordExtraction,
   ActionVerbAnalysis,
+  CombinedResumeAnalysis,
   SemanticSkillMatch,
   SemanticSimilarityResult,
 } from "@/models/ai.schemas";
@@ -22,7 +24,7 @@ import type {
  * Normalize Ollama keyword extraction to full schema format
  */
 export function normalizeKeywordExtraction(
-  ollamaResult: OllamaSemanticKeywordExtraction
+  ollamaResult: OllamaSemanticKeywordExtraction,
 ): SemanticKeywordExtraction {
   return {
     technical_skills: ollamaResult.technical_skills,
@@ -38,7 +40,7 @@ export function normalizeKeywordExtraction(
  * Normalize Ollama action verb analysis to full schema format
  */
 export function normalizeActionVerbAnalysis(
-  ollamaResult: OllamaActionVerbAnalysis
+  ollamaResult: OllamaActionVerbAnalysis,
 ): ActionVerbAnalysis {
   return {
     strong_verbs: ollamaResult.strong_verbs.map((verb) => ({
@@ -56,10 +58,22 @@ export function normalizeActionVerbAnalysis(
 }
 
 /**
+ * Normalize Ollama combined resume analysis to full schema format
+ */
+export function normalizeCombinedResumeAnalysis(
+  ollamaResult: OllamaCombinedResumeAnalysis,
+): CombinedResumeAnalysis {
+  return {
+    keywords: normalizeKeywordExtraction(ollamaResult.keywords),
+    verbs: normalizeActionVerbAnalysis(ollamaResult.verbs),
+  };
+}
+
+/**
  * Normalize Ollama skill match to full schema format
  */
 export function normalizeSkillMatch(
-  ollamaResult: OllamaSkillMatch
+  ollamaResult: OllamaSkillMatch,
 ): SemanticSkillMatch {
   return {
     exact_matches: ollamaResult.matched_skills
@@ -85,7 +99,7 @@ export function normalizeSkillMatch(
  * Normalize Ollama semantic similarity to full schema format
  */
 export function normalizeSemanticSimilarity(
-  ollamaResult: OllamaSemanticSimilarity
+  ollamaResult: OllamaSemanticSimilarity,
 ): SemanticSimilarityResult {
   return {
     similarity_score: ollamaResult.similarity_score,

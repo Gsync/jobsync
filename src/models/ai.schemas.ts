@@ -1,101 +1,136 @@
 import { z } from "zod";
 
-/**
- * Schema for resume review AI response.
- * Uses .describe() to guide the LLM on expected output.
- *
- * Key principles for better output:
- * - Force specific examples from the actual resume
- * - Require evidence-based feedback
- * - Ensure actionable suggestions
- */
-export const ResumeReviewSchema = z.object({
-  score: z
+// COMPREHENSIVE RESUME REVIEW SCHEMA
+// Single LLM call with detailed structured output
+
+const ScoresSchema = z.object({
+  overall: z
     .number()
     .min(0)
     .max(100)
-    .describe(
-      `MUST be a number 0-100. Calculate as sum of 8 criteria:
-      - Keywords (0-20): Technical terms, tools, methodologies found
-      - Quantified Achievements (0-25): Numbers, %, $, metrics in bullets
-      - Action Verbs (0-10): Strong verbs like Led, Architected, Delivered
-      - Formatting (0-15): Visual hierarchy, bullets, spacing, ATS-friendly
-      - Summary (0-10): Clear value proposition, role target
-      - Clarity (0-10): STAR format, clear progression, dates
-      - Skills (0-5): Organized, relevant, no fluff
-      - Grammar (0-5): Error-free, consistent tense
+    .describe("Overall resume score 0-100. Entry-level: 35-50, Mid: 45-65, Senior: 55-75, Exceptional: >75"),
+  impact: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe("Impact score based on quantified achievements, measurable results, and business value demonstrated"),
+  clarity: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe("Clarity score based on readability, organization, STAR format usage, and professional writing"),
+  atsCompatibility: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe("ATS compatibility score based on formatting, keywords, standard sections, and parsability"),
+});
 
-      Realistic ranges: Entry-level 35-50, Mid 45-65, Senior 55-75, Exceptional >75.
-      NEVER return 0 unless resume is blank. Most resumes score 45-65.`
-    ),
-  summary: z.string().describe(
-    `2-3 sentences that MUST include:
-      1. The score with interpretation (e.g., "This resume scores 58/100, placing it in the average range")
-      2. The single biggest strength (with brief evidence)
-      3. The single most impactful area to improve
-
-      Example: "This resume scores 62/100, which is above average. The standout strength is the 6 quantified achievements including '40% cost reduction' and '$2M revenue impact'. The highest-impact improvement would be adding a stronger professional summary that clearly articulates your value proposition."`
-  ),
-  strengths: z
+const AchievementsSchema = z.object({
+  strong: z
     .array(z.string())
-    .min(2)
-    .max(5)
-    .describe(
-      `List 2-5 specific strengths with EVIDENCE from the resume.
-
-      Format: "[Category]: [Specific evidence quoted or referenced]"
-
-      Good examples:
-      - "Strong quantified impact: Your bullet 'Reduced customer churn by 25% saving $500K annually' demonstrates clear business value"
-      - "Technical depth: Listing 12 relevant technologies (React, Node, AWS, etc.) shows comprehensive skill set"
-      - "Clear progression: Promotion from Engineer to Senior Engineer in 2 years shows growth"
-
-      Bad examples (too vague):
-      - "Good experience" (no specifics)
-      - "Nice formatting" (no evidence)
-      - "Strong skills" (which skills?)`
-    ),
-  weaknesses: z
+    .describe("List achievements with measurable impact (numbers, %, $). Quote actual text from resume."),
+  weak: z
     .array(z.string())
-    .min(2)
-    .max(5)
-    .describe(
-      `List 2-5 specific weaknesses with WHY they matter.
+    .describe("List vague statements that need quantification. Quote actual text that lacks metrics."),
+  missingMetrics: z
+    .array(z.string())
+    .describe("Suggest specific metrics that could be added (e.g., 'Add team size to Managed project' or 'Quantify cost savings')"),
+});
 
-      Format: "[Issue]: [Why it hurts your candidacy]"
+const KeywordsSchema = z.object({
+  found: z
+    .array(z.string())
+    .describe("Relevant industry/role keywords present in resume (technologies, tools, methodologies, domain terms)"),
+  missing: z
+    .array(z.string())
+    .describe("Important keywords that should be added based on typical role requirements"),
+  overused: z
+    .array(z.string())
+    .describe("Buzzwords or clichés used too frequently (e.g., 'synergy', 'results-driven', 'team player')"),
+});
 
-      Good examples:
-      - "Missing metrics in 3 of 5 job bullets: 'Managed client relationships' lacks the impact numbers that recruiters scan for"
-      - "No professional summary: Recruiters spend 6 seconds scanning - without a summary, your key qualifications may be missed"
-      - "Weak action verbs: 'Responsible for' and 'Helped with' don't convey ownership; use 'Led', 'Delivered', 'Drove'"
+const VerbSuggestionSchema = z.object({
+  replace: z.string().describe("Weak verb to replace"),
+  with: z.string().describe("Stronger alternative verb"),
+});
 
-      Bad examples (not actionable):
-      - "Could be better" (how?)
-      - "Needs more detail" (where?)
-      - "Formatting issues" (what specifically?)`
-    ),
+const ActionVerbsSchema = z.object({
+  strong: z
+    .array(z.string())
+    .describe("Powerful verbs used effectively (e.g., Led, Architected, Spearheaded, Delivered, Transformed)"),
+  weak: z
+    .array(z.string())
+    .describe("Weak verbs that should be replaced (e.g., 'Responsible for', 'Helped with', 'Worked on')"),
   suggestions: z
+    .array(VerbSuggestionSchema)
+    .describe("Specific verb replacement suggestions with context"),
+});
+
+const SectionFeedbackItemSchema = z.object({
+  status: z.enum(["good", "needsWork", "missing"]).describe("Section status assessment"),
+  feedback: z.string().describe("Specific actionable advice for this section"),
+});
+
+const ImprovementSchema = z.object({
+  priority: z.number().min(1).max(5).describe("Priority ranking 1-5, where 1 is highest priority"),
+  issue: z.string().describe("What's wrong - be specific"),
+  fix: z.string().describe("How to fix it - be actionable"),
+});
+
+const GrammarErrorSchema = z.object({
+  text: z.string().describe("Exact text containing the error"),
+  issue: z.string().describe("What's wrong with it"),
+  correction: z.string().describe("Corrected version"),
+});
+
+const GrammarAndSpellingSchema = z.object({
+  errors: z
+    .array(GrammarErrorSchema)
+    .describe("Grammar and spelling errors found"),
+  punctuationIssues: z
     .array(z.string())
-    .min(2)
+    .describe("Punctuation issues (e.g., inconsistent periods, comma problems)"),
+  consistencyIssues: z
+    .array(z.string())
+    .describe("Consistency issues (e.g., tense shifts, formatting inconsistencies, date format variations)"),
+});
+
+/**
+ * Comprehensive Resume Review Schema
+ * Single LLM call returns all analysis in structured format
+ */
+export const ResumeReviewSchema = z.object({
+  scores: ScoresSchema.describe("Multiple score dimensions for nuanced assessment"),
+  achievements: AchievementsSchema.describe("Achievement quality assessment with specific examples"),
+  keywords: KeywordsSchema.describe("Keyword relevance analysis"),
+  actionVerbs: ActionVerbsSchema.describe("Action verb strength analysis with suggestions"),
+  sectionFeedback: z
+    .record(z.string(), SectionFeedbackItemSchema)
+    .describe("Section-by-section feedback keyed by section name (e.g., 'Summary', 'Experience', 'Skills', 'Education')"),
+  atsIssues: z
+    .array(z.string())
+    .describe("Formatting or content issues that may cause ATS rejection (tables, graphics, unusual fonts, missing sections)"),
+  topImprovements: z
+    .array(ImprovementSchema)
+    .min(3)
     .max(5)
-    .describe(
-      `List 2-5 actionable improvements with EXACTLY what to do.
-
-      Format: "[Action verb]: [Specific instruction with example if possible]"
-
-      Good examples:
-      - "Quantify your 'Improved team efficiency' bullet: Add the % improvement or hours saved, e.g., 'Improved team efficiency by 30%, saving 10 hours/week'"
-      - "Add a professional summary: Start with '[Title] with [X years] experience in [key skill]. Known for [top achievement]. Seeking [target role]'"
-      - "Replace 'Responsible for managing' with 'Managed' or better yet 'Led' - active voice is more impactful"
-
-      Bad examples (too vague):
-      - "Add more numbers" (where? what kind?)
-      - "Improve your summary" (how specifically?)
-      - "Use better verbs" (which ones? where?)`
-    ),
+    .describe("Top 3-5 prioritized improvement suggestions"),
+  grammarAndSpelling: GrammarAndSpellingSchema.describe("Grammar, spelling, and consistency analysis"),
+  summary: z
+    .string()
+    .describe("2-3 sentence overall assessment mentioning overall score, top strength, and most impactful improvement area"),
 });
 
 export type ResumeReviewResponse = z.infer<typeof ResumeReviewSchema>;
+export type ResumeScores = z.infer<typeof ScoresSchema>;
+export type ResumeAchievements = z.infer<typeof AchievementsSchema>;
+export type ResumeKeywords = z.infer<typeof KeywordsSchema>;
+export type ResumeActionVerbs = z.infer<typeof ActionVerbsSchema>;
+export type SectionFeedback = z.infer<typeof SectionFeedbackItemSchema>;
+export type ResumeImprovement = z.infer<typeof ImprovementSchema>;
+export type GrammarError = z.infer<typeof GrammarErrorSchema>;
+export type GrammarAndSpelling = z.infer<typeof GrammarAndSpellingSchema>;
 
 /**
  * Schema for analysis category used in job match response.
@@ -111,7 +146,7 @@ const AnalysisCategorySchema = z.object({
       - "Experience Match (18/25 pts)"
       - "Keyword Overlap (14/20 pts)"
       - "Qualifications (10/15 pts)"
-      - "Industry Fit (7/10 pts)"`
+      - "Industry Fit (7/10 pts)"`,
   ),
   value: z.array(z.string()).describe(
     `List of specific observations with EVIDENCE.
@@ -129,7 +164,7 @@ const AnalysisCategorySchema = z.object({
 
       For Keyword Overlap:
       - "Found: React, TypeScript, Node.js, AWS, Docker, Agile, REST API (7 of 10)"
-      - "Missing: Kubernetes, Redis, GraphQL (3 of 10)"`
+      - "Missing: Kubernetes, Redis, GraphQL (3 of 10)"`,
   ),
 });
 
@@ -160,7 +195,7 @@ export const JobMatchSchema = z.object({
       - <35: Poor match, may not be right fit
 
       Most candidates score 40-60 against any given job.
-      NEVER return 0 unless completely unrelated industry/role.`
+      NEVER return 0 unless completely unrelated industry/role.`,
     ),
   detailed_analysis: z
     .array(AnalysisCategorySchema)
@@ -178,7 +213,7 @@ export const JobMatchSchema = z.object({
       4. "Qualifications (X/15 pts)" - Education, certifications match
       5. "Industry Fit (X/10 pts)" - Domain knowledge assessment
 
-      Each category MUST have specific evidence, not vague statements.`
+      Each category MUST have specific evidence, not vague statements.`,
     ),
   suggestions: z
     .array(AnalysisCategorySchema)
@@ -206,7 +241,7 @@ export const JobMatchSchema = z.object({
          - New skills to learn for better match
          - Example: ["Learn GraphQL fundamentals", "Get hands-on with PostgreSQL"]
 
-      Each suggestion must be SPECIFIC and IMPLEMENTABLE.`
+      Each suggestion must be SPECIFIC and IMPLEMENTABLE.`,
     ),
   additional_comments: z
     .array(z.string())
@@ -229,7 +264,7 @@ export const JobMatchSchema = z.object({
          - "Recommendation: Consider upskilling in [X] before applying"
          - "Recommendation: This role may not be the best fit currently"
 
-      Be direct and honest about fit. Don't sugarcoat poor matches.`
+      Be direct and honest about fit. Don't sugarcoat poor matches.`,
     ),
 });
 
@@ -247,27 +282,27 @@ export const SemanticKeywordSchema = z.object({
   technical_skills: z.array(z.string()).describe(
     `Programming languages, frameworks, libraries extracted from text.
       Examples: ["Python", "React", "TypeScript", "Django", "TensorFlow"]
-      Be comprehensive - extract ALL technical skills mentioned.`
+      Be comprehensive - extract ALL technical skills mentioned.`,
   ),
   tools_platforms: z.array(z.string()).describe(
     `Development tools, platforms, services, and cloud providers.
       Examples: ["Docker", "Kubernetes", "AWS", "GitHub Actions", "JIRA", "Figma"]
-      Include both infrastructure and productivity tools.`
+      Include both infrastructure and productivity tools.`,
   ),
   methodologies: z.array(z.string()).describe(
     `Development methodologies, practices, and processes.
       Examples: ["Agile", "Scrum", "TDD", "CI/CD", "DevOps", "Microservices"]
-      Include architectural patterns and best practices.`
+      Include architectural patterns and best practices.`,
   ),
   domain_knowledge: z.array(z.string()).describe(
     `Industry-specific knowledge and compliance frameworks.
       Examples: ["Healthcare", "HIPAA", "FinTech", "SOX", "GDPR", "FDA regulations"]
-      Include certifications and domain expertise.`
+      Include certifications and domain expertise.`,
   ),
   soft_skills: z.array(z.string()).describe(
     `Leadership and interpersonal skills mentioned.
       Examples: ["Team leadership", "Cross-functional collaboration", "Mentoring"]
-      Only include if explicitly stated or clearly demonstrated.`
+      Only include if explicitly stated or clearly demonstrated.`,
   ),
   total_count: z
     .number()
@@ -291,14 +326,14 @@ export const ActionVerbAnalysisSchema = z.object({
         impact_level: z
           .enum(["high", "medium"])
           .describe(
-            "High: Led, Architected, Spearheaded, Delivered. Medium: Managed, Developed, Implemented"
+            "High: Led, Architected, Spearheaded, Delivered. Medium: Managed, Developed, Implemented",
           ),
-      })
+      }),
     )
     .describe(
       `Strong action verbs that demonstrate ownership and impact.
       High impact: Led, Architected, Spearheaded, Delivered, Drove, Built, Scaled, Transformed
-      Medium impact: Managed, Developed, Implemented, Created, Designed, Coordinated`
+      Medium impact: Managed, Developed, Implemented, Created, Designed, Coordinated`,
     ),
   weak_verbs: z
     .array(
@@ -310,12 +345,12 @@ export const ActionVerbAnalysisSchema = z.object({
         suggestion: z
           .string()
           .describe("Stronger alternative verb to use instead"),
-      })
+      }),
     )
     .describe(
       `Weak verbs/phrases that reduce impact.
       Examples: "Responsible for", "Helped with", "Assisted in", "Worked on", "Involved in"
-      These should be replaced with action-oriented alternatives.`
+      These should be replaced with action-oriented alternatives.`,
     ),
   verb_strength_score: z
     .number()
@@ -326,11 +361,28 @@ export const ActionVerbAnalysisSchema = z.object({
       0-3: Mostly passive language
       4-6: Mix of strong and weak verbs
       7-8: Predominantly strong verbs
-      9-10: Exceptional action-oriented language throughout`
+      9-10: Exceptional action-oriented language throughout`,
     ),
 });
 
 export type ActionVerbAnalysis = z.infer<typeof ActionVerbAnalysisSchema>;
+
+/**
+ * Combined schema for resume analysis (keywords + verbs)
+ * Single LLM call instead of two separate calls
+ */
+export const CombinedResumeAnalysisSchema = z.object({
+  keywords: SemanticKeywordSchema.describe(
+    "All keywords and skills extracted from the resume",
+  ),
+  verbs: ActionVerbAnalysisSchema.describe(
+    "Action verb analysis with strength assessment",
+  ),
+});
+
+export type CombinedResumeAnalysis = z.infer<
+  typeof CombinedResumeAnalysisSchema
+>;
 
 /**
  * Schema for skill matching between resume and job
@@ -349,7 +401,7 @@ export const SemanticSkillMatchSchema = z.object({
           .string()
           .min(1)
           .describe("Quote from job showing this requirement"),
-      })
+      }),
     )
     .describe("Skills that match exactly between resume and job"),
   related_matches: z
@@ -366,10 +418,10 @@ export const SemanticSkillMatchSchema = z.object({
           .string()
           .min(1)
           .describe("Why these skills are related/transferable"),
-      })
+      }),
     )
     .describe(
-      "Skills that are related/similar but not exact matches (e.g., React vs Vue, PostgreSQL vs MySQL)"
+      "Skills that are related/similar but not exact matches (e.g., React vs Vue, PostgreSQL vs MySQL)",
     ),
   missing_skills: z
     .array(
@@ -381,9 +433,9 @@ export const SemanticSkillMatchSchema = z.object({
         learnability: z
           .enum(["quick", "moderate", "significant"])
           .describe(
-            "How quickly this could be learned: quick (<1 month), moderate (1-3 months), significant (3+ months)"
+            "How quickly this could be learned: quick (<1 month), moderate (1-3 months), significant (3+ months)",
           ),
-      })
+      }),
     )
     .describe("Skills required by job but not found in resume"),
   overall_match_percentage: z
@@ -391,7 +443,7 @@ export const SemanticSkillMatchSchema = z.object({
     .min(0)
     .max(100)
     .describe(
-      "Overall skill match percentage considering exact + related matches"
+      "Overall skill match percentage considering exact + related matches",
     ),
 });
 
@@ -423,13 +475,13 @@ export const SemanticSimilaritySchema = z.object({
       65-79: Strong fit
       50-64: Moderate fit
       35-49: Weak fit
-      0-34: Poor fit`
+      0-34: Poor fit`,
     ),
 
   match_explanation: z.string().describe(
     `2-3 sentence explanation of why this candidate is/isn't a good fit.
       Start with the key reason (e.g., "Strong technical alignment with 80% skill match...")
-      Include both positives and concerns.`
+      Include both positives and concerns.`,
   ),
 
   key_matches: z
@@ -439,7 +491,7 @@ export const SemanticSimilaritySchema = z.object({
     .describe(
       `Top 3-5 areas where candidate strongly matches requirements.
       Examples: "5+ years React experience matches requirement",
-      "Led team of 8 engineers, exceeds leadership requirement"`
+      "Led team of 8 engineers, exceeds leadership requirement"`,
     ),
 
   key_gaps: z
@@ -449,12 +501,12 @@ export const SemanticSimilaritySchema = z.object({
         note: z
           .string()
           .describe("Brief note on gap severity or how to address"),
-      })
+      }),
     )
     .max(5)
     .describe(
       `Top 3-5 gaps between resume and job requirements.
-      Include severity/importance of each gap.`
+      Include severity/importance of each gap.`,
     ),
 
   transferable_skills: z
@@ -465,12 +517,12 @@ export const SemanticSimilaritySchema = z.object({
         how_it_transfers: z
           .string()
           .describe("Brief explanation of transferability"),
-      })
+      }),
     )
     .max(4)
     .describe(
       `Skills in resume that could apply to missing requirements.
-      Example: MySQL knowledge transfers to PostgreSQL (both SQL databases)`
+      Example: MySQL knowledge transfers to PostgreSQL (both SQL databases)`,
     ),
 
   application_recommendation: z.string().describe(
@@ -479,7 +531,7 @@ export const SemanticSimilaritySchema = z.object({
       - "Apply now - strong match, highlight your React migration project"
       - "Apply after adding Docker basics - critical gap for this role"
       - "Consider upskilling in Kubernetes before applying - key requirement"
-      - "May not be the best fit - role requires senior-level system design"`
+      - "May not be the best fit - role requires senior-level system design"`,
   ),
 });
 

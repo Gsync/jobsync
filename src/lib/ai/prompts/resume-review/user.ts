@@ -1,64 +1,64 @@
 /**
- * Resume Review User Prompts
- *
- * Functions to construct user prompts for resume analysis.
+ * Resume Review User Prompt
+ * Constructs the user prompt for comprehensive resume analysis
  */
 
 /**
- * Build user prompt for resume review with chain-of-thought instructions
+ * Build user prompt for comprehensive resume review
  */
 export function buildResumeReviewPrompt(resumeText: string): string {
-  return `Analyze this resume using your expert methodology.
-
-## YOUR TASK
-
-Follow the 5-phase analytical process from your training:
-
-### PHASE 1: RECONNAISSANCE
-- What industry/role is this resume for?
-- What career stage (entry/mid/senior/executive)?
-- Adjust your baseline expectations accordingly.
-
-### PHASE 2: FORENSIC COUNTING (be literal)
-Count these elements EXACTLY:
-- Quantified achievements (%, $, numbers)
-- Technical/industry keywords
-- Strong vs weak action verbs
-
-### PHASE 3: QUALITATIVE ASSESSMENT
-Evaluate:
-- Formatting quality (visual hierarchy, ATS-friendliness)
-- Professional summary effectiveness
-- Experience clarity (STAR format, progression)
-- Skills section organization
-- Grammar/spelling
-
-### PHASE 4: CALCULATE & SHOW MATH
-"Keywords: X + Quantified: Y + Verbs: Z + Formatting: A + Summary: B + Clarity: C + Skills: D + Grammar: E = TOTAL"
-
-### PHASE 5: SELF-CRITIQUE
-Before finalizing:
-□ Did I count actual elements (not estimate)?
-□ Is my score realistic for this career stage?
-□ Are my suggestions SPECIFIC to THIS resume?
-□ Did I include at least one HIGH-IMPACT improvement?
-
----
+  return `Analyze this resume thoroughly and return a structured JSON response.
 
 ## RESUME TO ANALYZE:
 
 ${resumeText}
 
----
+## ANALYSIS INSTRUCTIONS:
 
-## OUTPUT REQUIREMENTS
+1. **Scores** - Assess the resume on multiple dimensions:
+   - overall: Overall quality score (0-100)
+   - impact: Achievement impact and measurable results
+   - clarity: Organization, readability, professional writing
+   - atsCompatibility: ATS-friendliness, proper formatting
 
-Provide your structured assessment with:
-1. **score**: Your calculated total (0-100)
-2. **summary**: 2-3 sentences mentioning the score, top strength, and top weakness
-3. **strengths**: 3-5 specific strengths WITH evidence from the resume
-4. **weaknesses**: 3-5 specific weaknesses with WHY they matter
-5. **suggestions**: 3-5 actionable improvements with EXACTLY what to do
+2. **Achievements** - Categorize achievements found:
+   - strong: Quote achievements with numbers/metrics
+   - weak: Quote vague statements needing quantification
+   - missingMetrics: Suggest specific metrics to add
 
-Remember: Reference SPECIFIC text from this resume. No generic feedback.`;
+3. **Keywords** - Analyze keyword presence:
+   - found: Technical skills, tools, methodologies present
+   - missing: Important keywords for the role that should be added
+   - overused: Buzzwords or clichés used excessively
+
+4. **Action Verbs** - Assess language strength:
+   - strong: Powerful verbs like Led, Architected, Delivered
+   - weak: Weak verbs like "Responsible for", "Helped with"
+   - suggestions: Specific replacement recommendations
+
+5. **Section Feedback** - Evaluate each resume section:
+   - Key by section name (Summary, Experience, Skills, Education, etc.)
+   - Provide status (good/needsWork/missing) and specific feedback
+
+6. **ATS Issues** - List formatting/content issues:
+   - Tables, graphics, unusual fonts
+   - Missing standard sections
+   - Parsing problems
+
+7. **Top Improvements** - Prioritize 3-5 changes:
+   - Rank by impact (priority 1 = highest)
+   - Be specific about issue and fix
+
+8. **Grammar and Spelling** - Note all errors:
+   - Quote exact text with errors
+   - Note punctuation inconsistencies
+   - Flag consistency issues (tense, formatting)
+
+9. **Summary** - 2-3 sentence assessment:
+   - Mention overall score
+   - Highlight top strength
+   - Note most impactful improvement
+
+Be specific and reference actual content from this resume.
+Every suggestion must be actionable with concrete examples.`;
 }

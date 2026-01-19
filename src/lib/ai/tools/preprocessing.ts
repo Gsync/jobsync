@@ -293,7 +293,6 @@ export const preprocessResume = async (
 
     // Full validation
     const validationResult = validateResume(normalizedText, metadata);
-    console.log("RESUME: ", { normalizedText, metadata });
     if (!validationResult.isValid) {
       return {
         success: false,

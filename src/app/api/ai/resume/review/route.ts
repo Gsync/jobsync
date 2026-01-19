@@ -9,10 +9,6 @@ import {
   ResumeReviewSchema,
   RESUME_REVIEW_SYSTEM_PROMPT,
   buildResumeReviewPrompt,
-  extractSemanticKeywords,
-  analyzeActionVerbs,
-  getKeywordCountFromSemantic,
-  getVerbCountFromSemantic,
   AIUnavailableError,
   preprocessResume,
 } from "@/lib/ai";
@@ -21,6 +17,7 @@ import { AiModel } from "@/models/ai.model";
 
 /**
  * Resume Review Endpoint
+ * Single comprehensive LLM call for complete resume analysis
  */
 export const POST = async (req: NextRequest) => {
   const session = await auth();
@@ -59,55 +56,28 @@ export const POST = async (req: NextRequest) => {
     const preprocessResult = await preprocessResume(resume);
     if (!preprocessResult.success) {
       return NextResponse.json(
-        { error: preprocessResult.error.message, code: preprocessResult.error.code },
+        {
+          error: preprocessResult.error.message,
+          code: preprocessResult.error.code,
+        },
         { status: 400 },
       );
     }
-    const { normalizedText, metadata } = preprocessResult.data;
-
-    // Use semantic extraction for keywords and verbs
-    const [semanticKeywords, semanticVerbs] = await Promise.all([
-      extractSemanticKeywords(
-        normalizedText,
-        selectedModel.provider,
-        selectedModel.model || "llama3.2",
-      ),
-      analyzeActionVerbs(
-        normalizedText,
-        selectedModel.provider,
-        selectedModel.model || "llama3.2",
-      ),
-    ]);
-
-    const keywordCount = getKeywordCountFromSemantic(semanticKeywords);
-    const verbCount = getVerbCountFromSemantic(semanticVerbs);
-    const allKeywords = [
-      ...semanticKeywords.technical_skills,
-      ...semanticKeywords.tools_platforms,
-    ];
-    const allVerbs = semanticVerbs.strong_verbs.map((v) => v.verb);
-
-    const basePrompt = buildResumeReviewPrompt(normalizedText);
-    const fullPrompt = `${basePrompt}
-
-TOOL ANALYSIS RESULTS (use these in your evaluation):
-- Technical keywords found: ${keywordCount} (${allKeywords.slice(0, 10).join(", ") || "none"})
-- Action verbs found: ${verbCount} (${allVerbs.slice(0, 10).join(", ") || "none"})
-
-Use these concrete counts in your Step 1 (SCAN & COUNT) and scoring decisions.`;
+    const { normalizedText } = preprocessResult.data;
 
     const model = getModel(
       selectedModel.provider,
       selectedModel.model || "llama3.2",
     );
 
+    // Single comprehensive LLM call
     const result = streamText({
       model,
       output: Output.object({
         schema: ResumeReviewSchema,
       }),
       system: RESUME_REVIEW_SYSTEM_PROMPT,
-      prompt: fullPrompt,
+      prompt: buildResumeReviewPrompt(normalizedText),
       temperature: 0.3,
     });
 

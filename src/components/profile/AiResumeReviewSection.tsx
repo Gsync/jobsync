@@ -91,7 +91,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   };
 
   // Check if we have any content to show
-  const hasContent = object && (object.score !== undefined || object.summary);
+  const hasContent = object && (object.scores?.overall !== undefined || object.summary);
 
   return (
     <Sheet open={aISectionOpen} onOpenChange={triggerSheetChange}>

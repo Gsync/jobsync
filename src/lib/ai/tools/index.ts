@@ -18,13 +18,7 @@ export { AIUnavailableError } from "./errors";
 // ...existing code...
 
 // Semantic extraction (LLM-powered)
-export {
-  extractSemanticKeywords,
-  analyzeActionVerbs,
-  performSemanticSkillMatch,
-  getKeywordCountFromSemantic,
-  getVerbCountFromSemantic,
-} from "./semantic-extraction";
+export { performSemanticSkillMatch } from "./semantic-extraction";
 
 // Semantic similarity (LLM-powered)
 export {

@@ -23,6 +23,7 @@ export function isOllamaProvider(provider: ProviderType): boolean {
 export {
   normalizeKeywordExtraction,
   normalizeActionVerbAnalysis,
+  normalizeCombinedResumeAnalysis,
   normalizeSkillMatch,
   normalizeSemanticSimilarity,
 } from "./normalizers";
@@ -31,10 +32,12 @@ export {
 export {
   OllamaSemanticKeywordSchema,
   OllamaActionVerbSchema,
+  OllamaCombinedResumeAnalysisSchema,
   OllamaSkillMatchSchema,
   OllamaSemanticSimilaritySchema,
   type OllamaSemanticKeywordExtraction,
   type OllamaActionVerbAnalysis,
+  type OllamaCombinedResumeAnalysis,
   type OllamaSkillMatch,
   type OllamaSemanticSimilarity,
 } from "@/models/ai.ollama-schemas";
