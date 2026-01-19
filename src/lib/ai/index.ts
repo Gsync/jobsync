@@ -18,6 +18,15 @@ export {
 // Analysis tools
 export { AIUnavailableError } from "./tools";
 
+// Preprocessing
+export {
+  preprocessResume,
+  convertResumeToText,
+  type PreprocessingResult,
+  type ResumeMetadata,
+  type PreprocessedResume,
+} from "./tools";
+
 // Semantic extraction and similarity functions
 export {
   extractSemanticKeywords,

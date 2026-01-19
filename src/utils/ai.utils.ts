@@ -1,27 +1,18 @@
 import { JobResponse } from "@/models/job.model";
-import {
-  ContactInfo,
-  Education,
-  Resume,
-  ResumeSection,
-  SectionType,
-  WorkExperience,
-} from "@/models/profile.model";
 import { AiProvider } from "@/models/ai.model";
+
+// Re-export for backwards compatibility
+export { convertResumeToText } from "@/lib/ai/tools/preprocessing";
 
 const removeHtmlTags = (description: string | undefined): string => {
   if (!description) return "";
 
   return (
     description
-      // Convert list items to bullet points before stripping tags
       .replace(/<li[^>]*>/gi, "• ")
-      // Add line breaks after block elements
       .replace(/<\/(li|p|div|br)[^>]*>/gi, "\n")
       .replace(/<br\s*\/?>/gi, "\n")
-      // Remove all remaining HTML tags
       .replace(/<[^>]+>/g, " ")
-      // Clean up excessive whitespace while preserving structure
       .replace(/\s+/g, " ")
       .replace(/\n\s*\n/g, "\n")
       .trim()
@@ -130,87 +121,6 @@ export const fetchRunningModels = async (): Promise<{
       error: "Cannot connect to Ollama service.",
     };
   }
-};
-
-export const convertResumeToText = (resume: Resume): Promise<string> => {
-  return new Promise((resolve) => {
-    const formatContactInfo = (contactInfo?: ContactInfo) => {
-      if (!contactInfo) return "";
-      const parts = [
-        `Name: ${contactInfo.firstName} ${contactInfo.lastName}`,
-        contactInfo.headline ? `Headline: ${contactInfo.headline}` : "",
-        contactInfo.email ? `Email: ${contactInfo.email}` : "",
-        contactInfo.phone ? `Phone: ${contactInfo.phone}` : "",
-        contactInfo.address ? `Address: ${contactInfo.address}` : "",
-      ].filter(Boolean);
-      return parts.join("\n");
-    };
-
-    const formatWorkExperiences = (workExperiences?: WorkExperience[]) => {
-      if (!workExperiences || workExperiences.length === 0) return "";
-      return workExperiences
-        .map((experience) => {
-          const desc = removeHtmlTags(experience.description);
-          const parts = [
-            `Company: ${experience.Company.label}`,
-            `Job Title: ${experience.jobTitle.label}`,
-            `Location: ${experience.location.label}`,
-            desc ? `Description: ${desc}` : "",
-          ].filter(Boolean);
-          return parts.join("\n");
-        })
-        .join("\n\n");
-    };
-    // Start Date: ${experience.startDate.toLocaleDateString().split("T")[0]}
-    // End Date: ${
-    //   experience.currentJob
-    //     ? "Present"
-    //     : experience.endDate.toLocaleDateString().split("T")[0]
-    // }
-
-    const formatEducation = (educations?: Education[]) => {
-      if (!educations || educations.length === 0) return "";
-      return educations
-        .map((education) => {
-          const desc = removeHtmlTags(education.description);
-          const parts = [
-            `Institution: ${education.institution}`,
-            `Degree: ${education.degree}`,
-            `Field of Study: ${education.fieldOfStudy}`,
-            `Location: ${education.location.label}`,
-            desc ? `Description: ${desc}` : "",
-          ].filter(Boolean);
-          return parts.join("\n");
-        })
-        .join("\n\n");
-    };
-
-    const formatResumeSections = (sections?: ResumeSection[]) => {
-      if (!sections || sections.length === 0) return "";
-      return sections
-        .map((section) => {
-          switch (section.sectionType) {
-            case SectionType.SUMMARY:
-              return `Summary: ${removeHtmlTags(section.summary?.content)}`;
-            case SectionType.EXPERIENCE:
-              return formatWorkExperiences(section.workExperiences);
-            case SectionType.EDUCATION:
-              return formatEducation(section.educations);
-            default:
-              return "";
-          }
-        })
-        .join("\n");
-    };
-
-    const inputMessage = `
-                 
-                 Title: ${resume.title}
-                 ${formatContactInfo(resume.ContactInfo)}
-                 ${formatResumeSections(resume.ResumeSections)}
-                 `;
-    return resolve(inputMessage);
-  });
 };
 
 export const convertJobToText = (job: JobResponse): Promise<string> => {

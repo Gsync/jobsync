@@ -14,8 +14,8 @@ import {
   getKeywordCountFromSemantic,
   getVerbCountFromSemantic,
   AIUnavailableError,
+  preprocessResume,
 } from "@/lib/ai";
-import { convertResumeToText } from "@/utils/ai.utils";
 import { Resume } from "@/models/profile.model";
 import { AiModel } from "@/models/ai.model";
 
@@ -56,19 +56,24 @@ export const POST = async (req: NextRequest) => {
   }
 
   try {
-    const resumeText = await convertResumeToText(resume);
-
-    // ...existing code...
+    const preprocessResult = await preprocessResume(resume);
+    if (!preprocessResult.success) {
+      return NextResponse.json(
+        { error: preprocessResult.error.message, code: preprocessResult.error.code },
+        { status: 400 },
+      );
+    }
+    const { normalizedText, metadata } = preprocessResult.data;
 
     // Use semantic extraction for keywords and verbs
     const [semanticKeywords, semanticVerbs] = await Promise.all([
       extractSemanticKeywords(
-        resumeText,
+        normalizedText,
         selectedModel.provider,
         selectedModel.model || "llama3.2",
       ),
       analyzeActionVerbs(
-        resumeText,
+        normalizedText,
         selectedModel.provider,
         selectedModel.model || "llama3.2",
       ),
@@ -82,7 +87,7 @@ export const POST = async (req: NextRequest) => {
     ];
     const allVerbs = semanticVerbs.strong_verbs.map((v) => v.verb);
 
-    const basePrompt = buildResumeReviewPrompt(resumeText);
+    const basePrompt = buildResumeReviewPrompt(normalizedText);
     const fullPrompt = `${basePrompt}
 
 TOOL ANALYSIS RESULTS (use these in your evaluation):

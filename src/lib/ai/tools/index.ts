@@ -31,3 +31,12 @@ export {
   calculateSemanticSimilarity,
   generateMatchExplanation,
 } from "./semantic-similarity";
+
+// Preprocessing
+export {
+  preprocessResume,
+  convertResumeToText,
+  type PreprocessingResult,
+  type ResumeMetadata,
+  type PreprocessedResume,
+} from "./preprocessing";
