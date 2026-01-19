@@ -4,70 +4,13 @@
  */
 
 import {
-  countQuantifiedAchievements,
-  analyzeFormatting,
   calculateResumeScore,
   calculateJobMatchScore,
   validateScore,
 } from "@/lib/ai";
 
 describe("AI Library - Analysis Tools", () => {
-  describe("countQuantifiedAchievements", () => {
-    it("should count achievements with numbers", () => {
-      const text =
-        "Increased sales by 40%. Managed $2M budget. Led team of 10 engineers.";
-      const result = countQuantifiedAchievements(text);
-      expect(result.count).toBe(3);
-      expect(result.examples.length).toBeGreaterThan(0);
-    });
-
-    it("should count achievements with percentages", () => {
-      const text = "Improved performance by 25%. Reduced costs by 15%.";
-      const result = countQuantifiedAchievements(text);
-      expect(result.count).toBe(2);
-      expect(result.examples).toContain("25%");
-    });
-
-    it("should return 0 for text with no quantified achievements", () => {
-      const text = "Worked on projects. Collaborated with team members.";
-      const result = countQuantifiedAchievements(text);
-      expect(result.count).toBe(0);
-      expect(result.examples).toEqual([]);
-    });
-
-    it("should handle empty text", () => {
-      const result = countQuantifiedAchievements("");
-      expect(result.count).toBe(0);
-      expect(result.examples).toEqual([]);
-    });
-  });
-
-  // Note: extractKeywords, countActionVerbs, calculateKeywordOverlap tests removed
-  // These functions now use semantic AI extraction (extractSemanticKeywords, analyzeActionVerbs, etc.)
-  // which require AI providers and cannot be easily unit tested without mocking
-
-  describe("analyzeFormatting", () => {
-    it("should detect bullet points", () => {
-      const text =
-        "- First item\n- Second item\n- Third item\n- Fourth item\n- Fifth item";
-      const formatting = analyzeFormatting(text);
-      expect(formatting.hasBulletPoints).toBe(true);
-    });
-
-    it("should count sections", () => {
-      const text =
-        "EXPERIENCE\nWork history\n\nEDUCATION\nSchool info\n\nSKILLS\nTech stack";
-      const formatting = analyzeFormatting(text);
-      expect(formatting.sectionCount).toBeGreaterThan(0);
-    });
-
-    it("should return false for no bullet points", () => {
-      const text = "Plain text without any formatting";
-      const formatting = analyzeFormatting(text);
-      expect(formatting.hasBulletPoints).toBe(false);
-    });
-  });
-
+  // ...existing code...
   // Note: extractRequiredSkills tests removed - function now uses semantic AI extraction
 });
 

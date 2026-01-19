@@ -9,8 +9,6 @@ import {
   ResumeReviewSchema,
   RESUME_REVIEW_SYSTEM_PROMPT,
   buildResumeReviewPrompt,
-  countQuantifiedAchievements,
-  analyzeFormatting,
   extractSemanticKeywords,
   analyzeActionVerbs,
   getKeywordCountFromSemantic,
@@ -38,10 +36,10 @@ export const POST = async (req: NextRequest) => {
     return NextResponse.json(
       {
         error: `Rate limit exceeded. Try again in ${Math.ceil(
-          rateLimit.resetIn / 1000
+          rateLimit.resetIn / 1000,
         )} seconds.`,
       },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
@@ -53,28 +51,26 @@ export const POST = async (req: NextRequest) => {
   if (!resume || !selectedModel) {
     return NextResponse.json(
       { error: "Resume and model selection required" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   try {
     const resumeText = await convertResumeToText(resume);
 
-    // Extract tool data for enhanced prompting using semantic AI functions
-    const quantified = countQuantifiedAchievements(resumeText);
-    const formatting = analyzeFormatting(resumeText);
+    // ...existing code...
 
     // Use semantic extraction for keywords and verbs
     const [semanticKeywords, semanticVerbs] = await Promise.all([
       extractSemanticKeywords(
         resumeText,
         selectedModel.provider,
-        selectedModel.model || "llama3.2"
+        selectedModel.model || "llama3.2",
       ),
       analyzeActionVerbs(
         resumeText,
         selectedModel.provider,
-        selectedModel.model || "llama3.2"
+        selectedModel.model || "llama3.2",
       ),
     ]);
 
@@ -90,24 +86,14 @@ export const POST = async (req: NextRequest) => {
     const fullPrompt = `${basePrompt}
 
 TOOL ANALYSIS RESULTS (use these in your evaluation):
-- Quantified achievements found: ${quantified.count} (Examples: ${
-      quantified.examples.join(", ") || "none"
-    })
-- Technical keywords found: ${keywordCount} (${
-      allKeywords.slice(0, 10).join(", ") || "none"
-    })
-- Action verbs found: ${verbCount} (${
-      allVerbs.slice(0, 10).join(", ") || "none"
-    })
-- Formatting quality: ${
-      formatting.hasBulletPoints ? "Has bullet points" : "No bullets"
-    }, ${formatting.sectionCount} sections detected
+- Technical keywords found: ${keywordCount} (${allKeywords.slice(0, 10).join(", ") || "none"})
+- Action verbs found: ${verbCount} (${allVerbs.slice(0, 10).join(", ") || "none"})
 
 Use these concrete counts in your Step 1 (SCAN & COUNT) and scoring decisions.`;
 
     const model = getModel(
       selectedModel.provider,
-      selectedModel.model || "llama3.2"
+      selectedModel.model || "llama3.2",
     );
 
     const result = streamText({
@@ -136,7 +122,7 @@ Use these concrete counts in your Step 1 (SCAN & COUNT) and scoring decisions.`;
         {
           error: `Cannot connect to ${selectedModel.provider} service. Please ensure the service is running.`,
         },
-        { status: 503 }
+        { status: 503 },
       );
     }
 

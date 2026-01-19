@@ -13,11 +13,9 @@
 // Error classes
 export { AIUnavailableError } from "./errors";
 
-// Achievement analysis
-export { countQuantifiedAchievements } from "./achievement";
+// ...existing code...
 
-// Formatting analysis
-export { analyzeFormatting } from "./formatting";
+// ...existing code...
 
 // Semantic extraction (LLM-powered)
 export {

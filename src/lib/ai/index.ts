@@ -16,11 +16,7 @@ export {
 } from "./prompts";
 
 // Analysis tools
-export {
-  countQuantifiedAchievements,
-  analyzeFormatting,
-  AIUnavailableError,
-} from "./tools";
+export { AIUnavailableError } from "./tools";
 
 // Semantic extraction and similarity functions
 export {
