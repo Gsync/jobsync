@@ -4,7 +4,6 @@ export {
   JobMatchSchema,
   type ResumeReviewResponse,
   type JobMatchResponse,
-  type JobMatchAnalysis,
 } from "@/models/ai.schemas";
 
 // Prompts
@@ -46,28 +45,5 @@ export {
   validateText,
   type TextMetadata,
 } from "./tools/text-processing";
-
-// Semantic extraction for job matching (still used)
-export {
-  performSemanticSkillMatch,
-  calculateSemanticSimilarity,
-  generateMatchExplanation,
-} from "./tools";
-
-// Schemas for job matching
-export {
-  SemanticSkillMatchSchema,
-  SemanticSimilaritySchema,
-  type SemanticSkillMatch,
-  type SemanticSimilarityResult,
-} from "@/models/ai.schemas";
-
-// Scoring calculators
-export {
-  calculateResumeScore,
-  calculateJobMatchScore,
-  validateScore,
-  SCORING_GUIDELINES,
-} from "./scoring";
 
 export { checkRateLimit } from "./rate-limiter";

@@ -138,7 +138,7 @@ export const AiJobMatchSection = ({
 
   // Check if we have any content to show
   const hasContent =
-    object && (object.matching_score !== undefined || object.detailed_analysis);
+    object && (object.matchScore !== undefined || object.summary);
 
   return (
     <Sheet open={aISectionOpen} onOpenChange={onOpenChange}>

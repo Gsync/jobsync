@@ -1,70 +1,16 @@
-// Import types needed in this file
-import type {
-  SemanticSkillMatch,
-  SemanticSimilarityResult,
-} from "./ai.schemas";
-
-// Re-export types from new schemas
+// Re-export types from schemas
 export type {
   ResumeReviewResponse,
   JobMatchResponse,
-  JobMatchAnalysis,
-  SemanticKeywordExtraction,
-  ActionVerbAnalysis,
-  SemanticSkillMatch,
-  SemanticSimilarityResult,
+  RequirementMet,
+  RequirementMissing,
+  RequirementPartial,
+  SkillsAnalysis,
+  ExperienceAnalysis,
+  KeywordsAnalysis,
+  TailoringTip,
 } from "./ai.schemas";
-export {
-  ResumeReviewSchema,
-  JobMatchSchema,
-  SemanticKeywordSchema,
-  ActionVerbAnalysisSchema,
-  SemanticSkillMatchSchema,
-  SemanticSimilaritySchema,
-} from "./ai.schemas";
-
-// JOB MATCH TYPES
-
-export interface SemanticData {
-  skillMatch: SemanticSkillMatch | null;
-  similarity: SemanticSimilarityResult | null;
-  matchExplanation: {
-    summary: string;
-    fit_assessment: string;
-    strengths_explanation: string[];
-    gaps_explanation: string[];
-    transferable_explanation: string[];
-    action_items: string[];
-  } | null;
-}
-
-export interface ToolDataResume {
-  quantified: { count: number; examples: string[] };
-  keywords: { keywords: string[]; count: number };
-  verbs: { count: number; verbs: string[] };
-  formatting: {
-    hasBulletPoints: boolean;
-    hasConsistentSpacing: boolean;
-    averageLineLength: number;
-    sectionCount: number;
-  };
-}
-
-export interface ToolDataJobMatch {
-  keywordOverlap: {
-    overlapPercentage: number;
-    matchedKeywords: string[];
-    missingKeywords: string[];
-    totalJobKeywords: number;
-  };
-  resumeKeywords: { keywords: string[]; count: number };
-  jobKeywords: { keywords: string[]; count: number };
-  requiredSkills: {
-    requiredSkills: string[];
-    preferredSkills: string[];
-    totalSkills: number;
-  };
-}
+export { ResumeReviewSchema, JobMatchSchema } from "./ai.schemas";
 
 // AI MODEL
 
@@ -78,9 +24,6 @@ export enum AiProvider {
   OLLAMA = "ollama",
   OPENAI = "openai",
   DEEPSEEK = "deepseek",
-  // Future providers:
-  // GEMINI = "gemini",
-  // CLAUDE = "claude",
 }
 
 // Default models per provider
@@ -95,7 +38,6 @@ export enum OpenaiModel {
   GPT4O_MINI = "gpt-4o-mini",
 }
 
-// DeepSeek models - fallback if API is unavailable
 export enum DeepseekModel {
   DEEPSEEK_CHAT = "deepseek-chat",
   DEEPSEEK_REASONER = "deepseek-reasoner",

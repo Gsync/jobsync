@@ -6,8 +6,6 @@
  * - text-processing: Shared text normalization and metadata extraction
  * - preprocessing: Resume preprocessing (normalization, validation)
  * - preprocessing-job: Job description preprocessing
- * - semantic-extraction: LLM-powered skill matching and extraction
- * - semantic-similarity: LLM-powered similarity analysis
  */
 
 // Error classes
@@ -45,12 +43,3 @@ export {
   type JobMetadata,
   type PreprocessedJob,
 } from "./preprocessing-job";
-
-// Semantic extraction (LLM-powered)
-export { performSemanticSkillMatch } from "./semantic-extraction";
-
-// Semantic similarity (LLM-powered)
-export {
-  calculateSemanticSimilarity,
-  generateMatchExplanation,
-} from "./semantic-similarity";

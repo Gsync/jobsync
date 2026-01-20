@@ -9,8 +9,6 @@ import {
   JobMatchSchema,
   JOB_MATCH_SYSTEM_PROMPT,
   buildJobMatchPrompt,
-  performSemanticSkillMatch,
-  calculateSemanticSimilarity,
   AIUnavailableError,
   preprocessResume,
   preprocessJob,
@@ -21,8 +19,7 @@ import { AiModel } from "@/models/ai.model";
 
 /**
  * Job Match Endpoint
- * Matches a resume against a job description using semantic analysis and LLM
- * Includes preprocessing of both inputs for consistency and reliability
+ * Single comprehensive LLM call for resume-job matching
  */
 export const POST = async (req: NextRequest) => {
   const session = await auth();
@@ -64,13 +61,12 @@ export const POST = async (req: NextRequest) => {
       getJobDetails(jobId),
     ]);
 
-    // Preprocess both resume and job description for consistency
+    // Preprocess both resume and job description
     const [resumePreprocessResult, jobPreprocessResult] = await Promise.all([
       preprocessResume(resume),
       preprocessJob(job),
     ]);
 
-    // Check resume preprocessing
     if (!resumePreprocessResult.success) {
       return NextResponse.json(
         {
@@ -81,7 +77,6 @@ export const POST = async (req: NextRequest) => {
       );
     }
 
-    // Check job preprocessing
     if (!jobPreprocessResult.success) {
       return NextResponse.json(
         {
@@ -95,50 +90,19 @@ export const POST = async (req: NextRequest) => {
     const { normalizedText: resumeText } = resumePreprocessResult.data;
     const { normalizedText: jobText } = jobPreprocessResult.data;
 
-    // Use semantic analysis for skill matching
-    const [skillMatch, similarity] = await Promise.all([
-      performSemanticSkillMatch(
-        resumeText,
-        jobText,
-        selectedModel.provider,
-        selectedModel.model || "llama3.2",
-      ),
-      calculateSemanticSimilarity(
-        resumeText,
-        jobText,
-        selectedModel.provider,
-        selectedModel.model || "llama3.2",
-      ),
-    ]);
-
-    const matchedSkills = skillMatch.exact_matches.map((m) => m.skill);
-    const missingSkills = skillMatch.missing_skills.map((s) => s.skill);
-    const totalSkills = matchedSkills.length + missingSkills.length;
-
-    const basePrompt = buildJobMatchPrompt(resumeText, jobText);
-    const fullPrompt = `${basePrompt}
-
-TOOL ANALYSIS RESULTS (use these in your evaluation):
-- Semantic similarity: ${similarity.similarity_score}% match
-- Skills matched: ${matchedSkills.length} of ${totalSkills} required skills
-- Matched skills: ${matchedSkills.slice(0, 10).join(", ") || "none"}
-- Missing skills: ${missingSkills.slice(0, 10).join(", ") || "none"}
-- Match explanation: ${similarity.match_explanation}
-
-Use these results in your scoring decisions.`;
-
     const model = getModel(
       selectedModel.provider,
       selectedModel.model || "llama3.2",
     );
 
+    // Single comprehensive LLM call
     const result = streamText({
       model,
       output: Output.object({
         schema: JobMatchSchema,
       }),
       system: JOB_MATCH_SYSTEM_PROMPT,
-      prompt: fullPrompt,
+      prompt: buildJobMatchPrompt(resumeText, jobText),
       temperature: 0.3,
     });
 

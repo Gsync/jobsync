@@ -5,7 +5,6 @@
  * For new code, import directly from the specific module:
  *   - ./resume-review for resume analysis prompts
  *   - ./job-match for job matching prompts
- *   - ./shared for validation/critic prompts
  */
 
 // Resume Review exports
@@ -18,7 +17,4 @@ export {
 export {
   JOB_MATCH_SYSTEM_PROMPT,
   buildJobMatchPrompt,
-  JOB_MATCH_SCORE_GUIDE,
-  getSkillMatchPrompt,
-  getSimilarityPrompt,
 } from "./job-match";
