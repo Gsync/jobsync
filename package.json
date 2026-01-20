@@ -16,7 +16,7 @@
     "@ai-sdk/deepseek": "^2.0.4",
     "@ai-sdk/openai": "^3.0.2",
     "@ai-sdk/react": "^3.0.5",
-    "@hookform/resolvers": "^3.9.1",
+    "@hookform/resolvers": "^5.2.2",
     "@nivo/bar": "^0.99.0",
     "@nivo/calendar": "^0.99.0",
     "@nivo/core": "^0.99.0",
@@ -62,7 +62,7 @@
     "recharts": "^2.15.0",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^3.23.8"
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.1",

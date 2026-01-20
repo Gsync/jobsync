@@ -4,7 +4,7 @@ export const AddTaskFormSchema = z.object({
   id: z.string().optional(),
   userId: z.string().optional(),
   title: z
-    .string({ required_error: "Title is required." })
+    .string({ error: "Title is required." })
     .min(2, { message: "Title must be at least 2 characters." }),
   description: z
     .string()
