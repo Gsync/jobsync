@@ -3,21 +3,7 @@ import { AiProvider } from "@/models/ai.model";
 
 // Re-export for backwards compatibility
 export { convertResumeToText } from "@/lib/ai/tools/preprocessing";
-
-const removeHtmlTags = (description: string | undefined): string => {
-  if (!description) return "";
-
-  return (
-    description
-      .replace(/<li[^>]*>/gi, "• ")
-      .replace(/<\/(li|p|div|br)[^>]*>/gi, "\n")
-      .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .replace(/\n\s*\n/g, "\n")
-      .trim()
-  );
-};
+export { convertJobToText } from "@/lib/ai/tools/preprocessing-job";
 
 export interface ModelCheckResult {
   isRunning: boolean;
@@ -33,7 +19,7 @@ export interface ModelCheckResult {
  */
 export const checkIfModelIsRunning = async (
   modelName: string | undefined,
-  provider: AiProvider
+  provider: AiProvider,
 ): Promise<ModelCheckResult> => {
   // Only check for Ollama provider
   if (provider !== AiProvider.OLLAMA) {
@@ -121,24 +107,4 @@ export const fetchRunningModels = async (): Promise<{
       error: "Cannot connect to Ollama service.",
     };
   }
-};
-
-export const convertJobToText = (job: JobResponse): Promise<string> => {
-  return new Promise((resolve) => {
-    const {
-      description,
-      JobTitle: { label: jobTitle },
-      Company: { label: companyName },
-      Location: { label: location },
-    } = job;
-
-    const jobText = `
-       Job Title: ${jobTitle}
-       Company: ${companyName}
-       Location: ${location}
-       Description: ${removeHtmlTags(description)}
-     `;
-
-    return resolve(jobText);
-  });
 };

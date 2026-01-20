@@ -18,14 +18,34 @@ export {
 // Analysis tools
 export { AIUnavailableError } from "./tools";
 
-// Preprocessing
+// Resume preprocessing
 export {
   preprocessResume,
   convertResumeToText,
   type PreprocessingResult,
   type ResumeMetadata,
   type PreprocessedResume,
-} from "./tools";
+} from "./tools/preprocessing";
+
+// Job preprocessing
+export {
+  preprocessJob,
+  convertJobToText,
+  type JobPreprocessingResult,
+  type JobMetadata,
+  type PreprocessedJob,
+} from "./tools/preprocessing-job";
+
+// Shared text processing utilities
+export {
+  removeHtmlTags,
+  normalizeWhitespace,
+  normalizeBullets,
+  normalizeHeadings,
+  extractMetadata,
+  validateText,
+  type TextMetadata,
+} from "./tools/text-processing";
 
 // Semantic extraction for job matching (still used)
 export {

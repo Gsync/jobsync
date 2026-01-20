@@ -1,6 +1,7 @@
 /**
  * Resume Preprocessing Module
  * Normalizes text, detects sections, extracts metadata, and validates resume content
+ * Uses shared text processing utilities from text-processing.ts
  */
 
 import {
@@ -11,15 +12,19 @@ import {
   SectionType,
   WorkExperience,
 } from "@/models/profile.model";
+import {
+  removeHtmlTags,
+  normalizeWhitespace,
+  normalizeBullets,
+  normalizeHeadings,
+  extractMetadata,
+  validateText,
+  type TextMetadata,
+} from "./text-processing";
 
 // TYPES
 
-export interface ResumeMetadata {
-  characterCount: number;
-  wordCount: number;
-  lineCount: number;
-  hasContactInfo: boolean;
-}
+export type ResumeMetadata = TextMetadata;
 
 export interface PreprocessedResume {
   normalizedText: string;
@@ -36,116 +41,39 @@ export type PreprocessingResult =
 
 // VALIDATION THRESHOLDS
 
-const MIN_WORD_COUNT = 50;
 const MIN_CHAR_COUNT = 200;
 const MAX_WORD_COUNT = 10000;
-const MAX_CONSECUTIVE_SPECIAL_CHARS = 20;
 
-// UTILITY FUNCTIONS
-
-export const removeHtmlTags = (description: string | undefined): string => {
-  if (!description) return "";
-
-  return description
-    .replace(/<li[^>]*>/gi, "• ")
-    .replace(/<\/(li|p|div|br)[^>]*>/gi, "\n")
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .replace(/\n\s*\n/g, "\n")
-    .trim();
+// Re-export shared utilities for backward compatibility
+export {
+  removeHtmlTags,
+  normalizeWhitespace,
+  normalizeBullets,
+  normalizeHeadings,
+  extractMetadata,
 };
 
-// NORMALIZATION FUNCTIONS
-
-export const normalizeWhitespace = (text: string): string => {
-  return text
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .replace(/[ \t]+/g, " ")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-};
-
-export const normalizeBullets = (text: string): string => {
-  return text
-    .replace(/[•●○◦▪▸►◆★✦✓✔→‣⁃]/g, "•")
-    .replace(/^[-–—]\s/gm, "• ")
-    .replace(/^\*\s/gm, "• ");
-};
-
-export const normalizeHeadings = (text: string): string => {
-  return text
-    .replace(/^([A-Z][A-Z\s&]+):?\s*$/gm, (_match, heading) => {
-      const normalized = heading.trim().replace(/:$/, "");
-      return `\n${normalized}\n`;
-    })
-    .replace(/\n{3,}/g, "\n\n");
-};
-
-// METADATA EXTRACTION
-
-export const extractMetadata = (text: string): ResumeMetadata => {
-  const words = text.split(/\s+/).filter((w) => w.length > 0);
-  const lines = text.split("\n");
-
-  return {
-    characterCount: text.length,
-    wordCount: words.length,
-    lineCount: lines.length,
-    hasContactInfo: hasContactPatterns(text),
-  };
-};
-
-const hasContactPatterns = (text: string): boolean => {
-  const emailPattern = /[\w.-]+@[\w.-]+\.\w+/;
-  const phonePattern = /\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
-  return emailPattern.test(text) || phonePattern.test(text);
-};
-
-// VALIDATION
-
-interface ValidationResult {
-  isValid: boolean;
-  error?: { code: string; message: string; details?: object };
-}
+// VALIDATION - Resume-specific validation logic
 
 export const validateResume = (
   text: string,
   metadata: ResumeMetadata,
-): ValidationResult => {
-  // Check for empty content
-  if (!text || text.trim().length === 0) {
-    return {
-      isValid: false,
-      error: {
-        code: "NO_CONTENT",
-        message: "Resume appears to be empty or contains only whitespace",
-      },
-    };
+): {
+  isValid: boolean;
+  error?: { code: string; message: string; details?: object };
+} => {
+  // Use shared generic validation first
+  const genericValidation = validateText(
+    text,
+    MIN_CHAR_COUNT,
+    MAX_WORD_COUNT * 5,
+    "Resume",
+  );
+  if (!genericValidation.isValid) {
+    return genericValidation;
   }
 
-  // Check minimum length
-  if (
-    metadata.wordCount < MIN_WORD_COUNT ||
-    metadata.characterCount < MIN_CHAR_COUNT
-  ) {
-    return {
-      isValid: false,
-      error: {
-        code: "TOO_SHORT",
-        message: `Resume is too short. Found ${metadata.wordCount} words and ${metadata.characterCount} characters. Minimum required: ${MIN_WORD_COUNT} words or ${MIN_CHAR_COUNT} characters.`,
-        details: {
-          wordCount: metadata.wordCount,
-          characterCount: metadata.characterCount,
-          minWordCount: MIN_WORD_COUNT,
-          minCharCount: MIN_CHAR_COUNT,
-        },
-      },
-    };
-  }
-
-  // Check for corruption - too long
+  // Resume-specific check: max word count
   if (metadata.wordCount > MAX_WORD_COUNT) {
     return {
       isValid: false,
@@ -155,24 +83,6 @@ export const validateResume = (
         details: {
           wordCount: metadata.wordCount,
           maxWordCount: MAX_WORD_COUNT,
-        },
-      },
-    };
-  }
-
-  // Check for corruption - consecutive special characters
-  const specialCharPattern = new RegExp(
-    `[^a-zA-Z0-9\\s]{${MAX_CONSECUTIVE_SPECIAL_CHARS + 1},}`,
-  );
-  if (specialCharPattern.test(text)) {
-    return {
-      isValid: false,
-      error: {
-        code: "CORRUPTED",
-        message:
-          "Resume appears to be corrupted. Found excessive consecutive special characters.",
-        details: {
-          maxConsecutiveSpecialChars: MAX_CONSECUTIVE_SPECIAL_CHARS,
         },
       },
     };

@@ -12,14 +12,17 @@ import {
   performSemanticSkillMatch,
   calculateSemanticSimilarity,
   AIUnavailableError,
+  preprocessResume,
+  preprocessJob,
 } from "@/lib/ai";
-import { convertResumeToText, convertJobToText } from "@/utils/ai.utils";
 import { getResumeById } from "@/actions/profile.actions";
 import { getJobDetails } from "@/actions/job.actions";
 import { AiModel } from "@/models/ai.model";
 
 /**
  * Job Match Endpoint
+ * Matches a resume against a job description using semantic analysis and LLM
+ * Includes preprocessing of both inputs for consistency and reliability
  */
 export const POST = async (req: NextRequest) => {
   const session = await auth();
@@ -35,10 +38,10 @@ export const POST = async (req: NextRequest) => {
     return NextResponse.json(
       {
         error: `Rate limit exceeded. Try again in ${Math.ceil(
-          rateLimit.resetIn / 1000
+          rateLimit.resetIn / 1000,
         )} seconds.`,
       },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
@@ -51,7 +54,7 @@ export const POST = async (req: NextRequest) => {
   if (!resumeId || !jobId || !selectedModel) {
     return NextResponse.json(
       { error: "Resume ID, Job ID, and model selection required" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -61,8 +64,36 @@ export const POST = async (req: NextRequest) => {
       getJobDetails(jobId),
     ]);
 
-    const resumeText = await convertResumeToText(resume);
-    const jobText = await convertJobToText(job);
+    // Preprocess both resume and job description for consistency
+    const [resumePreprocessResult, jobPreprocessResult] = await Promise.all([
+      preprocessResume(resume),
+      preprocessJob(job),
+    ]);
+
+    // Check resume preprocessing
+    if (!resumePreprocessResult.success) {
+      return NextResponse.json(
+        {
+          error: resumePreprocessResult.error.message,
+          code: resumePreprocessResult.error.code,
+        },
+        { status: 400 },
+      );
+    }
+
+    // Check job preprocessing
+    if (!jobPreprocessResult.success) {
+      return NextResponse.json(
+        {
+          error: jobPreprocessResult.error.message,
+          code: jobPreprocessResult.error.code,
+        },
+        { status: 400 },
+      );
+    }
+
+    const { normalizedText: resumeText } = resumePreprocessResult.data;
+    const { normalizedText: jobText } = jobPreprocessResult.data;
 
     // Use semantic analysis for skill matching
     const [skillMatch, similarity] = await Promise.all([
@@ -70,13 +101,13 @@ export const POST = async (req: NextRequest) => {
         resumeText,
         jobText,
         selectedModel.provider,
-        selectedModel.model || "llama3.2"
+        selectedModel.model || "llama3.2",
       ),
       calculateSemanticSimilarity(
         resumeText,
         jobText,
         selectedModel.provider,
-        selectedModel.model || "llama3.2"
+        selectedModel.model || "llama3.2",
       ),
     ]);
 
@@ -98,7 +129,7 @@ Use these results in your scoring decisions.`;
 
     const model = getModel(
       selectedModel.provider,
-      selectedModel.model || "llama3.2"
+      selectedModel.model || "llama3.2",
     );
 
     const result = streamText({
@@ -127,7 +158,7 @@ Use these results in your scoring decisions.`;
         {
           error: `Cannot connect to ${selectedModel.provider} service. Please ensure the service is running.`,
         },
-        { status: 503 }
+        { status: 503 },
       );
     }
 
