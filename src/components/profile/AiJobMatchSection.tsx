@@ -51,7 +51,8 @@ export const AiJobMatchSection = ({
 
   const selectedModel: AiModel = getFromLocalStorage(
     "aiSettings",
-    defaultModel
+
+    defaultModel,
   );
   const resumesRef = useRef<Resume[]>([]);
 
@@ -98,7 +99,7 @@ export const AiJobMatchSection = ({
     setRunningModelError("");
     const result = await checkIfModelIsRunning(
       selectedModel.model,
-      selectedModel.provider
+      selectedModel.provider,
     );
     if (result.isRunning && result.runningModelName) {
       setRunningModelName(result.runningModelName);
@@ -213,9 +214,6 @@ export const AiJobMatchSection = ({
               <div className="flex items-center flex-col mt-4">
                 <Loading />
                 <div className="mt-2">Analyzing job match...</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Agent is comparing qualifications
-                </div>
               </div>
             ) : (
               <AiJobMatchResponseContent

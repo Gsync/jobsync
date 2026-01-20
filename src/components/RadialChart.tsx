@@ -25,7 +25,7 @@ export function RadialChartComponent({ score }: { score: number }) {
   return (
     <ChartContainer
       config={chartConfig}
-      className="mx-auto aspect-square w-full max-w-[180px] max-h-[180px]"
+      className="mx-auto aspect-square w-full max-w-[180px] mb-[-40px]"
     >
       <RadialBarChart
         data={chartData}

@@ -58,7 +58,7 @@ export const AiJobMatchResponseContent = ({
       )}
 
       {summary && (
-        <div className={matchScore !== undefined ? "mt-[-30px]" : ""}>
+        <div>
           <SectionHeader title="Summary" />
           <SheetDescription>{summary}</SheetDescription>
         </div>
@@ -76,7 +76,7 @@ export const AiJobMatchResponseContent = ({
                       <ListItem key={i}>
                         <strong>{req.requirement}</strong>: {req.evidence}
                       </ListItem>
-                    )
+                    ),
                 )}
               </ul>
             </>
@@ -90,11 +90,9 @@ export const AiJobMatchResponseContent = ({
                     req && (
                       <ListItem key={i}>
                         <strong>{req.requirement}</strong>: {req.evidence}{" "}
-                        <span className="text-amber-600">
-                          (Gap: {req.gap})
-                        </span>
+                        <span className="text-amber-600">(Gap: {req.gap})</span>
                       </ListItem>
-                    )
+                    ),
                 )}
               </ul>
             </>
@@ -123,7 +121,7 @@ export const AiJobMatchResponseContent = ({
                           Suggestion: {req.suggestion}
                         </span>
                       </ListItem>
-                    )
+                    ),
                 )}
               </ul>
             </>
@@ -226,7 +224,7 @@ export const AiJobMatchResponseContent = ({
           <SectionHeader title="Deal Breakers" />
           <ul className="text-sm text-red-600">
             {dealBreakers.map(
-              (item, i) => item && <ListItem key={i}>{item}</ListItem>
+              (item, i) => item && <ListItem key={i}>{item}</ListItem>,
             )}
           </ul>
         </>
@@ -242,7 +240,7 @@ export const AiJobMatchResponseContent = ({
                   <ListItem key={i}>
                     <strong>{tip.section}:</strong> {tip.action}
                   </ListItem>
-                )
+                ),
             )}
           </ul>
         </>

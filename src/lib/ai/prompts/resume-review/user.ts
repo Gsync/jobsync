@@ -40,10 +40,11 @@ ${resumeText}
    - Key by section name (Summary, Experience, Skills, Education, etc.)
    - Provide status (good/needsWork/missing) and specific feedback
 
-6. **ATS Issues** - List formatting/content issues:
-   - Tables, graphics, unusual fonts
-   - Missing standard sections
-   - Parsing problems
+6. **ATS Issues** - Only list issues that ACTUALLY EXIST in this resume:
+   - Check for: tables, graphics, unusual fonts (only report if found)
+   - Check for: missing standard sections like Education, Skills (only report if truly missing)
+   - Check for: parsing problems (only report if present)
+   - If no ATS issues exist, return an empty array
 
 7. **Top Improvements** - Prioritize 3-5 changes:
    - Rank by impact (priority 1 = highest)

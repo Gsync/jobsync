@@ -30,7 +30,7 @@ const ScoresSection = ({
   return (
     <div className="pt-4">
       {scores.overall !== undefined && (
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center">
           <RadialChartComponent score={scores.overall} />
         </div>
       )}
@@ -39,10 +39,12 @@ const ScoresSection = ({
           (item) =>
             item.value !== undefined && (
               <div key={item.label} className="text-center">
-                <div className="text-xs text-muted-foreground">{item.label}</div>
+                <div className="text-xs text-muted-foreground">
+                  {item.label}
+                </div>
                 <div className="font-semibold">{item.value}</div>
               </div>
-            )
+            ),
         )}
       </div>
     </div>
@@ -108,7 +110,9 @@ const AchievementsSection = ({
               Suggested Metrics to Add
             </div>
             <ul className="text-sm text-muted-foreground space-y-1">
-              {missingMetrics.map((item, i) => item && <li key={i}>- {item}</li>)}
+              {missingMetrics.map(
+                (item, i) => item && <li key={i}>- {item}</li>,
+              )}
             </ul>
           </div>
         )}
@@ -148,7 +152,7 @@ const KeywordsSection = ({
                     <Badge key={i} variant="secondary" className="text-xs">
                       {kw}
                     </Badge>
-                  )
+                  ),
               )}
             </div>
           </div>
@@ -165,14 +169,16 @@ const KeywordsSection = ({
                     <Badge key={i} variant="outline" className="text-xs">
                       {kw}
                     </Badge>
-                  )
+                  ),
               )}
             </div>
           </div>
         )}
         {overused && overused.length > 0 && (
           <div>
-            <div className="text-xs font-medium text-red-600 mb-1">Overused</div>
+            <div className="text-xs font-medium text-red-600 mb-1">
+              Overused
+            </div>
             <div className="flex flex-wrap gap-1">
               {overused.map(
                 (kw, i) =>
@@ -180,7 +186,7 @@ const KeywordsSection = ({
                     <Badge key={i} variant="destructive" className="text-xs">
                       {kw}
                     </Badge>
-                  )
+                  ),
               )}
             </div>
           </div>
@@ -223,7 +229,7 @@ const ActionVerbsSection = ({
                     <Badge key={i} variant="secondary" className="text-xs">
                       {v}
                     </Badge>
-                  )
+                  ),
               )}
             </div>
           </div>
@@ -240,7 +246,7 @@ const ActionVerbsSection = ({
                     <Badge key={i} variant="outline" className="text-xs">
                       {v}
                     </Badge>
-                  )
+                  ),
               )}
             </div>
           </div>
@@ -256,11 +262,13 @@ const ActionVerbsSection = ({
                   s?.replace &&
                   s?.with && (
                     <li key={i} className="flex items-center gap-1">
-                      <span className="line-through text-red-500">{s.replace}</span>
+                      <span className="line-through text-red-500">
+                        {s.replace}
+                      </span>
                       <ArrowRight className="h-3 w-3" />
                       <span className="text-green-600">{s.with}</span>
                     </li>
-                  )
+                  ),
               )}
             </ul>
           </div>
@@ -275,7 +283,8 @@ const SectionFeedbackSection = ({
 }: {
   sectionFeedback?: DeepPartial<ResumeReviewResponse["sectionFeedback"]>;
 }) => {
-  if (!sectionFeedback || Object.keys(sectionFeedback).length === 0) return null;
+  if (!sectionFeedback || Object.keys(sectionFeedback).length === 0)
+    return null;
 
   const getStatusIcon = (status?: string) => {
     switch (status) {
@@ -311,7 +320,7 @@ const SectionFeedbackSection = ({
                     </p>
                   )}
                 </div>
-              )
+              ),
           )}
         </div>
       </AccordionContent>
@@ -319,7 +328,11 @@ const SectionFeedbackSection = ({
   );
 };
 
-const ATSIssuesSection = ({ atsIssues }: { atsIssues?: (string | undefined)[] }) => {
+const ATSIssuesSection = ({
+  atsIssues,
+}: {
+  atsIssues?: (string | undefined)[];
+}) => {
   if (!atsIssues || atsIssues.length === 0) return null;
 
   return (
@@ -336,7 +349,7 @@ const ATSIssuesSection = ({ atsIssues }: { atsIssues?: (string | undefined)[] })
                   <XCircle className="h-3 w-3 text-red-600 mt-0.5 flex-shrink-0" />
                   {issue}
                 </li>
-              )
+              ),
           )}
         </ul>
       </AccordionContent>
@@ -374,7 +387,7 @@ const TopImprovementsSection = ({
                     </p>
                   )}
                 </div>
-              )
+              ),
           )}
         </div>
       </AccordionContent>
@@ -411,18 +424,24 @@ const GrammarSection = ({
                 (err, i) =>
                   err && (
                     <div key={i} className="text-sm">
-                      <span className="line-through text-red-500">{err.text}</span>
+                      <span className="line-through text-red-500">
+                        {err.text}
+                      </span>
                       {err.correction && (
                         <>
                           <ArrowRight className="h-3 w-3 inline mx-1" />
-                          <span className="text-green-600">{err.correction}</span>
+                          <span className="text-green-600">
+                            {err.correction}
+                          </span>
                         </>
                       )}
                       {err.issue && (
-                        <p className="text-xs text-muted-foreground">{err.issue}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {err.issue}
+                        </p>
                       )}
                     </div>
-                  )
+                  ),
               )}
             </div>
           </div>
@@ -480,7 +499,19 @@ export const AiResumeReviewResponseContent = ({
       <ScoresSection scores={scores} />
       <SummarySection summary={summary} />
 
-      <Accordion type="multiple" className="w-full" defaultValue={["improvements", "achievements", "keywords", "verbs", "sections", "ats", "grammar"]}>
+      <Accordion
+        type="multiple"
+        className="w-full"
+        defaultValue={[
+          "improvements",
+          "achievements",
+          "keywords",
+          "verbs",
+          "sections",
+          "ats",
+          "grammar",
+        ]}
+      >
         <TopImprovementsSection topImprovements={topImprovements} />
         <AchievementsSection achievements={achievements} />
         <KeywordsSection keywords={keywords} />

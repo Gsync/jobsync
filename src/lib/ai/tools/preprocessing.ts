@@ -107,15 +107,25 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
       return parts.join("\n");
     };
 
+    const formatDate = (date: Date) => {
+      const d = new Date(date);
+      return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    };
+
     const formatWorkExperiences = (workExperiences?: WorkExperience[]) => {
       if (!workExperiences || workExperiences.length === 0) return "";
       return workExperiences
         .map((experience) => {
           const desc = removeHtmlTags(experience.description);
+          const startDate = formatDate(experience.startDate);
+          const endDate = experience.currentJob
+            ? "Present"
+            : formatDate(experience.endDate);
           const parts = [
             `Company: ${experience.Company.label}`,
             `Job Title: ${experience.jobTitle.label}`,
             `Location: ${experience.location.label}`,
+            `Dates: ${startDate} - ${endDate}`,
             desc ? `Description: ${desc}` : "",
           ].filter(Boolean);
           return parts.join("\n");
@@ -128,11 +138,16 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
       return educations
         .map((education) => {
           const desc = removeHtmlTags(education.description);
+          const startDate = formatDate(education.startDate);
+          const endDate = education.endDate
+            ? formatDate(education.endDate)
+            : "Present";
           const parts = [
             `Institution: ${education.institution}`,
             `Degree: ${education.degree}`,
             `Field of Study: ${education.fieldOfStudy}`,
             `Location: ${education.location.label}`,
+            `Dates: ${startDate} - ${endDate}`,
             desc ? `Description: ${desc}` : "",
           ].filter(Boolean);
           return parts.join("\n");
@@ -145,25 +160,36 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
       return sections
         .map((section) => {
           switch (section.sectionType) {
-            case SectionType.SUMMARY:
-              return `Summary: ${removeHtmlTags(section.summary?.content)}`;
-            case SectionType.EXPERIENCE:
-              return formatWorkExperiences(section.workExperiences);
-            case SectionType.EDUCATION:
-              return formatEducation(section.educations);
+            case SectionType.SUMMARY: {
+              const content = removeHtmlTags(section.summary?.content);
+              return content ? `## SUMMARY\n${content}` : "";
+            }
+            case SectionType.EXPERIENCE: {
+              const content = formatWorkExperiences(section.workExperiences);
+              return content ? `## EXPERIENCE\n${content}` : "";
+            }
+            case SectionType.EDUCATION: {
+              const content = formatEducation(section.educations);
+              return content ? `## EDUCATION\n${content}` : "";
+            }
             default:
               return "";
           }
         })
-        .join("\n");
+        .filter(Boolean)
+        .join("\n\n");
     };
 
-    const inputMessage = `
-Title: ${resume.title}
-${formatContactInfo(resume.ContactInfo)}
-${formatResumeSections(resume.ResumeSections)}
-`;
-    return resolve(inputMessage);
+    const contactInfo = formatContactInfo(resume.ContactInfo);
+    const sections = formatResumeSections(resume.ResumeSections);
+
+    const parts = [
+      `# ${resume.title}`,
+      contactInfo ? `## CONTACT\n${contactInfo}` : "",
+      sections,
+    ].filter(Boolean);
+
+    return resolve(parts.join("\n\n"));
   });
 };
 
@@ -175,7 +201,6 @@ export const preprocessResume = async (
   try {
     // Convert resume object to raw text
     const rawText = await convertResumeToText(resume);
-
     // Quick validation - fail fast if obviously invalid
     if (!rawText || rawText.trim().length < MIN_CHAR_COUNT) {
       const charCount = rawText?.trim().length || 0;
