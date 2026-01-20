@@ -71,7 +71,7 @@ export function AddJob({
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [isPending, startTransition] = useTransition();
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
-    resolver: zodResolver(AddJobFormSchema),
+    resolver: zodResolver(AddJobFormSchema) as any,
     defaultValues: {
       type: Object.keys(JOB_TYPES)[0],
       dueDate: addDays(new Date(), 3),

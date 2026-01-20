@@ -8,22 +8,22 @@ export const AddEducationFormSchema = z.object({
   sectionType: z.string().optional(),
   institution: z
     .string({
-      required_error: "Institution name is required.",
+      error: "Institution name is required.",
     })
     .min(2),
   degree: z
     .string({
-      required_error: "Degree is required.",
+      error: "Degree is required.",
     })
     .min(2),
   fieldOfStudy: z
     .string({
-      required_error: "Field of study is required.",
+      error: "Field of study is required.",
     })
     .min(2),
   location: z
     .string({
-      required_error: "Location is required.",
+      error: "Location is required.",
     })
     .min(2, {
       message: "Location name must be at least 2 characters.",

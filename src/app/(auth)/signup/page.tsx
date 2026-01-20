@@ -28,7 +28,7 @@ const FormSchema = z.object({
   }),
   email: z
     .string({
-      required_error: "Email is required.",
+      error: "Email is required.",
     })
     .min(3, {
       message: "Email must be at least 3 characters.",
@@ -36,10 +36,10 @@ const FormSchema = z.object({
     .email("Please enter a valid email."),
   password: z
     .string({
-      required_error: "Please enter your password.",
+      error: "Please enter your password.",
     })
     .min(6, {
-      message: "Name must be at least 6 characters.",
+      message: "Password must be at least 6 characters.",
     }),
 });
 

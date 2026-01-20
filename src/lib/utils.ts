@@ -97,11 +97,12 @@ export const calculatePercentageDifference = (
   return Math.round(difference);
 };
 
-export const getLast7Days = (dateType = "PP") => {
+export const getLast7Days = (dateType = "PP", baseDate?: Date) => {
   const dates = [];
+  const anchor = baseDate ? new Date(baseDate) : new Date();
   for (let i = 6; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
+    const date = new Date(anchor);
+    date.setDate(anchor.getDate() - i);
     dates.push(format(date, dateType));
   }
   return dates;

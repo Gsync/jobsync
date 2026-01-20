@@ -25,11 +25,13 @@ Job searching can be overwhelming, with numerous applications to track and deadl
 ## Key Features
 - **Application Tracker:** Keep a detailed record of all your job applications, including company details, job titles, application dates, and current status.
 
-- **Activity Monitoring Dashboard:** Visualize your job search progress with an interactive dashboard that provides insights into your application activities, success rates, and upcoming tasks.
+- **Monitoring Dashboard:** Visualize your job search progress with an interactive dashboard that provides insights into your application activities, success rates, and upcoming tasks.
 
 - **Resume Management:** Store and manage your resumes, and use it with AI to get reviews and match with job descriptions.
 
-- **AI Assistant:** Leverage the power of AI to improve your resumes and cover letters. Get personalized job matching with scoring to identify the best opportunities tailored to your profile.
+- **Task & Activity Management:** Manage tasks, track activites linked with tasks included with time tracking. 
+
+- **AI Assistant:** Leverage the power of AI to improve your resumes and match with jobs. Get personalized job matching with scoring to identify the best opportunities tailored to your profile.
 
 
 ## Free to Use and Self-Hosted
@@ -88,6 +90,12 @@ You can use default username (admin@example) and password (password123) or chang
 docker compose up
 ```
 
+***For Update (Optional)***
+Try running deployment script (deploy.sh)
+```sh
+ ./deploy.sh
+```
+
 #### Step 4 - Access the app
 * **Open [http://localhost:3000](http://localhost:3000) with your browser to access the app.**
 * If you encounter port conflicts, please change it in the docker file
@@ -107,22 +115,22 @@ docker compose up
 
 ### AI Integration
 
-#### Ollama (llama3.1)
+#### Ollama (llama3.2)
 
-Currently only works with ollama https://ollama.com to review the resume.
+Works with ollama https://ollama.com to review the resume.
 
 Please make sure ollama is installed and running on the same system to use the resume review and job matching feature.
 
-Its making use of llama3.1 model, and only tested with 8B variant, please make sure it is downloaded and included in ollama.
+AI settings will show a list of available models based on what you have in Ollama, has been tested with llama3.2 and qwen 8B variant, please make sure it is downloaded and included in ollama.
 
-***Note:*** The response is based on the resume and job description content input, for an optimal response please make sure the input content does not contain any special characters, and the length of input content is within the context length of the model in use, also avoid including unnecessary details in the job description. Although llama3.1 supports longer context length, this app only support 3000 tokens context length, model might hallicunate and give unexpected response if longer input text content is used.
+***Note:*** It is recommended to increase the ollama context length from default 4k.
 
-#### OpenAI
+#### Deepseek
 
-You must add your valid API key in the docker file, also please make sure openai provider and model is selected from the settings page, ollama is selected as the default provider.
+You must add your valid API key in the env file, also please make sure deepseek provider and model is selected from the settings page, ollama is selected as the default provider.
 
 ```
-ENV OPENAI_API_KEY=sk-xxx
+DEEPSEEK_API_KEY=your-deepseek-api-key-here
 ```
 
 ### Note

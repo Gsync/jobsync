@@ -4,3 +4,10 @@ import "@testing-library/jest-dom";
 if (typeof global.fetch === "undefined") {
   global.fetch = jest.fn();
 }
+
+// Mock ResizeObserver for Radix UI components
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};

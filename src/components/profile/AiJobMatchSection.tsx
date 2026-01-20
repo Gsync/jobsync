@@ -1,4 +1,6 @@
 "use client";
+
+import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { getResumeList } from "@/actions/profile.actions";
 import {
   Sheet,
@@ -7,7 +9,7 @@ import {
   SheetPortal,
   SheetTitle,
 } from "../ui/sheet";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Resume } from "@/models/profile.model";
 import { toast } from "../ui/use-toast";
 import {
@@ -19,7 +21,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import Loading from "../Loading";
-import { AiModel, defaultModel, JobMatchResponse } from "@/models/ai.model";
+import { AiModel, defaultModel } from "@/models/ai.model";
 import { AiJobMatchResponseContent } from "./AiJobMatchResponseContent";
 import { getFromLocalStorage } from "@/utils/localstorage.utils";
 import {
@@ -28,7 +30,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
-import { Info } from "lucide-react";
+import { Info, CheckCircle, XCircle } from "lucide-react";
+import { checkIfModelIsRunning } from "@/utils/ai.utils";
+import { JobMatchSchema } from "@/models/ai.schemas";
 
 interface AiSectionProps {
   aISectionOpen: boolean;
@@ -41,91 +45,43 @@ export const AiJobMatchSection = ({
   triggerChange,
   jobId,
 }: AiSectionProps) => {
-  const [aIContent, setAIContent] = useState<JobMatchResponse | any>("");
-  const [loading, setLoading] = useState(false);
   const [selectedResumeId, setSelectedResumeId] = useState<string>();
+  const [runningModelName, setRunningModelName] = useState<string>("");
+  const [runningModelError, setRunningModelError] = useState<string>("");
+
   const selectedModel: AiModel = getFromLocalStorage(
     "aiSettings",
-    defaultModel
-  );
 
+    defaultModel,
+  );
   const resumesRef = useRef<Resume[]>([]);
+
+  // Standard single-agent mode
+  const { object, submit, isLoading, stop } = useObject({
+    api: "/api/ai/resume/match",
+    schema: JobMatchSchema,
+    onError: (err) => {
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description: err.message || "Failed to get job match analysis",
+      });
+    },
+  });
+
   const getResumes = async () => {
     try {
-      const { data, total, success, message } = await getResumeList();
-      if (!data || data.ResumeSections?.length === 0) {
-        throw new Error("Resume content is required");
+      const { data, success, message } = await getResumeList();
+      if (!data || data.length === 0) {
+        return;
       }
       resumesRef.current = data;
       if (!success) {
-        setLoading(false);
         throw new Error(message);
       }
     } catch (error) {
       const message = "Error fetching resume list";
       const description = error instanceof Error ? error.message : message;
-      setLoading(false);
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description,
-      });
-    }
-  };
-  const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(
-    null
-  );
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  const getJobMatch = async (resumeId: string, jobId: string) => {
-    try {
-      setLoading(true);
-      // if (
-      //   abortControllerRef.current
-      //   //   && (await readerRef?.current?.closed) === false
-      // ) {
-      //   await abortStream();
-      // }
-      setAIContent("");
-      const abortController = new AbortController();
-      abortControllerRef.current = abortController;
-
-      const response = await fetch("/api/ai/resume/match", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeId, jobId, selectedModel }),
-        signal: abortController.signal,
-      });
-
-      if (!response.body) {
-        setLoading(false);
-        throw new Error("No response body");
-      }
-
-      if (!response.ok) {
-        setLoading(false);
-        throw new Error(response.statusText);
-      }
-
-      const reader = response.body.getReader();
-      readerRef.current = reader;
-      const decoder = new TextDecoder();
-      let done = false;
-      setLoading(false);
-
-      while (!done && !abortController.signal.aborted) {
-        const { value, done: doneReading } = await reader.read();
-
-        done = doneReading;
-        const chunk = decoder.decode(value, { stream: !done });
-        const parsedChunk = JSON.parse(JSON.stringify(chunk));
-        setAIContent((prev: any) => prev + parsedChunk);
-      }
-      reader.releaseLock();
-    } catch (error) {
-      const message = "Error fetching job matching response";
-      const description = error instanceof Error ? error.message : message;
-      setLoading(false);
       toast({
         variant: "destructive",
         title: "Error!",
@@ -134,21 +90,59 @@ export const AiJobMatchSection = ({
     }
   };
 
-  const abortStream = async () => {
-    abortControllerRef.current?.abort();
-    console.log("aborting stream");
-    await readerRef?.current?.cancel();
+  const getJobMatch = (resumeId: string, jobId: string) => {
+    submit({ resumeId, jobId, selectedModel });
   };
 
-  const onSelectResume = async (resumeId: string) => {
+  const checkModelStatus = useCallback(async () => {
+    setRunningModelName("");
+    setRunningModelError("");
+    const result = await checkIfModelIsRunning(
+      selectedModel.model,
+      selectedModel.provider,
+    );
+    if (result.isRunning && result.runningModelName) {
+      setRunningModelName(result.runningModelName);
+    } else if (result.error) {
+      setRunningModelError(result.error);
+    }
+  }, [selectedModel.model, selectedModel.provider]);
+
+  const onOpenChange = async (openState: boolean) => {
+    triggerChange(openState);
+    if (!openState && isLoading) {
+      stop();
+    }
+    if (openState && selectedModel.provider === "ollama") {
+      await checkModelStatus();
+    } else if (!openState) {
+      setRunningModelName("");
+      setRunningModelError("");
+      setSelectedResumeId(undefined);
+    }
+  };
+
+  const onSelectResume = (resumeId: string) => {
     setSelectedResumeId(resumeId);
-    await getJobMatch(resumeId, jobId);
+    getJobMatch(resumeId, jobId);
   };
+
   useEffect(() => {
     getResumes();
   }, []);
+
+  useEffect(() => {
+    if (aISectionOpen && selectedModel.provider === "ollama") {
+      checkModelStatus();
+    }
+  }, [aISectionOpen, selectedModel.provider, checkModelStatus]);
+
+  // Check if we have any content to show
+  const hasContent =
+    object && (object.matchScore !== undefined || object.summary);
+
   return (
-    <Sheet open={aISectionOpen} onOpenChange={triggerChange}>
+    <Sheet open={aISectionOpen} onOpenChange={onOpenChange}>
       <SheetPortal>
         <SheetContent className="overflow-y-scroll">
           <SheetHeader>
@@ -167,9 +161,34 @@ export const AiJobMatchSection = ({
               </TooltipProvider>
             </SheetTitle>
           </SheetHeader>
+
+          {selectedModel.provider === "ollama" && (
+            <>
+              {runningModelName && (
+                <div className="flex items-center gap-1 text-green-600 text-sm mt-4">
+                  <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{runningModelName} is running</span>
+                </div>
+              )}
+              {runningModelError && (
+                <div className="flex items-center gap-1 text-red-600 text-sm mt-4">
+                  <XCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{runningModelError}</span>
+                </div>
+              )}
+            </>
+          )}
+
           {!selectedResumeId && (
             <div className="mt-4">
-              <Select value={selectedResumeId} onValueChange={onSelectResume}>
+              <Select
+                value={selectedResumeId}
+                onValueChange={onSelectResume}
+                disabled={
+                  isLoading ||
+                  (selectedModel.provider === "ollama" && !runningModelName)
+                }
+              >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Select a resume" />
                 </SelectTrigger>
@@ -189,19 +208,18 @@ export const AiJobMatchSection = ({
               </Select>
             </div>
           )}
+
           <div className="mt-2">
-            {loading ? (
-              <div className="flex items-center flex-col">
+            {isLoading && !hasContent ? (
+              <div className="flex items-center flex-col mt-4">
                 <Loading />
-                <div>Loading...</div>
+                <div className="mt-2">Analyzing job match...</div>
               </div>
             ) : (
-              <>
-                <AiJobMatchResponseContent content={aIContent} />
-                {/* <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-                  <code className="text-white">{aIContent}</code>
-                </pre> */}
-              </>
+              <AiJobMatchResponseContent
+                content={object}
+                isStreaming={isLoading}
+              />
             )}
           </div>
         </SheetContent>

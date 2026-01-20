@@ -4,7 +4,7 @@ export const AddSummarySectionFormSchema = z.object({
   id: z.string().optional(),
   sectionTitle: z
     .string({
-      required_error: "Section title is required.",
+      error: "Section title is required.",
     })
     .min(1),
   sectionType: z.string().optional(),
@@ -13,7 +13,7 @@ export const AddSummarySectionFormSchema = z.object({
   resumeId: z.string().optional(),
   content: z
     .string({
-      required_error: "Summary content is required",
+      error: "Summary content is required",
     })
     .min(10),
 });

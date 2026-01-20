@@ -2,7 +2,14 @@ import prisma from "@/lib/db";
 import { calculatePercentageDifference, getLast7Days } from "@/lib/utils";
 import { getCurrentUser } from "@/utils/user.utils";
 import { Prisma } from "@prisma/client";
-import { addMinutes, format, subDays } from "date-fns";
+import {
+  addMinutes,
+  format,
+  formatISO,
+  parseISO,
+  startOfDay,
+  subDays,
+} from "date-fns";
 
 export const getJobsAppliedForPeriod = async (
   daysAgo: number
@@ -81,7 +88,7 @@ export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
     if (!user) {
       throw new Error("Not authenticated");
     }
-    const today = addMinutes(new Date(), 5);
+    const today = new Date();
     const sevenDaysAgo = subDays(today, 6);
     const activities = await prisma.activity.findMany({
       where: {
@@ -105,26 +112,25 @@ export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
       },
     });
     const groupedData = activities.reduce((acc: any, activity: any) => {
-      const day = format(new Date(activity.endTime), "PP");
+      const activityDate = startOfDay(new Date(activity.endTime));
+      const day = formatISO(activityDate, { representation: "date" });
       const activityTypeLabel = activity.activityType?.label || "Unknown";
 
       if (!acc[day]) {
-        acc[day] = { day: day.split(",")[0] };
+        acc[day] = {};
       }
 
       const durationInHours = (activity.duration || 0) / 60;
-      acc[day][activityTypeLabel] = (
-        (parseFloat(acc[day][activityTypeLabel]) || 0) + durationInHours
-      ).toFixed(1);
+      acc[day][activityTypeLabel] =
+        (acc[day][activityTypeLabel] || 0) + durationInHours;
 
       return acc;
     }, {});
-    const last7Days = getLast7Days();
-    const result = last7Days.map((date) => ({
-      day: date.split(",")[0],
-      ...groupedData[date],
+    const last7Days = getLast7Days("yyyy-MM-dd");
+    const result = last7Days.map((dateStr) => ({
+      day: format(parseISO(dateStr), "EEE, MMM d"),
+      ...groupedData[dateStr],
     }));
-
     return result;
   } catch (error) {
     const msg = "Failed to fetch activities data.";
@@ -141,8 +147,7 @@ export const getJobsActivityForPeriod = async (): Promise<any | undefined> => {
       throw new Error("Not authenticated");
     }
     const today = new Date();
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(today.getDate() - 30);
+    const sevenDaysAgo = subDays(today, 6);
     const jobData = await prisma.job.groupBy({
       by: "appliedDate",
       _count: {
@@ -162,16 +167,17 @@ export const getJobsActivityForPeriod = async (): Promise<any | undefined> => {
     });
     // Reduce to a format that groups by unique date (YYYY-MM-DD)
     const groupedPosts = jobData.reduce((acc: any, post: any) => {
-      const date = format(new Date(post.appliedDate), "PP");
+      const jobDate = startOfDay(new Date(post.appliedDate));
+      const date = formatISO(jobDate, { representation: "date" });
       acc[date] = (acc[date] || 0) + post._count._all;
       return acc;
     }, {});
     // Get the last 7 days
-    const last7Days = getLast7Days();
+    const last7Days = getLast7Days("yyyy-MM-dd");
     // Map to ensure all dates are represented with a count of 0 if necessary
-    const result = last7Days.map((date) => ({
-      day: date.split(",")[0],
-      value: groupedPosts[date] || 0,
+    const result = last7Days.map((dateStr) => ({
+      day: format(parseISO(dateStr), "EEE, MMM d"),
+      value: groupedPosts[dateStr] || 0,
     }));
 
     return result;
@@ -191,7 +197,7 @@ export const getActivityCalendarData = async (): Promise<any | undefined> => {
     }
     const today = new Date();
     const daysAgo = new Date();
-    daysAgo.setDate(today.getDate() - 356);
+    daysAgo.setDate(today.getDate() - 365);
     const jobData = await prisma.job.groupBy({
       by: "appliedDate",
       _count: {

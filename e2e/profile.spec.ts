@@ -127,7 +127,7 @@ test.describe("Profile page", () => {
   });
 
   test("should add resume work experience section", async ({ page }) => {
-    const resumeTitle = "Test Resume 5";
+    const resumeTitle = `Test Resume 5 ${Date.now()}`;
     const jobText = "Software Developer";
     await page.getByRole("link", { name: "Profile" }).click();
     await createResume(page, resumeTitle);
@@ -135,7 +135,9 @@ test.describe("Profile page", () => {
     await expect(page.getByRole("status").first()).toContainText(
       /Experience has been added/
     );
-    await expect(page.getByRole("heading", { name: jobText })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: jobText }).first()
+    ).toBeVisible();
     await deleteResume(page, resumeTitle);
     await expect(page.getByRole("status").first()).toContainText(
       /Resume has been deleted successfully/
@@ -145,7 +147,7 @@ test.describe("Profile page", () => {
   test("should add resume work experience after clicking Edit Experience section", async ({
     page,
   }) => {
-    const resumeTitle = "Test Resume 6";
+    const resumeTitle = `Test Resume 6 ${Date.now()}`;
     const jobText = "Software Developer";
     await page.getByRole("link", { name: "Profile" }).click();
     await createResume(page, resumeTitle);
@@ -153,7 +155,9 @@ test.describe("Profile page", () => {
     await expect(page.getByRole("status").first()).toContainText(
       /Experience has been added/
     );
-    await expect(page.getByRole("heading", { name: jobText })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: jobText }).first()
+    ).toBeVisible();
     await page
       .getByText(jobText + "Edit")
       .getByRole("button", { name: "Edit" })
@@ -175,11 +179,15 @@ test.describe("Profile page", () => {
   });
 
   test("should add resume education section", async ({ page }) => {
-    const resumeTitle = "Test Resume 7";
+    const resumeTitle = `Test Resume 7 ${Date.now()}`;
     const degreeText = "Bachelor of Science";
     await page.getByRole("link", { name: "Profile" }).click();
     await createResume(page, resumeTitle);
-    await page.getByTestId("resume-actions-menu-btn").first().click();
+    await page
+      .getByRole("row", { name: new RegExp(resumeTitle, "i") })
+      .first()
+      .getByTestId("resume-actions-menu-btn")
+      .click({ force: true });
     await page.getByRole("link", { name: "View/Edit Resume" }).click();
     await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible();
     await page.getByRole("button", { name: "Add Section" }).click();
@@ -237,7 +245,7 @@ test.describe("Profile page", () => {
       /Education has been added/
     );
     await expect(
-      page.getByRole("heading", { name: "test school" })
+      page.getByRole("heading", { name: "test school" }).first()
     ).toBeVisible();
     await deleteResume(page, resumeTitle);
     await expect(page.getByRole("status").first()).toContainText(
@@ -328,14 +336,13 @@ async function addExperience(page: Page, resumeTitle: string, jobText: string) {
 
 async function deleteResume(page: Page, title: string) {
   await page.getByRole("link", { name: "Profile" }).click();
-  await page
-    .getByRole("row", { name: title })
-    .first()
-    .getByTestId("resume-actions-menu-btn")
-    .click();
-  await page.getByRole("menuitem", { name: "Delete" }).click();
+  await page.waitForLoadState("networkidle");
+  const row = page.getByRole("row", { name: new RegExp(title, "i") }).first();
+  await row.waitFor({ state: "visible", timeout: 10000 });
+  await row.getByTestId("resume-actions-menu-btn").click({ force: true });
+  await page.getByRole("menuitem", { name: "Delete" }).click({ force: true });
   await expect(page.getByRole("alertdialog")).toContainText(
     "Are you sure you want to delete this resume?"
   );
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByRole("button", { name: "Delete" }).click({ force: true });
 }

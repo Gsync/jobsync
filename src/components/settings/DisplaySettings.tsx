@@ -19,7 +19,7 @@ import { useTheme } from "next-themes";
 
 const appearanceFormSchema = z.object({
   theme: z.enum(["light", "dark", "system"], {
-    required_error: "Please select a theme.",
+    error: "Please select a theme.",
   }),
 });
 

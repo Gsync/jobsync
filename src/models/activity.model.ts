@@ -19,4 +19,5 @@ export interface Activity {
   endTime?: Date;
   duration?: number;
   description?: string;
+  taskId?: string | null;
 }

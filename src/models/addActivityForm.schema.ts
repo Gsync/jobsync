@@ -9,7 +9,7 @@ export const AddActivityFormSchema = z
     userId: z.string().optional(),
     activityName: z
       .string({
-        required_error: "Activity name is required.",
+        error: "Activity name is required.",
       })
       .min(2, {
         message: "Activity name must be at least 2 characters.",

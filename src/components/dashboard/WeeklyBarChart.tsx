@@ -16,11 +16,20 @@ export default function WeeklyBarChart({
   groupMode,
   axisLeftLegend,
 }: WeeklyBarChartProps) {
+  const roundedData = data.map((item) => {
+    const newItem: any = { ...item };
+    keys.forEach((key) => {
+      if (typeof newItem[key] === "number") {
+        newItem[key] = Math.round(newItem[key] * 100) / 100;
+      }
+    });
+    return newItem;
+  });
   return (
     <Card className="mb-2 lg:mb-0">
       <CardContent className="h-[240px] p-3">
         <ResponsiveBar
-          data={data}
+          data={roundedData}
           keys={keys}
           indexBy="day"
           margin={{
