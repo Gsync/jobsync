@@ -75,6 +75,8 @@ function AiSettings() {
       const result = await checkIfModelIsRunning(model, selectedModel.provider);
       if (result.isRunning && result.runningModelName) {
         setRunningModelName(result.runningModelName);
+        // Keep the model alive indefinitely
+        await keepModelAlive(result.runningModelName);
       } else if (result.error) {
         setRunningModelError(result.error);
       }
@@ -106,7 +108,7 @@ function AiSettings() {
       if (!response.ok) {
         if (selectedModel.provider === AiProvider.OLLAMA) {
           setFetchError(
-            "Failed to fetch Ollama models. Make sure Ollama is running."
+            "Failed to fetch Ollama models. Make sure Ollama is running.",
           );
         }
         return;
@@ -121,11 +123,31 @@ function AiSettings() {
       console.error("Error fetching Ollama models:", error);
       if (selectedModel.provider === AiProvider.OLLAMA) {
         setFetchError(
-          "Failed to fetch Ollama models. Make sure Ollama is running."
+          "Failed to fetch Ollama models. Make sure Ollama is running.",
         );
       }
     } finally {
       setIsLoadingModels(false);
+    }
+  };
+
+  const keepModelAlive = async (modelName: string) => {
+    try {
+      // Send a request to keep the model loaded for 1 hour
+      await fetch("http://localhost:11434/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: modelName,
+          prompt: "",
+          keep_alive: "1h", // Keep loaded for 1 hour
+          stream: false,
+        }),
+      });
+    } catch (error) {
+      console.error("Error keeping model alive:", error);
     }
   };
 
@@ -137,7 +159,7 @@ function AiSettings() {
       if (!response.ok) {
         if (selectedModel.provider === AiProvider.OLLAMA) {
           setRunningModelError(
-            "No model is currently running. Please start a model first."
+            "No model is currently running. Please start a model first.",
           );
         }
         return;
@@ -153,17 +175,18 @@ function AiSettings() {
         // Verify the model is running using shared utility
         const result = await checkIfModelIsRunning(
           runningModelName,
-          AiProvider.OLLAMA
+          AiProvider.OLLAMA,
         );
         if (result.isRunning && result.runningModelName) {
           setRunningModelName(result.runningModelName);
+          await keepModelAlive(result.runningModelName);
         } else if (result.error) {
           setRunningModelError(result.error);
         }
       } else {
         if (selectedModel.provider === AiProvider.OLLAMA) {
           setRunningModelError(
-            "No model is currently running. Please run the ollama model first."
+            "No model is currently running. Please run the ollama model first.",
           );
         }
       }
@@ -171,7 +194,7 @@ function AiSettings() {
       console.error("Error fetching running model:", error);
       if (selectedModel.provider === AiProvider.OLLAMA) {
         setRunningModelError(
-          "No model is currently running. Please run the ollama model first."
+          "No model is currently running. Please run the ollama model first.",
         );
       }
     }
@@ -190,7 +213,9 @@ function AiSettings() {
       }
       const data: DeepseekModelResponse = await response.json();
       const modelNames = data.data.map((model) => model.id);
-      setDeepseekModels(modelNames.length > 0 ? modelNames : Object.values(DeepseekModel));
+      setDeepseekModels(
+        modelNames.length > 0 ? modelNames : Object.values(DeepseekModel),
+      );
     } catch (error) {
       console.error("Error fetching DeepSeek models:", error);
       // Fall back to enum models if API fails
@@ -316,7 +341,8 @@ function AiSettings() {
           onClick={saveModelSettings}
           disabled={
             !selectedModel.model ||
-            (selectedModel.provider === AiProvider.OLLAMA && !runningModelName) ||
+            (selectedModel.provider === AiProvider.OLLAMA &&
+              !runningModelName) ||
             isLoadingModels
           }
         >
