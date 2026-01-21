@@ -89,8 +89,29 @@ export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
     if (!user) {
       throw new Error("Not authenticated");
     }
-    const today = endOfDay(new Date());
-    const sevenDaysAgo = startOfDay(subDays(new Date(), 6));
+    const now = new Date();
+    const today = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        23,
+        59,
+        59,
+        999,
+      ),
+    );
+    const sevenDaysAgo = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() - 6,
+        0,
+        0,
+        0,
+        0,
+      ),
+    );
     const activities = await prisma.activity.findMany({
       where: {
         userId: user.id,
@@ -113,8 +134,15 @@ export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
       },
     });
     const groupedData = activities.reduce((acc: any, activity: any) => {
-      const activityDate = startOfDay(new Date(activity.endTime));
-      const day = formatISO(activityDate, { representation: "date" });
+      const activityDate = new Date(activity.endTime);
+      const day = formatISO(
+        new Date(
+          activityDate.getFullYear(),
+          activityDate.getMonth(),
+          activityDate.getDate(),
+        ),
+        { representation: "date" },
+      );
       const activityTypeLabel = activity.activityType?.label || "Unknown";
 
       if (!acc[day]) {
@@ -147,8 +175,29 @@ export const getJobsActivityForPeriod = async (): Promise<any | undefined> => {
     if (!user) {
       throw new Error("Not authenticated");
     }
-    const today = endOfDay(new Date());
-    const sevenDaysAgo = startOfDay(subDays(new Date(), 6));
+    const now = new Date();
+    const today = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        23,
+        59,
+        59,
+        999,
+      ),
+    );
+    const sevenDaysAgo = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() - 6,
+        0,
+        0,
+        0,
+        0,
+      ),
+    );
     const jobData = await prisma.job.groupBy({
       by: "appliedDate",
       _count: {
@@ -168,8 +217,11 @@ export const getJobsActivityForPeriod = async (): Promise<any | undefined> => {
     });
     // Reduce to a format that groups by unique date (YYYY-MM-DD)
     const groupedPosts = jobData.reduce((acc: any, post: any) => {
-      const jobDate = startOfDay(new Date(post.appliedDate));
-      const date = formatISO(jobDate, { representation: "date" });
+      const jobDate = new Date(post.appliedDate);
+      const date = formatISO(
+        new Date(jobDate.getFullYear(), jobDate.getMonth(), jobDate.getDate()),
+        { representation: "date" },
+      );
       acc[date] = (acc[date] || 0) + post._count._all;
       return acc;
     }, {});
@@ -196,9 +248,29 @@ export const getActivityCalendarData = async (): Promise<any | undefined> => {
     if (!user) {
       throw new Error("Not authenticated");
     }
-    const today = startOfDay(new Date());
-    const daysAgo = new Date();
-    daysAgo.setDate(today.getDate() - 365);
+    const now = new Date();
+    const today = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        23,
+        59,
+        59,
+        999,
+      ),
+    );
+    const daysAgo = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() - 365,
+        0,
+        0,
+        0,
+        0,
+      ),
+    );
     const jobData = await prisma.job.groupBy({
       by: "appliedDate",
       _count: {
