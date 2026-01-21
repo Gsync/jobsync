@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/utils/user.utils";
 import { Prisma } from "@prisma/client";
 import {
   addMinutes,
+  endOfDay,
   format,
   formatISO,
   parseISO,
@@ -12,7 +13,7 @@ import {
 } from "date-fns";
 
 export const getJobsAppliedForPeriod = async (
-  daysAgo: number
+  daysAgo: number,
 ): Promise<any | undefined> => {
   const user = await getCurrentUser();
 
@@ -88,8 +89,8 @@ export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
     if (!user) {
       throw new Error("Not authenticated");
     }
-    const today = new Date();
-    const sevenDaysAgo = subDays(today, 6);
+    const today = endOfDay(new Date());
+    const sevenDaysAgo = startOfDay(subDays(new Date(), 6));
     const activities = await prisma.activity.findMany({
       where: {
         userId: user.id,
@@ -146,8 +147,8 @@ export const getJobsActivityForPeriod = async (): Promise<any | undefined> => {
     if (!user) {
       throw new Error("Not authenticated");
     }
-    const today = new Date();
-    const sevenDaysAgo = subDays(today, 6);
+    const today = endOfDay(new Date());
+    const sevenDaysAgo = startOfDay(subDays(new Date(), 6));
     const jobData = await prisma.job.groupBy({
       by: "appliedDate",
       _count: {
@@ -195,7 +196,7 @@ export const getActivityCalendarData = async (): Promise<any | undefined> => {
     if (!user) {
       throw new Error("Not authenticated");
     }
-    const today = new Date();
+    const today = startOfDay(new Date());
     const daysAgo = new Date();
     daysAgo.setDate(today.getDate() - 365);
     const jobData = await prisma.job.groupBy({
@@ -241,7 +242,7 @@ export const getActivityCalendarData = async (): Promise<any | undefined> => {
         acc[year].push({ day: date, value });
         return acc;
       },
-      {}
+      {},
     );
 
     return groupedByYear;

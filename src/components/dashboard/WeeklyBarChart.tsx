@@ -81,15 +81,24 @@ export default function WeeklyBarChart({
             truncateTickAt: 0,
           }}
           motionConfig="gentle"
-          // tooltip={({ value, color }) => (
+          // tooltip={({ id, value, color, indexValue }) => (
           //   <div
           //     style={{
-          //       padding: 6,
-          //       color,
-          //       background: "#fff",
+          //       padding: 8,
+          //       background: "#1e293b",
+          //       color: "#fff",
+          //       borderRadius: 4,
+          //       fontSize: 14,
+          //       minWidth: 120,
           //     }}
           //   >
-          //     <strong>Jobs Applied: {value}</strong>
+          //     <div>
+          //       <span style={{ color }}>{id}:</span>{" "}
+          //       <strong>
+          //         {value}
+          //         {axisLeftLegend.includes("Hours") && "h"}
+          //       </strong>
+          //     </div>
           //   </div>
           // )}
         />
