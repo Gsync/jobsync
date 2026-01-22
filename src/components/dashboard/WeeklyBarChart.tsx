@@ -42,6 +42,7 @@ export default function WeeklyBarChart({
           groupMode={groupMode}
           colors={groupMode === "stacked" ? { scheme: "nivo" } : "#2a7ef0"}
           enableTotals={groupMode === "stacked" ? true : false}
+          valueFormat={(value) => value.toFixed(2)}
           theme={{
             text: {
               fill: "#9ca3af",
