@@ -5,6 +5,7 @@ import {
   CalendarClock,
   UserRound,
   Sheet,
+  Wrench,
 } from "lucide-react";
 
 export enum APP_CONSTANTS {
@@ -43,5 +44,11 @@ export const SIDEBAR_LINKS = [
     icon: Sheet,
     route: "/dashboard/admin",
     label: "Administration",
+  },
+  {
+    icon: Wrench,
+    route: "/dashboard/developer",
+    label: "Developer Options",
+    devOnly: true,
   },
 ];

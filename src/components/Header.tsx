@@ -39,6 +39,10 @@ async function Header() {
               </Link>
             </SheetClose>
             {SIDEBAR_LINKS.map((item) => {
+              // Only show dev-only items in development mode
+              if (item.devOnly && process.env.NODE_ENV !== "development") {
+                return null;
+              }
               return (
                 <SheetClose asChild key={item.label}>
                   <Link
