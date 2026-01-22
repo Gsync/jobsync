@@ -62,6 +62,13 @@ For example, add it to your .env local file:
 AUTH_SECRET="your_generated_secret"
 ```
 
+**Important**
+If you are running it on a remote server/homelab, you must update timezone otherwise activities times may shift
+
+```sh 
+TZ=America/Edmonton
+```
+
 ##### For npm
 
 ```sh
@@ -91,9 +98,15 @@ docker compose up
 ```
 
 ***For Update (Optional)***
-Try running deployment script (deploy.sh)
+Try running deployment script (deploy.sh) - with clone
+
 ```sh
  ./deploy.sh
+```
+OR - without clone
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Gsync/jobsync/main/deploy.sh | sudo bash -s
 ```
 
 #### Step 4 - Access the app
