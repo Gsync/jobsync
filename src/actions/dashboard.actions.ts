@@ -2,15 +2,7 @@ import prisma from "@/lib/db";
 import { calculatePercentageDifference, getLast7Days } from "@/lib/utils";
 import { getCurrentUser } from "@/utils/user.utils";
 import { Prisma } from "@prisma/client";
-import {
-  addMinutes,
-  endOfDay,
-  format,
-  formatISO,
-  parseISO,
-  startOfDay,
-  subDays,
-} from "date-fns";
+import { format, parseISO, subDays } from "date-fns";
 
 export const getJobsAppliedForPeriod = async (
   daysAgo: number,
@@ -90,27 +82,24 @@ export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
       throw new Error("Not authenticated");
     }
     const now = new Date();
+    // Use local time for date range to match grouping and getLast7Days
     const today = new Date(
-      Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate(),
-        23,
-        59,
-        59,
-        999,
-      ),
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59,
+      999,
     );
     const sevenDaysAgo = new Date(
-      Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate() - 6,
-        0,
-        0,
-        0,
-        0,
-      ),
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - 6,
+      0,
+      0,
+      0,
+      0,
     );
     const activities = await prisma.activity.findMany({
       where: {
@@ -134,15 +123,9 @@ export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
       },
     });
     const groupedData = activities.reduce((acc: any, activity: any) => {
+      // Use local date for grouping to match user's perception
       const activityDate = new Date(activity.endTime);
-      const day = formatISO(
-        new Date(
-          activityDate.getFullYear(),
-          activityDate.getMonth(),
-          activityDate.getDate(),
-        ),
-        { representation: "date" },
-      );
+      const day = format(activityDate, "yyyy-MM-dd");
       const activityTypeLabel = activity.activityType?.label || "Unknown";
 
       if (!acc[day]) {
@@ -176,27 +159,24 @@ export const getJobsActivityForPeriod = async (): Promise<any | undefined> => {
       throw new Error("Not authenticated");
     }
     const now = new Date();
+    // Use local time for date range to match grouping and getLast7Days
     const today = new Date(
-      Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate(),
-        23,
-        59,
-        59,
-        999,
-      ),
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59,
+      999,
     );
     const sevenDaysAgo = new Date(
-      Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate() - 6,
-        0,
-        0,
-        0,
-        0,
-      ),
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - 6,
+      0,
+      0,
+      0,
+      0,
     );
     const jobData = await prisma.job.groupBy({
       by: "appliedDate",
@@ -215,17 +195,13 @@ export const getJobsActivityForPeriod = async (): Promise<any | undefined> => {
         appliedDate: "asc",
       },
     });
-    // Reduce to a format that groups by unique date (YYYY-MM-DD)
+    // Reduce to a format that groups by unique date (YYYY-MM-DD) using local time
     const groupedPosts = jobData.reduce((acc: any, post: any) => {
-      const jobDate = new Date(post.appliedDate);
-      const date = formatISO(
-        new Date(jobDate.getFullYear(), jobDate.getMonth(), jobDate.getDate()),
-        { representation: "date" },
-      );
+      const date = format(new Date(post.appliedDate), "yyyy-MM-dd");
       acc[date] = (acc[date] || 0) + post._count._all;
       return acc;
     }, {});
-    // Get the last 7 days
+    // Get the last 7 days in local time
     const last7Days = getLast7Days("yyyy-MM-dd");
     // Map to ensure all dates are represented with a count of 0 if necessary
     const result = last7Days.map((dateStr) => ({
@@ -249,27 +225,24 @@ export const getActivityCalendarData = async (): Promise<any | undefined> => {
       throw new Error("Not authenticated");
     }
     const now = new Date();
+    // Use local time for date range to match grouping
     const today = new Date(
-      Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate(),
-        23,
-        59,
-        59,
-        999,
-      ),
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59,
+      999,
     );
     const daysAgo = new Date(
-      Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate() - 365,
-        0,
-        0,
-        0,
-        0,
-      ),
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - 365,
+      0,
+      0,
+      0,
+      0,
     );
     const jobData = await prisma.job.groupBy({
       by: "appliedDate",
@@ -280,7 +253,7 @@ export const getActivityCalendarData = async (): Promise<any | undefined> => {
         userId: user.id,
         applied: true,
         appliedDate: {
-          gte: daysAgo, // A year of data
+          gte: daysAgo,
           lte: today,
         },
       },
