@@ -48,6 +48,12 @@ function AddCompany({
 
   const form = useForm<z.infer<typeof AddCompanyFormSchema>>({
     resolver: zodResolver(AddCompanyFormSchema),
+    defaultValues: {
+      company: "",
+      logoUrl: "",
+      id: undefined,
+      createdBy: undefined,
+    },
   });
 
   const { reset, formState } = form;
@@ -61,14 +67,16 @@ function AddCompany({
           createdBy: editCompany?.createdBy,
           logoUrl: editCompany?.logoUrl ?? "",
         },
-        { keepDefaultValues: true }
+        { keepDefaultValues: true },
       );
     }
   }, [editCompany, reset]);
 
   const addCompanyForm = () => {
-    reset();
-    resetEditCompany();
+    if (!editCompany) {
+      reset();
+      resetEditCompany();
+    }
     setDialogOpen(true);
   };
 

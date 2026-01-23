@@ -1,6 +1,5 @@
 "use client";
 import { Button } from "../ui/button";
-import Image from "next/image";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -99,12 +98,11 @@ function CompaniesTable({
             return (
               <TableRow key={company.id}>
                 <TableCell className="hidden sm:table-cell">
-                  <Image
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     alt="Company logo"
-                    className="aspect-square rounded-md object-cover"
-                    height="32"
+                    className="w-8 h-8 rounded-md object-cover"
                     src={company.logoUrl || "/images/jobsync-logo.svg"}
-                    width="32"
                   />
                 </TableCell>
                 <TableCell className="font-medium">{company.label}</TableCell>

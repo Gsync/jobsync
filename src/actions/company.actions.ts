@@ -9,7 +9,7 @@ import { z } from "zod";
 export const getCompanyList = async (
   page = 1,
   limit = 10,
-  countBy?: string
+  countBy?: string,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -84,8 +84,22 @@ export const getAllCompanies = async (): Promise<any | undefined> => {
   }
 };
 
+const isValidImageUrl = (url: string): boolean => {
+  if (!url) return true;
+  try {
+    const urlObj = new URL(url);
+    // Only allow http and https protocols
+    if (!["http:", "https:"].includes(urlObj.protocol)) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export const addCompany = async (
-  data: z.infer<typeof AddCompanyFormSchema>
+  data: z.infer<typeof AddCompanyFormSchema>,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -95,6 +109,13 @@ export const addCompany = async (
     }
 
     const { company, logoUrl } = data;
+
+    // Validate image URL
+    if (logoUrl && !isValidImageUrl(logoUrl)) {
+      throw new Error(
+        "Invalid logo URL. Only http and https protocols are allowed.",
+      );
+    }
 
     const value = company.trim().toLowerCase();
 
@@ -125,7 +146,7 @@ export const addCompany = async (
 };
 
 export const updateCompany = async (
-  data: z.infer<typeof AddCompanyFormSchema>
+  data: z.infer<typeof AddCompanyFormSchema>,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -140,6 +161,13 @@ export const updateCompany = async (
       throw new Error("Id is not provided or no user privilages");
     }
 
+    // Validate image URL
+    if (logoUrl && !isValidImageUrl(logoUrl)) {
+      throw new Error(
+        "Invalid logo URL. Only http and https protocols are allowed.",
+      );
+    }
+
     const value = company.trim().toLowerCase();
 
     const companyExists = await prisma.company.findUnique({
@@ -148,7 +176,7 @@ export const updateCompany = async (
       },
     });
 
-    if (companyExists) {
+    if (companyExists && companyExists.id !== id) {
       throw new Error("Company already exists!");
     }
 
@@ -171,7 +199,7 @@ export const updateCompany = async (
 };
 
 export const getCompanyById = async (
-  companyId: string
+  companyId: string,
 ): Promise<any | undefined> => {
   try {
     if (!companyId) {
@@ -199,7 +227,7 @@ export const getCompanyById = async (
 };
 
 export const deleteCompanyById = async (
-  companyId: string
+  companyId: string,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -215,7 +243,7 @@ export const deleteCompanyById = async (
     });
     if (experiences > 0) {
       throw new Error(
-        `Company cannot be deleted due to its use in experience section of one of the resume! `
+        `Company cannot be deleted due to its use in experience section of one of the resume! `,
       );
     }
     const jobs = await prisma.job.count({
@@ -226,7 +254,7 @@ export const deleteCompanyById = async (
 
     if (jobs > 0) {
       throw new Error(
-        `Company cannot be deleted due to ${jobs} number of associated jobs! `
+        `Company cannot be deleted due to ${jobs} number of associated jobs! `,
       );
     }
 
