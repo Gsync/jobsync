@@ -192,7 +192,13 @@ function TasksTable({
           task.status === "complete" && "line-through",
         )}
       >
-        {task.title}
+        <button
+          onClick={() => editTask(task.id)}
+          className="text-left hover:underline cursor-pointer"
+          aria-label={`Edit ${task.title}`}
+        >
+          {task.title}
+        </button>
       </TableCell>
       <TableCell className="py-1 px-2">
         {task.activityType?.label || "—"}
