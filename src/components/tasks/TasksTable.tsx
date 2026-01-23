@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
-import { format, isToday, isTomorrow, isPast, isThisWeek } from "date-fns";
+import { format, isToday, isTomorrow, isPast, isThisWeek, parse } from "date-fns";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -419,7 +419,10 @@ function TasksTable({
       <>
         {sortedDates.map((dateStr) => {
           const groupTasks = groupedTasks[dateStr];
-          const displayDate = format(new Date(dateStr), "MMM d, yyyy");
+          const date = parse(dateStr, "yyyy-MM-dd", new Date());
+          const displayDate = isToday(date)
+            ? "Today"
+            : format(date, "MMM d, yyyy");
 
           return (
             <div key={dateStr} className="mb-6">
@@ -451,7 +454,10 @@ function TasksTable({
       <>
         {sortedDates.map((dateStr) => {
           const groupTasks = groupedTasks[dateStr];
-          const displayDate = format(new Date(dateStr), "MMM d, yyyy");
+          const date = parse(dateStr, "yyyy-MM-dd", new Date());
+          const displayDate = isToday(date)
+            ? "Today"
+            : format(date, "MMM d, yyyy");
 
           return (
             <div key={dateStr} className="mb-6">
