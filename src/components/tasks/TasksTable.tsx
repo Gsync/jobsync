@@ -42,7 +42,7 @@ type TasksTableProps = {
   editTask: (id: string) => void;
   onChangeTaskStatus: (id: string, status: TaskStatus) => void;
   onStartActivity: (id: string) => void;
-  groupBy?: "none" | "date" | "activityType";
+  groupBy?: "none" | "createdDate" | "dueDate" | "updatedDate" | "activityType";
 };
 
 const statusColors: Record<TaskStatus, string> = {
@@ -59,6 +59,9 @@ type DateGroup =
   | "This Week"
   | "Later"
   | "No Due Date";
+
+type CreatedDateGroup = string; // Format: "YYYY-MM-DD"
+type UpdatedDateGroup = string; // Format: "YYYY-MM-DD"
 
 function getDateGroup(dueDate: Date | null | undefined): DateGroup {
   if (!dueDate) return "No Due Date";
@@ -102,6 +105,40 @@ function groupTasksByActivityType(tasks: Task[]): Record<string, Task[]> {
   return groups;
 }
 
+function groupTasksByCreatedDate(
+  tasks: Task[],
+): Record<CreatedDateGroup, Task[]> {
+  const groups: Record<CreatedDateGroup, Task[]> = {};
+
+  tasks.forEach((task) => {
+    const dateStr = format(new Date(task.createdAt), "yyyy-MM-dd");
+    const key = dateStr;
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+    groups[key].push(task);
+  });
+
+  return groups;
+}
+
+function groupTasksByUpdatedDate(
+  tasks: Task[],
+): Record<UpdatedDateGroup, Task[]> {
+  const groups: Record<UpdatedDateGroup, Task[]> = {};
+
+  tasks.forEach((task) => {
+    const dateStr = format(new Date(task.updatedAt), "yyyy-MM-dd");
+    const key = dateStr;
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+    groups[key].push(task);
+  });
+
+  return groups;
+}
+
 function TasksTable({
   tasks,
   deleteTask,
@@ -123,7 +160,7 @@ function TasksTable({
       key={task.id}
       className={cn(
         "group relative h-9",
-        task.status === "complete" && "opacity-60"
+        task.status === "complete" && "opacity-60",
       )}
     >
       <TableCell className="w-[24px] py-1 pl-1 pr-1">
@@ -131,14 +168,14 @@ function TasksTable({
           onClick={() =>
             onChangeTaskStatus(
               task.id,
-              task.status === "complete" ? "in-progress" : "complete"
+              task.status === "complete" ? "in-progress" : "complete",
             )
           }
           className={cn(
             "h-5 w-5 rounded border flex items-center justify-center transition-colors",
             task.status === "complete"
               ? "bg-green-500 border-green-500 text-white"
-              : "border-gray-300 hover:border-gray-400"
+              : "border-gray-300 hover:border-gray-400",
           )}
           aria-label={
             task.status === "complete"
@@ -152,7 +189,7 @@ function TasksTable({
       <TableCell
         className={cn(
           "py-1 px-2 font-medium",
-          task.status === "complete" && "line-through"
+          task.status === "complete" && "line-through",
         )}
       >
         {task.title}
@@ -164,7 +201,7 @@ function TasksTable({
         <Badge
           className={cn(
             "min-w-[120px] whitespace-nowrap justify-center",
-            statusColors[task.status]
+            statusColors[task.status],
           )}
         >
           {TASK_STATUSES[task.status]}
@@ -217,7 +254,7 @@ function TasksTable({
                         >
                           <span>{TASK_STATUSES[status]}</span>
                         </DropdownMenuItem>
-                      )
+                      ),
                     )}
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
@@ -296,7 +333,7 @@ function TasksTable({
     );
   }
 
-  if (groupBy === "date") {
+  if (groupBy === "dueDate") {
     const groupedTasks = groupTasksByDate(tasks);
     const groupOrder: DateGroup[] = [
       "Overdue",
@@ -320,7 +357,7 @@ function TasksTable({
                   "text-sm font-semibold mb-2 px-2 py-1",
                   group === "Overdue",
                   group === "Today",
-                  group === "Tomorrow"
+                  group === "Tomorrow",
                 )}
               >
                 {group} ({groupTasks.length})
@@ -358,6 +395,70 @@ function TasksTable({
             </Table>
           </div>
         ))}
+        <DeleteAlertDialog
+          pageTitle="task"
+          open={alertOpen}
+          onOpenChange={setAlertOpen}
+          onDelete={() => deleteTask(taskIdToDelete)}
+        />
+      </>
+    );
+  }
+
+  if (groupBy === "createdDate") {
+    const groupedTasks = groupTasksByCreatedDate(tasks);
+    const sortedDates = Object.keys(groupedTasks).sort().reverse();
+
+    return (
+      <>
+        {sortedDates.map((dateStr) => {
+          const groupTasks = groupedTasks[dateStr];
+          const displayDate = format(new Date(dateStr), "MMM d, yyyy");
+
+          return (
+            <div key={dateStr} className="mb-6">
+              <h3 className="text-sm font-semibold mb-2 px-2 py-1">
+                {displayDate} ({groupTasks.length})
+              </h3>
+              <Table>
+                {renderTableHeader()}
+                <TableBody>{groupTasks.map(renderTaskRow)}</TableBody>
+              </Table>
+            </div>
+          );
+        })}
+        <DeleteAlertDialog
+          pageTitle="task"
+          open={alertOpen}
+          onOpenChange={setAlertOpen}
+          onDelete={() => deleteTask(taskIdToDelete)}
+        />
+      </>
+    );
+  }
+
+  if (groupBy === "updatedDate") {
+    const groupedTasks = groupTasksByUpdatedDate(tasks);
+    const sortedDates = Object.keys(groupedTasks).sort().reverse();
+
+    return (
+      <>
+        {sortedDates.map((dateStr) => {
+          const groupTasks = groupedTasks[dateStr];
+          const displayDate = format(new Date(dateStr), "MMM d, yyyy");
+
+          return (
+            <div key={dateStr} className="mb-6">
+              <h3 className="text-sm font-semibold mb-2 px-2 py-1">
+                {displayDate} ({groupTasks.length})
+              </h3>
+              <Table>
+                {renderTableHeader()}
+                <TableBody>{groupTasks.map(renderTaskRow)}</TableBody>
+              </Table>
+            </div>
+          );
+        })}
         <DeleteAlertDialog
           pageTitle="task"
           open={alertOpen}

@@ -64,12 +64,12 @@ function TasksContainer({
   const [totalTasks, setTotalTasks] = useState(0);
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(false);
-  const [groupBy, setGroupBy] = useState<"none" | "date" | "activityType">(
-    "none"
-  );
+  const [groupBy, setGroupBy] = useState<
+    "none" | "createdDate" | "dueDate" | "updatedDate" | "activityType"
+  >("none");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<TaskStatus[]>(
-    DEFAULT_STATUS_FILTER
+    DEFAULT_STATUS_FILTER,
   );
 
   const tasksPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
@@ -81,7 +81,7 @@ function TasksContainer({
         pageNum,
         tasksPerPage,
         filter,
-        statuses
+        statuses,
       );
       if (success && data) {
         setTasks((prev) => (pageNum === 1 ? data : [...prev, ...data]));
@@ -97,7 +97,7 @@ function TasksContainer({
         setLoading(false);
       }
     },
-    [tasksPerPage]
+    [tasksPerPage],
   );
 
   const reloadTasks = useCallback(async () => {
@@ -144,7 +144,7 @@ function TasksContainer({
   const onChangeTaskStatus = async (taskId: string, status: TaskStatus) => {
     const originalTasks = [...tasks];
     setTasks((prev) =>
-      prev.map((task) => (task.id === taskId ? { ...task, status } : task))
+      prev.map((task) => (task.id === taskId ? { ...task, status } : task)),
     );
 
     const { success, message } = await updateTaskStatus(taskId, status);
@@ -190,14 +190,21 @@ function TasksContainer({
   }, [loadTasks, filterKey, statusFilter]);
 
   const onGroupByChange = (value: string) => {
-    setGroupBy(value as "none" | "date" | "activityType");
+    setGroupBy(
+      value as
+        | "none"
+        | "createdDate"
+        | "dueDate"
+        | "updatedDate"
+        | "activityType",
+    );
   };
 
   const toggleStatusFilter = (status: TaskStatus) => {
     setStatusFilter((prev) =>
       prev.includes(status)
         ? prev.filter((s) => s !== status)
-        : [...prev, status]
+        : [...prev, status],
     );
   };
 
@@ -229,7 +236,7 @@ function TasksContainer({
                       >
                         {TASK_STATUSES[status]}
                       </DropdownMenuCheckboxItem>
-                    )
+                    ),
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -243,7 +250,9 @@ function TasksContainer({
                     <SelectLabel>Group by</SelectLabel>
                     <SelectSeparator />
                     <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="date">Due Date</SelectItem>
+                    <SelectItem value="createdDate">Created Date</SelectItem>
+                    <SelectItem value="dueDate">Due Date</SelectItem>
+                    <SelectItem value="updatedDate">Updated Date</SelectItem>
                     <SelectItem value="activityType">Activity Type</SelectItem>
                   </SelectGroup>
                 </SelectContent>
