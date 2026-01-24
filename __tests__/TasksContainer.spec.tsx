@@ -175,7 +175,7 @@ describe("TasksContainer Component", () => {
       render(<TasksContainer activityTypes={mockActivityTypes} />);
 
       await waitFor(() => {
-        expect(getTasksList).toHaveBeenCalledWith(1, 10, undefined, [
+        expect(getTasksList).toHaveBeenCalledWith(1, 25, undefined, [
           "in-progress",
           "needs-attention",
         ]);
@@ -475,7 +475,7 @@ describe("TasksContainer Component", () => {
 
     it("should apply activity type filter", async () => {
       await waitFor(() => {
-        expect(getTasksList).toHaveBeenCalledWith(1, 10, "type-1", [
+        expect(getTasksList).toHaveBeenCalledWith(1, 25, "type-1", [
           "in-progress",
           "needs-attention",
         ]);
@@ -494,7 +494,7 @@ describe("TasksContainer Component", () => {
       await user.click(inProgressCheckbox);
 
       await waitFor(() => {
-        expect(getTasksList).toHaveBeenCalledWith(1, 10, "type-1", [
+        expect(getTasksList).toHaveBeenCalledWith(1, 25, "type-1", [
           "needs-attention",
         ]);
       });
@@ -557,7 +557,7 @@ describe("TasksContainer Component", () => {
       await user.click(loadMoreButton);
 
       await waitFor(() => {
-        expect(getTasksList).toHaveBeenCalledWith(2, 10, undefined, [
+        expect(getTasksList).toHaveBeenCalledWith(2, 25, undefined, [
           "in-progress",
           "needs-attention",
         ]);

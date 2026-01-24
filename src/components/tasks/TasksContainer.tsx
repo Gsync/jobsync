@@ -28,6 +28,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
+import { RecordsCount } from "../RecordsCount";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -71,8 +73,11 @@ function TasksContainer({
   const [statusFilter, setStatusFilter] = useState<TaskStatus[]>(
     DEFAULT_STATUS_FILTER,
   );
+  const [recordsPerPage, setRecordsPerPage] = useState<number>(
+    APP_CONSTANTS.RECORDS_PER_PAGE,
+  );
 
-  const tasksPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
+  const tasksPerPage = recordsPerPage;
 
   const loadTasks = useCallback(
     async (pageNum: number, filter?: string, statuses?: TaskStatus[]) => {
@@ -187,7 +192,7 @@ function TasksContainer({
 
   useEffect(() => {
     (async () => await loadTasks(1, filterKey, statusFilter))();
-  }, [loadTasks, filterKey, statusFilter]);
+  }, [loadTasks, filterKey, statusFilter, recordsPerPage]);
 
   const onGroupByChange = (value: string) => {
     setGroupBy(
@@ -284,13 +289,18 @@ function TasksContainer({
                 onStartActivity={onStartActivity}
                 groupBy={groupBy}
               />
-              <div className="text-xs text-muted-foreground mt-4">
-                Showing{" "}
-                <strong>
-                  {1} to {tasks.length}
-                </strong>{" "}
-                of
-                <strong> {totalTasks}</strong> tasks
+              <div className="flex items-center justify-between mt-4">
+                <RecordsCount
+                  count={tasks.length}
+                  total={totalTasks}
+                  label="tasks"
+                />
+                {totalTasks > APP_CONSTANTS.RECORDS_PER_PAGE && (
+                  <RecordsPerPageSelector
+                    value={recordsPerPage}
+                    onChange={setRecordsPerPage}
+                  />
+                )}
               </div>
             </>
           )}

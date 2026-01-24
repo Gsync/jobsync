@@ -8,11 +8,12 @@ import {
   Wrench,
 } from "lucide-react";
 
-export enum APP_CONSTANTS {
-  RECORDS_PER_PAGE = 10,
-  ACTIVITY_MAX_DURATION_MINUTES = 8 * 60, // 8 Hours
-  ACTIVITY_MAX_DURATION_MS = 8 * 60 * 60 * 1000, // 8 hours in milliseconds
-}
+export const APP_CONSTANTS = {
+  RECORDS_PER_PAGE: 25,
+  RECORDS_PER_PAGE_OPTIONS: [25, 50, 100],
+  ACTIVITY_MAX_DURATION_MINUTES: 8 * 60, // 8 Hours
+  ACTIVITY_MAX_DURATION_MS: 8 * 60 * 60 * 1000, // 8 hours in milliseconds
+} as const;
 
 export const SIDEBAR_LINKS = [
   {

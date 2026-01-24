@@ -4,6 +4,7 @@ import { handleError } from "@/lib/utils";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
 import { JOB_TYPES, JobStatus } from "@/models/job.model";
 import { getCurrentUser } from "@/utils/user.utils";
+import { APP_CONSTANTS } from "@/lib/constants";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -28,8 +29,8 @@ export const getJobSourceList = async (): Promise<any | undefined> => {
 };
 
 export const getJobsList = async (
-  page = 1,
-  limit = 10,
+  page: number = 1,
+  limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
   filter?: string
 ): Promise<any | undefined> => {
   try {

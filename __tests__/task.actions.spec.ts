@@ -90,7 +90,7 @@ describe("taskActions", () => {
         },
         orderBy: [{ priority: "desc" }, { createdAt: "desc" }, { updatedAt: "desc" }],
         skip: 0,
-        take: 10,
+        take: 25,
       });
       expect(prisma.task.count).toHaveBeenCalledWith({
         where: { userId: mockUser.id },

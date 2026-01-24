@@ -4,11 +4,12 @@ import { handleError } from "@/lib/utils";
 import { Task, TaskStatus } from "@/models/task.model";
 import { AddTaskFormSchema } from "@/models/addTaskForm.schema";
 import { getCurrentUser } from "@/utils/user.utils";
+import { APP_CONSTANTS } from "@/lib/constants";
 import { z } from "zod";
 
 export const getTasksList = async (
   page: number = 1,
-  limit: number = 10,
+  limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
   filter?: string,
   statusFilter?: TaskStatus[]
 ): Promise<any | undefined> => {

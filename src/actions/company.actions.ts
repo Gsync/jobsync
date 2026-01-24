@@ -3,12 +3,13 @@ import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { AddCompanyFormSchema } from "@/models/addCompanyForm.schema";
 import { getCurrentUser } from "@/utils/user.utils";
+import { APP_CONSTANTS } from "@/lib/constants";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 export const getCompanyList = async (
-  page = 1,
-  limit = 10,
+  page: number = 1,
+  limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
   countBy?: string,
 ): Promise<any | undefined> => {
   try {

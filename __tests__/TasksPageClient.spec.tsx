@@ -377,7 +377,7 @@ describe("TasksPageClient Component", () => {
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(
           1,
-          10,
+          25,
           "type-1",
           expect.any(Array)
         );
@@ -408,7 +408,7 @@ describe("TasksPageClient Component", () => {
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(
           1,
-          10,
+          25,
           "type-1",
           expect.any(Array)
         );
@@ -424,7 +424,7 @@ describe("TasksPageClient Component", () => {
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(
           1,
-          10,
+          25,
           undefined,
           expect.any(Array)
         );

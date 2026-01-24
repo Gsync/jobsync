@@ -4,6 +4,7 @@ import { handleError } from "@/lib/utils";
 import { Activity } from "@/models/activity.model";
 import { AddActivityFormSchema } from "@/models/addActivityForm.schema";
 import { getCurrentUser } from "@/utils/user.utils";
+import { APP_CONSTANTS } from "@/lib/constants";
 import { z } from "zod";
 
 export const getAllActivityTypes = async (): Promise<any | undefined> => {
@@ -54,7 +55,7 @@ export const createActivityType = async (
 
 export const getActivitiesList = async (
   page: number = 1,
-  limit: number = 10
+  limit: number = APP_CONSTANTS.RECORDS_PER_PAGE
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();

@@ -24,6 +24,8 @@ import Loading from "../Loading";
 import { ActivityBanner } from "./ActivityBanner";
 import { differenceInMinutes } from "date-fns";
 import { APP_CONSTANTS } from "@/lib/constants";
+import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
+import { RecordsCount } from "../RecordsCount";
 
 function ActivitiesContainer() {
   const [activityFormOpen, setActivityFormOpen] = useState<boolean>(false);
@@ -34,6 +36,9 @@ function ActivitiesContainer() {
   const [page, setPage] = useState<number>(1);
   const [totalActivities, setTotalActivities] = useState<number>(0);
   const [loading, setLoading] = useState(false);
+  const [recordsPerPage, setRecordsPerPage] = useState<number>(
+    APP_CONSTANTS.RECORDS_PER_PAGE,
+  );
 
   const closeActivityForm = () => setActivityFormOpen(false);
 
@@ -46,10 +51,10 @@ function ActivitiesContainer() {
     setTimeElapsed(0);
   }, []);
 
-  const loadActivities = useCallback(async (page: number) => {
+  const loadActivities = useCallback(async (page: number, limit: number) => {
     setLoading(true);
     try {
-      const { data, success, message, total } = await getActivitiesList(page);
+      const { data, success, message, total } = await getActivitiesList(page, limit);
       if (success) {
         setActivitiesList((prev) => (page === 1 ? data : [...prev, ...data]));
         setTotalActivities(total);
@@ -73,8 +78,8 @@ function ActivitiesContainer() {
   }, []);
 
   const reloadActivities = useCallback(async () => {
-    await loadActivities(1);
-  }, [loadActivities]);
+    await loadActivities(1, recordsPerPage);
+  }, [loadActivities, recordsPerPage]);
 
   const stopActivity = useCallback(
     async (autoStop: boolean = false) => {
@@ -174,15 +179,14 @@ function ActivitiesContainer() {
 
   useEffect(() => {
     const init = async () => {
-      await Promise.all([loadActivities(1), fetchActiveActivity()]);
+      await Promise.all([loadActivities(1, recordsPerPage), fetchActiveActivity()]);
     };
     init();
     return () => {
       stopTimer(); // Cleanup the timer on unmount
     };
-    // Need to run this once, so no dependency trigger
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [recordsPerPage]);
 
   useEffect(() => {
     if (currentActivity) {
@@ -240,13 +244,18 @@ function ActivitiesContainer() {
               onStartActivity={startActivity}
               activityExist={Boolean(currentActivity)}
             />
-            <div className="text-xs text-muted-foreground">
-              Showing{" "}
-              <strong>
-                {1} to {activitiesList.length}
-              </strong>{" "}
-              of
-              <strong> {totalActivities}</strong> activities
+            <div className="flex items-center justify-between mt-4">
+              <RecordsCount
+                count={activitiesList.length}
+                total={totalActivities}
+                label="activities"
+              />
+              {totalActivities > APP_CONSTANTS.RECORDS_PER_PAGE && (
+                <RecordsPerPageSelector
+                  value={recordsPerPage}
+                  onChange={setRecordsPerPage}
+                />
+              )}
             </div>
           </>
         )}
@@ -255,7 +264,7 @@ function ActivitiesContainer() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => loadActivities(page + 1)}
+              onClick={() => loadActivities(page + 1, recordsPerPage)}
               disabled={loading}
               className="btn btn-primary"
             >

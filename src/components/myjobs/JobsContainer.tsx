@@ -40,6 +40,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AddJob } from "./AddJob";
 import MyJobsTable from "./MyJobsTable";
 import { format } from "date-fns";
+import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
+import { RecordsCount } from "../RecordsCount";
 
 type MyJobsProps = {
   statuses: JobStatus[];
@@ -74,8 +76,11 @@ function JobsContainer({
   const [filterKey, setFilterKey] = useState<string>();
   const [editJob, setEditJob] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [recordsPerPage, setRecordsPerPage] = useState<number>(
+    APP_CONSTANTS.RECORDS_PER_PAGE,
+  );
 
-  const jobsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
+  const jobsPerPage = recordsPerPage;
 
   const loadJobs = useCallback(
     async (page: number, filter?: string) => {
@@ -164,7 +169,7 @@ function JobsContainer({
 
   useEffect(() => {
     (async () => await loadJobs(1))();
-  }, [loadJobs]);
+  }, [loadJobs, recordsPerPage]);
 
   const onFilterChange = (filterBy: string) => {
     if (filterBy === "none") {
@@ -268,13 +273,18 @@ function JobsContainer({
                 editJob={onEditJob}
                 onChangeJobStatus={onChangeJobStatus}
               />
-              <div className="text-xs text-muted-foreground">
-                Showing{" "}
-                <strong>
-                  {1} to {jobs.length}
-                </strong>{" "}
-                of
-                <strong> {totalJobs}</strong> jobs
+              <div className="flex items-center justify-between mt-4">
+                <RecordsCount
+                  count={jobs.length}
+                  total={totalJobs}
+                  label="jobs"
+                />
+                {totalJobs > APP_CONSTANTS.RECORDS_PER_PAGE && (
+                  <RecordsPerPageSelector
+                    value={recordsPerPage}
+                    onChange={setRecordsPerPage}
+                  />
+                )}
               </div>
             </>
           )}
