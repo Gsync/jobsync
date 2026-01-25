@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "${BIND_IP:-127.0.0.1}:${BIND_PORT:-3000}:3000"
     environment:
       # Please do not forget to create and update your .env file
       - NODE_ENV=production

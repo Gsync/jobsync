@@ -98,7 +98,9 @@ Try running deployment script (deploy.sh)
 
 #### Step 4 - Access the app
 * **Open [http://localhost:3000](http://localhost:3000) with your browser to access the app.**
-* If you encounter port conflicts, please change it in the docker file
+* **Customize port:** Add to your `.env` file:
+  - `BIND_PORT=<PORT_NUMBER>` - to use a custom port (default: 3000)
+  - If you change BIND_PORT, make sure NEXTAUTH_URL uses the same port.
 
 ### Credits
 
