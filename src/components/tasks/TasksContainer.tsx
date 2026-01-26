@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Card,
   CardContent,
@@ -8,7 +8,8 @@ import {
   CardTitle,
 } from "../ui/card";
 import { Button } from "../ui/button";
-import { ListFilter, PlusCircle, Filter } from "lucide-react";
+import { ListFilter, PlusCircle, Filter, Search } from "lucide-react";
+import { Input } from "../ui/input";
 import {
   deleteTaskById,
   getTaskById,
@@ -28,6 +29,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
+import { RecordsCount } from "../RecordsCount";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -64,24 +67,30 @@ function TasksContainer({
   const [totalTasks, setTotalTasks] = useState(0);
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(false);
-  const [groupBy, setGroupBy] = useState<"none" | "date" | "activityType">(
-    "none"
-  );
+  const [groupBy, setGroupBy] = useState<
+    "none" | "createdDate" | "dueDate" | "updatedDate" | "activityType"
+  >("none");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<TaskStatus[]>(
-    DEFAULT_STATUS_FILTER
+    DEFAULT_STATUS_FILTER,
   );
+  const [recordsPerPage, setRecordsPerPage] = useState<number>(
+    APP_CONSTANTS.RECORDS_PER_PAGE,
+  );
+  const [searchTerm, setSearchTerm] = useState("");
+  const hasSearched = useRef(false);
 
-  const tasksPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
+  const tasksPerPage = recordsPerPage;
 
   const loadTasks = useCallback(
-    async (pageNum: number, filter?: string, statuses?: TaskStatus[]) => {
+    async (pageNum: number, filter?: string, statuses?: TaskStatus[], search?: string) => {
       setLoading(true);
       const { success, data, total, message } = await getTasksList(
         pageNum,
         tasksPerPage,
         filter,
-        statuses
+        statuses,
+        search,
       );
       if (success && data) {
         setTasks((prev) => (pageNum === 1 ? data : [...prev, ...data]));
@@ -97,13 +106,13 @@ function TasksContainer({
         setLoading(false);
       }
     },
-    [tasksPerPage]
+    [tasksPerPage],
   );
 
   const reloadTasks = useCallback(async () => {
-    await loadTasks(1, filterKey, statusFilter);
+    await loadTasks(1, filterKey, statusFilter, searchTerm || undefined);
     onTasksChanged?.();
-  }, [loadTasks, filterKey, statusFilter, onTasksChanged]);
+  }, [loadTasks, filterKey, statusFilter, searchTerm, onTasksChanged]);
 
   const onDeleteTask = async (taskId: string) => {
     const { success, message } = await deleteTaskById(taskId);
@@ -144,7 +153,7 @@ function TasksContainer({
   const onChangeTaskStatus = async (taskId: string, status: TaskStatus) => {
     const originalTasks = [...tasks];
     setTasks((prev) =>
-      prev.map((task) => (task.id === taskId ? { ...task, status } : task))
+      prev.map((task) => (task.id === taskId ? { ...task, status } : task)),
     );
 
     const { success, message } = await updateTaskStatus(taskId, status);
@@ -186,18 +195,40 @@ function TasksContainer({
   };
 
   useEffect(() => {
-    (async () => await loadTasks(1, filterKey, statusFilter))();
-  }, [loadTasks, filterKey, statusFilter]);
+    (async () => await loadTasks(1, filterKey, statusFilter, searchTerm || undefined))();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadTasks, filterKey, statusFilter, recordsPerPage]);
+
+  // Debounced search effect
+  useEffect(() => {
+    if (searchTerm !== "") {
+      hasSearched.current = true;
+    }
+    if (searchTerm === "" && !hasSearched.current) return;
+
+    const timer = setTimeout(() => {
+      loadTasks(1, filterKey, statusFilter, searchTerm || undefined);
+    }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
 
   const onGroupByChange = (value: string) => {
-    setGroupBy(value as "none" | "date" | "activityType");
+    setGroupBy(
+      value as
+        | "none"
+        | "createdDate"
+        | "dueDate"
+        | "updatedDate"
+        | "activityType",
+    );
   };
 
   const toggleStatusFilter = (status: TaskStatus) => {
     setStatusFilter((prev) =>
       prev.includes(status)
         ? prev.filter((s) => s !== status)
-        : [...prev, status]
+        : [...prev, status],
     );
   };
 
@@ -208,6 +239,16 @@ function TasksContainer({
           <CardTitle>My Tasks</CardTitle>
           <div className="flex items-center">
             <div className="ml-auto flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search tasks..."
+                  className="pl-8 h-8 w-[150px] lg:w-[200px]"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="h-8 gap-1">
@@ -229,7 +270,7 @@ function TasksContainer({
                       >
                         {TASK_STATUSES[status]}
                       </DropdownMenuCheckboxItem>
-                    )
+                    ),
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -243,7 +284,9 @@ function TasksContainer({
                     <SelectLabel>Group by</SelectLabel>
                     <SelectSeparator />
                     <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="date">Due Date</SelectItem>
+                    <SelectItem value="createdDate">Created Date</SelectItem>
+                    <SelectItem value="dueDate">Due Date</SelectItem>
+                    <SelectItem value="updatedDate">Updated Date</SelectItem>
                     <SelectItem value="activityType">Activity Type</SelectItem>
                   </SelectGroup>
                 </SelectContent>
@@ -275,13 +318,18 @@ function TasksContainer({
                 onStartActivity={onStartActivity}
                 groupBy={groupBy}
               />
-              <div className="text-xs text-muted-foreground mt-4">
-                Showing{" "}
-                <strong>
-                  {1} to {tasks.length}
-                </strong>{" "}
-                of
-                <strong> {totalTasks}</strong> tasks
+              <div className="flex items-center justify-between mt-4">
+                <RecordsCount
+                  count={tasks.length}
+                  total={totalTasks}
+                  label="tasks"
+                />
+                {totalTasks > APP_CONSTANTS.RECORDS_PER_PAGE && (
+                  <RecordsPerPageSelector
+                    value={recordsPerPage}
+                    onChange={setRecordsPerPage}
+                  />
+                )}
               </div>
             </>
           )}
@@ -295,7 +343,7 @@ function TasksContainer({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => loadTasks(page + 1, filterKey, statusFilter)}
+                onClick={() => loadTasks(page + 1, filterKey, statusFilter, searchTerm || undefined)}
                 disabled={loading}
                 className="btn btn-primary"
               >

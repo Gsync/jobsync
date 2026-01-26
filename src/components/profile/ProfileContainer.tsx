@@ -10,10 +10,10 @@ import ResumeTable from "./ResumeTable";
 import { toast } from "../ui/use-toast";
 import { PlusCircle } from "lucide-react";
 import { Button } from "../ui/button";
+import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
+import { RecordsCount } from "../RecordsCount";
 
 const ProfileContainer = () => {
-  const recordsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
-
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
 
@@ -21,6 +21,9 @@ const ProfileContainer = () => {
   const [totalResumes, setTotalResumes] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState(false);
+  const [recordsPerPage, setRecordsPerPage] = useState<number>(
+    APP_CONSTANTS.RECORDS_PER_PAGE,
+  );
 
   const loadResumes = useCallback(
     async (page: number) => {
@@ -52,7 +55,7 @@ const ProfileContainer = () => {
 
   useEffect(() => {
     (async () => await loadResumes(1))();
-  }, [loadResumes]);
+  }, [loadResumes, recordsPerPage]);
 
   const createResume = () => {
     setResumeToEdit(null);
@@ -105,13 +108,18 @@ const ProfileContainer = () => {
               editResume={onEditResume}
               reloadResumes={reloadResumes}
             />
-            <div className="text-xs text-muted-foreground">
-              Showing{" "}
-              <strong>
-                {1} to {resumes.length}
-              </strong>{" "}
-              of
-              <strong> {totalResumes}</strong> resumes
+            <div className="flex items-center justify-between mt-4">
+              <RecordsCount
+                count={resumes.length}
+                total={totalResumes}
+                label="resumes"
+              />
+              {totalResumes > APP_CONSTANTS.RECORDS_PER_PAGE && (
+                <RecordsPerPageSelector
+                  value={recordsPerPage}
+                  onChange={setRecordsPerPage}
+                />
+              )}
             </div>
           </>
         )}

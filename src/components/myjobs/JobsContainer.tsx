@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Card,
   CardContent,
@@ -8,7 +8,8 @@ import {
   CardTitle,
 } from "../ui/card";
 import { Button } from "../ui/button";
-import { File, ListFilter } from "lucide-react";
+import { Input } from "../ui/input";
+import { File, ListFilter, Search } from "lucide-react";
 import {
   deleteJobById,
   getJobDetails,
@@ -40,6 +41,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AddJob } from "./AddJob";
 import MyJobsTable from "./MyJobsTable";
 import { format } from "date-fns";
+import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
+import { RecordsCount } from "../RecordsCount";
 
 type MyJobsProps = {
   statuses: JobStatus[];
@@ -72,18 +75,24 @@ function JobsContainer({
   const [page, setPage] = useState(1);
   const [totalJobs, setTotalJobs] = useState(0);
   const [filterKey, setFilterKey] = useState<string>();
+  const [searchTerm, setSearchTerm] = useState("");
   const [editJob, setEditJob] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [recordsPerPage, setRecordsPerPage] = useState<number>(
+    APP_CONSTANTS.RECORDS_PER_PAGE,
+  );
+  const hasSearched = useRef(false);
 
-  const jobsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
+  const jobsPerPage = recordsPerPage;
 
   const loadJobs = useCallback(
-    async (page: number, filter?: string) => {
+    async (page: number, filter?: string, search?: string) => {
       setLoading(true);
       const { success, data, total, message } = await getJobsList(
         page,
         jobsPerPage,
-        filter
+        filter,
+        search
       );
       if (success && data) {
         setJobs((prev) => (page === 1 ? data : [...prev, ...data]));
@@ -104,11 +113,11 @@ function JobsContainer({
   );
 
   const reloadJobs = useCallback(async () => {
-    await loadJobs(1);
-    if (filterKey !== "none") {
-      setFilterKey("none");
+    await loadJobs(1, undefined, searchTerm || undefined);
+    if (filterKey) {
+      setFilterKey(undefined);
     }
-  }, [loadJobs, filterKey]);
+  }, [loadJobs, filterKey, searchTerm]);
 
   const onDeleteJob = async (jobId: string) => {
     const { res, success, message } = await deleteJobById(jobId);
@@ -166,12 +175,27 @@ function JobsContainer({
     (async () => await loadJobs(1))();
   }, [loadJobs]);
 
+  useEffect(() => {
+    if (searchTerm !== "") {
+      hasSearched.current = true;
+    }
+    // Skip only on initial mount when search is empty
+    if (searchTerm === "" && !hasSearched.current) return;
+
+    const timer = setTimeout(() => {
+      loadJobs(1, filterKey, searchTerm || undefined);
+    }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
+
   const onFilterChange = (filterBy: string) => {
     if (filterBy === "none") {
-      reloadJobs();
+      setFilterKey(undefined);
+      loadJobs(1, undefined, searchTerm || undefined);
     } else {
       setFilterKey(filterBy);
-      loadJobs(1, filterBy);
+      loadJobs(1, filterBy, searchTerm || undefined);
     }
   };
 
@@ -215,6 +239,16 @@ function JobsContainer({
           <CardTitle>My Jobs</CardTitle>
           <div className="flex items-center">
             <div className="ml-auto flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search jobs..."
+                  className="pl-8 h-8 w-[150px] lg:w-[200px]"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
               <Select value={filterKey} onValueChange={onFilterChange}>
                 <SelectTrigger className="w-[120px] h-8">
                   <ListFilter className="h-3.5 w-3.5" />
@@ -268,13 +302,18 @@ function JobsContainer({
                 editJob={onEditJob}
                 onChangeJobStatus={onChangeJobStatus}
               />
-              <div className="text-xs text-muted-foreground">
-                Showing{" "}
-                <strong>
-                  {1} to {jobs.length}
-                </strong>{" "}
-                of
-                <strong> {totalJobs}</strong> jobs
+              <div className="flex items-center justify-between mt-4">
+                <RecordsCount
+                  count={jobs.length}
+                  total={totalJobs}
+                  label="jobs"
+                />
+                {totalJobs > APP_CONSTANTS.RECORDS_PER_PAGE && (
+                  <RecordsPerPageSelector
+                    value={recordsPerPage}
+                    onChange={setRecordsPerPage}
+                  />
+                )}
               </div>
             </>
           )}
@@ -283,7 +322,7 @@ function JobsContainer({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => loadJobs(page + 1, filterKey)}
+                onClick={() => loadJobs(page + 1, filterKey, searchTerm || undefined)}
                 disabled={loading}
                 className="btn btn-primary"
               >

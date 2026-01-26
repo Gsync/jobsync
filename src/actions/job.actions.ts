@@ -4,6 +4,7 @@ import { handleError } from "@/lib/utils";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
 import { JOB_TYPES, JobStatus } from "@/models/job.model";
 import { getCurrentUser } from "@/utils/user.utils";
+import { APP_CONSTANTS } from "@/lib/constants";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -28,9 +29,10 @@ export const getJobSourceList = async (): Promise<any | undefined> => {
 };
 
 export const getJobsList = async (
-  page = 1,
-  limit = 10,
-  filter?: string
+  page: number = 1,
+  limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
+  filter?: string,
+  search?: string
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -51,12 +53,24 @@ export const getJobsList = async (
             },
           }
       : {};
+
+    const whereClause: any = {
+      userId: user.id,
+      ...filterBy,
+    };
+
+    if (search) {
+      whereClause.OR = [
+        { JobTitle: { label: { contains: search } } },
+        { Company: { label: { contains: search } } },
+        { Location: { label: { contains: search } } },
+        { description: { contains: search } },
+      ];
+    }
+
     const [data, total] = await Promise.all([
       prisma.job.findMany({
-        where: {
-          userId: user.id,
-          ...filterBy,
-        },
+        where: whereClause,
         skip,
         take: limit,
         select: {
@@ -78,10 +92,7 @@ export const getJobsList = async (
         },
       }),
       prisma.job.count({
-        where: {
-          userId: user.id,
-          ...filterBy,
-        },
+        where: whereClause,
       }),
     ]);
     return { success: true, data, total };

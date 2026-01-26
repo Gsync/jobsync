@@ -8,6 +8,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { createTask, updateTask } from "@/actions/task.actions";
+import { format } from "date-fns";
 import { Loader, PlusCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { useForm } from "react-hook-form";
@@ -157,10 +158,7 @@ export function TaskForm({
                     <FormItem className="flex flex-col">
                       <FormLabel>Title *</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="Enter task title"
-                          {...field}
-                        />
+                        <Input placeholder="Enter task title" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -268,7 +266,7 @@ export function TaskForm({
               </div>
 
               {/* Due Date */}
-              <div className="md:col-span-2">
+              <div>
                 <FormField
                   control={form.control}
                   name="dueDate"
@@ -285,6 +283,34 @@ export function TaskForm({
                   )}
                 />
               </div>
+
+              {/* Created and Updated Dates */}
+              {editTask && (
+                <div className="flex flex-col gap-2">
+                  <div>
+                    <p className="text-sm font-medium">Created</p>
+                    <p className="text-sm text-muted-foreground">
+                      {editTask.createdAt
+                        ? format(
+                            new Date(editTask.createdAt),
+                            "MMM d, yyyy h:mm a",
+                          )
+                        : "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Updated</p>
+                    <p className="text-sm text-muted-foreground">
+                      {editTask.updatedAt
+                        ? format(
+                            new Date(editTask.updatedAt),
+                            "MMM d, yyyy h:mm a",
+                          )
+                        : "N/A"}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Description */}
               <div className="md:col-span-2">

@@ -127,7 +127,7 @@ describe("Company Actions", () => {
 
     it("should handle errors", async () => {
       (getCurrentUser as jest.Mock).mockRejectedValue(
-        new Error("Database error")
+        new Error("Database error"),
       );
 
       await expect(getCompanyList(1, 10)).resolves.toStrictEqual({
@@ -172,7 +172,7 @@ describe("Company Actions", () => {
     it("should handle unexpected errors", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
       (prisma.company.findMany as jest.Mock).mockRejectedValue(
-        new Error("Unexpected error")
+        new Error("Unexpected error"),
       );
 
       const result = await getAllCompanies();
@@ -240,7 +240,7 @@ describe("Company Actions", () => {
         createdBy: mockUser.id,
       };
       (prisma.company.findUnique as jest.Mock).mockResolvedValue(
-        mockExistingCompany
+        mockExistingCompany,
       );
 
       const result = await addCompany(validData);
@@ -258,7 +258,7 @@ describe("Company Actions", () => {
     it("should handle unexpected errors", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
       (prisma.company.findUnique as jest.Mock).mockRejectedValue(
-        new Error("Unexpected error")
+        new Error("Unexpected error"),
       );
 
       const result = await addCompany(validData);
@@ -268,6 +268,87 @@ describe("Company Actions", () => {
         where: { value: "new company" },
       });
       expect(prisma.company.create).not.toHaveBeenCalled();
+    });
+
+    it("should return error if logo URL is invalid", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+
+      const invalidData = {
+        company: "New Company",
+        logoUrl: "javascript:alert('xss')",
+      };
+
+      const result = await addCompany(invalidData);
+
+      expect(result).toEqual({
+        success: false,
+        message: "Invalid logo URL. Only http and https protocols are allowed.",
+      });
+
+      expect(prisma.company.findUnique).not.toHaveBeenCalled();
+      expect(prisma.company.create).not.toHaveBeenCalled();
+    });
+
+    it("should return error if logo URL has data protocol", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+
+      const invalidData = {
+        company: "New Company",
+        logoUrl: "data:image/png;base64,iVBORw0KGgo=",
+      };
+
+      const result = await addCompany(invalidData);
+
+      expect(result).toEqual({
+        success: false,
+        message: "Invalid logo URL. Only http and https protocols are allowed.",
+      });
+
+      expect(prisma.company.create).not.toHaveBeenCalled();
+    });
+
+    it("should allow empty logo URL", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (prisma.company.findUnique as jest.Mock).mockResolvedValue(null);
+      const mockCompany = {
+        id: "company-id",
+        label: "New Company",
+        value: "new company",
+        logoUrl: "",
+        createdBy: mockUser.id,
+      };
+      (prisma.company.create as jest.Mock).mockResolvedValue(mockCompany);
+      (revalidatePath as jest.Mock).mockResolvedValue(undefined);
+
+      const result = await addCompany({
+        company: "New Company",
+        logoUrl: "",
+      });
+
+      expect(result).toEqual({ success: true, data: mockCompany });
+      expect(prisma.company.create).toHaveBeenCalled();
+    });
+
+    it("should allow https URLs", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (prisma.company.findUnique as jest.Mock).mockResolvedValue(null);
+      const mockCompany = {
+        id: "company-id",
+        label: "New Company",
+        value: "new company",
+        logoUrl: "https://example.com/logo.png",
+        createdBy: mockUser.id,
+      };
+      (prisma.company.create as jest.Mock).mockResolvedValue(mockCompany);
+      (revalidatePath as jest.Mock).mockResolvedValue(undefined);
+
+      const result = await addCompany({
+        company: "New Company",
+        logoUrl: "https://example.com/logo.png",
+      });
+
+      expect(result).toEqual({ success: true, data: mockCompany });
+      expect(prisma.company.create).toHaveBeenCalled();
     });
   });
 
@@ -290,7 +371,7 @@ describe("Company Actions", () => {
       };
 
       (prisma.company.update as jest.Mock).mockResolvedValue(
-        mockUpdatedCompany
+        mockUpdatedCompany,
       );
 
       const result = await updateCompany(validData);
@@ -354,6 +435,66 @@ describe("Company Actions", () => {
       expect(prisma.company.findUnique).not.toHaveBeenCalled();
       expect(prisma.company.update).not.toHaveBeenCalled();
     });
+
+    it("should return error if logo URL is invalid", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+
+      const invalidData = {
+        ...validData,
+        logoUrl: "javascript:alert('xss')",
+      };
+
+      const result = await updateCompany(invalidData);
+
+      expect(result).toEqual({
+        success: false,
+        message: "Invalid logo URL. Only http and https protocols are allowed.",
+      });
+
+      expect(prisma.company.findUnique).not.toHaveBeenCalled();
+      expect(prisma.company.update).not.toHaveBeenCalled();
+    });
+
+    it("should return error if logo URL has data protocol", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+
+      const invalidData = {
+        ...validData,
+        logoUrl: "data:image/png;base64,iVBORw0KGgo=",
+      };
+
+      const result = await updateCompany(invalidData);
+
+      expect(result).toEqual({
+        success: false,
+        message: "Invalid logo URL. Only http and https protocols are allowed.",
+      });
+
+      expect(prisma.company.update).not.toHaveBeenCalled();
+    });
+
+    it("should allow empty logo URL", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+
+      (prisma.company.findUnique as jest.Mock).mockResolvedValue(null);
+
+      const mockUpdatedCompany = {
+        id: "company-id",
+        value: "updated company",
+      };
+
+      (prisma.company.update as jest.Mock).mockResolvedValue(
+        mockUpdatedCompany,
+      );
+
+      const result = await updateCompany({
+        ...validData,
+        logoUrl: "",
+      });
+
+      expect(result).toEqual({ success: true, data: mockUpdatedCompany });
+      expect(prisma.company.update).toHaveBeenCalled();
+    });
   });
 
   describe("getCompanyById", () => {
@@ -403,7 +544,7 @@ describe("Company Actions", () => {
     it("should handle unexpected errors", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
       (prisma.company.findUnique as jest.Mock).mockRejectedValue(
-        new Error("Unexpected error")
+        new Error("Unexpected error"),
       );
 
       await expect(getCompanyById(mockCompanyId)).resolves.toStrictEqual({

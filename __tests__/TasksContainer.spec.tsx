@@ -175,10 +175,10 @@ describe("TasksContainer Component", () => {
       render(<TasksContainer activityTypes={mockActivityTypes} />);
 
       await waitFor(() => {
-        expect(getTasksList).toHaveBeenCalledWith(1, 10, undefined, [
+        expect(getTasksList).toHaveBeenCalledWith(1, 25, undefined, [
           "in-progress",
           "needs-attention",
-        ]);
+        ], undefined);
       });
 
       await waitFor(() => {
@@ -475,10 +475,10 @@ describe("TasksContainer Component", () => {
 
     it("should apply activity type filter", async () => {
       await waitFor(() => {
-        expect(getTasksList).toHaveBeenCalledWith(1, 10, "type-1", [
+        expect(getTasksList).toHaveBeenCalledWith(1, 25, "type-1", [
           "in-progress",
           "needs-attention",
-        ]);
+        ], undefined);
       });
     });
 
@@ -494,9 +494,9 @@ describe("TasksContainer Component", () => {
       await user.click(inProgressCheckbox);
 
       await waitFor(() => {
-        expect(getTasksList).toHaveBeenCalledWith(1, 10, "type-1", [
+        expect(getTasksList).toHaveBeenCalledWith(1, 25, "type-1", [
           "needs-attention",
-        ]);
+        ], undefined);
       });
     });
 
@@ -557,10 +557,10 @@ describe("TasksContainer Component", () => {
       await user.click(loadMoreButton);
 
       await waitFor(() => {
-        expect(getTasksList).toHaveBeenCalledWith(2, 10, undefined, [
+        expect(getTasksList).toHaveBeenCalledWith(2, 25, undefined, [
           "in-progress",
           "needs-attention",
-        ]);
+        ], undefined);
       });
     });
 
@@ -637,6 +637,441 @@ describe("TasksContainer Component", () => {
       // Note: onFilterChange would typically be called from parent component
       // This test verifies the prop is passed correctly
       expect(mockOnFilterChange).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Search Feature", () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("should render search input", async () => {
+      (getTasksList as jest.Mock).mockResolvedValue({
+        success: true,
+        data: mockTasks,
+        total: 2,
+      });
+
+      render(<TasksContainer activityTypes={mockActivityTypes} />);
+
+      const searchInput = screen.getByPlaceholderText("Search tasks...");
+      expect(searchInput).toBeInTheDocument();
+    });
+
+    it("should call getTasksList with search term after debounce", async () => {
+      (getTasksList as jest.Mock).mockResolvedValue({
+        success: true,
+        data: mockTasks,
+        total: 2,
+      });
+
+      render(<TasksContainer activityTypes={mockActivityTypes} />);
+
+      await waitFor(() => {
+        expect(getTasksList).toHaveBeenCalledWith(
+          1,
+          25,
+          undefined,
+          ["in-progress", "needs-attention"],
+          undefined
+        );
+      });
+
+      jest.clearAllMocks();
+
+      const searchInput = screen.getByPlaceholderText("Search tasks...");
+      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).type(
+        searchInput,
+        "Task 1"
+      );
+
+      // Before debounce, getTasksList should not be called with search term
+      expect(getTasksList).not.toHaveBeenCalled();
+
+      // Fast-forward past the 300ms debounce
+      jest.advanceTimersByTime(300);
+
+      await waitFor(() => {
+        expect(getTasksList).toHaveBeenCalledWith(
+          1,
+          25,
+          undefined,
+          ["in-progress", "needs-attention"],
+          "Task 1"
+        );
+      });
+    });
+
+    it("should filter tasks based on search term", async () => {
+      const filteredTasks = [mockTasks[0]];
+
+      (getTasksList as jest.Mock)
+        .mockResolvedValueOnce({
+          success: true,
+          data: mockTasks,
+          total: 2,
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          data: filteredTasks,
+          total: 1,
+        });
+
+      render(<TasksContainer activityTypes={mockActivityTypes} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Task 1")).toBeInTheDocument();
+        expect(screen.getByText("Task 2")).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText("Search tasks...");
+      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).type(
+        searchInput,
+        "Task 1"
+      );
+
+      jest.advanceTimersByTime(300);
+
+      await waitFor(() => {
+        expect(screen.getByText("Task 1")).toBeInTheDocument();
+        expect(screen.queryByText("Task 2")).not.toBeInTheDocument();
+      });
+    });
+
+    it("should show no tasks found when search returns empty results", async () => {
+      (getTasksList as jest.Mock)
+        .mockResolvedValueOnce({
+          success: true,
+          data: mockTasks,
+          total: 2,
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          data: [],
+          total: 0,
+        });
+
+      render(<TasksContainer activityTypes={mockActivityTypes} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Task 1")).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText("Search tasks...");
+      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).type(
+        searchInput,
+        "nonexistent"
+      );
+
+      jest.advanceTimersByTime(300);
+
+      await waitFor(() => {
+        expect(screen.getByText(/No tasks found/i)).toBeInTheDocument();
+      });
+    });
+
+    it("should combine search with status filter", async () => {
+      (getTasksList as jest.Mock).mockResolvedValue({
+        success: true,
+        data: mockTasks,
+        total: 2,
+      });
+
+      render(<TasksContainer activityTypes={mockActivityTypes} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Task 1")).toBeInTheDocument();
+      });
+
+      // Toggle status filter first
+      const filterButton = screen.getByRole("button", { name: /status/i });
+      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).click(
+        filterButton
+      );
+
+      const inProgressCheckbox = screen.getByRole("menuitemcheckbox", {
+        name: "In Progress",
+      });
+      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).click(
+        inProgressCheckbox
+      );
+
+      await waitFor(() => {
+        expect(getTasksList).toHaveBeenCalledWith(
+          1,
+          25,
+          undefined,
+          ["needs-attention"],
+          undefined
+        );
+      });
+
+      jest.clearAllMocks();
+
+      // Now search
+      const searchInput = screen.getByPlaceholderText("Search tasks...");
+      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).type(
+        searchInput,
+        "Task"
+      );
+
+      jest.advanceTimersByTime(300);
+
+      await waitFor(() => {
+        expect(getTasksList).toHaveBeenCalledWith(
+          1,
+          25,
+          undefined,
+          ["needs-attention"],
+          "Task"
+        );
+      });
+    });
+
+    it("should combine search with activity type filter", async () => {
+      (getTasksList as jest.Mock).mockResolvedValue({
+        success: true,
+        data: mockTasks,
+        total: 2,
+      });
+
+      render(
+        <TasksContainer activityTypes={mockActivityTypes} filterKey="type-1" />
+      );
+
+      await waitFor(() => {
+        expect(getTasksList).toHaveBeenCalledWith(
+          1,
+          25,
+          "type-1",
+          ["in-progress", "needs-attention"],
+          undefined
+        );
+      });
+
+      jest.clearAllMocks();
+
+      const searchInput = screen.getByPlaceholderText("Search tasks...");
+      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).type(
+        searchInput,
+        "Development"
+      );
+
+      jest.advanceTimersByTime(300);
+
+      await waitFor(() => {
+        expect(getTasksList).toHaveBeenCalledWith(
+          1,
+          25,
+          "type-1",
+          ["in-progress", "needs-attention"],
+          "Development"
+        );
+      });
+    });
+
+    it("should pass search term when loading more tasks", async () => {
+      (getTasksList as jest.Mock)
+        .mockResolvedValueOnce({
+          success: true,
+          data: mockTasks,
+          total: 20,
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          data: mockTasks,
+          total: 20,
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          data: [{ ...mockTasks[0], id: "task-3", title: "Task 3" }],
+          total: 20,
+        });
+
+      render(<TasksContainer activityTypes={mockActivityTypes} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Task 1")).toBeInTheDocument();
+      });
+
+      // Type search term
+      const searchInput = screen.getByPlaceholderText("Search tasks...");
+      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).type(
+        searchInput,
+        "Task"
+      );
+
+      jest.advanceTimersByTime(300);
+
+      await waitFor(() => {
+        expect(getTasksList).toHaveBeenCalledWith(
+          1,
+          25,
+          undefined,
+          ["in-progress", "needs-attention"],
+          "Task"
+        );
+      });
+
+      jest.clearAllMocks();
+
+      // Click Load More
+      const loadMoreButton = screen.getByText("Load More");
+      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).click(
+        loadMoreButton
+      );
+
+      await waitFor(() => {
+        expect(getTasksList).toHaveBeenCalledWith(
+          2,
+          25,
+          undefined,
+          ["in-progress", "needs-attention"],
+          "Task"
+        );
+      });
+    });
+
+    it("should reset to page 1 when search term changes", async () => {
+      (getTasksList as jest.Mock).mockResolvedValue({
+        success: true,
+        data: mockTasks,
+        total: 2,
+      });
+
+      render(<TasksContainer activityTypes={mockActivityTypes} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Task 1")).toBeInTheDocument();
+      });
+
+      jest.clearAllMocks();
+
+      const searchInput = screen.getByPlaceholderText("Search tasks...");
+      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).type(
+        searchInput,
+        "first search"
+      );
+
+      jest.advanceTimersByTime(300);
+
+      await waitFor(() => {
+        expect(getTasksList).toHaveBeenCalledWith(
+          1,
+          25,
+          undefined,
+          ["in-progress", "needs-attention"],
+          "first search"
+        );
+      });
+
+      jest.clearAllMocks();
+
+      // Change search term
+      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).clear(
+        searchInput
+      );
+      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).type(
+        searchInput,
+        "second search"
+      );
+
+      jest.advanceTimersByTime(300);
+
+      await waitFor(() => {
+        expect(getTasksList).toHaveBeenCalledWith(
+          1,
+          25,
+          undefined,
+          ["in-progress", "needs-attention"],
+          "second search"
+        );
+      });
+    });
+
+    it("should debounce multiple rapid keystrokes", async () => {
+      (getTasksList as jest.Mock).mockResolvedValue({
+        success: true,
+        data: mockTasks,
+        total: 2,
+      });
+
+      const typingUser = userEvent.setup({
+        advanceTimers: jest.advanceTimersByTime,
+      });
+
+      render(<TasksContainer activityTypes={mockActivityTypes} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Task 1")).toBeInTheDocument();
+      });
+
+      jest.clearAllMocks();
+
+      const searchInput = screen.getByPlaceholderText("Search tasks...");
+
+      // Type "Task" rapidly - single userEvent instance handles debouncing correctly
+      await typingUser.type(searchInput, "Task");
+
+      // Only after full debounce should API be called
+      jest.advanceTimersByTime(300);
+
+      await waitFor(() => {
+        expect(getTasksList).toHaveBeenLastCalledWith(
+          1,
+          25,
+          undefined,
+          ["in-progress", "needs-attention"],
+          "Task"
+        );
+      });
+    });
+
+    it("should reload tasks with search term after task is saved", async () => {
+      const mockOnTasksChanged = jest.fn();
+
+      (getTasksList as jest.Mock).mockResolvedValue({
+        success: true,
+        data: mockTasks,
+        total: 2,
+      });
+
+      render(
+        <TasksContainer
+          activityTypes={mockActivityTypes}
+          onTasksChanged={mockOnTasksChanged}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText("Task 1")).toBeInTheDocument();
+      });
+
+      // Type search term
+      const searchInput = screen.getByPlaceholderText("Search tasks...");
+      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).type(
+        searchInput,
+        "Task"
+      );
+
+      jest.advanceTimersByTime(300);
+
+      await waitFor(() => {
+        expect(getTasksList).toHaveBeenCalledWith(
+          1,
+          25,
+          undefined,
+          ["in-progress", "needs-attention"],
+          "Task"
+        );
+      });
+
+      // Verify that search term is maintained in state
+      expect(searchInput).toHaveValue("Task");
     });
   });
 });

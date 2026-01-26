@@ -2,6 +2,7 @@
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { getCurrentUser } from "@/utils/user.utils";
+import { APP_CONSTANTS } from "@/lib/constants";
 
 export const getAllJobTitles = async (): Promise<any | undefined> => {
   try {
@@ -22,8 +23,8 @@ export const getAllJobTitles = async (): Promise<any | undefined> => {
 };
 
 export const getJobTitleList = async (
-  page = 1,
-  limit = 10,
+  page: number = 1,
+  limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
   countBy?: string
 ): Promise<any | undefined> => {
   try {

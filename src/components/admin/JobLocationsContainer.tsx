@@ -7,14 +7,17 @@ import JobLocationsTable from "./JobLocationsTable";
 import { getJobLocationsList } from "@/actions/jobLocation.actions";
 import Loading from "../Loading";
 import { Button } from "../ui/button";
+import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
+import { RecordsCount } from "../RecordsCount";
 
 function JobLocationsContainer() {
   const [locations, setLocations] = useState<JobTitle[]>([]);
   const [totalJobLocations, setTotalJobLocations] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
-
-  const recordsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
+  const [recordsPerPage, setRecordsPerPage] = useState<number>(
+    APP_CONSTANTS.RECORDS_PER_PAGE,
+  );
 
   const loadJobLocations = useCallback(
     async (page: number) => {
@@ -40,7 +43,7 @@ function JobLocationsContainer() {
 
   useEffect(() => {
     (async () => await loadJobLocations(1))();
-  }, [loadJobLocations]);
+  }, [loadJobLocations, recordsPerPage]);
 
   return (
     <>
@@ -62,13 +65,18 @@ function JobLocationsContainer() {
                   jobLocations={locations}
                   reloadJobLocations={reloadJobLocations}
                 />
-                <div className="text-xs text-muted-foreground">
-                  Showing{" "}
-                  <strong>
-                    {1} to {locations.length}
-                  </strong>{" "}
-                  of
-                  <strong> {totalJobLocations}</strong> job locations
+                <div className="flex items-center justify-between mt-4">
+                  <RecordsCount
+                    count={locations.length}
+                    total={totalJobLocations}
+                    label="job locations"
+                  />
+                  {totalJobLocations > APP_CONSTANTS.RECORDS_PER_PAGE && (
+                    <RecordsPerPageSelector
+                      value={recordsPerPage}
+                      onChange={setRecordsPerPage}
+                    />
+                  )}
                 </div>
               </>
             )}

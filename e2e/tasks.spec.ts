@@ -171,7 +171,9 @@ test.describe("Tasks Management", () => {
   test("should filter tasks by status", async ({ page }) => {
     await navigateToTasks(page);
 
-    await page.getByRole("button", { name: "Status" }).click({ force: true });
+    await page
+      .getByRole("button", { name: "Status", exact: true })
+      .click({ force: true });
     await expect(page.getByText("Filter by Status")).toBeVisible();
 
     const inProgressCheckbox = page.getByRole("menuitemcheckbox", {
@@ -213,7 +215,9 @@ test.describe("Tasks Management", () => {
       /Task status updated/
     );
 
-    await page.getByRole("button", { name: "Status" }).click({ force: true });
+    await page
+      .getByRole("button", { name: "Status", exact: true })
+      .click({ force: true });
     await page
       .getByRole("menuitemcheckbox", { name: "Complete" })
       .click({ force: true });
@@ -227,18 +231,27 @@ test.describe("Tasks Management", () => {
       // Stop any running activity first
       await page.goto("/dashboard/activities");
       await page.waitForLoadState("networkidle");
+      // Wait for the activities page to be fully loaded
+      await page.getByTestId("add-activity-btn").waitFor({ state: "visible" });
+      // Try to find and click the Stop button if it exists
       const stopButton = page.getByRole("button", { name: "Stop" });
-      const isStopVisible = await stopButton.isVisible();
-      if (isStopVisible) {
+      try {
+        await stopButton.waitFor({ state: "visible", timeout: 3000 });
         await stopButton.click({ force: true });
-        await page.waitForTimeout(500);
+        // Wait for the activity to actually stop (button should disappear)
+        await expect(stopButton).not.toBeVisible({ timeout: 10000 });
+        // Reload to ensure clean state
+        await page.reload();
+        await page.waitForLoadState("networkidle");
+      } catch {
+        // No running activity, continue
       }
     });
 
     test("should start activity from task and redirect to activities", async ({
       page,
-    }) => {
-      const activityTaskTitle = "E2E Start Activity Task";
+    }, testInfo) => {
+      const activityTaskTitle = `E2E Start Activity Task ${testInfo.project.name}`;
       await navigateToTasks(page);
       await createTask(page, activityTaskTitle, {
         activityType: "E2E Testing",
@@ -272,8 +285,8 @@ test.describe("Tasks Management", () => {
 
     test("should not allow starting activity when task already has linked activity", async ({
       page,
-    }) => {
-      const linkedActivityTaskTitle = "E2E Linked Activity Task";
+    }, testInfo) => {
+      const linkedActivityTaskTitle = `E2E Linked Activity Task ${testInfo.project.name}`;
       await navigateToTasks(page);
       await createTask(page, linkedActivityTaskTitle, {
         activityType: "E2E Testing",
@@ -292,6 +305,9 @@ test.describe("Tasks Management", () => {
       await taskRow
         .getByTestId("task-start-activity-btn")
         .click({ force: true });
+      await expect(page.getByRole("status").first()).toContainText(
+        /Activity started from task/
+      );
       await expect(page).toHaveURL(/\/dashboard\/activities/);
 
       // Stop the activity so we can test the linked state
@@ -321,10 +337,15 @@ test.describe("Tasks Management", () => {
 
       // Cleanup: delete the activity first, then the task
       await page.goto("/dashboard/activities");
-      await page
-        .getByRole("row", { name: new RegExp(linkedActivityTaskTitle, "i") })
-        .getByRole("button")
-        .first()
+      await page.waitForLoadState("networkidle");
+      await page.getByTestId("add-activity-btn").waitFor({ state: "visible" });
+      const activityRow = page
+        .getByRole("row", {
+          name: new RegExp(linkedActivityTaskTitle, "i"),
+        })
+        .first();
+      await activityRow
+        .getByRole("button", { name: "Toggle menu" })
         .click({ force: true });
       await page
         .getByRole("menuitem", { name: "Delete" })
@@ -337,8 +358,8 @@ test.describe("Tasks Management", () => {
 
     test("should not allow starting activity on completed task", async ({
       page,
-    }) => {
-      const completedTaskTitle = "E2E Completed Task";
+    }, testInfo) => {
+      const completedTaskTitle = `E2E Completed Task ${testInfo.project.name}`;
       await navigateToTasks(page);
       await createTask(page, completedTaskTitle, {
         activityType: "E2E Testing",
@@ -361,7 +382,9 @@ test.describe("Tasks Management", () => {
       );
 
       // Add Complete status to filter to see completed tasks
-      await page.getByRole("button", { name: "Status" }).click({ force: true });
+      await page
+        .getByRole("button", { name: "Status", exact: true })
+        .click({ force: true });
       await page
         .getByRole("menuitemcheckbox", { name: "Complete" })
         .click({ force: true });

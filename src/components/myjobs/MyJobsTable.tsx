@@ -7,7 +7,6 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import Image from "next/image";
 import {
   ListCollapse,
   MoreHorizontal,
@@ -90,12 +89,11 @@ function MyJobsTable({
             return (
               <TableRow key={job.id}>
                 <TableCell className="hidden sm:table-cell">
-                  <Image
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     alt="Company logo"
-                    className="aspect-square rounded-md object-cover"
-                    height="32"
+                    className="aspect-square rounded-md object-cover h-8 w-8"
                     src={job.Company?.logoUrl || "/images/jobsync-logo.svg"}
-                    width="32"
                   />
                 </TableCell>
                 <TableCell className="hidden md:table-cell w-[120px]">

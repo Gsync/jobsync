@@ -4,13 +4,15 @@ import { handleError } from "@/lib/utils";
 import { Task, TaskStatus } from "@/models/task.model";
 import { AddTaskFormSchema } from "@/models/addTaskForm.schema";
 import { getCurrentUser } from "@/utils/user.utils";
+import { APP_CONSTANTS } from "@/lib/constants";
 import { z } from "zod";
 
 export const getTasksList = async (
   page: number = 1,
-  limit: number = 10,
+  limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
   filter?: string,
-  statusFilter?: TaskStatus[]
+  statusFilter?: TaskStatus[],
+  search?: string
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -31,6 +33,14 @@ export const getTasksList = async (
 
     if (statusFilter && statusFilter.length > 0) {
       whereClause.status = { in: statusFilter };
+    }
+
+    if (search) {
+      whereClause.OR = [
+        { title: { contains: search } },
+        { description: { contains: search } },
+        { activityType: { label: { contains: search } } },
+      ];
     }
 
     const [data, total] = await Promise.all([

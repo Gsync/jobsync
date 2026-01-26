@@ -7,14 +7,17 @@ import JobTitlesTable from "./JobTitlesTable";
 import { getJobTitleList } from "@/actions/jobtitle.actions";
 import Loading from "../Loading";
 import { Button } from "../ui/button";
+import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
+import { RecordsCount } from "../RecordsCount";
 
 function JobTitlesContainer() {
   const [titles, setTitles] = useState<JobTitle[]>([]);
   const [totalJobTitles, setTotalJobTitles] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
-
-  const recordsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
+  const [recordsPerPage, setRecordsPerPage] = useState<number>(
+    APP_CONSTANTS.RECORDS_PER_PAGE,
+  );
 
   const loadJobTitles = useCallback(
     async (page: number) => {
@@ -40,7 +43,7 @@ function JobTitlesContainer() {
 
   useEffect(() => {
     (async () => await loadJobTitles(1))();
-  }, [loadJobTitles]);
+  }, [loadJobTitles, recordsPerPage]);
 
   return (
     <>
@@ -62,13 +65,18 @@ function JobTitlesContainer() {
                   jobTitles={titles}
                   reloadJobTitles={reloadJobTitles}
                 />
-                <div className="text-xs text-muted-foreground">
-                  Showing{" "}
-                  <strong>
-                    {1} to {titles.length}
-                  </strong>{" "}
-                  of
-                  <strong> {totalJobTitles}</strong> job titles
+                <div className="flex items-center justify-between mt-4">
+                  <RecordsCount
+                    count={titles.length}
+                    total={totalJobTitles}
+                    label="job titles"
+                  />
+                  {totalJobTitles > APP_CONSTANTS.RECORDS_PER_PAGE && (
+                    <RecordsPerPageSelector
+                      value={recordsPerPage}
+                      onChange={setRecordsPerPage}
+                    />
+                  )}
                 </div>
               </>
             )}

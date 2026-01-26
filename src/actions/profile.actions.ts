@@ -8,6 +8,7 @@ import { AddSummarySectionFormSchema } from "@/models/addSummaryForm.schema";
 import { CreateResumeFormSchema } from "@/models/createResumeForm.schema";
 import { ResumeSection, SectionType, Summary } from "@/models/profile.model";
 import { getCurrentUser } from "@/utils/user.utils";
+import { APP_CONSTANTS } from "@/lib/constants";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import path from "path";
@@ -15,8 +16,8 @@ import fs from "fs";
 import { writeFile } from "fs/promises";
 
 export const getResumeList = async (
-  page = 1,
-  limit = 15
+  page: number = 1,
+  limit: number = APP_CONSTANTS.RECORDS_PER_PAGE
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
