@@ -379,7 +379,8 @@ describe("TasksPageClient Component", () => {
           1,
           25,
           "type-1",
-          expect.any(Array)
+          expect.any(Array),
+          undefined
         );
       });
     });
@@ -410,7 +411,8 @@ describe("TasksPageClient Component", () => {
           1,
           25,
           "type-1",
-          expect.any(Array)
+          expect.any(Array),
+          undefined
         );
       });
 
@@ -426,7 +428,8 @@ describe("TasksPageClient Component", () => {
           1,
           25,
           undefined,
-          expect.any(Array)
+          expect.any(Array),
+          undefined
         );
       });
     });

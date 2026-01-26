@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Card,
   CardContent,
@@ -8,7 +8,8 @@ import {
   CardTitle,
 } from "../ui/card";
 import { Button } from "../ui/button";
-import { ListFilter, PlusCircle, Filter } from "lucide-react";
+import { ListFilter, PlusCircle, Filter, Search } from "lucide-react";
+import { Input } from "../ui/input";
 import {
   deleteTaskById,
   getTaskById,
@@ -76,17 +77,20 @@ function TasksContainer({
   const [recordsPerPage, setRecordsPerPage] = useState<number>(
     APP_CONSTANTS.RECORDS_PER_PAGE,
   );
+  const [searchTerm, setSearchTerm] = useState("");
+  const hasSearched = useRef(false);
 
   const tasksPerPage = recordsPerPage;
 
   const loadTasks = useCallback(
-    async (pageNum: number, filter?: string, statuses?: TaskStatus[]) => {
+    async (pageNum: number, filter?: string, statuses?: TaskStatus[], search?: string) => {
       setLoading(true);
       const { success, data, total, message } = await getTasksList(
         pageNum,
         tasksPerPage,
         filter,
         statuses,
+        search,
       );
       if (success && data) {
         setTasks((prev) => (pageNum === 1 ? data : [...prev, ...data]));
@@ -106,9 +110,9 @@ function TasksContainer({
   );
 
   const reloadTasks = useCallback(async () => {
-    await loadTasks(1, filterKey, statusFilter);
+    await loadTasks(1, filterKey, statusFilter, searchTerm || undefined);
     onTasksChanged?.();
-  }, [loadTasks, filterKey, statusFilter, onTasksChanged]);
+  }, [loadTasks, filterKey, statusFilter, searchTerm, onTasksChanged]);
 
   const onDeleteTask = async (taskId: string) => {
     const { success, message } = await deleteTaskById(taskId);
@@ -191,8 +195,23 @@ function TasksContainer({
   };
 
   useEffect(() => {
-    (async () => await loadTasks(1, filterKey, statusFilter))();
+    (async () => await loadTasks(1, filterKey, statusFilter, searchTerm || undefined))();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadTasks, filterKey, statusFilter, recordsPerPage]);
+
+  // Debounced search effect
+  useEffect(() => {
+    if (searchTerm !== "") {
+      hasSearched.current = true;
+    }
+    if (searchTerm === "" && !hasSearched.current) return;
+
+    const timer = setTimeout(() => {
+      loadTasks(1, filterKey, statusFilter, searchTerm || undefined);
+    }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
 
   const onGroupByChange = (value: string) => {
     setGroupBy(
@@ -220,6 +239,16 @@ function TasksContainer({
           <CardTitle>My Tasks</CardTitle>
           <div className="flex items-center">
             <div className="ml-auto flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search tasks..."
+                  className="pl-8 h-8 w-[150px] lg:w-[200px]"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="h-8 gap-1">
@@ -314,7 +343,7 @@ function TasksContainer({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => loadTasks(page + 1, filterKey, statusFilter)}
+                onClick={() => loadTasks(page + 1, filterKey, statusFilter, searchTerm || undefined)}
                 disabled={loading}
                 className="btn btn-primary"
               >
