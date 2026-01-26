@@ -167,6 +167,168 @@ describe("jobActions", () => {
         message: "Not authenticated",
       });
     });
+
+    describe("search functionality", () => {
+      it("should build OR clause when search parameter is provided", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        const { data, total } = await getMockJobsList(1, 10);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue(data);
+        (prisma.job.count as jest.Mock).mockResolvedValue(total);
+
+        await getJobsList(1, 10, undefined, "Amazon");
+
+        expect(prisma.job.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              userId: mockUser.id,
+              OR: [
+                { JobTitle: { label: { contains: "Amazon" } } },
+                { Company: { label: { contains: "Amazon" } } },
+                { Location: { label: { contains: "Amazon" } } },
+                { description: { contains: "Amazon" } },
+              ],
+            }),
+          })
+        );
+        expect(prisma.job.count).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              OR: [
+                { JobTitle: { label: { contains: "Amazon" } } },
+                { Company: { label: { contains: "Amazon" } } },
+                { Location: { label: { contains: "Amazon" } } },
+                { description: { contains: "Amazon" } },
+              ],
+            }),
+          })
+        );
+      });
+
+      it("should search across job title", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, "Developer");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock.calls[0][0];
+        expect(findManyCall.where.OR).toContainEqual({
+          JobTitle: { label: { contains: "Developer" } },
+        });
+      });
+
+      it("should search across company name", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, "Google");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock.calls[0][0];
+        expect(findManyCall.where.OR).toContainEqual({
+          Company: { label: { contains: "Google" } },
+        });
+      });
+
+      it("should search across location", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, "Remote");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock.calls[0][0];
+        expect(findManyCall.where.OR).toContainEqual({
+          Location: { label: { contains: "Remote" } },
+        });
+      });
+
+      it("should search across description", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, "React");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock.calls[0][0];
+        expect(findManyCall.where.OR).toContainEqual({
+          description: { contains: "React" },
+        });
+      });
+
+      it("should combine search with filter", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, "applied", "Developer");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock.calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          Status: { value: "applied" },
+          OR: expect.any(Array),
+        });
+      });
+
+      it("should not include OR clause when search is undefined", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, undefined);
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock.calls[0][0];
+        expect(findManyCall.where.OR).toBeUndefined();
+      });
+
+      it("should not include OR clause when search is empty string", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, "");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock.calls[0][0];
+        expect(findManyCall.where.OR).toBeUndefined();
+      });
+
+      it("should return filtered results with correct pagination", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        const mockFilteredData = [
+          {
+            id: "1",
+            JobTitle: { label: "Full Stack Developer" },
+            Company: { label: "Amazon" },
+          },
+        ];
+        (prisma.job.findMany as jest.Mock).mockResolvedValue(mockFilteredData);
+        (prisma.job.count as jest.Mock).mockResolvedValue(1);
+
+        const result = await getJobsList(1, 10, undefined, "Amazon");
+
+        expect(result).toEqual({
+          success: true,
+          data: mockFilteredData,
+          total: 1,
+        });
+      });
+
+      it("should combine job type filter with search", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, "PT", "Developer");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock.calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          jobType: "PT",
+          OR: expect.any(Array),
+        });
+      });
+    });
   });
   describe("getJobDetails", () => {
     it("should throw error when jobId is not provided", async () => {

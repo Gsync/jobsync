@@ -31,7 +31,8 @@ export const getJobSourceList = async (): Promise<any | undefined> => {
 export const getJobsList = async (
   page: number = 1,
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
-  filter?: string
+  filter?: string,
+  search?: string
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -52,12 +53,24 @@ export const getJobsList = async (
             },
           }
       : {};
+
+    const whereClause: any = {
+      userId: user.id,
+      ...filterBy,
+    };
+
+    if (search) {
+      whereClause.OR = [
+        { JobTitle: { label: { contains: search } } },
+        { Company: { label: { contains: search } } },
+        { Location: { label: { contains: search } } },
+        { description: { contains: search } },
+      ];
+    }
+
     const [data, total] = await Promise.all([
       prisma.job.findMany({
-        where: {
-          userId: user.id,
-          ...filterBy,
-        },
+        where: whereClause,
         skip,
         take: limit,
         select: {
@@ -79,10 +92,7 @@ export const getJobsList = async (
         },
       }),
       prisma.job.count({
-        where: {
-          userId: user.id,
-          ...filterBy,
-        },
+        where: whereClause,
       }),
     ]);
     return { success: true, data, total };
