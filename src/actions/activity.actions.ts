@@ -55,7 +55,8 @@ export const createActivityType = async (
 
 export const getActivitiesList = async (
   page: number = 1,
-  limit: number = APP_CONSTANTS.RECORDS_PER_PAGE
+  limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
+  search?: string
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -66,14 +67,24 @@ export const getActivitiesList = async (
 
     const offset = (page - 1) * limit;
 
+    const whereClause: any = {
+      userId: user.id,
+      endTime: {
+        not: null,
+      },
+    };
+
+    if (search) {
+      whereClause.OR = [
+        { activityName: { contains: search } },
+        { description: { contains: search } },
+        { activityType: { label: { contains: search } } },
+      ];
+    }
+
     const [data, total] = await Promise.all([
       prisma.activity.findMany({
-        where: {
-          userId: user.id,
-          endTime: {
-            not: null,
-          },
-        },
+        where: whereClause,
         select: {
           id: true,
           activityName: true,
@@ -91,12 +102,7 @@ export const getActivitiesList = async (
         take: limit,
       }),
       prisma.activity.count({
-        where: {
-          userId: user.id,
-          endTime: {
-            not: null,
-          },
-        },
+        where: whereClause,
       }),
     ]);
 
