@@ -7,7 +7,7 @@ import {
 } from "@/actions/dashboard.actions";
 import ActivityCalendar from "@/components/dashboard/ActivityCalendar";
 import JobsApplied from "@/components/dashboard/JobsAppliedCard";
-import NumberCard from "@/components/dashboard/NumberCard";
+import NumberCardToggle from "@/components/dashboard/NumberCardToggle";
 import RecentJobsCard from "@/components/dashboard/RecentJobsCard";
 import WeeklyBarChart from "@/components/dashboard/WeeklyBarChart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -48,15 +48,11 @@ export default async function Dashboard() {
       <div className="grid auto-rows-max items-start gap-2 md:gap-2 lg:col-span-2">
         <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4">
           <JobsApplied />
-          <NumberCard
-            label="Last 7 days"
-            num={jobsAppliedLast7Days}
-            trend={trendFor7Days}
-          />
-          <NumberCard
-            label="Last 30 days"
-            num={jobsAppliedLast30Days}
-            trend={trendFor30Days}
+          <NumberCardToggle
+            data={[
+              { label: "Last 7 days", num: jobsAppliedLast7Days, trend: trendFor7Days },
+              { label: "Last 30 days", num: jobsAppliedLast30Days, trend: trendFor30Days },
+            ]}
           />
         </div>
         <Tabs defaultValue="jobs">
