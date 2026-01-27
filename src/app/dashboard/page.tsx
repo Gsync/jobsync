@@ -9,7 +9,7 @@ import ActivityCalendar from "@/components/dashboard/ActivityCalendar";
 import JobsApplied from "@/components/dashboard/JobsAppliedCard";
 import NumberCardToggle from "@/components/dashboard/NumberCardToggle";
 import RecentJobsCard from "@/components/dashboard/RecentJobsCard";
-import WeeklyBarChart from "@/components/dashboard/WeeklyBarChart";
+import WeeklyBarChartToggle from "@/components/dashboard/WeeklyBarChartToggle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Metadata } from "next";
@@ -39,9 +39,9 @@ export default async function Dashboard() {
     Array.from(
       new Set(
         data.flatMap((entry) =>
-          Object.keys(entry).filter((key) => key !== "day")
-        )
-      )
+          Object.keys(entry).filter((key) => key !== "day"),
+        ),
+      ),
     );
   return (
     <>
@@ -50,32 +50,36 @@ export default async function Dashboard() {
           <JobsApplied />
           <NumberCardToggle
             data={[
-              { label: "Last 7 days", num: jobsAppliedLast7Days, trend: trendFor7Days },
-              { label: "Last 30 days", num: jobsAppliedLast30Days, trend: trendFor30Days },
+              {
+                label: "Last 7 days",
+                num: jobsAppliedLast7Days,
+                trend: trendFor7Days,
+              },
+              {
+                label: "Last 30 days",
+                num: jobsAppliedLast30Days,
+                trend: trendFor30Days,
+              },
             ]}
           />
         </div>
-        <Tabs defaultValue="jobs">
-          <TabsList>
-            <TabsTrigger value="jobs">Weekly Jobs</TabsTrigger>
-            <TabsTrigger value="activities">Activities</TabsTrigger>
-          </TabsList>
-          <TabsContent value="jobs">
-            <WeeklyBarChart
-              data={weeklyData}
-              keys={["value"]}
-              axisLeftLegend="NUMBER OF JOBS APPLIED"
-            />
-          </TabsContent>
-          <TabsContent value="activities">
-            <WeeklyBarChart
-              data={activitiesData}
-              keys={activitiesDataKeys(activitiesData)}
-              groupMode="stacked"
-              axisLeftLegend="TIME SPENT (Hours)"
-            />
-          </TabsContent>
-        </Tabs>
+        <WeeklyBarChartToggle
+          charts={[
+            {
+              label: "Jobs",
+              data: weeklyData,
+              keys: ["value"],
+              axisLeftLegend: "NUMBER OF JOBS APPLIED",
+            },
+            {
+              label: "Activities",
+              data: activitiesData,
+              keys: activitiesDataKeys(activitiesData),
+              groupMode: "stacked",
+              axisLeftLegend: "TIME SPENT (Hours)",
+            },
+          ]}
+        />
       </div>
       <div>
         <RecentJobsCard jobs={recentJobs} />
