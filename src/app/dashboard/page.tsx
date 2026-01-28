@@ -4,11 +4,13 @@ import {
   getJobsActivityForPeriod,
   getJobsAppliedForPeriod,
   getRecentJobs,
+  getTopActivityTypesByDuration,
 } from "@/actions/dashboard.actions";
 import ActivityCalendar from "@/components/dashboard/ActivityCalendar";
 import JobsApplied from "@/components/dashboard/JobsAppliedCard";
 import NumberCardToggle from "@/components/dashboard/NumberCardToggle";
 import RecentJobsCard from "@/components/dashboard/RecentJobsCard";
+import TopActivitiesCard from "@/components/dashboard/TopActivitiesCard";
 import WeeklyBarChartToggle from "@/components/dashboard/WeeklyBarChartToggle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -26,6 +28,8 @@ export default async function Dashboard() {
     weeklyData,
     activitiesData,
     activityCalendarData,
+    topActivities7Days,
+    topActivities30Days,
   ] = await Promise.all([
     getJobsAppliedForPeriod(7),
     getJobsAppliedForPeriod(30),
@@ -33,6 +37,8 @@ export default async function Dashboard() {
     getJobsActivityForPeriod(),
     getActivityDataForPeriod(),
     getActivityCalendarData(),
+    getTopActivityTypesByDuration(7),
+    getTopActivityTypesByDuration(30),
   ]);
   const activityCalendarDataKeys = Object.keys(activityCalendarData);
   const activitiesDataKeys = (data: string[]) =>
@@ -60,6 +66,12 @@ export default async function Dashboard() {
                 num: jobsAppliedLast30Days,
                 trend: trendFor30Days,
               },
+            ]}
+          />
+          <TopActivitiesCard
+            data={[
+              { label: "Last 7 days", activities: topActivities7Days },
+              { label: "Last 30 days", activities: topActivities30Days },
             ]}
           />
         </div>
