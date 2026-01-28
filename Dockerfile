@@ -42,8 +42,6 @@ RUN chown nextjs:nodejs .next
 # Set up /data directory with the right permissions
 RUN mkdir -p /data/files/resumes && chown -R nextjs:nodejs /data/files/resumes
 
-# RUN npm install prisma@6.19.0 --no-save
-
 # Automatically leverage output traces to reduce image size
 
 COPY --from=builder /app/public ./public
