@@ -14,10 +14,21 @@ import {
   Trash,
   CirclePlay,
   Check,
+  ArrowDown,
+  ArrowRight,
+  ArrowUp,
+  Flame,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
-import { format, isToday, isTomorrow, isPast, isThisWeek, parse } from "date-fns";
+import {
+  format,
+  isToday,
+  isTomorrow,
+  isPast,
+  isThisWeek,
+  parse,
+} from "date-fns";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +61,41 @@ const statusColors: Record<TaskStatus, string> = {
   complete: "bg-green-500",
   "needs-attention": "bg-orange-500",
   cancelled: "bg-gray-500",
+};
+
+type PriorityLevel = "low" | "medium" | "high" | "critical";
+
+function getPriorityLevel(priority: number): PriorityLevel {
+  if (priority <= 3) return "low";
+  if (priority <= 6) return "medium";
+  if (priority <= 8) return "high";
+  return "critical";
+}
+
+const priorityConfig: Record<
+  PriorityLevel,
+  { icon: React.ElementType; color: string; label: string }
+> = {
+  low: {
+    icon: ArrowDown,
+    color: "text-green-600 bg-green-100 dark:bg-green-900/30",
+    label: "Low",
+  },
+  medium: {
+    icon: ArrowRight,
+    color: "text-cyan-600 bg-cyan-100 dark:bg-cyan-900/30",
+    label: "Medium",
+  },
+  high: {
+    icon: ArrowUp,
+    color: "text-orange-600 bg-orange-100 dark:bg-orange-900/30",
+    label: "High",
+  },
+  critical: {
+    icon: Flame,
+    color: "text-red-600 bg-red-100 dark:bg-red-900/30",
+    label: "Critical",
+  },
 };
 
 type DateGroup =
@@ -213,8 +259,23 @@ function TasksTable({
           {TASK_STATUSES[task.status]}
         </Badge>
       </TableCell>
-      <TableCell className="hidden md:table-cell py-1 px-2 text-center">
-        {task.priority}
+      <TableCell className="hidden md:table-cell py-1 px-2">
+        {(() => {
+          const level = getPriorityLevel(task.priority);
+          const config = priorityConfig[level];
+          const Icon = config.icon;
+          return (
+            <div
+              className={cn(
+                "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
+                config.color,
+              )}
+            >
+              <Icon className="h-3 w-3" />
+              <span>{task.priority}</span>
+            </div>
+          );
+        })()}
       </TableCell>
       <TableCell className="hidden md:table-cell py-1 px-2 text-center">
         {task.percentComplete}%
