@@ -79,6 +79,12 @@ function TasksContainer({
   );
   const [searchTerm, setSearchTerm] = useState("");
   const hasSearched = useRef(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Avoid hydration mismatch with Radix UI components
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const tasksPerPage = recordsPerPage;
 
@@ -249,48 +255,64 @@ function TasksContainer({
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 gap-1">
-                    <Filter className="h-3.5 w-3.5" />
-                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                      Status
-                    </span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {(Object.keys(TASK_STATUSES) as TaskStatus[]).map(
-                    (status) => (
-                      <DropdownMenuCheckboxItem
-                        key={status}
-                        checked={statusFilter.includes(status)}
-                        onCheckedChange={() => toggleStatusFilter(status)}
-                      >
-                        {TASK_STATUSES[status]}
-                      </DropdownMenuCheckboxItem>
-                    ),
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Select value={groupBy} onValueChange={onGroupByChange}>
-                <SelectTrigger className="w-[140px] h-8">
+              {mounted ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 gap-1">
+                      <Filter className="h-3.5 w-3.5" />
+                      <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                        Status
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {(Object.keys(TASK_STATUSES) as TaskStatus[]).map(
+                      (status) => (
+                        <DropdownMenuCheckboxItem
+                          key={status}
+                          checked={statusFilter.includes(status)}
+                          onCheckedChange={() => toggleStatusFilter(status)}
+                        >
+                          {TASK_STATUSES[status]}
+                        </DropdownMenuCheckboxItem>
+                      ),
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button variant="outline" size="sm" className="h-8 gap-1">
+                  <Filter className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                    Status
+                  </span>
+                </Button>
+              )}
+              {mounted ? (
+                <Select value={groupBy} onValueChange={onGroupByChange}>
+                  <SelectTrigger className="w-[140px] h-8">
+                    <ListFilter className="h-3.5 w-3.5" />
+                    <SelectValue placeholder="Group by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Group by</SelectLabel>
+                      <SelectSeparator />
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="createdDate">Created Date</SelectItem>
+                      <SelectItem value="dueDate">Due Date</SelectItem>
+                      <SelectItem value="updatedDate">Updated Date</SelectItem>
+                      <SelectItem value="activityType">Activity Type</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Button variant="outline" size="sm" className="h-8 gap-1 w-[140px]">
                   <ListFilter className="h-3.5 w-3.5" />
-                  <SelectValue placeholder="Group by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Group by</SelectLabel>
-                    <SelectSeparator />
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="createdDate">Created Date</SelectItem>
-                    <SelectItem value="dueDate">Due Date</SelectItem>
-                    <SelectItem value="updatedDate">Updated Date</SelectItem>
-                    <SelectItem value="activityType">Activity Type</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+                  <span>Group by</span>
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="outline"
