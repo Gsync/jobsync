@@ -11,6 +11,7 @@ import {
 } from "@/actions/task.actions";
 import { Task } from "@/models/task.model";
 import { useRouter } from "next/navigation";
+import { useActivity } from "@/context/ActivityContext";
 
 jest.mock("next-auth", () => {
   const mockAuth = jest.fn();
@@ -54,6 +55,12 @@ jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
 }));
 
+jest.mock("@/context/ActivityContext", () => ({
+  useActivity: jest.fn(() => ({
+    refreshCurrentActivity: jest.fn(),
+  })),
+}));
+
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
@@ -92,6 +99,8 @@ describe("TasksContainer Component", () => {
     replace: jest.fn(),
     prefetch: jest.fn(),
   };
+
+  const mockRefreshCurrentActivity = jest.fn();
 
   const mockActivityTypes = [
     {
@@ -162,6 +171,9 @@ describe("TasksContainer Component", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
+    (useActivity as jest.Mock).mockReturnValue({
+      refreshCurrentActivity: mockRefreshCurrentActivity,
+    });
   });
 
   describe("Initial Load", () => {
@@ -436,7 +448,7 @@ describe("TasksContainer Component", () => {
 
       await waitFor(() => {
         expect(startActivityFromTask).toHaveBeenCalledWith("task-1");
-        expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/activities");
+        expect(mockRefreshCurrentActivity).toHaveBeenCalled();
       });
     });
 
@@ -451,7 +463,7 @@ describe("TasksContainer Component", () => {
 
       await waitFor(() => {
         expect(startActivityFromTask).toHaveBeenCalledWith("task-1");
-        expect(mockRouter.push).not.toHaveBeenCalled();
+        expect(mockRefreshCurrentActivity).not.toHaveBeenCalled();
       });
     });
   });

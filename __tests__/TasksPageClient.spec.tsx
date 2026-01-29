@@ -49,6 +49,12 @@ jest.mock("next/navigation", () => ({
   }),
 }));
 
+jest.mock("@/context/ActivityContext", () => ({
+  useActivity: jest.fn(() => ({
+    refreshCurrentActivity: jest.fn(),
+  })),
+}));
+
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
