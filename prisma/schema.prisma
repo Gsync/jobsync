@@ -27,6 +27,7 @@ model User {
   Activity     Activity[]
   ActivityType ActivityType[]
   Task         Task[]
+  Automation   Automation[]
 }
 
 model Profile {
@@ -48,6 +49,7 @@ model Resume {
   File           File?           @relation(fields: [FileId], references: [id])
   FileId         String?         @unique
   Job            Job[]
+  Automation     Automation[]
 }
 
 model File {
@@ -241,6 +243,17 @@ model Job {
   Interview   Interview[]
   Resume      Resume?     @relation(fields: [resumeId], references: [id])
   resumeId    String?
+
+  // Automation discovery fields
+  automationId    String?
+  automation      Automation? @relation(fields: [automationId], references: [id], onDelete: SetNull)
+  matchScore      Int?
+  matchData       String?
+  discoveryStatus String?
+  discoveredAt    DateTime?
+
+  @@index([userId, automationId])
+  @@index([userId, discoveryStatus])
 }
 
 model ActivityType {
@@ -300,4 +313,55 @@ model Task {
   @@index([userId, status])
   @@index([userId, activityTypeId])
   @@index([userId, dueDate])
+}
+
+model Automation {
+  id             String          @id @default(uuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id])
+
+  name           String
+  jobBoard       String
+  keywords       String
+  location       String
+  resumeId       String
+  resume         Resume          @relation(fields: [resumeId], references: [id])
+  matchThreshold Int             @default(80)
+
+  scheduleHour   Int
+  nextRunAt      DateTime?
+  lastRunAt      DateTime?
+
+  status         String          @default("active")
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  runs           AutomationRun[]
+  discoveredJobs Job[]
+
+  @@index([userId])
+  @@index([status, nextRunAt])
+}
+
+model AutomationRun {
+  id               String     @id @default(uuid())
+  automationId     String
+  automation       Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+  jobsSearched     Int        @default(0)
+  jobsDeduplicated Int        @default(0)
+  jobsProcessed    Int        @default(0)
+  jobsMatched      Int        @default(0)
+  jobsSaved        Int        @default(0)
+
+  status           String     @default("running")
+  errorMessage     String?
+  blockedReason    String?
+
+  startedAt        DateTime   @default(now())
+  completedAt      DateTime?
+
+  @@index([automationId])
+  @@index([startedAt])
 }
