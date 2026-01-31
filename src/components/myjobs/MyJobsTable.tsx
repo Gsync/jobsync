@@ -78,6 +78,7 @@ function MyJobsTable({
             <TableHead>Company</TableHead>
             <TableHead className="hidden md:table-cell">Location</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead className="hidden md:table-cell">Match</TableHead>
             <TableHead className="hidden md:table-cell">Source</TableHead>
             <TableHead>
               <span className="sr-only">Actions</span>
@@ -127,6 +128,9 @@ function MyJobsTable({
                       {job.Status?.label}
                     </Badge>
                   )}
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {job.matchScore != null ? `${job.matchScore}%` : "-"}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {job.JobSource?.label}

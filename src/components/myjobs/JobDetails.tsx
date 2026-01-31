@@ -15,13 +15,24 @@ import { Button } from "../ui/button";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AiJobMatchSection } from "../profile/AiJobMatchSection";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { DownloadFileButton } from "../profile/DownloadFileButton";
+import { MatchDetails } from "../automations/MatchDetails";
+import type { JobMatchResponse } from "@/models/ai.schemas";
 
 function JobDetails({ job }: { job: JobResponse }) {
   const [aiSectionOpen, setAiSectionOpen] = useState(false);
   const router = useRouter();
   const goBack = () => router.back();
+
+  const parsedMatchData = useMemo(() => {
+    if (!job.matchData) return null;
+    try {
+      return JSON.parse(job.matchData) as JobMatchResponse;
+    } catch {
+      return null;
+    }
+  }, [job.matchData]);
   const getAiJobMatch = async () => {
     setAiSectionOpen(true);
   };
@@ -109,6 +120,18 @@ function JobDetails({ job }: { job: JobResponse }) {
           <div className="my-4 ml-4">
             <TipTapContentViewer content={job?.description} />
           </div>
+          {parsedMatchData && (
+            <div className="mx-4 mb-4">
+              <h4 className="font-medium mb-2 flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                AI Match Analysis
+                {job.matchScore && (
+                  <Badge variant="default">{job.matchScore}% Match</Badge>
+                )}
+              </h4>
+              <MatchDetails matchData={parsedMatchData} />
+            </div>
+          )}
           <CardFooter></CardFooter>
         </Card>
       )}

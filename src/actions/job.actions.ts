@@ -85,6 +85,7 @@ export const getJobsList = async (
           appliedDate: true,
           description: false,
           Resume: true,
+          matchScore: true,
         },
         orderBy: {
           createdAt: "desc",

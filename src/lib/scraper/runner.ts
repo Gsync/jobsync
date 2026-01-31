@@ -331,7 +331,12 @@ export async function runAutomation(
           userId: automation.userId,
           automationId: automation.id,
           matchScore: matchResult.score,
-          matchData: JSON.stringify(matchResult.data),
+          matchData: JSON.stringify({
+            ...matchResult.data,
+            resumeId: resume.id,
+            resumeTitle: resume.title,
+            matchedAt: new Date().toISOString(),
+          }),
         });
 
         await db.job.create({ data: jobRecord });
