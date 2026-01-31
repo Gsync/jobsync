@@ -23,7 +23,6 @@ import {
 import Loading from "../Loading";
 import { AiModel, defaultModel } from "@/models/ai.model";
 import { AiJobMatchResponseContent } from "./AiJobMatchResponseContent";
-import { getFromLocalStorage } from "@/utils/localstorage.utils";
 import {
   Tooltip,
   TooltipContent,
@@ -33,6 +32,7 @@ import {
 import { Info, CheckCircle, XCircle } from "lucide-react";
 import { checkIfModelIsRunning } from "@/utils/ai.utils";
 import { JobMatchSchema } from "@/models/ai.schemas";
+import { getUserSettings } from "@/actions/userSettings.actions";
 
 interface AiSectionProps {
   aISectionOpen: boolean;
@@ -48,13 +48,29 @@ export const AiJobMatchSection = ({
   const [selectedResumeId, setSelectedResumeId] = useState<string>();
   const [runningModelName, setRunningModelName] = useState<string>("");
   const [runningModelError, setRunningModelError] = useState<string>("");
-
-  const selectedModel: AiModel = getFromLocalStorage(
-    "aiSettings",
-
-    defaultModel,
-  );
+  const [selectedModel, setSelectedModel] = useState<AiModel>(defaultModel);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const resumesRef = useRef<Resume[]>([]);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const result = await getUserSettings();
+        if (result.success && result.data?.settings?.ai) {
+          const aiSettings = result.data.settings.ai;
+          setSelectedModel({
+            provider: aiSettings.provider || defaultModel.provider,
+            model: aiSettings.model,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching AI settings:", error);
+      } finally {
+        setIsLoadingSettings(false);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   // Standard single-agent mode
   const { object, submit, isLoading, stop } = useObject({
@@ -186,6 +202,7 @@ export const AiJobMatchSection = ({
                 onValueChange={onSelectResume}
                 disabled={
                   isLoading ||
+                  isLoadingSettings ||
                   (selectedModel.provider === "ollama" && !runningModelName)
                 }
               >

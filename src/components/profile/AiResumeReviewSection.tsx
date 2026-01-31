@@ -12,12 +12,11 @@ import {
   SheetTrigger,
 } from "../ui/sheet";
 import Loading from "../Loading";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "../ui/use-toast";
 import { Resume } from "@/models/profile.model";
-import { AiModel, defaultModel, ResumeReviewResponse } from "@/models/ai.model";
+import { AiModel, defaultModel } from "@/models/ai.model";
 import { AiResumeReviewResponseContent } from "./AiResumeReviewResponseContent";
-import { getFromLocalStorage } from "@/utils/localstorage.utils";
 import {
   Tooltip,
   TooltipContent,
@@ -26,6 +25,7 @@ import {
 } from "../ui/tooltip";
 import { checkIfModelIsRunning } from "@/utils/ai.utils";
 import { ResumeReviewSchema } from "@/models/ai.schemas";
+import { getUserSettings } from "@/actions/userSettings.actions";
 
 interface AiSectionProps {
   resume: Resume;
@@ -35,11 +35,28 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   const [aISectionOpen, setAiSectionOpen] = useState(false);
   const [runningModelName, setRunningModelName] = useState<string>("");
   const [runningModelError, setRunningModelError] = useState<string>("");
+  const [selectedModel, setSelectedModel] = useState<AiModel>(defaultModel);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
 
-  const selectedModel: AiModel = getFromLocalStorage(
-    "aiSettings",
-    defaultModel
-  );
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const result = await getUserSettings();
+        if (result.success && result.data?.settings?.ai) {
+          const aiSettings = result.data.settings.ai;
+          setSelectedModel({
+            provider: aiSettings.provider || defaultModel.provider,
+            model: aiSettings.model,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching AI settings:", error);
+      } finally {
+        setIsLoadingSettings(false);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   // Standard single-agent mode
   const { object, submit, isLoading, stop } = useObject({
@@ -102,7 +119,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
             variant="outline"
             className="h-8 gap-1 cursor-pointer"
             onClick={() => triggerSheetChange(true)}
-            disabled={isLoading || resume.ResumeSections?.length! < 2}
+            disabled={isLoading || isLoadingSettings || resume.ResumeSections?.length! < 2}
           >
             <Sparkles className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
