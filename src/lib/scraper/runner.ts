@@ -17,11 +17,47 @@ import {
   JOB_MATCH_SYSTEM_PROMPT,
   buildJobMatchPrompt,
 } from "@/lib/ai";
-import { AiProvider, OllamaModel } from "@/models/ai.model";
+import {
+  AiProvider,
+  OllamaModel,
+  OpenaiModel,
+  DeepseekModel,
+} from "@/models/ai.model";
 import type { Resume as PrismaResume } from "@prisma/client";
 import { automationLogger } from "@/lib/automation-logger";
+import {
+  defaultUserSettings,
+  type AiSettings,
+} from "@/models/userSettings.model";
 
 const MAX_JOBS_PER_RUN = 10;
+
+function getDefaultModelForProvider(provider: AiProvider): string {
+  switch (provider) {
+    case AiProvider.OLLAMA:
+      return OllamaModel.LLAMA3_2;
+    case AiProvider.OPENAI:
+      return OpenaiModel.GPT4O_MINI;
+    case AiProvider.DEEPSEEK:
+      return DeepseekModel.DEEPSEEK_CHAT;
+  }
+}
+
+async function getUserAiSettings(userId: string): Promise<AiSettings> {
+  const userSettings = await db.userSettings.findUnique({
+    where: { userId },
+  });
+
+  if (!userSettings) {
+    return defaultUserSettings.ai;
+  }
+
+  const settings = JSON.parse(userSettings.settings);
+  return {
+    ...defaultUserSettings.ai,
+    ...settings.ai,
+  };
+}
 
 function getErrorMessage(error: ScraperError): string {
   switch (error.type) {
@@ -251,6 +287,8 @@ export async function runAutomation(
     let jobsSaved = 0;
     let aiError: string | null = null;
 
+    const aiSettings = await getUserAiSettings(automation.userId);
+
     // JSearch returns full job details, no separate extraction needed
     for (const job of jobsToProcess) {
       automationLogger.log(
@@ -261,22 +299,23 @@ export async function runAutomation(
 
       jobsProcessed++;
 
+      const modelName = aiSettings.model || getDefaultModelForProvider(aiSettings.provider);
       automationLogger.log(
         automation.id,
         "info",
-        `Analyzing job match for: ${job.title}`,
+        `Analyzing job match for: ${job.title} (using ${aiSettings.provider}/${modelName})`,
       );
 
       const matchResult = await matchJobToResume(
         job,
         resume as ResumeWithSections,
         automation.jobBoard as JobBoard,
+        aiSettings,
       );
 
       if (!matchResult.success) {
-        if (matchResult.error === "ollama_unavailable") {
-          aiError =
-            "Ollama is not running. Please start Ollama and try again.";
+        if (matchResult.error === "ai_unavailable") {
+          aiError = `AI provider (${aiSettings.provider}) is not available. Please check your settings.`;
           automationLogger.log(automation.id, "error", aiError);
           break;
         }
@@ -442,6 +481,7 @@ async function matchJobToResume(
   job: JobDetails,
   resume: ResumeWithSections,
   sourceBoard: JobBoard,
+  aiSettings: AiSettings,
 ): Promise<MatchResult> {
   try {
     const resumeText = await convertResumeForMatch(resume);
@@ -455,7 +495,9 @@ Description:
 ${job.description}
 `.trim();
 
-    const model = getModel(AiProvider.OLLAMA, OllamaModel.LLAMA3_2);
+    const provider = aiSettings.provider;
+    const modelName = aiSettings.model || getDefaultModelForProvider(provider);
+    const model = getModel(provider, modelName);
 
     const result = await generateText({
       model,
@@ -486,9 +528,10 @@ ${job.description}
       message.includes("ECONNREFUSED") ||
       message.includes("fetch failed") ||
       message.includes("network") ||
-      message.includes("Failed to fetch")
+      message.includes("Failed to fetch") ||
+      message.includes("ENOTFOUND")
     ) {
-      return { success: false, score: 0, error: "ollama_unavailable" };
+      return { success: false, score: 0, error: "ai_unavailable" };
     }
 
     return { success: false, score: 0, error: message };

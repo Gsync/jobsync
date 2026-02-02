@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -33,9 +33,7 @@ export function LogsTab({ automationId, runKey }: LogsTabProps) {
     logs: [],
     isRunning: false,
   });
-  const [autoScroll, setAutoScroll] = useState(true);
   const [filter, setFilter] = useState<LogLevel | "all">("all");
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const eventSource = new EventSource(
@@ -59,12 +57,6 @@ export function LogsTab({ automationId, runKey }: LogsTabProps) {
       eventSource.close();
     };
   }, [automationId]);
-
-  useEffect(() => {
-    if (autoScroll && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [logData.logs, autoScroll]);
 
   useEffect(() => {
     if (runKey !== undefined) {
@@ -181,13 +173,6 @@ export function LogsTab({ automationId, runKey }: LogsTabProps) {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setAutoScroll(!autoScroll)}
-            >
-              {autoScroll ? "Auto-scroll: On" : "Auto-scroll: Off"}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
               onClick={handleClearLogs}
               disabled={logData.logs.length === 0}
             >
@@ -209,7 +194,7 @@ export function LogsTab({ automationId, runKey }: LogsTabProps) {
         )}
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[600px] w-full" ref={scrollRef}>
+        <ScrollArea className="h-[600px] w-full">
           {filteredLogs.length === 0 ? (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               <p>
@@ -220,7 +205,7 @@ export function LogsTab({ automationId, runKey }: LogsTabProps) {
             </div>
           ) : (
             <div className="space-y-2 font-mono text-xs">
-              {filteredLogs.map((log, index) => (
+              {[...filteredLogs].reverse().map((log, index) => (
                 <div
                   key={index}
                   className="flex gap-2 p-2 rounded border hover:bg-muted/50"
