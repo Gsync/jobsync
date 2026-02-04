@@ -146,6 +146,22 @@ You must add your valid API key in the env file, also please make sure deepseek 
 DEEPSEEK_API_KEY=your-deepseek-api-key-here
 ```
 
+### Contributing
+
+#### Preventing Pull Requests from Main Branch
+
+To maintain code quality and prevent accidental PRs from the `main` branch, configure a repository ruleset:
+
+1. Go to **Settings** → **Rules** → **Rulesets** → **New branch ruleset**
+2. Set **Name**: "Prevent PRs from main", **Enforcement**: Active
+3. **Target**: All branches or specific branches (e.g., `main`, `dev`)
+4. Enable **Metadata restrictions**:
+   - Select "Restrict pull request source branches"
+   - Add pattern: `refs/heads/main`
+5. Click **Create**
+
+This prevents users from creating PRs where `main` is the source branch.
+
 ### Note
 
 - If you are updating from an old version and already logged in, please try logging out and login again.
