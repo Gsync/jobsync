@@ -123,7 +123,7 @@ curl -fsSL https://raw.githubusercontent.com/Gsync/jobsync/main/deploy.sh | sudo
 - <a href="https://github.com/ueberdosis/tiptap">Tiptap</a>
 - <a href="https://github.com/plouc/nivo">Nivo</a>
 - <a href="https://github.com/sqlite/sqlite">Sqlite</a>
-- <a href="https://github.com/langchain-ai">LangChain</a>
+- <a href="https://github.com/vercel/ai">Vercel AI-SDK</a>
 - <a href="https://github.com/ollama/ollama">Ollama</a>
 
 ### AI Integration

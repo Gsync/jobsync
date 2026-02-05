@@ -1,5 +1,6 @@
 import {
   addCompany,
+  deleteCompanyById,
   getAllCompanies,
   getCompanyById,
   getCompanyList,
@@ -20,6 +21,13 @@ jest.mock("@prisma/client", () => {
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
+    },
+    workExperience: {
+      count: jest.fn(),
+    },
+    job: {
+      count: jest.fn(),
     },
   };
   return { PrismaClient: jest.fn(() => mPrismaClient) };
@@ -555,6 +563,75 @@ describe("Company Actions", () => {
       expect(prisma.company.findUnique).toHaveBeenCalledWith({
         where: { id: mockCompanyId },
       });
+    });
+  });
+
+  describe("deleteCompanyById", () => {
+    it("should delete a company successfully", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as jest.Mock).mockResolvedValue(0);
+      (prisma.job.count as jest.Mock).mockResolvedValue(0);
+      const mockDeleted = { id: "company-id", label: "Test Company" };
+      (prisma.company.delete as jest.Mock).mockResolvedValue(mockDeleted);
+
+      const result = await deleteCompanyById("company-id");
+
+      expect(result).toEqual({ res: mockDeleted, success: true });
+      expect(prisma.company.delete).toHaveBeenCalledWith({
+        where: { id: "company-id", createdBy: mockUser.id },
+      });
+    });
+
+    it("should return error for unauthenticated user", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+
+      const result = await deleteCompanyById("company-id");
+
+      expect(result).toEqual({ success: false, message: "Not authenticated" });
+      expect(prisma.company.delete).not.toHaveBeenCalled();
+    });
+
+    it("should prevent deletion when work experiences exist", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as jest.Mock).mockResolvedValue(1);
+
+      const result = await deleteCompanyById("company-id");
+
+      expect(result).toEqual({
+        success: false,
+        message:
+          "Company cannot be deleted due to its use in experience section of one of the resume! ",
+      });
+      expect(prisma.job.count).not.toHaveBeenCalled();
+      expect(prisma.company.delete).not.toHaveBeenCalled();
+    });
+
+    it("should prevent deletion when associated jobs exist", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as jest.Mock).mockResolvedValue(0);
+      (prisma.job.count as jest.Mock).mockResolvedValue(3);
+
+      const result = await deleteCompanyById("company-id");
+
+      expect(result).toEqual({
+        success: false,
+        message:
+          "Company cannot be deleted due to 3 number of associated jobs! ",
+      });
+      expect(prisma.company.delete).not.toHaveBeenCalled();
+    });
+
+    it("should handle unexpected errors", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as jest.Mock).mockResolvedValue(0);
+      (prisma.job.count as jest.Mock).mockResolvedValue(0);
+      (prisma.company.delete as jest.Mock).mockRejectedValue(
+        new Error("Delete failed"),
+      );
+
+      const result = await deleteCompanyById("company-id");
+
+      expect(result).toEqual({ success: false, message: "Delete failed" });
     });
   });
 });
