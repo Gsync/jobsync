@@ -3,13 +3,14 @@ import {
   getActivityDataForPeriod,
   getJobsActivityForPeriod,
   getJobsAppliedForPeriod,
+  getRecentActivities,
   getRecentJobs,
   getTopActivityTypesByDuration,
 } from "@/actions/dashboard.actions";
 import ActivityCalendar from "@/components/dashboard/ActivityCalendar";
 import JobsApplied from "@/components/dashboard/JobsAppliedCard";
 import NumberCardToggle from "@/components/dashboard/NumberCardToggle";
-import RecentJobsCard from "@/components/dashboard/RecentJobsCard";
+import RecentCardToggle from "@/components/dashboard/RecentCardToggle";
 import TopActivitiesCard from "@/components/dashboard/TopActivitiesCard";
 import WeeklyBarChartToggle from "@/components/dashboard/WeeklyBarChartToggle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,6 +26,7 @@ export default async function Dashboard() {
     { count: jobsAppliedLast7Days, trend: trendFor7Days },
     { count: jobsAppliedLast30Days, trend: trendFor30Days },
     recentJobs,
+    recentActivities,
     weeklyData,
     activitiesData,
     activityCalendarData,
@@ -34,6 +36,7 @@ export default async function Dashboard() {
     getJobsAppliedForPeriod(7),
     getJobsAppliedForPeriod(30),
     getRecentJobs(),
+    getRecentActivities(),
     getJobsActivityForPeriod(),
     getActivityDataForPeriod(),
     getActivityCalendarData(),
@@ -94,7 +97,7 @@ export default async function Dashboard() {
         />
       </div>
       <div>
-        <RecentJobsCard jobs={recentJobs} />
+        <RecentCardToggle jobs={recentJobs} activities={recentActivities} />
       </div>
       <div className="w-full col-span-3">
         <Tabs defaultValue={activityCalendarDataKeys.at(-1)}>

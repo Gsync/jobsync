@@ -293,6 +293,34 @@ export const getTopActivityTypesByDuration = async (
   }
 };
 
+export const getRecentActivities = async () => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+    const list = await prisma.activity.findMany({
+      where: {
+        userId: user.id,
+        endTime: { not: null },
+      },
+      include: {
+        activityType: true,
+      },
+      orderBy: {
+        endTime: "desc",
+      },
+      take: 6,
+    });
+    return list;
+  } catch (error) {
+    const msg = "Failed to fetch recent activities.";
+    console.error(msg, error);
+    throw new Error(msg);
+  }
+};
+
 export const getActivityCalendarData = async (): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
