@@ -20,7 +20,9 @@ export default function TopActivitiesCard({ data }: TopActivitiesCardProps) {
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium">Top Activities</CardTitle>
+          <CardTitle className="text-sm font-medium text-green-600">
+            Top Activities
+          </CardTitle>
           <div className="flex rounded-md border text-xs">
             {data.map((item, index) => (
               <button
@@ -43,7 +45,9 @@ export default function TopActivitiesCard({ data }: TopActivitiesCardProps) {
       </CardHeader>
       <CardContent>
         {current.activities.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No activities recorded</p>
+          <p className="text-sm text-muted-foreground">
+            No activities recorded
+          </p>
         ) : (
           <div className="space-y-3">
             {current.activities.map((activity, index) => (
@@ -52,7 +56,9 @@ export default function TopActivitiesCard({ data }: TopActivitiesCardProps) {
                   {index + 1}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{activity.label}</p>
+                  <p className="text-sm font-medium truncate">
+                    {activity.label}
+                  </p>
                 </div>
                 <span className="text-sm font-semibold tabular-nums">
                   {activity.hours}h

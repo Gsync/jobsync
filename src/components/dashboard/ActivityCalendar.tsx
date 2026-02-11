@@ -19,7 +19,7 @@ export default function ActivityCalendar({
   return (
     <Card className="w-[100%]">
       <CardHeader>
-        <CardTitle>Activity Calendar (Jobs Applied)</CardTitle>
+        <CardTitle className="text-green-600">Activity Calendar</CardTitle>
       </CardHeader>
       <CardContent className="h-[200px]">
         <ResponsiveCalendar

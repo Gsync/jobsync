@@ -47,7 +47,10 @@ export default function NumberCardToggle({ data }: NumberCardToggleProps) {
             ))}
           </div>
         </div>
-        <CardTitle className="text-4xl">{current.num}</CardTitle>
+        <CardTitle className="text-4xl">
+          {current.num}{" "}
+          <span className="text-xs text-muted-foreground">Jobs Applied</span>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex gap-2 text-xs text-muted-foreground">

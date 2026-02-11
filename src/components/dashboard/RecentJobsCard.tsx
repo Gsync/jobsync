@@ -8,7 +8,7 @@ export default function RecentJobsCard({ jobs }: { jobs: JobResponse[] }) {
   return (
     <Card className="mb-2">
       <CardHeader>
-        <CardTitle>Recent Jobs Applied</CardTitle>
+        <CardTitle className="text-green-600">Recent Jobs</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-6">
         {jobs.map((job) => (

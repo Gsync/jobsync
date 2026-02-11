@@ -81,7 +81,7 @@ export default async function Dashboard() {
               label: "Jobs",
               data: weeklyData,
               keys: ["value"],
-              axisLeftLegend: "NUMBER OF JOBS APPLIED",
+              axisLeftLegend: "JOBS APPLIED",
             },
             {
               label: "Activities",
