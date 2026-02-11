@@ -78,6 +78,7 @@ function MyJobsTable({
             <TableHead>Company</TableHead>
             <TableHead className="hidden md:table-cell">Location</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead className="hidden md:table-cell">Match</TableHead>
             <TableHead className="hidden md:table-cell">Source</TableHead>
             <TableHead>
               <span className="sr-only">Actions</span>
@@ -100,15 +101,14 @@ function MyJobsTable({
                   {job.appliedDate ? format(job.appliedDate, "PP") : "N/A"}
                 </TableCell>
                 <TableCell
-                  className="font-medium cursor-pointer"
-                  // onClick={() => viewJobDetails(job?.id)}
+                  className="font-medium cursor-pointer max-w-[120px] sm:max-w-none"
                 >
-                  <Link href={`/dashboard/myjobs/${job?.id}`}>
+                  <Link href={`/dashboard/myjobs/${job?.id}`} className="block truncate">
                     {job.JobTitle?.label}
                   </Link>
                 </TableCell>
-                <TableCell className="font-medium">
-                  {job.Company?.label}
+                <TableCell className="font-medium max-w-[100px] sm:max-w-none">
+                  <span className="block truncate">{job.Company?.label}</span>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {job.Location?.label}
@@ -127,6 +127,9 @@ function MyJobsTable({
                       {job.Status?.label}
                     </Badge>
                   )}
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {job.matchScore != null ? `${job.matchScore}%` : "-"}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {job.JobSource?.label}

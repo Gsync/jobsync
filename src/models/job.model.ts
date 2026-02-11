@@ -35,6 +35,8 @@ export interface JobResponse {
   applied: boolean;
   resumeId?: string;
   Resume?: Resume;
+  matchScore?: number | null;
+  matchData?: string | null;
 }
 
 export interface JobTitle {

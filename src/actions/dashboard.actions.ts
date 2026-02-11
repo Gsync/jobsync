@@ -217,6 +217,110 @@ export const getJobsActivityForPeriod = async (): Promise<any | undefined> => {
   }
 };
 
+export interface TopActivityType {
+  label: string;
+  hours: number;
+}
+
+export const getTopActivityTypesByDuration = async (
+  daysAgo: number,
+): Promise<TopActivityType[]> => {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+
+  try {
+    const now = new Date();
+    const today = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59,
+      999,
+    );
+    const startDate = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - daysAgo + 1,
+      0,
+      0,
+      0,
+      0,
+    );
+
+    const activities = await prisma.activity.findMany({
+      where: {
+        userId: user.id,
+        endTime: {
+          gte: startDate,
+          lte: today,
+        },
+      },
+      select: {
+        duration: true,
+        activityType: {
+          select: {
+            label: true,
+          },
+        },
+      },
+    });
+
+    const groupedByType = activities.reduce(
+      (acc: Record<string, number>, activity) => {
+        const label = activity.activityType?.label || "Unknown";
+        const durationInHours = (activity.duration || 0) / 60;
+        acc[label] = (acc[label] || 0) + durationInHours;
+        return acc;
+      },
+      {},
+    );
+
+    const sorted = Object.entries(groupedByType)
+      .map(([label, hours]) => ({ label, hours: Math.round(hours * 10) / 10 }))
+      .sort((a, b) => b.hours - a.hours)
+      .slice(0, 3);
+
+    return sorted;
+  } catch (error) {
+    const msg = "Failed to fetch top activity types";
+    console.error(msg, error);
+    throw new Error(msg);
+  }
+};
+
+export const getRecentActivities = async () => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+    const list = await prisma.activity.findMany({
+      where: {
+        userId: user.id,
+        endTime: { not: null },
+      },
+      include: {
+        activityType: true,
+      },
+      orderBy: {
+        endTime: "desc",
+      },
+      take: 6,
+    });
+    return list;
+  } catch (error) {
+    const msg = "Failed to fetch recent activities.";
+    console.error(msg, error);
+    throw new Error(msg);
+  }
+};
+
 export const getActivityCalendarData = async (): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();

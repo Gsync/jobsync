@@ -1,4 +1,5 @@
 import ActivitiesContainer from "@/components/activities/ActivitiesContainer";
+import { ActivityProvider } from "@/context/ActivityContext";
 import "@testing-library/jest-dom";
 import { screen, render, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -128,7 +129,11 @@ describe("ActivitiesContainer Search Functionality", () => {
   });
 
   const renderComponent = () => {
-    return render(<ActivitiesContainer />);
+    return render(
+      <ActivityProvider>
+        <ActivitiesContainer />
+      </ActivityProvider>
+    );
   };
 
   describe("Search Input", () => {

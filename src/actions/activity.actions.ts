@@ -187,6 +187,21 @@ export const startActivityById = async (
       throw new Error("Not authenticated");
     }
 
+    // Check for existing active activity to prevent concurrent activities
+    const existingActive = await prisma.activity.findFirst({
+      where: {
+        userId: user.id,
+        endTime: null,
+      },
+    });
+
+    if (existingActive) {
+      return {
+        success: false,
+        message: "An activity is already in progress. Stop it before starting a new one.",
+      };
+    }
+
     const activity = await prisma.activity.findFirst({
       where: {
         id: activityId,
@@ -249,7 +264,7 @@ export const stopActivityById = async (
     });
     return { activity, success: true };
   } catch (error) {
-    const msg = "Failed to start activity. ";
+    const msg = "Failed to stop activity. ";
     return handleError(error, msg);
   }
 };

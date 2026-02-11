@@ -235,60 +235,58 @@ function JobsContainer({
   return (
     <>
       <Card x-chunk="dashboard-06-chunk-0">
-        <CardHeader className="flex-row justify-between items-center">
+        <CardHeader className="flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
           <CardTitle>My Jobs</CardTitle>
-          <div className="flex items-center">
-            <div className="ml-auto flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search jobs..."
-                  className="pl-8 h-8 w-[150px] lg:w-[200px]"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <Select value={filterKey} onValueChange={onFilterChange}>
-                <SelectTrigger className="w-[120px] h-8">
-                  <ListFilter className="h-3.5 w-3.5" />
-                  <SelectValue placeholder="Filter" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Filter by</SelectLabel>
-                    <SelectSeparator />
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="applied">Applied</SelectItem>
-                    <SelectItem value="interview">Interview</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-                    <SelectItem value="PT">Part-time</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 gap-1"
-                disabled={loading}
-                onClick={downloadJobsList}
-              >
-                <File className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Export
-                </span>
-              </Button>
-              <AddJob
-                jobStatuses={statuses}
-                companies={companies}
-                jobTitles={titles}
-                locations={locations}
-                jobSources={sources}
-                editJob={editJob}
-                resetEditJob={resetEditJob}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[140px] sm:flex-none">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search jobs..."
+                className="pl-8 h-8 w-full sm:w-[150px] lg:w-[200px]"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            <Select value={filterKey} onValueChange={onFilterChange}>
+              <SelectTrigger className="w-[120px] h-8">
+                <ListFilter className="h-3.5 w-3.5" />
+                <SelectValue placeholder="Filter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Filter by</SelectLabel>
+                  <SelectSeparator />
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="applied">Applied</SelectItem>
+                  <SelectItem value="interview">Interview</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="PT">Part-time</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1"
+              disabled={loading}
+              onClick={downloadJobsList}
+            >
+              <File className="h-3.5 w-3.5" />
+              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                Export
+              </span>
+            </Button>
+            <AddJob
+              jobStatuses={statuses}
+              companies={companies}
+              jobTitles={titles}
+              locations={locations}
+              jobSources={sources}
+              editJob={editJob}
+              resetEditJob={resetEditJob}
+            />
           </div>
         </CardHeader>
         <CardContent>
@@ -302,7 +300,7 @@ function JobsContainer({
                 editJob={onEditJob}
                 onChangeJobStatus={onChangeJobStatus}
               />
-              <div className="flex items-center justify-between mt-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mt-4">
                 <RecordsCount
                   count={jobs.length}
                   total={totalJobs}

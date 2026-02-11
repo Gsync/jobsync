@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import {
@@ -16,6 +17,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "../ui/use-toast";
 import { Button } from "../ui/button";
 import { useTheme } from "next-themes";
+import { Loader2 } from "lucide-react";
+import { getUserSettings, updateDisplaySettings } from "@/actions/userSettings.actions";
 
 const appearanceFormSchema = z.object({
   theme: z.enum(["light", "dark", "system"], {
@@ -25,30 +28,88 @@ const appearanceFormSchema = z.object({
 
 type AppearanceFormValues = z.infer<typeof appearanceFormSchema>;
 
-const currentTheme =
-  typeof window !== "undefined"
-    ? (localStorage.getItem("theme") as "light" | "dark" | "system" | undefined)
-    : "system";
-
-// This can come from your database or API.
-const defaultValues: Partial<AppearanceFormValues> = {
-  theme: currentTheme || "system",
-};
-
 function DisplaySettings() {
-  const { setTheme, systemTheme } = useTheme();
+  const { setTheme, theme, systemTheme } = useTheme();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
   const form = useForm<AppearanceFormValues>({
     resolver: zodResolver(appearanceFormSchema),
-    defaultValues,
+    defaultValues: {
+      theme: "system",
+    },
   });
 
-  function onSubmit(data: AppearanceFormValues) {
-    setTheme(data.theme);
-    toast({
-      variant: "success",
-      title: `Your selected theme has been saved.`,
-    });
+  useEffect(() => {
+    const fetchSettings = async () => {
+      setIsLoading(true);
+      try {
+        const result = await getUserSettings();
+        if (result.success && result.data?.settings?.display?.theme) {
+          const savedTheme = result.data.settings.display.theme;
+          form.reset({ theme: savedTheme });
+          setTheme(savedTheme);
+        } else if (theme) {
+          form.reset({ theme: theme as "light" | "dark" | "system" });
+        }
+      } catch (error) {
+        console.error("Error fetching display settings:", error);
+        if (theme) {
+          form.reset({ theme: theme as "light" | "dark" | "system" });
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function onSubmit(data: AppearanceFormValues) {
+    setIsSaving(true);
+    try {
+      const result = await updateDisplaySettings({ theme: data.theme });
+      if (result.success) {
+        setTheme(data.theme);
+        toast({
+          variant: "success",
+          title: "Your selected theme has been saved.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.message || "Failed to save display settings.",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving display settings:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save display settings.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   }
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+        </CardHeader>
+        <CardContent className="ml-4">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Loading settings...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -70,7 +131,7 @@ function DisplaySettings() {
                     <FormMessage />
                     <RadioGroup
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                       className="grid max-w-lg md:grid-cols-3 gap-8 pt-2"
                     >
                       <FormItem>
@@ -118,7 +179,10 @@ function DisplaySettings() {
                 )}
               />
 
-              <Button type="submit">Update preferences</Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Update preferences
+              </Button>
             </form>
           </Form>
         </div>

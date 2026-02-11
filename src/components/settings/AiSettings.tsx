@@ -18,13 +18,10 @@ import {
 } from "../ui/select";
 import { Label } from "../ui/label";
 import { Button } from "../ui/button";
-import {
-  getFromLocalStorage,
-  saveToLocalStorage,
-} from "@/utils/localstorage.utils";
 import { toast } from "../ui/use-toast";
-import { XCircle, CheckCircle } from "lucide-react";
+import { XCircle, CheckCircle, Loader2 } from "lucide-react";
 import { checkIfModelIsRunning } from "@/utils/ai.utils";
+import { getUserSettings, updateAiSettings } from "@/actions/userSettings.actions";
 
 interface OllamaModelResponse {
   models: {
@@ -54,6 +51,8 @@ function AiSettings() {
   const [ollamaModels, setOllamaModels] = useState<string[]>([]);
   const [deepseekModels, setDeepseekModels] = useState<string[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [fetchError, setFetchError] = useState<string>("");
   const [runningModelError, setRunningModelError] = useState<string>("");
@@ -84,10 +83,25 @@ function AiSettings() {
   };
 
   useEffect(() => {
-    const savedSettings = getFromLocalStorage("aiSettings", selectedModel);
-    setSelectedModel(savedSettings);
-    setIsInitialized(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const fetchSettings = async () => {
+      setIsLoadingSettings(true);
+      try {
+        const result = await getUserSettings();
+        if (result.success && result.data?.settings?.ai) {
+          const aiSettings = result.data.settings.ai;
+          setSelectedModel({
+            provider: aiSettings.provider || defaultModel.provider,
+            model: aiSettings.model,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching user settings:", error);
+      } finally {
+        setIsLoadingSettings(false);
+        setIsInitialized(true);
+      }
+    };
+    fetchSettings();
   }, []);
 
   useEffect(() => {
@@ -237,7 +251,7 @@ function AiSettings() {
         return [];
     }
   };
-  const saveModelSettings = () => {
+  const saveModelSettings = async () => {
     if (!selectedModel.model) {
       toast({
         variant: "destructive",
@@ -246,13 +260,52 @@ function AiSettings() {
       });
       return;
     }
-    saveToLocalStorage("aiSettings", selectedModel);
-    toast({
-      variant: "success",
-      title: "Saved!",
-      description: "AI Settings saved successfully.",
-    });
+    setIsSaving(true);
+    try {
+      const result = await updateAiSettings({
+        provider: selectedModel.provider,
+        model: selectedModel.model,
+      });
+      if (result.success) {
+        toast({
+          variant: "success",
+          title: "Saved!",
+          description: "AI Settings saved successfully.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.message || "Failed to save AI settings.",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving AI settings:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save AI settings.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
+  if (isLoadingSettings) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>AI Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="ml-4">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Loading settings...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -343,9 +396,11 @@ function AiSettings() {
             !selectedModel.model ||
             (selectedModel.provider === AiProvider.OLLAMA &&
               !runningModelName) ||
-            isLoadingModels
+            isLoadingModels ||
+            isSaving
           }
         >
+          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Save
         </Button>
       </CardContent>

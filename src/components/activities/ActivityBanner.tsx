@@ -37,9 +37,9 @@ export function ActivityBanner({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 px-4 py-3 border rounded-lg mb-4",
+        "flex items-center gap-3 px-4 py-1 border rounded-lg",
         variantStyles[variant],
-        className
+        className,
       )}
     >
       <div className="flex-shrink-0">{variantIcons[variant]}</div>
@@ -56,7 +56,7 @@ export function ActivityBanner({
               "focus:ring-yellow-500": variant === "warning",
               "focus:ring-red-500": variant === "error",
               "focus:ring-blue-500": variant === "info",
-            }
+            },
           )}
           onClick={() => onStopActivity(false)}
         >
