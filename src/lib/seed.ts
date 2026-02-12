@@ -54,26 +54,35 @@ async function seedUser() {
 }
 
 async function seedStatuses() {
+  const existing = await prisma.jobStatus.findUnique({
+    where: { value: "draft" },
+  });
+  if (existing) return;
+
   for (const status of STATUS_DATA) {
-    const existing = await prisma.jobStatus.findUnique({
+    await prisma.jobStatus.upsert({
       where: { value: status.value },
+      update: {},
+      create: status,
     });
-    if (!existing) {
-      await prisma.jobStatus.create({ data: status });
-    }
   }
-  console.log("[seed] Statuses ready");
+  console.log("[seed] Statuses seeded");
 }
 
 async function seedJobSources(userId: string) {
+  const existing = await prisma.jobSource.findUnique({
+    where: { value: "indeed" },
+  });
+  if (existing) return;
+
   for (const source of JOB_SOURCES) {
     await prisma.jobSource.upsert({
       where: { value: source.value },
-      update: { label: source.label, value: source.value },
+      update: {},
       create: { label: source.label, value: source.value, createdBy: userId },
     });
   }
-  console.log("[seed] Job sources ready");
+  console.log("[seed] Job sources seeded");
 }
 
 export async function runSeed() {
