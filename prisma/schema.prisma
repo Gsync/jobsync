@@ -22,6 +22,7 @@ model User {
   JobTitle     JobTitle[]
   Location     Location[]
   Company      Company[]
+  JobSource    JobSource[]
   Contact      Contact[]
   Profile      Profile[]
   Activity     Activity[]
@@ -218,6 +219,8 @@ model JobSource {
   label       String
   value       String @unique
   jobsApplied Job[]
+  createdBy   String // userId
+  user        User   @relation(fields: [createdBy], references: [id])
 }
 
 model Interview {

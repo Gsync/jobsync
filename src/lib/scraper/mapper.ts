@@ -37,7 +37,7 @@ export async function mapScrapedJobToJobRecord(
   const jobTitleId = await findOrCreateJobTitle(scrapedJob.title, userId);
   const locationId = await findOrCreateLocation(scrapedJob.location, userId);
   const companyId = await findOrCreateCompany(scrapedJob.company, userId);
-  const jobSourceId = await getOrCreateJobSource(scrapedJob.sourceBoard);
+  const jobSourceId = await getOrCreateJobSource(scrapedJob.sourceBoard, userId);
   const statusId = await getDefaultJobStatus();
 
   return {
@@ -176,7 +176,10 @@ async function findOrCreateCompany(
   return newCompany.id;
 }
 
-async function getOrCreateJobSource(sourceBoard: string): Promise<string> {
+async function getOrCreateJobSource(
+  sourceBoard: string,
+  userId: string
+): Promise<string> {
   const normalized = sourceBoard.toLowerCase();
 
   let jobSource = await db.jobSource.findFirst({
@@ -188,6 +191,7 @@ async function getOrCreateJobSource(sourceBoard: string): Promise<string> {
       data: {
         label: sourceBoard.charAt(0).toUpperCase() + sourceBoard.slice(1),
         value: normalized,
+        createdBy: userId,
       },
     });
   }

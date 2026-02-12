@@ -31,7 +31,7 @@ async function seedUser() {
     console.warn(
       "[seed] USER_EMAIL not set, skipping user creation"
     );
-    return;
+    return null;
   }
 
   const existingUser = await prisma.user.findUnique({
@@ -40,7 +40,7 @@ async function seedUser() {
 
   if (!existingUser) {
     const password = await bcrypt.hash(process.env.USER_PASSWORD || "", 10);
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         email,
         name: "Admin",
@@ -48,7 +48,9 @@ async function seedUser() {
       },
     });
     console.log("[seed] Created user:", email);
+    return user;
   }
+  return existingUser;
 }
 
 async function seedStatuses() {
@@ -63,12 +65,12 @@ async function seedStatuses() {
   console.log("[seed] Statuses ready");
 }
 
-async function seedJobSources() {
+async function seedJobSources(userId: string) {
   for (const source of JOB_SOURCES) {
     await prisma.jobSource.upsert({
       where: { value: source.value },
       update: { label: source.label, value: source.value },
-      create: { label: source.label, value: source.value },
+      create: { label: source.label, value: source.value, createdBy: userId },
     });
   }
   console.log("[seed] Job sources ready");
@@ -76,9 +78,11 @@ async function seedJobSources() {
 
 export async function runSeed() {
   try {
-    await seedUser();
+    const user = await seedUser();
     await seedStatuses();
-    await seedJobSources();
+    if (user) {
+      await seedJobSources(user.id);
+    }
     console.log("[seed] Database seeding complete");
   } catch (error) {
     console.error("[seed] Error during seeding:", error);

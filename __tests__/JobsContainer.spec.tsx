@@ -127,8 +127,8 @@ describe("JobsContainer Search Functionality", () => {
   ];
 
   const mockSources = [
-    { id: "1", label: "Indeed", value: "indeed" },
-    { id: "2", label: "LinkedIn", value: "linkedin" },
+    { id: "1", label: "Indeed", value: "indeed", createdBy: "user-1" },
+    { id: "2", label: "LinkedIn", value: "linkedin", createdBy: "user-1" },
   ];
 
   const mockJobs = [

@@ -20,7 +20,15 @@ export const getStatusList = async (): Promise<any | undefined> => {
 
 export const getJobSourceList = async (): Promise<any | undefined> => {
   try {
-    const list = await prisma.jobSource.findMany();
+    const user = await getCurrentUser();
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+    const list = await prisma.jobSource.findMany({
+      where: {
+        createdBy: user.id,
+      },
+    });
     return list;
   } catch (error) {
     const msg = "Failed to fetch job source list. ";
