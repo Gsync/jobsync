@@ -326,7 +326,7 @@ export function AddJob({
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel>Job Source</FormLabel>
-                        <Combobox options={jobSources} field={field} />
+                        <Combobox options={jobSources} field={field} creatable />
                         <FormMessage />
                       </FormItem>
                     )}

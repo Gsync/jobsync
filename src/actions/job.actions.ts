@@ -224,6 +224,33 @@ export const createLocation = async (
   }
 };
 
+export const createJobSource = async (
+  label: string
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const value = label.trim().toLowerCase();
+
+    if (!value) {
+      throw new Error("Please provide job source name");
+    }
+
+    const jobSource = await prisma.jobSource.create({
+      data: { label, value, createdBy: user.id },
+    });
+
+    return { data: jobSource, success: true };
+  } catch (error) {
+    const msg = "Failed to create job source. ";
+    return handleError(error, msg);
+  }
+};
+
 export const addJob = async (
   data: z.infer<typeof AddJobFormSchema>
 ): Promise<any | undefined> => {
