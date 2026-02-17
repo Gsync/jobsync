@@ -49,40 +49,29 @@ JobSync Assistant is completely free to use and open source. It provides a power
 git clone https://github.com/Gsync/jobsync.git
 ```
 
-#### Step 2 - Change environment variables
-* ** You must create a .env file before proceeding. Refer to .env.example and create or change to .env with your environment variables**
-  
-#### 2.1 Generate auth secret (Optional) 
+#### Step 2 - Environment setup
 
-These methods will generate a random string that you can use as your AUTH_SECRET. Make sure to set this in your environment variables:
+When using `deploy.sh`, the `.env` file is automatically created from `.env.example` and `AUTH_SECRET` is auto-generated if missing. For `docker compose up` or `docker run` without a `.env` file, the container entrypoint auto-generates a temporary `AUTH_SECRET` at startup.
 
-For example, add it to your .env local file:
-
-```sh
-AUTH_SECRET="your_generated_secret"
-```
+You can also create `.env` manually from `.env.example` and customize variables as needed.
 
 **Important**
 If you are running it on a remote server/homelab, you must update timezone otherwise activities times may shift
 
-```sh 
+```sh
 TZ=America/Edmonton
 ```
 
-##### For npm
+##### Manual AUTH_SECRET generation (Optional)
+
+If you prefer to set your own `AUTH_SECRET`, use one of these methods and add it to your `.env` file:
 
 ```sh
-    npm exec auth secret
+openssl rand -base64 32
 ```
 OR
 ```sh
-    npx auth secret
-```
-
-##### Using the openssl command available on Linux and Mac OS X:
-
-```sh
-    openssl rand -base64 33
+npx auth secret
 ```
 
 #### 2.2 Change username and password (Optional) 

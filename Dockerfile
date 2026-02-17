@@ -49,10 +49,11 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
 EXPOSE 3000
 
 ENV PORT=3000
 
-# Start as root, fix /data permissions, then run app as nextjs user
-CMD chown -R nextjs:nodejs /data && \
-    exec su -s /bin/sh nextjs -c "npx -y prisma@6.19.0 migrate deploy && node server.js"
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

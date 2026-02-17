@@ -26,7 +26,7 @@ echo ""
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
-echo -e "${GREEN}[1/5]${NC} Current directory: $SCRIPT_DIR"
+echo -e "${GREEN}[1/6]${NC} Current directory: $SCRIPT_DIR"
 echo ""
 
 # Detect Docker Compose (standalone v2 or plugin)
@@ -48,23 +48,56 @@ if [ ! -d ".git" ]; then
     exit 1
 fi
 
+# Ensure .env exists and AUTH_SECRET is set
+echo -e "${GREEN}[2/6]${NC} Checking environment configuration..."
+
+if [ ! -f ".env" ]; then
+    if [ -f ".env.example" ]; then
+        cp .env.example .env
+        echo -e "  Created ${YELLOW}.env${NC} from .env.example"
+    else
+        echo -e "  ${RED}Warning: No .env.example found. Creating empty .env${NC}"
+        touch .env
+    fi
+fi
+
+# Generate AUTH_SECRET if missing or empty
+if ! grep -q '^AUTH_SECRET=.\+' .env 2>/dev/null; then
+    NEW_SECRET=$(openssl rand -base64 32)
+    if grep -q '^AUTH_SECRET=' .env 2>/dev/null; then
+        # AUTH_SECRET line exists but is empty — replace it (handle macOS vs Linux sed)
+        if sed --version >/dev/null 2>&1; then
+            sed -i "s|^AUTH_SECRET=.*|AUTH_SECRET=$NEW_SECRET|" .env
+        else
+            sed -i '' "s|^AUTH_SECRET=.*|AUTH_SECRET=$NEW_SECRET|" .env
+        fi
+    else
+        echo "AUTH_SECRET=$NEW_SECRET" >> .env
+    fi
+    echo -e "  Generated ${YELLOW}AUTH_SECRET${NC} in .env"
+else
+    echo -e "  AUTH_SECRET already set in .env"
+fi
+
+echo ""
+
 # Fetch latest changes
-echo -e "${GREEN}[2/5]${NC} Fetching latest changes from GitHub..."
+echo -e "${GREEN}[3/6]${NC} Fetching latest changes from GitHub..."
 git fetch origin
 
 # Checkout and pull the specified branch
-echo -e "${GREEN}[3/5]${NC} Checking out branch: ${YELLOW}$BRANCH${NC}"
+echo -e "${GREEN}[4/6]${NC} Checking out branch: ${YELLOW}$BRANCH${NC}"
 git checkout "$BRANCH"
 
-echo -e "${GREEN}[3/5]${NC} Pulling latest changes..."
+echo -e "${GREEN}[4/6]${NC} Pulling latest changes..."
 git pull origin "$BRANCH"
 
 # Stop existing containers
-echo -e "${GREEN}[4/5]${NC} Stopping existing containers..."
+echo -e "${GREEN}[5/6]${NC} Stopping existing containers..."
 $COMPOSE_CMD down
 
 # Build and start containers
-echo -e "${GREEN}[5/5]${NC} Building and starting containers..."
+echo -e "${GREEN}[6/6]${NC} Building and starting containers..."
 $COMPOSE_CMD up -d --build
 
 echo ""
