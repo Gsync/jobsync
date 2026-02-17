@@ -31,8 +31,6 @@ WORKDIR /app
 # Set environment variables
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN apk add --no-cache openssl su-exec
-
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 -h /home/nextjs nextjs
 
