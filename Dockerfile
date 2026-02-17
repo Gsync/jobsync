@@ -29,13 +29,12 @@ FROM base AS runner
 WORKDIR /app
 
 # Set environment variables
-ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl su-exec
 
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+    adduser --system --uid 1001 -h /home/nextjs nextjs
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
@@ -43,8 +42,6 @@ RUN chown nextjs:nodejs .next
 
 # Set up /data directory with the right permissions
 RUN mkdir -p /data/files/resumes && chown -R nextjs:nodejs /data/files/resumes
-
-# Automatically leverage output traces to reduce image size
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma

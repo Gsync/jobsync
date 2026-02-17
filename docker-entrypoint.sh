@@ -7,6 +7,10 @@ if [ -z "$AUTH_SECRET" ]; then
   echo "AUTH_SECRET was not set — generated a temporary secret for this container."
 fi
 
+# Run migrations as root (before switching users)
+npx -y prisma@6.19.0 migrate deploy
+
 # Fix /data permissions and run app as nextjs user
 chown -R nextjs:nodejs /data
-exec su -m -s /bin/sh nextjs -c "npx -y prisma@6.19.0 migrate deploy && node server.js"
+export HOME=/home/nextjs
+exec su-exec nextjs node server.js
