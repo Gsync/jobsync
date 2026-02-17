@@ -33,6 +33,16 @@ export const JOB_SOURCES = [
   { label: "Other", value: "other" },
 ] as const;
 
+export const JOB_STATUSES = [
+  { label: "Draft", value: "draft" },
+  { label: "Applied", value: "applied" },
+  { label: "Interview", value: "interview" },
+  { label: "Offer", value: "offer" },
+  { label: "Rejected", value: "rejected" },
+  { label: "Expired", value: "expired" },
+  { label: "Archived", value: "archived" },
+] as const;
+
 export const SIDEBAR_LINKS = [
   {
     icon: LayoutDashboard,

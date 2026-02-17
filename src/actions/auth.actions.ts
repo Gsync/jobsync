@@ -5,7 +5,7 @@ import { delay } from "@/utils/delay";
 import prisma from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { SignupFormSchema } from "@/models/signupForm.schema";
-import { JOB_SOURCES } from "@/lib/constants";
+import { JOB_SOURCES, JOB_STATUSES } from "@/lib/constants";
 
 export async function signup(formData: {
   name: string;
@@ -40,6 +40,14 @@ export async function signup(formData: {
       createdBy: newUser.id,
     })),
   });
+
+  for (const status of JOB_STATUSES) {
+    await prisma.jobStatus.upsert({
+      where: { value: status.value },
+      update: {},
+      create: status,
+    });
+  }
 
   return { success: true };
 }

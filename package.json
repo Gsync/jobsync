@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "node ./prisma/seed.js",
-    "test": "jest",
+"test": "jest",
     "test:e2e": "npx playwright test",
     "test:watch": "jest --watch"
   },
