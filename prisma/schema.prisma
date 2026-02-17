@@ -203,6 +203,8 @@ model Location {
   user           User             @relation(fields: [createdBy], references: [id])
   educations     Education[]
   workExperience WorkExperience[]
+
+  @@unique([value, createdBy])
 }
 
 model Company {

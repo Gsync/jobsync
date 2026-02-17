@@ -44,7 +44,8 @@ describe("Job Location Actions", () => {
   });
 
   describe("getAllJobLocations", () => {
-    it("should return all job locations", async () => {
+    it("should return job locations for authenticated user", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
       const mockLocations = [
         { id: "loc-1", label: "New York", value: "new york" },
         { id: "loc-2", label: "Remote", value: "remote" },
@@ -54,10 +55,22 @@ describe("Job Location Actions", () => {
       const result = await getAllJobLocations();
 
       expect(result).toEqual(mockLocations);
-      expect(prisma.location.findMany).toHaveBeenCalled();
+      expect(prisma.location.findMany).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id },
+      });
+    });
+
+    it("should return error for unauthenticated user", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+
+      const result = await getAllJobLocations();
+
+      expect(result).toEqual({ success: false, message: "Not authenticated" });
+      expect(prisma.location.findMany).not.toHaveBeenCalled();
     });
 
     it("should handle errors", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
       (prisma.location.findMany as jest.Mock).mockRejectedValue(
         new Error("Database error")
       );

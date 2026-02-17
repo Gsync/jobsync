@@ -6,7 +6,15 @@ import { APP_CONSTANTS } from "@/lib/constants";
 
 export const getAllJobLocations = async (): Promise<any | undefined> => {
   try {
-    const list = await prisma.location.findMany();
+    const user = await getCurrentUser();
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+    const list = await prisma.location.findMany({
+      where: {
+        createdBy: user.id,
+      },
+    });
     return list;
   } catch (error) {
     const msg = "Failed to fetch job location list. ";
