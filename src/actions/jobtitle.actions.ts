@@ -92,7 +92,7 @@ export const createJobTitle = async (
     const value = label.trim().toLowerCase();
 
     const upsertedTitle = await prisma.jobTitle.upsert({
-      where: { value, createdBy: user.id },
+      where: { value_createdBy: { value, createdBy: user.id } },
       update: { label },
       create: { label, value, createdBy: user.id },
     });

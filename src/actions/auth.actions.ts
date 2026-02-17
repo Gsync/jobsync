@@ -5,6 +5,7 @@ import { delay } from "@/utils/delay";
 import prisma from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { SignupFormSchema } from "@/models/signupForm.schema";
+import { JOB_SOURCES } from "@/lib/constants";
 
 export async function signup(formData: {
   name: string;
@@ -28,8 +29,16 @@ export async function signup(formData: {
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  await prisma.user.create({
+  const newUser = await prisma.user.create({
     data: { name, email, password: hashedPassword },
+  });
+
+  await prisma.jobSource.createMany({
+    data: JOB_SOURCES.map((source) => ({
+      label: source.label,
+      value: source.value,
+      createdBy: newUser.id,
+    })),
   });
 
   return { success: true };

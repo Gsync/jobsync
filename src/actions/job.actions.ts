@@ -213,6 +213,13 @@ export const createLocation = async (
       throw new Error("Please provide location name");
     }
 
+    const existing = await prisma.location.findFirst({
+      where: { value, createdBy: user.id },
+    });
+    if (existing) {
+      return { data: existing, success: true };
+    }
+
     const location = await prisma.location.create({
       data: { label, value, createdBy: user.id },
     });
@@ -238,6 +245,13 @@ export const createJobSource = async (
 
     if (!value) {
       throw new Error("Please provide job source name");
+    }
+
+    const existing = await prisma.jobSource.findFirst({
+      where: { value, createdBy: user.id },
+    });
+    if (existing) {
+      return { data: existing, success: true };
     }
 
     const jobSource = await prisma.jobSource.create({

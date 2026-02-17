@@ -1,4 +1,5 @@
 import prisma from "@/lib/db";
+import { JOB_SOURCES } from "@/lib/constants";
 
 import bcrypt from "bcryptjs";
 
@@ -10,18 +11,6 @@ const STATUS_DATA = [
   { label: "Rejected", value: "rejected" },
   { label: "Expired", value: "expired" },
   { label: "Archived", value: "archived" },
-];
-
-const JOB_SOURCES = [
-  { label: "Indeed", value: "indeed" },
-  { label: "Linkedin", value: "linkedin" },
-  { label: "Monster", value: "monster" },
-  { label: "Glassdoor", value: "glassdoor" },
-  { label: "Company Career page", value: "careerpage" },
-  { label: "Google", value: "google" },
-  { label: "ZipRecruiter", value: "ziprecruiter" },
-  { label: "Job Street", value: "jobstreet" },
-  { label: "Other", value: "other" },
 ];
 
 async function seedUser() {
@@ -69,17 +58,20 @@ async function seedStatuses() {
 }
 
 async function seedJobSources(userId: string) {
-  const existing = await prisma.jobSource.findUnique({
-    where: { value: "indeed" },
+  const existing = await prisma.jobSource.findFirst({
+    where: { value: "indeed", createdBy: userId },
   });
   if (existing) return;
 
   for (const source of JOB_SOURCES) {
-    await prisma.jobSource.upsert({
-      where: { value: source.value },
-      update: {},
-      create: { label: source.label, value: source.value, createdBy: userId },
+    const found = await prisma.jobSource.findFirst({
+      where: { value: source.value, createdBy: userId },
     });
+    if (!found) {
+      await prisma.jobSource.create({
+        data: { label: source.label, value: source.value, createdBy: userId },
+      });
+    }
   }
   console.log("[seed] Job sources seeded");
 }

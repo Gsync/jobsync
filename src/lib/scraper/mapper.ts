@@ -67,7 +67,7 @@ async function findOrCreateJobTitle(
   const normalized = normalizeForSearch(title);
 
   let existing = await db.jobTitle.findFirst({
-    where: { value: normalized },
+    where: { value: normalized, createdBy: userId },
   });
 
   if (!existing) {
@@ -75,6 +75,7 @@ async function findOrCreateJobTitle(
     if (keywords.length > 0) {
       existing = await db.jobTitle.findFirst({
         where: {
+          createdBy: userId,
           OR: keywords.map((keyword) => ({
             value: { contains: keyword },
           })),
@@ -146,7 +147,7 @@ async function findOrCreateCompany(
   const normalized = normalizeForSearch(company);
 
   let existing = await db.company.findFirst({
-    where: { value: normalized },
+    where: { value: normalized, createdBy: userId },
   });
 
   if (!existing) {
@@ -154,6 +155,7 @@ async function findOrCreateCompany(
     if (companyKeywords.length > 0) {
       existing = await db.company.findFirst({
         where: {
+          createdBy: userId,
           OR: companyKeywords.map((keyword) => ({
             label: { contains: keyword },
           })),
@@ -183,7 +185,7 @@ async function getOrCreateJobSource(
   const normalized = sourceBoard.toLowerCase();
 
   let jobSource = await db.jobSource.findFirst({
-    where: { value: normalized },
+    where: { value: normalized, createdBy: userId },
   });
 
   if (!jobSource) {

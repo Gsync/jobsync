@@ -176,11 +176,13 @@ model Contact {
 model JobTitle {
   id              String           @id @default(uuid())
   label           String
-  value           String           @unique //TODO: Change and Apply unique constraint on index  with value and userid
+  value           String
   jobs            Job[]
   createdBy       String // userId
   user            User             @relation(fields: [createdBy], references: [id])
   workExperiences WorkExperience[]
+
+  @@unique([value, createdBy])
 }
 
 model JobStatus {
@@ -206,21 +208,25 @@ model Location {
 model Company {
   id              String           @id @default(uuid())
   label           String
-  value           String           @unique
+  value           String
   jobsApplied     Job[]
   logoUrl         String? // field is optional
   createdBy       String // userId
   user            User             @relation(fields: [createdBy], references: [id])
   workExperiences WorkExperience[]
+
+  @@unique([value, createdBy])
 }
 
 model JobSource {
   id          String @id @default(uuid())
   label       String
-  value       String @unique
+  value       String
   jobsApplied Job[]
   createdBy   String // userId
   user        User   @relation(fields: [createdBy], references: [id])
+
+  @@unique([value, createdBy])
 }
 
 model Interview {
@@ -272,7 +278,7 @@ model Job {
 model ActivityType {
   id          String   @id @default(uuid())
   label       String
-  value       String   @unique
+  value       String
   description String?
   createdBy   String // userId
   user        User     @relation(fields: [createdBy], references: [id])
@@ -281,6 +287,8 @@ model ActivityType {
 
   Activities Activity[]
   Tasks      Task[]
+
+  @@unique([value, createdBy])
 }
 
 model Activity {

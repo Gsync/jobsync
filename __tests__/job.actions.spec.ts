@@ -36,6 +36,7 @@ jest.mock("@prisma/client", () => {
     },
     location: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
     },
@@ -417,7 +418,7 @@ describe("jobActions", () => {
         createdBy: mockUser.id,
       };
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-
+      (prisma.location.findFirst as jest.Mock).mockResolvedValue(null);
       (prisma.location.create as jest.Mock).mockResolvedValue(mockLocation);
 
       const result = await createLocation(label);
@@ -435,7 +436,7 @@ describe("jobActions", () => {
     });
     it("should handle unexpected errors", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-
+      (prisma.location.findFirst as jest.Mock).mockResolvedValue(null);
       (prisma.location.create as jest.Mock).mockRejectedValue(
         new Error("Unexpected error")
       );
