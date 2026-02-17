@@ -9,4 +9,4 @@ fi
 
 # Fix /data permissions and run app as nextjs user
 chown -R nextjs:nodejs /data
-exec su -s /bin/sh nextjs -c "npx -y prisma@6.19.0 migrate deploy && node server.js"
+exec su -m -s /bin/sh nextjs -c "npx -y prisma@6.19.0 migrate deploy && node server.js"
