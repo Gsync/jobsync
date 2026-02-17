@@ -23,9 +23,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
-  const userId = session?.accessToken?.sub;
+  const userId = session?.user?.id;
 
-  if (!session || !session.user || !userId) {
+  if (!session || !userId) {
     return createSSEErrorResponse("Not Authenticated");
   }
 

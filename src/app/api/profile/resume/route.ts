@@ -12,7 +12,7 @@ import { getTimestampedFileName } from "@/lib/utils";
 
 export const POST = async (req: NextRequest) => {
   const session = await auth();
-  const userId = session?.accessToken.sub;
+  const userId = session?.user?.id;
   const dataPath = process.env.NODE_ENV !== "production" ? "data" : "/data";
   let filePath;
 
@@ -79,7 +79,7 @@ export const POST = async (req: NextRequest) => {
 
 export const GET = async (req: NextRequest) => {
   const session = await auth();
-  const userId = session?.accessToken.sub;
+  const userId = session?.user?.id;
 
   try {
     if (!session || !session.user) {

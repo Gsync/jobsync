@@ -1,6 +1,5 @@
 import prisma from "@/lib/db";
 
-// @ts-expect-error - no types for bcryptjs
 import bcrypt from "bcryptjs";
 
 const STATUS_DATA = [

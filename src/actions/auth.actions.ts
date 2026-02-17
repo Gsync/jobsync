@@ -2,6 +2,38 @@
 import { AuthError } from "next-auth";
 import { signIn } from "../auth";
 import { delay } from "@/utils/delay";
+import prisma from "@/lib/db";
+import bcrypt from "bcryptjs";
+import { SignupFormSchema } from "@/models/signupForm.schema";
+
+export async function signup(formData: {
+  name: string;
+  email: string;
+  password: string;
+}) {
+  const parsed = SignupFormSchema.safeParse(formData);
+  if (!parsed.success) {
+    return { error: "Invalid form data." };
+  }
+
+  const { name, email, password } = parsed.data;
+
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (existingUser) {
+    return { error: "An account with this email already exists." };
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  await prisma.user.create({
+    data: { name, email, password: hashedPassword },
+  });
+
+  return { success: true };
+}
 
 export async function authenticate(
   prevState: string | undefined,
