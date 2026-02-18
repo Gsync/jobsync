@@ -89,13 +89,6 @@ function SigninForm() {
                   </FormItem>
                 )}
               />
-              {/* <div className="flex items-center"> */}
-              {/* <Label htmlFor="password">Password</Label> */}
-              {/* <Link href="#" className="ml-auto inline-block text-sm underline">
-                Forgot your password?
-              </Link> */}
-              {/* </div> */}
-              {/* <Input id="password" type="password" required /> */}
             </div>
             <Button type="submit" disabled={isPending} className="w-full">
               {isPending ? <Loading /> : "Login"}
