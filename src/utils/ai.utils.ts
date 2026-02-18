@@ -1,3 +1,7 @@
+const OLLAMA =
+  process.env.OLLAMA_BASE_URL ||
+  process.env.NEXT_PUBLIC_OLLAMA_BASE_URL ||
+  "http://localhost:11434";
 import { JobResponse } from "@/models/job.model";
 import { AiProvider } from "@/models/ai.model";
 
@@ -35,7 +39,7 @@ export const checkIfModelIsRunning = async (
 
   try {
     // Check if Ollama service is accessible
-    const response = await fetch("http://localhost:11434/api/ps", {
+    const response = await fetch(`${OLLAMA}/api/ps`, {
       signal: AbortSignal.timeout(5000), // 5 second timeout
     });
 
@@ -86,7 +90,7 @@ export const fetchRunningModels = async (): Promise<{
   error?: string;
 }> => {
   try {
-    const response = await fetch("http://localhost:11434/api/ps", {
+    const response = await fetch(`${OLLAMA}/api/ps`, {
       signal: AbortSignal.timeout(5000),
     });
 

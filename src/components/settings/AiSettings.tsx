@@ -1,4 +1,5 @@
 "use client";
+const OLLAMA = process.env.NEXT_PUBLIC_OLLAMA_BASE_URL || "http://localhost:11434";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import {
@@ -118,7 +119,7 @@ function AiSettings() {
     setIsLoadingModels(true);
     setFetchError("");
     try {
-      const response = await fetch("http://localhost:11434/api/tags");
+      const response = await fetch(`${OLLAMA}/api/tags`);
       if (!response.ok) {
         if (selectedModel.provider === AiProvider.OLLAMA) {
           setFetchError(
@@ -148,7 +149,7 @@ function AiSettings() {
   const keepModelAlive = async (modelName: string) => {
     try {
       // Send a request to keep the model loaded for 1 hour
-      await fetch("http://localhost:11434/api/generate", {
+      await fetch(`${OLLAMA}/api/generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -169,7 +170,7 @@ function AiSettings() {
     setRunningModelError("");
     setRunningModelName("");
     try {
-      const response = await fetch("http://localhost:11434/api/ps");
+      const response = await fetch('${OLLAMA}/api/ps');
       if (!response.ok) {
         if (selectedModel.provider === AiProvider.OLLAMA) {
           setRunningModelError(
