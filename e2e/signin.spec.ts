@@ -3,13 +3,13 @@ import { test, expect } from "@playwright/test";
 test("Signin page has title", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page).toHaveTitle("Signin | JobSync");
+  await expect(page).toHaveTitle("Sign In | JobSync");
+
+  await expect(page.getByRole("heading", { name: "JobSync" })).toBeVisible();
 
   await expect(
-    page.getByRole("heading", { name: "JobSync - Job Search Assistant" })
+    page.getByRole("heading", { name: "Welcome back" }),
   ).toBeVisible();
-
-  await expect(page.getByRole("heading", { name: "Login" })).toBeVisible();
 });
 
 test("Signin and out from app", async ({ page, baseURL }) => {
@@ -25,5 +25,7 @@ test("Signin and out from app", async ({ page, baseURL }) => {
   await page.getByRole("button", { name: "Avatar" }).click();
   await page.getByRole("button", { name: "Logout" }).click();
 
-  await expect(page.getByRole("heading", { name: "Login" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Welcome back" }),
+  ).toBeVisible();
 });
