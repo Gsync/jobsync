@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import {
   AiModel,
   AiProvider,
@@ -22,6 +21,7 @@ import { toast } from "../ui/use-toast";
 import { XCircle, CheckCircle, Loader2 } from "lucide-react";
 import { checkIfModelIsRunning } from "@/utils/ai.utils";
 import { getUserSettings, updateAiSettings } from "@/actions/userSettings.actions";
+import { getOllamaBaseUrl } from "@/actions/apiKey.actions";
 
 interface OllamaModelResponse {
   models: {
@@ -57,6 +57,7 @@ function AiSettings() {
   const [fetchError, setFetchError] = useState<string>("");
   const [runningModelError, setRunningModelError] = useState<string>("");
   const [runningModelName, setRunningModelName] = useState<string>("");
+  const [ollamaBaseUrl, setOllamaBaseUrl] = useState("http://127.0.0.1:11434");
 
   const setSelectedProvider = (provider: AiProvider) => {
     setSelectedModel({ provider, model: undefined });
@@ -69,12 +70,10 @@ function AiSettings() {
     setRunningModelName("");
     setRunningModelError("");
 
-    // Check if the selected model is running (only for Ollama)
     if (selectedModel.provider === AiProvider.OLLAMA) {
       const result = await checkIfModelIsRunning(model, selectedModel.provider);
       if (result.isRunning && result.runningModelName) {
         setRunningModelName(result.runningModelName);
-        // Keep the model alive indefinitely
         await keepModelAlive(result.runningModelName);
       } else if (result.error) {
         setRunningModelError(result.error);
@@ -86,9 +85,14 @@ function AiSettings() {
     const fetchSettings = async () => {
       setIsLoadingSettings(true);
       try {
-        const result = await getUserSettings();
-        if (result.success && result.data?.settings?.ai) {
-          const aiSettings = result.data.settings.ai;
+        const [settingsResult, resolvedUrl] = await Promise.all([
+          getUserSettings(),
+          getOllamaBaseUrl(),
+        ]);
+        setOllamaBaseUrl(resolvedUrl);
+
+        if (settingsResult.success && settingsResult.data?.settings?.ai) {
+          const aiSettings = settingsResult.data.settings.ai;
           setSelectedModel({
             provider: aiSettings.provider || defaultModel.provider,
             model: aiSettings.model,
@@ -118,7 +122,7 @@ function AiSettings() {
     setIsLoadingModels(true);
     setFetchError("");
     try {
-      const response = await fetch("http://localhost:11434/api/tags");
+      const response = await fetch(`${ollamaBaseUrl}/api/tags`);
       if (!response.ok) {
         if (selectedModel.provider === AiProvider.OLLAMA) {
           setFetchError(
@@ -131,7 +135,6 @@ function AiSettings() {
       const modelNames = data.models.map((model) => model.name);
       setOllamaModels(modelNames);
 
-      // Fetch and auto-select running model
       await fetchRunningModel();
     } catch (error) {
       console.error("Error fetching Ollama models:", error);
@@ -147,8 +150,7 @@ function AiSettings() {
 
   const keepModelAlive = async (modelName: string) => {
     try {
-      // Send a request to keep the model loaded for 1 hour
-      await fetch("http://localhost:11434/api/generate", {
+      await fetch(`${ollamaBaseUrl}/api/generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -156,7 +158,7 @@ function AiSettings() {
         body: JSON.stringify({
           model: modelName,
           prompt: "",
-          keep_alive: "1h", // Keep loaded for 1 hour
+          keep_alive: "1h",
           stream: false,
         }),
       });
@@ -169,7 +171,7 @@ function AiSettings() {
     setRunningModelError("");
     setRunningModelName("");
     try {
-      const response = await fetch("http://localhost:11434/api/ps");
+      const response = await fetch(`${ollamaBaseUrl}/api/ps`);
       if (!response.ok) {
         if (selectedModel.provider === AiProvider.OLLAMA) {
           setRunningModelError(
@@ -180,13 +182,11 @@ function AiSettings() {
       }
       const data: OllamaRunningModelResponse = await response.json();
       if (data.models && data.models.length > 0) {
-        // Auto-select the first running model
         const runningModelName = data.models[0].name;
         setSelectedModel({
           provider: AiProvider.OLLAMA,
           model: runningModelName,
         });
-        // Verify the model is running using shared utility
         const result = await checkIfModelIsRunning(
           runningModelName,
           AiProvider.OLLAMA,
@@ -220,7 +220,6 @@ function AiSettings() {
     try {
       const response = await fetch("/api/ai/deepseek/models");
       if (!response.ok) {
-        // Fall back to enum models if API fails
         const fallbackModels = Object.values(DeepseekModel);
         setDeepseekModels(fallbackModels);
         return;
@@ -232,7 +231,6 @@ function AiSettings() {
       );
     } catch (error) {
       console.error("Error fetching DeepSeek models:", error);
-      // Fall back to enum models if API fails
       setDeepseekModels(Object.values(DeepseekModel));
     } finally {
       setIsLoadingModels(false);
@@ -292,44 +290,79 @@ function AiSettings() {
   };
   if (isLoadingSettings) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>AI Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="ml-4">
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Loading settings...</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-lg font-medium">AI Provider</h3>
+          <p className="text-sm text-muted-foreground">
+            Configure your AI service provider and model.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Loading settings...</span>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>AI Settings</CardTitle>
-      </CardHeader>
-      <CardContent className="ml-4">
-        <div>
-          <Label className="my-4" htmlFor="ai-provider">
-            AI Service Provider
-          </Label>
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-lg font-medium">AI Provider</h3>
+        <p className="text-sm text-muted-foreground">
+          Configure your AI service provider and model.
+        </p>
+      </div>
+      <div>
+        <Label className="my-4" htmlFor="ai-provider">
+          AI Service Provider
+        </Label>
+        <Select
+          value={selectedModel.provider}
+          onValueChange={setSelectedProvider}
+        >
+          <SelectTrigger
+            id="ai-provider"
+            aria-label="Select AI provider"
+            className="w-[180px]"
+          >
+            <SelectValue placeholder="Select AI Service Provider" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {Object.entries(AiProvider).map(([key, value]) => (
+                <SelectItem key={key} value={value} className="capitalize">
+                  {value}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label className="my-4" htmlFor="ai-model">
+          Model
+        </Label>
+        <div className="flex items-start gap-2">
           <Select
-            value={selectedModel.provider}
-            onValueChange={setSelectedProvider}
+            value={selectedModel.model}
+            onValueChange={setSelectedProviderModel}
+            disabled={isLoadingModels}
           >
             <SelectTrigger
-              id="ai-provider"
-              aria-label="Select AI provider"
+              id="ai-model"
+              aria-label="Select Model"
               className="w-[180px]"
             >
-              <SelectValue placeholder="Select AI Service Provider" />
+              <SelectValue
+                placeholder={
+                  isLoadingModels ? "Loading models..." : "Select AI Model"
+                }
+              />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {Object.entries(AiProvider).map(([key, value]) => (
+                {getModelsList(selectedModel.provider).map(([key, value]) => (
                   <SelectItem key={key} value={value} className="capitalize">
                     {value}
                   </SelectItem>
@@ -337,74 +370,41 @@ function AiSettings() {
               </SelectGroup>
             </SelectContent>
           </Select>
-        </div>
-        <div>
-          <Label className="my-4" htmlFor="ai-model">
-            Model
-          </Label>
-          <div className="flex items-start gap-2">
-            <Select
-              value={selectedModel.model}
-              onValueChange={setSelectedProviderModel}
-              disabled={isLoadingModels}
-            >
-              <SelectTrigger
-                id="ai-model"
-                aria-label="Select Model"
-                className="w-[180px]"
-              >
-                <SelectValue
-                  placeholder={
-                    isLoadingModels ? "Loading models..." : "Select AI Model"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {getModelsList(selectedModel.provider).map(([key, value]) => (
-                    <SelectItem key={key} value={value} className="capitalize">
-                      {value}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            {fetchError && (
-              <div className="flex items-center gap-1 text-red-600 text-sm mt-2">
-                <XCircle className="h-4 w-4 flex-shrink-0" />
-                <span>{fetchError}</span>
-              </div>
-            )}
-          </div>
-          {runningModelName && (
-            <div className="flex items-center gap-1 text-green-600 text-sm mt-2">
-              <CheckCircle className="h-4 w-4 flex-shrink-0" />
-              <span>{runningModelName} is running</span>
-            </div>
-          )}
-          {runningModelError && (
+          {fetchError && (
             <div className="flex items-center gap-1 text-red-600 text-sm mt-2">
               <XCircle className="h-4 w-4 flex-shrink-0" />
-              <span>{runningModelError}</span>
+              <span>{fetchError}</span>
             </div>
           )}
         </div>
-        <Button
-          className="mt-8"
-          onClick={saveModelSettings}
-          disabled={
-            !selectedModel.model ||
-            (selectedModel.provider === AiProvider.OLLAMA &&
-              !runningModelName) ||
-            isLoadingModels ||
-            isSaving
-          }
-        >
-          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Save
-        </Button>
-      </CardContent>
-    </Card>
+        {runningModelName && (
+          <div className="flex items-center gap-1 text-green-600 text-sm mt-2">
+            <CheckCircle className="h-4 w-4 flex-shrink-0" />
+            <span>{runningModelName} is running</span>
+          </div>
+        )}
+        {runningModelError && (
+          <div className="flex items-center gap-1 text-red-600 text-sm mt-2">
+            <XCircle className="h-4 w-4 flex-shrink-0" />
+            <span>{runningModelError}</span>
+          </div>
+        )}
+      </div>
+      <Button
+        className="mt-4"
+        onClick={saveModelSettings}
+        disabled={
+          !selectedModel.model ||
+          (selectedModel.provider === AiProvider.OLLAMA &&
+            !runningModelName) ||
+          isLoadingModels ||
+          isSaving
+        }
+      >
+        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        Save
+      </Button>
+    </div>
   );
 }
 

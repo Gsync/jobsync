@@ -30,6 +30,24 @@ model User {
   Task         Task[]
   Automation   Automation[]
   Settings     UserSettings?
+  ApiKey       ApiKey[]
+}
+
+model ApiKey {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  provider     String
+  encryptedKey String
+  iv           String
+  last4        String
+  label        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastUsedAt   DateTime?
+
+  @@unique([userId, provider])
+  @@index([userId])
 }
 
 model UserSettings {

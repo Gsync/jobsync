@@ -65,9 +65,10 @@ export const POST = async (req: NextRequest) => {
     }
     const { normalizedText } = preprocessResult.data;
 
-    const model = getModel(
+    const model = await getModel(
       selectedModel.provider,
       selectedModel.model || "llama3.2",
+      userId,
     );
 
     // Single comprehensive LLM call

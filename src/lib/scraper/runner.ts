@@ -29,6 +29,7 @@ import {
   defaultUserSettings,
   type AiSettings,
 } from "@/models/userSettings.model";
+import { resolveApiKey } from "@/lib/api-key-resolver";
 
 const MAX_JOBS_PER_RUN = 10;
 
@@ -193,10 +194,12 @@ export async function runAutomation(
       `Searching for jobs: "${automation.keywords}" in ${automation.location}`,
     );
 
-    // Use JSearch API
+    // Use JSearch API with user's key if available
+    const rapidApiKey = await resolveApiKey(automation.userId, "rapidapi");
     const searchResult = await searchJSearchJobs(
       automation.keywords,
       automation.location,
+      rapidApiKey,
     );
 
     if (!searchResult.success) {
@@ -311,6 +314,7 @@ export async function runAutomation(
         resume as ResumeWithSections,
         automation.jobBoard as JobBoard,
         aiSettings,
+        automation.userId,
       );
 
       if (!matchResult.success) {
@@ -482,6 +486,7 @@ async function matchJobToResume(
   resume: ResumeWithSections,
   sourceBoard: JobBoard,
   aiSettings: AiSettings,
+  userId: string,
 ): Promise<MatchResult> {
   try {
     const resumeText = await convertResumeForMatch(resume);
@@ -497,7 +502,7 @@ ${job.description}
 
     const provider = aiSettings.provider;
     const modelName = aiSettings.model || getDefaultModelForProvider(provider);
-    const model = getModel(provider, modelName);
+    const model = await getModel(provider, modelName, userId);
 
     const result = await generateText({
       model,

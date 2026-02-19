@@ -1,8 +1,13 @@
+import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import { resolveApiKey } from "@/lib/api-key-resolver";
 
 export async function GET() {
   try {
-    const apiKey = process.env.DEEPSEEK_API_KEY;
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    const apiKey = await resolveApiKey(userId, "deepseek");
 
     if (!apiKey) {
       return NextResponse.json(

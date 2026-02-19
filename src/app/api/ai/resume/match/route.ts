@@ -90,9 +90,10 @@ export const POST = async (req: NextRequest) => {
     const { normalizedText: resumeText } = resumePreprocessResult.data;
     const { normalizedText: jobText } = jobPreprocessResult.data;
 
-    const model = getModel(
+    const model = await getModel(
       selectedModel.provider,
       selectedModel.model || "llama3.2",
+      userId,
     );
 
     // Single comprehensive LLM call
