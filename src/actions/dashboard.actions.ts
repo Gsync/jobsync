@@ -197,6 +197,7 @@ export const getJobsActivityForPeriod = async (): Promise<any | undefined> => {
     });
     // Reduce to a format that groups by unique date (YYYY-MM-DD) using local time
     const groupedPosts = jobData.reduce((acc: any, post: any) => {
+      if (!post.appliedDate) return acc;
       const date = format(new Date(post.appliedDate), "yyyy-MM-dd");
       acc[date] = (acc[date] || 0) + post._count._all;
       return acc;
@@ -377,6 +378,7 @@ export const getActivityCalendarData = async (): Promise<any | undefined> => {
 
     // Reduce to a format that groups by unique date (YYYY-MM-DD)
     const groupedJobs = jobData.reduce((acc: any, job: any) => {
+      if (!job.appliedDate) return acc;
       const date = format(new Date(job.appliedDate), "yyyy-MM-dd");
       acc[date] = (acc[date] || 0) + job._count._all;
       return acc;
