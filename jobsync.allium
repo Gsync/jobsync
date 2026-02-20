@@ -498,15 +498,16 @@ value ConnectorResult<T> {
 
 value ConnectorError {
   type: blocked | rate_limited | network | parse
-  message: String
-  retryAfter: Integer?
+  reason: String?                        -- present when type = blocked
+  message: String?                       -- present when type = network | parse
+  retryAfter: Integer?                   -- present when type = rate_limited
 }
 
 -- External system: EURES job portal API (European Employment Services)
 external entity EuresAPI {
-  baseUrl: String = "https://eures.europa.eu/api"
-  searchEndpoint: String = "/jv/search"
-  detailEndpoint: String = "/jv/get/{id}"
+  baseUrl: String = "https://europa.eu/eures/api"
+  searchEndpoint: String = "/jv-searchengine/public/jv-search/search"
+  detailEndpoint: String = "/jv-searchengine/public/jv/id/{id}"
   -- No API key required (public API)
   -- Returns: vacancy listings with multilingual titles, descriptions, employer info
   -- Filters: keywords, location (NUTS codes), occupation codes, contract type
