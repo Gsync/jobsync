@@ -29,8 +29,9 @@ export function createEuresConnector(): DataSourceConnector {
           ? [params.location.toLowerCase()]
           : [];
 
-        const body: EuresSearchRequest = {
-          resultsPerPage: 10,
+        const RESULTS_PER_PAGE = 50;
+        const baseBody: EuresSearchRequest = {
+          resultsPerPage: RESULTS_PER_PAGE,
           page: 1,
           sortSearch: "MOST_RECENT",
           keywords: [
@@ -57,37 +58,50 @@ export function createEuresConnector(): DataSourceConnector {
           requestLanguage,
         };
 
-        const response = await fetch(EURES_SEARCH_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify(body),
-        });
+        const allVacancies: DiscoveredVacancy[] = [];
+        let page = 1;
 
-        if (!response.ok) {
-          if (response.status === 429) {
+        while (true) {
+          const response = await fetch(EURES_SEARCH_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({ ...baseBody, page }),
+          });
+
+          if (!response.ok) {
+            if (response.status === 429) {
+              return {
+                success: false,
+                error: { type: "rate_limited" as const, retryAfter: 60 },
+              };
+            }
             return {
               success: false,
-              error: { type: "rate_limited", retryAfter: 60 },
+              error: {
+                type: "network" as const,
+                message: `EURES API error: ${response.status} ${response.statusText}`,
+              },
             };
           }
-          return {
-            success: false,
-            error: {
-              type: "network",
-              message: `EURES API error: ${response.status} ${response.statusText}`,
-            },
-          };
+
+          const data: EuresSearchResponse = await response.json();
+          const jvs = data.jvs || [];
+
+          if (jvs.length === 0) break;
+
+          for (const jv of jvs) {
+            allVacancies.push(translateEuresVacancy(jv, requestLanguage));
+          }
+
+          if (allVacancies.length >= data.numberRecords) break;
+
+          page++;
         }
 
-        const data: EuresSearchResponse = await response.json();
-        const vacancies = (data.jvs || []).map((jv) =>
-          translateEuresVacancy(jv, requestLanguage),
-        );
-
-        return { success: true, data: vacancies };
+        return { success: true, data: allVacancies };
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unknown error";
