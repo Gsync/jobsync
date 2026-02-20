@@ -79,7 +79,7 @@ export function AutomationWizard({
     mode: "onChange",
     defaultValues: {
       name: editAutomation?.name ?? "",
-      jobBoard: (editAutomation?.jobBoard as "jsearch") ?? "jsearch",
+      jobBoard: (editAutomation?.jobBoard as "jsearch" | "eures") ?? "jsearch",
       keywords: editAutomation?.keywords ?? "",
       location: editAutomation?.location ?? "",
       resumeId: editAutomation?.resumeId ?? "",
@@ -92,7 +92,7 @@ export function AutomationWizard({
     if (open) {
       form.reset({
         name: editAutomation?.name ?? "",
-        jobBoard: (editAutomation?.jobBoard as "jsearch") ?? "jsearch",
+        jobBoard: (editAutomation?.jobBoard as "jsearch" | "eures") ?? "jsearch",
         keywords: editAutomation?.keywords ?? "",
         location: editAutomation?.location ?? "",
         resumeId: editAutomation?.resumeId ?? "",
@@ -215,10 +215,11 @@ export function AutomationWizard({
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="jsearch">JSearch (Google Jobs)</SelectItem>
+                    <SelectItem value="eures">EURES (European Jobs)</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormDescription>
-                  The job board to search (more coming soon)
+                  The job board to search for vacancies
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -254,7 +255,9 @@ export function AutomationWizard({
                   <Input placeholder="e.g., Calgary, AB" {...field} />
                 </FormControl>
                 <FormDescription>
-                  City, state/province, or region to search in
+                  {formValues.jobBoard === "eures"
+                    ? "Country code (e.g., de, at, fr) or NUTS region code"
+                    : "City, state/province, or region to search in"}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -370,7 +373,9 @@ export function AutomationWizard({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Job Board</span>
-              <span className="font-medium capitalize">{formValues.jobBoard || "-"}</span>
+              <span className="font-medium">
+                {formValues.jobBoard === "eures" ? "EURES" : formValues.jobBoard === "jsearch" ? "JSearch" : formValues.jobBoard || "-"}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Keywords</span>
