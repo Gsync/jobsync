@@ -1,0 +1,676 @@
+-- JobSync Domain Specification
+-- A job search management application with automation, activity tracking, and AI matching.
+-- Allium specification v1.0
+
+-- =============================================================================
+-- Configuration
+-- =============================================================================
+
+config {
+  RECORDS_PER_PAGE: Integer = 25
+  ACTIVITY_MAX_DURATION_MINUTES: Integer = 480
+  SCHEDULER_CRON: String = "0 * * * *"
+  MAX_AUTOMATIONS_PER_USER: Integer = 10
+  MAX_JOBS_PER_AUTOMATION_RUN: Integer = 10
+  AI_RATE_LIMIT_PER_MINUTE: Integer = 5
+  AUTOMATION_MANUAL_RUN_LIMIT_PER_HOUR: Integer = 5
+}
+
+-- =============================================================================
+-- Bounded Context: Identity & Tenant Isolation
+-- =============================================================================
+
+entity User {
+  name: String
+  email: String                           -- unique
+  password: String                        -- bcrypt hashed
+  createdAt: DateTime
+  settings: UserSettings?                 -- 1:1 optional
+  profile: Profile?                       -- 1:1 optional
+  jobs: Job[]
+  tasks: Task[]
+  activities: Activity[]
+  automations: Automation[]
+  contacts: Contact[]
+  companies: Company[]
+  jobTitles: JobTitle[]
+  locations: Location[]
+  activityTypes: ActivityType[]
+}
+
+entity UserSettings {
+  user: User                              -- 1:1
+  settings: String = "{}"                 -- JSON blob
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+-- =============================================================================
+-- Bounded Context: Resume & Profile
+-- =============================================================================
+
+entity Profile {
+  user: User                              -- 1:1 via userId
+  resumes: Resume[]
+}
+
+entity Resume {
+  profile: Profile
+  title: String
+  file: File?                             -- 1:1 optional attachment
+  contactInfo: ContactInfo?               -- 1:1 optional
+  sections: ResumeSection[]
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+entity File {
+  fileName: String
+  filePath: String
+  fileType: String
+  uploadedAt: DateTime
+  resume: Resume?                         -- 1:1 back-reference
+}
+
+value ContactInfo {
+  resume: Resume                          -- 1:1 via resumeId
+  firstName: String
+  lastName: String
+  headline: String
+  email: String
+  phone: String
+  address: String?
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+entity ResumeSection {
+  resume: Resume
+  sectionTitle: String
+  sectionType: summary | experience | education | license | other
+  summary: Summary?                       -- 1:1 optional
+  workExperiences: WorkExperience[]
+  educations: Education[]
+  licenseOrCertifications: LicenseOrCertification[]
+  others: OtherSection[]
+}
+
+value Summary {
+  content: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+entity WorkExperience {
+  section: ResumeSection?
+  company: Company
+  jobTitle: JobTitle
+  startDate: DateTime
+  endDate: DateTime?
+  description: String
+  location: Location
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+entity Education {
+  section: ResumeSection?
+  institution: String
+  degree: String
+  fieldOfStudy: String
+  startDate: DateTime
+  endDate: DateTime?
+  description: String?
+  location: Location
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+entity LicenseOrCertification {
+  section: ResumeSection?
+  title: String
+  organization: String
+  issueDate: DateTime?
+  expirationDate: DateTime?
+  credentialUrl: String?
+}
+
+entity OtherSection {
+  section: ResumeSection?
+  title: String
+  content: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+-- =============================================================================
+-- Bounded Context: Reference Data (user-scoped lookups)
+-- =============================================================================
+
+entity Company {
+  label: String
+  value: String                           -- unique
+  logoUrl: String?
+  createdBy: User
+  jobs: Job[]
+  workExperiences: WorkExperience[]
+}
+
+entity JobTitle {
+  label: String
+  value: String                           -- unique (see open question below)
+  createdBy: User
+  jobs: Job[]
+  workExperiences: WorkExperience[]
+}
+
+entity Location {
+  label: String
+  value: String
+  stateProv: String?
+  country: String?
+  createdBy: User
+  jobs: Job[]
+  educations: Education[]
+  workExperiences: WorkExperience[]
+}
+
+entity ActivityType {
+  label: String
+  value: String                           -- unique
+  description: String?
+  createdBy: User
+  activities: Activity[]
+  tasks: Task[]
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+-- =============================================================================
+-- Bounded Context: Job Board (pre-seeded reference enums)
+-- =============================================================================
+
+-- Pre-seeded in database; not user-scoped. Acts as enum tables.
+
+entity JobStatus {
+  label: String
+  value: bookmarked | applied | interview | offer | rejected | withdrawn | archived
+  jobs: Job[]
+}
+
+entity JobSource {
+  label: String
+  value: linkedin | indeed | glassdoor | company_website | referral | other
+  jobs: Job[]
+}
+
+-- =============================================================================
+-- Bounded Context: Job Tracking
+-- =============================================================================
+
+entity Job {
+  user: User
+  description: String
+  jobType: full_time | part_time | contract
+  applied: Boolean = false
+  appliedDate: DateTime?
+  dueDate: DateTime?
+  jobUrl: String?
+  salaryRange: String?
+  createdAt: DateTime
+
+  -- relationships
+  status: JobStatus
+  jobTitle: JobTitle
+  company: Company
+  location: Location?
+  source: JobSource?
+  resume: Resume?
+  interviews: Interview[]
+
+  -- automation discovery fields
+  automation: Automation?
+  matchScore: Integer?
+  matchData: String?                      -- JSON string with match reasoning
+  discoveryStatus: new | accepted | dismissed
+  discoveredAt: DateTime?
+
+  -- derived
+  isDiscovered: automation != null        -- true when found by automation
+}
+
+entity Interview {
+  createdAt: DateTime
+  job: Job
+  interviewers: Contact[]
+}
+
+entity Contact {
+  name: String
+  email: String
+  createdBy: User
+  createdAt: DateTime
+  interview: Interview?
+}
+
+-- =============================================================================
+-- Bounded Context: Task & Activity Management
+-- =============================================================================
+
+entity Task {
+  user: User
+  title: String
+  description: String?
+  status: in_progress | complete | needs_attention | cancelled = in_progress
+  priority: Integer = 5
+  percentComplete: Integer = 0
+  dueDate: DateTime?
+  activityType: ActivityType?
+  activity: Activity?                     -- 1:1 optional link
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+entity Activity {
+  user: User
+  activityName: String
+  startTime: DateTime
+  endTime: DateTime?
+  duration: Integer?                      -- minutes
+  description: String?
+  activityType: ActivityType
+  task: Task?                             -- 1:1 optional link via taskId
+  createdAt: DateTime
+  updatedAt: DateTime
+
+  -- derived
+  isRunning: endTime = null
+}
+
+-- =============================================================================
+-- Bounded Context: Automation & Discovery
+-- =============================================================================
+
+entity Automation {
+  user: User
+  name: String
+  jobBoard: jsearch                       -- currently only jsearch supported
+  keywords: String
+  location: String
+  resume: Resume
+  matchThreshold: Integer = 80            -- 0-100
+  scheduleHour: Integer                   -- hour of day (0-23)
+  nextRunAt: DateTime?
+  lastRunAt: DateTime?
+  status: active | paused = active
+  runs: AutomationRun[]
+  discoveredJobs: Job[]
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+entity AutomationRun {
+  automation: Automation                  -- cascade delete
+  jobsSearched: Integer = 0
+  jobsDeduplicated: Integer = 0
+  jobsProcessed: Integer = 0
+  jobsMatched: Integer = 0
+  jobsSaved: Integer = 0
+  status: running | completed | failed | completed_with_errors | blocked | rate_limited = running
+  errorMessage: String?
+  blockedReason: String?
+  startedAt: DateTime
+  completedAt: DateTime?
+}
+
+-- External system: JSearch job board API
+external entity JSearchAPI {
+  query: String
+  location: String
+  datePosted: String                      -- e.g. "week"
+  page: Integer
+}
+
+-- External system: LLM provider for AI matching
+external entity LLMProvider {
+  provider: ollama | openai | deepseek
+  model: String
+  prompt: String
+  resumeContent: String
+  jobDescription: String
+}
+
+-- =============================================================================
+-- Rules: Authentication & Isolation
+-- =============================================================================
+
+rule UserRegistration {
+  when: RegisterRequest(name, email, password)
+  requires: not exists User where email = email
+  ensures: User.created(name, email, bcrypt(password))
+}
+
+rule UserLogin {
+  when: LoginRequest(email, password)
+  requires: exists user: User where user.email = email
+  let user = User where email = email
+  requires: bcrypt_verify(password, user.password)
+  ensures: SessionCreated(user)
+}
+
+rule TenantIsolation {
+  -- Ubiquitous: The system shall filter all data queries by the authenticated user's id.
+  when: DataQuery(userId, entityType)
+  requires: userId = authenticatedUser.id
+  ensures: results filtered by userId or createdBy = userId
+}
+
+-- =============================================================================
+-- Rules: Job Status Transitions
+-- =============================================================================
+
+rule JobAppliedTransition {
+  -- WHEN job status transitions to "applied", the system shall set applied=true and appliedDate=now.
+  when: job: Job.status transitions_to applied
+  ensures: job.applied = true
+  ensures: job.appliedDate = now()
+}
+
+rule JobInterviewTransition {
+  -- WHEN job status transitions to "interview", the system shall set applied=true.
+  -- The system shall not overwrite an existing appliedDate.
+  when: job: Job.status transitions_to interview
+  ensures: job.applied = true
+}
+
+-- =============================================================================
+-- Rules: Activity Management
+-- =============================================================================
+
+rule ActivityMutualExclusion {
+  -- The system shall reject starting a new activity when another is already running for the same user.
+  when: StartActivity(userId)
+  let running = Activity where userId = userId and endTime = null
+  requires: not exists running
+  ensures: Activity.created(userId, activityName, startTime = now(), endTime = null)
+}
+
+rule ActivityMaxDuration {
+  -- WHILE an activity's duration exceeds ACTIVITY_MAX_DURATION_MINUTES,
+  -- the system shall auto-stop the activity and cap duration at 480 minutes.
+  when: activity: Activity.duration_exceeds ACTIVITY_MAX_DURATION_MINUTES
+  ensures: activity.endTime = activity.startTime + 480 minutes
+  ensures: activity.duration = 480
+}
+
+rule ActivityCloneOnStart {
+  -- WHEN a user "starts" an existing activity, the system shall create a new activity
+  -- cloned from the original (same name, type, description) with startTime=now.
+  when: StartExistingActivity(userId, sourceActivityId)
+  let source = Activity where id = sourceActivityId
+  requires: not exists Activity where userId = userId and endTime = null
+  ensures: Activity.created(
+    userId,
+    activityName = source.activityName,
+    activityType = source.activityType,
+    description = source.description,
+    startTime = now(),
+    endTime = null
+  )
+}
+
+rule ActivityListingFilter {
+  -- The system shall only show completed activities (endTime is not null) in activity listings.
+  when: ListActivities(userId)
+  ensures: results filtered by endTime != null
+}
+
+-- =============================================================================
+-- Rules: Task Management
+-- =============================================================================
+
+rule TaskStartActivity {
+  -- WHEN a user starts an activity from a task, the system shall verify preconditions.
+  when: StartActivityFromTask(userId, taskId)
+  let task = Task where id = taskId
+  requires: task.activityType != null
+  requires: task.activity = null
+  requires: task.status != complete
+  requires: task.status != cancelled
+  requires: not exists Activity where userId = userId and endTime = null
+  ensures: Activity.created(
+    userId,
+    activityName = task.title,
+    activityType = task.activityType,
+    task = task,
+    startTime = now(),
+    endTime = null
+  )
+}
+
+rule TaskDeletionGuard {
+  -- IF a task has a linked activity, the system shall reject deletion.
+  when: DeleteTask(taskId)
+  let task = Task where id = taskId
+  requires: task.activity = null
+  ensures: not exists task
+}
+
+-- =============================================================================
+-- Rules: Automation & Discovery
+-- =============================================================================
+
+rule AutomationLimit {
+  -- The system shall reject creating an automation when the user already has MAX_AUTOMATIONS_PER_USER.
+  when: CreateAutomation(userId)
+  let count = Automation where userId = userId | count
+  requires: count < MAX_AUTOMATIONS_PER_USER
+  ensures: Automation.created(userId, ...)
+}
+
+rule AutomationScheduler {
+  -- WHEN the scheduler cron fires, the system shall find active automations with nextRunAt <= now.
+  when: SchedulerTick()
+  let due = Automation where status = active and nextRunAt <= now()
+  ensures: AutomationRunTriggered(automation) for each due automation with resume != null
+}
+
+rule AutomationRunFlow {
+  -- WHEN an automation run is triggered, the system shall execute the discovery pipeline.
+  when: AutomationRunTriggered(automation)
+  let run = AutomationRun.created(automation, status = running, startedAt = now())
+  -- Step 1: Search JSearch API
+  let searchResults = JSearchAPI.search(automation.keywords, automation.location, datePosted = "week", page = 1)
+  -- Step 2: Deduplicate against existing job URLs (normalized)
+  let newJobs = searchResults where jobUrl not in (Job where userId = automation.userId).jobUrl
+  -- Step 3: Cap at MAX_JOBS_PER_AUTOMATION_RUN
+  let batch = newJobs | take MAX_JOBS_PER_AUTOMATION_RUN
+  -- Step 4: Score each job via LLM
+  -- Step 5: Filter by matchThreshold
+  -- Step 6: Save matched jobs
+  ensures: run.status = completed or failed or completed_with_errors or blocked or rate_limited
+  ensures: automation.lastRunAt = now()
+  ensures: automation.nextRunAt = next occurrence of automation.scheduleHour
+}
+
+rule AutomationPause {
+  -- WHEN an automation is paused, the system shall clear nextRunAt.
+  when: PauseAutomation(automationId)
+  let automation = Automation where id = automationId
+  ensures: automation.status = paused
+  ensures: automation.nextRunAt = null
+}
+
+rule AutomationResume {
+  -- WHEN an automation is resumed, the system shall recalculate nextRunAt from scheduleHour.
+  when: ResumeAutomation(automationId)
+  let automation = Automation where id = automationId
+  ensures: automation.status = active
+  ensures: automation.nextRunAt = next occurrence of automation.scheduleHour
+}
+
+rule DiscoveredJobTriage {
+  -- WHEN a user triages a discovered job, the system shall update discoveryStatus.
+  when: TriageDiscoveredJob(jobId, decision)
+  let job = Job where id = jobId
+  requires: job.discoveryStatus = new
+  requires: decision = accepted or decision = dismissed
+  ensures: job.discoveryStatus = decision
+}
+
+-- =============================================================================
+-- Rules: Rate Limiting
+-- =============================================================================
+
+rule AutomationManualRunRateLimit {
+  -- The system shall limit manual automation triggers to AUTOMATION_MANUAL_RUN_LIMIT_PER_HOUR per automation.
+  when: ManualTriggerRun(automationId)
+  let recentRuns = AutomationRun where automationId = automationId and startedAt > now() - 1 hour | count
+  requires: recentRuns < AUTOMATION_MANUAL_RUN_LIMIT_PER_HOUR
+  ensures: AutomationRunTriggered(automation)
+}
+
+rule AIRateLimit {
+  -- The system shall limit AI endpoint requests to AI_RATE_LIMIT_PER_MINUTE per user.
+  when: AIRequest(userId)
+  let recentRequests = AIRequestLog where userId = userId and timestamp > now() - 1 minute | count
+  requires: recentRequests < AI_RATE_LIMIT_PER_MINUTE
+  ensures: AIRequestProcessed(userId)
+}
+
+-- =============================================================================
+-- Rules: AI Features
+-- =============================================================================
+
+rule AIResumeReview {
+  -- WHEN a user requests an AI resume review, the system shall stream LLM analysis.
+  when: RequestAIReview(userId, resumeId)
+  let resume = Resume where id = resumeId
+  requires: resume.profile.user.id = userId
+  ensures: StreamingLLMResponse(resume.content)
+}
+
+rule AIJobMatch {
+  -- WHEN a user requests a job match score, the system shall return a 0-100 score with reasoning.
+  when: RequestJobMatch(userId, resumeId, jobDescription)
+  let resume = Resume where id = resumeId
+  requires: resume.profile.user.id = userId
+  ensures: MatchResult(score: 0..100, reasoning: String)
+}
+
+-- =============================================================================
+-- Rules: Export
+-- =============================================================================
+
+rule JobExport {
+  -- WHEN a user exports jobs, the system shall generate CSV of all their jobs.
+  when: ExportJobs(userId)
+  let jobs = Job where userId = userId
+  ensures: CSVGenerated(jobs)
+}
+
+-- =============================================================================
+-- Surfaces
+-- =============================================================================
+
+surface AuthSurface {
+  facing visitor: Unauthenticated
+  provides: Register, Login
+}
+
+surface DashboardSurface {
+  facing viewer: User
+  context jobs: Job where userId = viewer.id
+  context activities: Activity where userId = viewer.id
+  exposes: jobCountsByStatus, activityHeatmap, recentActivities
+  related: JobListSurface, TaskListSurface, ActivityListSurface
+}
+
+surface JobListSurface {
+  facing viewer: User
+  context jobs: Job where userId = viewer.id
+  exposes: paginatedJobs, filters, search
+  provides: AddJob, UpdateJob, UpdateJobStatus, DeleteJob, ExportJobs
+  related: JobDetailSurface
+}
+
+surface JobDetailSurface {
+  facing viewer: User
+  context job: Job where userId = viewer.id
+  exposes: fullJobDetails, company, jobTitle, location, source, resume, interviews, automationMatch
+  related: JobListSurface, JobMatchSurface
+}
+
+surface AutomationListSurface {
+  facing viewer: User
+  context automations: Automation where userId = viewer.id
+  exposes: paginatedAutomations
+  provides: CreateAutomation, UpdateAutomation, DeleteAutomation, PauseAutomation, ResumeAutomation
+  related: AutomationDetailSurface
+}
+
+surface AutomationDetailSurface {
+  facing viewer: User
+  context automation: Automation where userId = viewer.id
+  exposes: automationDetails, runs, discoveredJobs
+  provides: TriggerRun, AcceptJob, DismissJob
+  related: AutomationListSurface
+}
+
+surface TaskListSurface {
+  facing viewer: User
+  context tasks: Task where userId = viewer.id
+  exposes: paginatedTasks, filters
+  provides: CreateTask, UpdateTask, UpdateTaskStatus, DeleteTask, StartActivityFromTask
+  related: ActivityListSurface
+}
+
+surface ActivityListSurface {
+  facing viewer: User
+  context activities: Activity where userId = viewer.id and endTime != null
+  exposes: paginatedCompletedActivities
+  provides: CreateActivity, DeleteActivity, StartActivity, StopActivity
+  related: TaskListSurface
+}
+
+surface ProfileSurface {
+  facing viewer: User
+  context profile: Profile where userId = viewer.id
+  exposes: profile, resumes, resumeSections, contactInfo, workExperiences, educations, certifications
+  provides: CreateResume, UpdateResume, DeleteResume,
+            CreateContactInfo, UpdateContactInfo,
+            CreateResumeSection, UpdateResumeSection, DeleteResumeSection,
+            CreateWorkExperience, UpdateWorkExperience, DeleteWorkExperience,
+            CreateEducation, UpdateEducation, DeleteEducation,
+            CreateCertification, UpdateCertification, DeleteCertification
+  related: ResumeReviewSurface
+}
+
+surface AdminSurface {
+  facing viewer: User
+  exposes: companies, jobTitles, locations, activityTypes
+  provides: CreateCompany, UpdateCompany, DeleteCompany,
+            CreateJobTitle, UpdateJobTitle, DeleteJobTitle,
+            CreateLocation, UpdateLocation, DeleteLocation,
+            CreateActivityType, UpdateActivityType, DeleteActivityType
+}
+
+surface ResumeReviewSurface {
+  facing viewer: User
+  context resume: Resume where profile.userId = viewer.id
+  provides: RequestAIReview
+  related: ProfileSurface
+}
+
+surface JobMatchSurface {
+  facing viewer: User
+  context job: Job where userId = viewer.id
+  provides: RequestJobMatch
+  related: JobDetailSurface
+}
+
+-- =============================================================================
+-- Open Questions
+-- =============================================================================
+
+open question "JobTitle unique constraint should be composite (value + userId), not just value alone. Current schema allows collisions across tenants."
