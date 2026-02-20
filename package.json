@@ -48,6 +48,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
+    "cockatiel": "^3.2.1",
     "date-fns": "^3.6.0",
     "lucide-react": "^0.469.0",
     "next": "15.5.10",
