@@ -53,6 +53,10 @@ function translateDetail(
     postedAt: detail.creationDate ? new Date(detail.creationDate) : undefined,
     employmentType: mapDetailScheduleCode(profile.positionScheduleCodes),
     externalId: detail.id,
+    applicationDeadline: profile.lastApplicationDate ?? undefined,
+    applicationInstructions: profile.applicationInstructions
+      ? stripDetailHtml(profile.applicationInstructions.join("\n"))
+      : undefined,
   };
 }
 
