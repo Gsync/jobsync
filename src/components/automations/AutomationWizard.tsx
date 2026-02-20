@@ -104,7 +104,8 @@ export function AutomationWizard({
     }
   }, [open, editAutomation, form]);
 
-  const formValues = form.watch();
+  const jobBoard = form.watch("jobBoard");
+  const connectorParams = form.watch("connectorParams");
 
   const tryParseConnectorParams = (params?: string) => {
     try { return params ? JSON.parse(params) : undefined; } catch { return undefined; }
@@ -149,14 +150,14 @@ export function AutomationWizard({
   const canGoNext = () => {
     switch (step) {
       case 0:
-        return (formValues.name?.trim().length ?? 0) > 0;
+        return (form.getValues("name")?.trim().length ?? 0) > 0;
       case 1:
         return (
-          (formValues.keywords?.trim().length ?? 0) > 0 &&
-          (formValues.location?.trim().length ?? 0) > 0
+          (form.getValues("keywords")?.trim().length ?? 0) > 0 &&
+          (form.getValues("location")?.trim().length ?? 0) > 0
         );
       case 2:
-        return (formValues.resumeId?.length ?? 0) > 0;
+        return (form.getValues("resumeId")?.length ?? 0) > 0;
       case 3:
       case 4:
         return true;
@@ -183,7 +184,7 @@ export function AutomationWizard({
     onOpenChange(false);
   };
 
-  const selectedResume = resumes.find((r) => r.id === formValues.resumeId);
+  const selectedResume = resumes.find((r) => r.id === form.getValues("resumeId"));
 
   const renderStepContent = () => {
     return (
@@ -241,17 +242,17 @@ export function AutomationWizard({
               <FormItem>
                 <FormLabel>Search Keywords</FormLabel>
                 <FormControl>
-                  {formValues.jobBoard === "eures" ? (
+                  {jobBoard === "eures" ? (
                     <EuresOccupationCombobox
                       field={field}
-                      language={tryParseConnectorParams(formValues.connectorParams)?.language}
+                      language={tryParseConnectorParams(connectorParams)?.language}
                     />
                   ) : (
                     <Input placeholder="e.g., Full Stack Developer" {...field} />
                   )}
                 </FormControl>
                 <FormDescription>
-                  {formValues.jobBoard === "eures"
+                  {jobBoard === "eures"
                     ? "Search or type an occupation title (ESCO)"
                     : "Job titles, skills, or keywords to search for"}
                 </FormDescription>
@@ -269,7 +270,7 @@ export function AutomationWizard({
                   <Input placeholder="e.g., Calgary, AB" {...field} />
                 </FormControl>
                 <FormDescription>
-                  {formValues.jobBoard === "eures"
+                  {jobBoard === "eures"
                     ? "Country code (e.g., de, at, fr) or NUTS region code"
                     : "City, state/province, or region to search in"}
                 </FormDescription>
@@ -383,21 +384,21 @@ export function AutomationWizard({
           <div className="rounded-lg border p-4 space-y-3">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Name</span>
-              <span className="font-medium">{formValues.name || "-"}</span>
+              <span className="font-medium">{form.getValues("name") || "-"}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Job Board</span>
               <span className="font-medium">
-                {formValues.jobBoard === "eures" ? "EURES" : formValues.jobBoard === "jsearch" ? "JSearch" : formValues.jobBoard || "-"}
+                {jobBoard === "eures" ? "EURES" : jobBoard === "jsearch" ? "JSearch" : jobBoard || "-"}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Keywords</span>
-              <span className="font-medium">{formValues.keywords || "-"}</span>
+              <span className="font-medium">{form.getValues("keywords") || "-"}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Location</span>
-              <span className="font-medium">{formValues.location || "-"}</span>
+              <span className="font-medium">{form.getValues("location") || "-"}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Resume</span>
@@ -405,12 +406,12 @@ export function AutomationWizard({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Match Threshold</span>
-              <span className="font-medium">{formValues.matchThreshold ?? 80}%</span>
+              <span className="font-medium">{form.getValues("matchThreshold") ?? 80}%</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Schedule</span>
               <span className="font-medium">
-                Daily at {(formValues.scheduleHour ?? 8).toString().padStart(2, "0")}:00
+                Daily at {(form.getValues("scheduleHour") ?? 8).toString().padStart(2, "0")}:00
               </span>
             </div>
           </div>
