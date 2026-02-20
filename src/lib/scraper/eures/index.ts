@@ -9,6 +9,12 @@ import type { components } from "./generated";
 type EuresSearchRequest = components["schemas"]["JobSearchRequest"];
 type EuresSearchResponse = components["schemas"]["JobSearchResponse"];
 import { translateEuresVacancy } from "./translator";
+import {
+  resilientFetch,
+  BrokenCircuitError,
+  TaskCancelledError,
+  BulkheadRejectedError,
+} from "./resilience";
 
 const EURES_API_BASE = "https://europa.eu/eures/api";
 const EURES_SEARCH_URL = `${EURES_API_BASE}/jv-searchengine/public/jv-search/search`;
@@ -62,32 +68,17 @@ export function createEuresConnector(): DataSourceConnector {
         let page = 1;
 
         while (true) {
-          const response = await fetch(EURES_SEARCH_URL, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-            body: JSON.stringify({ ...baseBody, page }),
-          });
-
-          if (!response.ok) {
-            if (response.status === 429) {
-              return {
-                success: false,
-                error: { type: "rate_limited" as const, retryAfter: 60 },
-              };
-            }
-            return {
-              success: false,
-              error: {
-                type: "network" as const,
-                message: `EURES API error: ${response.status} ${response.statusText}`,
+          const data = await resilientFetch<EuresSearchResponse>(
+            EURES_SEARCH_URL,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
               },
-            };
-          }
-
-          const data: EuresSearchResponse = await response.json();
+              body: JSON.stringify({ ...baseBody, page }),
+            },
+          );
           const jvs = data.jvs || [];
 
           if (jvs.length === 0) break;
@@ -103,6 +94,30 @@ export function createEuresConnector(): DataSourceConnector {
 
         return { success: true, data: allVacancies };
       } catch (error) {
+        if (error instanceof BrokenCircuitError) {
+          return {
+            success: false,
+            error: {
+              type: "network" as const,
+              message: "EURES API circuit breaker open — service temporarily unavailable",
+            },
+          };
+        }
+        if (error instanceof BulkheadRejectedError) {
+          return {
+            success: false,
+            error: { type: "rate_limited" as const, retryAfter: 30 },
+          };
+        }
+        if (error instanceof TaskCancelledError) {
+          return {
+            success: false,
+            error: {
+              type: "network" as const,
+              message: "EURES API request timed out",
+            },
+          };
+        }
         const message =
           error instanceof Error ? error.message : "Unknown error";
         return { success: false, error: { type: "network", message } };
