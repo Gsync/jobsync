@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
@@ -19,8 +25,16 @@ import {
   AlertDialogTrigger,
 } from "../ui/alert-dialog";
 import { Loader2, Plus, Trash2, CheckCircle } from "lucide-react";
-import { getUserApiKeys, saveApiKey, deleteApiKey } from "@/actions/apiKey.actions";
-import type { ApiKeyClientResponse, ApiKeyProvider } from "@/models/apiKey.model";
+import {
+  getUserApiKeys,
+  saveApiKey,
+  deleteApiKey,
+  getDefaultOllamaBaseUrl,
+} from "@/actions/apiKey.actions";
+import type {
+  ApiKeyClientResponse,
+  ApiKeyProvider,
+} from "@/models/apiKey.model";
 
 interface ProviderConfig {
   id: ApiKeyProvider;
@@ -29,6 +43,8 @@ interface ProviderConfig {
   inputType: "password" | "text";
   description: string;
 }
+
+const DEFAULT_OLLAMA_PLACEHOLDER = "http://127.0.0.1:11434";
 
 const PROVIDERS: ProviderConfig[] = [
   {
@@ -55,7 +71,7 @@ const PROVIDERS: ProviderConfig[] = [
   {
     id: "ollama",
     name: "Ollama",
-    placeholder: "http://127.0.0.1:11434",
+    placeholder: DEFAULT_OLLAMA_PLACEHOLDER,
     inputType: "text",
     description: "Base URL for your Ollama instance",
   },
@@ -64,13 +80,19 @@ const PROVIDERS: ProviderConfig[] = [
 function ApiKeySettings() {
   const [keys, setKeys] = useState<ApiKeyClientResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [editingProvider, setEditingProvider] = useState<ApiKeyProvider | null>(null);
+  const [defaultOllamaUrl, setDefaultOllamaUrl] = useState(
+    DEFAULT_OLLAMA_PLACEHOLDER,
+  );
+  const [editingProvider, setEditingProvider] = useState<ApiKeyProvider | null>(
+    null,
+  );
   const [inputValue, setInputValue] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     fetchKeys();
+    getDefaultOllamaBaseUrl().then(setDefaultOllamaUrl);
   }, []);
 
   const fetchKeys = async () => {
@@ -192,7 +214,8 @@ function ApiKeySettings() {
       <div>
         <h3 className="text-lg font-medium">API Keys</h3>
         <p className="text-sm text-muted-foreground">
-          Manage your API keys for AI providers and external services. Keys are encrypted and stored securely.
+          Manage your API keys for AI providers and external services. Keys are
+          encrypted and stored securely.
         </p>
       </div>
 
@@ -209,6 +232,11 @@ function ApiKeySettings() {
                     <CardTitle className="text-base">{provider.name}</CardTitle>
                     <CardDescription className="text-sm">
                       {provider.description}
+                      {provider.id === "ollama" && (
+                        <span className="block text-xs text-muted-foreground/70 mt-0.5">
+                          Default: {defaultOllamaUrl}
+                        </span>
+                      )}
                     </CardDescription>
                   </div>
                   {existingKey ? (
@@ -231,7 +259,11 @@ function ApiKeySettings() {
                       <Input
                         id={`key-${provider.id}`}
                         type={provider.inputType}
-                        placeholder={provider.placeholder}
+                        placeholder={
+                          provider.id === "ollama"
+                            ? defaultOllamaUrl
+                            : provider.placeholder
+                        }
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         className="mt-1"
@@ -243,10 +275,16 @@ function ApiKeySettings() {
                         onClick={() => handleVerifyAndSave(provider.id)}
                         disabled={!inputValue.trim() || verifying}
                       >
-                        {verifying && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                        {verifying && (
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                        )}
                         Verify & Save
                       </Button>
-                      <Button size="sm" variant="outline" onClick={handleCancel}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCancel}
+                      >
                         Cancel
                       </Button>
                     </div>
@@ -284,13 +322,16 @@ function ApiKeySettings() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete API Key</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete your {provider.name} key?
-                              The system will fall back to the server environment variable if available.
+                              Are you sure you want to delete your{" "}
+                              {provider.name} key? The system will fall back to
+                              the server environment variable if available.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(provider.id)}>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(provider.id)}
+                            >
                               Delete
                             </AlertDialogAction>
                           </AlertDialogFooter>

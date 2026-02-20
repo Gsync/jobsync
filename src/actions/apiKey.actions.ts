@@ -5,7 +5,10 @@ import { getCurrentUser } from "@/utils/user.utils";
 import { handleError } from "@/lib/utils";
 import { encrypt, getLast4 } from "@/lib/encryption";
 import { apiKeySaveSchema } from "@/models/apiKey.schema";
-import type { ApiKeyClientResponse, ApiKeyProvider } from "@/models/apiKey.model";
+import type {
+  ApiKeyClientResponse,
+  ApiKeyProvider,
+} from "@/models/apiKey.model";
 
 export async function getUserApiKeys(): Promise<{
   success: boolean;
@@ -122,6 +125,10 @@ export async function deleteApiKey(provider: string): Promise<{
       message: string;
     };
   }
+}
+
+export async function getDefaultOllamaBaseUrl(): Promise<string> {
+  return process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
 }
 
 export async function getOllamaBaseUrl(): Promise<string> {
