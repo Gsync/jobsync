@@ -1,38 +1,37 @@
-export interface JobSearchResult {
+// Canonical domain type: what "a job discovered by automation" means in JobSync
+export interface DiscoveredVacancy {
   title: string;
-  company: string;
-  location: string;
-  url: string;
-  snippet?: string;
-}
-
-export interface JobDetails {
-  title: string;
-  company: string;
+  employerName: string;
   location: string;
   description: string;
-  url: string;
-  postedDate?: string;
+  sourceUrl: string;
+  sourceBoard: string;
+  postedAt?: Date;
   salary?: string;
+  employmentType?: string;
+  externalId?: string;
 }
 
-export type ScraperError =
+export type ConnectorError =
   | { type: "blocked"; reason: string }
   | { type: "rate_limited"; retryAfter?: number }
   | { type: "network"; message: string }
   | { type: "parse"; message: string };
 
-export type ScraperResult<T> =
+export type ConnectorResult<T> =
   | { success: true; data: T }
-  | { success: false; error: ScraperError };
+  | { success: false; error: ConnectorError };
 
-export interface ScraperService {
-  readonly boardId: string;
-  readonly boardName: string;
-  search(
-    keywords: string,
-    location: string,
-  ): Promise<ScraperResult<JobSearchResult[]>>;
-  extract(url: string): Promise<ScraperResult<JobDetails>>;
-  close(): Promise<void>;
+export interface SearchParams {
+  keywords: string;
+  location: string;
+  connectorParams?: Record<string, unknown>;
+}
+
+export interface DataSourceConnector {
+  readonly id: string;
+  readonly name: string;
+  readonly requiresApiKey: boolean;
+  search(params: SearchParams): Promise<ConnectorResult<DiscoveredVacancy[]>>;
+  getDetails?(externalId: string): Promise<ConnectorResult<DiscoveredVacancy>>;
 }

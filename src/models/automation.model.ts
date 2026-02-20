@@ -9,7 +9,7 @@ export type AutomationRunStatus =
   | "blocked"
   | "rate_limited";
 export type DiscoveryStatus = "new" | "accepted" | "dismissed";
-export type JobBoard = "jsearch";
+export type JobBoard = "jsearch" | "eures";
 
 export interface Automation {
   id: string;
@@ -72,13 +72,4 @@ export interface DiscoveredJob {
   JobTitle: { label: string };
   Company: { label: string };
   Location?: { label: string } | null;
-}
-
-export interface ScrapedJobData {
-  title: string;
-  company: string;
-  location: string;
-  description: string;
-  sourceUrl: string;
-  sourceBoard: JobBoard;
 }
