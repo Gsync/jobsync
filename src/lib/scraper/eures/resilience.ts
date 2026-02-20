@@ -10,6 +10,8 @@ import {
   TimeoutStrategy,
 } from "cockatiel";
 
+import { TokenBucketRateLimiter } from "./rate-limiter";
+
 export {
   BrokenCircuitError,
   TaskCancelledError,
@@ -57,10 +59,13 @@ export const euresPolicy = wrap(
   euresBulkhead,
 );
 
+const euresRateLimiter = new TokenBucketRateLimiter(3, 500);
+
 export async function resilientFetch<T>(
   url: string,
   init: RequestInit,
 ): Promise<T> {
+  await euresRateLimiter.acquire();
   return euresPolicy.execute(async ({ signal }) => {
     const response = await fetch(url, { ...init, signal });
 
