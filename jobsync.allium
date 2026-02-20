@@ -589,10 +589,12 @@ rule DiscoveredJobTriage {
 -- =============================================================================
 
 rule AutomationManualRunRateLimit {
-  -- The system shall limit manual automation triggers to AUTOMATION_MANUAL_RUN_LIMIT_PER_HOUR per automation.
-  when: ManualTriggerRun(automationId)
-  let recentRuns = AutomationRun where automationId = automationId and startedAt > now() - 1 hour | count
-  requires: recentRuns < AUTOMATION_MANUAL_RUN_LIMIT_PER_HOUR
+  -- WHEN a user triggers a manual run, the system shall enforce rate limiting
+  -- and delegate to the standard run flow. Manual runs are allowed regardless
+  -- of automation status (active or paused).
+  when: TriggerRun(automation)
+  let recentRuns = AutomationRun where automation = automation and startedAt > now() - 1.hour | count
+  requires: recentRuns < config.AUTOMATION_MANUAL_RUN_LIMIT_PER_HOUR
   ensures: AutomationRunTriggered(automation)
 }
 
@@ -671,7 +673,7 @@ surface AutomationListSurface {
   facing viewer: User
   context automations: Automation where userId = viewer.id
   exposes: paginatedAutomations
-  provides: CreateAutomation, UpdateAutomation, DeleteAutomation, PauseAutomation, ResumeAutomation
+  provides: CreateAutomation, UpdateAutomation, DeleteAutomation, PauseAutomation, ResumeAutomation, TriggerRun
   related: AutomationDetailSurface
 }
 
@@ -679,7 +681,11 @@ surface AutomationDetailSurface {
   facing viewer: User
   context automation: Automation where userId = viewer.id
   exposes: automationDetails, runs, discoveredJobs
-  provides: TriggerRun, AcceptJob, DismissJob
+  provides:
+    TriggerRun(automation)
+      when automation.runs where startedAt > now() - 1.hour | count < config.AUTOMATION_MANUAL_RUN_LIMIT_PER_HOUR
+    AcceptJob
+    DismissJob
   related: AutomationListSurface
 }
 
