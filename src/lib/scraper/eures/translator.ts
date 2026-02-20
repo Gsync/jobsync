@@ -5,24 +5,29 @@ type EuresJobVacancy = components["schemas"]["JobVacancy"];
 
 const EURES_VACANCY_URL_BASE = "https://europa.eu/eures/portal/jv-se/jv-details/";
 
+/**
+ * Translates a EURES search-result vacancy into a DiscoveredVacancy.
+ * Defensive null guards (`?? ""`, `?? []`) are required because the EURES API
+ * returns null for fields the OpenAPI schema declares as non-nullable at runtime.
+ */
 export function translateEuresVacancy(
   jv: EuresJobVacancy,
   requestLanguage: string,
 ): DiscoveredVacancy {
-  const translation = jv.translations[requestLanguage];
+  const translation = jv.translations?.[requestLanguage];
   const title = translation?.title ?? jv.title;
-  const description = stripHtml(translation?.description ?? jv.description);
+  const description = stripHtml(translation?.description ?? jv.description ?? "");
 
   return {
     title,
-    employerName: jv.employer.name,
-    location: formatLocation(jv.locationMap),
+    employerName: jv.employer?.name ?? "",
+    location: formatLocation(jv.locationMap ?? {}),
     description,
     sourceUrl: `${EURES_VACANCY_URL_BASE}${jv.id}`,
     sourceBoard: "eures",
     postedAt: jv.creationDate ? new Date(jv.creationDate) : undefined,
     salary: undefined,
-    employmentType: mapScheduleCode(jv.positionScheduleCodes),
+    employmentType: mapScheduleCode(jv.positionScheduleCodes ?? []),
     externalId: jv.id,
   };
 }
@@ -49,7 +54,7 @@ function formatLocation(locationMap: Record<string, string[]>): string {
 
   return entries
     .map(([country, cities]) => {
-      const city = cities.find((c) => c.length > 0);
+      const city = cities?.find((c) => c?.length > 0);
       return city ? `${city}, ${country}` : country;
     })
     .join("; ");

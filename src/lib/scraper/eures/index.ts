@@ -21,6 +21,12 @@ const EURES_API_BASE = "https://europa.eu/eures/api";
 const EURES_SEARCH_URL = `${EURES_API_BASE}/jv-searchengine/public/jv-search/search`;
 const EURES_DETAIL_URL = `${EURES_API_BASE}/jv-searchengine/public/jv/id`;
 
+/**
+ * Translates a EURES detail response into a DiscoveredVacancy.
+ * Falls back to the first available profile when the requested language is missing.
+ * Returns a minimal stub (empty strings) if no profiles exist at all — the API
+ * types declare jvProfiles as non-nullable but empty objects occur in practice.
+ */
 function translateDetail(
   detail: EuresVacancyDetail,
   language: string,
