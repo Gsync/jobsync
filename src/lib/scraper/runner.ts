@@ -276,6 +276,19 @@ export async function runAutomation(
 
     const jobsToProcess = newJobs.slice(0, MAX_JOBS_PER_RUN);
 
+    // Enrich with detail data if connector supports it
+    if (connector.getDetails) {
+      automationLogger.log(automation.id, "info", "Fetching detailed vacancy data...");
+      for (let i = 0; i < jobsToProcess.length; i++) {
+        const job = jobsToProcess[i];
+        if (!job.externalId) continue;
+        const detail = await connector.getDetails(job.externalId);
+        if (detail.success) {
+          jobsToProcess[i] = { ...job, ...detail.data, sourceUrl: job.sourceUrl };
+        }
+      }
+    }
+
     if (jobsToProcess.length < newJobs.length) {
       automationLogger.log(
         automation.id,
@@ -488,6 +501,8 @@ Title: ${job.title}
 Company: ${job.employerName}
 Location: ${job.location}
 ${job.salary ? `Salary: ${job.salary}` : ""}
+${job.applicationDeadline ? `Application Deadline: ${job.applicationDeadline}` : ""}
+${job.applicationInstructions ? `\nApplication Instructions:\n${job.applicationInstructions}` : ""}
 
 Description:
 ${job.description}

@@ -473,6 +473,8 @@ value DiscoveredVacancy {
   salary: String?
   employmentType: full_time | part_time | contract  -- mapped to JobSync domain
   externalId: String?                    -- provider's native ID for dedup
+  applicationDeadline: String?           -- ISO date, e.g. "2025-06-30"
+  applicationInstructions: String?       -- plain text, HTML stripped
 }
 
 -- Behavioral interface: each data source implements this contract

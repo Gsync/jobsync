@@ -10,6 +10,8 @@ export interface DiscoveredVacancy {
   salary?: string;
   employmentType?: "full_time" | "part_time" | "contract";
   externalId?: string;
+  applicationDeadline?: string;
+  applicationInstructions?: string;
 }
 
 export type ConnectorError =
