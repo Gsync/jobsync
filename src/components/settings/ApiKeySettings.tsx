@@ -42,6 +42,7 @@ interface ProviderConfig {
   placeholder: string;
   inputType: "password" | "text";
   description: string;
+  sensitive: boolean;
 }
 
 const DEFAULT_OLLAMA_PLACEHOLDER = "http://127.0.0.1:11434";
@@ -53,6 +54,7 @@ const PROVIDERS: ProviderConfig[] = [
     placeholder: "sk-...",
     inputType: "password",
     description: "Used for GPT models in resume review and job matching",
+    sensitive: true,
   },
   {
     id: "deepseek",
@@ -60,6 +62,7 @@ const PROVIDERS: ProviderConfig[] = [
     placeholder: "sk-...",
     inputType: "password",
     description: "Used for DeepSeek models in resume review and job matching",
+    sensitive: true,
   },
   {
     id: "rapidapi",
@@ -67,6 +70,7 @@ const PROVIDERS: ProviderConfig[] = [
     placeholder: "Your RapidAPI key",
     inputType: "password",
     description: "Used for JSearch job discovery automations",
+    sensitive: true,
   },
   {
     id: "ollama",
@@ -74,6 +78,7 @@ const PROVIDERS: ProviderConfig[] = [
     placeholder: DEFAULT_OLLAMA_PLACEHOLDER,
     inputType: "text",
     description: "Base URL for your Ollama instance",
+    sensitive: false,
   },
 ];
 
@@ -133,7 +138,12 @@ function ApiKeySettings() {
         return;
       }
 
-      const saveResult = await saveApiKey({ provider, key: inputValue });
+      const providerConfig = PROVIDERS.find((p) => p.id === provider);
+      const saveResult = await saveApiKey({
+        provider,
+        key: inputValue,
+        sensitive: providerConfig?.sensitive ?? true,
+      });
       if (saveResult.success) {
         toast({
           variant: "success",
@@ -242,7 +252,9 @@ function ApiKeySettings() {
                   {existingKey ? (
                     <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-100 dark:hover:bg-green-900">
                       <CheckCircle className="h-3 w-3 mr-1" />
-                      ····{existingKey.last4}
+                      {provider.sensitive
+                        ? `····${existingKey.last4}`
+                        : existingKey.displayValue || existingKey.last4}
                     </Badge>
                   ) : (
                     <Badge variant="secondary">Not configured</Badge>

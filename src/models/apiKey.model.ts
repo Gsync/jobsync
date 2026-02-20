@@ -15,6 +15,8 @@ export interface ApiKeyClientResponse {
   id: string;
   provider: ApiKeyProvider;
   last4: string;
+  // Full value for non-sensitive entries (e.g. URLs)
+  displayValue?: string;
   label: string | null;
   createdAt: Date;
   lastUsedAt: Date | null;

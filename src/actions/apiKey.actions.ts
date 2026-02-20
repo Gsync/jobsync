@@ -25,6 +25,8 @@ export async function getUserApiKeys(): Promise<{
         id: true,
         provider: true,
         last4: true,
+        iv: true,
+        encryptedKey: true,
         label: true,
         createdAt: true,
         lastUsedAt: true,
@@ -33,10 +35,18 @@ export async function getUserApiKeys(): Promise<{
 
     return {
       success: true,
-      data: keys.map((k) => ({
-        ...k,
-        provider: k.provider as ApiKeyProvider,
-      })),
+      data: keys.map((k) => {
+        const isSensitive = k.iv !== "";
+        return {
+          id: k.id,
+          provider: k.provider as ApiKeyProvider,
+          last4: k.last4,
+          ...(isSensitive ? {} : { displayValue: k.encryptedKey }),
+          label: k.label,
+          createdAt: k.createdAt,
+          lastUsedAt: k.lastUsedAt,
+        };
+      }),
     };
   } catch (error) {
     return handleError(error, "Failed to fetch API keys") as {
@@ -50,6 +60,7 @@ export async function saveApiKey(input: {
   provider: string;
   key: string;
   label?: string;
+  sensitive?: boolean;
 }): Promise<{
   success: boolean;
   data?: ApiKeyClientResponse;
@@ -60,8 +71,23 @@ export async function saveApiKey(input: {
     if (!user) return { success: false, message: "Not authenticated" };
 
     const parsed = apiKeySaveSchema.parse(input);
-    const { encrypted, iv } = encrypt(parsed.key);
-    const last4 = getLast4(parsed.key);
+    const isSensitive = parsed.sensitive;
+
+    let encryptedKey: string;
+    let iv: string;
+    let last4: string;
+
+    if (isSensitive) {
+      const result = encrypt(parsed.key);
+      encryptedKey = result.encrypted;
+      iv = result.iv;
+      last4 = getLast4(parsed.key);
+    } else {
+      // Non-sensitive values stored as plaintext
+      encryptedKey = parsed.key;
+      iv = "";
+      last4 = parsed.key;
+    }
 
     const apiKey = await db.apiKey.upsert({
       where: {
@@ -73,13 +99,13 @@ export async function saveApiKey(input: {
       create: {
         userId: user.id,
         provider: parsed.provider,
-        encryptedKey: encrypted,
+        encryptedKey,
         iv,
         last4,
         label: parsed.label,
       },
       update: {
-        encryptedKey: encrypted,
+        encryptedKey,
         iv,
         last4,
         label: parsed.label,
@@ -94,10 +120,15 @@ export async function saveApiKey(input: {
       },
     });
 
-    return {
-      success: true,
-      data: { ...apiKey, provider: apiKey.provider as ApiKeyProvider },
+    const response: ApiKeyClientResponse = {
+      ...apiKey,
+      provider: apiKey.provider as ApiKeyProvider,
     };
+    if (!isSensitive) {
+      response.displayValue = parsed.key;
+    }
+
+    return { success: true, data: response };
   } catch (error) {
     return handleError(error, "Failed to save API key") as {
       success: boolean;
@@ -141,6 +172,7 @@ export async function getOllamaBaseUrl(): Promise<string> {
         },
       });
       if (apiKey) {
+        if (apiKey.iv === "") return apiKey.encryptedKey;
         const { decrypt } = await import("@/lib/encryption");
         return decrypt(apiKey.encryptedKey, apiKey.iv);
       }
