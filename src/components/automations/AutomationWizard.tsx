@@ -36,6 +36,7 @@ import { createAutomation, updateAutomation } from "@/actions/automation.actions
 import { toast } from "@/components/ui/use-toast";
 import type { AutomationWithResume } from "@/models/automation.model";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { EuresOccupationCombobox } from "@/components/automations/EuresOccupationCombobox";
 
 interface Resume {
   id: string;
@@ -104,6 +105,10 @@ export function AutomationWizard({
   }, [open, editAutomation, form]);
 
   const formValues = form.watch();
+
+  const tryParseConnectorParams = (params?: string) => {
+    try { return params ? JSON.parse(params) : undefined; } catch { return undefined; }
+  };
 
   const onSubmit = async (data: CreateAutomationInput) => {
     setIsSubmitting(true);
@@ -236,10 +241,19 @@ export function AutomationWizard({
               <FormItem>
                 <FormLabel>Search Keywords</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Full Stack Developer" {...field} />
+                  {formValues.jobBoard === "eures" ? (
+                    <EuresOccupationCombobox
+                      field={field}
+                      language={tryParseConnectorParams(formValues.connectorParams)?.language}
+                    />
+                  ) : (
+                    <Input placeholder="e.g., Full Stack Developer" {...field} />
+                  )}
                 </FormControl>
                 <FormDescription>
-                  Job titles, skills, or keywords to search for
+                  {formValues.jobBoard === "eures"
+                    ? "Search or type an occupation title (ESCO)"
+                    : "Job titles, skills, or keywords to search for"}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
