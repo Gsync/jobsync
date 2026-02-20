@@ -8,6 +8,7 @@ import type { components } from "./generated";
 
 type EuresSearchRequest = components["schemas"]["JobSearchRequest"];
 type EuresSearchResponse = components["schemas"]["JobSearchResponse"];
+type EuresVacancyDetail = components["schemas"]["JobVacancyDetail"];
 import { translateEuresVacancy } from "./translator";
 import {
   resilientFetch,
@@ -18,6 +19,71 @@ import {
 
 const EURES_API_BASE = "https://europa.eu/eures/api";
 const EURES_SEARCH_URL = `${EURES_API_BASE}/jv-searchengine/public/jv-search/search`;
+const EURES_DETAIL_URL = `${EURES_API_BASE}/jv-searchengine/public/jv/id`;
+
+function translateDetail(
+  detail: EuresVacancyDetail,
+  language: string,
+): DiscoveredVacancy {
+  const profile = detail.jvProfiles[language] ?? Object.values(detail.jvProfiles)[0];
+  if (!profile) {
+    return {
+      title: "",
+      employerName: "",
+      location: "Europe",
+      description: "",
+      sourceUrl: `https://europa.eu/eures/portal/jv-se/jv-details/${detail.id}`,
+      sourceBoard: "eures",
+      externalId: detail.id,
+    };
+  }
+
+  const location = profile.locations?.[0];
+  const locationStr = location?.cityName && location?.countryCode
+    ? `${location.cityName}, ${location.countryCode.toUpperCase()}`
+    : location?.countryCode?.toUpperCase() ?? "Europe";
+
+  return {
+    title: profile.title ?? "",
+    employerName: profile.employer?.name ?? "",
+    location: locationStr,
+    description: stripDetailHtml(profile.description ?? ""),
+    sourceUrl: `https://europa.eu/eures/portal/jv-se/jv-details/${detail.id}`,
+    sourceBoard: "eures",
+    postedAt: detail.creationDate ? new Date(detail.creationDate) : undefined,
+    employmentType: mapDetailScheduleCode(profile.positionScheduleCodes),
+    externalId: detail.id,
+  };
+}
+
+function stripDetailHtml(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function mapDetailScheduleCode(
+  codes?: string[],
+): "full_time" | "part_time" | "contract" | undefined {
+  if (!codes || codes.length === 0) return undefined;
+  const code = codes[0];
+  switch (code) {
+    case "FullTime": return "full_time";
+    case "PartTime": return "part_time";
+    case "FlexTime": return "part_time";
+    default: return undefined;
+  }
+}
 
 export function createEuresConnector(): DataSourceConnector {
   return {
@@ -93,6 +159,50 @@ export function createEuresConnector(): DataSourceConnector {
         }
 
         return { success: true, data: allVacancies };
+      } catch (error) {
+        if (error instanceof BrokenCircuitError) {
+          return {
+            success: false,
+            error: {
+              type: "network" as const,
+              message: "EURES API circuit breaker open — service temporarily unavailable",
+            },
+          };
+        }
+        if (error instanceof BulkheadRejectedError) {
+          return {
+            success: false,
+            error: { type: "rate_limited" as const, retryAfter: 30 },
+          };
+        }
+        if (error instanceof TaskCancelledError) {
+          return {
+            success: false,
+            error: {
+              type: "network" as const,
+              message: "EURES API request timed out",
+            },
+          };
+        }
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        return { success: false, error: { type: "network", message } };
+      }
+    },
+
+    async getDetails(
+      externalId: string,
+    ): Promise<ConnectorResult<DiscoveredVacancy>> {
+      try {
+        const detail = await resilientFetch<EuresVacancyDetail>(
+          `${EURES_DETAIL_URL}/${encodeURIComponent(externalId)}`,
+          {
+            method: "GET",
+            headers: { Accept: "application/json" },
+          },
+        );
+
+        return { success: true, data: translateDetail(detail, "en") };
       } catch (error) {
         if (error instanceof BrokenCircuitError) {
           return {

@@ -8,7 +8,7 @@ export interface DiscoveredVacancy {
   sourceBoard: string;
   postedAt?: Date;
   salary?: string;
-  employmentType?: string;
+  employmentType?: "full_time" | "part_time" | "contract";
   externalId?: string;
 }
 
