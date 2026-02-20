@@ -20,6 +20,7 @@ export const CreateAutomationSchema = z.object({
   jobBoard: JobBoardSchema,
   keywords: z.string().min(1, "Keywords are required").max(200),
   location: z.string().min(1, "Location is required").max(100),
+  connectorParams: z.string().optional(),
   resumeId: z.string().uuid("Invalid resume"),
   matchThreshold: z.number().min(0).max(100),
   scheduleHour: z.number().min(0).max(23),

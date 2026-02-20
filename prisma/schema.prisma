@@ -365,6 +365,7 @@ model Automation {
   jobBoard       String
   keywords       String
   location       String
+  connectorParams String?
   resumeId       String
   resume         Resume          @relation(fields: [resumeId], references: [id])
   matchThreshold Int             @default(80)
