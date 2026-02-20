@@ -21,7 +21,6 @@ import { toast } from "../ui/use-toast";
 import { XCircle, CheckCircle, Loader2 } from "lucide-react";
 import { checkIfModelIsRunning } from "@/utils/ai.utils";
 import { getUserSettings, updateAiSettings } from "@/actions/userSettings.actions";
-import { getOllamaBaseUrl } from "@/actions/apiKey.actions";
 
 interface OllamaModelResponse {
   models: {
@@ -57,7 +56,6 @@ function AiSettings() {
   const [fetchError, setFetchError] = useState<string>("");
   const [runningModelError, setRunningModelError] = useState<string>("");
   const [runningModelName, setRunningModelName] = useState<string>("");
-  const [ollamaBaseUrl, setOllamaBaseUrl] = useState("http://127.0.0.1:11434");
 
   const setSelectedProvider = (provider: AiProvider) => {
     setSelectedModel({ provider, model: undefined });
@@ -85,11 +83,7 @@ function AiSettings() {
     const fetchSettings = async () => {
       setIsLoadingSettings(true);
       try {
-        const [settingsResult, resolvedUrl] = await Promise.all([
-          getUserSettings(),
-          getOllamaBaseUrl(),
-        ]);
-        setOllamaBaseUrl(resolvedUrl);
+        const settingsResult = await getUserSettings();
 
         if (settingsResult.success && settingsResult.data?.settings?.ai) {
           const aiSettings = settingsResult.data.settings.ai;
@@ -122,7 +116,7 @@ function AiSettings() {
     setIsLoadingModels(true);
     setFetchError("");
     try {
-      const response = await fetch(`${ollamaBaseUrl}/api/tags`);
+      const response = await fetch("/api/ai/ollama/tags");
       if (!response.ok) {
         if (selectedModel.provider === AiProvider.OLLAMA) {
           setFetchError(
@@ -150,11 +144,9 @@ function AiSettings() {
 
   const keepModelAlive = async (modelName: string) => {
     try {
-      await fetch(`${ollamaBaseUrl}/api/generate`, {
+      await fetch("/api/ai/ollama/generate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: modelName,
           prompt: "",
@@ -171,7 +163,7 @@ function AiSettings() {
     setRunningModelError("");
     setRunningModelName("");
     try {
-      const response = await fetch(`${ollamaBaseUrl}/api/ps`);
+      const response = await fetch("/api/ai/ollama/ps");
       if (!response.ok) {
         if (selectedModel.provider === AiProvider.OLLAMA) {
           setRunningModelError(

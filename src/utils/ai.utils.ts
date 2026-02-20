@@ -34,9 +34,8 @@ export const checkIfModelIsRunning = async (
   }
 
   try {
-    // Check if Ollama service is accessible
-    const response = await fetch("http://localhost:11434/api/ps", {
-      signal: AbortSignal.timeout(5000), // 5 second timeout
+    const response = await fetch("/api/ai/ollama/ps", {
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!response.ok) {
@@ -86,7 +85,7 @@ export const fetchRunningModels = async (): Promise<{
   error?: string;
 }> => {
   try {
-    const response = await fetch("http://localhost:11434/api/ps", {
+    const response = await fetch("/api/ai/ollama/ps", {
       signal: AbortSignal.timeout(5000),
     });
 
