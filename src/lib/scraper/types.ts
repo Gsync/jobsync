@@ -10,7 +10,9 @@ export interface DiscoveredVacancy {
   salary?: string;
   employmentType?: "full_time" | "part_time" | "contract";
   externalId?: string;
+  /** ISO 8601 date string (e.g. "2026-03-15") from the job board; format varies by connector. */
   applicationDeadline?: string;
+  /** Free-text application instructions, HTML-stripped. May contain multi-paragraph content from the source board. */
   applicationInstructions?: string;
 }
 

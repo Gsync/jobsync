@@ -276,7 +276,11 @@ export async function runAutomation(
 
     const jobsToProcess = newJobs.slice(0, MAX_JOBS_PER_RUN);
 
-    // Enrich with detail data if connector supports it
+    // Enrich with detail data if connector supports it.
+    // Runs after dedup+cap so at most MAX_JOBS_PER_RUN (10) API calls are made.
+    // Merges detail fields over search data but preserves the original sourceUrl
+    // (detail endpoints may return a different canonical URL).
+    // Failures are silently ignored — search data is a sufficient fallback.
     if (connector.getDetails) {
       automationLogger.log(automation.id, "info", "Fetching detailed vacancy data...");
       for (let i = 0; i < jobsToProcess.length; i++) {
