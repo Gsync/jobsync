@@ -44,14 +44,18 @@ function stripHtml(html: string): string {
 }
 
 function formatLocation(locationMap: Record<string, string[]>): string {
-  const countries = Object.keys(locationMap);
-  if (countries.length === 0) return "Europe";
+  const entries = Object.entries(locationMap);
+  if (entries.length === 0) return "Europe";
 
-  // Use country codes joined, e.g. "DE" or "DE, AT"
-  return countries.join(", ");
+  return entries
+    .map(([country, cities]) => {
+      const city = cities.find((c) => c.length > 0);
+      return city ? `${city}, ${country}` : country;
+    })
+    .join("; ");
 }
 
-function mapScheduleCode(codes: string[]): string | undefined {
+function mapScheduleCode(codes: string[]): "full_time" | "part_time" | "contract" | undefined {
   if (!codes || codes.length === 0) return undefined;
 
   const code = codes[0];

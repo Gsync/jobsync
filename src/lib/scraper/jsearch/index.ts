@@ -123,9 +123,30 @@ function translateJSearchJob(job: JSearchJob): DiscoveredVacancy {
       ? new Date(job.job_posted_at_datetime_utc)
       : undefined,
     salary: formatSalary(job),
-    employmentType: job.job_employment_type?.toLowerCase(),
+    employmentType: mapEmploymentType(job.job_employment_type),
     externalId: job.job_id,
   };
+}
+
+function mapEmploymentType(
+  raw?: string,
+): "full_time" | "part_time" | "contract" | undefined {
+  if (!raw) return undefined;
+  switch (raw.toLowerCase()) {
+    case "fulltime":
+    case "full_time":
+    case "full-time":
+      return "full_time";
+    case "parttime":
+    case "part_time":
+    case "part-time":
+      return "part_time";
+    case "contractor":
+    case "contract":
+      return "contract";
+    default:
+      return undefined;
+  }
 }
 
 function formatSalary(job: JSearchJob): string | undefined {
