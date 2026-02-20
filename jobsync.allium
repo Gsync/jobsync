@@ -200,7 +200,7 @@ entity JobStatus {
 
 entity JobSource {
   label: String
-  value: linkedin | indeed | glassdoor | company_website | referral | other
+  value: linkedin | indeed | glassdoor | company_website | referral | eures | other
   jobs: Job[]
 }
 
@@ -294,9 +294,10 @@ entity Activity {
 entity Automation {
   user: User
   name: String
-  jobBoard: jsearch                       -- currently only jsearch supported
+  jobBoard: jsearch | eures               -- currently only jsearch supported
   keywords: String
   location: String
+  connectorParams: String?              -- JSON blob for provider-specific search config
   resume: Resume
   matchThreshold: Integer = 80            -- 0-100
   scheduleHour: Integer                   -- hour of day (0-23)
@@ -457,6 +458,71 @@ rule TaskDeletionGuard {
 }
 
 -- =============================================================================
+-- Bounded Context: Data Source Connectors
+-- =============================================================================
+
+-- Canonical domain type: what "a job discovered by automation" means in JobSync
+value DiscoveredVacancy {
+  title: String
+  employerName: String
+  location: String
+  description: String                    -- plain text, HTML stripped
+  sourceUrl: String
+  sourceBoard: String                    -- connector id
+  postedAt: DateTime?
+  salary: String?
+  employmentType: full_time | part_time | contract  -- mapped to JobSync domain
+  externalId: String?                    -- provider's native ID for dedup
+}
+
+-- Behavioral interface: each data source implements this contract
+interface DataSourceConnector {
+  id: String                             -- unique connector identifier
+  name: String                           -- display name
+  requiresApiKey: Boolean
+  search(params: SearchParams): ConnectorResult<DiscoveredVacancy[]>
+  getDetails?(externalId: String): ConnectorResult<DiscoveredVacancy>
+}
+
+value SearchParams {
+  keywords: String
+  location: String
+  connectorParams: String?               -- JSON blob for provider-specific config
+}
+
+value ConnectorResult<T> {
+  success: Boolean
+  data: T?
+  error: ConnectorError?
+}
+
+value ConnectorError {
+  type: blocked | rate_limited | network | parse
+  message: String
+  retryAfter: Integer?
+}
+
+-- External system: EURES job portal API (European Employment Services)
+external entity EuresAPI {
+  baseUrl: String = "https://eures.europa.eu/api"
+  searchEndpoint: String = "/jv/search"
+  detailEndpoint: String = "/jv/get/{id}"
+  -- No API key required (public API)
+  -- Returns: vacancy listings with multilingual titles, descriptions, employer info
+  -- Filters: keywords, location (NUTS codes), occupation codes, contract type
+}
+
+-- Connector dispatch: replaces hardcoded JSearch calls in runner
+rule ConnectorDispatch {
+  -- WHEN an automation run searches for jobs, the system shall resolve the
+  -- connector from the registry using automation.jobBoard, not import directly.
+  when: AutomationRunTriggered(automation)
+  let connector = ConnectorRegistry.resolve(automation.jobBoard)
+  requires: connector != null
+  ensures: connector.search(SearchParams(automation.keywords, automation.location, automation.connectorParams))
+}
+
+-- =============================================================================
 -- Rules: Automation & Discovery
 -- =============================================================================
 
@@ -479,8 +545,8 @@ rule AutomationRunFlow {
   -- WHEN an automation run is triggered, the system shall execute the discovery pipeline.
   when: AutomationRunTriggered(automation)
   let run = AutomationRun.created(automation, status = running, startedAt = now())
-  -- Step 1: Search JSearch API
-  let searchResults = JSearchAPI.search(automation.keywords, automation.location, datePosted = "week", page = 1)
+  -- Step 1: Search via connector (resolved from automation.jobBoard)
+  let searchResults = ConnectorRegistry.resolve(automation.jobBoard).search(automation.keywords, automation.location, automation.connectorParams)
   -- Step 2: Deduplicate against existing job URLs (normalized)
   let newJobs = searchResults where jobUrl not in (Job where userId = automation.userId).jobUrl
   -- Step 3: Cap at MAX_JOBS_PER_AUTOMATION_RUN
