@@ -18,6 +18,7 @@ export interface Automation {
   jobBoard: JobBoard;
   keywords: string;
   location: string;
+  connectorParams?: string;
   resumeId: string;
   matchThreshold: number;
   scheduleHour: number;

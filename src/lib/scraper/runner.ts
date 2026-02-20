@@ -196,6 +196,9 @@ export async function runAutomation(
     const searchResult = await connector.search({
       keywords: automation.keywords,
       location: automation.location,
+      connectorParams: automation.connectorParams
+        ? JSON.parse(automation.connectorParams)
+        : undefined,
     });
 
     if (!searchResult.success) {
