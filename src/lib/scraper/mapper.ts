@@ -1,9 +1,10 @@
-import type { ScrapedJobData, DiscoveryStatus } from "@/models/automation.model";
+import type { DiscoveryStatus } from "@/models/automation.model";
+import type { DiscoveredVacancy } from "./types";
 import db from "@/lib/db";
 import { normalizeForSearch, extractKeywords, extractCityName } from "./utils";
 
 interface MapperInput {
-  scrapedJob: ScrapedJobData;
+  vacancy: DiscoveredVacancy;
   userId: string;
   automationId: string;
   matchScore: number;
@@ -32,19 +33,19 @@ interface MapperOutput {
 export async function mapScrapedJobToJobRecord(
   input: MapperInput
 ): Promise<MapperOutput> {
-  const { scrapedJob, userId, automationId, matchScore, matchData } = input;
+  const { vacancy, userId, automationId, matchScore, matchData } = input;
 
-  const jobTitleId = await findOrCreateJobTitle(scrapedJob.title, userId);
-  const locationId = await findOrCreateLocation(scrapedJob.location, userId);
-  const companyId = await findOrCreateCompany(scrapedJob.company, userId);
-  const jobSourceId = await getOrCreateJobSource(scrapedJob.sourceBoard, userId);
+  const jobTitleId = await findOrCreateJobTitle(vacancy.title, userId);
+  const locationId = await findOrCreateLocation(vacancy.location, userId);
+  const companyId = await findOrCreateCompany(vacancy.employerName, userId);
+  const jobSourceId = await getOrCreateJobSource(vacancy.sourceBoard);
   const statusId = await getDefaultJobStatus();
 
   return {
     userId,
     automationId,
-    jobUrl: scrapedJob.sourceUrl,
-    description: scrapedJob.description,
+    jobUrl: vacancy.sourceUrl,
+    description: vacancy.description,
     jobType: "full-time",
     createdAt: new Date(),
     applied: false,
@@ -179,13 +180,12 @@ async function findOrCreateCompany(
 }
 
 async function getOrCreateJobSource(
-  sourceBoard: string,
-  userId: string
+  sourceBoard: string
 ): Promise<string> {
   const normalized = sourceBoard.toLowerCase();
 
   let jobSource = await db.jobSource.findFirst({
-    where: { value: normalized, createdBy: userId },
+    where: { value: normalized },
   });
 
   if (!jobSource) {
@@ -193,7 +193,6 @@ async function getOrCreateJobSource(
       data: {
         label: sourceBoard.charAt(0).toUpperCase() + sourceBoard.slice(1),
         value: normalized,
-        createdBy: userId,
       },
     });
   }

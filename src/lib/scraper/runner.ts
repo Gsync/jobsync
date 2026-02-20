@@ -3,11 +3,9 @@ import db from "@/lib/db";
 import type {
   Automation,
   AutomationRunStatus,
-  ScrapedJobData,
-  JobBoard,
 } from "@/models/automation.model";
-import type { ScraperError, JobDetails } from "./types";
-import { searchJSearchJobs } from "./jsearch";
+import type { ConnectorError, DiscoveredVacancy } from "./types";
+import { connectorRegistry } from "./connectors";
 import { mapScrapedJobToJobRecord } from "./mapper";
 import { normalizeJobUrl } from "./utils";
 import { calculateNextRunAt } from "./schedule";
@@ -29,7 +27,7 @@ import {
   defaultUserSettings,
   type AiSettings,
 } from "@/models/userSettings.model";
-import { resolveApiKey } from "@/lib/api-key-resolver";
+
 
 const MAX_JOBS_PER_RUN = 10;
 
@@ -60,7 +58,7 @@ async function getUserAiSettings(userId: string): Promise<AiSettings> {
   };
 }
 
-function getErrorMessage(error: ScraperError): string {
+function getErrorMessage(error: ConnectorError): string {
   switch (error.type) {
     case "blocked":
       return error.reason;
@@ -194,13 +192,11 @@ export async function runAutomation(
       `Searching for jobs: "${automation.keywords}" in ${automation.location}`,
     );
 
-    // Use JSearch API with user's key if available
-    const rapidApiKey = await resolveApiKey(automation.userId, "rapidapi");
-    const searchResult = await searchJSearchJobs(
-      automation.keywords,
-      automation.location,
-      rapidApiKey,
-    );
+    const connector = connectorRegistry.create(automation.jobBoard);
+    const searchResult = await connector.search({
+      keywords: automation.keywords,
+      location: automation.location,
+    });
 
     if (!searchResult.success) {
       automationLogger.log(
@@ -234,7 +230,7 @@ export async function runAutomation(
     automationLogger.log(
       automation.id,
       "success",
-      `Found ${jobsSearched} jobs from JSearch API`,
+      `Found ${jobsSearched} jobs from ${connector.name}`,
       { jobsSearched },
     );
 
@@ -264,7 +260,7 @@ export async function runAutomation(
 
     const existingJobUrls = await getExistingJobUrls(automation.userId);
     const newJobs = searchResult.data.filter(
-      (job) => !existingJobUrls.has(normalizeJobUrl(job.url)),
+      (job) => !existingJobUrls.has(normalizeJobUrl(job.sourceUrl)),
     );
     const jobsDeduplicated = newJobs.length;
 
@@ -297,7 +293,7 @@ export async function runAutomation(
       automationLogger.log(
         automation.id,
         "info",
-        `Processing: ${job.title} at ${job.company}`,
+        `Processing: ${job.title} at ${job.employerName}`,
       );
 
       jobsProcessed++;
@@ -312,7 +308,6 @@ export async function runAutomation(
       const matchResult = await matchJobToResume(
         job,
         resume as ResumeWithSections,
-        automation.jobBoard as JobBoard,
         aiSettings,
         automation.userId,
       );
@@ -355,22 +350,18 @@ export async function runAutomation(
         `Job matched! Saving to database...`,
         {
           title: job.title,
-          company: job.company,
+          company: job.employerName,
         },
       );
 
       try {
-        const scrapedJob: ScrapedJobData = {
-          title: job.title,
-          company: job.company,
-          location: job.location,
-          description: job.description,
-          sourceUrl: normalizeJobUrl(job.url),
-          sourceBoard: automation.jobBoard as JobBoard,
+        const vacancy: DiscoveredVacancy = {
+          ...job,
+          sourceUrl: normalizeJobUrl(job.sourceUrl),
         };
 
         const jobRecord = await mapScrapedJobToJobRecord({
-          scrapedJob,
+          vacancy,
           userId: automation.userId,
           automationId: automation.id,
           matchScore: matchResult.score,
@@ -482,9 +473,8 @@ interface MatchResult {
 }
 
 async function matchJobToResume(
-  job: JobDetails,
+  job: DiscoveredVacancy,
   resume: ResumeWithSections,
-  sourceBoard: JobBoard,
   aiSettings: AiSettings,
   userId: string,
 ): Promise<MatchResult> {
@@ -492,7 +482,7 @@ async function matchJobToResume(
     const resumeText = await convertResumeForMatch(resume);
     const jobText = `
 Title: ${job.title}
-Company: ${job.company}
+Company: ${job.employerName}
 Location: ${job.location}
 ${job.salary ? `Salary: ${job.salary}` : ""}
 
@@ -597,7 +587,7 @@ async function convertResumeForMatch(
   return parts.filter(Boolean).join("\n");
 }
 
-function getStatusFromError(error: ScraperError): AutomationRunStatus {
+function getStatusFromError(error: ConnectorError): AutomationRunStatus {
   switch (error.type) {
     case "blocked":
       return "blocked";
