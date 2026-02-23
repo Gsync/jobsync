@@ -203,22 +203,8 @@ test.describe("Profile page", () => {
     }
     await page.getByPlaceholder("Ex: Stanford").click();
     await page.getByPlaceholder("Ex: Stanford").fill("test school");
-    await page.getByLabel("Location").click();
-    await page.getByPlaceholder("Create or Search location").click();
     const locationText = "location test";
-    await page.getByPlaceholder("Create or Search location").fill(locationText);
-    await page.waitForTimeout(500); // Wait for debounce
-    // Check if item exists in list or needs to be created
-    const existingLocation = page.getByRole("option", {
-      name: locationText,
-      exact: true,
-    });
-    const createLocation = page.getByText(`Create: ${locationText}`);
-    if (await existingLocation.isVisible()) {
-      await existingLocation.click();
-    } else if (await createLocation.isVisible()) {
-      await createLocation.click();
-    }
+    await selectOrCreateComboboxOption(page, "Location", "Create or Search location", locationText);
     await expect(page.getByLabel("Location")).toContainText(locationText);
     await page.getByPlaceholder("Ex: Bachelor's").click();
     await page.getByPlaceholder("Ex: Bachelor's").fill("degree text");
@@ -274,55 +260,13 @@ async function addExperience(page: Page, resumeTitle: string, jobText: string) {
     await sectionTitleField.fill("Experience");
     await sectionTitleField.press("Tab");
   }
-  await page.getByLabel("Job Title").click();
-  await page.getByPlaceholder("Create or Search title").click();
-  await page.getByPlaceholder("Create or Search title").fill(jobText);
-  await page.waitForTimeout(500); // Wait for debounce
-  // Check if item exists in list or needs to be created
-  const existingTitle = page.getByRole("option", {
-    name: jobText,
-    exact: true,
-  });
-  const createTitle = page.getByText(`Create: ${jobText}`);
-  if (await existingTitle.isVisible()) {
-    await existingTitle.click();
-  } else if (await createTitle.isVisible()) {
-    await createTitle.click();
-  }
+  await selectOrCreateComboboxOption(page, "Job Title", "Create or Search title", jobText);
   await expect(page.getByLabel("Job Title")).toContainText(jobText);
-  await page.getByLabel("Company").click();
-  await page.getByPlaceholder("Create or Search company").click();
   const companyText = "company test";
-  await page.getByPlaceholder("Create or Search company").fill(companyText);
-  await page.waitForTimeout(500); // Wait for debounce
-  // Check if item exists in list or needs to be created
-  const existingCompany = page.getByRole("option", {
-    name: companyText,
-    exact: true,
-  });
-  const createCompany = page.getByText(`Create: ${companyText}`);
-  if (await existingCompany.isVisible()) {
-    await existingCompany.click();
-  } else if (await createCompany.isVisible()) {
-    await createCompany.click();
-  }
+  await selectOrCreateComboboxOption(page, "Company", "Create or Search company", companyText);
   await expect(page.getByLabel("Company")).toContainText(companyText);
-  await page.getByLabel("Job Location").click();
-  await page.getByPlaceholder("Create or Search location").click();
   const locationText = "location test";
-  await page.getByPlaceholder("Create or Search location").fill(locationText);
-  await page.waitForTimeout(500); // Wait for debounce
-  // Check if item exists in list or needs to be created
-  const existingLocation = page.getByRole("option", {
-    name: locationText,
-    exact: true,
-  });
-  const createLocation = page.getByText(`Create: ${locationText}`);
-  if (await existingLocation.isVisible()) {
-    await existingLocation.click();
-  } else if (await createLocation.isVisible()) {
-    await createLocation.click();
-  }
+  await selectOrCreateComboboxOption(page, "Job Location", "Create or Search location", locationText);
   await expect(page.getByLabel("Job Location")).toContainText(locationText);
   await page.getByLabel("Start Date").click();
   // Wait for calendar popover to open
@@ -347,4 +291,25 @@ async function deleteResume(page: Page, title: string) {
     "Are you sure you want to delete this resume?",
   );
   await page.getByRole("button", { name: "Delete" }).click({ force: true });
+}
+
+async function selectOrCreateComboboxOption(
+  page: Page,
+  label: string,
+  searchPlaceholder: string,
+  text: string,
+) {
+  await page.getByLabel(label).click();
+  await page.getByPlaceholder(searchPlaceholder).click();
+  await page.getByPlaceholder(searchPlaceholder).fill(text);
+  await page.waitForTimeout(500);
+  const existingOption = page.getByRole("option", { name: text, exact: true });
+  const createOption = page.getByText(`Create: ${text}`);
+  try {
+    await existingOption.waitFor({ state: "visible", timeout: 3000 });
+    await existingOption.click();
+  } catch {
+    await createOption.waitFor({ state: "visible", timeout: 3000 });
+    await createOption.click();
+  }
 }
