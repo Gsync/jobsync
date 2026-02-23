@@ -183,7 +183,7 @@ describe("Job Title Actions", () => {
 
       expect(result).toEqual(mockTitle);
       expect(prisma.jobTitle.upsert).toHaveBeenCalledWith({
-        where: { value: "senior developer", createdBy: mockUser.id },
+        where: { value_createdBy: { value: "senior developer", createdBy: mockUser.id } },
         update: { label: "Senior Developer" },
         create: {
           label: "Senior Developer",

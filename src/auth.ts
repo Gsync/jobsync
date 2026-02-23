@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
-var bcrypt = require("bcryptjs");
+import bcrypt from "bcryptjs";
 import { authConfig } from "./auth.config";
 import { User } from "./models/user.model";
 import prisma from "./lib/db";

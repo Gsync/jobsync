@@ -40,7 +40,7 @@ export const createActivityType = async (
     const value = label.trim().toLowerCase();
 
     const upsertedActivityType = await prisma.activityType.upsert({
-      where: { value, createdBy: user.id },
+      where: { value_createdBy: { value, createdBy: user.id } },
       update: { label },
       create: { label, value, createdBy: user.id },
     });

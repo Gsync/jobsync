@@ -34,8 +34,9 @@ interface JSearchResponse {
   data: JSearchJob[];
 }
 
-export function createJSearchProvider(): ScraperService {
-  if (!RAPIDAPI_KEY) {
+export function createJSearchProvider(rapidApiKey?: string): ScraperService {
+  const apiKey = rapidApiKey || RAPIDAPI_KEY;
+  if (!apiKey) {
     throw new Error("RAPIDAPI_KEY environment variable is not set");
   }
 
@@ -57,7 +58,7 @@ export function createJSearchProvider(): ScraperService {
         const response = await fetch(url.toString(), {
           method: "GET",
           headers: {
-            "X-RapidAPI-Key": RAPIDAPI_KEY,
+            "X-RapidAPI-Key": apiKey,
             "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
           },
         });
@@ -129,8 +130,10 @@ export function createJSearchProvider(): ScraperService {
 export async function searchJSearchJobs(
   keywords: string,
   location: string,
+  rapidApiKey?: string,
 ): Promise<ScraperResult<JobDetails[]>> {
-  if (!RAPIDAPI_KEY) {
+  const apiKey = rapidApiKey || RAPIDAPI_KEY;
+  if (!apiKey) {
     return {
       success: false,
       error: { type: "network", message: "RAPIDAPI_KEY is not configured" },
@@ -147,7 +150,7 @@ export async function searchJSearchJobs(
     const response = await fetch(url.toString(), {
       method: "GET",
       headers: {
-        "X-RapidAPI-Key": RAPIDAPI_KEY,
+        "X-RapidAPI-Key": apiKey,
         "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
       },
     });

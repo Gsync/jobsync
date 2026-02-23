@@ -1,5 +1,8 @@
 import { Metadata } from "next";
-import DeveloperContainer from "@/components/developer/DeveloperContainer";
+import {
+  MockActivitiesCard,
+  MockProfileCard,
+} from "@/components/developer/DeveloperContainer";
 
 export const metadata: Metadata = {
   title: "Developer Options | JobSync",
@@ -8,10 +11,19 @@ export const metadata: Metadata = {
 
 export default function DeveloperPage() {
   return (
-    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-      <div className="mx-auto w-full max-w-6xl">
-        <DeveloperContainer />
+    <>
+      <div className="col-span-3">
+        <h1 className="text-3xl font-bold tracking-tight">Developer Options</h1>
+        <p className="text-muted-foreground mt-2">
+          Tools for development and testing. Only available in development mode.
+        </p>
       </div>
-    </main>
+      <div className="col-start-1 self-start">
+        <MockActivitiesCard />
+      </div>
+      <div className="col-start-2 self-start">
+        <MockProfileCard />
+      </div>
+    </>
   );
 }

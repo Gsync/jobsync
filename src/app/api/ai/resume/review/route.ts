@@ -21,9 +21,9 @@ import { AiModel } from "@/models/ai.model";
  */
 export const POST = async (req: NextRequest) => {
   const session = await auth();
-  const userId = session?.accessToken?.sub;
+  const userId = session?.user?.id;
 
-  if (!session || !session.user || !userId) {
+  if (!session || !userId) {
     return NextResponse.json({ message: "Not Authenticated" }, { status: 401 });
   }
 
@@ -65,9 +65,10 @@ export const POST = async (req: NextRequest) => {
     }
     const { normalizedText } = preprocessResult.data;
 
-    const model = getModel(
+    const model = await getModel(
       selectedModel.provider,
       selectedModel.model || "llama3.2",
+      userId,
     );
 
     // Single comprehensive LLM call

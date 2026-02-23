@@ -55,8 +55,6 @@ git fetch origin
 # Checkout and pull the specified branch
 echo -e "${GREEN}[3/5]${NC} Checking out branch: ${YELLOW}$BRANCH${NC}"
 git checkout "$BRANCH"
-
-echo -e "${GREEN}[3/5]${NC} Pulling latest changes..."
 git pull origin "$BRANCH"
 
 # Stop existing containers

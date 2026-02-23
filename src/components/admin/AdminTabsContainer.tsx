@@ -1,6 +1,7 @@
 "use client";
 import CompaniesContainer from "@/components/admin/CompaniesContainer";
 import JobLocationsContainer from "@/components/admin/JobLocationsContainer";
+import JobSourcesContainer from "@/components/admin/JobSourcesContainer";
 import JobTitlesContainer from "@/components/admin/JobTitlesContainer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -33,6 +34,7 @@ function AdminTabsContainer() {
         <TabsTrigger value="companies">Companies</TabsTrigger>
         <TabsTrigger value="job-titles">Job Titles</TabsTrigger>
         <TabsTrigger value="locations">Locations</TabsTrigger>
+        <TabsTrigger value="sources">Sources</TabsTrigger>
       </TabsList>
       <TabsContent value="companies">
         <CompaniesContainer />
@@ -42,6 +44,9 @@ function AdminTabsContainer() {
       </TabsContent>
       <TabsContent value="locations">
         <JobLocationsContainer />
+      </TabsContent>
+      <TabsContent value="sources">
+        <JobSourcesContainer />
       </TabsContent>
     </Tabs>
   );

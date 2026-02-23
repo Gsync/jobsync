@@ -75,7 +75,7 @@ export function AddJob({
     defaultValues: {
       type: Object.keys(JOB_TYPES)[0],
       dueDate: addDays(new Date(), 3),
-      status: jobStatuses[0].id,
+      status: jobStatuses[0]?.id,
       salaryRange: "1",
     },
   });
@@ -113,7 +113,7 @@ export function AddJob({
           dateApplied: editJob.appliedDate ?? undefined,
           resume: editJob.Resume?.id ?? undefined,
         },
-        { keepDefaultValues: true }
+        { keepDefaultValues: true },
       );
       setDialogOpen(true);
     }
@@ -163,12 +163,12 @@ export function AddJob({
 
   const jobAppliedChange = (applied: boolean) => {
     if (applied) {
-      form.getValues("status") === jobStatuses[0].id &&
-        setValue("status", jobStatuses[1].id);
+      form.getValues("status") === jobStatuses[0]?.id &&
+        setValue("status", jobStatuses[1]?.id);
       setValue("dateApplied", new Date());
     } else {
       resetField("dateApplied");
-      setValue("status", jobStatuses[0].id);
+      setValue("status", jobStatuses[0]?.id);
     }
   };
 
@@ -326,7 +326,11 @@ export function AddJob({
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel>Job Source</FormLabel>
-                        <Combobox options={jobSources} field={field} />
+                        <Combobox
+                          options={jobSources}
+                          field={field}
+                          creatable
+                        />
                         <FormMessage />
                       </FormItem>
                     )}

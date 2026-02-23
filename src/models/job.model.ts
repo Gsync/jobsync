@@ -70,6 +70,10 @@ export interface JobSource {
   id: string;
   label: string;
   value: string;
+  createdBy: string;
+  _count?: {
+    jobsApplied: number;
+  };
 }
 
 export interface JobLocation {

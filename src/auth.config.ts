@@ -2,7 +2,11 @@ import type { NextAuthConfig } from "next-auth";
 
 declare module "next-auth" {
   interface Session {
-    accessToken?: any;
+    user: {
+      id: string;
+      name?: string | null;
+      email?: string | null;
+    };
   }
 }
 
@@ -19,17 +23,25 @@ export const authConfig = {
 
       if (isOnDashboard) {
         if (isLoggedIn) return true;
-        return false; // Redirect unauthenticated users to login page
+        return false;
       } else if (isLoggedIn) {
         return Response.redirect(new URL("/dashboard", nextUrl));
       }
       return true;
     },
+    async jwt({ token, user }) {
+      if (user?.id) {
+        token.id = user.id;
+      }
+      return token;
+    },
     async session({ session, token }) {
-      // Send properties to the client, like an access_token from a provider.
-      session.accessToken = token;
+      const userId = (token.id as string) || token.sub;
+      if (userId) {
+        session.user.id = userId;
+      }
       return session;
     },
   },
-  providers: [], // Add providers with an empty array for now
+  providers: [],
 } satisfies NextAuthConfig;

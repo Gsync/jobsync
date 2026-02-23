@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import {
   Form,
   FormControl,
@@ -96,27 +95,30 @@ function DisplaySettings() {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Appearance</CardTitle>
-        </CardHeader>
-        <CardContent className="ml-4">
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Loading settings...</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-lg font-medium">Appearance</h3>
+          <p className="text-sm text-muted-foreground">
+            Customize the look and feel of the application.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Loading settings...</span>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Appearance</CardTitle>
-      </CardHeader>
-      <CardContent className="ml-4">
-        <div className="mt-4">
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-lg font-medium">Appearance</h3>
+        <p className="text-sm text-muted-foreground">
+          Customize the look and feel of the application.
+        </p>
+      </div>
+      <div>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <FormField
@@ -185,9 +187,8 @@ function DisplaySettings() {
               </Button>
             </form>
           </Form>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 

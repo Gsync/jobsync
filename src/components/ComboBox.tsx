@@ -28,6 +28,7 @@ import { addCompany } from "@/actions/company.actions";
 import { createJobTitle } from "@/actions/jobtitle.actions";
 import { toast } from "./ui/use-toast";
 import { createActivityType } from "@/actions/activity.actions";
+import { createJobSource } from "@/actions/job.actions";
 
 interface ComboboxProps {
   options: any[];
@@ -63,6 +64,18 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
             });
           }
           response = data;
+          break;
+        case "source":
+          const sourceRes = await createJobSource(label);
+          if (!sourceRes.success) {
+            toast({
+              variant: "destructive",
+              title: "Error!",
+              description: sourceRes.message,
+            });
+          }
+          response = sourceRes.data;
+          if (!sourceRes.success) return;
           break;
         case "activityType":
           response = await createActivityType(label);

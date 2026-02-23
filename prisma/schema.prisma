@@ -22,6 +22,7 @@ model User {
   JobTitle     JobTitle[]
   Location     Location[]
   Company      Company[]
+  JobSource    JobSource[]
   Contact      Contact[]
   Profile      Profile[]
   Activity     Activity[]
@@ -29,6 +30,24 @@ model User {
   Task         Task[]
   Automation   Automation[]
   Settings     UserSettings?
+  ApiKey       ApiKey[]
+}
+
+model ApiKey {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  provider     String
+  encryptedKey String
+  iv           String
+  last4        String
+  label        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastUsedAt   DateTime?
+
+  @@unique([userId, provider])
+  @@index([userId])
 }
 
 model UserSettings {
@@ -175,11 +194,13 @@ model Contact {
 model JobTitle {
   id              String           @id @default(uuid())
   label           String
-  value           String           @unique //TODO: Change and Apply unique constraint on index  with value and userid
+  value           String
   jobs            Job[]
   createdBy       String // userId
   user            User             @relation(fields: [createdBy], references: [id])
   workExperiences WorkExperience[]
+
+  @@unique([value, createdBy])
 }
 
 model JobStatus {
@@ -200,24 +221,32 @@ model Location {
   user           User             @relation(fields: [createdBy], references: [id])
   educations     Education[]
   workExperience WorkExperience[]
+
+  @@unique([value, createdBy])
 }
 
 model Company {
   id              String           @id @default(uuid())
   label           String
-  value           String           @unique
+  value           String
   jobsApplied     Job[]
   logoUrl         String? // field is optional
   createdBy       String // userId
   user            User             @relation(fields: [createdBy], references: [id])
   workExperiences WorkExperience[]
+
+  @@unique([value, createdBy])
 }
 
 model JobSource {
   id          String @id @default(uuid())
   label       String
-  value       String @unique
+  value       String
   jobsApplied Job[]
+  createdBy   String // userId
+  user        User   @relation(fields: [createdBy], references: [id])
+
+  @@unique([value, createdBy])
 }
 
 model Interview {
@@ -269,7 +298,7 @@ model Job {
 model ActivityType {
   id          String   @id @default(uuid())
   label       String
-  value       String   @unique
+  value       String
   description String?
   createdBy   String // userId
   user        User     @relation(fields: [createdBy], references: [id])
@@ -278,6 +307,8 @@ model ActivityType {
 
   Activities Activity[]
   Tasks      Task[]
+
+  @@unique([value, createdBy])
 }
 
 model Activity {

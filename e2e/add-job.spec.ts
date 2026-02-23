@@ -15,6 +15,10 @@ async function login(page: Page) {
 }
 
 async function createNewJob(page: Page, jobText: string) {
+  const suffix = jobText.replace(/\s+/g, "-");
+  const companyText = `company ${suffix}`;
+  const locationText = `location ${suffix}`;
+
   await page.getByRole("button", { name: "Add New Job" }).click();
   await expect(page).toHaveURL("/dashboard/myjobs");
 
@@ -41,7 +45,6 @@ async function createNewJob(page: Page, jobText: string) {
   await expect(page.getByLabel("Job Title")).toContainText(jobText);
   await page.getByLabel("Company").click();
   await page.getByPlaceholder("Create or Search company").click();
-  const companyText = "company test";
   await page.getByPlaceholder("Create or Search company").fill(companyText);
   await page.waitForTimeout(500); // Wait for debounce
   // Check if item exists in list or needs to be created
@@ -58,7 +61,6 @@ async function createNewJob(page: Page, jobText: string) {
   await expect(page.getByLabel("Company")).toContainText(companyText);
   await page.getByLabel("Job Location").click();
   await page.getByPlaceholder("Create or Search location").click();
-  const locationText = "location test";
   await page.getByPlaceholder("Create or Search location").fill(locationText);
   await page.waitForTimeout(500); // Wait for debounce
   // Check if item exists in list or needs to be created
@@ -132,9 +134,11 @@ test.describe("Add New Job", () => {
     await expect(page.getByLabel("Job Title")).toContainText(
       "developer test title"
     );
-    await expect(page.getByLabel("Company")).toContainText("company test");
+    await expect(page.getByLabel("Company")).toContainText(
+      `company ${jobText.replace(/\s+/g, "-")}`
+    );
     await expect(page.getByLabel("Job Location")).toContainText(
-      "location test"
+      `location ${jobText.replace(/\s+/g, "-")}`
     );
     await expect(page.getByLabel("Job Source")).toContainText("Indeed");
     await expect(page.getByLabel("Select Job Status")).toContainText("Draft");

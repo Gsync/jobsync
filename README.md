@@ -38,80 +38,36 @@ Job searching can be overwhelming, with numerous applications to track and deadl
 JobSync Assistant is completely free to use and open source. It provides a powerful job search management tool at no cost and ensures that everyone has access to the resources they need. Additionally, JobSeeker Assistant is designed to be self-hosted, giving you full control over your data. By using Docker, you can easily set up and run JobSync Assistant on your own server, ensuring a secure and personalized experience.
 
 
-## Installation
+## Quick Start
 
-### Using Docker
-
-#### Step 1 - Clone repo
-* **Alternativey you can also download the source code using download link**
+Make sure [Docker](https://www.docker.com) is installed and running, then:
 
 ```sh
 git clone https://github.com/Gsync/jobsync.git
-```
-
-#### Step 2 - Change environment variables
-* ** You must create a .env file before proceeding. Refer to .env.example and create or change to .env with your environment variables**
-  
-#### 2.1 Generate auth secret (Optional) 
-
-These methods will generate a random string that you can use as your AUTH_SECRET. Make sure to set this in your environment variables:
-
-For example, add it to your .env local file:
-
-```sh
-AUTH_SECRET="your_generated_secret"
-```
-
-**Important**
-If you are running it on a remote server/homelab, you must update timezone otherwise activities times may shift
-
-```sh 
-TZ=America/Edmonton
-```
-
-##### For npm
-
-```sh
-    npm exec auth secret
-```
-OR
-```sh
-    npx auth secret
-```
-
-##### Using the openssl command available on Linux and Mac OS X:
-
-```sh
-    openssl rand -base64 33
-```
-
-#### 2.2 Change username and password (Optional) 
-
-You can use default username (admin@example) and password (password123) or change it in you .env file
-
-#### Step 3 - Build docker image and run container
-* **Please make sure you have <a href="https://www.docker.com">docker</a> installed and running**
-* Please make sure you are in you project directory in your terminal
-
-```sh
+cd jobsync
 docker compose up
 ```
 
-***For Update (Optional)***
-Try running deployment script (deploy.sh) - with clone
+Open [http://localhost:3000](http://localhost:3000) and create your account. That's it!
 
-```sh
- ./deploy.sh
-```
-OR - without clone
+API keys for AI providers can be configured in **Settings** after signing in.
+
+### Configuration (Optional)
+
+Environment variables can be set in `docker-compose.yml`:
+
+| Variable | Description |
+|---|---|
+| `TZ` | Your timezone (e.g. `America/Edmonton`). **Set this on remote servers** to avoid activity time shifts. |
+| `AUTH_SECRET` | Auto-generated if not set. To set manually: `openssl rand -base64 32` |
+
+### Updating
+
+From the project directory, run the deploy script to pull the latest changes and rebuild:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Gsync/jobsync/main/deploy.sh | sudo bash -s
 ```
-
-#### Step 4 - Access the app
-* **Open [http://localhost:3000](http://localhost:3000) with your browser to access the app.**
-* If you encounter port conflicts, please change it in the docker file
 
 ### Credits
 
@@ -134,17 +90,13 @@ Works with ollama https://ollama.com to review the resume.
 
 Please make sure ollama is installed and running on the same system to use the resume review and job matching feature.
 
-AI settings will show a list of available models based on what you have in Ollama, has been tested with llama3.2 and qwen 8B variant, please make sure it is downloaded and included in ollama.
+AI settings will show a list of available models based on what you have in Ollama, has been tested with llama3.2 and qwen 8B variant, please make sure it is downloaded and currently running.
 
 ***Note:*** It is recommended to increase the ollama context length from default 4k.
 
 #### Deepseek
 
-You must add your valid API key in the env file, also please make sure deepseek provider and model is selected from the settings page, ollama is selected as the default provider.
-
-```
-DEEPSEEK_API_KEY=your-deepseek-api-key-here
-```
+You must add your valid API key under settings, also please make sure deepseek provider and model is selected from the settings page, ollama is selected as the default provider.
 
 ### Note
 

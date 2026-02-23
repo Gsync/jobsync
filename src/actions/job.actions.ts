@@ -20,7 +20,15 @@ export const getStatusList = async (): Promise<any | undefined> => {
 
 export const getJobSourceList = async (): Promise<any | undefined> => {
   try {
-    const list = await prisma.jobSource.findMany();
+    const user = await getCurrentUser();
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+    const list = await prisma.jobSource.findMany({
+      where: {
+        createdBy: user.id,
+      },
+    });
     return list;
   } catch (error) {
     const msg = "Failed to fetch job source list. ";
@@ -205,6 +213,13 @@ export const createLocation = async (
       throw new Error("Please provide location name");
     }
 
+    const existing = await prisma.location.findFirst({
+      where: { value, createdBy: user.id },
+    });
+    if (existing) {
+      return { data: existing, success: true };
+    }
+
     const location = await prisma.location.create({
       data: { label, value, createdBy: user.id },
     });
@@ -212,6 +227,40 @@ export const createLocation = async (
     return { data: location, success: true };
   } catch (error) {
     const msg = "Failed to create job location. ";
+    return handleError(error, msg);
+  }
+};
+
+export const createJobSource = async (
+  label: string
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const value = label.trim().toLowerCase();
+
+    if (!value) {
+      throw new Error("Please provide job source name");
+    }
+
+    const existing = await prisma.jobSource.findFirst({
+      where: { value, createdBy: user.id },
+    });
+    if (existing) {
+      return { data: existing, success: true };
+    }
+
+    const jobSource = await prisma.jobSource.create({
+      data: { label, value, createdBy: user.id },
+    });
+
+    return { data: jobSource, success: true };
+  } catch (error) {
+    const msg = "Failed to create job source. ";
     return handleError(error, msg);
   }
 };

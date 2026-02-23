@@ -37,7 +37,7 @@ export async function mapScrapedJobToJobRecord(
   const jobTitleId = await findOrCreateJobTitle(scrapedJob.title, userId);
   const locationId = await findOrCreateLocation(scrapedJob.location, userId);
   const companyId = await findOrCreateCompany(scrapedJob.company, userId);
-  const jobSourceId = await getOrCreateJobSource(scrapedJob.sourceBoard);
+  const jobSourceId = await getOrCreateJobSource(scrapedJob.sourceBoard, userId);
   const statusId = await getDefaultJobStatus();
 
   return {
@@ -67,7 +67,7 @@ async function findOrCreateJobTitle(
   const normalized = normalizeForSearch(title);
 
   let existing = await db.jobTitle.findFirst({
-    where: { value: normalized },
+    where: { value: normalized, createdBy: userId },
   });
 
   if (!existing) {
@@ -75,6 +75,7 @@ async function findOrCreateJobTitle(
     if (keywords.length > 0) {
       existing = await db.jobTitle.findFirst({
         where: {
+          createdBy: userId,
           OR: keywords.map((keyword) => ({
             value: { contains: keyword },
           })),
@@ -146,7 +147,7 @@ async function findOrCreateCompany(
   const normalized = normalizeForSearch(company);
 
   let existing = await db.company.findFirst({
-    where: { value: normalized },
+    where: { value: normalized, createdBy: userId },
   });
 
   if (!existing) {
@@ -154,6 +155,7 @@ async function findOrCreateCompany(
     if (companyKeywords.length > 0) {
       existing = await db.company.findFirst({
         where: {
+          createdBy: userId,
           OR: companyKeywords.map((keyword) => ({
             label: { contains: keyword },
           })),
@@ -176,11 +178,14 @@ async function findOrCreateCompany(
   return newCompany.id;
 }
 
-async function getOrCreateJobSource(sourceBoard: string): Promise<string> {
+async function getOrCreateJobSource(
+  sourceBoard: string,
+  userId: string
+): Promise<string> {
   const normalized = sourceBoard.toLowerCase();
 
   let jobSource = await db.jobSource.findFirst({
-    where: { value: normalized },
+    where: { value: normalized, createdBy: userId },
   });
 
   if (!jobSource) {
@@ -188,6 +193,7 @@ async function getOrCreateJobSource(sourceBoard: string): Promise<string> {
       data: {
         label: sourceBoard.charAt(0).toUpperCase() + sourceBoard.slice(1),
         value: normalized,
+        createdBy: userId,
       },
     });
   }

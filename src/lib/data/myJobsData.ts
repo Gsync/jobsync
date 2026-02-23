@@ -29,7 +29,7 @@ export const MY_JOBS_DATA: { data: JobResponse[]; total: number } = {
         createdBy: "xyz",
       },
       Status: { id: "1", label: "Draft", value: "draft" },
-      JobSource: { id: "1", label: "Indeed", value: "indeed" },
+      JobSource: { id: "1", label: "Indeed", value: "indeed", createdBy: "xyz" },
       appliedDate: new Date("2024-06-19"),
       description:
         "<p>We are looking for a <strong>Full Stack Developer</strong> to join our team at Amazon. You will be responsible for developing and maintaining our web applications. Strong experience in both front-end and back-end technologies is required.</p>",
@@ -63,7 +63,7 @@ export const MY_JOBS_DATA: { data: JobResponse[]; total: number } = {
         createdBy: "xyz",
       },
       Status: { id: "1", label: "Rejected", value: "rejected" },
-      JobSource: { id: "1", label: "Indeed", value: "indeed" },
+      JobSource: { id: "1", label: "Indeed", value: "indeed", createdBy: "xyz" },
       appliedDate: new Date("2024-06-20"),
       description:
         "<p>Join our dynamic team at Google as a <strong>Full Stack Developer</strong>. You will be involved in the full software development lifecycle, from conception to deployment. Proficiency in JavaScript, Python, and cloud technologies is required.</p>",
@@ -97,7 +97,7 @@ export const MY_JOBS_DATA: { data: JobResponse[]; total: number } = {
         createdBy: "xyz",
       },
       Status: { id: "1", label: "Applied", value: "applied" },
-      JobSource: { id: "1", label: "Indeed", value: "indeed" },
+      JobSource: { id: "1", label: "Indeed", value: "indeed", createdBy: "xyz" },
       appliedDate: new Date("2024-06-19"),
       description:
         "<p>Facebook is seeking a talented <strong>Full Stack Developer</strong> to work on our cutting-edge social media platforms. Experience with React and Node.js is highly desirable. Work remotely with a team of top developers.</p>",
@@ -131,7 +131,7 @@ export const MY_JOBS_DATA: { data: JobResponse[]; total: number } = {
         createdBy: "xyz",
       },
       Status: { id: "1", label: "Applied", value: "applied" },
-      JobSource: { id: "2", label: "Linkedin", value: "linkedin" },
+      JobSource: { id: "2", label: "Linkedin", value: "linkedin", createdBy: "xyz" },
       appliedDate: new Date("2024-06-18"),
       description:
         "<p>Netflix is hiring a <strong>Full Stack Developer</strong> to enhance our streaming platform. You will work on both front-end and back-end features, ensuring a seamless user experience. Familiarity with cloud infrastructure is a plus.</p>",
@@ -165,7 +165,7 @@ export const MY_JOBS_DATA: { data: JobResponse[]; total: number } = {
         createdBy: "xyz",
       },
       Status: { id: "1", label: "Applied", value: "applied" },
-      JobSource: { id: "1", label: "Indeed", value: "indeed" },
+      JobSource: { id: "1", label: "Indeed", value: "indeed", createdBy: "xyz" },
       appliedDate: new Date("2024-06-18"),
       description:
         "<p>We are looking for a creative <strong>Frontend Developer</strong> at Apple to build intuitive interfaces for our products. Strong knowledge of HTML, CSS, and JavaScript is essential. Experience with design tools is a plus.</p>",
@@ -199,7 +199,7 @@ export const MY_JOBS_DATA: { data: JobResponse[]; total: number } = {
         createdBy: "xyz",
       },
       Status: { id: "1", label: "Applied", value: "applied" },
-      JobSource: { id: "1", label: "Indeed", value: "indeed" },
+      JobSource: { id: "1", label: "Indeed", value: "indeed", createdBy: "xyz" },
       appliedDate: new Date("2024-06-19"),
       description:
         "<p>Amazon is seeking a skilled <strong>DevOps Engineer</strong> to manage our deployment pipelines and infrastructure. Experience with AWS, Docker, and CI/CD tools is required. Join a fast-paced environment and help us scale.</p>",
@@ -233,7 +233,7 @@ export const MY_JOBS_DATA: { data: JobResponse[]; total: number } = {
         createdBy: "xyz",
       },
       Status: { id: "1", label: "Applied", value: "applied" },
-      JobSource: { id: "1", label: "Indeed", value: "indeed" },
+      JobSource: { id: "1", label: "Indeed", value: "indeed", createdBy: "xyz" },
       appliedDate: new Date("2024-06-19"),
       description:
         "<p>We are looking for an experienced <strong>Software Architect</strong> at Microsoft to design and oversee the development of complex software systems. Strong leadership and coding skills are essential. Work with the latest technologies and shape the future of our products.</p>",
@@ -267,7 +267,7 @@ export const MY_JOBS_DATA: { data: JobResponse[]; total: number } = {
         createdBy: "xyz",
       },
       Status: { id: "1", label: "Applied", value: "applied" },
-      JobSource: { id: "1", label: "Indeed", value: "indeed" },
+      JobSource: { id: "1", label: "Indeed", value: "indeed", createdBy: "xyz" },
       appliedDate: new Date("2024-06-19"),
       description:
         "<p>Netflix is seeking a talented <strong>Frontend Developer</strong> to join our team in Los Angeles. You will work on building responsive and interactive web applications. Experience with React and performance optimization is desired.</p>",
@@ -301,7 +301,7 @@ export const MY_JOBS_DATA: { data: JobResponse[]; total: number } = {
         createdBy: "xyz",
       },
       Status: { id: "1", label: "Applied", value: "applied" },
-      JobSource: { id: "2", label: "Linkedin", value: "linkedin" },
+      JobSource: { id: "2", label: "Linkedin", value: "linkedin", createdBy: "xyz" },
       appliedDate: new Date("2024-06-19"),
       description:
         "<p>Apple is hiring a <strong>Backend Developer</strong> to build and maintain our server-side applications. Expertise in server-side programming languages and database management is required. Work remotely and collaborate with our global team.</p>",

@@ -84,7 +84,7 @@ export default function RecentCardToggle({
                   </div>
                 </Link>
                 <div className="ml-auto text-sm font-medium">
-                  {format(job?.appliedDate, "PP")}
+                  {job?.appliedDate ? format(job.appliedDate, "PP") : "N/A"}
                 </div>
               </div>
             ))

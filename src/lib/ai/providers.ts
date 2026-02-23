@@ -1,31 +1,32 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOllama } from "ollama-ai-provider-v2";
 import { createDeepSeek } from "@ai-sdk/deepseek";
+import { resolveApiKey } from "@/lib/api-key-resolver";
 
 export type ProviderType = "openai" | "ollama" | "deepseek";
 
-/**
- * Get a language model instance for the specified provider and model.
- */
-export function getModel(provider: ProviderType, modelName: string) {
+export async function getModel(
+  provider: ProviderType,
+  modelName: string,
+  userId?: string,
+) {
   if (provider === "openai") {
-    const openai = createOpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    const apiKey = await resolveApiKey(userId, "openai");
+    if (!apiKey) throw new Error("OpenAI API key not configured");
+    const openai = createOpenAI({ apiKey });
     return openai(modelName);
   }
 
   if (provider === "deepseek") {
-    const deepseek = createDeepSeek({
-      apiKey: process.env.DEEPSEEK_API_KEY,
-    });
+    const apiKey = await resolveApiKey(userId, "deepseek");
+    if (!apiKey) throw new Error("DeepSeek API key not configured");
+    const deepseek = createDeepSeek({ apiKey });
     return deepseek(modelName);
   }
 
-  // Use ollama-ai-provider-v2 for Ollama
+  const baseURL = await resolveApiKey(userId, "ollama");
   const ollama = createOllama({
-    baseURL: (process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434") + "/api",
+    baseURL: (baseURL || "http://127.0.0.1:11434") + "/api",
   });
-
   return ollama(modelName);
 }

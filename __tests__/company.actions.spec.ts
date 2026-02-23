@@ -19,6 +19,7 @@ jest.mock("@prisma/client", () => {
       findMany: jest.fn(),
       count: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
@@ -200,7 +201,7 @@ describe("Company Actions", () => {
 
     it("should create a new company successfully", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.company.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.company.findFirst as jest.Mock).mockResolvedValue(null);
       const mockCompany = {
         id: "company-id",
         label: "New Company",
@@ -215,8 +216,8 @@ describe("Company Actions", () => {
       const result = await addCompany(validData);
 
       expect(result).toEqual({ success: true, data: mockCompany });
-      expect(prisma.company.findUnique).toHaveBeenCalledWith({
-        where: { value: "new company" },
+      expect(prisma.company.findFirst).toHaveBeenCalledWith({
+        where: { value: "new company", createdBy: mockUser.id },
       });
       expect(prisma.company.create).toHaveBeenCalledWith({
         data: {
@@ -235,7 +236,7 @@ describe("Company Actions", () => {
       const result = await addCompany(validData);
 
       expect(result).toEqual({ success: false, message: "Not authenticated" });
-      expect(prisma.company.findUnique).not.toHaveBeenCalled();
+      expect(prisma.company.findFirst).not.toHaveBeenCalled();
       expect(prisma.company.create).not.toHaveBeenCalled();
     });
 
@@ -247,7 +248,7 @@ describe("Company Actions", () => {
         value: "new company",
         createdBy: mockUser.id,
       };
-      (prisma.company.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.company.findFirst as jest.Mock).mockResolvedValue(
         mockExistingCompany,
       );
 
@@ -257,23 +258,23 @@ describe("Company Actions", () => {
         success: false,
         message: "Company already exists!",
       });
-      expect(prisma.company.findUnique).toHaveBeenCalledWith({
-        where: { value: "new company" },
+      expect(prisma.company.findFirst).toHaveBeenCalledWith({
+        where: { value: "new company", createdBy: mockUser.id },
       });
       expect(prisma.company.create).not.toHaveBeenCalled();
     });
 
     it("should handle unexpected errors", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.company.findUnique as jest.Mock).mockRejectedValue(
+      (prisma.company.findFirst as jest.Mock).mockRejectedValue(
         new Error("Unexpected error"),
       );
 
       const result = await addCompany(validData);
 
       expect(result).toEqual({ success: false, message: "Unexpected error" });
-      expect(prisma.company.findUnique).toHaveBeenCalledWith({
-        where: { value: "new company" },
+      expect(prisma.company.findFirst).toHaveBeenCalledWith({
+        where: { value: "new company", createdBy: mockUser.id },
       });
       expect(prisma.company.create).not.toHaveBeenCalled();
     });
@@ -293,7 +294,7 @@ describe("Company Actions", () => {
         message: "Invalid logo URL. Only http and https protocols are allowed.",
       });
 
-      expect(prisma.company.findUnique).not.toHaveBeenCalled();
+      expect(prisma.company.findFirst).not.toHaveBeenCalled();
       expect(prisma.company.create).not.toHaveBeenCalled();
     });
 
@@ -317,7 +318,7 @@ describe("Company Actions", () => {
 
     it("should allow empty logo URL", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.company.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.company.findFirst as jest.Mock).mockResolvedValue(null);
       const mockCompany = {
         id: "company-id",
         label: "New Company",
@@ -339,7 +340,7 @@ describe("Company Actions", () => {
 
     it("should allow https URLs", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.company.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.company.findFirst as jest.Mock).mockResolvedValue(null);
       const mockCompany = {
         id: "company-id",
         label: "New Company",
@@ -371,7 +372,7 @@ describe("Company Actions", () => {
     it("should update a company successfully", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
 
-      (prisma.company.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.company.findFirst as jest.Mock).mockResolvedValue(null);
 
       const mockUpdatedCompany = {
         id: "company-id",
@@ -386,8 +387,8 @@ describe("Company Actions", () => {
 
       expect(result).toEqual({ success: true, data: mockUpdatedCompany });
 
-      expect(prisma.company.findUnique).toHaveBeenCalledWith({
-        where: { value: "updated company" },
+      expect(prisma.company.findFirst).toHaveBeenCalledWith({
+        where: { value: "updated company", createdBy: mockUser.id },
       });
 
       expect(prisma.company.update).toHaveBeenCalledWith({
@@ -407,14 +408,14 @@ describe("Company Actions", () => {
 
       expect(result).toEqual({ success: false, message: "Not authenticated" });
 
-      expect(prisma.company.findUnique).not.toHaveBeenCalled();
+      expect(prisma.company.findFirst).not.toHaveBeenCalled();
       expect(prisma.company.update).not.toHaveBeenCalled();
     });
 
     it("should return error if company already exists", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
 
-      (prisma.company.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.company.findFirst as jest.Mock).mockResolvedValue({
         id: "existing-company-id",
       });
 
@@ -440,7 +441,7 @@ describe("Company Actions", () => {
         message: "Id is not provided or no user privilages",
       });
 
-      expect(prisma.company.findUnique).not.toHaveBeenCalled();
+      expect(prisma.company.findFirst).not.toHaveBeenCalled();
       expect(prisma.company.update).not.toHaveBeenCalled();
     });
 
@@ -459,7 +460,7 @@ describe("Company Actions", () => {
         message: "Invalid logo URL. Only http and https protocols are allowed.",
       });
 
-      expect(prisma.company.findUnique).not.toHaveBeenCalled();
+      expect(prisma.company.findFirst).not.toHaveBeenCalled();
       expect(prisma.company.update).not.toHaveBeenCalled();
     });
 
@@ -484,7 +485,7 @@ describe("Company Actions", () => {
     it("should allow empty logo URL", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
 
-      (prisma.company.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.company.findFirst as jest.Mock).mockResolvedValue(null);
 
       const mockUpdatedCompany = {
         id: "company-id",
