@@ -5,13 +5,13 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "3737:3000"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/data/dev.db
       - AUTH_SECRET=${AUTH_SECRET:-}
       - ENCRYPTION_KEY=you-encryption-key-here
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3737}
       - AUTH_TRUST_HOST=${AUTH_TRUST_HOST:-true}
       - TZ=${TZ:-America/Edmonton}
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
