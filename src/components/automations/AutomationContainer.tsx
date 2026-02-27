@@ -24,7 +24,8 @@ export function AutomationContainer({ resumes }: AutomationContainerProps) {
   const [automations, setAutomations] = useState<AutomationWithResume[]>([]);
   const [loading, setLoading] = useState(true);
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [editAutomation, setEditAutomation] = useState<AutomationWithResume | null>(null);
+  const [editAutomation, setEditAutomation] =
+    useState<AutomationWithResume | null>(null);
 
   const loadAutomations = useCallback(async () => {
     setLoading(true);
@@ -71,7 +72,11 @@ export function AutomationContainer({ resumes }: AutomationContainerProps) {
             <Button variant="outline" size="icon" onClick={loadAutomations}>
               <RefreshCw className="h-4 w-4" />
             </Button>
-            <Button onClick={() => setWizardOpen(true)} disabled={resumes.length === 0}>
+            <Button
+              variant="outline"
+              onClick={() => setWizardOpen(true)}
+              disabled={resumes.length === 0}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Create Automation
             </Button>

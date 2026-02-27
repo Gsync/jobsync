@@ -26,18 +26,14 @@ export default function JobsAppliedCard() {
           onClick={() => router.push("/dashboard/myjobs")}
         >
           <PlusCircle className="h-3.5 w-3.5 mr-1" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Add New Job
-          </span>
+          <span className="sm:not-sr-only sm:whitespace-nowrap">New Job</span>
         </Button>
         <Button
           variant="outline"
           onClick={() => router.push("/dashboard/tasks")}
         >
           <PlusCircle className="h-3.5 w-3.5 mr-1" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Add New Task
-          </span>
+          <span className="sm:not-sr-only sm:whitespace-nowrap">New Task</span>
         </Button>
       </CardFooter>
     </Card>

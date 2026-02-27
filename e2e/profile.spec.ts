@@ -12,7 +12,7 @@ test.beforeEach(async ({ page, baseURL }) => {
 });
 
 async function createResume(page: Page, title: string) {
-  await page.getByRole("button", { name: "Create Resume" }).click();
+  await page.getByRole("button", { name: "New Resume" }).click();
   await page.getByPlaceholder("Ex: Full Stack Developer").fill(title);
   await page.getByRole("button", { name: "Save" }).click();
 }
@@ -204,7 +204,12 @@ test.describe("Profile page", () => {
     await page.getByPlaceholder("Ex: Stanford").click();
     await page.getByPlaceholder("Ex: Stanford").fill("test school");
     const locationText = "location test";
-    await selectOrCreateComboboxOption(page, "Location", "Create or Search location", locationText);
+    await selectOrCreateComboboxOption(
+      page,
+      "Location",
+      "Create or Search location",
+      locationText,
+    );
     await expect(page.getByLabel("Location")).toContainText(locationText);
     await page.getByPlaceholder("Ex: Bachelor's").click();
     await page.getByPlaceholder("Ex: Bachelor's").fill("degree text");
@@ -260,13 +265,28 @@ async function addExperience(page: Page, resumeTitle: string, jobText: string) {
     await sectionTitleField.fill("Experience");
     await sectionTitleField.press("Tab");
   }
-  await selectOrCreateComboboxOption(page, "Job Title", "Create or Search title", jobText);
+  await selectOrCreateComboboxOption(
+    page,
+    "Job Title",
+    "Create or Search title",
+    jobText,
+  );
   await expect(page.getByLabel("Job Title")).toContainText(jobText);
   const companyText = "company test";
-  await selectOrCreateComboboxOption(page, "Company", "Create or Search company", companyText);
+  await selectOrCreateComboboxOption(
+    page,
+    "Company",
+    "Create or Search company",
+    companyText,
+  );
   await expect(page.getByLabel("Company")).toContainText(companyText);
   const locationText = "location test";
-  await selectOrCreateComboboxOption(page, "Job Location", "Create or Search location", locationText);
+  await selectOrCreateComboboxOption(
+    page,
+    "Job Location",
+    "Create or Search location",
+    locationText,
+  );
   await expect(page.getByLabel("Job Location")).toContainText(locationText);
   await page.getByLabel("Start Date").click();
   // Wait for calendar popover to open

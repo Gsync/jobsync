@@ -233,6 +233,7 @@ export default function AutomationDetailPage() {
             {automation.status === "active" ? "Pause" : "Resume"}
           </Button>
           <Button
+            variant="outline"
             onClick={handleRunNow}
             disabled={
               runNowLoading || resumeMissing || automation.status === "paused"

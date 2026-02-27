@@ -189,7 +189,7 @@ export function AddJob({
       >
         <PlusCircle className="h-3.5 w-3.5" />
         <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-          Add Job
+          New Job
         </span>
       </Button>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

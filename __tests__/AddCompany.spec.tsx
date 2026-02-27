@@ -27,7 +27,7 @@ describe("AddCompany Component", () => {
       />,
     );
     expect(
-      screen.getByRole("button", { name: /add company/i }),
+      screen.getByRole("button", { name: /new company/i }),
     ).toBeInTheDocument();
   });
 
@@ -41,7 +41,7 @@ describe("AddCompany Component", () => {
       />,
     );
     const addCompanyButton = screen.getByRole("button", {
-      name: /add company/i,
+      name: /new company/i,
     });
     fireEvent.click(addCompanyButton);
 
