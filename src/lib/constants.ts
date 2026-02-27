@@ -14,6 +14,7 @@ export const APP_CONSTANTS = {
   RECORDS_PER_PAGE_OPTIONS: [25, 50, 100],
   ACTIVITY_MAX_DURATION_MINUTES: 8 * 60, // 8 Hours
   ACTIVITY_MAX_DURATION_MS: 8 * 60 * 60 * 1000, // 8 hours in milliseconds
+  RECENT_NUM_JOBS_ACTIVITIES: 7,
 } as const;
 
 export const SCHEDULER_CONSTANTS = {

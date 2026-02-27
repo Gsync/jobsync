@@ -1,3 +1,4 @@
+import { APP_CONSTANTS } from "@/lib/constants";
 import prisma from "@/lib/db";
 import { calculatePercentageDifference, getLast7Days } from "@/lib/utils";
 import { getCurrentUser } from "@/utils/user.utils";
@@ -64,7 +65,7 @@ export const getRecentJobs = async (): Promise<any | undefined> => {
       orderBy: {
         appliedDate: "desc",
       },
-      take: 6,
+      take: APP_CONSTANTS.RECENT_NUM_JOBS_ACTIVITIES,
     });
     return list;
   } catch (error) {
@@ -312,7 +313,7 @@ export const getRecentActivities = async () => {
       orderBy: {
         endTime: "desc",
       },
-      take: 6,
+      take: APP_CONSTANTS.RECENT_NUM_JOBS_ACTIVITIES,
     });
     return list;
   } catch (error) {
