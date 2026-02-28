@@ -29,7 +29,7 @@ function ActivitiesContainer() {
   const [totalActivities, setTotalActivities] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [recordsPerPage, setRecordsPerPage] = useState<number>(
-    APP_CONSTANTS.RECORDS_PER_PAGE
+    APP_CONSTANTS.RECORDS_PER_PAGE,
   );
   const [searchTerm, setSearchTerm] = useState("");
   const hasSearched = useRef(false);
@@ -46,7 +46,7 @@ function ActivitiesContainer() {
         const { data, success, message, total } = await getActivitiesList(
           page,
           limit,
-          search
+          search,
         );
         if (success) {
           setActivitiesList((prev) => (page === 1 ? data : [...prev, ...data]));
@@ -69,7 +69,7 @@ function ActivitiesContainer() {
         setLoading(false);
       }
     },
-    []
+    [],
   );
 
   const reloadActivities = useCallback(async () => {
@@ -134,7 +134,7 @@ function ActivitiesContainer() {
               >
                 <PlusCircle className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Add Activity
+                  New Activity
                 </span>
               </Button>
             </DialogTrigger>
@@ -183,7 +183,11 @@ function ActivitiesContainer() {
               size="sm"
               variant="outline"
               onClick={() =>
-                loadActivities(page + 1, recordsPerPage, searchTerm || undefined)
+                loadActivities(
+                  page + 1,
+                  recordsPerPage,
+                  searchTerm || undefined,
+                )
               }
               disabled={loading}
               className="btn btn-primary"

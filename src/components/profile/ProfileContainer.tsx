@@ -30,7 +30,7 @@ const ProfileContainer = () => {
       setLoading(true);
       const { data, total, success, message } = await getResumeList(
         page,
-        recordsPerPage
+        recordsPerPage,
       );
       if (success && data) {
         setResumes((prev) => (page === 1 ? data : [...prev, ...data]));
@@ -46,7 +46,7 @@ const ProfileContainer = () => {
         });
       }
     },
-    [recordsPerPage]
+    [recordsPerPage],
   );
 
   const reloadResumes = useCallback(async () => {
@@ -87,7 +87,7 @@ const ProfileContainer = () => {
           >
             <PlusCircle className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-              Create Resume
+              New Resume
             </span>
           </Button>
           <CreateResume

@@ -5,6 +5,7 @@ import {
   getJobsActivityForPeriod,
   getActivityCalendarData,
 } from "@/actions/dashboard.actions";
+import { APP_CONSTANTS } from "@/lib/constants";
 import { getCurrentUser } from "@/utils/user.utils";
 import { PrismaClient } from "@prisma/client";
 
@@ -52,7 +53,7 @@ describe("Dashboard Actions", () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(null);
 
       await expect(getJobsAppliedForPeriod(7)).rejects.toThrow(
-        "Not authenticated"
+        "Not authenticated",
       );
     });
 
@@ -68,11 +69,11 @@ describe("Dashboard Actions", () => {
     it("should handle database errors", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
       (prisma.$transaction as jest.Mock).mockRejectedValue(
-        new Error("Database error")
+        new Error("Database error"),
       );
 
       await expect(getJobsAppliedForPeriod(7)).rejects.toThrow(
-        "Failed to calculate job count"
+        "Failed to calculate job count",
       );
     });
   });
@@ -114,7 +115,7 @@ describe("Dashboard Actions", () => {
         orderBy: {
           appliedDate: "desc",
         },
-        take: 6,
+        take: APP_CONSTANTS.RECENT_NUM_JOBS_ACTIVITIES,
       });
     });
 
@@ -122,18 +123,18 @@ describe("Dashboard Actions", () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(null);
 
       await expect(getRecentJobs()).rejects.toThrow(
-        "Failed to fetch jobs list. "
+        "Failed to fetch jobs list. ",
       );
     });
 
     it("should handle database errors", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
       (prisma.job.findMany as jest.Mock).mockRejectedValue(
-        new Error("Database error")
+        new Error("Database error"),
       );
 
       await expect(getRecentJobs()).rejects.toThrow(
-        "Failed to fetch jobs list. "
+        "Failed to fetch jobs list. ",
       );
     });
 
@@ -176,18 +177,18 @@ describe("Dashboard Actions", () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(null);
 
       await expect(getActivityDataForPeriod()).rejects.toThrow(
-        "Failed to fetch activities data."
+        "Failed to fetch activities data.",
       );
     });
 
     it("should handle database errors", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
       (prisma.activity.findMany as jest.Mock).mockRejectedValue(
-        new Error("Database error")
+        new Error("Database error"),
       );
 
       await expect(getActivityDataForPeriod()).rejects.toThrow(
-        "Failed to fetch activities data."
+        "Failed to fetch activities data.",
       );
     });
 
@@ -251,18 +252,18 @@ describe("Dashboard Actions", () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(null);
 
       await expect(getJobsActivityForPeriod()).rejects.toThrow(
-        "Failed to fetch jobs list. "
+        "Failed to fetch jobs list. ",
       );
     });
 
     it("should handle database errors", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
       (prisma.job.groupBy as jest.Mock).mockRejectedValue(
-        new Error("Database error")
+        new Error("Database error"),
       );
 
       await expect(getJobsActivityForPeriod()).rejects.toThrow(
-        "Failed to fetch jobs list. "
+        "Failed to fetch jobs list. ",
       );
     });
 
@@ -308,18 +309,18 @@ describe("Dashboard Actions", () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(null);
 
       await expect(getActivityCalendarData()).rejects.toThrow(
-        "Failed to fetch jobs list. "
+        "Failed to fetch jobs list. ",
       );
     });
 
     it("should handle database errors", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
       (prisma.job.groupBy as jest.Mock).mockRejectedValue(
-        new Error("Database error")
+        new Error("Database error"),
       );
 
       await expect(getActivityCalendarData()).rejects.toThrow(
-        "Failed to fetch jobs list. "
+        "Failed to fetch jobs list. ",
       );
     });
 

@@ -1,13 +1,13 @@
 {
   "name": "jobsync",
-  "version": "0.2.4",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack -p 3000",
+    "dev": "next dev --turbopack -p 3737",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-"test": "jest",
+    "test": "jest",
     "test:e2e": "npx playwright test",
     "test:watch": "jest --watch"
   },

@@ -48,7 +48,7 @@ cd jobsync
 docker compose up
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and create your account. That's it!
+Open [http://localhost:3737](http://localhost:3737) and create your account. That's it!
 
 API keys for AI providers can be configured in **Settings** after signing in.
 

@@ -19,7 +19,7 @@ async function createNewJob(page: Page, jobText: string) {
   const companyText = `company ${suffix}`;
   const locationText = `location ${suffix}`;
 
-  await page.getByRole("button", { name: "Add New Job" }).click();
+  await page.getByRole("button", { name: "New Job" }).click();
   await expect(page).toHaveURL("/dashboard/myjobs");
 
   await page.getByTestId("add-job-btn").click();
@@ -111,7 +111,7 @@ test.describe("Add New Job", () => {
   test("should allow me to add a new job", async ({ page }) => {
     await createNewJob(page, jobText);
     await expect(
-      page.getByRole("row", { name: jobText }).first()
+      page.getByRole("row", { name: jobText }).first(),
     ).toBeVisible();
     await deleteJob(page, jobText);
   });
@@ -129,16 +129,16 @@ test.describe("Add New Job", () => {
       .click();
     await page.getByRole("menuitem", { name: "Edit Job" }).click();
     await expect(
-      page.getByPlaceholder("Copy and paste job link here")
+      page.getByPlaceholder("Copy and paste job link here"),
     ).toHaveValue("www.google.com");
     await expect(page.getByLabel("Job Title")).toContainText(
-      "developer test title"
+      "developer test title",
     );
     await expect(page.getByLabel("Company")).toContainText(
-      `company ${jobText.replace(/\s+/g, "-")}`
+      `company ${jobText.replace(/\s+/g, "-")}`,
     );
     await expect(page.getByLabel("Job Location")).toContainText(
-      `location ${jobText.replace(/\s+/g, "-")}`
+      `location ${jobText.replace(/\s+/g, "-")}`,
     );
     await expect(page.getByLabel("Job Source")).toContainText("Indeed");
     await expect(page.getByLabel("Select Job Status")).toContainText("Draft");
@@ -150,7 +150,7 @@ test.describe("Add New Job", () => {
       .fill("test description edited");
     await page.getByTestId("save-job-btn").click();
     await expect(page.getByRole("status").first()).toContainText(
-      /Job has been updated/
+      /Job has been updated/,
     );
     await deleteJob(page, jobText);
   });
