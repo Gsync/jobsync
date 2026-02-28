@@ -139,7 +139,7 @@ echo -e "  Changelog updated"
 echo ""
 
 # Step 7: Commit, tag, and push
-echo -e "${GREEN}[7/9]${NC} Committing and tagging..."
+echo -e "${GREEN}[7/10]${NC} Committing and tagging..."
 git add package.json package-lock.json CHANGELOG.md
 git commit -m "chore(release): ${VERSION_NUMBER}"
 git tag -a "$NEW_VERSION" -m "Release $NEW_VERSION"
@@ -148,12 +148,12 @@ git push origin "$NEW_VERSION"
 echo ""
 
 # Step 8: Login to GHCR and build
-echo -e "${GREEN}[8/9]${NC} Logging in to GHCR..."
+echo -e "${GREEN}[8/10]${NC} Logging in to GHCR..."
 echo "$GITHUB_TOKEN" | docker login "$REGISTRY" -u gsync --password-stdin
 echo ""
 
 # Step 9: Build and push multi-arch image
-echo -e "${GREEN}[9/9]${NC} Building and pushing Docker image..."
+echo -e "${GREEN}[9/10]${NC} Building and pushing Docker image..."
 MAJOR=$(echo "$VERSION_NUMBER" | cut -d. -f1)
 MINOR=$(echo "$VERSION_NUMBER" | cut -d. -f1-2)
 
@@ -171,6 +171,11 @@ docker buildx build \
   --tag "${REGISTRY}/${IMAGE_NAME}:latest" \
   --push \
   .
+
+# Step 10: Create GitHub Release
+echo -e "${GREEN}[10/10]${NC} Creating GitHub Release..."
+gh release create "$NEW_VERSION" --title "$NEW_VERSION" --generate-notes
+echo ""
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
