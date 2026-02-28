@@ -3,7 +3,7 @@ name: release-please
 on:
   push:
     branches:
-      - dev
+      - main
 
 permissions:
   contents: write
@@ -20,4 +20,4 @@ jobs:
         id: release
         with:
           release-type: node
-          target-branch: dev
+          target-branch: main
