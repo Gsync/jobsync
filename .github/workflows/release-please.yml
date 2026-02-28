@@ -20,3 +20,4 @@ jobs:
         id: release
         with:
           release-type: node
+          target-branch: dev
