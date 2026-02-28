@@ -47,7 +47,8 @@ dev.db-journal
 data/files/resumes
 CLAUDE.md
 /docs
-.github
+.github/*
+!.github/workflows
 .claude
 .specify
 /specs
