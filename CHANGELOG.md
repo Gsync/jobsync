@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.2](https://github.com/Gsync/jobsync/compare/v1.1.0...v1.1.2) (2026-02-28)
+
+
+### Bug Fixes
+
+*  display user email in profile dropdown instead of static text
+
+### Other Changes
+
+*  replace release-please workflow with local release script
+*  release 1.1.1
+
+
 ## [1.1.1](https://github.com/Gsync/jobsync/compare/v1.1.0...v1.1.1) (2026-02-28)
 
 
