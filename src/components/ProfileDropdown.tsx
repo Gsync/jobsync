@@ -30,7 +30,7 @@ export function ProfileDropdown({ user, signOutAction }: ProfileDropdownProps) {
           <UserAvatar user={user} />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuLabel>{user?.email ?? "My Account"}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
             <Link href="/dashboard/settings" className="cursor-pointer">
