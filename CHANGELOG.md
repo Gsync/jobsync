@@ -11,7 +11,7 @@
 ### Bug Fixes
 
 * Add job draft date in job details ([f6c2bb6](https://github.com/Gsync/jobsync/commit/f6c2bb65f14364f1292ecccf66c4f2999ba5cfc6))
-* Admin tab swich ([8c57052](https://github.com/Gsync/jobsync/commit/8c5705297c643a13c9d00da34a45d7d85f785f23))
+* Admin tab switch ([8c57052](https://github.com/Gsync/jobsync/commit/8c5705297c643a13c9d00da34a45d7d85f785f23))
 * bullet and order styling of editor content ([423b0f4](https://github.com/Gsync/jobsync/commit/423b0f43d0cfff76e1522864bd1b5177773692fb))
 * button hydration error ([d7e97a0](https://github.com/Gsync/jobsync/commit/d7e97a014e2d41ccdb1cd77d6baa0b6975576f4b))
 * Combobox filter issue ([1ab477e](https://github.com/Gsync/jobsync/commit/1ab477eb6e64f0aab7da360fcc936897217583e5))
