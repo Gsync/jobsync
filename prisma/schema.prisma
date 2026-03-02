@@ -31,6 +31,7 @@ model User {
   Automation   Automation[]
   Settings     UserSettings?
   ApiKey       ApiKey[]
+  Note         Note[]
 }
 
 model ApiKey {
@@ -282,6 +283,7 @@ model Job {
   Interview   Interview[]
   Resume      Resume?     @relation(fields: [resumeId], references: [id])
   resumeId    String?
+  Notes       Note[]
 
   // Automation discovery fields
   automationId    String?
@@ -405,4 +407,18 @@ model AutomationRun {
 
   @@index([automationId])
   @@index([startedAt])
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([jobId])
+  @@index([userId])
 }

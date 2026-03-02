@@ -43,6 +43,7 @@ import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
 import { redirect } from "next/navigation";
 import { Combobox } from "../ComboBox";
+import { NotesCollapsibleSection } from "./NotesCollapsibleSection";
 import { Resume } from "@/models/profile.model";
 import CreateResume from "../profile/CreateResume";
 import { getResumeList } from "@/actions/profile.actions";
@@ -492,6 +493,9 @@ export function AddJob({
                     )}
                   />
                 </div>
+                {editJob && (
+                  <NotesCollapsibleSection jobId={editJob.id} />
+                )}
                 <div className="md:col-span-2">
                   <DialogFooter
                   // className="md:col-span

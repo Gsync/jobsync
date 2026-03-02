@@ -94,6 +94,7 @@ export const getJobsList = async (
           description: false,
           Resume: true,
           matchScore: true,
+          _count: { select: { Notes: true } },
         },
         orderBy: {
           createdAt: "desc",

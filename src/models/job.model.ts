@@ -37,6 +37,7 @@ export interface JobResponse {
   Resume?: Resume;
   matchScore?: number | null;
   matchData?: string | null;
+  _count?: { Notes?: number };
 }
 
 export interface JobTitle {

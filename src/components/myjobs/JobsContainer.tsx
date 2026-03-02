@@ -40,6 +40,7 @@ import Loading from "../Loading";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AddJob } from "./AddJob";
 import MyJobsTable from "./MyJobsTable";
+import { NoteDialog } from "./NoteDialog";
 import { format } from "date-fns";
 import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
 import { RecordsCount } from "../RecordsCount";
@@ -81,6 +82,8 @@ function JobsContainer({
   const [recordsPerPage, setRecordsPerPage] = useState<number>(
     APP_CONSTANTS.RECORDS_PER_PAGE,
   );
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [noteJobId, setNoteJobId] = useState("");
   const hasSearched = useRef(false);
 
   const jobsPerPage = recordsPerPage;
@@ -169,6 +172,11 @@ function JobsContainer({
 
   const resetEditJob = () => {
     setEditJob(null);
+  };
+
+  const onAddNote = (jobId: string) => {
+    setNoteJobId(jobId);
+    setNoteDialogOpen(true);
   };
 
   useEffect(() => {
@@ -299,6 +307,7 @@ function JobsContainer({
                 deleteJob={onDeleteJob}
                 editJob={onEditJob}
                 onChangeJobStatus={onChangeJobStatus}
+                onAddNote={onAddNote}
               />
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mt-4">
                 <RecordsCount
@@ -331,6 +340,12 @@ function JobsContainer({
         </CardContent>
         <CardFooter></CardFooter>
       </Card>
+      <NoteDialog
+        open={noteDialogOpen}
+        onOpenChange={setNoteDialogOpen}
+        jobId={noteJobId}
+        onSaved={() => reloadJobs()}
+      />
     </>
   );
 }
