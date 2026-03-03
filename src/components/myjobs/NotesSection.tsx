@@ -99,7 +99,7 @@ export function NotesSection({ jobId }: NotesSectionProps) {
             onClick={handleAddNote}
           >
             <PlusCircle className="h-3.5 w-3.5" />
-            Add Note
+            New Note
           </Button>
         </div>
         <CollapsibleContent className="mt-3 space-y-3">
