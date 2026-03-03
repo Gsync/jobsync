@@ -17,6 +17,16 @@ export interface JobForm {
   applied: boolean;
 }
 
+export interface Tag {
+  id: string;
+  label: string;
+  value: string;
+  createdBy: string;
+  _count?: {
+    jobs: number;
+  };
+}
+
 export interface JobResponse {
   id: string;
   userId: string;
@@ -37,6 +47,7 @@ export interface JobResponse {
   Resume?: Resume;
   matchScore?: number | null;
   matchData?: string | null;
+  tags?: Tag[];
   _count?: { Notes?: number };
 }
 

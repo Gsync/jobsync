@@ -3,6 +3,7 @@ import CompaniesContainer from "@/components/admin/CompaniesContainer";
 import JobLocationsContainer from "@/components/admin/JobLocationsContainer";
 import JobSourcesContainer from "@/components/admin/JobSourcesContainer";
 import JobTitlesContainer from "@/components/admin/JobTitlesContainer";
+import TagsContainer from "@/components/admin/TagsContainer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
@@ -19,7 +20,7 @@ function AdminTabsContainer() {
 
       return params.toString();
     },
-    [queryParams]
+    [queryParams],
   );
 
   const onTabChange = (tab: string) => {
@@ -35,6 +36,7 @@ function AdminTabsContainer() {
         <TabsTrigger value="job-titles">Job Titles</TabsTrigger>
         <TabsTrigger value="locations">Locations</TabsTrigger>
         <TabsTrigger value="sources">Sources</TabsTrigger>
+        <TabsTrigger value="skills">Skills</TabsTrigger>
       </TabsList>
       <TabsContent value="companies">
         <CompaniesContainer />
@@ -47,6 +49,9 @@ function AdminTabsContainer() {
       </TabsContent>
       <TabsContent value="sources">
         <JobSourcesContainer />
+      </TabsContent>
+      <TabsContent value="skills">
+        <TagsContainer />
       </TabsContent>
     </Tabs>
   );

@@ -83,7 +83,7 @@ function JobDetails({ job }: { job: JobResponse }) {
                 ? DownloadFileButton(
                     job?.Resume?.File?.filePath,
                     job?.Resume?.title,
-                    job?.Resume?.File?.fileName
+                    job?.Resume?.File?.fileName,
                   )
                 : null}
             </div>
@@ -96,7 +96,7 @@ function JobDetails({ job }: { job: JobResponse }) {
                 className={cn(
                   "w-[70px] justify-center",
                   job.Status?.value === "applied" && "bg-cyan-500",
-                  job.Status?.value === "interview" && "bg-green-500"
+                  job.Status?.value === "interview" && "bg-green-500",
                 )}
               >
                 {job.Status?.label}
@@ -106,6 +106,15 @@ function JobDetails({ job }: { job: JobResponse }) {
               {job?.appliedDate ? format(new Date(job?.appliedDate), "PP") : ""}
             </span>
           </h3>
+          {job.tags && job.tags.length > 0 && (
+            <div className="my-3 ml-4 flex flex-wrap gap-1">
+              {job.tags.map((tag) => (
+                <Badge key={tag.id} variant="secondary">
+                  {tag.label}
+                </Badge>
+              ))}
+            </div>
+          )}
           {job.jobUrl && (
             <div className="my-3 ml-4">
               <span className="font-semibold mr-2">Job URL:</span>

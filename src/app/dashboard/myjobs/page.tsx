@@ -5,19 +5,22 @@ import JobsContainer from "@/components/myjobs/JobsContainer";
 import { getAllCompanies } from "@/actions/company.actions";
 import { getAllJobTitles } from "@/actions/jobtitle.actions";
 import { getAllJobLocations } from "@/actions/jobLocation.actions";
+import { getAllTags } from "@/actions/tag.actions";
 
 export const metadata: Metadata = {
   title: "My Jobs | JobSync",
 };
 
 async function MyJobs() {
-  const [statuses, companies, titles, locations, sources] = await Promise.all([
-    getStatusList(),
-    getAllCompanies(),
-    getAllJobTitles(),
-    getAllJobLocations(),
-    getJobSourceList(),
-  ]);
+  const [statuses, companies, titles, locations, sources, tags] =
+    await Promise.all([
+      getStatusList(),
+      getAllCompanies(),
+      getAllJobTitles(),
+      getAllJobLocations(),
+      getJobSourceList(),
+      getAllTags(),
+    ]);
   return (
     <div className="col-span-3">
       <JobsContainer
@@ -26,6 +29,7 @@ async function MyJobs() {
         locations={locations}
         sources={sources}
         statuses={statuses}
+        tags={tags ?? []}
       />
     </div>
   );

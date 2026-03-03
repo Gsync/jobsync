@@ -24,6 +24,7 @@ import {
   JobSource,
   JobStatus,
   JobTitle,
+  Tag,
 } from "@/models/job.model";
 import {
   Select,
@@ -51,6 +52,7 @@ type MyJobsProps = {
   titles: JobTitle[];
   locations: JobLocation[];
   sources: JobSource[];
+  tags: Tag[];
 };
 
 function JobsContainer({
@@ -59,6 +61,7 @@ function JobsContainer({
   titles,
   locations,
   sources,
+  tags,
 }: MyJobsProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -70,7 +73,7 @@ function JobsContainer({
 
       return params.toString();
     },
-    [queryParams]
+    [queryParams],
   );
   const [jobs, setJobs] = useState<JobResponse[]>([]);
   const [page, setPage] = useState(1);
@@ -95,7 +98,7 @@ function JobsContainer({
         page,
         jobsPerPage,
         filter,
-        search
+        search,
       );
       if (success && data) {
         setJobs((prev) => (page === 1 ? data : [...prev, ...data]));
@@ -112,7 +115,7 @@ function JobsContainer({
         return;
       }
     },
-    [jobsPerPage]
+    [jobsPerPage],
   );
 
   const reloadJobs = useCallback(async () => {
@@ -292,6 +295,7 @@ function JobsContainer({
               jobTitles={titles}
               locations={locations}
               jobSources={sources}
+              tags={tags}
               editJob={editJob}
               resetEditJob={resetEditJob}
             />
@@ -329,7 +333,9 @@ function JobsContainer({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => loadJobs(page + 1, filterKey, searchTerm || undefined)}
+                onClick={() =>
+                  loadJobs(page + 1, filterKey, searchTerm || undefined)
+                }
                 disabled={loading}
                 className="btn btn-primary"
               >

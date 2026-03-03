@@ -22,6 +22,7 @@ import {
   JobSource,
   JobStatus,
   JobTitle,
+  Tag,
 } from "@/models/job.model";
 import { addDays } from "date-fns";
 import { z } from "zod";
@@ -47,6 +48,7 @@ import { NotesCollapsibleSection } from "./NotesCollapsibleSection";
 import { Resume } from "@/models/profile.model";
 import CreateResume from "../profile/CreateResume";
 import { getResumeList } from "@/actions/profile.actions";
+import { TagInput } from "./TagInput";
 
 type AddJobProps = {
   jobStatuses: JobStatus[];
@@ -54,6 +56,7 @@ type AddJobProps = {
   jobTitles: JobTitle[];
   locations: JobLocation[];
   jobSources: JobSource[];
+  tags: Tag[];
   editJob?: JobResponse | null;
   resetEditJob: () => void;
 };
@@ -64,12 +67,14 @@ export function AddJob({
   jobTitles,
   locations,
   jobSources,
+  tags,
   editJob,
   resetEditJob,
 }: AddJobProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
   const [resumes, setResumes] = useState<Resume[]>([]);
+  const [availableTags, setAvailableTags] = useState<Tag[]>(tags);
   const [isPending, startTransition] = useTransition();
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
     resolver: zodResolver(AddJobFormSchema) as any,
@@ -113,9 +118,18 @@ export function AddJob({
           jobUrl: editJob.jobUrl ?? undefined,
           dateApplied: editJob.appliedDate ?? undefined,
           resume: editJob.Resume?.id ?? undefined,
+          tags: editJob.tags?.map((t) => t.id) ?? [],
         },
         { keepDefaultValues: true },
       );
+      // Merge any tags from editJob into the local pool so they're selectable
+      if (editJob.tags && editJob.tags.length > 0) {
+        setAvailableTags((prev) => {
+          const existing = new Set(prev.map((t) => t.id));
+          const incoming = editJob.tags!.filter((t) => !existing.has(t.id));
+          return incoming.length > 0 ? [...prev, ...incoming] : prev;
+        });
+      }
       setDialogOpen(true);
     }
   }, [editJob, reset]);
@@ -475,6 +489,27 @@ export function AddJob({
                   />
                 </div>
 
+                {/* Add Skill Tags */}
+                <div className="md:col-span-2">
+                  <FormField
+                    control={form.control}
+                    name="tags"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Add Skill</FormLabel>
+                        <FormControl>
+                          <TagInput
+                            availableTags={availableTags}
+                            selectedTagIds={field.value ?? []}
+                            onChange={(ids) => field.onChange(ids)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 {/* Job Description */}
                 <div className="md:col-span-2">
                   <FormField
@@ -493,9 +528,7 @@ export function AddJob({
                     )}
                   />
                 </div>
-                {editJob && (
-                  <NotesCollapsibleSection jobId={editJob.id} />
-                )}
+                {editJob && <NotesCollapsibleSection jobId={editJob.id} />}
                 <div className="md:col-span-2">
                   <DialogFooter
                   // className="md:col-span

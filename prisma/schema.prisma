@@ -32,6 +32,7 @@ model User {
   Settings     UserSettings?
   ApiKey       ApiKey[]
   Note         Note[]
+  Tag          Tag[]
 }
 
 model ApiKey {
@@ -284,6 +285,7 @@ model Job {
   Resume      Resume?     @relation(fields: [resumeId], references: [id])
   resumeId    String?
   Notes       Note[]
+  tags        Tag[]
 
   // Automation discovery fields
   automationId    String?
@@ -359,26 +361,26 @@ model Task {
 }
 
 model Automation {
-  id             String          @id @default(uuid())
-  userId         String
-  user           User            @relation(fields: [userId], references: [id])
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   name           String
   jobBoard       String
   keywords       String
   location       String
   resumeId       String
-  resume         Resume          @relation(fields: [resumeId], references: [id])
-  matchThreshold Int             @default(80)
+  resume         Resume @relation(fields: [resumeId], references: [id])
+  matchThreshold Int    @default(80)
 
-  scheduleHour   Int
-  nextRunAt      DateTime?
-  lastRunAt      DateTime?
+  scheduleHour Int
+  nextRunAt    DateTime?
+  lastRunAt    DateTime?
 
-  status         String          @default("active")
+  status String @default("active")
 
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   runs           AutomationRun[]
   discoveredJobs Job[]
@@ -388,22 +390,22 @@ model Automation {
 }
 
 model AutomationRun {
-  id               String     @id @default(uuid())
-  automationId     String
-  automation       Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  id           String     @id @default(uuid())
+  automationId String
+  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
 
-  jobsSearched     Int        @default(0)
-  jobsDeduplicated Int        @default(0)
-  jobsProcessed    Int        @default(0)
-  jobsMatched      Int        @default(0)
-  jobsSaved        Int        @default(0)
+  jobsSearched     Int @default(0)
+  jobsDeduplicated Int @default(0)
+  jobsProcessed    Int @default(0)
+  jobsMatched      Int @default(0)
+  jobsSaved        Int @default(0)
 
-  status           String     @default("running")
-  errorMessage     String?
-  blockedReason    String?
+  status        String  @default("running")
+  errorMessage  String?
+  blockedReason String?
 
-  startedAt        DateTime   @default(now())
-  completedAt      DateTime?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
 
   @@index([automationId])
   @@index([startedAt])
@@ -421,4 +423,15 @@ model Note {
 
   @@index([jobId])
   @@index([userId])
+}
+
+model Tag {
+  id        String @id @default(uuid())
+  label     String
+  value     String
+  createdBy String
+  user      User   @relation(fields: [createdBy], references: [id])
+  jobs      Job[]
+
+  @@unique([value, createdBy])
 }
