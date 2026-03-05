@@ -50,7 +50,7 @@ function TagsContainer() {
       <div className="col-span-3">
         <Card>
           <CardHeader className="flex-row justify-between items-center">
-            <CardTitle>Skills</CardTitle>
+            <CardTitle>Skills/Tags</CardTitle>
             <div className="flex items-center">
               <div className="ml-auto flex items-center gap-2">
                 <AddTag reloadTags={reloadTags} />

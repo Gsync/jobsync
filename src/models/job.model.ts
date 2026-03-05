@@ -24,6 +24,7 @@ export interface Tag {
   createdBy: string;
   _count?: {
     jobs: number;
+    questions: number;
   };
 }
 

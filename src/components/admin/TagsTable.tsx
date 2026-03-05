@@ -35,11 +35,21 @@ function TagsTable({ tags, reloadTags }: TagsTableProps) {
   });
 
   const onDeleteTag = (tag: Tag) => {
-    if ((tag._count?.jobs ?? 0) > 0) {
+    const jobCount = tag._count?.jobs ?? 0;
+    const questionCount = tag._count?.questions ?? 0;
+
+    if (jobCount > 0 || questionCount > 0) {
+      const links = [
+        jobCount > 0 ? `${jobCount} job(s)` : "",
+        questionCount > 0 ? `${questionCount} question(s)` : "",
+      ]
+        .filter(Boolean)
+        .join(" and ");
+
       setAlert({
         openState: true,
         title: "Skill is in use!",
-        description: `This skill is linked to ${tag._count?.jobs} job(s) and cannot be deleted.`,
+        description: `This skill is linked to ${links} and cannot be deleted.`,
         deleteAction: false,
       });
     } else {
@@ -77,6 +87,7 @@ function TagsTable({ tags, reloadTags }: TagsTableProps) {
             <TableHead>Skill Label</TableHead>
             <TableHead className="hidden sm:table-cell">Value</TableHead>
             <TableHead># Jobs</TableHead>
+            <TableHead># Questions</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -89,6 +100,9 @@ function TagsTable({ tags, reloadTags }: TagsTableProps) {
               </TableCell>
               <TableCell className="font-medium">
                 {tag._count?.jobs ?? 0}
+              </TableCell>
+              <TableCell className="font-medium">
+                {tag._count?.questions ?? 0}
               </TableCell>
               <TableCell>
                 <DropdownMenu>

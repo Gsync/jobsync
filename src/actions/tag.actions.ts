@@ -41,7 +41,7 @@ export const getTagList = async (
           id: true,
           label: true,
           value: true,
-          _count: { select: { jobs: true } },
+          _count: { select: { jobs: true, questions: true } },
         },
         orderBy: { label: "asc" },
       }),
@@ -91,13 +91,21 @@ export const deleteTagById = async (
       throw new Error("Not authenticated");
     }
 
-    const jobs = await prisma.job.count({
-      where: { tags: { some: { id: tagId } } },
-    });
+    const [jobs, questions] = await Promise.all([
+      prisma.job.count({ where: { tags: { some: { id: tagId } } } }),
+      prisma.question.count({ where: { tags: { some: { id: tagId } } } }),
+    ]);
 
-    if (jobs > 0) {
+    if (jobs > 0 || questions > 0) {
+      const links = [
+        jobs > 0 ? `${jobs} job(s)` : "",
+        questions > 0 ? `${questions} question(s)` : "",
+      ]
+        .filter(Boolean)
+        .join(" and ");
+
       throw new Error(
-        `Skill tag cannot be deleted because it is linked to ${jobs} job(s).`,
+        `Skill tag cannot be deleted because it is linked to ${links}.`,
       );
     }
 
