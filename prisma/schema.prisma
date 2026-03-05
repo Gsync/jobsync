@@ -33,6 +33,7 @@ model User {
   ApiKey       ApiKey[]
   Note         Note[]
   Tag          Tag[]
+  Question     Question[]
 }
 
 model ApiKey {
@@ -432,6 +433,20 @@ model Tag {
   createdBy String
   user      User   @relation(fields: [createdBy], references: [id])
   jobs      Job[]
+  questions Question[]
 
   @@unique([value, createdBy])
+}
+
+model Question {
+  id        String   @id @default(uuid())
+  question  String
+  answer    String?
+  createdBy String
+  user      User     @relation(fields: [createdBy], references: [id])
+  tags      Tag[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdBy])
 }

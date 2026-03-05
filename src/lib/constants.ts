@@ -7,6 +7,7 @@ import {
   Sheet,
   Wrench,
   Zap,
+  BookOpen,
 } from "lucide-react";
 
 export const APP_CONSTANTS = {
@@ -69,6 +70,11 @@ export const SIDEBAR_LINKS = [
     icon: CalendarClock,
     route: "/dashboard/activities",
     label: "Activities",
+  },
+  {
+    icon: BookOpen,
+    route: "/dashboard/questions",
+    label: "Question Bank",
   },
   {
     icon: UserRound,
