@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.1.4](https://github.com/Gsync/jobsync/compare/v1.1.3...v1.1.4) (2026-03-06)
+
+
+### Features
+
+*  Add question bank feature
+*  add skill tags to jobs
+*  add notes to job applications
+
+### Bug Fixes
+
+*  edit note issue
+
+### Other Changes
+
+* Update release file
+* Update readme
+* Add questions field column to tags table
+*  Write unit tests for question bank feature
+*  add contributing guidelines and code of conduct
+* Show total hours of weekly activities on dashboard
+*  write unit tests for skill tags feature
+*  write unit tests for add note
+
+
 ## [1.1.3](https://github.com/Gsync/jobsync/compare/v1.1.2...v1.1.3) (2026-02-28)
 
 
