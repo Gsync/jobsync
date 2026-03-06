@@ -69,6 +69,10 @@ From the project directory, run the deploy script to pull the latest changes and
 curl -fsSL https://raw.githubusercontent.com/Gsync/jobsync/main/deploy.sh | sudo bash -s
 ```
 
+## Contributing
+
+We welcome contributions! Please read our [Contributing Guidelines](./CONTRIBUTING.md) to get started. This project follows a [Code of Conduct](./CODE_OF_CONDUCT.md) — by participating, you agree to uphold its standards.
+
 ### Credits
 
 - <a href="https://github.com/facebook/react">React</a>
