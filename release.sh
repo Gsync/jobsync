@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # JobSync Release & Docker Build Script
-# Usage: ./release.sh [patch|minor|major]  (defaults to patch)
+# Usage: ./release.sh [patch|minor|major|x.y.z]  (defaults to patch)
 
 set -e
 
@@ -14,8 +14,9 @@ BUMP_TYPE="${1:-patch}"
 REGISTRY="ghcr.io"
 IMAGE_NAME="gsync/jobsync"
 
-if [[ "$BUMP_TYPE" != "patch" && "$BUMP_TYPE" != "minor" && "$BUMP_TYPE" != "major" ]]; then
-  echo -e "${RED}Error: Invalid bump type '$BUMP_TYPE'. Use patch, minor, or major.${NC}"
+SEMVER_REGEX='^[0-9]+\.[0-9]+\.[0-9]+$'
+if [[ "$BUMP_TYPE" != "patch" && "$BUMP_TYPE" != "minor" && "$BUMP_TYPE" != "major" && ! "$BUMP_TYPE" =~ $SEMVER_REGEX ]]; then
+  echo -e "${RED}Error: Invalid argument '$BUMP_TYPE'. Use patch, minor, major, or a semver (e.g., 1.5.0).${NC}"
   exit 1
 fi
 

@@ -33,13 +33,34 @@ export default function WeeklyBarChartToggle({
     return newItem;
   });
 
+  const totalHours =
+    current.label === "Activities"
+      ? roundedData.reduce(
+          (sum, item) =>
+            sum +
+            current.keys.reduce(
+              (keySum, key) =>
+                keySum + (typeof item[key] === "number" ? item[key] : 0),
+              0,
+            ),
+          0,
+        )
+      : null;
+
   return (
     <Card className="mb-2 lg:mb-0">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between mb-1 mt-3">
-          <CardTitle className="text-green-600">
-            Weekly {current.label}
-          </CardTitle>
+          <div className="flex items-baseline gap-2">
+            <CardTitle className="text-green-600">
+              Weekly {current.label}
+            </CardTitle>
+            {totalHours !== null && (
+              <span className="text-sm text-muted-foreground">
+                {totalHours.toFixed(1)} hrs
+              </span>
+            )}
+          </div>
           <div className="flex rounded-md border text-xs">
             {charts.map((chart, index) => (
               <button
