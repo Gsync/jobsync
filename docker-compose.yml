@@ -3,7 +3,7 @@ services:
     image: ghcr.io/gsync/jobsync:latest
     container_name: jobsync_app
     ports:
-      - "3737:3000"
+      - "3737:3737"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/data/dev.db

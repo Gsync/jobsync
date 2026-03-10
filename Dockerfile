@@ -49,8 +49,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
 
-EXPOSE 3000
+EXPOSE 3737
 
-ENV PORT=3000
+ENV PORT=3737
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
