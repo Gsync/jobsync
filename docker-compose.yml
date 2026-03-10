@@ -18,6 +18,8 @@ services:
       - RAPIDAPI_KEY=${RAPIDAPI_KEY:-}
     volumes:
       - ./jobsyncdb/data:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3737"]
