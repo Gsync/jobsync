@@ -101,7 +101,7 @@ describe("Tag Actions", () => {
           where: { createdBy: mockUser.id },
           skip: 0,
           take: 10,
-          orderBy: { label: "asc" },
+          orderBy: { jobs: { _count: "desc" } },
         }),
       );
     });

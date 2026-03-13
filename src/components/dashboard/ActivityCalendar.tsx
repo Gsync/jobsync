@@ -1,5 +1,6 @@
 "use client";
 import { ResponsiveCalendar } from "@nivo/calendar";
+import { format, parseISO } from "date-fns";
 import { useTheme } from "next-themes";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 // make sure parent container have a defined height when using
@@ -16,6 +17,9 @@ export default function ActivityCalendar({
 }) {
   const { resolvedTheme } = useTheme();
   const borderColor = resolvedTheme === "light" ? "#ffffff" : "#0e1117";
+  const hoursMap = Object.fromEntries(
+    data.map((d) => [d.day, d.hours ?? 0]),
+  );
   return (
     <Card className="w-[100%]">
       <CardHeader>
@@ -34,6 +38,25 @@ export default function ActivityCalendar({
           monthBorderColor={borderColor}
           dayBorderWidth={2}
           dayBorderColor={borderColor}
+          tooltip={(day) => {
+            const hours = hoursMap[day.day] ?? 0;
+            return (
+              <div
+                style={{
+                  background: "#1e293b",
+                  color: "#fff",
+                  padding: "6px 12px",
+                  borderRadius: "4px",
+                  fontSize: "12px",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <div><strong>{format(parseISO(day.day), "EEE MMM d, yyyy")}</strong></div>
+                <div>{day.value} job{Number(day.value) === 1 ? "" : "s"} applied</div>
+                <div>{hours} hr{hours === 1 ? "" : "s"} activity</div>
+              </div>
+            );
+          }}
           theme={{
             text: {
               fill: "#9ca3af",
