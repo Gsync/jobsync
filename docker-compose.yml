@@ -25,3 +25,22 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  # Added separte service for testing to avoid conflicts with the main app's database and environment variables
+  app_test:
+    image: ghcr.io/gsync/jobsync:latest
+    container_name: jobsync_app_test
+    ports:
+      - "3738:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:/data/dev.db
+      - AUTH_SECRET=${AUTH_SECRET:-}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-you-encryption-key-here}
+      - NEXTAUTH_URL=http://localhost:3738
+      - AUTH_TRUST_HOST=true
+      - TZ=America/Edmonton
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    volumes:
+      - ./jobsyncdb_test/data:/data
+    restart: unless-stopped
