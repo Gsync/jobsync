@@ -45,11 +45,10 @@ dev.db-journal
 /blob-report/
 /playwright/.cache/
 data/files/resumes
-CLAUDE.md
 /docs
 .github/*
 !.github/workflows
-.claude
+.claude/settings.local.json
 .specify
 /specs
 .vscode
