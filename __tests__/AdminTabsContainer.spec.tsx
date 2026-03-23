@@ -24,6 +24,11 @@ jest.mock("@/actions/jobLocation.actions", () => ({
   getJobLocationsList: jest.fn().mockResolvedValue({ data: [], total: 0 }),
 }));
 
+jest.mock("@/actions/activity.actions", () => ({
+  getActivityTypeList: jest.fn().mockResolvedValue({ data: [], total: 0 }),
+  createActivityType: jest.fn(),
+}));
+
 describe("AdminTabsContainer", () => {
   const user = userEvent.setup({ skipHover: true });
 
@@ -31,7 +36,7 @@ describe("AdminTabsContainer", () => {
     jest.clearAllMocks();
   });
 
-  it("should render all three tabs", () => {
+  it("should render all tabs", () => {
     render(<AdminTabsContainer />);
 
     expect(screen.getByRole("tab", { name: "Companies" })).toBeInTheDocument();
@@ -40,6 +45,9 @@ describe("AdminTabsContainer", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("tab", { name: "Locations" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("tab", { name: "Activity Types" })
     ).toBeInTheDocument();
   });
 
@@ -69,6 +77,19 @@ describe("AdminTabsContainer", () => {
 
     expect(mockPush).toHaveBeenCalledWith(
       "/dashboard/admin?tab=locations"
+    );
+  });
+
+  it("should switch to activity types tab and update URL", async () => {
+    render(<AdminTabsContainer />);
+
+    const activityTypesTab = screen.getByRole("tab", {
+      name: "Activity Types",
+    });
+    await user.click(activityTypesTab);
+
+    expect(mockPush).toHaveBeenCalledWith(
+      "/dashboard/admin?tab=activity-types"
     );
   });
 
