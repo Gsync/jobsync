@@ -13,51 +13,72 @@ User Settings (DB)
        └─► NEXT_LOCALE cookie → for API routes
 ```
 
-## How to Add Translations
+## Imports
 
-### 1. Add the key to `src/i18n/dictionaries.ts`
-
-Add the key to **all** locale objects (en, de, fr, es):
+All i18n functionality is accessed through **two barrel modules**:
 
 ```ts
-// In the `en` object:
-"myFeature.title": "My Feature",
+// Client Components (no server-only code):
+import { useTranslations, formatDate, formatNumber, SUPPORTED_LOCALES } from "@/i18n";
 
-// In the `de` object:
-"myFeature.title": "Mein Feature",
-
-// etc.
+// Server Components, Actions, API Routes:
+import { t, getUserLocale, getLocaleFromCookie, formatDate } from "@/i18n/server";
 ```
+
+**Never import from internal modules directly** (`@/i18n/dictionaries`, `@/i18n/use-translations`, `@/lib/formatters`, `@/lib/locale`).
+
+## How to Add Translations
+
+### 1. Add the key to the namespace dictionary
+
+Add to the appropriate file in `src/i18n/dictionaries/` (or `dictionaries.ts` for core keys):
+
+```ts
+// In dictionaries/myfeature.ts — all 4 locales:
+"myFeature.title": "My Feature",      // en
+"myFeature.title": "Mein Feature",    // de
+"myFeature.title": "Ma fonctionnalité", // fr
+"myFeature.title": "Mi función",      // es
+```
+
+Then import the namespace in `src/i18n/dictionaries.ts` and add to `mergeDictionaries()`.
 
 ### 2. Use in Client Components
 
 ```tsx
-import { useTranslations } from "@/i18n/use-translations";
+import { useTranslations, formatDateShort } from "@/i18n";
 
 function MyComponent() {
-  const { t } = useTranslations();
-  return <h1>{t("myFeature.title")}</h1>;
+  const { t, locale } = useTranslations();
+  return (
+    <div>
+      <h1>{t("myFeature.title")}</h1>
+      <span>{formatDateShort(new Date(), locale)}</span>
+    </div>
+  );
 }
 ```
 
 ### 3. Use in Server Components
 
 ```tsx
-import { getUserLocale } from "@/lib/locale";
-import { t } from "@/i18n/dictionaries";
+import { t, getUserLocale, formatDateShort } from "@/i18n/server";
 
 async function MyServerComponent() {
   const locale = await getUserLocale();
-  return <h1>{t(locale, "myFeature.title")}</h1>;
+  return (
+    <div>
+      <h1>{t(locale, "myFeature.title")}</h1>
+      <span>{formatDateShort(new Date(), locale)}</span>
+    </div>
+  );
 }
 ```
 
 ### 4. Use in API Routes
 
-API routes read the locale from the `NEXT_LOCALE` cookie:
-
 ```ts
-import { getLocaleFromCookie } from "@/lib/locale";
+import { getLocaleFromCookie } from "@/i18n/server";
 
 export async function GET() {
   const locale = await getLocaleFromCookie();
