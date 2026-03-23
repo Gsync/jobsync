@@ -20,6 +20,11 @@
 ### 1.4 Connector → JOB_SOURCES Sync
 - Installierte Connectors aktualisieren automatisch die JOB_SOURCES für die Job-Tabelle und Job-Details/Metadaten
 
+### 1.5 Job-Alerts
+- Benachrichtigungen bei neuen Jobs, die den Suchkriterien entsprechen
+- Push-Benachrichtigungen (Browser), E-Mail-Alerts, Webhook-Notifications
+- Konfigurierbar pro Automation (Frequenz, Schwellenwert, Kanal)
+
 ---
 
 ## 2. UX/UI
@@ -98,7 +103,28 @@ Dynamische Dateipfade und Dateinamen:
 - **Ordner:** `<Unternehmen>/<LANG>/<Jobtitel>/`
 - **Dateiname:** `<Datum> <Bewerbername> - <Jobtitel>` oder `<Datum> <Bewerbername> - <Unternehmen> - <Jobtitel>`
 
-### 4.4 Städte: Verdienst-Index
+### 4.4 Unterschrift
+- Upload einer bestehenden Unterschrift (Bild/SVG)
+- Zeicheneingabe direkt in der App (Canvas/Touch)
+- Automatische Platzierung in Bewerbungsunterlagen (Anschreiben, CV)
+- Automatisierte Unterschriftenerstellung (Name → Schrift-Rendering)
+
+### 4.5 Automatisches Datum
+- Aktuelles Datum wird automatisch in Bewerbungsunterlagen eingefügt
+- Lokalisiertes Format je nach Zielland (z.B. "23. März 2026" für DE, "March 23, 2026" für EN)
+
+### 4.6 Video-Vorstellung
+- Bewerber können ein kurzes Vorstellungsvideo aufnehmen oder hochladen
+- Einbettbar in Bewerbungsunterlagen als QR-Code/Link
+- Optional: KI-gestützte Transkription und Zusammenfassung
+
+### 4.7 Landingpage für Unternehmen
+- Personalisierte Bewerber-Landingpage pro Bewerbung
+- Enthält: Video-Vorstellung, CV, Portfolio, Skills, Kontaktdaten
+- Teilbar per Link oder QR-Code
+- Tracking: Aufrufe, Verweildauer (optional)
+
+### 4.8 Städte: Verdienst-Index
 - Gehaltsvergleich nach Stadt/Region
 
 ---
