@@ -27,7 +27,7 @@ import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { getUserSettings, updateDisplaySettings } from "@/actions/userSettings.actions";
 import { SUPPORTED_LOCALES, DEFAULT_LOCALE } from "@/i18n/locales";
-import { useTranslations } from "@/i18n/use-translations";
+import { useTranslations } from "@/i18n";
 
 const appearanceFormSchema = z.object({
   theme: z.enum(["light", "dark", "system"], {

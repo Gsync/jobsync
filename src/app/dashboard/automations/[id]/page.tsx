@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { formatDateCompact } from "@/lib/formatters";
-import { useTranslations } from "@/i18n/use-translations";
+import { formatDateCompact } from "@/i18n";
+import { useTranslations } from "@/i18n";
 import {
   Card,
   CardContent,

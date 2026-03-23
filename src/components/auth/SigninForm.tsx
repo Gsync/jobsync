@@ -17,7 +17,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { SigninFormSchema } from "@/models/signinForm.schema";
 import Loading from "../Loading";
-import { useTranslations } from "@/i18n/use-translations";
+import { useTranslations } from "@/i18n";
 
 function SigninForm() {
   const { t } = useTranslations();

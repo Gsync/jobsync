@@ -1,5 +1,5 @@
 "use client";
-import { useTranslations } from "@/i18n/use-translations";
+import { useTranslations } from "@/i18n";
 import {
   Table,
   TableBody,
@@ -29,7 +29,7 @@ import {
   isThisWeek,
   parse,
 } from "date-fns";
-import { formatDateShort, formatISODate } from "@/lib/formatters";
+import { formatDateShort, formatISODate } from "@/i18n";
 import {
   DropdownMenu,
   DropdownMenuContent,

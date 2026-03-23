@@ -1,5 +1,5 @@
 "use client";
-import { useTranslations } from "@/i18n/use-translations";
+import { useTranslations } from "@/i18n";
 import { format } from "date-fns";
 import { Badge } from "../ui/badge";
 import { cn, formatUrl } from "@/lib/utils";

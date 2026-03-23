@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "@/i18n/use-translations";
-import { formatDateShort } from "@/lib/formatters";
+import { useTranslations } from "@/i18n";
+import { formatDateShort } from "@/i18n";
 import {
   Card,
   CardContent,

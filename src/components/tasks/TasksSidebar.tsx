@@ -1,5 +1,5 @@
 "use client";
-import { useTranslations } from "@/i18n/use-translations";
+import { useTranslations } from "@/i18n";
 import { cn } from "@/lib/utils";
 
 type ActivityTypeWithCount = {

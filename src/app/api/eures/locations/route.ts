@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getLocaleFromCookie } from "@/lib/locale";
+import { getLocaleFromCookie } from "@/i18n/server";
 
 const EURES_COUNTRY_STATS_URL =
   "https://europa.eu/eures/api/jv-searchengine/public/statistics/getCountryStats";

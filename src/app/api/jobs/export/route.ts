@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import Papa from "papaparse";
 import { PassThrough } from "node:stream";
 import { getJobsIterator } from "@/actions/job.actions";
-import { formatISODate } from "@/lib/formatters";
+import { formatISODate } from "@/i18n";
 
 const FIELDS: string[] = [
   "index",

@@ -3,7 +3,7 @@
 import { AlertCircle, CheckCircle2, CircleStop, XCircle } from "lucide-react";
 import { cn, formatElapsedTime } from "@/lib/utils";
 import React from "react";
-import { useTranslations } from "@/i18n/use-translations";
+import { useTranslations } from "@/i18n";
 
 type BannerVariant = "success" | "warning" | "error" | "info";
 

@@ -46,7 +46,7 @@ import TasksTable from "./TasksTable";
 import { TaskForm } from "./TaskForm";
 import { ActivityType } from "@/models/activity.model";
 import { useActivity } from "@/context/ActivityContext";
-import { useTranslations } from "@/i18n/use-translations";
+import { useTranslations } from "@/i18n";
 
 type TasksContainerProps = {
   activityTypes: ActivityType[];

@@ -1,9 +1,9 @@
 "use client";
 import { ResponsiveCalendar } from "@nivo/calendar";
 import { parseISO } from "date-fns";
-import { formatWeekdayDate } from "@/lib/formatters";
+import { formatWeekdayDate } from "@/i18n";
 import { useTheme } from "next-themes";
-import { useTranslations } from "@/i18n/use-translations";
+import { useTranslations } from "@/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 // make sure parent container have a defined height when using
 // responsive component, otherwise height will be 0 and

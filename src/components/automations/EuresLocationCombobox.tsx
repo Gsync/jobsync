@@ -28,8 +28,8 @@ import {
 import { ChipList } from "@/components/ui/chip-list";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "@/i18n/use-translations";
-import { formatNumber } from "@/lib/formatters";
+import { useTranslations } from "@/i18n";
+import { formatNumber } from "@/i18n";
 import Image from "next/image";
 
 const MAX_LOCATIONS = 10;

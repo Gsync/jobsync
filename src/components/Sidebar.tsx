@@ -6,7 +6,7 @@ import { Briefcase, Settings } from "lucide-react";
 import { SIDEBAR_LINKS } from "@/lib/constants";
 import NavLink from "./NavLink";
 import { usePathname } from "next/navigation";
-import { useTranslations } from "@/i18n/use-translations";
+import { useTranslations } from "@/i18n";
 
 function Sidebar() {
   const path = usePathname();

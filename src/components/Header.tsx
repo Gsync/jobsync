@@ -13,8 +13,7 @@ import { SIDEBAR_LINKS } from "@/lib/constants";
 import { signOut } from "@/auth";
 import { getCurrentUser } from "@/utils/user.utils";
 import { ProfileDropdown } from "./ProfileDropdown";
-import { getUserLocale } from "@/lib/locale";
-import { t } from "@/i18n/dictionaries";
+import { t, getUserLocale } from "@/i18n/server";
 
 async function Header() {
   const user = await getCurrentUser();

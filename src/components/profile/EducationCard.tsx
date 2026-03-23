@@ -10,8 +10,8 @@ import {
 import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
 import { TipTapContentViewer } from "../TipTapContentViewer";
-import { useTranslations } from "@/i18n/use-translations";
-import { formatMonthYear } from "@/lib/formatters";
+import { useTranslations } from "@/i18n";
+import { formatMonthYear } from "@/i18n";
 
 interface EducationCardProps {
   educationSection: ResumeSection | undefined;

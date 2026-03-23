@@ -1,5 +1,5 @@
 "use client";
-import { useTranslations } from "@/i18n/use-translations";
+import { useTranslations } from "@/i18n";
 import { useCallback, useEffect, useState } from "react";
 import { NoteResponse } from "@/models/note.model";
 import { getNotesByJobId, deleteNote } from "@/actions/note.actions";

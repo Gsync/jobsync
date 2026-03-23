@@ -1,7 +1,7 @@
 "use client";
 
-import { useTranslations } from "@/i18n/use-translations";
-import { formatDateCompact } from "@/lib/formatters";
+import { useTranslations } from "@/i18n";
+import { formatDateCompact } from "@/i18n";
 import {
   Card,
   CardContent,

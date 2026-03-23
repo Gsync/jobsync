@@ -14,7 +14,7 @@ import {
 } from "./ui/dropdown-menu";
 import UserAvatar from "./UserAvatar";
 import { SupportDialog } from "./SupportDialog";
-import { useTranslations } from "@/i18n/use-translations";
+import { useTranslations } from "@/i18n";
 
 interface ProfileDropdownProps {
   user: any;

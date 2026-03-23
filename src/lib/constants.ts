@@ -9,7 +9,7 @@ import {
   Zap,
   BookOpen,
 } from "lucide-react";
-import type { TranslationKey } from "@/i18n/dictionaries";
+import type { TranslationKey } from "@/i18n";
 
 export const APP_CONSTANTS = {
   RECORDS_PER_PAGE: 25,

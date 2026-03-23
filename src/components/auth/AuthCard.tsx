@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import SigninForm from "./SigninForm";
 import SignupForm from "./SignupForm";
-import { useTranslations } from "@/i18n/use-translations";
+import { useTranslations } from "@/i18n";
 
 type AuthMode = "signin" | "signup";
 

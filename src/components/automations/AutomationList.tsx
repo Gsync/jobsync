@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "@/i18n/use-translations";
-import { formatDateCompact } from "@/lib/formatters";
+import { useTranslations } from "@/i18n";
+import { formatDateCompact } from "@/i18n";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

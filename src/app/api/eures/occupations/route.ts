@@ -3,7 +3,7 @@ import {
   EURES_AUTOCOMPLETE_URL,
   type EuresAutocompleteResponse,
 } from "@/lib/scraper/eures/autocomplete";
-import { getLocaleFromCookie } from "@/lib/locale";
+import { getLocaleFromCookie } from "@/i18n/server";
 
 const LANGUAGE_PATTERN = /^[a-z]{2}$/;
 const MIN_KEYWORD_LENGTH = 2;

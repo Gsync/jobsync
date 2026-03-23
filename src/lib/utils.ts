@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { format, parse } from "date-fns";
-import { formatDate } from "@/lib/formatters";
+import { formatDate } from "@/i18n";
 import { NextApiRequest } from "next";
 import { twMerge } from "tailwind-merge";
 

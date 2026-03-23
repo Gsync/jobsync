@@ -14,8 +14,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
-import { useTranslations } from "@/i18n/use-translations";
-import { formatDateTimeSeconds } from "@/lib/formatters";
+import { useTranslations } from "@/i18n";
+import { formatDateTimeSeconds } from "@/i18n";
 import type { AutomationLog, LogLevel } from "@/lib/automation-logger";
 
 interface LogsTabProps {

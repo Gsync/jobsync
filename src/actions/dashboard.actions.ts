@@ -1,7 +1,6 @@
 import { APP_CONSTANTS } from "@/lib/constants";
 import prisma from "@/lib/db";
-import { formatISODate, formatWeekdayDate } from "@/lib/formatters";
-import { getUserLocale } from "@/lib/locale";
+import { formatISODate, formatWeekdayDate, getUserLocale } from "@/i18n/server";
 import { calculatePercentageDifference, getLast7Days } from "@/lib/utils";
 import { getCurrentUser } from "@/utils/user.utils";
 import { Prisma } from "@prisma/client";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "@/i18n/use-translations";
+import { useTranslations } from "@/i18n";
 import { useForm } from "react-hook-form";
 import { Button } from "../ui/button";
 import { DialogFooter } from "../ui/dialog";
@@ -21,7 +21,7 @@ import {
   differenceInHours,
   differenceInMinutes,
 } from "date-fns";
-import { formatTime } from "@/lib/formatters";
+import { formatTime } from "@/i18n";
 import { DatePicker } from "../DatePicker";
 import TiptapEditor from "../TiptapEditor";
 import { Combobox } from "../ComboBox";

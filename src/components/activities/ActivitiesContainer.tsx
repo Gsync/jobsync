@@ -21,7 +21,7 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
 import { RecordsCount } from "../RecordsCount";
 import { useActivity } from "@/context/ActivityContext";
-import { useTranslations } from "@/i18n/use-translations";
+import { useTranslations } from "@/i18n";
 
 function ActivitiesContainer() {
   const { t } = useTranslations();

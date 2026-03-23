@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getLocaleFromCookie } from "@/lib/locale";
+import { getLocaleFromCookie } from "@/i18n/server";
 
 const ESCO_SEARCH_URL = "https://ec.europa.eu/esco/api/search";
 

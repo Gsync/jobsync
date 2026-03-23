@@ -1,5 +1,5 @@
 "use client";
-import { useTranslations } from "@/i18n/use-translations";
+import { useTranslations } from "@/i18n";
 import {
   Table,
   TableBody,
@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
-import { formatDateShort } from "@/lib/formatters";
+import { formatDateShort } from "@/i18n";
 import {
   DropdownMenu,
   DropdownMenuContent,

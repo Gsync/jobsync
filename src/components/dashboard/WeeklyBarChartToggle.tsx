@@ -4,8 +4,8 @@ import { useState } from "react";
 import { ResponsiveBar } from "@nivo/bar";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "@/i18n/use-translations";
-import { formatDecimal } from "@/lib/formatters";
+import { useTranslations } from "@/i18n";
+import { formatDecimal } from "@/i18n";
 
 type ChartConfig = {
   label: string;

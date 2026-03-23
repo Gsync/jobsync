@@ -2,7 +2,7 @@
 import { useActivity } from "@/context/ActivityContext";
 import { ActivityBanner } from "./ActivityBanner";
 import { ActivityType } from "@/models/activity.model";
-import { useTranslations } from "@/i18n/use-translations";
+import { useTranslations } from "@/i18n";
 
 export function GlobalActivityBanner() {
   const { t } = useTranslations();

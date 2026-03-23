@@ -1,7 +1,7 @@
 "use client";
 
-import { useTranslations } from "@/i18n/use-translations";
-import { formatDateTime } from "@/lib/formatters";
+import { useTranslations } from "@/i18n";
+import { formatDateTime } from "@/i18n";
 import {
   Accordion,
   AccordionContent,
