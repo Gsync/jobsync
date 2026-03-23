@@ -121,11 +121,44 @@ Dynamische Dateipfade und Dateinamen:
 - Automatisierte Follow-Ups (Erinnerungen, Nachfass-E-Mails)
 - Automatisierte Terminvereinbarungen
 
+### 5.5 Dateiexplorer-Integration
+- CRM ist direkt mit dem Dateiexplorer (Sektion 2.5) verbunden
+- Bewerbungsunterlagen, E-Mails, Notizen und Anhänge pro Kontakt/Job sichtbar
+- Drag & Drop von Dateien in CRM-Einträge
+- Automatische Zuordnung von generierten Dokumenten (CV, Anschreiben) zum jeweiligen Job/Kontakt
+
+### 5.6 Backlog
+- Kanban-Board für Bewerbungspipeline (Backlog → In Bearbeitung → Gesendet → Follow-Up → Abgeschlossen)
+- Backlog für geplante Bewerbungen, Recherche-Aufgaben, Kontaktaufnahmen
+- Priorisierung und Sortierung nach Deadline, Match-Score, Unternehmensbewertung
+- Verknüpfung mit Kalender (Deadlines) und Automatisierung (Follow-Ups)
+
 ---
 
-## 6. API & Dokumentation
+## 6. Experimentell
 
-### 6.1 Automatische API-Dokumentation
+### 6.1 CareerBERT
+- Integration und Optimierung von [CareerBERT](https://github.com/julianrosenberger/careerbert)
+- Spezialisiertes NLP-Modell für Karriere- und Jobtexte (basierend auf BERT)
+- **Anwendungsfälle:**
+  - Semantisches Matching zwischen CV-Skills und Job-Anforderungen (besser als Keyword-Match)
+  - Automatische Skill-Extraktion aus Jobbeschreibungen und Lebensläufen
+  - Ähnlichkeitssuche: "Jobs ähnlich zu diesem" basierend auf Beschreibungstext
+  - Klassifikation von Jobs nach ESCO/ISCO Taxonomie
+  - Ranking von Bewerbungen nach semantischer Relevanz
+- **Technisch:**
+  - Self-hosted Inference (z.B. via ONNX Runtime oder Hugging Face Transformers)
+  - Optional: Finetuning auf eigene Jobdaten für bessere Ergebnisse
+  - API-Endpunkt für Embedding-Generierung und Similarity-Search
+  - Integration mit dem bestehenden AI Match-Score System
+- **Ressourcen:**
+  - https://github.com/julianrosenberger/careerbert
+
+---
+
+## 7. API & Dokumentation
+
+### 7.1 Automatische API-Dokumentation
 - OpenAPI/Swagger Dokumentation für alle API-Endpunkte
 - Auto-generiert aus den Next.js API Routes
 
