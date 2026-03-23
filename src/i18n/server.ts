@@ -1,3 +1,5 @@
+import "server-only";
+
 /**
  * Server-only i18n API — use in Server Components and Server Actions.
  *

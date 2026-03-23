@@ -4,9 +4,8 @@ import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "@/i18n";
+import { useTranslations, formatDateShort } from "@/i18n";
 import { JobResponse } from "@/models/job.model";
-import { format } from "date-fns";
 import Link from "next/link";
 
 type RecentActivity = {
@@ -33,7 +32,7 @@ export default function RecentCardToggle({
   activities,
 }: RecentCardToggleProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
 
   const tabs = [t("dashboard.jobs"), t("dashboard.activities")] as const;
 
@@ -86,7 +85,7 @@ export default function RecentCardToggle({
                   </div>
                 </Link>
                 <div className="ml-auto text-sm font-medium">
-                  {job?.appliedDate ? format(job.appliedDate, "PP") : t("dashboard.na")}
+                  {job?.appliedDate ? formatDateShort(job.appliedDate, locale) : t("dashboard.na")}
                 </div>
               </div>
             ))
@@ -105,7 +104,7 @@ export default function RecentCardToggle({
                     {formatDuration(activity.duration ?? 0)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {activity.endTime ? format(activity.endTime, "PP") : ""}
+                    {activity.endTime ? formatDateShort(activity.endTime, locale) : ""}
                   </p>
                 </div>
               </div>

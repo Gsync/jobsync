@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLocaleFromCookie } from "@/i18n/server";
+import { auth } from "@/auth";
 
 const EURES_COUNTRY_STATS_URL =
   "https://europa.eu/eures/api/jv-searchengine/public/statistics/getCountryStats";
@@ -92,6 +93,11 @@ function buildSubRegions(
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
   try {
     const locale = await getLocaleFromCookie();
     const [euresRes, nutsNames] = await Promise.all([

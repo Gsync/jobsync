@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLocaleFromCookie } from "@/i18n/server";
+import { auth } from "@/auth";
 
 const ESCO_RESOURCE_URL = "https://ec.europa.eu/esco/api/resource/occupation";
 
@@ -20,6 +21,11 @@ export interface EscoOccupationDetails {
 export async function GET(
   request: NextRequest,
 ): Promise<NextResponse<EscoOccupationDetails | { error: string }>> {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
   const { searchParams } = request.nextUrl;
   const uri = searchParams.get("uri");
   const userLocale = await getLocaleFromCookie();
@@ -27,6 +33,10 @@ export async function GET(
 
   if (!uri) {
     return NextResponse.json({ error: "uri is required" }, { status: 400 });
+  }
+
+  if (!uri.startsWith("http://data.europa.eu/esco/")) {
+    return NextResponse.json({ error: "Invalid ESCO URI" }, { status: 400 });
   }
 
   const url = new URL(ESCO_RESOURCE_URL);

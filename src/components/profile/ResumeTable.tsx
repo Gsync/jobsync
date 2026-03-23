@@ -22,7 +22,7 @@ import {
   TableRow,
 } from "../ui/table";
 import { Resume } from "@/models/profile.model";
-import { format } from "date-fns";
+import { formatDateShort } from "@/i18n";
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { useMemo, useState } from "react";
@@ -38,7 +38,7 @@ type ResumeTableProps = {
 };
 
 function ResumeTable({ resumes, editResume, reloadResumes }: ResumeTableProps) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const [alertOpen, setAlertOpen] = useState(false);
   const [resumeToDelete, setResumeToDelete] = useState<Resume>();
   const onDeleteResume = useMemo(
@@ -107,10 +107,10 @@ function ResumeTable({ resumes, editResume, reloadResumes }: ResumeTableProps) {
                   </Link>
                 </TableCell>
                 <TableCell>
-                  {resume.createdAt && format(resume.createdAt, "PP")}
+                  {resume.createdAt && formatDateShort(resume.createdAt, locale)}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {resume.updatedAt && format(resume.updatedAt, "PP")}
+                  {resume.updatedAt && formatDateShort(resume.updatedAt, locale)}
                 </TableCell>
                 <TableCell>{resume._count?.Job}</TableCell>
                 <TableCell>

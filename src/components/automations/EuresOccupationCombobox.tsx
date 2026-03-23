@@ -56,7 +56,9 @@ function OccupationDetailPopover({ uri }: { uri: string }) {
       .then((data) => {
         if (data.title) setDetails(data);
       })
-      .catch(() => {})
+      .catch(() => {
+        fetchedRef.current = false;
+      })
       .finally(() => setIsLoading(false));
   }, [open, uri]);
 

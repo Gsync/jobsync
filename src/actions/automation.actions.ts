@@ -207,8 +207,7 @@ export async function updateAutomation(
 
     const updateData: Record<string, unknown> = { ...validated };
 
-    // Explicitly set connectorParams to null when absent so Prisma clears the DB value
-    if (validated.connectorParams === undefined) {
+    if (validated.connectorParams === '') {
       updateData.connectorParams = null;
     }
 

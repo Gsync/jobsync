@@ -63,9 +63,7 @@ const core = {
     "settings.languageDesc": "Select the display language. This also sets the language for EURES, ESCO and Eurostat data.",
     "settings.selectLanguage": "Select language",
     "settings.updatePreferences": "Update preferences",
-    "settings.loadingSettings": "Loading settings...",
     "settings.themeSaved": "Your selected theme has been saved.",
-    "settings.saveFailed": "Failed to save display settings.",
 
     // Common
     "common.loading": "Loading...",
@@ -79,6 +77,10 @@ const core = {
     "common.loadMore": "Load More",
     "common.na": "N/A",
     "common.actions": "Actions",
+    "common.deleteConfirmTitle": "Are you sure you want to delete this {item}?",
+    "common.deleteConfirmDesc": "This action cannot be undone. This will permanently delete and remove data from server.",
+    "common.showingRecords": "Showing 1 to {count} of {total} {label}",
+    "common.recordsPerPage": "Records per page",
   },
   de: {
     "nav.dashboard": "Dashboard",
@@ -124,9 +126,7 @@ const core = {
     "settings.languageDesc": "Wähle die Anzeigesprache. Dies legt auch die Sprache für EURES-, ESCO- und Eurostat-Daten fest.",
     "settings.selectLanguage": "Sprache wählen",
     "settings.updatePreferences": "Einstellungen aktualisieren",
-    "settings.loadingSettings": "Einstellungen werden geladen...",
     "settings.themeSaved": "Dein ausgewähltes Theme wurde gespeichert.",
-    "settings.saveFailed": "Einstellungen konnten nicht gespeichert werden.",
 
     "common.loading": "Laden...",
     "common.error": "Fehler",
@@ -139,6 +139,10 @@ const core = {
     "common.loadMore": "Mehr laden",
     "common.na": "k.A.",
     "common.actions": "Aktionen",
+    "common.deleteConfirmTitle": "Möchtest du diesen/dieses {item} wirklich löschen?",
+    "common.deleteConfirmDesc": "Diese Aktion kann nicht rückgängig gemacht werden. Die Daten werden dauerhaft vom Server gelöscht.",
+    "common.showingRecords": "Zeige 1 bis {count} von {total} {label}",
+    "common.recordsPerPage": "Einträge pro Seite",
   },
   fr: {
     "nav.dashboard": "Tableau de bord",
@@ -184,9 +188,7 @@ const core = {
     "settings.languageDesc": "Sélectionnez la langue d'affichage. Cela définit également la langue pour les données EURES, ESCO et Eurostat.",
     "settings.selectLanguage": "Sélectionner la langue",
     "settings.updatePreferences": "Mettre à jour les préférences",
-    "settings.loadingSettings": "Chargement des paramètres...",
     "settings.themeSaved": "Votre thème sélectionné a été enregistré.",
-    "settings.saveFailed": "Échec de l'enregistrement des paramètres.",
 
     "common.loading": "Chargement...",
     "common.error": "Erreur",
@@ -199,6 +201,10 @@ const core = {
     "common.loadMore": "Charger plus",
     "common.na": "N/D",
     "common.actions": "Actions",
+    "common.deleteConfirmTitle": "Êtes-vous sûr de vouloir supprimer ce/cet {item} ?",
+    "common.deleteConfirmDesc": "Cette action est irréversible. Les données seront définitivement supprimées du serveur.",
+    "common.showingRecords": "Affichage de 1 à {count} sur {total} {label}",
+    "common.recordsPerPage": "Enregistrements par page",
   },
   es: {
     "nav.dashboard": "Panel",
@@ -244,9 +250,7 @@ const core = {
     "settings.languageDesc": "Selecciona el idioma de visualización. Esto también establece el idioma para los datos de EURES, ESCO y Eurostat.",
     "settings.selectLanguage": "Seleccionar idioma",
     "settings.updatePreferences": "Actualizar preferencias",
-    "settings.loadingSettings": "Cargando configuración...",
     "settings.themeSaved": "Tu tema seleccionado ha sido guardado.",
-    "settings.saveFailed": "Error al guardar la configuración.",
 
     "common.loading": "Cargando...",
     "common.error": "Error",
@@ -259,6 +263,10 @@ const core = {
     "common.loadMore": "Cargar más",
     "common.na": "N/D",
     "common.actions": "Acciones",
+    "common.deleteConfirmTitle": "¿Estás seguro de que deseas eliminar este/a {item}?",
+    "common.deleteConfirmDesc": "Esta acción no se puede deshacer. Los datos se eliminarán permanentemente del servidor.",
+    "common.showingRecords": "Mostrando 1 a {count} de {total} {label}",
+    "common.recordsPerPage": "Registros por página",
   },
 } as const;
 

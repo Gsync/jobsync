@@ -26,7 +26,7 @@ import { useTheme } from "next-themes";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { getUserSettings, updateDisplaySettings } from "@/actions/userSettings.actions";
-import { SUPPORTED_LOCALES, DEFAULT_LOCALE } from "@/i18n/locales";
+import { SUPPORTED_LOCALES, DEFAULT_LOCALE } from "@/i18n";
 import { useTranslations } from "@/i18n";
 
 const appearanceFormSchema = z.object({
@@ -90,10 +90,14 @@ function DisplaySettings() {
           variant: "success",
           title: t("settings.themeSaved"),
         });
+        // Reload to apply new locale to server-rendered components
+        if (data.locale !== document.documentElement.lang) {
+          window.location.reload();
+        }
       } else {
         toast({
           variant: "destructive",
-          title: "Error",
+          title: t("common.error"),
           description: result.message || t("settings.saveFailed"),
         });
       }

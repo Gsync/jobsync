@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLocaleFromCookie } from "@/i18n/server";
+import { auth } from "@/auth";
 
 const ESCO_SEARCH_URL = "https://ec.europa.eu/esco/api/search";
 
@@ -18,6 +19,11 @@ export interface EscoSearchResponse {
 export async function GET(
   request: NextRequest,
 ): Promise<NextResponse<EscoSearchResponse | { error: string }>> {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
   const { searchParams } = request.nextUrl;
   const text = searchParams.get("text");
   const userLocale = await getLocaleFromCookie();

@@ -1,5 +1,5 @@
 "use client";
-import { useTranslations } from "@/i18n";
+import { useTranslations, formatDateShort, formatTime } from "@/i18n";
 import { CirclePlay, MoreHorizontal, Trash } from "lucide-react";
 import {
   Table,
@@ -18,7 +18,6 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-import { format } from "date-fns";
 import { Activity, ActivityType } from "@/models/activity.model";
 import { deleteActivityById } from "@/actions/activity.actions";
 import { toast } from "../ui/use-toast";
@@ -38,7 +37,7 @@ function ActivitiesTable({
   onStartActivity,
   activityExist,
 }: ActivitiesTableProps) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const [alertOpen, setAlertOpen] = useState(false);
   const [activityIdToDelete, setActivityIdToDelete] = useState<string>();
   const calculateDuration = (totalMinutes: number) => {
@@ -60,7 +59,7 @@ function ActivitiesTable({
     if (success) {
       toast({
         variant: "success",
-        description: `Activity has been deleted successfully`,
+        description: t("activities.deletedSuccess"),
       });
       reloadActivities();
     } else {
@@ -96,7 +95,7 @@ function ActivitiesTable({
               >
                 <TableCell className="hidden md:table-cell w-[120px]">
                   {activity.startTime
-                    ? format(activity.startTime, "PP")
+                    ? formatDateShort(activity.startTime, locale)
                     : t("activities.na")}
                 </TableCell>
                 <TableCell className="font-medium">
@@ -106,10 +105,10 @@ function ActivitiesTable({
                   {(activity.activityType as ActivityType)?.label}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {format(activity.startTime, "p")}
+                  {formatTime(activity.startTime, locale)}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {format(activity.endTime!, "p")}
+                  {formatTime(activity.endTime!, locale)}
                 </TableCell>
                 <TableCell>
                   {activity.startTime &&

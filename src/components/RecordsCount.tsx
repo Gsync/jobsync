@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "@/i18n";
+
 type RecordsCountProps = {
   count: number;
   total: number;
@@ -11,14 +13,16 @@ export function RecordsCount({
   total,
   label = "records",
 }: RecordsCountProps) {
+  const { t } = useTranslations();
+
+  const text = t("common.showingRecords")
+    .replace("{count}", String(count))
+    .replace("{total}", String(total))
+    .replace("{label}", label);
+
   return (
     <div className="text-xs text-muted-foreground">
-      Showing{" "}
-      <strong>
-        1 to {count}
-      </strong>{" "}
-      of
-      <strong> {total}</strong> {label}
+      {text}
     </div>
   );
 }

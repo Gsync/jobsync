@@ -181,6 +181,7 @@ export function EuresLocationCombobox({ field }: EuresLocationComboboxProps) {
       })
       .catch(() => {
         // Fallback to static country list without regions
+        fetchedRef.current = false;
         setCountries(
           EURES_COUNTRIES.map((c) => ({
             code: c.code,
@@ -271,7 +272,7 @@ export function EuresLocationCombobox({ field }: EuresLocationComboboxProps) {
             }
           }}
           disabled={isSelected}
-          className={`flex items-center gap-2 pl-${indent}`}
+          className="flex items-center gap-2"
           style={{ paddingLeft: `${indent * 0.25}rem` }}
         >
           {node.isNS ? (

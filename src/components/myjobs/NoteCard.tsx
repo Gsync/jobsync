@@ -1,8 +1,7 @@
 "use client";
-import { useTranslations } from "@/i18n";
+import { useTranslations, formatDateShort, formatTime } from "@/i18n";
 import { NoteResponse } from "@/models/note.model";
 import { TipTapContentViewer } from "../TipTapContentViewer";
-import { format } from "date-fns";
 import { Button } from "../ui/button";
 import { Pencil, Trash } from "lucide-react";
 
@@ -13,12 +12,12 @@ type NoteCardProps = {
 };
 
 export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   return (
     <div className="border rounded-lg p-4 space-y-2">
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
-          {format(new Date(note.createdAt), "PPp")}
+          {formatDateShort(new Date(note.createdAt), locale)} {formatTime(new Date(note.createdAt), locale)}
           {note.isEdited && (
             <span className="ml-2 text-xs text-muted-foreground">{t("jobs.edited")}</span>
           )}

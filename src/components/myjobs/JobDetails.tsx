@@ -1,6 +1,5 @@
 "use client";
-import { useTranslations } from "@/i18n";
-import { format } from "date-fns";
+import { useTranslations, formatDateShort } from "@/i18n";
 import { Badge } from "../ui/badge";
 import { cn, formatUrl } from "@/lib/utils";
 import { JobResponse } from "@/models/job.model";
@@ -23,7 +22,7 @@ import { MatchDetails } from "../automations/MatchDetails";
 import type { JobMatchResponse } from "@/models/ai.schemas";
 
 function JobDetails({ job }: { job: JobResponse }) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const [aiSectionOpen, setAiSectionOpen] = useState(false);
   const router = useRouter();
   const goBack = () => router.back();
@@ -105,7 +104,7 @@ function JobDetails({ job }: { job: JobResponse }) {
               </Badge>
             )}
             <span className="ml-2">
-              {job?.appliedDate ? format(new Date(job?.appliedDate), "PP") : ""}
+              {job?.appliedDate ? formatDateShort(new Date(job?.appliedDate), locale) : ""}
             </span>
           </h3>
           {job.tags && job.tags.length > 0 && (

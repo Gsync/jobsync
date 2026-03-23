@@ -7,6 +7,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { APP_CONSTANTS } from "@/lib/constants";
+import { useTranslations } from "@/i18n";
 
 type RecordsPerPageSelectorProps = {
   value: number;
@@ -17,9 +18,10 @@ export function RecordsPerPageSelector({
   value,
   onChange,
 }: RecordsPerPageSelectorProps) {
+  const { t } = useTranslations();
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-muted-foreground">Records per page</span>
+      <span className="text-xs text-muted-foreground">{t("common.recordsPerPage")}</span>
       <Select
         value={String(value)}
         onValueChange={(val) => onChange(Number(val))}
