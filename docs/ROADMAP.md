@@ -159,9 +159,39 @@ Dynamische Dateipfade und Dateinamen:
 - Priorisierung und Sortierung nach Deadline, Match-Score, Unternehmensbewertung
 - Verknüpfung mit Kalender (Deadlines) und Automatisierung (Follow-Ups)
 
+### 5.7 Kontakt- & Unternehmens-Extraktion
+- Automatische Extraktion von Unternehmen, Kontaktpersonen und Ansprechpartnern aus:
+  - Jobbeschreibungen (NLP/Regex: "Ansprechpartner: ...", "Kontakt: ...")
+  - E-Mails (Signaturen parsen)
+  - Websites (Impressum, Team-Seiten)
+- Automatische Zuordnung zum CRM-Datensatz (Job → Unternehmen → Kontakt)
+- Dublettenprüfung: gleicher Kontakt bei verschiedenen Jobs erkennen
+- Anreicherung: LinkedIn-Profil, XING, Unternehmenswebsite verknüpfen
+
 ---
 
-## 6. Experimentell
+## 6. Datenschutz & Compliance
+
+### 6.1 DSGVO-Konformität
+- **Datenminimierung:** Nur für die Bewerbung notwendige Daten erfassen
+- **Einwilligungsmanagement:** Nutzer stimmen der Datenverarbeitung explizit zu
+- **Löschkonzept:**
+  - Automatische Löschung abgelaufener Bewerbungsdaten nach konfigurierbarer Frist
+  - "Recht auf Vergessenwerden": Vollständige Datenlöschung auf Anfrage (Account + alle verknüpften Daten)
+  - Löschprotokoll für Nachweisbarkeit
+- **Datenexport:** Vollständiger Export aller Nutzerdaten in maschinenlesbarem Format (JSON/CSV) — Art. 20 DSGVO Datenportabilität
+- **Verschlüsselung:**
+  - API-Keys bereits verschlüsselt gespeichert (AES)
+  - Personenbezogene Daten (Name, E-Mail, Kontakte) verschlüsselt at-rest
+  - TLS für alle externen API-Aufrufe
+- **Audit-Log:** Protokollierung von Datenzugriffen und -änderungen
+- **Datenschutzerklärung:** In-App Datenschutzhinweise, Cookie-Banner (falls Cookies über Session hinaus)
+- **Self-Hosted First:** Alle Daten bleiben auf dem eigenen Server — keine Cloud-Abhängigkeit für Kerndaten
+- **LLM-Datenschutz:** Konfigurierbar, ob Daten an externe LLM-APIs gesendet werden dürfen (Opt-In pro Provider)
+
+---
+
+## 7. Experimentell
 
 ### 6.1 CareerBERT
 - Integration und Optimierung von [CareerBERT](https://github.com/julianrosenberger/careerbert)
