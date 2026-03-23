@@ -18,8 +18,8 @@ export const DiscoveryStatusSchema = z.enum(["new", "accepted", "dismissed"]);
 export const CreateAutomationSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   jobBoard: JobBoardSchema,
-  keywords: z.string().min(1, "Keywords are required").max(200),
-  location: z.string().min(1, "Location is required").max(100),
+  keywords: z.string().min(1, "Keywords are required").max(500),
+  location: z.string().min(1, "Location is required").max(200),
   connectorParams: z.string().optional(),
   resumeId: z.string().uuid("Invalid resume"),
   matchThreshold: z.number().min(0).max(100),

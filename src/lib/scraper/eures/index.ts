@@ -108,7 +108,15 @@ export function createEuresConnector(): DataSourceConnector {
         const connectorParams = params.connectorParams ?? {};
         const requestLanguage = (connectorParams.language as string) ?? "en";
         const locationCodes = params.location
-          ? [params.location.toLowerCase()]
+          ? params.location
+              .split(",")
+              .map((c) => {
+                const trimmed = c.trim().toLowerCase();
+                // Convert "de-ns" storage format to EURES API "NS" within country context
+                if (trimmed.endsWith("-ns")) return trimmed.slice(0, -3).toUpperCase() + "-NS";
+                return trimmed;
+              })
+              .filter(Boolean)
           : [];
 
         const RESULTS_PER_PAGE = 50;
@@ -116,12 +124,14 @@ export function createEuresConnector(): DataSourceConnector {
           resultsPerPage: RESULTS_PER_PAGE,
           page: 1,
           sortSearch: "MOST_RECENT",
-          keywords: [
-            {
-              keyword: params.keywords,
-              specificSearchCode: "EVERYWHERE",
-            },
-          ],
+          keywords: params.keywords
+            .split("||")
+            .map((k) => k.trim())
+            .filter(Boolean)
+            .map((keyword) => ({
+              keyword,
+              specificSearchCode: "EVERYWHERE" as const,
+            })),
           publicationPeriod: "LAST_WEEK",
           occupationUris: [],
           skillUris: [],
