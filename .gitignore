@@ -54,3 +54,4 @@ CLAUDE.md
 /specs
 .vscode
 AGENTS.md
+.claude/settings.local.json

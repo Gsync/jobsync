@@ -20,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useTranslations } from "@/i18n";
 
 type QuestionCardProps = {
   question: Question;
@@ -37,6 +38,7 @@ export function QuestionCard({
   onEdit,
   onDelete,
 }: QuestionCardProps) {
+  const { t } = useTranslations();
   const [expanded, setExpanded] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -70,7 +72,7 @@ export function QuestionCard({
                 }}
               >
                 <Pencil className="mr-2 h-4 w-4" />
-                Edit
+                {t("questions.edit")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-destructive"
@@ -80,7 +82,7 @@ export function QuestionCard({
                 }}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete
+                {t("questions.delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -116,7 +118,7 @@ export function QuestionCard({
               setExpanded(!expanded);
             }}
           >
-            {expanded ? "Show less" : "Show more"}
+            {expanded ? t("questions.showLess") : t("questions.showMore")}
           </button>
         )}
       </div>
@@ -124,19 +126,18 @@ export function QuestionCard({
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Question</AlertDialogTitle>
+            <AlertDialogTitle>{t("questions.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this question? This action cannot
-              be undone.
+              {t("questions.deleteDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("questions.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => onDelete(question.id)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t("questions.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

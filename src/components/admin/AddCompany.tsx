@@ -26,6 +26,7 @@ import { Input } from "../ui/input";
 import { toast } from "../ui/use-toast";
 import { addCompany, updateCompany } from "@/actions/company.actions";
 import { Company } from "@/models/job.model";
+import { useTranslations } from "@/i18n";
 
 type AddCompanyProps = {
   reloadCompanies: () => void;
@@ -43,8 +44,9 @@ function AddCompany({
   setDialogOpen,
 }: AddCompanyProps) {
   const [isPending, startTransition] = useTransition();
+  const { t } = useTranslations();
 
-  const pageTitle = editCompany ? "Edit Company" : "Add Company";
+  const pageTitle = editCompany ? t("admin.editCompany") : t("admin.addCompany");
 
   const form = useForm<z.infer<typeof AddCompanyFormSchema>>({
     resolver: zodResolver(AddCompanyFormSchema),
@@ -90,7 +92,7 @@ function AddCompany({
       if (!res?.success) {
         toast({
           variant: "destructive",
-          title: "Error!",
+          title: t("common.error"),
           description: res?.message,
         });
       } else {
@@ -99,9 +101,9 @@ function AddCompany({
         reloadCompanies();
         toast({
           variant: "success",
-          description: `Company has been ${
-            editCompany ? "updated" : "created"
-          } successfully`,
+          description: editCompany
+            ? t("admin.companyUpdated")
+            : t("admin.companyCreated"),
         });
       }
     });
@@ -118,7 +120,7 @@ function AddCompany({
       >
         <PlusCircle className="h-3.5 w-3.5" />
         <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-          New Company
+          {t("admin.newCompany")}
         </span>
       </Button>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -126,8 +128,7 @@ function AddCompany({
           <DialogHeader>
             <DialogTitle>{pageTitle}</DialogTitle>
             <DialogDescription className="text-primary">
-              Caution: Editing name of the company will affect all the related
-              job records.
+              {t("admin.editCompanyWarning")}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -142,7 +143,7 @@ function AddCompany({
                   name="company"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Company Name</FormLabel>
+                      <FormLabel>{t("admin.companyName")}</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -159,7 +160,7 @@ function AddCompany({
                   name="logoUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Company Logo URL</FormLabel>
+                      <FormLabel>{t("admin.companyLogoUrl")}</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -179,11 +180,11 @@ function AddCompany({
                       className="mt-2 md:mt-0 w-full"
                       onClick={closeDialog}
                     >
-                      Cancel
+                      {t("common.cancel")}
                     </Button>
                   </div>
                   <Button type="submit" disabled={!formState.isDirty}>
-                    Save
+                    {t("common.save")}
                     {isPending && (
                       <Loader className="h-4 w-4 shrink-0 spinner" />
                     )}

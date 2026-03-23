@@ -24,6 +24,7 @@ import {
 import { Input } from "../ui/input";
 import { toast } from "../ui/use-toast";
 import { createTag } from "@/actions/tag.actions";
+import { useTranslations } from "@/i18n";
 
 const AddTagFormSchema = z.object({
   label: z
@@ -37,6 +38,7 @@ type AddTagProps = {
 };
 
 function AddTag({ reloadTags }: AddTagProps) {
+  const { t } = useTranslations();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -58,7 +60,7 @@ function AddTag({ reloadTags }: AddTagProps) {
       if (result?.success) {
         toast({
           variant: "success",
-          description: "Skill tag has been added successfully.",
+          description: t("admin.skillCreated"),
         });
         setDialogOpen(false);
         reset();
@@ -66,8 +68,8 @@ function AddTag({ reloadTags }: AddTagProps) {
       } else {
         toast({
           variant: "destructive",
-          title: "Error!",
-          description: result?.message ?? "Failed to create skill tag.",
+          title: t("common.error"),
+          description: result?.message ?? t("admin.skillCreateFailed"),
         });
       }
     });
@@ -83,15 +85,15 @@ function AddTag({ reloadTags }: AddTagProps) {
       >
         <PlusCircle className="h-3.5 w-3.5" />
         <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-          Add Skill
+          {t("admin.addSkill")}
         </span>
       </Button>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Skill</DialogTitle>
+            <DialogTitle>{t("admin.addSkillTitle")}</DialogTitle>
             <DialogDescription>
-              Add a new skill tag to use across your job applications.
+              {t("admin.addSkillDesc")}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -101,9 +103,9 @@ function AddTag({ reloadTags }: AddTagProps) {
                 name="label"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Skill Name</FormLabel>
+                    <FormLabel>{t("admin.skillName")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. React, AWS, Python" {...field} />
+                      <Input placeholder={t("admin.skillPlaceholder")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -115,10 +117,10 @@ function AddTag({ reloadTags }: AddTagProps) {
                   variant="outline"
                   onClick={() => setDialogOpen(false)}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button type="submit" disabled={isPending}>
-                  Save
+                  {t("common.save")}
                   {isPending && (
                     <Loader className="ml-2 h-4 w-4 shrink-0 spinner" />
                   )}

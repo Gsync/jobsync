@@ -23,6 +23,7 @@ import { AlertDialog } from "@/models/alertDialog.model";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { deleteJobSourceById } from "@/actions/jobSource.actions";
 import { toast } from "../ui/use-toast";
+import { useTranslations } from "@/i18n";
 
 type JobSourcesTableProps = {
   jobSources: JobSource[];
@@ -33,6 +34,7 @@ function JobSourcesTable({
   jobSources,
   reloadJobSources,
 }: JobSourcesTableProps) {
+  const { t } = useTranslations();
   const [alert, setAlert] = useState<AlertDialog>({
     openState: false,
     deleteAction: false,
@@ -42,9 +44,8 @@ function JobSourcesTable({
     if (source._count?.jobsApplied! > 0) {
       setAlert({
         openState: true,
-        title: "Applied jobs exist!",
-        description:
-          "Associated jobs applied must be 0 to be able to delete this job source",
+        title: t("admin.appliedJobsExist"),
+        description: t("admin.appliedJobsExistDesc"),
         deleteAction: false,
       });
     } else {
@@ -62,13 +63,13 @@ function JobSourcesTable({
       if (success) {
         toast({
           variant: "success",
-          description: `Job source has been deleted successfully`,
+          description: t("admin.jobSourceDeleted"),
         });
         reloadJobSources();
       } else {
         toast({
           variant: "destructive",
-          title: "Error!",
+          title: t("common.error"),
           description: message,
         });
       }
@@ -80,10 +81,10 @@ function JobSourcesTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Source</TableHead>
-            <TableHead className="hidden sm:table-cell">Value</TableHead>
-            <TableHead>Jobs Applied</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>{t("admin.source")}</TableHead>
+            <TableHead className="hidden sm:table-cell">{t("admin.value")}</TableHead>
+            <TableHead>{t("admin.jobsApplied")}</TableHead>
+            <TableHead>{t("common.actions")}</TableHead>
             <TableHead>
               <span className="sr-only">Actions</span>
             </TableHead>
@@ -109,13 +110,13 @@ function JobSourcesTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t("common.actions")}</DropdownMenuLabel>
                       <DropdownMenuItem
                         className="text-red-600 cursor-pointer"
                         onClick={() => onDeleteJobSource(source)}
                       >
                         <Trash className="mr-2 h-4 w-4" />
-                        Delete
+                        {t("common.delete")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

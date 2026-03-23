@@ -31,7 +31,7 @@ interface LogData {
 }
 
 export function LogsTab({ automationId, runKey }: LogsTabProps) {
-  const { locale } = useTranslations();
+  const { t, locale } = useTranslations();
   const [logData, setLogData] = useState<LogData>({
     logs: [],
     isRunning: false,
@@ -127,11 +127,11 @@ export function LogsTab({ automationId, runKey }: LogsTabProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CardTitle>Automation Logs</CardTitle>
+            <CardTitle>{t("automations.automationLogs")}</CardTitle>
             {logData.isRunning && (
               <Badge variant="default" className="gap-1">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                Running
+                {t("automations.running")}
               </Badge>
             )}
           </div>
@@ -142,35 +142,35 @@ export function LogsTab({ automationId, runKey }: LogsTabProps) {
                 variant={filter === "all" ? "default" : "outline"}
                 onClick={() => setFilter("all")}
               >
-                All
+                {t("automations.all")}
               </Button>
               <Button
                 size="sm"
                 variant={filter === "info" ? "default" : "outline"}
                 onClick={() => setFilter("info")}
               >
-                Info
+                {t("automations.info")}
               </Button>
               <Button
                 size="sm"
                 variant={filter === "success" ? "default" : "outline"}
                 onClick={() => setFilter("success")}
               >
-                Success
+                {t("automations.success")}
               </Button>
               <Button
                 size="sm"
                 variant={filter === "warning" ? "default" : "outline"}
                 onClick={() => setFilter("warning")}
               >
-                Warning
+                {t("automations.warning")}
               </Button>
               <Button
                 size="sm"
                 variant={filter === "error" ? "default" : "outline"}
                 onClick={() => setFilter("error")}
               >
-                Error
+                {t("automations.errorLog")}
               </Button>
             </div>
             <Button
@@ -185,11 +185,11 @@ export function LogsTab({ automationId, runKey }: LogsTabProps) {
         </div>
         {logData.startedAt && (
           <p className="text-sm text-muted-foreground">
-            Started: {formatDateTimeSeconds(new Date(logData.startedAt), locale)}
+            {t("automations.started")}: {formatDateTimeSeconds(new Date(logData.startedAt), locale)}
             {logData.completedAt && (
               <>
                 {" "}
-                • Completed:{" "}
+                • {t("automations.completed")}:{" "}
                 {formatDateTimeSeconds(new Date(logData.completedAt), locale)}
               </>
             )}
@@ -202,8 +202,8 @@ export function LogsTab({ automationId, runKey }: LogsTabProps) {
             <div className="flex items-center justify-center h-full text-muted-foreground">
               <p>
                 {logData.logs.length === 0
-                  ? "No logs yet. Run the automation to see logs."
-                  : "No logs match the selected filter."}
+                  ? t("automations.noLogs")
+                  : t("automations.noLogsFilter")}
               </p>
             </div>
           ) : (

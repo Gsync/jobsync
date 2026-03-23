@@ -12,8 +12,10 @@ import { PlusCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
 import { RecordsCount } from "../RecordsCount";
+import { useTranslations } from "@/i18n";
 
 const ProfileContainer = () => {
+  const { t } = useTranslations();
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
 
@@ -41,7 +43,7 @@ const ProfileContainer = () => {
         setLoading(false);
         return toast({
           variant: "destructive",
-          title: "Error!",
+          title: t("profile.error"),
           description: message,
         });
       }
@@ -77,7 +79,7 @@ const ProfileContainer = () => {
   return (
     <Card>
       <CardHeader className="flex-row justify-between items-center">
-        <CardTitle>Profile</CardTitle>
+        <CardTitle>{t("profile.title")}</CardTitle>
         <div className="flex items-center">
           <Button
             size="sm"
@@ -87,7 +89,7 @@ const ProfileContainer = () => {
           >
             <PlusCircle className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-              New Resume
+              {t("profile.newResume")}
             </span>
           </Button>
           <CreateResume
@@ -112,7 +114,7 @@ const ProfileContainer = () => {
               <RecordsCount
                 count={resumes.length}
                 total={totalResumes}
-                label="resumes"
+                label={t("profile.resumes")}
               />
               {totalResumes > APP_CONSTANTS.RECORDS_PER_PAGE && (
                 <RecordsPerPageSelector
@@ -132,7 +134,7 @@ const ProfileContainer = () => {
               disabled={loading}
               className="btn btn-primary"
             >
-              {loading ? "Loading..." : "Load More"}
+              {loading ? t("profile.loading") : t("profile.loadMore")}
             </Button>
           </div>
         )}

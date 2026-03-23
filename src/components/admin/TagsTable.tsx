@@ -22,6 +22,7 @@ import { deleteTagById } from "@/actions/tag.actions";
 import { toast } from "../ui/use-toast";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { AlertDialog } from "@/models/alertDialog.model";
+import { useTranslations } from "@/i18n";
 
 type TagsTableProps = {
   tags: Tag[];
@@ -29,6 +30,7 @@ type TagsTableProps = {
 };
 
 function TagsTable({ tags, reloadTags }: TagsTableProps) {
+  const { t } = useTranslations();
   const [alert, setAlert] = useState<AlertDialog>({
     openState: false,
     deleteAction: false,
@@ -39,17 +41,10 @@ function TagsTable({ tags, reloadTags }: TagsTableProps) {
     const questionCount = tag._count?.questions ?? 0;
 
     if (jobCount > 0 || questionCount > 0) {
-      const links = [
-        jobCount > 0 ? `${jobCount} job(s)` : "",
-        questionCount > 0 ? `${questionCount} question(s)` : "",
-      ]
-        .filter(Boolean)
-        .join(" and ");
-
       setAlert({
         openState: true,
-        title: "Skill is in use!",
-        description: `This skill is linked to ${links} and cannot be deleted.`,
+        title: t("admin.skillInUse"),
+        description: t("admin.skillInUseDesc"),
         deleteAction: false,
       });
     } else {
@@ -67,13 +62,13 @@ function TagsTable({ tags, reloadTags }: TagsTableProps) {
     if (success) {
       toast({
         variant: "success",
-        description: "Skill tag has been deleted successfully",
+        description: t("admin.skillDeleted"),
       });
       reloadTags();
     } else {
       toast({
         variant: "destructive",
-        title: "Error!",
+        title: t("common.error"),
         description: message,
       });
     }
@@ -84,11 +79,11 @@ function TagsTable({ tags, reloadTags }: TagsTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Skill Label</TableHead>
-            <TableHead className="hidden sm:table-cell">Value</TableHead>
-            <TableHead># Jobs</TableHead>
-            <TableHead># Questions</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>{t("admin.skillLabel")}</TableHead>
+            <TableHead className="hidden sm:table-cell">{t("admin.value")}</TableHead>
+            <TableHead>{t("admin.numJobs")}</TableHead>
+            <TableHead>{t("admin.numQuestions")}</TableHead>
+            <TableHead>{t("common.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -113,13 +108,13 @@ function TagsTable({ tags, reloadTags }: TagsTableProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t("common.actions")}</DropdownMenuLabel>
                     <DropdownMenuItem
                       className="text-red-600 cursor-pointer"
                       onClick={() => onDeleteTag(tag)}
                     >
                       <Trash className="mr-2 h-4 w-4" />
-                      Delete
+                      {t("common.delete")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

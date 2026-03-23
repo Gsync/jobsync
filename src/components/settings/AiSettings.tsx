@@ -21,6 +21,7 @@ import { toast } from "../ui/use-toast";
 import { XCircle, CheckCircle, Loader2 } from "lucide-react";
 import { checkIfModelIsRunning } from "@/utils/ai.utils";
 import { getUserSettings, updateAiSettings } from "@/actions/userSettings.actions";
+import { useTranslations } from "@/i18n";
 
 interface OllamaModelResponse {
   models: {
@@ -46,6 +47,7 @@ interface DeepseekModelResponse {
 }
 
 function AiSettings() {
+  const { t } = useTranslations();
   const [selectedModel, setSelectedModel] = useState<AiModel>(defaultModel);
   const [ollamaModels, setOllamaModels] = useState<string[]>([]);
   const [deepseekModels, setDeepseekModels] = useState<string[]>([]);
@@ -245,8 +247,8 @@ function AiSettings() {
     if (!selectedModel.model) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Please select a model to save.",
+        title: t("settings.error"),
+        description: t("settings.selectModelToSave"),
       });
       return;
     }
@@ -259,22 +261,22 @@ function AiSettings() {
       if (result.success) {
         toast({
           variant: "success",
-          title: "Saved!",
-          description: "AI Settings saved successfully.",
+          title: t("settings.saved"),
+          description: t("settings.aiSaved"),
         });
       } else {
         toast({
           variant: "destructive",
-          title: "Error",
-          description: result.message || "Failed to save AI settings.",
+          title: t("settings.error"),
+          description: result.message || t("settings.aiSaveFailed"),
         });
       }
     } catch (error) {
       console.error("Error saving AI settings:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to save AI settings.",
+        title: t("settings.error"),
+        description: t("settings.aiSaveFailed"),
       });
     } finally {
       setIsSaving(false);
@@ -284,14 +286,14 @@ function AiSettings() {
     return (
       <div className="space-y-4">
         <div>
-          <h3 className="text-lg font-medium">AI Provider</h3>
+          <h3 className="text-lg font-medium">{t("settings.aiProvider")}</h3>
           <p className="text-sm text-muted-foreground">
-            Configure your AI service provider and model.
+            {t("settings.aiProviderDesc")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Loading settings...</span>
+          <span>{t("settings.loadingSettings")}</span>
         </div>
       </div>
     );
@@ -300,14 +302,14 @@ function AiSettings() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-medium">AI Provider</h3>
+        <h3 className="text-lg font-medium">{t("settings.aiProvider")}</h3>
         <p className="text-sm text-muted-foreground">
-          Configure your AI service provider and model.
+          {t("settings.aiProviderDesc")}
         </p>
       </div>
       <div>
         <Label className="my-4" htmlFor="ai-provider">
-          AI Service Provider
+          {t("settings.aiServiceProvider")}
         </Label>
         <Select
           value={selectedModel.provider}
@@ -315,10 +317,10 @@ function AiSettings() {
         >
           <SelectTrigger
             id="ai-provider"
-            aria-label="Select AI provider"
+            aria-label={t("settings.selectProvider")}
             className="w-[180px]"
           >
-            <SelectValue placeholder="Select AI Service Provider" />
+            <SelectValue placeholder={t("settings.selectProvider")} />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
@@ -333,7 +335,7 @@ function AiSettings() {
       </div>
       <div>
         <Label className="my-4" htmlFor="ai-model">
-          Model
+          {t("settings.model")}
         </Label>
         <div className="flex items-start gap-2">
           <Select
@@ -343,12 +345,12 @@ function AiSettings() {
           >
             <SelectTrigger
               id="ai-model"
-              aria-label="Select Model"
+              aria-label={t("settings.selectModel")}
               className="w-[180px]"
             >
               <SelectValue
                 placeholder={
-                  isLoadingModels ? "Loading models..." : "Select AI Model"
+                  isLoadingModels ? t("settings.loadingModels") : t("settings.selectModel")
                 }
               />
             </SelectTrigger>
@@ -372,7 +374,7 @@ function AiSettings() {
         {runningModelName && (
           <div className="flex items-center gap-1 text-green-600 text-sm mt-2">
             <CheckCircle className="h-4 w-4 flex-shrink-0" />
-            <span>{runningModelName} is running</span>
+            <span>{runningModelName} {t("settings.isRunning")}</span>
           </div>
         )}
         {runningModelError && (
@@ -394,7 +396,7 @@ function AiSettings() {
         }
       >
         {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Save
+        {t("settings.save")}
       </Button>
     </div>
   );

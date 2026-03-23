@@ -1,5 +1,6 @@
 "use client";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n";
 
 type TagWithCount = {
   id: string;
@@ -21,9 +22,10 @@ function QuestionsSidebar({
   selectedFilter,
   onFilterChange,
 }: QuestionsSidebarProps) {
+  const { t } = useTranslations();
   return (
     <div className="w-48 border-r py-4 hidden md:block h-full">
-      <h3 className="font-semibold mb-4 text-sm">Skill Tags</h3>
+      <h3 className="font-semibold mb-4 text-sm">{t("questions.skillTags")}</h3>
       <ul className="space-y-1">
         <li>
           <button
@@ -35,7 +37,7 @@ function QuestionsSidebar({
             )}
           >
             <span className="flex justify-between items-center">
-              <span>All</span>
+              <span>{t("questions.all")}</span>
               <span className="text-muted-foreground text-xs">
                 {totalQuestions}
               </span>

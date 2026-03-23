@@ -8,6 +8,11 @@ import { dashboard } from "./dictionaries/dashboard";
 import { jobs } from "./dictionaries/jobs";
 import { activities } from "./dictionaries/activities";
 import { tasks } from "./dictionaries/tasks";
+import { automations } from "./dictionaries/automations";
+import { profile } from "./dictionaries/profile";
+import { questions } from "./dictionaries/questions";
+import { admin } from "./dictionaries/admin";
+import { settings } from "./dictionaries/settings";
 
 const core = {
   en: {
@@ -270,7 +275,7 @@ function mergeDictionaries(...namespaces: Record<string, Record<string, string>>
   return merged;
 }
 
-const dictionaries = mergeDictionaries(core, dashboard, jobs, activities, tasks);
+const dictionaries = mergeDictionaries(core, dashboard, jobs, activities, tasks, automations, profile, questions, admin, settings);
 
 export type TranslationKey = string;
 export type Dictionary = Record<string, string>;

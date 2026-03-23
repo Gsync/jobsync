@@ -29,6 +29,7 @@ import { useMemo, useState } from "react";
 import { toast } from "../ui/use-toast";
 import { deleteResumeById } from "@/actions/profile.actions";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
+import { useTranslations } from "@/i18n";
 
 type ResumeTableProps = {
   resumes: Resume[];
@@ -37,6 +38,7 @@ type ResumeTableProps = {
 };
 
 function ResumeTable({ resumes, editResume, reloadResumes }: ResumeTableProps) {
+  const { t } = useTranslations();
   const [alertOpen, setAlertOpen] = useState(false);
   const [resumeToDelete, setResumeToDelete] = useState<Resume>();
   const onDeleteResume = useMemo(
@@ -53,8 +55,8 @@ function ResumeTable({ resumes, editResume, reloadResumes }: ResumeTableProps) {
     if (resume._count?.Job! > 0)
       return toast({
         variant: "destructive",
-        title: "Error!",
-        description: "Number of jobs using resume must be 0!",
+        title: t("profile.error"),
+        description: t("profile.jobsMustBeZero"),
       });
     const { success, message } = await deleteResumeById(
       resume.id,
@@ -63,13 +65,13 @@ function ResumeTable({ resumes, editResume, reloadResumes }: ResumeTableProps) {
     if (success) {
       toast({
         variant: "success",
-        description: `Resume has been deleted successfully`,
+        description: t("profile.resumeDeleted"),
       });
       reloadResumes();
     } else {
       toast({
         variant: "destructive",
-        title: "Error!",
+        title: t("profile.error"),
         description: message,
       });
     }
@@ -79,13 +81,13 @@ function ResumeTable({ resumes, editResume, reloadResumes }: ResumeTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Resume Title</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead className="hidden md:table-cell">Updated</TableHead>
-            <TableHead>Jobs</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>{t("profile.resumeTitle")}</TableHead>
+            <TableHead>{t("profile.created")}</TableHead>
+            <TableHead className="hidden md:table-cell">{t("profile.updated")}</TableHead>
+            <TableHead>{t("profile.jobsCount")}</TableHead>
+            <TableHead>{t("profile.actions")}</TableHead>
             <TableHead>
-              <span className="sr-only">Actions</span>
+              <span className="sr-only">{t("profile.actions")}</span>
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -121,22 +123,22 @@ function ResumeTable({ resumes, editResume, reloadResumes }: ResumeTableProps) {
                         data-testid="resume-actions-menu-btn"
                       >
                         <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
+                        <span className="sr-only">{t("profile.toggleMenu")}</span>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t("profile.actions")}</DropdownMenuLabel>
                       <DropdownMenuItem
                         className="cursor-pointer"
                         onClick={() => editResume(resume)}
                       >
                         <Pencil className="mr-2 h-4 w-4" />
-                        Edit Resume Title
+                        {t("profile.editResumeTitle")}
                       </DropdownMenuItem>
                       <Link href={`/dashboard/profile/resume/${resume.id}`}>
                         <DropdownMenuItem className="cursor-pointer">
                           <FilePenLine className="mr-2 h-4 w-4" />
-                          View/Edit Resume
+                          {t("profile.viewEditResume")}
                         </DropdownMenuItem>
                       </Link>
                       <DropdownMenuItem
@@ -144,7 +146,7 @@ function ResumeTable({ resumes, editResume, reloadResumes }: ResumeTableProps) {
                         onClick={() => onDeleteResume(resume)}
                       >
                         <Trash className="mr-2 h-4 w-4" />
-                        Delete
+                        {t("profile.delete")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -155,7 +157,7 @@ function ResumeTable({ resumes, editResume, reloadResumes }: ResumeTableProps) {
         </TableBody>
       </Table>
       <DeleteAlertDialog
-        pageTitle="resume"
+        pageTitle={t("profile.resume")}
         open={alertOpen}
         onOpenChange={setAlertOpen}
         onDelete={() => deleteResume(resumeToDelete!)}

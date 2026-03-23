@@ -23,7 +23,7 @@ function EducationCard({
   openDialogForEdit,
 }: EducationCardProps) {
   const { sectionTitle, educations } = educationSection!;
-  const { locale } = useTranslations();
+  const { t, locale } = useTranslations();
   return (
     <>
       <CardTitle className="pl-6 py-3">{sectionTitle}</CardTitle>
@@ -59,7 +59,7 @@ function EducationCard({
               </h3>
               <CardDescription>
                 {formatMonthYear(startDate, locale)} -{" "}
-                {endDate ? formatMonthYear(endDate, locale) : "Present"}
+                {endDate ? formatMonthYear(endDate, locale) : t("profile.present")}
                 <br />
                 {label}
               </CardDescription>

@@ -9,8 +9,10 @@ import Loading from "../Loading";
 import { Button } from "../ui/button";
 import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
 import { RecordsCount } from "../RecordsCount";
+import { useTranslations } from "@/i18n";
 
 function JobSourcesContainer() {
+  const { t } = useTranslations();
   const [sources, setSources] = useState<JobSource[]>([]);
   const [totalJobSources, setTotalJobSources] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
@@ -50,7 +52,7 @@ function JobSourcesContainer() {
       <div className="col-span-3">
         <Card x-chunk="dashboard-06-chunk-0">
           <CardHeader className="flex-row justify-between items-center">
-            <CardTitle>Job Sources</CardTitle>
+            <CardTitle>{t("admin.jobSources")}</CardTitle>
             <div className="flex items-center">
               <div className="ml-auto flex items-center gap-2">
               </div>
@@ -68,7 +70,7 @@ function JobSourcesContainer() {
                   <RecordsCount
                     count={sources.length}
                     total={totalJobSources}
-                    label="job sources"
+                    label={t("admin.jobSourcesCount")}
                   />
                   {totalJobSources > APP_CONSTANTS.RECORDS_PER_PAGE && (
                     <RecordsPerPageSelector
@@ -88,7 +90,7 @@ function JobSourcesContainer() {
                   disabled={loading}
                   className="btn btn-primary"
                 >
-                  {loading ? "Loading..." : "Load More"}
+                  {loading ? t("common.loading") : t("common.loadMore")}
                 </Button>
               </div>
             )}

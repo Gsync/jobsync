@@ -44,7 +44,7 @@ export function DiscoveredJobsList({
   onRefresh,
   onViewDetails,
 }: DiscoveredJobsListProps) {
-  const { locale } = useTranslations();
+  const { t, locale } = useTranslations();
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
   const handleAccept = async (jobId: string) => {
@@ -53,11 +53,11 @@ export function DiscoveredJobsList({
     setLoadingAction(null);
 
     if (result.success) {
-      toast({ title: "Job accepted", description: "The job has been added to your tracked jobs." });
+      toast({ title: t("automations.jobAccepted"), description: t("automations.jobAcceptedDesc") });
       onRefresh();
     } else {
       toast({
-        title: "Error",
+        title: t("automations.somethingWentWrong"),
         description: result.message,
         variant: "destructive",
       });
@@ -70,11 +70,11 @@ export function DiscoveredJobsList({
     setLoadingAction(null);
 
     if (result.success) {
-      toast({ title: "Job dismissed" });
+      toast({ title: t("automations.jobDismissed") });
       onRefresh();
     } else {
       toast({
-        title: "Error",
+        title: t("automations.somethingWentWrong"),
         description: result.message,
         variant: "destructive",
       });
@@ -92,9 +92,9 @@ export function DiscoveredJobsList({
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium">No discovered jobs</h3>
+          <h3 className="text-lg font-medium">{t("automations.noDiscoveredJobs")}</h3>
           <p className="text-muted-foreground text-center mt-2">
-            Jobs discovered by automations will appear here.
+            {t("automations.noDiscoveredJobsDesc")}
           </p>
         </CardContent>
       </Card>
@@ -104,22 +104,22 @@ export function DiscoveredJobsList({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Discovered Jobs</CardTitle>
+        <CardTitle>{t("automations.discoveredJobs")}</CardTitle>
         <CardDescription>
-          Jobs found by your automations that match your criteria
+          {t("automations.discoveredJobsDesc")}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Job</TableHead>
-              <TableHead>Company</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead className="text-center">Match</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Discovered</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{t("automations.job")}</TableHead>
+              <TableHead>{t("automations.company")}</TableHead>
+              <TableHead>{t("automations.locationHeader")}</TableHead>
+              <TableHead className="text-center">{t("automations.match")}</TableHead>
+              <TableHead>{t("automations.status")}</TableHead>
+              <TableHead>{t("automations.discovered")}</TableHead>
+              <TableHead className="text-right">{t("automations.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

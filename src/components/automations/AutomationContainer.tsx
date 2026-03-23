@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import { useTranslations } from "@/i18n";
 import { getAutomationsList } from "@/actions/automation.actions";
 import type { AutomationWithResume } from "@/models/automation.model";
 import { AutomationList } from "./AutomationList";
@@ -21,6 +22,7 @@ interface AutomationContainerProps {
 }
 
 export function AutomationContainer({ resumes }: AutomationContainerProps) {
+  const { t } = useTranslations();
   const [automations, setAutomations] = useState<AutomationWithResume[]>([]);
   const [loading, setLoading] = useState(true);
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -35,8 +37,8 @@ export function AutomationContainer({ resumes }: AutomationContainerProps) {
       setAutomations(result.data);
     } else {
       toast({
-        title: "Error",
-        description: result.message || "Failed to load automations",
+        title: t("automations.validationError"),
+        description: result.message || t("automations.somethingWentWrong"),
         variant: "destructive",
       });
     }
@@ -67,7 +69,7 @@ export function AutomationContainer({ resumes }: AutomationContainerProps) {
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Job Discovery Automations</CardTitle>
+          <CardTitle>{t("automations.jobDiscovery")}</CardTitle>
           <div className="flex gap-2">
             <Button variant="outline" size="icon" onClick={loadAutomations}>
               <RefreshCw className="h-4 w-4" />
@@ -78,16 +80,16 @@ export function AutomationContainer({ resumes }: AutomationContainerProps) {
               disabled={resumes.length === 0}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Create Automation
+              {t("automations.createAutomation")}
             </Button>
           </div>
         </CardHeader>
         <CardContent>
           {resumes.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              <p>You need to create a resume before setting up automations.</p>
+              <p>{t("automations.needResume")}</p>
               <p className="text-sm mt-2">
-                Go to your Profile to create a resume first.
+                {t("automations.goToProfile")}
               </p>
             </div>
           ) : loading ? (

@@ -10,8 +10,10 @@ import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
 import { RecordsCount } from "../RecordsCount";
 import TagsTable from "./TagsTable";
 import AddTag from "./AddTag";
+import { useTranslations } from "@/i18n";
 
 function TagsContainer() {
+  const { t } = useTranslations();
   const [tags, setTags] = useState<Tag[]>([]);
   const [totalTags, setTotalTags] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
@@ -50,7 +52,7 @@ function TagsContainer() {
       <div className="col-span-3">
         <Card>
           <CardHeader className="flex-row justify-between items-center">
-            <CardTitle>Skills/Tags</CardTitle>
+            <CardTitle>{t("admin.skillsTags")}</CardTitle>
             <div className="flex items-center">
               <div className="ml-auto flex items-center gap-2">
                 <AddTag reloadTags={reloadTags} />
@@ -66,7 +68,7 @@ function TagsContainer() {
                   <RecordsCount
                     count={tags.length}
                     total={totalTags}
-                    label="skills"
+                    label={t("admin.skillsCount")}
                   />
                   {totalTags > APP_CONSTANTS.RECORDS_PER_PAGE && (
                     <RecordsPerPageSelector
@@ -86,7 +88,7 @@ function TagsContainer() {
                   disabled={loading}
                   className="btn btn-primary"
                 >
-                  {loading ? "Loading..." : "Load More"}
+                  {loading ? t("common.loading") : t("common.loadMore")}
                 </Button>
               </div>
             )}

@@ -5,10 +5,12 @@ import JobSourcesContainer from "@/components/admin/JobSourcesContainer";
 import JobTitlesContainer from "@/components/admin/JobTitlesContainer";
 import TagsContainer from "@/components/admin/TagsContainer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTranslations } from "@/i18n";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 
 function AdminTabsContainer() {
+  const { t } = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const queryParams = useSearchParams();
@@ -32,11 +34,11 @@ function AdminTabsContainer() {
       onValueChange={(e) => onTabChange(e)}
     >
       <TabsList>
-        <TabsTrigger value="companies">Companies</TabsTrigger>
-        <TabsTrigger value="job-titles">Job Titles</TabsTrigger>
-        <TabsTrigger value="locations">Locations</TabsTrigger>
-        <TabsTrigger value="sources">Sources</TabsTrigger>
-        <TabsTrigger value="skills">Skills</TabsTrigger>
+        <TabsTrigger value="companies">{t("admin.companies")}</TabsTrigger>
+        <TabsTrigger value="job-titles">{t("admin.jobTitles")}</TabsTrigger>
+        <TabsTrigger value="locations">{t("admin.locations")}</TabsTrigger>
+        <TabsTrigger value="sources">{t("admin.sources")}</TabsTrigger>
+        <TabsTrigger value="skills">{t("admin.skills")}</TabsTrigger>
       </TabsList>
       <TabsContent value="companies">
         <CompaniesContainer />

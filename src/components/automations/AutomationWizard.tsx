@@ -34,6 +34,7 @@ import {
 import { CreateAutomationSchema, type CreateAutomationInput } from "@/models/automation.schema";
 import { createAutomation, updateAutomation } from "@/actions/automation.actions";
 import { toast } from "@/components/ui/use-toast";
+import { useTranslations } from "@/i18n";
 import type { AutomationWithResume } from "@/models/automation.model";
 import { ChevronLeft, ChevronRight, HelpCircle, Loader2 } from "lucide-react";
 import { EuresOccupationCombobox } from "@/components/automations/EuresOccupationCombobox";
@@ -55,14 +56,14 @@ interface AutomationWizardProps {
   editAutomation?: AutomationWithResume | null;
 }
 
-const STEPS = [
-  { id: "basics", title: "Basics", description: "Name your automation" },
-  { id: "search", title: "Search", description: "Configure search criteria" },
-  { id: "resume", title: "Resume", description: "Select resume for matching" },
-  { id: "matching", title: "Matching", description: "Set match threshold" },
-  { id: "schedule", title: "Schedule", description: "When to run" },
-  { id: "review", title: "Review", description: "Confirm settings" },
-];
+const STEP_KEYS = [
+  { id: "basics", titleKey: "automations.stepBasics", descKey: "automations.stepBasicsDesc" },
+  { id: "search", titleKey: "automations.stepSearch", descKey: "automations.stepSearchDesc" },
+  { id: "resume", titleKey: "automations.stepResume", descKey: "automations.stepResumeDesc" },
+  { id: "matching", titleKey: "automations.stepMatching", descKey: "automations.stepMatchingDesc" },
+  { id: "schedule", titleKey: "automations.stepSchedule", descKey: "automations.stepScheduleDesc" },
+  { id: "review", titleKey: "automations.stepReview", descKey: "automations.stepReviewDesc" },
+] as const;
 
 const HOURS = Array.from({ length: 24 }, (_, i) => ({
   value: i,
@@ -76,6 +77,7 @@ export function AutomationWizard({
   onSuccess,
   editAutomation,
 }: AutomationWizardProps) {
+  const { t } = useTranslations();
   const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -135,10 +137,10 @@ export function AutomationWizard({
 
       if (result.success) {
         toast({
-          title: editAutomation ? "Automation updated" : "Automation created",
+          title: editAutomation ? t("automations.automationUpdated") : t("automations.automationCreated"),
           description: editAutomation
-            ? "Your automation has been updated successfully."
-            : "Your automation has been created and will run at the scheduled time.",
+            ? t("automations.automationUpdatedDesc")
+            : t("automations.automationCreatedDesc"),
         });
         form.reset();
         setStep(0);
@@ -146,15 +148,15 @@ export function AutomationWizard({
         onSuccess();
       } else {
         toast({
-          title: "Error",
-          description: result.message || "Something went wrong",
+          title: t("automations.validationError"),
+          description: result.message || t("automations.somethingWentWrong"),
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to save automation",
+        title: t("automations.validationError"),
+        description: t("automations.failedToSave"),
         variant: "destructive",
       });
     } finally {
@@ -182,7 +184,7 @@ export function AutomationWizard({
   };
 
   const nextStep = () => {
-    if (step < STEPS.length - 1) {
+    if (step < STEP_KEYS.length - 1) {
       setStep(step + 1);
     }
   };
@@ -211,12 +213,12 @@ export function AutomationWizard({
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Automation Name</FormLabel>
+                <FormLabel>{t("automations.automationName")}</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Full Stack Jobs Calgary" {...field} />
+                  <Input placeholder={t("automations.automationNamePlaceholder")} {...field} />
                 </FormControl>
                 <FormDescription>
-                  A descriptive name to identify this automation
+                  {t("automations.automationNameDesc")}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -227,20 +229,20 @@ export function AutomationWizard({
             name="jobBoard"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Job Board</FormLabel>
+                <FormLabel>{t("automations.jobBoard")}</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a job board" />
+                      <SelectValue placeholder={t("automations.selectJobBoard")} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="jsearch">JSearch (Google Jobs)</SelectItem>
-                    <SelectItem value="eures">EURES (European Jobs)</SelectItem>
+                    <SelectItem value="jsearch">{t("automations.jsearch")}</SelectItem>
+                    <SelectItem value="eures">{t("automations.eures")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormDescription>
-                  The job board to search for vacancies
+                  {t("automations.jobBoardDesc")}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -255,7 +257,7 @@ export function AutomationWizard({
             name="keywords"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Search Keywords</FormLabel>
+                <FormLabel>{t("automations.searchKeywords")}</FormLabel>
                 <FormControl>
                   {jobBoard === "eures" ? (
                     <EuresOccupationCombobox
@@ -263,12 +265,12 @@ export function AutomationWizard({
                       language={tryParseConnectorParams(connectorParams)?.language}
                     />
                   ) : (
-                    <Input placeholder="e.g., Full Stack Developer" {...field} />
+                    <Input placeholder={t("automations.keywordsPlaceholder")} {...field} />
                   )}
                 </FormControl>
                 <FormDescription>
                   {jobBoard !== "eures"
-                    ? "Job titles, skills, or keywords to search for"
+                    ? t("automations.keywordsDesc")
                     : undefined}
                 </FormDescription>
                 <FormMessage />
@@ -280,17 +282,17 @@ export function AutomationWizard({
             name="location"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Location</FormLabel>
+                <FormLabel>{t("automations.location")}</FormLabel>
                 <FormControl>
                   {jobBoard === "eures" ? (
                     <EuresLocationCombobox field={field} />
                   ) : (
-                    <Input placeholder="e.g., Calgary, AB" {...field} />
+                    <Input placeholder={t("automations.locationPlaceholder")} {...field} />
                   )}
                 </FormControl>
                 {jobBoard !== "eures" && (
                   <FormDescription>
-                    City, state/province, or region to search in
+                    {t("automations.locationDesc")}
                   </FormDescription>
                 )}
                 <FormMessage />
@@ -306,11 +308,11 @@ export function AutomationWizard({
             name="resumeId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Resume for Matching</FormLabel>
+                <FormLabel>{t("automations.resumeForMatching")}</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a resume" />
+                      <SelectValue placeholder={t("automations.selectResume")} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -322,7 +324,7 @@ export function AutomationWizard({
                   </SelectContent>
                 </Select>
                 <FormDescription>
-                  Jobs will be matched against this resume
+                  {t("automations.resumeMatchDesc")}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -330,7 +332,7 @@ export function AutomationWizard({
           />
           {resumes.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              No resumes found. Please create a resume in your profile first.
+              {t("automations.noResumes")}
             </p>
           )}
         </div>
@@ -343,7 +345,7 @@ export function AutomationWizard({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Match Threshold: {field.value}%
+                  {t("automations.matchThreshold")}: {field.value}%
                 </FormLabel>
                 <FormControl>
                   <Slider
@@ -355,8 +357,7 @@ export function AutomationWizard({
                   />
                 </FormControl>
                 <FormDescription>
-                  Only save jobs that match your resume above this percentage.
-                  Higher = fewer but better matches.
+                  {t("automations.matchThresholdDesc")}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -371,14 +372,14 @@ export function AutomationWizard({
             name="scheduleHour"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Daily Run Time</FormLabel>
+                <FormLabel>{t("automations.dailyRunTime")}</FormLabel>
                 <Select
                   onValueChange={(val) => field.onChange(parseInt(val))}
                   value={field.value.toString()}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select time" />
+                      <SelectValue placeholder={t("automations.selectTime")} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -390,7 +391,7 @@ export function AutomationWizard({
                   </SelectContent>
                 </Select>
                 <FormDescription>
-                  The automation will run daily at this time (server timezone)
+                  {t("automations.scheduleDesc")}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -402,17 +403,17 @@ export function AutomationWizard({
         <div className={step === 5 ? "space-y-4" : "hidden"}>
           <div className="rounded-lg border p-4 space-y-3">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Name</span>
+              <span className="text-muted-foreground">{t("automations.reviewName")}</span>
               <span className="font-medium">{form.getValues("name") || "-"}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Job Board</span>
+              <span className="text-muted-foreground">{t("automations.reviewJobBoard")}</span>
               <span className="font-medium">
-                {jobBoard === "eures" ? "EURES" : jobBoard === "jsearch" ? "JSearch" : jobBoard || "-"}
+                {jobBoard === "eures" ? t("automations.eures") : jobBoard === "jsearch" ? t("automations.jsearch") : jobBoard || "-"}
               </span>
             </div>
             <div className="flex justify-between items-start">
-              <span className="text-muted-foreground">Keywords</span>
+              <span className="text-muted-foreground">{t("automations.reviewKeywords")}</span>
               {jobBoard === "eures" && form.getValues("keywords")?.includes("||") ? (
                 <div className="flex flex-wrap gap-1 justify-end max-w-[60%]">
                   {form.getValues("keywords").split("||").filter(Boolean).map((kw) => (
@@ -426,7 +427,7 @@ export function AutomationWizard({
               )}
             </div>
             <div className="flex justify-between items-start">
-              <span className="text-muted-foreground">Location</span>
+              <span className="text-muted-foreground">{t("automations.reviewLocation")}</span>
               {jobBoard === "eures" && form.getValues("location") ? (
                 <div className="flex flex-wrap gap-1 justify-end max-w-[60%]">
                   {form.getValues("location").split(",").filter(Boolean).map((code) => {
@@ -455,17 +456,17 @@ export function AutomationWizard({
               )}
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Resume</span>
-              <span className="font-medium">{selectedResume?.title || "Not selected"}</span>
+              <span className="text-muted-foreground">{t("automations.reviewResume")}</span>
+              <span className="font-medium">{selectedResume?.title || t("automations.notSelected")}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Match Threshold</span>
+              <span className="text-muted-foreground">{t("automations.reviewMatchThreshold")}</span>
               <span className="font-medium">{form.getValues("matchThreshold") ?? 80}%</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Schedule</span>
+              <span className="text-muted-foreground">{t("automations.reviewSchedule")}</span>
               <span className="font-medium">
-                Daily at {(form.getValues("scheduleHour") ?? 8).toString().padStart(2, "0")}:00
+                {t("automations.dailyAt")} {(form.getValues("scheduleHour") ?? 8).toString().padStart(2, "0")}:00
               </span>
             </div>
           </div>
@@ -479,15 +480,15 @@ export function AutomationWizard({
       <DialogContent className="sm:max-w-[500px] max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {editAutomation ? "Edit Automation" : "Create Automation"}
+            {editAutomation ? t("automations.editAutomation") : t("automations.createAutomation")}
           </DialogTitle>
           <DialogDescription>
-            Step {step + 1} of {STEPS.length}: {STEPS[step].description}
+            {t("automations.step")} {step + 1} {t("automations.of")} {STEP_KEYS.length}: {t(STEP_KEYS[step].descKey)}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex justify-center gap-1 mb-4">
-          {STEPS.map((_, i) => (
+          {STEP_KEYS.map((_, i) => (
             <div
               key={i}
               className={`h-1 w-8 rounded-full ${
@@ -502,7 +503,7 @@ export function AutomationWizard({
             const firstError = Object.values(errors)[0];
             if (firstError?.message) {
               toast({
-                title: "Validation Error",
+                title: t("automations.validationError"),
                 description: firstError.message as string,
                 variant: "destructive",
               });
@@ -514,18 +515,18 @@ export function AutomationWizard({
               {step > 0 && (
                 <Button type="button" variant="outline" onClick={prevStep}>
                   <ChevronLeft className="h-4 w-4 mr-1" />
-                  Back
+                  {t("automations.back")}
                 </Button>
               )}
-              {step < STEPS.length - 1 ? (
+              {step < STEP_KEYS.length - 1 ? (
                 <Button type="button" onClick={nextStep} disabled={!canGoNext()}>
-                  Next
+                  {t("automations.next")}
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               ) : (
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  {editAutomation ? "Update" : "Create"} Automation
+                  {editAutomation ? t("automations.updateAutomation") : t("automations.createAutomation")}
                 </Button>
               )}
             </DialogFooter>

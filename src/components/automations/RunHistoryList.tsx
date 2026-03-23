@@ -49,15 +49,15 @@ const STATUS_CONFIG = {
 };
 
 export function RunHistoryList({ runs }: RunHistoryListProps) {
-  const { locale } = useTranslations();
+  const { t, locale } = useTranslations();
   if (runs.length === 0) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <History className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium">No runs yet</h3>
+          <h3 className="text-lg font-medium">{t("automations.noRuns")}</h3>
           <p className="text-muted-foreground text-center mt-2">
-            Run history will appear here once the automation runs.
+            {t("automations.noRunsDesc")}
           </p>
         </CardContent>
       </Card>
@@ -67,24 +67,24 @@ export function RunHistoryList({ runs }: RunHistoryListProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Run History</CardTitle>
+        <CardTitle>{t("automations.runHistory")}</CardTitle>
         <CardDescription>
-          Recent automation runs and their results
+          {t("automations.runHistoryDesc")}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Status</TableHead>
-              <TableHead>Started</TableHead>
-              <TableHead>Duration</TableHead>
-              <TableHead className="text-center">Searched</TableHead>
-              <TableHead className="text-center">New</TableHead>
-              <TableHead className="text-center">Processed</TableHead>
-              <TableHead className="text-center">Matched</TableHead>
-              <TableHead className="text-center">Saved</TableHead>
-              <TableHead>Error</TableHead>
+              <TableHead>{t("automations.statusHeader")}</TableHead>
+              <TableHead>{t("automations.startedHeader")}</TableHead>
+              <TableHead>{t("automations.duration")}</TableHead>
+              <TableHead className="text-center">{t("automations.searched")}</TableHead>
+              <TableHead className="text-center">{t("automations.new")}</TableHead>
+              <TableHead className="text-center">{t("automations.processed")}</TableHead>
+              <TableHead className="text-center">{t("automations.matched")}</TableHead>
+              <TableHead className="text-center">{t("automations.saved")}</TableHead>
+              <TableHead>{t("automations.errorHeader")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

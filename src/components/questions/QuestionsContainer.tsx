@@ -24,6 +24,7 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import Loading from "../Loading";
 import { QuestionList } from "./QuestionList";
 import { QuestionForm } from "./QuestionForm";
+import { useTranslations } from "@/i18n";
 
 type QuestionsContainerProps = {
   availableTags: Tag[];
@@ -36,6 +37,7 @@ function QuestionsContainer({
   filterKey,
   onQuestionsChanged,
 }: QuestionsContainerProps) {
+  const { t } = useTranslations();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [page, setPage] = useState(1);
   const [totalQuestions, setTotalQuestions] = useState(0);
@@ -66,8 +68,8 @@ function QuestionsContainer({
       } else {
         toast({
           variant: "destructive",
-          title: "Error!",
-          description: result?.message || "Failed to load questions.",
+          title: t("questions.error"),
+          description: result?.message || t("questions.loadFailed"),
         });
       }
       setLoading(false);
@@ -85,13 +87,13 @@ function QuestionsContainer({
     if (success) {
       toast({
         variant: "success",
-        description: "Question has been deleted successfully",
+        description: t("questions.deletedSuccess"),
       });
       reloadQuestions();
     } else {
       toast({
         variant: "destructive",
-        title: "Error!",
+        title: t("questions.error"),
         description: message,
       });
     }
@@ -102,7 +104,7 @@ function QuestionsContainer({
     if (!success) {
       toast({
         variant: "destructive",
-        title: "Error!",
+        title: t("questions.error"),
         description: message,
       });
       return;
@@ -139,14 +141,14 @@ function QuestionsContainer({
     <>
       <Card className="h-full">
         <CardHeader className="flex-row justify-between items-center">
-          <CardTitle>Question Bank</CardTitle>
+          <CardTitle>{t("questions.title")}</CardTitle>
           <div className="flex items-center">
             <div className="ml-auto flex items-center gap-2">
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Search questions..."
+                  placeholder={t("questions.searchPlaceholder")}
                   className="pl-8 h-8 w-[150px] lg:w-[200px]"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -160,7 +162,7 @@ function QuestionsContainer({
               >
                 <PlusCircle className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  New Question
+                  {t("questions.newQuestion")}
                 </span>
               </Button>
             </div>
@@ -180,7 +182,7 @@ function QuestionsContainer({
                   <RecordsCount
                     count={questions.length}
                     total={totalQuestions}
-                    label="questions"
+                    label={t("questions.questionsLabel")}
                   />
                   {totalQuestions > APP_CONSTANTS.RECORDS_PER_PAGE && (
                     <RecordsPerPageSelector
@@ -206,7 +208,7 @@ function QuestionsContainer({
                 }
                 disabled={loading}
               >
-                Load More
+                {t("questions.loadMore")}
               </Button>
             </div>
           )}

@@ -22,7 +22,7 @@ function ExperienceCard({
   experienceSection,
   openDialogForEdit,
 }: ExperienceCardProps) {
-  const { locale } = useTranslations();
+  const { t, locale } = useTranslations();
   return (
     <>
       <CardTitle className="pl-6 py-3">
@@ -57,7 +57,7 @@ function ExperienceCard({
               <h3>{Company.label}</h3>
               <CardDescription>
                 {formatMonthYear(startDate, locale)} -{" "}
-                {endDate ? formatMonthYear(endDate, locale) : "Present"}
+                {endDate ? formatMonthYear(endDate, locale) : t("profile.present")}
                 <br />
                 {location.label}
               </CardDescription>

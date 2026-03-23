@@ -54,7 +54,7 @@ export function AutomationList({
   onEdit,
   onRefresh,
 }: AutomationListProps) {
-  const { locale } = useTranslations();
+  const { t, locale } = useTranslations();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
@@ -65,11 +65,11 @@ export function AutomationList({
     setLoadingAction(null);
 
     if (result.success) {
-      toast({ title: "Automation paused" });
+      toast({ title: t("automations.automationPaused") });
       onRefresh();
     } else {
       toast({
-        title: "Error",
+        title: t("automations.validationError"),
         description: result.message,
         variant: "destructive",
       });
@@ -82,11 +82,11 @@ export function AutomationList({
     setLoadingAction(null);
 
     if (result.success) {
-      toast({ title: "Automation resumed" });
+      toast({ title: t("automations.automationResumed") });
       onRefresh();
     } else {
       toast({
-        title: "Error",
+        title: t("automations.validationError"),
         description: result.message,
         variant: "destructive",
       });
@@ -102,11 +102,11 @@ export function AutomationList({
     setDeleteId(null);
 
     if (result.success) {
-      toast({ title: "Automation deleted" });
+      toast({ title: t("automations.automationDeleted") });
       onRefresh();
     } else {
       toast({
-        title: "Error",
+        title: t("automations.validationError"),
         description: result.message,
         variant: "destructive",
       });
@@ -118,9 +118,9 @@ export function AutomationList({
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Zap className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium">No automations yet</h3>
+          <h3 className="text-lg font-medium">{t("automations.noAutomations")}</h3>
           <p className="text-muted-foreground text-center mt-2">
-            Create your first automation to start discovering jobs automatically.
+            {t("automations.noAutomationsDesc")}
           </p>
         </CardContent>
       </Card>
@@ -152,6 +152,7 @@ export function AutomationList({
                   </Badge>
                   <Badge
                     variant={automation.status === "active" ? "default" : "secondary"}
+                    className="capitalize"
                   >
                     {automation.status}
                   </Badge>
@@ -160,22 +161,22 @@ export function AutomationList({
                 {resumeMissing && (
                   <div className="flex items-center gap-2 text-amber-600 text-sm">
                     <AlertTriangle className="h-4 w-4" />
-                    <span>Resume missing - select a new one</span>
+                    <span>{t("automations.resumeMissing")}</span>
                   </div>
                 )}
 
                 <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
                   <span>
-                    <span className="font-medium text-foreground">Keywords:</span>{" "}
+                    <span className="font-medium text-foreground">{t("automations.keywords")}:</span>{" "}
                     {automation.keywords}
                   </span>
                   <span>
-                    <span className="font-medium text-foreground">Location:</span>{" "}
+                    <span className="font-medium text-foreground">{t("automations.locationLabel")}:</span>{" "}
                     {automation.location}
                   </span>
                   {automation.resume && (
                     <span>
-                      <span className="font-medium text-foreground">Resume:</span>{" "}
+                      <span className="font-medium text-foreground">{t("automations.resumeLabel")}:</span>{" "}
                       {automation.resume.title}
                     </span>
                   )}
@@ -185,12 +186,12 @@ export function AutomationList({
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
                     <span>
-                      {automation.scheduleHour.toString().padStart(2, "0")}:00 daily
+                      {automation.scheduleHour.toString().padStart(2, "0")}:00 {t("automations.daily").toLowerCase()}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <FileText className="h-4 w-4" />
-                    <span>{automation.matchThreshold}% threshold</span>
+                    <span>{automation.matchThreshold}% {t("automations.threshold").toLowerCase()}</span>
                   </div>
                   {automation.nextRunAt && automation.status === "active" && (
                     <span className="text-xs">
@@ -215,7 +216,7 @@ export function AutomationList({
                   {automation.status === "active" ? (
                     <DropdownMenuItem onClick={() => handlePause(automation.id)}>
                       <Pause className="h-4 w-4 mr-2" />
-                      Pause
+                      {t("automations.pause")}
                     </DropdownMenuItem>
                   ) : (
                     <DropdownMenuItem
@@ -223,12 +224,12 @@ export function AutomationList({
                       disabled={resumeMissing}
                     >
                       <Play className="h-4 w-4 mr-2" />
-                      Resume
+                      {t("automations.resume")}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onClick={() => onEdit(automation)}>
                     <Pencil className="h-4 w-4 mr-2" />
-                    Edit
+                    {t("automations.edit")}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -236,7 +237,7 @@ export function AutomationList({
                     onClick={() => setDeleteId(automation.id)}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
+                    {t("automations.delete")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -248,20 +249,19 @@ export function AutomationList({
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Automation</AlertDialogTitle>
+            <AlertDialogTitle>{t("automations.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this automation? This action cannot be
-              undone. Discovered jobs will remain but lose their automation reference.
+              {t("automations.deleteDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isDeleting ? "Deleting..." : "Delete"}
+              {isDeleting ? t("automations.deleting") : t("automations.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
