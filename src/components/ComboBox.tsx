@@ -116,7 +116,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
       <PopoverContent className="md:w-[240px] lg:w-[280px] p-0">
         <Command
           filter={(value, search) =>
-            value.includes(search.toLowerCase()) ? 1 : 0
+            value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
           }
         >
           <CommandInput
@@ -163,7 +163,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        option.value === field.value
+                        option.id === field.value
                           ? "opacity-100"
                           : "opacity-0"
                       )}
