@@ -75,6 +75,13 @@ The i18n system uses an **adapter pattern** (`@/i18n/index.ts` + `@/i18n/server.
 - Eurostat NUTS names are fetched in the user's language
 - Flag SVGs are in `public/flags/` (circle-flags library)
 
+## Security Rules
+
+- **All API proxy routes** (`/api/esco/*`, `/api/eures/*`) MUST check `auth()` — never expose EU APIs without authentication
+- **ESCO URI validation**: Always validate that user-supplied URIs start with `http://data.europa.eu/esco/` to prevent SSRF
+- **Server-only barrel**: `@/i18n/server.ts` has `import "server-only"` — never import it in client components
+- **No credentials in commits**: `.env` is gitignored, never commit API keys
+
 ## Reusable UI Components
 
 - `src/components/ui/chip-list.tsx` — Multi-select badge chips with edit/remove

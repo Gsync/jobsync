@@ -88,21 +88,48 @@ export async function GET() {
 
 ## Key Naming Convention
 
-Use dot-separated namespaces:
-- `nav.*` — Navigation (sidebar, header)
-- `auth.*` — Authentication (signin, signup)
-- `settings.*` — Settings page
-- `profile.*` — Profile dropdown
-- `common.*` — Shared strings (Save, Cancel, Error, etc.)
-- `dashboard.*` — Dashboard page
-- `jobs.*` — Jobs features
-- `automations.*` — Automation features
+Use dot-separated namespaces: `namespace.camelCaseKey`
+
+### Namespace Dictionary Files
+
+| File | Namespace | Keys | Content |
+|------|-----------|------|---------|
+| `dictionaries.ts` (core) | `nav.*`, `auth.*`, `profile.*`, `common.*`, `settings.*` (display only) | ~75 | Navigation, auth, shared strings |
+| `dictionaries/dashboard.ts` | `dashboard.*` | ~16 | Dashboard cards, charts |
+| `dictionaries/jobs.ts` | `jobs.*` | ~70 | Job list, add/edit, notes, tags |
+| `dictionaries/activities.ts` | `activities.*` | ~25 | Activity tracking, timer |
+| `dictionaries/tasks.ts` | `tasks.*` | ~50 | Task management, filters |
+| `dictionaries/automations.ts` | `automations.*` | ~110 | Automation wizard, discovery, logs |
+| `dictionaries/profile.ts` | `profile.*` | ~20 | Resume management |
+| `dictionaries/questions.ts` | `questions.*` | ~28 | Question bank |
+| `dictionaries/admin.ts` | `admin.*` | ~37 | Admin tabs (companies, sources, skills) |
+| `dictionaries/settings.ts` | `settings.*`, `developer.*` | ~55 | AI provider, API keys, developer tools |
+
+**Total: ~496 keys across 4 locales (EN, DE, FR, ES)**
+
+### Parameterized Strings
+
+Use `{placeholder}` syntax with `.replace()`:
+```ts
+t("common.deleteConfirmTitle").replace("{item}", "job")
+// EN: "Are you sure you want to delete this job?"
+// DE: "Möchtest du diesen/dieses job wirklich löschen?"
+```
 
 ## Adding a New Language
 
 1. Add the locale to `src/i18n/locales.ts` → `SUPPORTED_LOCALES`
-2. Add a new object in `src/i18n/dictionaries.ts` with all keys translated
-3. The language will appear in Settings → Display → Language
+2. Add a new locale block to **every** dictionary file (core + 9 namespaces)
+3. Update `mergeDictionaries()` locales array in `dictionaries.ts`
+4. Add `date-fns/locale` import in `src/lib/formatters.ts` → `DATE_FNS_LOCALES`
+5. Validate: `bun run /tmp/test-dictionaries.ts`
+6. The language will appear in Settings → Display → Language
+
+## Security
+
+- All API proxy routes (`/api/esco/*`, `/api/eures/*`) require authentication via `auth()`
+- ESCO Details route validates URI prefix (`http://data.europa.eu/esco/`) to prevent SSRF
+- `@/i18n/server.ts` has `import "server-only"` to prevent client-side import of server code
 
 ## Supported Locales
 
