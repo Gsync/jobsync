@@ -6,9 +6,12 @@ import { Briefcase, Settings } from "lucide-react";
 import { SIDEBAR_LINKS } from "@/lib/constants";
 import NavLink from "./NavLink";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "@/i18n/use-translations";
 
 function Sidebar() {
   const path = usePathname();
+  const { t } = useTranslations();
+
   return (
     <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
       <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
@@ -21,14 +24,13 @@ function Sidebar() {
         </Link>
         <TooltipProvider delayDuration={800}>
           {SIDEBAR_LINKS.map((item) => {
-            // Only show dev-only items in development mode
             if (item.devOnly && process.env.NODE_ENV !== "development") {
               return null;
             }
             return (
-              <div key={item.label} className="text-white fill-color">
+              <div key={item.labelKey} className="text-white fill-color">
                 <NavLink
-                  label={item.label}
+                  label={t(item.labelKey)}
                   Icon={item.icon}
                   route={item.route}
                   pathname={path}
@@ -41,7 +43,7 @@ function Sidebar() {
       <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
         <TooltipProvider>
           <NavLink
-            label="Settings"
+            label={t("nav.settings")}
             Icon={Settings}
             route="/dashboard/settings"
             pathname={path}

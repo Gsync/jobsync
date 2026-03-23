@@ -27,6 +27,7 @@ import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { getUserSettings, updateDisplaySettings } from "@/actions/userSettings.actions";
 import { SUPPORTED_LOCALES, DEFAULT_LOCALE } from "@/i18n/locales";
+import { useTranslations } from "@/i18n/use-translations";
 
 const appearanceFormSchema = z.object({
   theme: z.enum(["light", "dark", "system"], {
@@ -41,6 +42,7 @@ function DisplaySettings() {
   const { setTheme, theme, systemTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const { t } = useTranslations();
 
   const form = useForm<AppearanceFormValues>({
     resolver: zodResolver(appearanceFormSchema),
@@ -86,13 +88,13 @@ function DisplaySettings() {
         setTheme(data.theme);
         toast({
           variant: "success",
-          title: "Your selected theme has been saved.",
+          title: t("settings.themeSaved"),
         });
       } else {
         toast({
           variant: "destructive",
           title: "Error",
-          description: result.message || "Failed to save display settings.",
+          description: result.message || t("settings.saveFailed"),
         });
       }
     } catch (error) {
@@ -100,7 +102,7 @@ function DisplaySettings() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to save display settings.",
+        description: t("settings.saveFailed"),
       });
     } finally {
       setIsSaving(false);
@@ -111,14 +113,14 @@ function DisplaySettings() {
     return (
       <div className="space-y-4">
         <div>
-          <h3 className="text-lg font-medium">Appearance</h3>
+          <h3 className="text-lg font-medium">{t("settings.appearance")}</h3>
           <p className="text-sm text-muted-foreground">
-            Customize the look and feel of the application.
+            {t("settings.appearanceDesc")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Loading settings...</span>
+          <span>{t("settings.loadingSettings")}</span>
         </div>
       </div>
     );
@@ -127,9 +129,9 @@ function DisplaySettings() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-medium">Appearance</h3>
+        <h3 className="text-lg font-medium">{t("settings.appearance")}</h3>
         <p className="text-sm text-muted-foreground">
-          Customize the look and feel of the application.
+          {t("settings.appearanceDesc")}
         </p>
       </div>
       <div>
@@ -140,9 +142,9 @@ function DisplaySettings() {
                 name="theme"
                 render={({ field }) => (
                   <FormItem className="space-y-1">
-                    <FormLabel>Theme</FormLabel>
+                    <FormLabel>{t("settings.theme")}</FormLabel>
                     <FormDescription>
-                      Select the theme for the app.
+                      {t("settings.themeDesc")}
                     </FormDescription>
                     <FormMessage />
                     <RadioGroup
@@ -157,7 +159,7 @@ function DisplaySettings() {
                           </FormControl>
                           <LightThemeElement />
                           <span className="block w-full p-2 text-center font-normal">
-                            Light
+                            {t("settings.light")}
                           </span>
                         </FormLabel>
                       </FormItem>
@@ -168,7 +170,7 @@ function DisplaySettings() {
                           </FormControl>
                           <DarkThemeElement />
                           <span className="block w-full p-2 text-center font-normal">
-                            Dark
+                            {t("settings.dark")}
                           </span>
                         </FormLabel>
                       </FormItem>
@@ -186,7 +188,7 @@ function DisplaySettings() {
                             <LightThemeElement />
                           )}
                           <span className="block w-full p-2 text-center font-normal">
-                            System
+                            {t("settings.system")}
                           </span>
                         </FormLabel>
                       </FormItem>
@@ -200,14 +202,14 @@ function DisplaySettings() {
                 name="locale"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Language</FormLabel>
+                    <FormLabel>{t("settings.language")}</FormLabel>
                     <FormDescription>
-                      Select the display language. This also sets the language for EURES, ESCO and Eurostat data.
+                      {t("settings.languageDesc")}
                     </FormDescription>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="w-[240px]">
-                          <SelectValue placeholder="Select language" />
+                          <SelectValue placeholder={t("settings.selectLanguage")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -234,7 +236,7 @@ function DisplaySettings() {
 
               <Button type="submit" disabled={isSaving}>
                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Update preferences
+                {t("settings.updatePreferences")}
               </Button>
             </form>
           </Form>

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import SigninForm from "./SigninForm";
 import SignupForm from "./SignupForm";
+import { useTranslations } from "@/i18n/use-translations";
 
 type AuthMode = "signin" | "signup";
 
@@ -12,10 +13,10 @@ interface AuthCardProps {
 
 export default function AuthCard({ mode }: AuthCardProps) {
   const router = useRouter();
+  const { t } = useTranslations();
 
   return (
     <div className="mx-auto w-full max-w-md px-4">
-      {/* App branding */}
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold tracking-tight">JobSync</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -23,7 +24,6 @@ export default function AuthCard({ mode }: AuthCardProps) {
         </p>
       </div>
 
-      {/* Tab toggle */}
       <div className="mb-6 flex rounded-xl border bg-muted p-1">
         <button
           onClick={() => router.push("/signin")}
@@ -33,7 +33,7 @@ export default function AuthCard({ mode }: AuthCardProps) {
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          Sign In
+          {t("auth.signIn")}
         </button>
         <button
           onClick={() => router.push("/signup")}
@@ -43,18 +43,17 @@ export default function AuthCard({ mode }: AuthCardProps) {
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          Create Account
+          {t("auth.createAccount")}
         </button>
       </div>
 
-      {/* Form card */}
       <div className="rounded-xl border bg-card p-6 shadow-sm">
         {mode === "signin" ? (
           <>
             <div className="mb-5">
-              <h2 className="text-xl font-semibold">Welcome back</h2>
+              <h2 className="text-xl font-semibold">{t("auth.welcomeBack")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Enter your credentials to access your account
+                {t("auth.enterCredentials")}
               </p>
             </div>
             <SigninForm />
@@ -62,9 +61,9 @@ export default function AuthCard({ mode }: AuthCardProps) {
         ) : (
           <>
             <div className="mb-5">
-              <h2 className="text-xl font-semibold">Get started</h2>
+              <h2 className="text-xl font-semibold">{t("auth.getStarted")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Create a free account to start tracking your applications
+                {t("auth.createFreeAccount")}
               </p>
             </div>
             <SignupForm />

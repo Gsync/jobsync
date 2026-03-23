@@ -17,8 +17,10 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { SignupFormSchema } from "@/models/signupForm.schema";
 import Loading from "../Loading";
+import { useTranslations } from "@/i18n/use-translations";
 
 function SignupForm() {
+  const { t } = useTranslations();
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<z.infer<typeof SignupFormSchema>>({
@@ -64,9 +66,9 @@ function SignupForm() {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full Name</FormLabel>
+                  <FormLabel>{t("auth.fullName")}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Your Name" autoComplete="name" suppressHydrationWarning {...field} />
+                    <Input placeholder={t("auth.fullNamePlaceholder")} autoComplete="name" suppressHydrationWarning {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -79,9 +81,9 @@ function SignupForm() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>{t("auth.email")}</FormLabel>
                   <FormControl>
-                    <Input placeholder="id@example.com" autoComplete="email" suppressHydrationWarning {...field} />
+                    <Input placeholder={t("auth.emailPlaceholder")} autoComplete="email" suppressHydrationWarning {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -94,7 +96,7 @@ function SignupForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>{t("auth.password")}</FormLabel>
                   <FormControl>
                     <Input type="password" autoComplete="new-password" suppressHydrationWarning {...field} />
                   </FormControl>
@@ -104,7 +106,7 @@ function SignupForm() {
             />
           </div>
           <Button type="submit" disabled={isPending} className="w-full">
-            {isPending ? <Loading /> : "Create an account"}
+            {isPending ? <Loading /> : t("auth.createAnAccount")}
           </Button>
           <div
             className="flex h-8 items-end space-x-1"

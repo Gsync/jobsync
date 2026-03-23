@@ -9,6 +9,7 @@ import {
   Zap,
   BookOpen,
 } from "lucide-react";
+import type { TranslationKey } from "@/i18n/dictionaries";
 
 export const APP_CONSTANTS = {
   RECORDS_PER_PAGE: 25,
@@ -45,51 +46,66 @@ export const JOB_STATUSES = [
   { label: "Archived", value: "archived" },
 ] as const;
 
-export const SIDEBAR_LINKS = [
+export const SIDEBAR_LINKS: {
+  icon: typeof LayoutDashboard;
+  route: string;
+  label: string;
+  labelKey: TranslationKey;
+  devOnly?: boolean;
+}[] = [
   {
     icon: LayoutDashboard,
     route: "/dashboard",
     label: "Dashboard",
+    labelKey: "nav.dashboard",
   },
   {
     icon: BriefcaseBusiness,
     route: "/dashboard/myjobs",
     label: "My Jobs",
+    labelKey: "nav.myJobs",
   },
   {
     icon: Zap,
     route: "/dashboard/automations",
     label: "Automations",
+    labelKey: "nav.automations",
   },
   {
     icon: SquareCheckBig,
     route: "/dashboard/tasks",
     label: "Tasks",
+    labelKey: "nav.tasks",
   },
   {
     icon: CalendarClock,
     route: "/dashboard/activities",
     label: "Activities",
+    labelKey: "nav.activities",
   },
   {
     icon: BookOpen,
     route: "/dashboard/questions",
     label: "Question Bank",
+    labelKey: "nav.questionBank",
   },
   {
     icon: UserRound,
     route: "/dashboard/profile",
     label: "Profile",
+    labelKey: "nav.profile",
   },
   {
     icon: Sheet,
     route: "/dashboard/admin",
     label: "Administration",
+    labelKey: "nav.administration",
   },
   {
     icon: Wrench,
     route: "/dashboard/developer",
     label: "Developer Options",
+    labelKey: "nav.developerOptions",
     devOnly: true,
   },
 ];

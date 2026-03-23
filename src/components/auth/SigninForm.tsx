@@ -17,8 +17,10 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { SigninFormSchema } from "@/models/signinForm.schema";
 import Loading from "../Loading";
+import { useTranslations } from "@/i18n/use-translations";
 
 function SigninForm() {
+  const { t } = useTranslations();
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<z.infer<typeof SigninFormSchema>>({
@@ -62,11 +64,11 @@ function SigninForm() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel htmlFor="email">Email</FormLabel>
+                    <FormLabel htmlFor="email">{t("auth.email")}</FormLabel>
                     <FormControl>
                       <Input
                         id="email"
-                        placeholder="id@example.com"
+                        placeholder={t("auth.emailPlaceholder")}
                         autoComplete="email"
                         suppressHydrationWarning
                         {...field}
@@ -83,7 +85,7 @@ function SigninForm() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel htmlFor="password">Password</FormLabel>
+                    <FormLabel htmlFor="password">{t("auth.password")}</FormLabel>
                     <FormControl>
                       <Input
                         id="password"
@@ -99,7 +101,7 @@ function SigninForm() {
               />
             </div>
             <Button type="submit" disabled={isPending} className="w-full">
-              {isPending ? <Loading /> : "Login"}
+              {isPending ? <Loading /> : t("auth.login")}
             </Button>
             <div
               className="flex h-8 items-end space-x-1"
