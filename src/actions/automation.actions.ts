@@ -146,6 +146,7 @@ export async function createAutomation(
         jobBoard: validated.jobBoard,
         keywords: validated.keywords,
         location: validated.location,
+        connectorParams: validated.connectorParams,
         resumeId: validated.resumeId,
         matchThreshold: validated.matchThreshold,
         scheduleHour: validated.scheduleHour,
@@ -205,6 +206,11 @@ export async function updateAutomation(
     }
 
     const updateData: Record<string, unknown> = { ...validated };
+
+    // Explicitly set connectorParams to null when absent so Prisma clears the DB value
+    if (validated.connectorParams === undefined) {
+      updateData.connectorParams = null;
+    }
 
     if (validated.scheduleHour !== undefined) {
       updateData.nextRunAt = calculateNextRunAt(validated.scheduleHour);

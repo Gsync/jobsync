@@ -67,6 +67,8 @@ function SigninForm() {
                       <Input
                         id="email"
                         placeholder="id@example.com"
+                        autoComplete="email"
+                        suppressHydrationWarning
                         {...field}
                       />
                     </FormControl>
@@ -83,7 +85,13 @@ function SigninForm() {
                   <FormItem>
                     <FormLabel htmlFor="password">Password</FormLabel>
                     <FormControl>
-                      <Input id="password" type="password" {...field} />
+                      <Input
+                        id="password"
+                        type="password"
+                        autoComplete="current-password"
+                        suppressHydrationWarning
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
