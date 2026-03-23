@@ -373,12 +373,14 @@ export const getActivityTypesWithTaskCounts = async (): Promise<
       },
     });
 
-    const data = activityTypes.map((type) => ({
-      id: type.id,
-      label: type.label,
-      value: type.value,
-      taskCount: type._count.Tasks,
-    }));
+    const data = activityTypes
+      .map((type) => ({
+        id: type.id,
+        label: type.label,
+        value: type.value,
+        taskCount: type._count.Tasks,
+      }))
+      .sort((a, b) => b.taskCount - a.taskCount);
 
     const totalTasks = await prisma.task.count({
       where: {
