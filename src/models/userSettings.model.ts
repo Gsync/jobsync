@@ -7,6 +7,7 @@ export interface AiSettings {
 
 export interface DisplaySettings {
   theme: "light" | "dark" | "system";
+  locale: string;
 }
 
 export interface UserSettingsData {
@@ -26,5 +27,6 @@ export const defaultUserSettings: UserSettingsData = {
   },
   display: {
     theme: "system",
+    locale: "en",
   },
 };

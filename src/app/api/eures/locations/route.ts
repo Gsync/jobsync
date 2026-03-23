@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getLocaleFromCookie } from "@/lib/locale";
 
 const EURES_COUNTRY_STATS_URL =
   "https://europa.eu/eures/api/jv-searchengine/public/statistics/getCountryStats";
-const EUROSTAT_NUTS_URL =
+const EUROSTAT_NUTS_BASE_URL =
   "https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1/codelist/ESTAT/GEO?format=JSON";
 
 interface EuresEntry {
@@ -20,9 +21,10 @@ interface LocationNode {
 }
 
 /** Fetch NUTS code → name mapping from Eurostat (official EU source of truth). */
-async function fetchNutsNames(): Promise<Record<string, string>> {
+async function fetchNutsNames(locale: string): Promise<Record<string, string>> {
   try {
-    const res = await fetch(EUROSTAT_NUTS_URL, {
+    const url = `${EUROSTAT_NUTS_BASE_URL}&lang=${locale}`;
+    const res = await fetch(url, {
       next: { revalidate: 86400 },
     });
     if (!res.ok) return {};
@@ -89,11 +91,12 @@ function buildSubRegions(
   return nuts2;
 }
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
+    const locale = await getLocaleFromCookie();
     const [euresRes, nutsNames] = await Promise.all([
       fetch(EURES_COUNTRY_STATS_URL, { next: { revalidate: 3600 } }),
-      fetchNutsNames(),
+      fetchNutsNames(locale),
     ]);
 
     if (!euresRes.ok) {

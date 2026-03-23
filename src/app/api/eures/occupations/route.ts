@@ -3,6 +3,7 @@ import {
   EURES_AUTOCOMPLETE_URL,
   type EuresAutocompleteResponse,
 } from "@/lib/scraper/eures/autocomplete";
+import { getLocaleFromCookie } from "@/lib/locale";
 
 const LANGUAGE_PATTERN = /^[a-z]{2}$/;
 const MIN_KEYWORD_LENGTH = 2;
@@ -30,7 +31,8 @@ export async function GET(
     );
   }
 
-  const language = searchParams.get("language") ?? DEFAULT_LANGUAGE;
+  const userLocale = await getLocaleFromCookie();
+  const language = searchParams.get("language") ?? userLocale;
   if (!LANGUAGE_PATTERN.test(language)) {
     return NextResponse.json(
       { error: "language must be a 2-letter lowercase ISO code" },

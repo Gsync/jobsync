@@ -115,6 +115,17 @@ export function AutomationWizard({
     try { return params ? JSON.parse(params) : undefined; } catch { return undefined; }
   };
 
+  // Auto-set language in connectorParams from html lang attribute
+  useEffect(() => {
+    if (jobBoard === "eures" && open) {
+      const htmlLang = document.documentElement.lang || "en";
+      const current = tryParseConnectorParams(form.getValues("connectorParams"));
+      if (!current?.language || current.language !== htmlLang) {
+        form.setValue("connectorParams", JSON.stringify({ ...current, language: htmlLang }));
+      }
+    }
+  }, [jobBoard, open, form]);
+
   const onSubmit = async (data: CreateAutomationInput) => {
     setIsSubmitting(true);
     try {

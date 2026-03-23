@@ -10,13 +10,17 @@
     "test": "jest",
     "test:e2e": "npx playwright test",
     "test:watch": "jest --watch",
-    "generate:eures": "openapi-typescript https://rorar.github.io/EURES-API-Documentation/openapi.yaml -o src/lib/scraper/eures/generated.ts"
+    "generate:eures": "openapi-typescript https://rorar.github.io/EURES-API-Documentation/openapi.yaml -o src/lib/scraper/eures/generated.ts",
+    "i18n:extract": "lingui extract --clean",
+    "i18n:compile": "lingui compile --typescript"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^2.0.4",
     "@ai-sdk/openai": "^3.0.2",
     "@ai-sdk/react": "^3.0.5",
     "@hookform/resolvers": "^5.2.2",
+    "@lingui/core": "^5.9.3",
+    "@lingui/react": "^5.9.3",
     "@nivo/bar": "^0.99.0",
     "@nivo/calendar": "^0.99.0",
     "@nivo/core": "^0.99.0",
@@ -69,6 +73,7 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@lingui/cli": "^5.9.3",
     "@playwright/test": "^1.49.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.6.3",

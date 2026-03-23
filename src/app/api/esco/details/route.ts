@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getLocaleFromCookie } from "@/lib/locale";
 
 const ESCO_RESOURCE_URL = "https://ec.europa.eu/esco/api/resource/occupation";
 
@@ -21,7 +22,8 @@ export async function GET(
 ): Promise<NextResponse<EscoOccupationDetails | { error: string }>> {
   const { searchParams } = request.nextUrl;
   const uri = searchParams.get("uri");
-  const language = searchParams.get("language") ?? "en";
+  const userLocale = await getLocaleFromCookie();
+  const language = searchParams.get("language") ?? userLocale;
 
   if (!uri) {
     return NextResponse.json({ error: "uri is required" }, { status: 400 });

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getLocaleFromCookie } from "@/lib/locale";
 
 const ESCO_SEARCH_URL = "https://ec.europa.eu/esco/api/search";
 
@@ -19,7 +20,8 @@ export async function GET(
 ): Promise<NextResponse<EscoSearchResponse | { error: string }>> {
   const { searchParams } = request.nextUrl;
   const text = searchParams.get("text");
-  const language = searchParams.get("language") ?? "en";
+  const userLocale = await getLocaleFromCookie();
+  const language = searchParams.get("language") ?? userLocale;
   const limit = Math.min(
     parseInt(searchParams.get("limit") ?? "10"),
     20,

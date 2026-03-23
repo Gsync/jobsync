@@ -11,18 +11,28 @@ import {
   FormMessage,
 } from "../ui/form";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "../ui/use-toast";
 import { Button } from "../ui/button";
 import { useTheme } from "next-themes";
 import { Loader2 } from "lucide-react";
+import Image from "next/image";
 import { getUserSettings, updateDisplaySettings } from "@/actions/userSettings.actions";
+import { SUPPORTED_LOCALES, DEFAULT_LOCALE } from "@/i18n/locales";
 
 const appearanceFormSchema = z.object({
   theme: z.enum(["light", "dark", "system"], {
     error: "Please select a theme.",
   }),
+  locale: z.string().min(2),
 });
 
 type AppearanceFormValues = z.infer<typeof appearanceFormSchema>;
@@ -36,6 +46,7 @@ function DisplaySettings() {
     resolver: zodResolver(appearanceFormSchema),
     defaultValues: {
       theme: "system",
+      locale: DEFAULT_LOCALE,
     },
   });
 
@@ -44,12 +55,15 @@ function DisplaySettings() {
       setIsLoading(true);
       try {
         const result = await getUserSettings();
-        if (result.success && result.data?.settings?.display?.theme) {
-          const savedTheme = result.data.settings.display.theme;
-          form.reset({ theme: savedTheme });
-          setTheme(savedTheme);
+        if (result.success && result.data?.settings?.display) {
+          const display = result.data.settings.display;
+          form.reset({
+            theme: display.theme || "system",
+            locale: display.locale || DEFAULT_LOCALE,
+          });
+          if (display.theme) setTheme(display.theme);
         } else if (theme) {
-          form.reset({ theme: theme as "light" | "dark" | "system" });
+          form.reset({ theme: theme as "light" | "dark" | "system", locale: DEFAULT_LOCALE });
         }
       } catch (error) {
         console.error("Error fetching display settings:", error);
@@ -67,7 +81,7 @@ function DisplaySettings() {
   async function onSubmit(data: AppearanceFormValues) {
     setIsSaving(true);
     try {
-      const result = await updateDisplaySettings({ theme: data.theme });
+      const result = await updateDisplaySettings({ theme: data.theme, locale: data.locale });
       if (result.success) {
         setTheme(data.theme);
         toast({
@@ -177,6 +191,43 @@ function DisplaySettings() {
                         </FormLabel>
                       </FormItem>
                     </RadioGroup>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="locale"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Language</FormLabel>
+                    <FormDescription>
+                      Select the display language. This also sets the language for EURES, ESCO and Eurostat data.
+                    </FormDescription>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-[240px]">
+                          <SelectValue placeholder="Select language" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {SUPPORTED_LOCALES.map((loc) => (
+                          <SelectItem key={loc.code} value={loc.code}>
+                            <span className="flex items-center gap-2">
+                              <Image
+                                src={`/flags/${loc.flag}.svg`}
+                                alt={loc.code}
+                                width={16}
+                                height={16}
+                                className="inline-block"
+                              />
+                              {loc.nativeName}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />

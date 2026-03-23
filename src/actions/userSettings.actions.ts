@@ -1,4 +1,5 @@
 "use server";
+import { cookies } from "next/headers";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { getCurrentUser } from "@/utils/user.utils";
@@ -128,5 +129,14 @@ export const updateAiSettings = async (
 export const updateDisplaySettings = async (
   displaySettings: DisplaySettings
 ): Promise<any | undefined> => {
+  // Sync locale to cookie for server-side access without DB query
+  if (displaySettings.locale) {
+    const cookieStore = await cookies();
+    cookieStore.set("NEXT_LOCALE", displaySettings.locale, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+    });
+  }
   return updateUserSettings({ display: displaySettings });
 };
