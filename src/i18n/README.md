@@ -125,6 +125,22 @@ Available functions:
 
 **Important:** Use `formatISODate()` for machine-readable dates (data keys, CSV export, filenames).
 
+## Migration to LinguiJS Macros (Future)
+
+The current dictionary + formatters approach is designed as a **compatible fallback**.
+When `@lingui/swc-plugin` supports Next.js 15.5+, the migration path is:
+
+| Current | Future (LinguiJS Macros) |
+|---------|-------------------------|
+| `t("nav.dashboard")` | `` t`Dashboard` `` |
+| `useTranslations()` | `useLingui()` |
+| `dictionaries.ts` | PO files (auto-extracted) |
+| `formatters.ts` | ICU format in PO: `{date, date, medium}` |
+| `FormatSettings` overrides | Keep as-is (Intl layer) |
+
+The `useTranslations()` hook and `t(key)` function have the same API shape,
+so component code changes are minimal.
+
 ## EU API Language Integration
 
 The user's locale is automatically passed to:
