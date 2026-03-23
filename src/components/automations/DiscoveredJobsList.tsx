@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
+import { useTranslations } from "@/i18n/use-translations";
+import { formatDateShort } from "@/lib/formatters";
 import {
   Card,
   CardContent,
@@ -43,6 +44,7 @@ export function DiscoveredJobsList({
   onRefresh,
   onViewDetails,
 }: DiscoveredJobsListProps) {
+  const { locale } = useTranslations();
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
   const handleAccept = async (jobId: string) => {
@@ -177,7 +179,7 @@ export function DiscoveredJobsList({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {format(new Date(job.discoveredAt), "MMM d, yyyy")}
+                    {formatDateShort(new Date(job.discoveredAt), locale)}
                   </TableCell>
                   <TableCell className="text-right">
                     {job.discoveryStatus === "new" && (

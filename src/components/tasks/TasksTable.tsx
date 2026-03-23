@@ -23,13 +23,13 @@ import {
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import {
-  format,
   isToday,
   isTomorrow,
   isPast,
   isThisWeek,
   parse,
 } from "date-fns";
+import { formatDateShort, formatISODate } from "@/lib/formatters";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -158,7 +158,7 @@ function groupTasksByCreatedDate(
   const groups: Record<CreatedDateGroup, Task[]> = {};
 
   tasks.forEach((task) => {
-    const dateStr = format(new Date(task.createdAt), "yyyy-MM-dd");
+    const dateStr = formatISODate(new Date(task.createdAt));
     const key = dateStr;
     if (!groups[key]) {
       groups[key] = [];
@@ -175,7 +175,7 @@ function groupTasksByUpdatedDate(
   const groups: Record<UpdatedDateGroup, Task[]> = {};
 
   tasks.forEach((task) => {
-    const dateStr = format(new Date(task.updatedAt), "yyyy-MM-dd");
+    const dateStr = formatISODate(new Date(task.updatedAt));
     const key = dateStr;
     if (!groups[key]) {
       groups[key] = [];
@@ -194,7 +194,7 @@ function TasksTable({
   onStartActivity,
   groupBy = "none",
 }: TasksTableProps) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const [alertOpen, setAlertOpen] = useState(false);
   const [taskIdToDelete, setTaskIdToDelete] = useState("");
 
@@ -492,7 +492,7 @@ function TasksTable({
           const date = parse(dateStr, "yyyy-MM-dd", new Date());
           const displayDate = isToday(date)
             ? t("tasks.today")
-            : format(date, "MMM d, yyyy");
+            : formatDateShort(date, locale);
 
           return (
             <div key={dateStr} className="mb-6">
@@ -527,7 +527,7 @@ function TasksTable({
           const date = parse(dateStr, "yyyy-MM-dd", new Date());
           const displayDate = isToday(date)
             ? t("tasks.today")
-            : format(date, "MMM d, yyyy");
+            : formatDateShort(date, locale);
 
           return (
             <div key={dateStr} className="mb-6">

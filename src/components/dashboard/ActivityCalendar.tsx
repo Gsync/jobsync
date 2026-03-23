@@ -1,6 +1,7 @@
 "use client";
 import { ResponsiveCalendar } from "@nivo/calendar";
-import { format, parseISO } from "date-fns";
+import { parseISO } from "date-fns";
+import { formatWeekdayDate } from "@/lib/formatters";
 import { useTheme } from "next-themes";
 import { useTranslations } from "@/i18n/use-translations";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -17,7 +18,7 @@ export default function ActivityCalendar({
   data: any[];
 }) {
   const { resolvedTheme } = useTheme();
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const borderColor = resolvedTheme === "light" ? "#ffffff" : "#0e1117";
   const hoursMap = Object.fromEntries(
     data.map((d) => [d.day, d.hours ?? 0]),
@@ -53,7 +54,7 @@ export default function ActivityCalendar({
                   whiteSpace: "nowrap",
                 }}
               >
-                <div><strong>{format(parseISO(day.day), "EEE MMM d, yyyy")}</strong></div>
+                <div><strong>{formatWeekdayDate(parseISO(day.day), locale)}</strong></div>
                 <div>{day.value} job{Number(day.value) === 1 ? "" : "s"} {t("dashboard.applied")}</div>
                 <div>{hours} hr{hours === 1 ? "" : "s"} activity</div>
               </div>

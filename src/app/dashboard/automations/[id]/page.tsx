@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { format } from "date-fns";
+import { formatDateCompact } from "@/lib/formatters";
+import { useTranslations } from "@/i18n/use-translations";
 import {
   Card,
   CardContent,
@@ -49,6 +50,7 @@ import Loading from "@/components/Loading";
 export default function AutomationDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { locale } = useTranslations();
   const automationId = params.id as string;
 
   const [automation, setAutomation] = useState<AutomationWithResume | null>(
@@ -296,7 +298,7 @@ export default function AutomationDetailPage() {
               <p className="text-sm text-muted-foreground">Next Run</p>
               <p className="font-medium">
                 {automation.nextRunAt && automation.status === "active"
-                  ? format(new Date(automation.nextRunAt), "MMM d, h:mm a")
+                  ? formatDateCompact(new Date(automation.nextRunAt), locale)
                   : "-"}
               </p>
             </div>
@@ -304,7 +306,7 @@ export default function AutomationDetailPage() {
               <p className="text-sm text-muted-foreground">Last Run</p>
               <p className="font-medium">
                 {automation.lastRunAt
-                  ? format(new Date(automation.lastRunAt), "MMM d, h:mm a")
+                  ? formatDateCompact(new Date(automation.lastRunAt), locale)
                   : "Never"}
               </p>
             </div>

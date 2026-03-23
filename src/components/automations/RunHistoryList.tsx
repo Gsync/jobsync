@@ -1,6 +1,7 @@
 "use client";
 
-import { format } from "date-fns";
+import { useTranslations } from "@/i18n/use-translations";
+import { formatDateCompact } from "@/lib/formatters";
 import {
   Card,
   CardContent,
@@ -48,6 +49,7 @@ const STATUS_CONFIG = {
 };
 
 export function RunHistoryList({ runs }: RunHistoryListProps) {
+  const { locale } = useTranslations();
   if (runs.length === 0) {
     return (
       <Card>
@@ -104,7 +106,7 @@ export function RunHistoryList({ runs }: RunHistoryListProps) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {format(new Date(run.startedAt), "MMM d, h:mm a")}
+                    {formatDateCompact(new Date(run.startedAt), locale)}
                   </TableCell>
                   <TableCell>
                     {duration !== null ? `${duration}s` : "-"}

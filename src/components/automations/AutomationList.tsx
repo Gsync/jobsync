@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
+import { useTranslations } from "@/i18n/use-translations";
+import { formatDateCompact } from "@/lib/formatters";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +54,7 @@ export function AutomationList({
   onEdit,
   onRefresh,
 }: AutomationListProps) {
+  const { locale } = useTranslations();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
@@ -192,12 +194,12 @@ export function AutomationList({
                   </div>
                   {automation.nextRunAt && automation.status === "active" && (
                     <span className="text-xs">
-                      Next: {format(new Date(automation.nextRunAt), "MMM d, h:mm a")}
+                      Next: {formatDateCompact(new Date(automation.nextRunAt), locale)}
                     </span>
                   )}
                   {automation.lastRunAt && (
                     <span className="text-xs">
-                      Last: {format(new Date(automation.lastRunAt), "MMM d, h:mm a")}
+                      Last: {formatDateCompact(new Date(automation.lastRunAt), locale)}
                     </span>
                   )}
                 </div>

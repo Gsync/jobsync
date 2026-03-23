@@ -20,8 +20,8 @@ import {
   addMinutes,
   differenceInHours,
   differenceInMinutes,
-  format,
 } from "date-fns";
+import { formatTime } from "@/lib/formatters";
 import { DatePicker } from "../DatePicker";
 import TiptapEditor from "../TiptapEditor";
 import { Combobox } from "../ComboBox";
@@ -47,14 +47,14 @@ const ActivityFormComponent = ({
   onClose,
   reloadActivities,
 }: ActivityFormProps) => {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [duration, setDuration] = useState<Duration | null>(null);
   const defaultValues = useMemo(() => {
     const now = new Date();
-    const currentTime = format(now, "hh:mm a");
+    const currentTime = formatTime(now, locale);
     const nowPlus5mins = addMinutes(now, 5);
-    const estimatedEndTime = format(nowPlus5mins, "hh:mm a");
+    const estimatedEndTime = formatTime(nowPlus5mins, locale);
 
     return {
       activityName: "",

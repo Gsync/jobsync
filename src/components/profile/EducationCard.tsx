@@ -9,8 +9,9 @@ import {
 } from "../ui/card";
 import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
-import { format } from "date-fns";
 import { TipTapContentViewer } from "../TipTapContentViewer";
+import { useTranslations } from "@/i18n/use-translations";
+import { formatMonthYear } from "@/lib/formatters";
 
 interface EducationCardProps {
   educationSection: ResumeSection | undefined;
@@ -22,6 +23,7 @@ function EducationCard({
   openDialogForEdit,
 }: EducationCardProps) {
   const { sectionTitle, educations } = educationSection!;
+  const { locale } = useTranslations();
   return (
     <>
       <CardTitle className="pl-6 py-3">{sectionTitle}</CardTitle>
@@ -56,8 +58,8 @@ function EducationCard({
                 {degree}, {fieldOfStudy}
               </h3>
               <CardDescription>
-                {format(startDate, "MMM yyyy")} -{" "}
-                {endDate ? format(endDate, "MMM yyyy") : "Present"}
+                {formatMonthYear(startDate, locale)} -{" "}
+                {endDate ? formatMonthYear(endDate, locale) : "Present"}
                 <br />
                 {label}
               </CardDescription>

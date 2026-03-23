@@ -5,9 +5,21 @@ export interface AiSettings {
   model: string | undefined;
 }
 
+/** User-overridable format preferences. When undefined, Intl defaults for the locale are used. */
+export interface FormatSettings {
+  /** Override date style: "short" (3/23/26), "medium" (Mar 23, 2026), "long" (March 23, 2026) */
+  dateStyle?: "short" | "medium" | "long";
+  /** Override time format: "12h" or "24h". Default: locale-specific (e.g., 24h for DE, 12h for EN) */
+  timeFormat?: "12h" | "24h";
+  /** First day of week: 0=Sunday (US), 1=Monday (EU). Default: locale-specific */
+  firstDayOfWeek?: 0 | 1;
+}
+
 export interface DisplaySettings {
   theme: "light" | "dark" | "system";
   locale: string;
+  /** Optional format overrides — when absent, Intl locale defaults are used (CLDR) */
+  format?: FormatSettings;
 }
 
 export interface UserSettingsData {

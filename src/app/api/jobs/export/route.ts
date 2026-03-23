@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import Papa from "papaparse";
 import { PassThrough } from "node:stream";
 import { getJobsIterator } from "@/actions/job.actions";
-import { format } from "date-fns";
+import { formatISODate } from "@/lib/formatters";
 
 const FIELDS: string[] = [
   "index",
@@ -41,11 +41,11 @@ const transformJobData = (
   return {
     index: index + 1,
     createdAt: job.createdAt
-      ? format(new Date(job.createdAt), "yyyy-MM-dd")
+      ? formatISODate(new Date(job.createdAt))
       : "N/A",
     applied: job.applied ? "Yes" : "No",
     appliedDate: job.appliedDate
-      ? format(new Date(job.appliedDate), "yyyy-MM-dd")
+      ? formatISODate(new Date(job.appliedDate))
       : "N/A",
     Company: extractLabel(job.Company),
     JobTitle: extractLabel(job.JobTitle),

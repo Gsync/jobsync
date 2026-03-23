@@ -9,8 +9,9 @@ import {
 } from "../ui/card";
 import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
-import { format } from "date-fns";
 import { TipTapContentViewer } from "../TipTapContentViewer";
+import { useTranslations } from "@/i18n/use-translations";
+import { formatMonthYear } from "@/lib/formatters";
 
 interface ExperienceCardProps {
   experienceSection: ResumeSection | undefined;
@@ -21,6 +22,7 @@ function ExperienceCard({
   experienceSection,
   openDialogForEdit,
 }: ExperienceCardProps) {
+  const { locale } = useTranslations();
   return (
     <>
       <CardTitle className="pl-6 py-3">
@@ -54,8 +56,8 @@ function ExperienceCard({
             <CardContent>
               <h3>{Company.label}</h3>
               <CardDescription>
-                {format(startDate, "MMM yyyy")} -{" "}
-                {endDate ? format(endDate, "MMM yyyy") : "Present"}
+                {formatMonthYear(startDate, locale)} -{" "}
+                {endDate ? formatMonthYear(endDate, locale) : "Present"}
                 <br />
                 {location.label}
               </CardDescription>

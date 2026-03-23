@@ -14,6 +14,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
+import { useTranslations } from "@/i18n/use-translations";
+import { formatDateTimeSeconds } from "@/lib/formatters";
 import type { AutomationLog, LogLevel } from "@/lib/automation-logger";
 
 interface LogsTabProps {
@@ -29,6 +31,7 @@ interface LogData {
 }
 
 export function LogsTab({ automationId, runKey }: LogsTabProps) {
+  const { locale } = useTranslations();
   const [logData, setLogData] = useState<LogData>({
     logs: [],
     isRunning: false,
@@ -182,12 +185,12 @@ export function LogsTab({ automationId, runKey }: LogsTabProps) {
         </div>
         {logData.startedAt && (
           <p className="text-sm text-muted-foreground">
-            Started: {format(new Date(logData.startedAt), "MMM d, h:mm:ss a")}
+            Started: {formatDateTimeSeconds(new Date(logData.startedAt), locale)}
             {logData.completedAt && (
               <>
                 {" "}
                 • Completed:{" "}
-                {format(new Date(logData.completedAt), "MMM d, h:mm:ss a")}
+                {formatDateTimeSeconds(new Date(logData.completedAt), locale)}
               </>
             )}
           </p>

@@ -1,9 +1,11 @@
 import { APP_CONSTANTS } from "@/lib/constants";
 import prisma from "@/lib/db";
+import { formatISODate, formatWeekdayDate } from "@/lib/formatters";
+import { getUserLocale } from "@/lib/locale";
 import { calculatePercentageDifference, getLast7Days } from "@/lib/utils";
 import { getCurrentUser } from "@/utils/user.utils";
 import { Prisma } from "@prisma/client";
-import { format, parseISO, subDays } from "date-fns";
+import { subDays } from "date-fns";
 
 export const getJobsAppliedForPeriod = async (
   daysAgo: number,
@@ -126,7 +128,7 @@ export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
     const groupedData = activities.reduce((acc: any, activity: any) => {
       // Use local date for grouping to match user's perception
       const activityDate = new Date(activity.endTime);
-      const day = format(activityDate, "yyyy-MM-dd");
+      const day = formatISODate(activityDate);
       const activityTypeLabel = activity.activityType?.label || "Unknown";
 
       if (!acc[day]) {
@@ -140,8 +142,9 @@ export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
       return acc;
     }, {});
     const last7Days = getLast7Days("yyyy-MM-dd");
+    const locale = await getUserLocale();
     const result = last7Days.map((dateStr) => ({
-      day: format(parseISO(dateStr), "EEE, MMM d"),
+      day: formatWeekdayDate(dateStr, locale),
       ...groupedData[dateStr],
     }));
     return result;
@@ -199,15 +202,16 @@ export const getJobsActivityForPeriod = async (): Promise<any | undefined> => {
     // Reduce to a format that groups by unique date (YYYY-MM-DD) using local time
     const groupedPosts = jobData.reduce((acc: any, post: any) => {
       if (!post.appliedDate) return acc;
-      const date = format(new Date(post.appliedDate), "yyyy-MM-dd");
+      const date = formatISODate(new Date(post.appliedDate));
       acc[date] = (acc[date] || 0) + post._count._all;
       return acc;
     }, {});
     // Get the last 7 days in local time
     const last7Days = getLast7Days("yyyy-MM-dd");
     // Map to ensure all dates are represented with a count of 0 if necessary
+    const locale = await getUserLocale();
     const result = last7Days.map((dateStr) => ({
-      day: format(parseISO(dateStr), "EEE, MMM d"),
+      day: formatWeekdayDate(dateStr, locale),
       value: groupedPosts[dateStr] || 0,
     }));
 
@@ -380,7 +384,7 @@ export const getActivityCalendarData = async (): Promise<any | undefined> => {
     const groupedJobs: Record<string, number> = jobData.reduce(
       (acc: Record<string, number>, job: any) => {
         if (!job.appliedDate) return acc;
-        const date = format(new Date(job.appliedDate), "yyyy-MM-dd");
+        const date = formatISODate(new Date(job.appliedDate));
         acc[date] = (acc[date] || 0) + job._count._all;
         return acc;
       },
@@ -389,7 +393,7 @@ export const getActivityCalendarData = async (): Promise<any | undefined> => {
 
     const groupedHours: Record<string, number> = activityData.reduce(
       (acc: Record<string, number>, activity) => {
-        const date = format(new Date(activity.startTime), "yyyy-MM-dd");
+        const date = formatISODate(new Date(activity.startTime));
         acc[date] = (acc[date] || 0) + (activity.duration || 0) / 60;
         return acc;
       },

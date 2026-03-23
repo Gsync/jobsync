@@ -1,6 +1,7 @@
 "use client";
 
-import { format } from "date-fns";
+import { useTranslations } from "@/i18n/use-translations";
+import { formatDateTime } from "@/lib/formatters";
 import {
   Accordion,
   AccordionContent,
@@ -22,6 +23,7 @@ interface MatchDetailsProps {
 }
 
 export function MatchDetails({ matchData, discoveredAt }: MatchDetailsProps) {
+  const { locale } = useTranslations();
   if (!matchData) return null;
 
   const metadata = matchData as unknown as MatchMetadata;
@@ -156,9 +158,9 @@ export function MatchDetails({ matchData, discoveredAt }: MatchDetailsProps) {
         )}
         <p>
           {metadata.matchedAt
-            ? `Matched on ${format(new Date(metadata.matchedAt), "MMM d, yyyy 'at' h:mm a")}`
+            ? `Matched on ${formatDateTime(new Date(metadata.matchedAt), locale)}`
             : discoveredAt
-              ? `Discovered on ${format(new Date(discoveredAt), "MMM d, yyyy 'at' h:mm a")}`
+              ? `Discovered on ${formatDateTime(new Date(discoveredAt), locale)}`
               : null}
         </p>
       </div>

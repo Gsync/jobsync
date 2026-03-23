@@ -28,6 +28,8 @@ import {
 import { ChipList } from "@/components/ui/chip-list";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n/use-translations";
+import { formatNumber } from "@/lib/formatters";
 import Image from "next/image";
 
 const MAX_LOCATIONS = 10;
@@ -83,6 +85,7 @@ function FlagIcon({ code, className }: { code: string; className?: string }) {
 }
 
 export function EuresLocationCombobox({ field }: EuresLocationComboboxProps) {
+  const { locale } = useTranslations();
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [countries, setCountries] = useState<CountryWithRegions[]>([]);
@@ -279,7 +282,7 @@ export function EuresLocationCombobox({ field }: EuresLocationComboboxProps) {
           <span className="flex-1 text-sm">{node.displayName}</span>
           {node.jobs > 0 && (
             <span className="text-xs text-muted-foreground">
-              {node.jobs.toLocaleString()}
+              {formatNumber(node.jobs, locale)}
             </span>
           )}
           {hasChildren && !inputValue && (
@@ -374,7 +377,7 @@ export function EuresLocationCombobox({ field }: EuresLocationComboboxProps) {
                           <span className="flex-1">{country.name}</span>
                           {country.jobs > 0 && (
                             <span className="text-xs text-muted-foreground">
-                              {country.jobs.toLocaleString()} jobs
+                              {formatNumber(country.jobs, locale)} jobs
                             </span>
                           )}
                           {hasRegions && !inputValue && (

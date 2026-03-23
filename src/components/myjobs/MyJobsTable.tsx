@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
-import { format } from "date-fns";
+import { formatDateShort } from "@/lib/formatters";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,7 +56,7 @@ function MyJobsTable({
   onChangeJobStatus,
   onAddNote,
 }: MyJobsTableProps) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const [alertOpen, setAlertOpen] = useState(false);
   const [jobIdToDelete, setJobIdToDelete] = useState("");
 
@@ -103,7 +103,7 @@ function MyJobsTable({
                   />
                 </TableCell>
                 <TableCell className="hidden md:table-cell w-[120px]">
-                  {job.appliedDate ? format(job.appliedDate, "PP") : t("common.na")}
+                  {job.appliedDate ? formatDateShort(job.appliedDate, locale) : t("common.na")}
                 </TableCell>
                 <TableCell
                   className="font-medium cursor-pointer max-w-[120px] sm:max-w-none"

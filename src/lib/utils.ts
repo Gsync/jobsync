@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { format, parse } from "date-fns";
+import { formatDate } from "@/lib/formatters";
 import { NextApiRequest } from "next";
 import { twMerge } from "tailwind-merge";
 
@@ -104,13 +105,13 @@ export const calculatePercentageDifference = (
   return Math.round(difference);
 };
 
-export const getLast7Days = (dateType = "PP", baseDate?: Date) => {
+export const getLast7Days = (dateType = "PP", baseDate?: Date, locale?: string) => {
   const dates = [];
   const anchor = baseDate ? new Date(baseDate) : new Date();
   for (let i = 6; i >= 0; i--) {
     const date = new Date(anchor);
     date.setDate(anchor.getDate() - i);
-    dates.push(format(date, dateType));
+    dates.push(locale ? formatDate(date, locale, dateType) : format(date, dateType));
   }
   return dates;
 };

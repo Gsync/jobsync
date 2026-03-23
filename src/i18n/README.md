@@ -92,6 +92,39 @@ Use dot-separated namespaces:
 | fr   | Français | 🇫🇷  |
 | es   | Español  | 🇪🇸  |
 
+## Locale-Aware Formatting
+
+All dates, numbers, and currencies use locale-aware formatters from `src/lib/formatters.ts`.
+
+### Date Formatting
+
+```tsx
+import { formatDateShort, formatDateTime, formatTime } from "@/lib/formatters";
+
+// In client components:
+const { locale } = useTranslations();
+formatDateShort(new Date(), locale);  // "Mar 23, 2026" (en) / "23. März 2026" (de)
+formatDateTime(new Date(), locale);   // "Mar 23, 2:30 PM" (en) / "23. März, 14:30" (de)
+formatTime(new Date(), locale);       // "2:30 PM" (en) / "14:30" (de)
+```
+
+Available functions:
+| Function | EN Example | DE Example |
+|----------|-----------|-----------|
+| `formatDateShort` | Mar 23, 2026 | 23. März 2026 |
+| `formatDateLong` | Monday, March 23, 2026 | Montag, 23. März 2026 |
+| `formatDateTime` | Mar 23, 2:30 PM | 23. März, 14:30 |
+| `formatDateCompact` | Mar 23, 2:30 PM | 23. Mär., 14:30 |
+| `formatMonthYear` | Mar 2026 | März 2026 |
+| `formatTime` | 2:30 PM | 14:30 |
+| `formatISODate` | 2026-03-23 | 2026-03-23 (always ISO) |
+| `formatNumber` | 1,000 | 1.000 |
+| `formatDecimal` | 1,234.5 | 1.234,5 |
+| `formatPercent` | 80% | 80 % |
+| `formatCurrency` | €1,000 | 1.000 € |
+
+**Important:** Use `formatISODate()` for machine-readable dates (data keys, CSV export, filenames).
+
 ## EU API Language Integration
 
 The user's locale is automatically passed to:

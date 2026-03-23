@@ -5,6 +5,7 @@ import { ResponsiveBar } from "@nivo/bar";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/use-translations";
+import { formatDecimal } from "@/lib/formatters";
 
 type ChartConfig = {
   label: string;
@@ -23,7 +24,7 @@ export default function WeeklyBarChartToggle({
 }: WeeklyBarChartToggleProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const current = charts[activeIndex];
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
 
   const roundedData = current.data.map((item) => {
     const newItem: any = { ...item };
@@ -59,7 +60,7 @@ export default function WeeklyBarChartToggle({
             </CardTitle>
             {totalHours !== null && (
               <span className="text-sm text-muted-foreground">
-                {totalHours.toFixed(1)} {t("dashboard.hrs")}
+                {formatDecimal(totalHours, locale, 1)} {t("dashboard.hrs")}
               </span>
             )}
           </div>
@@ -104,8 +105,8 @@ export default function WeeklyBarChartToggle({
             enableTotals={current.groupMode === "stacked" ? true : false}
             valueFormat={(value) =>
               current.label === "Activities"
-                ? value.toFixed(1)
-                : value.toFixed(0)
+                ? formatDecimal(value, locale, 1)
+                : formatDecimal(value, locale, 0)
             }
             theme={{
               text: {
