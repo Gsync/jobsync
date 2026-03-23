@@ -35,8 +35,12 @@ import { CreateAutomationSchema, type CreateAutomationInput } from "@/models/aut
 import { createAutomation, updateAutomation } from "@/actions/automation.actions";
 import { toast } from "@/components/ui/use-toast";
 import type { AutomationWithResume } from "@/models/automation.model";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, HelpCircle, Loader2 } from "lucide-react";
 import { EuresOccupationCombobox } from "@/components/automations/EuresOccupationCombobox";
+import { EuresLocationCombobox } from "@/components/automations/EuresLocationCombobox";
+import { getLocationLabel, getCountryCode } from "@/lib/scraper/eures/countries";
+import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
 
 interface Resume {
   id: string;
@@ -252,9 +256,9 @@ export function AutomationWizard({
                   )}
                 </FormControl>
                 <FormDescription>
-                  {jobBoard === "eures"
-                    ? "Search or type an occupation title (ESCO)"
-                    : "Job titles, skills, or keywords to search for"}
+                  {jobBoard !== "eures"
+                    ? "Job titles, skills, or keywords to search for"
+                    : undefined}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -267,13 +271,17 @@ export function AutomationWizard({
               <FormItem>
                 <FormLabel>Location</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Calgary, AB" {...field} />
+                  {jobBoard === "eures" ? (
+                    <EuresLocationCombobox field={field} />
+                  ) : (
+                    <Input placeholder="e.g., Calgary, AB" {...field} />
+                  )}
                 </FormControl>
-                <FormDescription>
-                  {jobBoard === "eures"
-                    ? "Country code (e.g., de, at, fr) or NUTS region code"
-                    : "City, state/province, or region to search in"}
-                </FormDescription>
+                {jobBoard !== "eures" && (
+                  <FormDescription>
+                    City, state/province, or region to search in
+                  </FormDescription>
+                )}
                 <FormMessage />
               </FormItem>
             )}
@@ -392,13 +400,48 @@ export function AutomationWizard({
                 {jobBoard === "eures" ? "EURES" : jobBoard === "jsearch" ? "JSearch" : jobBoard || "-"}
               </span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between items-start">
               <span className="text-muted-foreground">Keywords</span>
-              <span className="font-medium">{form.getValues("keywords") || "-"}</span>
+              {jobBoard === "eures" && form.getValues("keywords")?.includes("||") ? (
+                <div className="flex flex-wrap gap-1 justify-end max-w-[60%]">
+                  {form.getValues("keywords").split("||").filter(Boolean).map((kw) => (
+                    <Badge key={kw.trim()} variant="secondary">
+                      {kw.trim()}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <span className="font-medium">{form.getValues("keywords") || "-"}</span>
+              )}
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between items-start">
               <span className="text-muted-foreground">Location</span>
-              <span className="font-medium">{form.getValues("location") || "-"}</span>
+              {jobBoard === "eures" && form.getValues("location") ? (
+                <div className="flex flex-wrap gap-1 justify-end max-w-[60%]">
+                  {form.getValues("location").split(",").filter(Boolean).map((code) => {
+                    const trimmed = code.trim();
+                    const isNS = trimmed.toLowerCase() === "ns" || trimmed.toLowerCase().endsWith("-ns");
+                    return (
+                      <Badge key={trimmed} variant="secondary" className="gap-1">
+                        {isNS ? (
+                          <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                        ) : (
+                          <Image
+                            src={`/flags/${getCountryCode(trimmed)}.svg`}
+                            alt={trimmed}
+                            className="h-3.5 w-3.5"
+                            width={14}
+                            height={14}
+                          />
+                        )}
+                        {getLocationLabel(trimmed)}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              ) : (
+                <span className="font-medium">{form.getValues("location") || "-"}</span>
+              )}
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Resume</span>
@@ -422,7 +465,7 @@ export function AutomationWizard({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {editAutomation ? "Edit Automation" : "Create Automation"}
