@@ -4,8 +4,6 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getUserLocale } from "@/lib/locale";
-import { initI18n } from "@/i18n/lingui";
-import { LinguiClientProvider } from "@/i18n/provider";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +26,6 @@ interface Props {
 
 export default async function RootLayout({ children }: Readonly<Props>) {
   const locale = await getUserLocale();
-  const i18n = await initI18n(locale);
 
   return (
     <html lang={locale} suppressHydrationWarning>
@@ -38,16 +35,14 @@ export default async function RootLayout({ children }: Readonly<Props>) {
           inter.variable
         )}
       >
-        <LinguiClientProvider i18n={i18n}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-          </ThemeProvider>
-        </LinguiClientProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
