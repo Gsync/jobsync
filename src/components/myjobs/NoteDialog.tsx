@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "@/i18n/use-translations";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,7 @@ export function NoteDialog({
   editNote,
   onSaved,
 }: NoteDialogProps) {
+  const { t } = useTranslations();
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<z.infer<typeof NoteFormSchema>>({
@@ -67,7 +69,7 @@ export function NoteDialog({
       if (result.success) {
         toast({
           variant: "success",
-          description: `Note ${editNote ? "updated" : "added"} successfully`,
+          description: editNote ? t("jobs.noteUpdated") : t("jobs.noteAdded"),
         });
         form.reset({ jobId, content: "" });
         onOpenChange(false);
@@ -75,7 +77,7 @@ export function NoteDialog({
       } else {
         toast({
           variant: "destructive",
-          title: "Error!",
+          title: t("jobs.error"),
           description: result.message,
         });
       }
@@ -86,7 +88,7 @@ export function NoteDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editNote ? "Edit Note" : "Add Note"}</DialogTitle>
+          <DialogTitle>{editNote ? t("jobs.editNote") : t("jobs.addNoteTitle")}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -108,10 +110,10 @@ export function NoteDialog({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button type="submit" disabled={isPending}>
-                Save
+                {t("common.save")}
                 {isPending && (
                   <Loader className="ml-2 h-4 w-4 shrink-0 spinner" />
                 )}

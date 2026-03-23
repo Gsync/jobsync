@@ -1,7 +1,9 @@
 // components/Banner.tsx
+"use client";
 import { AlertCircle, CheckCircle2, CircleStop, XCircle } from "lucide-react";
 import { cn, formatElapsedTime } from "@/lib/utils";
 import React from "react";
+import { useTranslations } from "@/i18n/use-translations";
 
 type BannerVariant = "success" | "warning" | "error" | "info";
 
@@ -34,6 +36,7 @@ export function ActivityBanner({
   elapsedTime,
   className,
 }: BannerProps) {
+  const { t } = useTranslations();
   return (
     <div
       className={cn(
@@ -47,7 +50,7 @@ export function ActivityBanner({
       <span>{formatElapsedTime(elapsedTime)}</span>
       {
         <button
-          title="Stop Activity"
+          title={t("activities.stopActivity")}
           type="button"
           className={cn(
             "flex-shrink-0 rounded-lg p-1.5 inline-flex items-center justify-center hover:bg-opacity-10 hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2",
@@ -60,7 +63,7 @@ export function ActivityBanner({
           )}
           onClick={() => onStopActivity(false)}
         >
-          <span className="sr-only">Stop Activity</span>
+          <span className="sr-only">{t("activities.stopActivity")}</span>
           <CircleStop className="text-red-500" />
         </button>
       }

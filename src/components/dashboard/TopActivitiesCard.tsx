@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n/use-translations";
 import { TopActivityType } from "@/actions/dashboard.actions";
 
 interface TopActivitiesCardProps {
@@ -15,13 +16,14 @@ interface TopActivitiesCardProps {
 export default function TopActivitiesCard({ data }: TopActivitiesCardProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const current = data[activeIndex];
+  const { t } = useTranslations();
 
   return (
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-green-600">
-            Top Activities
+            {t("dashboard.topActivities")}
           </CardTitle>
           <div className="flex rounded-md border text-xs">
             {data.map((item, index) => (
@@ -46,7 +48,7 @@ export default function TopActivitiesCard({ data }: TopActivitiesCardProps) {
       <CardContent>
         {current.activities.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No activities recorded
+            {t("dashboard.noActivities")}
           </p>
         ) : (
           <div className="space-y-3">

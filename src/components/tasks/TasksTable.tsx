@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "@/i18n/use-translations";
 import {
   Table,
   TableBody,
@@ -193,6 +194,7 @@ function TasksTable({
   onStartActivity,
   groupBy = "none",
 }: TasksTableProps) {
+  const { t } = useTranslations();
   const [alertOpen, setAlertOpen] = useState(false);
   const [taskIdToDelete, setTaskIdToDelete] = useState("");
 
@@ -225,8 +227,8 @@ function TasksTable({
           )}
           aria-label={
             task.status === "complete"
-              ? "Mark as in progress"
-              : "Mark as complete"
+              ? t("tasks.markInProgress")
+              : t("tasks.markComplete")
           }
         >
           {task.status === "complete" && <Check className="h-3 w-3" />}
@@ -294,20 +296,20 @@ function TasksTable({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[200px]">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuLabel>{t("tasks.actions")}</DropdownMenuLabel>
             <DropdownMenuGroup>
               <DropdownMenuItem
                 className="cursor-pointer"
                 onClick={() => editTask(task.id)}
               >
                 <Pencil className="mr-2 h-4 w-4" />
-                Edit Task
+                {t("tasks.editTask")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
                   <Tags className="mr-2 h-4 w-4" />
-                  Change Status
+                  {t("tasks.changeStatus")}
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent className="p-0">
@@ -333,7 +335,7 @@ function TasksTable({
                 disabled={!!task.activity}
               >
                 <CirclePlay className="mr-2 h-4 w-4" />
-                Start Activity
+                {t("tasks.startActivity")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -341,7 +343,7 @@ function TasksTable({
                 onClick={() => onDeleteTask(task.id)}
               >
                 <Trash className="mr-2 h-4 w-4" />
-                Delete
+                {t("common.delete")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
@@ -350,7 +352,7 @@ function TasksTable({
       <TableCell className="py-1 px-1">
         {!task.activity && (
           <Button
-            title="Start Activity"
+            title={t("tasks.startActivity")}
             aria-haspopup="true"
             size="icon"
             variant="ghost"
@@ -371,22 +373,22 @@ function TasksTable({
     <TableHeader>
       <TableRow>
         <TableHead className="w-[24px] h-9 px-1">
-          <span className="sr-only">Complete</span>
+          <span className="sr-only">{t("tasks.complete")}</span>
         </TableHead>
-        <TableHead className="h-9 px-2">Title</TableHead>
-        <TableHead className="h-9 px-2">Activity Type</TableHead>
-        <TableHead className="hidden md:table-cell h-9 px-2">Status</TableHead>
+        <TableHead className="h-9 px-2">{t("tasks.taskTitle")}</TableHead>
+        <TableHead className="h-9 px-2">{t("tasks.activityType")}</TableHead>
+        <TableHead className="hidden md:table-cell h-9 px-2">{t("tasks.status")}</TableHead>
         <TableHead className="hidden md:table-cell h-9 px-2 text-center">
-          Priority
+          {t("tasks.priority")}
         </TableHead>
         <TableHead className="hidden md:table-cell h-9 px-2 text-center">
-          % Complete
+          {t("tasks.percentComplete")}
         </TableHead>
         <TableHead className="h-9 px-1">
-          <span className="sr-only">Actions</span>
+          <span className="sr-only">{t("tasks.actions")}</span>
         </TableHead>
         <TableHead className="h-9 px-1">
-          <span className="sr-only">Start Activity</span>
+          <span className="sr-only">{t("tasks.startActivity")}</span>
         </TableHead>
       </TableRow>
     </TableHeader>
@@ -395,7 +397,7 @@ function TasksTable({
   if (tasks.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        No tasks found. Create your first task to get started.
+        {t("tasks.noTasks")}
       </div>
     );
   }
@@ -427,7 +429,14 @@ function TasksTable({
                   group === "Tomorrow",
                 )}
               >
-                {group} ({groupTasks.length})
+                {({
+                  Overdue: t("tasks.overdue"),
+                  Today: t("tasks.today"),
+                  Tomorrow: t("tasks.tomorrow"),
+                  "This Week": t("tasks.thisWeek"),
+                  Later: t("tasks.later"),
+                  "No Due Date": t("tasks.noDueDate"),
+                } as Record<DateGroup, string>)[group]} ({groupTasks.length})
               </h3>
               <Table>
                 {renderTableHeader()}
@@ -454,7 +463,7 @@ function TasksTable({
         {Object.entries(groupedTasks).map(([activityType, groupTasks]) => (
           <div key={activityType} className="mb-6">
             <h3 className="text-sm font-semibold mb-2 px-2 py-1">
-              {activityType} ({groupTasks.length})
+              {activityType === "No Activity Type" ? t("tasks.noActivityType") : activityType} ({groupTasks.length})
             </h3>
             <Table>
               {renderTableHeader()}
@@ -482,7 +491,7 @@ function TasksTable({
           const groupTasks = groupedTasks[dateStr];
           const date = parse(dateStr, "yyyy-MM-dd", new Date());
           const displayDate = isToday(date)
-            ? "Today"
+            ? t("tasks.today")
             : format(date, "MMM d, yyyy");
 
           return (
@@ -517,7 +526,7 @@ function TasksTable({
           const groupTasks = groupedTasks[dateStr];
           const date = parse(dateStr, "yyyy-MM-dd", new Date());
           const displayDate = isToday(date)
-            ? "Today"
+            ? t("tasks.today")
             : format(date, "MMM d, yyyy");
 
           return (

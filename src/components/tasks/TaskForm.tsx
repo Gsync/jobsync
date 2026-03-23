@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "@/i18n/use-translations";
 import {
   Dialog,
   DialogContent,
@@ -57,6 +58,7 @@ export function TaskForm({
   dialogOpen,
   setDialogOpen,
 }: TaskFormProps) {
+  const { t } = useTranslations();
   const [isPending, startTransition] = useTransition();
   const form = useForm<z.infer<typeof AddTaskFormSchema>>({
     resolver: zodResolver(AddTaskFormSchema),
@@ -120,14 +122,14 @@ export function TaskForm({
       } else {
         toast({
           variant: "destructive",
-          title: "Error!",
+          title: t("tasks.error"),
           description: message,
         });
       }
     });
   }
 
-  const pageTitle = editTask ? "Edit Task" : "Add Task";
+  const pageTitle = editTask ? t("tasks.editTask") : t("tasks.addTask");
 
   const closeDialog = () => {
     reset();
@@ -156,9 +158,9 @@ export function TaskForm({
                   name="title"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Title *</FormLabel>
+                      <FormLabel>{t("tasks.taskTitle")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter task title" {...field} />
+                        <Input placeholder={t("tasks.enterTitle")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -173,7 +175,7 @@ export function TaskForm({
                   name="activityTypeId"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Activity Type</FormLabel>
+                      <FormLabel>{t("tasks.activityType")}</FormLabel>
                       <FormControl>
                         <Combobox
                           options={activityTypes}
@@ -197,9 +199,9 @@ export function TaskForm({
                   name="status"
                   render={({ field }) => (
                     <FormItem className="flex flex-col [&>button]:capitalize">
-                      <FormLabel>Status</FormLabel>
+                      <FormLabel>{t("tasks.status")}</FormLabel>
                       <SelectFormCtrl
-                        label="Task Status"
+                        label={t("tasks.taskStatus")}
                         options={statusOptions}
                         field={field}
                       />
@@ -216,7 +218,7 @@ export function TaskForm({
                   name="priority"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Priority: {priorityValue}</FormLabel>
+                      <FormLabel>{t("tasks.priority")}: {priorityValue}</FormLabel>
                       <FormControl>
                         <Slider
                           min={0}
@@ -228,8 +230,8 @@ export function TaskForm({
                         />
                       </FormControl>
                       <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Low (0)</span>
-                        <span>High (10)</span>
+                        <span>{t("tasks.low")}</span>
+                        <span>{t("tasks.high")}</span>
                       </div>
                       <FormMessage />
                     </FormItem>
@@ -244,7 +246,7 @@ export function TaskForm({
                   name="percentComplete"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>% Complete: {percentCompleteValue}%</FormLabel>
+                      <FormLabel>{t("tasks.percentComplete")}: {percentCompleteValue}%</FormLabel>
                       <FormControl>
                         <Slider
                           min={0}
@@ -272,7 +274,7 @@ export function TaskForm({
                   name="dueDate"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Due Date</FormLabel>
+                      <FormLabel>{t("tasks.dueDate")}</FormLabel>
                       <DatePicker
                         field={field}
                         presets={true}
@@ -288,25 +290,25 @@ export function TaskForm({
               {editTask && (
                 <div className="flex flex-col gap-2">
                   <div>
-                    <p className="text-sm font-medium">Created</p>
+                    <p className="text-sm font-medium">{t("tasks.created")}</p>
                     <p className="text-sm text-muted-foreground">
                       {editTask.createdAt
                         ? format(
                             new Date(editTask.createdAt),
                             "MMM d, yyyy h:mm a",
                           )
-                        : "N/A"}
+                        : t("common.na")}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Updated</p>
+                    <p className="text-sm font-medium">{t("tasks.updated")}</p>
                     <p className="text-sm text-muted-foreground">
                       {editTask.updatedAt
                         ? format(
                             new Date(editTask.updatedAt),
                             "MMM d, yyyy h:mm a",
                           )
-                        : "N/A"}
+                        : t("common.na")}
                     </p>
                   </div>
                 </div>
@@ -319,7 +321,7 @@ export function TaskForm({
                   name="description"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>{t("tasks.description")}</FormLabel>
                       <FormControl>
                         <TiptapEditor field={field} />
                       </FormControl>
@@ -338,11 +340,11 @@ export function TaskForm({
                       className="mt-2 md:mt-0 w-full"
                       onClick={closeDialog}
                     >
-                      Cancel
+                      {t("common.cancel")}
                     </Button>
                   </div>
                   <Button type="submit" data-testid="save-task-btn">
-                    Save
+                    {t("common.save")}
                     {isPending && (
                       <Loader className="h-4 w-4 shrink-0 spinner ml-2" />
                     )}

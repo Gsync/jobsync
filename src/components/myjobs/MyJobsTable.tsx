@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "@/i18n/use-translations";
 import {
   Table,
   TableBody,
@@ -55,6 +56,7 @@ function MyJobsTable({
   onChangeJobStatus,
   onAddNote,
 }: MyJobsTableProps) {
+  const { t } = useTranslations();
   const [alertOpen, setAlertOpen] = useState(false);
   const [jobIdToDelete, setJobIdToDelete] = useState("");
 
@@ -74,17 +76,17 @@ function MyJobsTable({
         <TableHeader>
           <TableRow>
             <TableHead className="hidden w-[100px] sm:table-cell">
-              <span className="sr-only">Company Logo</span>
+              <span className="sr-only">{t("jobs.companyLogo")}</span>
             </TableHead>
-            <TableHead className="hidden md:table-cell">Date Applied</TableHead>
-            <TableHead>Title</TableHead>
-            <TableHead>Company</TableHead>
-            <TableHead className="hidden md:table-cell">Location</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="hidden md:table-cell">Match</TableHead>
-            <TableHead className="hidden md:table-cell">Source</TableHead>
+            <TableHead className="hidden md:table-cell">{t("jobs.dateApplied")}</TableHead>
+            <TableHead>{t("jobs.jobTitle")}</TableHead>
+            <TableHead>{t("jobs.company")}</TableHead>
+            <TableHead className="hidden md:table-cell">{t("jobs.location")}</TableHead>
+            <TableHead>{t("jobs.status")}</TableHead>
+            <TableHead className="hidden md:table-cell">{t("jobs.match")}</TableHead>
+            <TableHead className="hidden md:table-cell">{t("jobs.source")}</TableHead>
             <TableHead>
-              <span className="sr-only">Actions</span>
+              <span className="sr-only">{t("jobs.actions")}</span>
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -95,13 +97,13 @@ function MyJobsTable({
                 <TableCell className="hidden sm:table-cell">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    alt="Company logo"
+                    alt={t("jobs.companyLogo")}
                     className="aspect-square rounded-md object-cover h-8 w-8"
                     src={job.Company?.logoUrl || "/images/jobsync-logo.svg"}
                   />
                 </TableCell>
                 <TableCell className="hidden md:table-cell w-[120px]">
-                  {job.appliedDate ? format(job.appliedDate, "PP") : "N/A"}
+                  {job.appliedDate ? format(job.appliedDate, "PP") : t("common.na")}
                 </TableCell>
                 <TableCell
                   className="font-medium cursor-pointer max-w-[120px] sm:max-w-none"
@@ -126,7 +128,7 @@ function MyJobsTable({
                 </TableCell>
                 <TableCell>
                   {new Date() > job.dueDate && job.Status?.value === "draft" ? (
-                    <Badge className="bg-red-500">Expired</Badge>
+                    <Badge className="bg-red-500">{t("jobs.expired")}</Badge>
                   ) : (
                     <Badge
                       className={cn(
@@ -155,38 +157,38 @@ function MyJobsTable({
                         data-testid="job-actions-menu-btn"
                       >
                         <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
+                        <span className="sr-only">{t("jobs.toggleMenu")}</span>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-[200px]">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t("jobs.actions")}</DropdownMenuLabel>
                       <DropdownMenuGroup>
                         <DropdownMenuItem
                           className="cursor-pointer"
                           onClick={() => viewJobDetails(job?.id)}
                         >
                           <ListCollapse className="mr-2 h-4 w-4" />
-                          View Details
+                          {t("jobs.viewDetails")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="cursor-pointer"
                           onClick={() => editJob(job.id)}
                         >
                           <Pencil className="mr-2 h-4 w-4" />
-                          Edit Job
+                          {t("jobs.editJob")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="cursor-pointer"
                           onClick={() => onAddNote(job.id)}
                         >
                           <StickyNote className="mr-2 h-4 w-4" />
-                          Add a Note
+                          {t("jobs.addNote")}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuSub>
                           <DropdownMenuSubTrigger>
                             <Tags className="mr-2 h-4 w-4" />
-                            Change status
+                            {t("jobs.changeStatus")}
                           </DropdownMenuSubTrigger>
                           <DropdownMenuPortal>
                             <DropdownMenuSubContent className="p-0">
@@ -229,7 +231,7 @@ function MyJobsTable({
                           onClick={() => onDeleteJob(job.id)}
                         >
                           <Trash className="mr-2 h-4 w-4" />
-                          Delete
+                          {t("common.delete")}
                         </DropdownMenuItem>
                       </DropdownMenuGroup>
                     </DropdownMenuContent>

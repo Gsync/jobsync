@@ -46,6 +46,7 @@ import TasksTable from "./TasksTable";
 import { TaskForm } from "./TaskForm";
 import { ActivityType } from "@/models/activity.model";
 import { useActivity } from "@/context/ActivityContext";
+import { useTranslations } from "@/i18n/use-translations";
 
 type TasksContainerProps = {
   activityTypes: ActivityType[];
@@ -62,6 +63,7 @@ function TasksContainer({
   onFilterChange,
   onTasksChanged,
 }: TasksContainerProps) {
+  const { t } = useTranslations();
   const router = useRouter();
   const { refreshCurrentActivity } = useActivity();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -113,13 +115,13 @@ function TasksContainer({
       } else {
         toast({
           variant: "destructive",
-          title: "Error!",
+          title: t("tasks.error"),
           description: message,
         });
         setLoading(false);
       }
     },
-    [tasksPerPage],
+    [tasksPerPage, t],
   );
 
   const reloadTasks = useCallback(async () => {
@@ -132,13 +134,13 @@ function TasksContainer({
     if (success) {
       toast({
         variant: "success",
-        description: "Task has been deleted successfully",
+        description: t("tasks.deletedSuccess"),
       });
       reloadTasks();
     } else {
       toast({
         variant: "destructive",
-        title: "Error!",
+        title: t("tasks.error"),
         description: message,
       });
     }
@@ -149,7 +151,7 @@ function TasksContainer({
     if (!success) {
       toast({
         variant: "destructive",
-        title: "Error!",
+        title: t("tasks.error"),
         description: message,
       });
       return;
@@ -173,14 +175,14 @@ function TasksContainer({
     if (success) {
       toast({
         variant: "success",
-        description: "Task status updated successfully",
+        description: t("tasks.statusUpdated"),
       });
       onTasksChanged?.();
     } else {
       setTasks(originalTasks);
       toast({
         variant: "destructive",
-        title: "Error!",
+        title: t("tasks.error"),
         description: message,
       });
     }
@@ -192,13 +194,13 @@ function TasksContainer({
       await refreshCurrentActivity();
       toast({
         variant: "success",
-        description: "Activity started from task",
+        description: t("tasks.activityStarted"),
       });
       router.push("/dashboard/activities");
     } else {
       toast({
         variant: "destructive",
-        title: "Error!",
+        title: t("tasks.error"),
         description: message,
       });
     }
@@ -251,14 +253,14 @@ function TasksContainer({
     <>
       <Card x-chunk="dashboard-tasks-chunk-0" className="h-full">
         <CardHeader className="flex-row justify-between items-center">
-          <CardTitle>My Tasks</CardTitle>
+          <CardTitle>{t("tasks.title")}</CardTitle>
           <div className="flex items-center">
             <div className="ml-auto flex items-center gap-2">
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Search tasks..."
+                  placeholder={t("tasks.searchPlaceholder")}
                   className="pl-8 h-8 w-[150px] lg:w-[200px]"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -270,12 +272,12 @@ function TasksContainer({
                     <Button variant="outline" size="sm" className="h-8 gap-1">
                       <Filter className="h-3.5 w-3.5" />
                       <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                        Status
+                        {t("tasks.status")}
                       </span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t("tasks.filterByStatus")}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {(Object.keys(TASK_STATUSES) as TaskStatus[]).map(
                       (status) => (
@@ -294,7 +296,7 @@ function TasksContainer({
                 <Button variant="outline" size="sm" className="h-8 gap-1">
                   <Filter className="h-3.5 w-3.5" />
                   <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                    Status
+                    {t("tasks.status")}
                   </span>
                 </Button>
               )}
@@ -302,18 +304,18 @@ function TasksContainer({
                 <Select value={groupBy} onValueChange={onGroupByChange}>
                   <SelectTrigger className="w-[140px] h-8">
                     <ListFilter className="h-3.5 w-3.5" />
-                    <SelectValue placeholder="Group by" />
+                    <SelectValue placeholder={t("tasks.groupBy")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      <SelectLabel>Group by</SelectLabel>
+                      <SelectLabel>{t("tasks.groupBy")}</SelectLabel>
                       <SelectSeparator />
                       <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="createdDate">Created Date</SelectItem>
-                      <SelectItem value="dueDate">Due Date</SelectItem>
-                      <SelectItem value="updatedDate">Updated Date</SelectItem>
+                      <SelectItem value="createdDate">{t("tasks.createdDate")}</SelectItem>
+                      <SelectItem value="dueDate">{t("tasks.dueDate")}</SelectItem>
+                      <SelectItem value="updatedDate">{t("tasks.updatedDate")}</SelectItem>
                       <SelectItem value="activityType">
-                        Activity Type
+                        {t("tasks.activityType")}
                       </SelectItem>
                     </SelectGroup>
                   </SelectContent>
@@ -325,7 +327,7 @@ function TasksContainer({
                   className="h-8 gap-1 w-[140px]"
                 >
                   <ListFilter className="h-3.5 w-3.5" />
-                  <span>Group by</span>
+                  <span>{t("tasks.groupBy")}</span>
                 </Button>
               )}
               <Button
@@ -337,7 +339,7 @@ function TasksContainer({
               >
                 <PlusCircle className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  New Task
+                  {t("tasks.newTask")}
                 </span>
               </Button>
             </div>
@@ -372,7 +374,7 @@ function TasksContainer({
           )}
           {!loading && tasks.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              No tasks found. Create your first task to get started.
+              {t("tasks.noTasks")}
             </div>
           )}
           {tasks.length < totalTasks && (
@@ -391,7 +393,7 @@ function TasksContainer({
                 disabled={loading}
                 className="btn btn-primary"
               >
-                {loading ? "Loading..." : "Load More"}
+                {loading ? t("common.loading") : t("tasks.loadMore")}
               </Button>
             </div>
           )}

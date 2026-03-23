@@ -2,6 +2,7 @@
 import { ResponsiveCalendar } from "@nivo/calendar";
 import { format, parseISO } from "date-fns";
 import { useTheme } from "next-themes";
+import { useTranslations } from "@/i18n/use-translations";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 // make sure parent container have a defined height when using
 // responsive component, otherwise height will be 0 and
@@ -16,6 +17,7 @@ export default function ActivityCalendar({
   data: any[];
 }) {
   const { resolvedTheme } = useTheme();
+  const { t } = useTranslations();
   const borderColor = resolvedTheme === "light" ? "#ffffff" : "#0e1117";
   const hoursMap = Object.fromEntries(
     data.map((d) => [d.day, d.hours ?? 0]),
@@ -23,7 +25,7 @@ export default function ActivityCalendar({
   return (
     <Card className="w-[100%]">
       <CardHeader>
-        <CardTitle className="text-green-600">Activity Calendar</CardTitle>
+        <CardTitle className="text-green-600">{t("dashboard.activityCalendar")}</CardTitle>
       </CardHeader>
       <CardContent className="h-[200px]">
         <ResponsiveCalendar
@@ -52,7 +54,7 @@ export default function ActivityCalendar({
                 }}
               >
                 <div><strong>{format(parseISO(day.day), "EEE MMM d, yyyy")}</strong></div>
-                <div>{day.value} job{Number(day.value) === 1 ? "" : "s"} applied</div>
+                <div>{day.value} job{Number(day.value) === 1 ? "" : "s"} {t("dashboard.applied")}</div>
                 <div>{hours} hr{hours === 1 ? "" : "s"} activity</div>
               </div>
             );

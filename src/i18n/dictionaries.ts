@@ -1,10 +1,15 @@
 /**
  * Centralized translation dictionaries.
- * Each key maps to translations in all supported locales.
- * Use getDictionary(locale) to get the translations for a specific locale.
+ * Organized by namespace (nav, auth, settings, dashboard, jobs, activities, tasks).
+ * Use getDictionary(locale) to get all translations for a specific locale.
  */
 
-const dictionaries = {
+import { dashboard } from "./dictionaries/dashboard";
+import { jobs } from "./dictionaries/jobs";
+import { activities } from "./dictionaries/activities";
+import { tasks } from "./dictionaries/tasks";
+
+const core = {
   en: {
     // Navigation
     "nav.dashboard": "Dashboard",
@@ -66,6 +71,9 @@ const dictionaries = {
     "common.edit": "Edit",
     "common.create": "Create",
     "common.search": "Search",
+    "common.loadMore": "Load More",
+    "common.na": "N/A",
+    "common.actions": "Actions",
   },
   de: {
     "nav.dashboard": "Dashboard",
@@ -123,6 +131,9 @@ const dictionaries = {
     "common.edit": "Bearbeiten",
     "common.create": "Erstellen",
     "common.search": "Suchen",
+    "common.loadMore": "Mehr laden",
+    "common.na": "k.A.",
+    "common.actions": "Aktionen",
   },
   fr: {
     "nav.dashboard": "Tableau de bord",
@@ -180,6 +191,9 @@ const dictionaries = {
     "common.edit": "Modifier",
     "common.create": "Créer",
     "common.search": "Rechercher",
+    "common.loadMore": "Charger plus",
+    "common.na": "N/D",
+    "common.actions": "Actions",
   },
   es: {
     "nav.dashboard": "Panel",
@@ -237,17 +251,35 @@ const dictionaries = {
     "common.edit": "Editar",
     "common.create": "Crear",
     "common.search": "Buscar",
+    "common.loadMore": "Cargar más",
+    "common.na": "N/D",
+    "common.actions": "Acciones",
   },
 } as const;
 
-export type TranslationKey = keyof (typeof dictionaries)["en"];
-export type Dictionary = Record<TranslationKey, string>;
-
-export function getDictionary(locale: string): Dictionary {
-  return (dictionaries[locale as keyof typeof dictionaries] ?? dictionaries.en) as Dictionary;
+// Merge all namespace dictionaries into a single flat dictionary per locale
+function mergeDictionaries(...namespaces: Record<string, Record<string, string>>[]) {
+  const locales = ["en", "de", "fr", "es"] as const;
+  const merged: Record<string, Record<string, string>> = {};
+  for (const locale of locales) {
+    merged[locale] = {};
+    for (const ns of namespaces) {
+      Object.assign(merged[locale], ns[locale] ?? {});
+    }
+  }
+  return merged;
 }
 
-export function t(locale: string, key: TranslationKey): string {
+const dictionaries = mergeDictionaries(core, dashboard, jobs, activities, tasks);
+
+export type TranslationKey = string;
+export type Dictionary = Record<string, string>;
+
+export function getDictionary(locale: string): Dictionary {
+  return dictionaries[locale] ?? dictionaries.en;
+}
+
+export function t(locale: string, key: string): string {
   const dict = getDictionary(locale);
   return dict[key] ?? key;
 }

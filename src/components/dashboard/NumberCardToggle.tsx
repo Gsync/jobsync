@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { useTranslations } from "@/i18n/use-translations";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,7 @@ interface NumberCardToggleProps {
 export default function NumberCardToggle({ data }: NumberCardToggleProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const current = data[activeIndex];
+  const { t } = useTranslations();
 
   return (
     <Card>
@@ -49,7 +51,7 @@ export default function NumberCardToggle({ data }: NumberCardToggleProps) {
         </div>
         <CardTitle className="text-4xl">
           {current.num}{" "}
-          <span className="text-xs text-muted-foreground">Jobs Applied</span>
+          <span className="text-xs text-muted-foreground">{t("dashboard.jobsApplied")}</span>
         </CardTitle>
       </CardHeader>
       <CardContent>

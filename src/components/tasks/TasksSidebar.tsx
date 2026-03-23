@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "@/i18n/use-translations";
 import { cn } from "@/lib/utils";
 
 type ActivityTypeWithCount = {
@@ -21,9 +22,10 @@ function TasksSidebar({
   selectedFilter,
   onFilterChange,
 }: TasksSidebarProps) {
+  const { t } = useTranslations();
   return (
     <div className="w-48 border-r py-4 hidden md:block h-full">
-      <h3 className="font-semibold mb-4 text-sm">Activity Types</h3>
+      <h3 className="font-semibold mb-4 text-sm">{t("tasks.activityTypes")}</h3>
       <ul className="space-y-1">
         <li>
           <button
@@ -35,7 +37,7 @@ function TasksSidebar({
             )}
           >
             <span className="flex justify-between items-center">
-              <span>All</span>
+              <span>{t("tasks.all")}</span>
               <span className="text-muted-foreground text-xs">
                 {totalTasks}
               </span>

@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "@/i18n/use-translations";
 import { CirclePlay, MoreHorizontal, Trash } from "lucide-react";
 import {
   Table,
@@ -37,6 +38,7 @@ function ActivitiesTable({
   onStartActivity,
   activityExist,
 }: ActivitiesTableProps) {
+  const { t } = useTranslations();
   const [alertOpen, setAlertOpen] = useState(false);
   const [activityIdToDelete, setActivityIdToDelete] = useState<string>();
   const calculateDuration = (totalMinutes: number) => {
@@ -64,7 +66,7 @@ function ActivitiesTable({
     } else {
       toast({
         variant: "destructive",
-        title: "Error!",
+        title: t("activities.error"),
         description: message,
       });
     }
@@ -74,14 +76,14 @@ function ActivitiesTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="hidden md:table-cell">Date</TableHead>
-            <TableHead>Activity</TableHead>
-            <TableHead>Project(Activity Type)</TableHead>
-            <TableHead className="hidden md:table-cell">Start Time</TableHead>
-            <TableHead className="hidden md:table-cell">End Time</TableHead>
-            <TableHead>Duration</TableHead>
+            <TableHead className="hidden md:table-cell">{t("activities.date")}</TableHead>
+            <TableHead>{t("activities.activity")}</TableHead>
+            <TableHead>{t("activities.activityType")}</TableHead>
+            <TableHead className="hidden md:table-cell">{t("activities.startTime")}</TableHead>
+            <TableHead className="hidden md:table-cell">{t("activities.endTime")}</TableHead>
+            <TableHead>{t("activities.duration")}</TableHead>
             <TableHead>
-              <span>Actions</span>
+              <span>{t("activities.actions")}</span>
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -95,7 +97,7 @@ function ActivitiesTable({
                 <TableCell className="hidden md:table-cell w-[120px]">
                   {activity.startTime
                     ? format(activity.startTime, "PP")
-                    : "N/A"}
+                    : t("activities.na")}
                 </TableCell>
                 <TableCell className="font-medium">
                   {activity.activityName}
@@ -123,7 +125,7 @@ function ActivitiesTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-[200px]">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t("activities.actions")}</DropdownMenuLabel>
                       <DropdownMenuGroup>
                         <DropdownMenuItem
                           className="cursor-pointer text-green-600"
@@ -131,21 +133,21 @@ function ActivitiesTable({
                           disabled={activityExist}
                         >
                           <CirclePlay className="mr-2 h-4 w-4" />
-                          Start Activity
+                          {t("activities.startActivity")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-red-600 cursor-pointer"
                           onClick={() => onDeleteActivity(activity.id!)}
                         >
                           <Trash className="mr-2 h-4 w-4" />
-                          Delete
+                          {t("common.delete")}
                         </DropdownMenuItem>
                       </DropdownMenuGroup>
                     </DropdownMenuContent>
                   </DropdownMenu>
                   {!activityExist && (
                     <Button
-                      title="Start Activity"
+                      title={t("activities.startActivity")}
                       aria-haspopup="true"
                       size="icon"
                       variant="ghost"

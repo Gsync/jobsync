@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ResponsiveBar } from "@nivo/bar";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n/use-translations";
 
 type ChartConfig = {
   label: string;
@@ -22,6 +23,7 @@ export default function WeeklyBarChartToggle({
 }: WeeklyBarChartToggleProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const current = charts[activeIndex];
+  const { t } = useTranslations();
 
   const roundedData = current.data.map((item) => {
     const newItem: any = { ...item };
@@ -53,11 +55,11 @@ export default function WeeklyBarChartToggle({
         <div className="flex items-center justify-between mb-1 mt-3">
           <div className="flex items-baseline gap-2">
             <CardTitle className="text-green-600">
-              Weekly {current.label}
+              {t("dashboard.weekly")} {current.label}
             </CardTitle>
             {totalHours !== null && (
               <span className="text-sm text-muted-foreground">
-                {totalHours.toFixed(1)} hrs
+                {totalHours.toFixed(1)} {t("dashboard.hrs")}
               </span>
             )}
           </div>

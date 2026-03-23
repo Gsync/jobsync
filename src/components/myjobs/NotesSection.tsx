@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "@/i18n/use-translations";
 import { useCallback, useEffect, useState } from "react";
 import { NoteResponse } from "@/models/note.model";
 import { getNotesByJobId, deleteNote } from "@/actions/note.actions";
@@ -20,6 +21,7 @@ type NotesSectionProps = {
 };
 
 export function NotesSection({ jobId }: NotesSectionProps) {
+  const { t } = useTranslations();
   const [notes, setNotes] = useState<NoteResponse[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -60,7 +62,7 @@ export function NotesSection({ jobId }: NotesSectionProps) {
     } else {
       toast({
         variant: "destructive",
-        title: "Error!",
+        title: t("jobs.error"),
         description: result.message,
       });
     }
@@ -82,7 +84,7 @@ export function NotesSection({ jobId }: NotesSectionProps) {
         <div className="flex items-center justify-between">
           <CollapsibleTrigger className="flex items-center gap-2 hover:opacity-80">
             <StickyNote className="h-4 w-4" />
-            <span className="font-medium">Notes</span>
+            <span className="font-medium">{t("jobs.notes")}</span>
             {notes.length > 0 && (
               <Badge variant="secondary" className="text-xs">
                 {notes.length}
@@ -99,12 +101,12 @@ export function NotesSection({ jobId }: NotesSectionProps) {
             onClick={handleAddNote}
           >
             <PlusCircle className="h-3.5 w-3.5" />
-            New Note
+            {t("jobs.newNote")}
           </Button>
         </div>
         <CollapsibleContent className="mt-3 space-y-3">
           {notes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No notes yet.</p>
+            <p className="text-sm text-muted-foreground">{t("jobs.noNotes")}</p>
           ) : (
             notes.map((note) => (
               <NoteCard

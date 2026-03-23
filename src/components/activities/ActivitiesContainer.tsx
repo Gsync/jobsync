@@ -21,8 +21,10 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
 import { RecordsCount } from "../RecordsCount";
 import { useActivity } from "@/context/ActivityContext";
+import { useTranslations } from "@/i18n/use-translations";
 
 function ActivitiesContainer() {
+  const { t } = useTranslations();
   const [activityFormOpen, setActivityFormOpen] = useState<boolean>(false);
   const [activitiesList, setActivitiesList] = useState<Activity[]>([]);
   const [page, setPage] = useState<number>(1);
@@ -55,21 +57,21 @@ function ActivitiesContainer() {
         } else {
           toast({
             variant: "destructive",
-            title: "Error!",
+            title: t("activities.error"),
             description: message,
           });
         }
       } catch (error) {
         toast({
           variant: "destructive",
-          title: "Error!",
-          description: "Failed to load activities. Please try again.",
+          title: t("activities.error"),
+          description: t("activities.failedToLoad"),
         });
       } finally {
         setLoading(false);
       }
     },
-    [],
+    [t],
   );
 
   const reloadActivities = useCallback(async () => {
@@ -112,13 +114,13 @@ function ActivitiesContainer() {
   return (
     <Card>
       <CardHeader className="flex-row justify-between items-center">
-        <CardTitle>Activities</CardTitle>
+        <CardTitle>{t("activities.title")}</CardTitle>
         <div className="flex items-center gap-2">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search activities..."
+              placeholder={t("activities.searchPlaceholder")}
               className="pl-8 h-8 w-[150px] lg:w-[200px]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -134,13 +136,13 @@ function ActivitiesContainer() {
               >
                 <PlusCircle className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  New Activity
+                  {t("activities.addNewActivity")}
                 </span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[725px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Add New Activity</DialogTitle>
+                <DialogTitle>{t("activities.addNewActivity")}</DialogTitle>
               </DialogHeader>
               <div className="p-4">
                 <ActivityForm
@@ -192,7 +194,7 @@ function ActivitiesContainer() {
               disabled={loading}
               className="btn btn-primary"
             >
-              {loading ? "Loading..." : "Load More"}
+              {loading ? t("common.loading") : t("activities.loadMore")}
             </Button>
           </div>
         )}

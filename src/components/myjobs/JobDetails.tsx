@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "@/i18n/use-translations";
 import { format } from "date-fns";
 import { Badge } from "../ui/badge";
 import { cn, formatUrl } from "@/lib/utils";
@@ -22,6 +23,7 @@ import { MatchDetails } from "../automations/MatchDetails";
 import type { JobMatchResponse } from "@/models/ai.schemas";
 
 function JobDetails({ job }: { job: JobResponse }) {
+  const { t } = useTranslations();
   const [aiSectionOpen, setAiSectionOpen] = useState(false);
   const router = useRouter();
   const goBack = () => router.back();
@@ -40,19 +42,19 @@ function JobDetails({ job }: { job: JobResponse }) {
   const getJobType = (code: string) => {
     switch (code) {
       case "FT":
-        return "Full-time";
+        return t("jobs.fullTime");
       case "PT":
-        return "Part-time";
+        return t("jobs.partTime");
       case "C":
-        return "Contract";
+        return t("jobs.contract");
       default:
-        return "Unknown";
+        return code;
     }
   };
   return (
     <>
       <div className="flex justify-between">
-        <Button title="Go Back" size="sm" variant="outline" onClick={goBack}>
+        <Button title={t("jobs.goBack")} size="sm" variant="outline" onClick={goBack}>
           <ArrowLeft />
         </Button>
         <Button
@@ -64,7 +66,7 @@ function JobDetails({ job }: { job: JobResponse }) {
         >
           <Sparkles className="h-3.5 w-3.5" />
           <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Match with AI
+            {t("jobs.matchWithAi")}
           </span>
         </Button>
       </div>
@@ -90,7 +92,7 @@ function JobDetails({ job }: { job: JobResponse }) {
           </CardHeader>
           <h3 className="ml-4">
             {new Date() > job.dueDate && job.Status?.value === "draft" ? (
-              <Badge className="bg-red-500">Expired</Badge>
+              <Badge className="bg-red-500">{t("jobs.expired")}</Badge>
             ) : (
               <Badge
                 className={cn(
@@ -117,7 +119,7 @@ function JobDetails({ job }: { job: JobResponse }) {
           )}
           {job.jobUrl && (
             <div className="my-3 ml-4">
-              <span className="font-semibold mr-2">Job URL:</span>
+              <span className="font-semibold mr-2">{t("jobs.jobUrl")}:</span>
               <a
                 href={formatUrl(job.jobUrl)}
                 target="_blank"
@@ -135,9 +137,9 @@ function JobDetails({ job }: { job: JobResponse }) {
             <div className="mx-4 mb-4">
               <h4 className="font-medium mb-2 flex items-center gap-2">
                 <Sparkles className="h-4 w-4" />
-                AI Match Analysis
+                {t("jobs.aiMatchAnalysis")}
                 {job.matchScore && (
-                  <Badge variant="default">{job.matchScore}% Match</Badge>
+                  <Badge variant="default">{job.matchScore}{t("jobs.percentMatch")}</Badge>
                 )}
               </h4>
               <MatchDetails matchData={parsedMatchData} />

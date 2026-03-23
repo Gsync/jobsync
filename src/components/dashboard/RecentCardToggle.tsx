@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n/use-translations";
 import { JobResponse } from "@/models/job.model";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -27,20 +28,21 @@ function formatDuration(totalMinutes: number) {
   return totalMinutes === 0 ? "0min" : `${hours}h ${minutes}min`;
 }
 
-const tabs = ["Jobs", "Activities"] as const;
-
 export default function RecentCardToggle({
   jobs,
   activities,
 }: RecentCardToggleProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const { t } = useTranslations();
+
+  const tabs = [t("dashboard.jobs"), t("dashboard.activities")] as const;
 
   return (
     <Card className="mb-2">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-green-600">
-            Recent {tabs[activeIndex]}
+            {t("dashboard.recent")} {tabs[activeIndex]}
           </CardTitle>
           <div className="flex rounded-md border text-xs">
             {tabs.map((tab, index) => (
@@ -84,7 +86,7 @@ export default function RecentCardToggle({
                   </div>
                 </Link>
                 <div className="ml-auto text-sm font-medium">
-                  {job?.appliedDate ? format(job.appliedDate, "PP") : "N/A"}
+                  {job?.appliedDate ? format(job.appliedDate, "PP") : t("dashboard.na")}
                 </div>
               </div>
             ))
@@ -95,7 +97,7 @@ export default function RecentCardToggle({
                     {activity.activityName}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {activity.activityType?.label || "Unknown"}
+                    {activity.activityType?.label || t("dashboard.unknown")}
                   </p>
                 </div>
                 <div className="ml-auto text-right shrink-0">
