@@ -198,8 +198,34 @@ Dynamische Dateipfade und Dateinamen:
   - Unterscheidung: technisch notwendig (Session, NEXT_LOCALE) vs. optional (Analytics)
   - Opt-In für nicht-essentielle Cookies (DSGVO Art. 7)
   - Einstellungen jederzeit widerrufbar
+- **Passwortschutz für Bewerbungsunterlagen (externer Zugriff):**
+  - Geteilte Dokumente und Landingpages per Passwort schützen
+  - Zeitlich begrenzte Zugangslinks (expiring share links)
+  - Zugriffs-Log: wer hat wann auf welches Dokument zugegriffen
+  - Optional: Wasserzeichen mit Empfängername in geteilten PDFs
 - **Self-Hosted First:** Alle Daten bleiben auf dem eigenen Server — keine Cloud-Abhängigkeit für Kerndaten
 - **LLM-Datenschutz:** Konfigurierbar, ob Daten an externe LLM-APIs gesendet werden dürfen (Opt-In pro Provider)
+
+### 6.2 API Security (Best Practices)
+- **Authentifizierung:** Alle API-Routes erfordern Session-Auth (bereits implementiert für ESCO/EURES)
+- **Rate Limiting:** Request-Limits pro User/IP (bereits für manuelle Automation-Runs)
+  - Erweiterung: globales Rate Limiting via Redis/Memory für alle Endpunkte
+- **Input Validation:**
+  - Zod-Schema-Validierung auf allen Eingaben (bereits implementiert)
+  - URI-Whitelist für externe API-Proxies (SSRF-Schutz, bereits für ESCO)
+  - Maximale Payload-Größe begrenzen
+- **CORS:** Strikte Origin-Policy, nur eigene Domain erlauben
+- **CSRF-Schutz:** Next.js Server Actions haben eingebauten CSRF-Schutz; API-Routes absichern
+- **Content Security Policy (CSP):** Strikte CSP-Header für XSS-Schutz
+- **Dependency Security:** Regelmäßige Audits (`bun audit`), Dependabot/Renovate
+- **Secrets Management:**
+  - API-Keys verschlüsselt in DB (AES, bereits implementiert)
+  - Keine Secrets in Git (`.env` gitignored)
+  - Environment Variables für Server-Secrets
+- **Logging & Monitoring:**
+  - Fehlgeschlagene Auth-Versuche loggen
+  - Anomalie-Erkennung bei API-Nutzung
+  - Optional: Sentry/OpenTelemetry Integration
 
 ---
 
