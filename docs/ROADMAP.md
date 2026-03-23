@@ -185,7 +185,19 @@ Dynamische Dateipfade und Dateinamen:
   - Personenbezogene Daten (Name, E-Mail, Kontakte) verschlüsselt at-rest
   - TLS für alle externen API-Aufrufe
 - **Audit-Log:** Protokollierung von Datenzugriffen und -änderungen
-- **Datenschutzerklärung:** In-App Datenschutzhinweise, Cookie-Banner (falls Cookies über Session hinaus)
+- **Impressum:** Konfigurierbare Impressum-Seite (Pflicht in DE/AT/CH)
+  - Betreiber-Angaben, Kontaktdaten, Verantwortlicher i.S.d. § 55 RStV
+  - Für Self-Hosted: Nutzer pflegt eigene Angaben in den Settings
+- **Datenschutzerklärung:**
+  - Vollständige Datenschutzerklärung als eigene Seite (Art. 13/14 DSGVO)
+  - Auflistung aller verarbeiteten Daten, Zweck, Rechtsgrundlage, Speicherdauer
+  - Auflistung aller Drittanbieter (EURES, ESCO, Eurostat, LLM-Provider, Kununu, etc.)
+  - Lokalisiert in allen unterstützten Sprachen
+- **Cookie-Banner:**
+  - Consent-Management für Cookies und lokale Speicherung
+  - Unterscheidung: technisch notwendig (Session, NEXT_LOCALE) vs. optional (Analytics)
+  - Opt-In für nicht-essentielle Cookies (DSGVO Art. 7)
+  - Einstellungen jederzeit widerrufbar
 - **Self-Hosted First:** Alle Daten bleiben auf dem eigenen Server — keine Cloud-Abhängigkeit für Kerndaten
 - **LLM-Datenschutz:** Konfigurierbar, ob Daten an externe LLM-APIs gesendet werden dürfen (Opt-In pro Provider)
 
