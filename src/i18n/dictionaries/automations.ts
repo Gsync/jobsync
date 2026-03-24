@@ -23,6 +23,7 @@ export const automations = {
     "automations.jobBoardDesc": "Choose which job board to search",
     "automations.jsearch": "JSearch",
     "automations.eures": "EURES",
+    "automations.arbeitsagentur": "Arbeitsagentur (DE)",
     "automations.searchKeywords": "Search Keywords",
     "automations.keywordsPlaceholder": "e.g. React Developer, Frontend Engineer",
     "automations.keywordsDesc": "Enter keywords to search for relevant jobs",
@@ -157,6 +158,46 @@ export const automations = {
     "automations.matched": "Matched",
     "automations.saved": "Saved",
     "automations.errorHeader": "Error",
+
+    // EuresLocationCombobox
+    "automations.maxLocations": "Max {max} locations reached",
+    "automations.locationsSelected": "{count} location(s) selected",
+    "automations.selectCountries": "Select countries or regions...",
+    "automations.searchCountries": "Search countries or NUTS regions...",
+    "automations.noLocations": "No locations found.",
+    "automations.allOf": "All of {country}",
+    "automations.jobs": "jobs",
+
+    // EuresOccupationCombobox
+    "automations.maxKeywords": "Max {max} keywords reached",
+    "automations.keywordsSelected": "{count} keyword(s) selected",
+    "automations.searchOccupations": "Search ESCO occupations or type keywords...",
+    "automations.searchOccupationsPlaceholder": "Search occupations or type custom keyword...",
+    "automations.customKeyword": "Custom keyword",
+    "automations.escoOccupations": "ESCO Occupations",
+    "automations.addKeyword": "Add \"{keyword}\"",
+    "automations.enterKey": "Enter ↵",
+    "automations.typeToSearch": "Type to search ESCO occupations...",
+    "automations.couldNotLoad": "Could not load occupation details.",
+    "automations.iscoGroup": "ISCO Group:",
+    "automations.escoPortal": "ESCO Portal",
+    "automations.euresJobs": "EURES Jobs",
+
+    // EuresLocationCombobox - InfoTooltip
+    "automations.tooltipCountryCodes": "Country Codes",
+    "automations.tooltipCountryCodesDesc": "ISO 3166-1 alpha-2 codes (e.g., DE for Germany, AT for Austria). Selects all job vacancies in that country.",
+    "automations.tooltipNutsRegions": "NUTS Region Codes",
+    "automations.tooltipNutsDesc": "Nomenclature of Territorial Units for Statistics. Hierarchical codes for EU regions (e.g., DE1 = Baden-Württemberg). More specific than country codes.",
+    "automations.tooltipNS": "NS: Not Specified",
+    "automations.tooltipNSDesc": "Vacancies where the employer did not specify a region within the country.",
+
+    // EuresOccupationCombobox - InfoTooltip
+    "automations.tooltipEsco": "ESCO Occupations",
+    "automations.tooltipEscoDesc": "Search the European Skills, Competences, Qualifications and Occupations taxonomy. Selected occupations are matched against EURES job vacancies.",
+    "automations.tooltipCustom": "Custom Keywords",
+    "automations.tooltipCustomDesc": "Type any keyword and press Enter to add it as a free-text search term. Useful for non-standard job titles.",
+    "automations.tooltipIsco": "ISCO Groups",
+    "automations.tooltipIscoDesc": "Click the eye icon on a chip to see the ISCO classification group, which includes related occupations for broader searches.",
   },
   de: {
     // AutomationWizard - Steps
@@ -182,6 +223,7 @@ export const automations = {
     "automations.jobBoardDesc": "Wählen Sie die zu durchsuchende Jobbörse",
     "automations.jsearch": "JSearch",
     "automations.eures": "EURES",
+    "automations.arbeitsagentur": "Arbeitsagentur (DE)",
     "automations.searchKeywords": "Suchbegriffe",
     "automations.keywordsPlaceholder": "z.B. React-Entwickler, Frontend-Ingenieur",
     "automations.keywordsDesc": "Geben Sie Suchbegriffe für relevante Stellen ein",
@@ -316,6 +358,46 @@ export const automations = {
     "automations.matched": "Übereinstimmend",
     "automations.saved": "Gespeichert",
     "automations.errorHeader": "Fehler",
+
+    // EuresLocationCombobox
+    "automations.maxLocations": "Maximal {max} Standorte erreicht",
+    "automations.locationsSelected": "{count} Standort(e) ausgewählt",
+    "automations.selectCountries": "Länder oder Regionen auswählen...",
+    "automations.searchCountries": "Länder oder NUTS-Regionen suchen...",
+    "automations.noLocations": "Keine Standorte gefunden.",
+    "automations.allOf": "Ganz {country}",
+    "automations.jobs": "Jobs",
+
+    // EuresOccupationCombobox
+    "automations.maxKeywords": "Maximal {max} Suchbegriffe erreicht",
+    "automations.keywordsSelected": "{count} Suchbegriff(e) ausgewählt",
+    "automations.searchOccupations": "ESCO-Berufe suchen oder Suchbegriffe eingeben...",
+    "automations.searchOccupationsPlaceholder": "Berufe suchen oder eigenen Suchbegriff eingeben...",
+    "automations.customKeyword": "Eigener Suchbegriff",
+    "automations.escoOccupations": "ESCO-Berufe",
+    "automations.addKeyword": "\"{keyword}\" hinzufügen",
+    "automations.enterKey": "Enter ↵",
+    "automations.typeToSearch": "Tippen um ESCO-Berufe zu suchen...",
+    "automations.couldNotLoad": "Berufsdetails konnten nicht geladen werden.",
+    "automations.iscoGroup": "ISCO-Gruppe:",
+    "automations.escoPortal": "ESCO-Portal",
+    "automations.euresJobs": "EURES-Jobs",
+
+    // EuresLocationCombobox - InfoTooltip
+    "automations.tooltipCountryCodes": "Ländercodes",
+    "automations.tooltipCountryCodesDesc": "ISO 3166-1 Alpha-2-Codes (z.B. DE für Deutschland, AT für Österreich). Wählt alle Stellenangebote in diesem Land aus.",
+    "automations.tooltipNutsRegions": "NUTS-Regionscodes",
+    "automations.tooltipNutsDesc": "Systematik der Gebietseinheiten für die Statistik. Hierarchische Codes für EU-Regionen (z.B. DE1 = Baden-Württemberg). Spezifischer als Ländercodes.",
+    "automations.tooltipNS": "NS: Nicht angegeben",
+    "automations.tooltipNSDesc": "Stellenangebote, bei denen der Arbeitgeber keine Region innerhalb des Landes angegeben hat.",
+
+    // EuresOccupationCombobox - InfoTooltip
+    "automations.tooltipEsco": "ESCO-Berufe",
+    "automations.tooltipEscoDesc": "Durchsuchen Sie die Europäische Taxonomie für Fähigkeiten, Kompetenzen, Qualifikationen und Berufe. Ausgewählte Berufe werden mit EURES-Stellenangeboten abgeglichen.",
+    "automations.tooltipCustom": "Eigene Suchbegriffe",
+    "automations.tooltipCustomDesc": "Geben Sie ein beliebiges Stichwort ein und drücken Sie Enter, um es als Freitextsuchbegriff hinzuzufügen. Nützlich für nicht-standardisierte Berufsbezeichnungen.",
+    "automations.tooltipIsco": "ISCO-Gruppen",
+    "automations.tooltipIscoDesc": "Klicken Sie auf das Augensymbol auf einem Chip, um die ISCO-Klassifikationsgruppe zu sehen, die verwandte Berufe für breitere Suchen enthält.",
   },
   fr: {
     // AutomationWizard - Steps
@@ -341,6 +423,7 @@ export const automations = {
     "automations.jobBoardDesc": "Choisissez le site d'emploi à rechercher",
     "automations.jsearch": "JSearch",
     "automations.eures": "EURES",
+    "automations.arbeitsagentur": "Arbeitsagentur (DE)",
     "automations.searchKeywords": "Mots-clés de recherche",
     "automations.keywordsPlaceholder": "ex. Développeur React, Ingénieur Frontend",
     "automations.keywordsDesc": "Entrez des mots-clés pour rechercher des emplois pertinents",
@@ -475,6 +558,46 @@ export const automations = {
     "automations.matched": "Correspondants",
     "automations.saved": "Sauvegardés",
     "automations.errorHeader": "Erreur",
+
+    // EuresLocationCombobox
+    "automations.maxLocations": "Maximum {max} emplacements atteint",
+    "automations.locationsSelected": "{count} emplacement(s) sélectionné(s)",
+    "automations.selectCountries": "Sélectionner pays ou régions...",
+    "automations.searchCountries": "Rechercher pays ou régions NUTS...",
+    "automations.noLocations": "Aucun emplacement trouvé.",
+    "automations.allOf": "Tout {country}",
+    "automations.jobs": "emplois",
+
+    // EuresOccupationCombobox
+    "automations.maxKeywords": "Maximum {max} mots-clés atteint",
+    "automations.keywordsSelected": "{count} mot(s)-clé(s) sélectionné(s)",
+    "automations.searchOccupations": "Rechercher professions ESCO ou saisir mots-clés...",
+    "automations.searchOccupationsPlaceholder": "Rechercher professions ou saisir mot-clé personnalisé...",
+    "automations.customKeyword": "Mot-clé personnalisé",
+    "automations.escoOccupations": "Professions ESCO",
+    "automations.addKeyword": "Ajouter \"{keyword}\"",
+    "automations.enterKey": "Entrée ↵",
+    "automations.typeToSearch": "Tapez pour rechercher des professions ESCO...",
+    "automations.couldNotLoad": "Impossible de charger les détails de la profession.",
+    "automations.iscoGroup": "Groupe ISCO :",
+    "automations.escoPortal": "Portail ESCO",
+    "automations.euresJobs": "Emplois EURES",
+
+    // EuresLocationCombobox - InfoTooltip
+    "automations.tooltipCountryCodes": "Codes pays",
+    "automations.tooltipCountryCodesDesc": "Codes ISO 3166-1 alpha-2 (ex. DE pour l'Allemagne, AT pour l'Autriche). Sélectionne toutes les offres d'emploi dans ce pays.",
+    "automations.tooltipNutsRegions": "Codes régions NUTS",
+    "automations.tooltipNutsDesc": "Nomenclature des unités territoriales statistiques. Codes hiérarchiques pour les régions de l'UE (ex. DE1 = Bade-Wurtemberg). Plus spécifiques que les codes pays.",
+    "automations.tooltipNS": "NS : Non spécifié",
+    "automations.tooltipNSDesc": "Offres d'emploi où l'employeur n'a pas précisé de région dans le pays.",
+
+    // EuresOccupationCombobox - InfoTooltip
+    "automations.tooltipEsco": "Professions ESCO",
+    "automations.tooltipEscoDesc": "Recherchez dans la taxonomie européenne des aptitudes, compétences, qualifications et professions. Les professions sélectionnées sont comparées aux offres d'emploi EURES.",
+    "automations.tooltipCustom": "Mots-clés personnalisés",
+    "automations.tooltipCustomDesc": "Saisissez un mot-clé et appuyez sur Entrée pour l'ajouter comme terme de recherche libre. Utile pour les intitulés de poste non standards.",
+    "automations.tooltipIsco": "Groupes ISCO",
+    "automations.tooltipIscoDesc": "Cliquez sur l'icône œil sur un badge pour voir le groupe de classification ISCO, qui inclut des professions connexes pour des recherches plus larges.",
   },
   es: {
     // AutomationWizard - Steps
@@ -500,6 +623,7 @@ export const automations = {
     "automations.jobBoardDesc": "Elija qué portal de empleo buscar",
     "automations.jsearch": "JSearch",
     "automations.eures": "EURES",
+    "automations.arbeitsagentur": "Arbeitsagentur (DE)",
     "automations.searchKeywords": "Palabras clave de búsqueda",
     "automations.keywordsPlaceholder": "ej. Desarrollador React, Ingeniero Frontend",
     "automations.keywordsDesc": "Ingrese palabras clave para buscar empleos relevantes",
@@ -634,5 +758,45 @@ export const automations = {
     "automations.matched": "Coincidentes",
     "automations.saved": "Guardados",
     "automations.errorHeader": "Error",
+
+    // EuresLocationCombobox
+    "automations.maxLocations": "Máximo {max} ubicaciones alcanzado",
+    "automations.locationsSelected": "{count} ubicación(es) seleccionada(s)",
+    "automations.selectCountries": "Seleccionar países o regiones...",
+    "automations.searchCountries": "Buscar países o regiones NUTS...",
+    "automations.noLocations": "No se encontraron ubicaciones.",
+    "automations.allOf": "Todo {country}",
+    "automations.jobs": "empleos",
+
+    // EuresOccupationCombobox
+    "automations.maxKeywords": "Máximo {max} palabras clave alcanzado",
+    "automations.keywordsSelected": "{count} palabra(s) clave seleccionada(s)",
+    "automations.searchOccupations": "Buscar ocupaciones ESCO o escribir palabras clave...",
+    "automations.searchOccupationsPlaceholder": "Buscar ocupaciones o escribir palabra clave personalizada...",
+    "automations.customKeyword": "Palabra clave personalizada",
+    "automations.escoOccupations": "Ocupaciones ESCO",
+    "automations.addKeyword": "Agregar \"{keyword}\"",
+    "automations.enterKey": "Enter ↵",
+    "automations.typeToSearch": "Escriba para buscar ocupaciones ESCO...",
+    "automations.couldNotLoad": "No se pudieron cargar los detalles de la ocupación.",
+    "automations.iscoGroup": "Grupo ISCO:",
+    "automations.escoPortal": "Portal ESCO",
+    "automations.euresJobs": "Empleos EURES",
+
+    // EuresLocationCombobox - InfoTooltip
+    "automations.tooltipCountryCodes": "Códigos de país",
+    "automations.tooltipCountryCodesDesc": "Códigos ISO 3166-1 alfa-2 (ej. DE para Alemania, AT para Austria). Selecciona todas las ofertas de empleo en ese país.",
+    "automations.tooltipNutsRegions": "Códigos de región NUTS",
+    "automations.tooltipNutsDesc": "Nomenclatura de las Unidades Territoriales Estadísticas. Códigos jerárquicos para regiones de la UE (ej. DE1 = Baden-Württemberg). Más específicos que los códigos de país.",
+    "automations.tooltipNS": "NS: No especificado",
+    "automations.tooltipNSDesc": "Ofertas de empleo en las que el empleador no especificó una región dentro del país.",
+
+    // EuresOccupationCombobox - InfoTooltip
+    "automations.tooltipEsco": "Ocupaciones ESCO",
+    "automations.tooltipEscoDesc": "Busque en la taxonomía europea de aptitudes, competencias, cualificaciones y ocupaciones. Las ocupaciones seleccionadas se comparan con las ofertas de empleo de EURES.",
+    "automations.tooltipCustom": "Palabras clave personalizadas",
+    "automations.tooltipCustomDesc": "Escriba cualquier palabra clave y presione Enter para agregarla como término de búsqueda libre. Útil para títulos de trabajo no estándar.",
+    "automations.tooltipIsco": "Grupos ISCO",
+    "automations.tooltipIscoDesc": "Haga clic en el icono de ojo en una etiqueta para ver el grupo de clasificación ISCO, que incluye ocupaciones relacionadas para búsquedas más amplias.",
   },
 } as const;

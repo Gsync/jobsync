@@ -85,7 +85,7 @@ function FlagIcon({ code, className }: { code: string; className?: string }) {
 }
 
 export function EuresLocationCombobox({ field }: EuresLocationComboboxProps) {
-  const { locale } = useTranslations();
+  const { t, locale } = useTranslations();
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [countries, setCountries] = useState<CountryWithRegions[]>([]);
@@ -322,10 +322,10 @@ export function EuresLocationCombobox({ field }: EuresLocationComboboxProps) {
               type="button"
             >
               {isMaxReached
-                ? `Max ${MAX_LOCATIONS} locations reached`
+                ? t("automations.maxLocations").replace("{max}", String(MAX_LOCATIONS))
                 : selectedCodes.length > 0
-                  ? `${selectedCodes.length} location(s) selected`
-                  : "Select countries or regions..."}
+                  ? t("automations.locationsSelected").replace("{count}", String(selectedCodes.length))
+                  : t("automations.selectCountries")}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
@@ -335,7 +335,7 @@ export function EuresLocationCombobox({ field }: EuresLocationComboboxProps) {
           >
             <Command shouldFilter={false}>
               <CommandInput
-                placeholder="Search countries or NUTS regions..."
+                placeholder={t("automations.searchCountries")}
                 value={inputValue}
                 onValueChange={setInputValue}
               />
@@ -346,7 +346,7 @@ export function EuresLocationCombobox({ field }: EuresLocationComboboxProps) {
                   </div>
                 )}
                 {!isLoading && filtered.length === 0 && (
-                  <CommandEmpty>No locations found.</CommandEmpty>
+                  <CommandEmpty>{t("automations.noLocations")}</CommandEmpty>
                 )}
                 {!isLoading &&
                   filtered.map((country) => {
@@ -378,7 +378,7 @@ export function EuresLocationCombobox({ field }: EuresLocationComboboxProps) {
                           <span className="flex-1">{country.name}</span>
                           {country.jobs > 0 && (
                             <span className="text-xs text-muted-foreground">
-                              {formatNumber(country.jobs, locale)} jobs
+                              {formatNumber(country.jobs, locale)} {t("automations.jobs")}
                             </span>
                           )}
                           {hasRegions && !inputValue && (
@@ -404,7 +404,7 @@ export function EuresLocationCombobox({ field }: EuresLocationComboboxProps) {
                               className="h-3 w-3"
                             />
                             <span className="text-sm">
-                              All of {country.name}
+                              {t("automations.allOf").replace("{country}", country.name)}
                             </span>
                           </CommandItem>
                         )}
@@ -421,21 +421,17 @@ export function EuresLocationCombobox({ field }: EuresLocationComboboxProps) {
         </Popover>
 
         <InfoTooltip>
-          <p className="font-semibold mb-1">Country Codes</p>
+          <p className="font-semibold mb-1">{t("automations.tooltipCountryCodes")}</p>
           <p className="text-xs mb-2">
-            ISO 3166-1 alpha-2 codes (e.g., DE for Germany, AT for Austria).
-            Selects all job vacancies in that country.
+            {t("automations.tooltipCountryCodesDesc")}
           </p>
-          <p className="font-semibold mb-1">NUTS Region Codes</p>
+          <p className="font-semibold mb-1">{t("automations.tooltipNutsRegions")}</p>
           <p className="text-xs mb-2">
-            Nomenclature of Territorial Units for Statistics. Hierarchical
-            codes for EU regions (e.g., DE1 = Baden-Württemberg). More
-            specific than country codes.
+            {t("automations.tooltipNutsDesc")}
           </p>
-          <p className="font-semibold mb-1">NS: Not Specified</p>
+          <p className="font-semibold mb-1">{t("automations.tooltipNS")}</p>
           <p className="text-xs">
-            Vacancies where the employer did not specify a region within the
-            country.
+            {t("automations.tooltipNSDesc")}
           </p>
         </InfoTooltip>
       </div>

@@ -86,7 +86,7 @@ export function AutomationWizard({
     mode: "onChange",
     defaultValues: {
       name: editAutomation?.name ?? "",
-      jobBoard: (editAutomation?.jobBoard as "jsearch" | "eures") ?? "jsearch",
+      jobBoard: (editAutomation?.jobBoard as "jsearch" | "eures" | "arbeitsagentur") ?? "jsearch",
       keywords: editAutomation?.keywords ?? "",
       location: editAutomation?.location ?? "",
       resumeId: editAutomation?.resumeId ?? "",
@@ -99,7 +99,7 @@ export function AutomationWizard({
     if (open) {
       form.reset({
         name: editAutomation?.name ?? "",
-        jobBoard: (editAutomation?.jobBoard as "jsearch" | "eures") ?? "jsearch",
+        jobBoard: (editAutomation?.jobBoard as "jsearch" | "eures" | "arbeitsagentur") ?? "jsearch",
         keywords: editAutomation?.keywords ?? "",
         location: editAutomation?.location ?? "",
         resumeId: editAutomation?.resumeId ?? "",
@@ -239,6 +239,7 @@ export function AutomationWizard({
                   <SelectContent>
                     <SelectItem value="jsearch">{t("automations.jsearch")}</SelectItem>
                     <SelectItem value="eures">{t("automations.eures")}</SelectItem>
+                    <SelectItem value="arbeitsagentur">{t("automations.arbeitsagentur")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormDescription>
@@ -409,7 +410,7 @@ export function AutomationWizard({
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("automations.reviewJobBoard")}</span>
               <span className="font-medium">
-                {jobBoard === "eures" ? t("automations.eures") : jobBoard === "jsearch" ? t("automations.jsearch") : jobBoard || "-"}
+                {jobBoard === "eures" ? t("automations.eures") : jobBoard === "jsearch" ? t("automations.jsearch") : jobBoard === "arbeitsagentur" ? t("automations.arbeitsagentur") : jobBoard || "-"}
               </span>
             </div>
             <div className="flex justify-between items-start">

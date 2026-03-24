@@ -31,6 +31,7 @@ import {
 import { ChipList, type ChipItem } from "@/components/ui/chip-list";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n";
 
 const MAX_KEYWORDS = 10;
 const SEPARATOR = "||";
@@ -42,6 +43,7 @@ type EuresOccupationComboboxProps = {
 
 /** Detail popover for an ESCO occupation */
 function OccupationDetailPopover({ uri }: { uri: string }) {
+  const { t } = useTranslations();
   const [details, setDetails] = useState<EscoOccupationDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -108,7 +110,7 @@ function OccupationDetailPopover({ uri }: { uri: string }) {
             {details.broaderIscoGroup && (
               <div className="flex items-center gap-1.5 text-xs">
                 <Network className="h-3 w-3 text-muted-foreground" />
-                <span className="text-muted-foreground">ISCO Group:</span>
+                <span className="text-muted-foreground">{t("automations.iscoGroup")}</span>
                 <a
                   href={`https://esco.ec.europa.eu/en/classification/occupation?uri=${encodeURIComponent(details.broaderIscoGroup.uri)}`}
                   target="_blank"
@@ -127,7 +129,7 @@ function OccupationDetailPopover({ uri }: { uri: string }) {
                 className="flex items-center gap-1 text-xs text-primary hover:underline"
               >
                 <Briefcase className="h-3 w-3" />
-                ESCO Portal
+                {t("automations.escoPortal")}
                 <ExternalLink className="h-2.5 w-2.5" />
               </a>
               <a
@@ -137,7 +139,7 @@ function OccupationDetailPopover({ uri }: { uri: string }) {
                 className="flex items-center gap-1 text-xs text-primary hover:underline"
               >
                 <ExternalLink className="h-3 w-3" />
-                EURES Jobs
+                {t("automations.euresJobs")}
                 <ExternalLink className="h-2.5 w-2.5" />
               </a>
             </div>
@@ -145,7 +147,7 @@ function OccupationDetailPopover({ uri }: { uri: string }) {
         )}
         {!isLoading && !details && (
           <p className="p-3 text-xs text-muted-foreground">
-            Could not load occupation details.
+            {t("automations.couldNotLoad")}
           </p>
         )}
       </PopoverContent>
@@ -157,6 +159,7 @@ export function EuresOccupationCombobox({
   field,
   language = "en",
 }: EuresOccupationComboboxProps) {
+  const { t } = useTranslations();
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [results, setResults] = useState<EscoSearchResult[]>([]);
@@ -292,10 +295,10 @@ export function EuresOccupationCombobox({
               type="button"
             >
               {isMaxReached
-                ? `Max ${MAX_KEYWORDS} keywords reached`
+                ? t("automations.maxKeywords").replace("{max}", String(MAX_KEYWORDS))
                 : selectedKeywords.length > 0
-                  ? `${selectedKeywords.length} keyword(s) selected`
-                  : "Search ESCO occupations or type keywords..."}
+                  ? t("automations.keywordsSelected").replace("{count}", String(selectedKeywords.length))
+                  : t("automations.searchOccupations")}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
@@ -305,7 +308,7 @@ export function EuresOccupationCombobox({
           >
             <Command shouldFilter={false}>
               <CommandInput
-                placeholder="Search occupations or type custom keyword..."
+                placeholder={t("automations.searchOccupationsPlaceholder")}
                 value={inputValue}
                 onValueChange={(val) => {
                   setInputValue(val);
@@ -331,7 +334,7 @@ export function EuresOccupationCombobox({
                 {!isLoading &&
                   inputValue.trim() &&
                   !selectedKeywords.includes(inputValue.trim()) && (
-                    <CommandGroup heading="Custom keyword">
+                    <CommandGroup heading={t("automations.customKeyword")}>
                       <CommandItem
                         onSelect={() => {
                           addKeyword(inputValue.trim());
@@ -341,10 +344,10 @@ export function EuresOccupationCombobox({
                         className="flex items-center gap-2"
                       >
                         <span className="text-sm">
-                          Add &quot;{inputValue.trim()}&quot;
+                          {t("automations.addKeyword").replace("{keyword}", inputValue.trim())}
                         </span>
                         <span className="ml-auto text-xs text-muted-foreground">
-                          Enter ↵
+                          {t("automations.enterKey")}
                         </span>
                       </CommandItem>
                     </CommandGroup>
@@ -352,7 +355,7 @@ export function EuresOccupationCombobox({
 
                 {/* ESCO results */}
                 {!isLoading && filteredResults.length > 0 && (
-                  <CommandGroup heading="ESCO Occupations">
+                  <CommandGroup heading={t("automations.escoOccupations")}>
                     {filteredResults.map((result) => (
                       <CommandItem
                         key={result.uri}
@@ -393,7 +396,7 @@ export function EuresOccupationCombobox({
                   filteredResults.length === 0 &&
                   !inputValue.trim() && (
                     <CommandEmpty>
-                      Type to search ESCO occupations...
+                      {t("automations.typeToSearch")}
                     </CommandEmpty>
                   )}
               </CommandList>
@@ -402,21 +405,17 @@ export function EuresOccupationCombobox({
         </Popover>
 
         <InfoTooltip>
-          <p className="font-semibold mb-1">ESCO Occupations</p>
+          <p className="font-semibold mb-1">{t("automations.tooltipEsco")}</p>
           <p className="text-xs mb-2">
-            Search the European Skills, Competences, Qualifications and
-            Occupations taxonomy. Selected occupations are matched against EURES
-            job vacancies.
+            {t("automations.tooltipEscoDesc")}
           </p>
-          <p className="font-semibold mb-1">Custom Keywords</p>
+          <p className="font-semibold mb-1">{t("automations.tooltipCustom")}</p>
           <p className="text-xs mb-2">
-            Type any keyword and press Enter to add it as a free-text search
-            term. Useful for non-standard job titles.
+            {t("automations.tooltipCustomDesc")}
           </p>
-          <p className="font-semibold mb-1">ISCO Groups</p>
+          <p className="font-semibold mb-1">{t("automations.tooltipIsco")}</p>
           <p className="text-xs">
-            Click the eye icon on a chip to see the ISCO classification group,
-            which includes related occupations for broader searches.
+            {t("automations.tooltipIscoDesc")}
           </p>
         </InfoTooltip>
       </div>

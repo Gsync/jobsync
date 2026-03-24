@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const JobBoardSchema = z.enum(["jsearch", "eures"]);
+export const JobBoardSchema = z.enum(["jsearch", "eures", "arbeitsagentur"]);
 
 export const AutomationStatusSchema = z.enum(["active", "paused"]);
 
