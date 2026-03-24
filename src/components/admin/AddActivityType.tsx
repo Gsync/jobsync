@@ -29,7 +29,9 @@ const AddActivityTypeFormSchema = z.object({
   label: z
     .string({ error: "Activity type label is required." })
     .min(1, { message: "Activity type label cannot be empty." })
-    .max(60, { message: "Activity type label must be 60 characters or fewer." }),
+    .max(60, {
+      message: "Activity type label must be 60 characters or fewer.",
+    }),
 });
 
 type AddActivityTypeProps = {
@@ -83,13 +85,13 @@ function AddActivityType({ reloadActivityTypes }: AddActivityTypeProps) {
       >
         <PlusCircle className="h-3.5 w-3.5" />
         <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-          Add Activity Type
+          New Activity Type
         </span>
       </Button>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Activity Type</DialogTitle>
+            <DialogTitle>Add New Activity Type</DialogTitle>
             <DialogDescription>
               Add a new activity type to categorize your activities and tasks.
             </DialogDescription>

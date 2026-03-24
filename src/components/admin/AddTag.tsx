@@ -83,13 +83,13 @@ function AddTag({ reloadTags }: AddTagProps) {
       >
         <PlusCircle className="h-3.5 w-3.5" />
         <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-          Add Skill
+          New Skill
         </span>
       </Button>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Skill</DialogTitle>
+            <DialogTitle>Add New Skill</DialogTitle>
             <DialogDescription>
               Add a new skill tag to use across your job applications.
             </DialogDescription>
