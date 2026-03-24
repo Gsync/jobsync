@@ -56,6 +56,27 @@
   - Bewerbungsunterlagen direkt per E-Mail oder Bewerbungsportale versenden
   - QR-Code für Kontaktdaten und Unterlagen (z.B. auf Job-Messen)
 
+### 2.6 Unified Add Automation Workflow
+- Einheitlicher Wizard für alle Connectors (JSearch, EURES, Arbeitsagentur, zukünftige)
+- Connector-spezifische Felder werden dynamisch basierend auf dem gewählten Connector geladen
+- Gemeinsame Felder (Name, Resume, Threshold, Schedule) bleiben einheitlich
+- Connector-spezifische Widgets (z.B. EURES: NUTS-Combobox, Arbeitsagentur: Umkreis-Slider)
+
+### 2.7 Connector Settings
+- **Connector-Verwaltung in Settings:**
+  - Übersicht aller verfügbaren Connectors mit Status (aktiv/inaktiv)
+  - Toggle zum Aktivieren/Deaktivieren einzelner Connectors
+  - Deaktivierte Connectors erscheinen nicht im Automation Wizard
+- **Connector-spezifische Einstellungen:**
+  - API-Keys pro Connector (falls benötigt, z.B. RapidAPI für JSearch)
+  - Default-Parameter pro Connector (z.B. Standard-Umkreis für Arbeitsagentur, Standard-Sprache für EURES)
+  - Rate-Limit-Konfiguration
+  - Proxy-Einstellungen
+- **Connector Health Check:**
+  - Status-Anzeige ob der Connector erreichbar ist
+  - Letzte erfolgreiche Verbindung
+  - Fehlerlog pro Connector
+
 ---
 
 ## 3. Quality of Life
