@@ -16,7 +16,7 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AiJobMatchSection } from "../profile/AiJobMatchSection";
 import { NotesSection } from "./NotesSection";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { DownloadFileButton } from "../profile/DownloadFileButton";
 import { MatchDetails } from "../automations/MatchDetails";
 import type { JobMatchResponse } from "@/models/ai.schemas";
@@ -24,6 +24,8 @@ import type { JobMatchResponse } from "@/models/ai.schemas";
 function JobDetails({ job }: { job: JobResponse }) {
   const { t, locale } = useTranslations();
   const [aiSectionOpen, setAiSectionOpen] = useState(false);
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => { setNow(new Date()); }, []);
   const router = useRouter();
   const goBack = () => router.back();
 
@@ -90,7 +92,7 @@ function JobDetails({ job }: { job: JobResponse }) {
             </div>
           </CardHeader>
           <h3 className="ml-4">
-            {new Date() > job.dueDate && job.Status?.value === "draft" ? (
+            {now && now > job.dueDate && job.Status?.value === "draft" ? (
               <Badge className="bg-red-500">{t("jobs.expired")}</Badge>
             ) : (
               <Badge

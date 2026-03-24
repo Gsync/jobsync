@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 import {
   EURES_AUTOCOMPLETE_URL,
@@ -15,6 +16,11 @@ const DEFAULT_LANGUAGE = "en";
 export async function GET(
   request: NextRequest
 ): Promise<NextResponse<EuresAutocompleteResponse | { error: string }>> {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
   const { searchParams } = request.nextUrl;
 
   const keyword = searchParams.get("keyword");

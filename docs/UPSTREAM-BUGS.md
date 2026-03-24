@@ -1,0 +1,158 @@
+# Upstream Bug Report for Gsync/jobsync
+
+**Reported by:** rorar (fork maintainer)
+**Date:** 2026-03-24
+**Branch tested:** dev (commit 5879362)
+**JobSync version:** 1.1.4+
+
+---
+
+## Critical Security Vulnerabilities
+
+### 1. Path Traversal in Resume File Download API
+
+**File:** `src/app/api/profile/resume/route.ts` (GET handler, ~line 96-108)
+
+The `filePath` query parameter is read directly from user input and passed to `fs.readFileSync()` without any path validation. An attacker can read any file on the server.
+
+**Reproduction:**
+```
+GET /api/profile/resume?filePath=/etc/passwd
+GET /api/profile/resume?filePath=/home/user/.env
+```
+
+**Impact:** Full server file system read access for any authenticated user. Exposes `.env`, source code, and all server files.
+
+**Suggested Fix:** Validate resolved path is within the upload directory, or look up file path by database ID instead of accepting raw paths.
+
+---
+
+### 2. handleError() Returns undefined for Non-Error Exceptions
+
+**File:** `src/lib/utils.ts` (function `handleError`, ~line 36-44)
+
+Only returns `{ success, message }` when `error instanceof Error`. For non-Error exceptions (string, number, plain object), returns `undefined`. Affects ~80 call sites across all server actions, causing runtime crashes on destructuring.
+
+**Suggested Fix:** Add fallback `return { success: false, message: msg };` at end of function.
+
+---
+
+### 3. API Route Handlers Return undefined on Non-Error Exceptions
+
+**File:** `src/app/api/profile/resume/route.ts` (POST ~line 65-77, GET ~line 138-150)
+
+Catch blocks only return NextResponse for `instanceof Error`. Non-Error throws produce empty responses.
+
+**Suggested Fix:** Add generic fallback: `return NextResponse.json({ error: "Internal error" }, { status: 500 });`
+
+---
+
+### 4. CSV Export Error Silently Swallowed
+
+**File:** `src/app/api/jobs/export/route.ts` (~line 82-94)
+
+Error response inside IIFE catch returns to the IIFE, not the HTTP handler. The PassThrough stream was already returned. Error response is created but never sent to client.
+
+**Suggested Fix:** Write error to the stream before ending it.
+
+---
+
+### 5. Toast Race Condition in AddJob
+
+**File:** `src/components/myjobs/AddJob.tsx` (~line 149-168)
+
+Success toast fires outside `startTransition` callback — runs before async server action completes. User sees success toast even when action fails.
+
+**Suggested Fix:** Move success toast inside the transition callback, after checking result.
+
+---
+
+## High Severity Bugs
+
+### 6. Loose Equality for Authorization Checks
+
+**Files:** `src/actions/job.actions.ts:337`, `src/actions/company.actions.ts:162`
+
+Uses `!=` instead of `!==` for user ID comparison. Type coercion could bypass auth.
+
+### 7. Non-Null Assertions on Undefined Values
+
+**File:** `src/actions/profile.actions.ts:250-262`
+
+`fileName!` and `filePath!` used on `string | undefined` parameters.
+
+### 8. path.join(filePath) is a No-op
+
+**File:** `src/app/api/profile/resume/route.ts:106`
+
+Single-argument `path.join()` returns input unchanged. Path sandboxing was intended but never implemented.
+
+### 9. Hardcoded PBKDF2 Salt
+
+**File:** `src/lib/encryption.ts:15`
+
+Salt is `"jobsync-api-key-encryption"` instead of random per-encryption. Enables pre-computation attacks.
+
+### 10. Jobs Export Missing Auth Check
+
+**File:** `src/app/api/jobs/export/route.ts`
+
+No `auth()` call. Returns HTTP 200 with empty CSV for unauthenticated users.
+
+### 11. No Error Boundaries
+
+Missing: `src/app/error.tsx`, `global-error.tsx`, `dashboard/error.tsx`, `not-found.tsx`. Unhandled errors show blank white screen.
+
+---
+
+## Medium Severity
+
+### 12. XSS via Unsanitized HTML Rendering
+
+**File:** `src/components/questions/QuestionCard.tsx:94`
+
+User-provided `question.answer` rendered via innerHTML without sanitization. Needs DOMPurify or safe rendering.
+
+### 13. Salary Range Data Gaps
+
+**File:** `src/lib/data/salaryRangeData.ts`
+
+Missing: 110K-120K and 140K-150K ranges.
+
+### 14. Resume Route Missing Ownership Check
+
+**File:** `src/app/api/profile/resume/route.ts:15,82`
+
+`userId` extracted but never used. Files accessed without verifying ownership.
+
+### 15. DeepSeek API Returns 500 Instead of 401
+
+**File:** `src/app/api/ai/deepseek/models/route.ts`
+
+Returns "API key not configured" (500) for unauthenticated users instead of 401.
+
+### 16. Middleware Only Protects /dashboard
+
+**File:** `src/middleware.ts`
+
+Matcher excludes all `/api/*` routes. Each route must individually implement auth.
+
+---
+
+## Low Severity
+
+| Bug | File |
+|-----|------|
+| `Promise<any>` return types on ~80 actions | Multiple |
+| 50+ console.log in production | Multiple |
+| Typo: "no user privilages" | `job.actions.ts:338` |
+| Variable typo: `comapnies` | `company.actions.ts:76` |
+| Commented-out time validation | `utils.ts:73` |
+| Dead file: `route.example.ts` | `src/app/api/company/` |
+| DownloadFileButton typed as `any` | `DownloadFileButton.tsx` |
+
+---
+
+*Report generated by automated static analysis, runtime testing, and code review.*
+*Fork: https://github.com/rorar/jobsync*
+*Upstream: https://github.com/Gsync/jobsync*

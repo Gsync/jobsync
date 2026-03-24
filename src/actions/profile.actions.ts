@@ -217,10 +217,10 @@ export const createResumeProfile = async (
       profile && profile.id
         ? await prisma.resume.create({
             data: {
-              profileId: profile!.id,
+              profileId: profile.id,
               title,
-              FileId: fileName
-                ? await createFileEntry(fileName, filePath)
+              FileId: fileName && filePath
+                ? await createFileEntry(fileName, filePath as string)
                 : null,
             },
           })
@@ -231,8 +231,8 @@ export const createResumeProfile = async (
                 create: [
                   {
                     title,
-                    FileId: fileName
-                      ? await createFileEntry(fileName, filePath)
+                    FileId: fileName && filePath
+                      ? await createFileEntry(fileName, filePath as string)
                       : null,
                   },
                 ],
@@ -248,13 +248,13 @@ export const createResumeProfile = async (
 };
 
 const createFileEntry = async (
-  fileName: string | undefined,
-  filePath: string | undefined
+  fileName: string,
+  filePath: string
 ) => {
   const newFileEntry = await prisma.file.create({
     data: {
-      fileName: fileName!,
-      filePath: filePath!,
+      fileName,
+      filePath,
       fileType: "resume",
     },
   });

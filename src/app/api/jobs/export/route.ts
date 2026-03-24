@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import Papa from "papaparse";
 import { PassThrough } from "node:stream";
@@ -57,6 +58,11 @@ const transformJobData = (
 };
 
 export const POST = async () => {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
   const passThrough = new PassThrough();
   let isFirstChunk = true;
   let hasError = false;
@@ -82,16 +88,8 @@ export const POST = async () => {
     } catch (error) {
       hasError = true;
       console.error("Error streaming CSV:", error);
-      if (error instanceof Error) {
-        return NextResponse.json(
-          {
-            error: error.message ?? "Jobs download failed",
-          },
-          {
-            status: 500,
-          }
-        );
-      }
+      passThrough.write(`\nError: ${error instanceof Error ? error.message : "Export failed"}\n`);
+      passThrough.end();
     } finally {
       passThrough.end();
     }

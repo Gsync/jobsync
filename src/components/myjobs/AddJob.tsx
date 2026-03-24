@@ -159,12 +159,13 @@ export function AddJob({
           title: t("jobs.error"),
           description: message,
         });
+      } else {
+        toast({
+          variant: "success",
+          description: editJob ? t("jobs.updatedSuccess") : t("jobs.createdSuccess"),
+        });
       }
       redirect("/dashboard/myjobs");
-    });
-    toast({
-      variant: "success",
-      description: editJob ? t("jobs.updatedSuccess") : t("jobs.createdSuccess"),
     });
   }
 

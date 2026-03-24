@@ -74,6 +74,7 @@ export const POST = async (req: NextRequest) => {
         }
       );
     }
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 };
 
@@ -103,7 +104,13 @@ export const GET = async (req: NextRequest) => {
       );
     }
 
-    const fullFilePath = path.join(filePath);
+    const dataDir = path.resolve(process.env.NODE_ENV !== "production" ? "data" : "/data", "files/resumes");
+    const resolvedPath = path.resolve(dataDir, path.basename(filePath));
+    if (!resolvedPath.startsWith(dataDir)) {
+      return NextResponse.json({ error: "Invalid file path" }, { status: 400 });
+    }
+
+    const fullFilePath = resolvedPath;
     if (!fs.existsSync(fullFilePath)) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
@@ -147,5 +154,6 @@ export const GET = async (req: NextRequest) => {
         }
       );
     }
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 };

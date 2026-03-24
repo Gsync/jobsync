@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useTranslations } from "@/i18n";
+import DOMPurify from "dompurify";
 
 type QuestionCardProps = {
   question: Question;
@@ -92,10 +93,11 @@ export function QuestionCard({
           <div
             className="mt-2 text-sm text-muted-foreground prose prose-sm max-w-none dark:prose-invert"
             dangerouslySetInnerHTML={{
-              __html:
+              __html: DOMPurify.sanitize(
                 expanded || !isLongAnswer
                   ? question.answer!
                   : truncateHtml(question.answer!, 300),
+              ),
             }}
           />
         )}

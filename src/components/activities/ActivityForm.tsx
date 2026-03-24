@@ -64,7 +64,7 @@ const ActivityFormComponent = ({
       endDate: now,
       endTime: estimatedEndTime,
     };
-  }, []);
+  }, [locale]);
   const form = useForm<z.infer<typeof AddActivityFormSchema>>({
     resolver: zodResolver(AddActivityFormSchema),
     defaultValues,

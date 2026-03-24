@@ -33,7 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { JobResponse, JobStatus } from "@/models/job.model";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -59,6 +59,8 @@ function MyJobsTable({
   const { t, locale } = useTranslations();
   const [alertOpen, setAlertOpen] = useState(false);
   const [jobIdToDelete, setJobIdToDelete] = useState("");
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => { setNow(new Date()); }, []);
 
   const router = useRouter();
   const viewJobDetails = (jobId: string) => {
@@ -127,7 +129,7 @@ function MyJobsTable({
                   {job.Location?.label}
                 </TableCell>
                 <TableCell>
-                  {new Date() > job.dueDate && job.Status?.value === "draft" ? (
+                  {now && now > job.dueDate && job.Status?.value === "draft" ? (
                     <Badge className="bg-red-500">{t("jobs.expired")}</Badge>
                   ) : (
                     <Badge

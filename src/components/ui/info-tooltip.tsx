@@ -25,6 +25,7 @@ export function InfoTooltip({ children, side = "right" }: InfoTooltipProps) {
       <PopoverTrigger asChild>
         <button
           type="button"
+          aria-label="More information"
           className="shrink-0 text-muted-foreground hover:text-foreground"
           onMouseEnter={() => setOpen(true)}
           onMouseLeave={() => setOpen(false)}

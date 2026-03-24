@@ -1,7 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { format, parse } from "date-fns";
 import { formatDate } from "@/i18n";
-import { NextApiRequest } from "next";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -53,6 +52,7 @@ export function handleError(error: unknown, msg = "Server Error.") {
     }
     return { success: false, message: error.message || msg };
   }
+  return { success: false, message: msg };
 }
 
 export function getTimestampedFileName(originalName: string): string {
@@ -70,7 +70,7 @@ export function getTimestampedFileName(originalName: string): string {
 export const combineDateAndTime = (date: Date, time: string): Date => {
   // Parse the time string into a `Date` object using a reference date
   const parsedTime = parse(time, "hh:mm a", new Date());
-  // if (isNaN(parsedTime.getTime())) throw new Error("Invalid time format");
+  if (isNaN(parsedTime.getTime())) throw new Error("Invalid time format");
 
   return new Date(
     date.getFullYear(),
