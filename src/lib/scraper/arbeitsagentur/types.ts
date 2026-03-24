@@ -16,8 +16,8 @@ export interface ArbeitsagenturSearchResponse {
 export interface ArbeitsagenturJob {
   /** Reference number — unique identifier for the job posting. */
   refnr: string;
-  /** Hash ID used for constructing the public detail URL. */
-  hashId: string;
+  /** Hash ID used for constructing the public detail URL (may be absent in search results). */
+  hashId?: string;
   /** Job title. */
   titel: string;
   /** Employer name. */

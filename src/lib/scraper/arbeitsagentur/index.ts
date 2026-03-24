@@ -25,9 +25,16 @@ const PAGE_SIZE = 50;
 
 /**
  * Build the public detail URL for a job listing.
+ * Uses hashId when available (detail response), falls back to refnr-based search URL.
  */
-function buildDetailUrl(hashId: string): string {
-  return `https://www.arbeitsagentur.de/jobsuche/suche?id=${encodeURIComponent(hashId)}`;
+function buildDetailUrl(hashId?: string, refnr?: string): string {
+  if (hashId) {
+    return `https://www.arbeitsagentur.de/jobsuche/suche?id=${encodeURIComponent(hashId)}`;
+  }
+  if (refnr) {
+    return `https://www.arbeitsagentur.de/jobsuche/suche?was=${encodeURIComponent(refnr)}`;
+  }
+  return "https://www.arbeitsagentur.de/jobsuche";
 }
 
 /**
@@ -95,7 +102,7 @@ function translateJob(job: ArbeitsagenturJob): DiscoveredVacancy {
     employerName: job.arbeitgeber ?? "",
     location: buildLocationString(job.arbeitsort),
     description: job.beruf ? stripHtml(job.beruf) : "",
-    sourceUrl: buildDetailUrl(job.hashId),
+    sourceUrl: buildDetailUrl(job.hashId, job.refnr),
     sourceBoard: "arbeitsagentur",
     postedAt: job.aktuelleVeroeffentlichungsdatum
       ? new Date(job.aktuelleVeroeffentlichungsdatum)
@@ -118,7 +125,7 @@ function translateDetail(detail: ArbeitsagenturJobDetail): DiscoveredVacancy {
       : detail.beruf
         ? stripHtml(detail.beruf)
         : "",
-    sourceUrl: buildDetailUrl(detail.hashId),
+    sourceUrl: buildDetailUrl(detail.hashId, detail.refnr),
     sourceBoard: "arbeitsagentur",
     postedAt: detail.aktuelleVeroeffentlichungsdatum
       ? new Date(detail.aktuelleVeroeffentlichungsdatum)
