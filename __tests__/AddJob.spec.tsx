@@ -123,7 +123,7 @@ describe("AddJob Component", () => {
     expect(dialog).not.toBeInTheDocument();
   });
   it("should load and show the job title combobox list", async () => {
-    const jobTitleCombobox = screen.getByLabelText("Job Title");
+    const jobTitleCombobox = screen.getByLabelText("Title");
     await user.click(jobTitleCombobox);
     const options = screen.getAllByRole("option");
     expect(options.length).toBeGreaterThan(0);
@@ -137,7 +137,7 @@ describe("AddJob Component", () => {
     expect(options[0].textContent).toBe("Google");
   });
   it("should load and show the location combobox list", async () => {
-    const locationCombobox = screen.getByLabelText("Job Location");
+    const locationCombobox = screen.getByLabelText("Location");
     await user.click(locationCombobox);
     const options = screen.getAllByRole("option");
     expect(options.length).toBeGreaterThan(0);
@@ -166,7 +166,7 @@ describe("AddJob Component", () => {
   });
   it("should closes the dialog and submit to save job when clicked on save button", async () => {
     const jobTitleInput = screen.getByRole("combobox", {
-      name: /job title/i,
+      name: /title/i,
     }) as HTMLSelectElement;
     await user.click(jobTitleInput);
     const selectedJobTitle = screen.getByRole("option", {
@@ -182,7 +182,7 @@ describe("AddJob Component", () => {
     await user.click(selectedCompany);
 
     const locationInput = screen.getByRole("combobox", {
-      name: /job location/i,
+      name: /location/i,
     });
     await user.click(locationInput);
     const selectedLocation = screen.getByRole("option", {

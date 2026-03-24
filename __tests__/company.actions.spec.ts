@@ -438,7 +438,7 @@ describe("Company Actions", () => {
 
       expect(result).toEqual({
         success: false,
-        message: "Id is not provided or no user privilages",
+        message: "Id is not provided or no user privileges",
       });
 
       expect(prisma.company.findFirst).not.toHaveBeenCalled();

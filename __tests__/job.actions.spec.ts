@@ -575,7 +575,7 @@ describe("jobActions", () => {
         updateJob({ ...jobData, id: undefined }),
       ).resolves.toStrictEqual({
         success: false,
-        message: "Id is not provide or no user privilages",
+        message: "Id is not provided or no user privileges",
       });
     });
   });
