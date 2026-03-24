@@ -52,4 +52,8 @@ data/files/resumes
 /specs
 .vscode
 AGENTS.md
-.claude/settings.local.json
+
+# devenv
+.devenv
+.devenv.flake.nix
+devenv.lock

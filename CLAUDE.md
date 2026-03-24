@@ -4,19 +4,33 @@
 
 JobSync is a self-hosted job application tracker built with Next.js 15, Prisma (SQLite), and Shadcn UI. It includes EURES/ESCO integration for European job discovery automations.
 
-## Development Environment (NixOS)
+## Development Environment
 
-This runs on NixOS with a read-only Nix store. Use the helper scripts:
+### Option A: devenv (recommended for standard NixOS)
+
+```bash
+devenv shell    # Enter dev environment with all dependencies
+dev             # Start Next.js dev server
+test            # Run Jest tests
+build           # Production build
+db-migrate      # Run Prisma migrations
+devenv up       # Start all processes
+```
+
+See `devenv.nix` for the full configuration. Requires a writable Nix store.
+
+### Option B: Helper scripts (for read-only Nix store / VMs)
 
 ```bash
 ./scripts/dev.sh      # Start dev server (port 3737)
 ./scripts/build.sh    # Production build
+./scripts/test.sh     # Run Jest tests (uses system Node.js)
 ./scripts/stop.sh     # Stop dev server
 ./scripts/prisma-generate.sh  # Generate Prisma client
 ./scripts/prisma-migrate.sh   # Run migrations
 ```
 
-All scripts source `scripts/env.sh` which sets Prisma engine paths for NixOS.
+All scripts source `scripts/env.sh` which auto-downloads and patches Prisma engines for NixOS.
 
 **bun** is the package manager (not npm/yarn). Use `bun add`, `bun run`, etc.
 
