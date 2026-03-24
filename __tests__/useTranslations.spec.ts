@@ -105,4 +105,64 @@ describe("useTranslations", () => {
     expect(result.current.t("common.save")).toBe("Speichern");
     expect(result.current.locale).toBe("de");
   });
+
+  // --- locale override parameter tests ---
+
+  it("useTranslations('de') returns German translations regardless of document.documentElement.lang", () => {
+    document.documentElement.lang = "en";
+    const { result } = renderHook(() => useTranslations("de"));
+
+    expect(result.current.locale).toBe("de");
+    expect(result.current.t("auth.signIn")).toBe("Anmelden");
+    expect(result.current.t("auth.createAccount")).toBe("Konto erstellen");
+    expect(result.current.t("common.save")).toBe("Speichern");
+  });
+
+  it("useTranslations('fr') returns French translations regardless of document.documentElement.lang", () => {
+    document.documentElement.lang = "en";
+    const { result } = renderHook(() => useTranslations("fr"));
+
+    expect(result.current.locale).toBe("fr");
+    expect(result.current.t("auth.signIn")).toBe("Se connecter");
+    expect(result.current.t("auth.createAccount")).toBe("Créer un compte");
+    expect(result.current.t("common.save")).toBe("Enregistrer");
+  });
+
+  it("locale override takes precedence over document.documentElement.lang", () => {
+    document.documentElement.lang = "de";
+    const { result } = renderHook(() => useTranslations("fr"));
+
+    // Even though lang is "de", override forces French
+    expect(result.current.locale).toBe("fr");
+    expect(result.current.t("nav.dashboard")).toBe("Tableau de bord");
+    expect(result.current.t("common.cancel")).toBe("Annuler");
+  });
+
+  it("when locale param is undefined, falls back to document.documentElement.lang", () => {
+    document.documentElement.lang = "de";
+    const { result } = renderHook(() => useTranslations(undefined));
+
+    expect(result.current.locale).toBe("de");
+    expect(result.current.t("common.save")).toBe("Speichern");
+    expect(result.current.t("auth.signIn")).toBe("Anmelden");
+  });
+
+  it("locale override 'en' returns English even when lang attribute is 'de'", () => {
+    document.documentElement.lang = "de";
+    const { result } = renderHook(() => useTranslations("en"));
+
+    expect(result.current.locale).toBe("en");
+    expect(result.current.t("auth.signIn")).toBe("Sign In");
+    expect(result.current.t("auth.createAccount")).toBe("Create Account");
+    expect(result.current.t("common.save")).toBe("Save");
+  });
+
+  it("locale override 'es' returns Spanish translations", () => {
+    document.documentElement.lang = "en";
+    const { result } = renderHook(() => useTranslations("es"));
+
+    expect(result.current.locale).toBe("es");
+    expect(result.current.t("auth.signIn")).toBe("Iniciar sesión");
+    expect(result.current.t("common.save")).toBe("Guardar");
+  });
 });

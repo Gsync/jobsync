@@ -9,11 +9,12 @@ type AuthMode = "signin" | "signup";
 
 interface AuthCardProps {
   mode: AuthMode;
+  locale?: string;
 }
 
-export default function AuthCard({ mode }: AuthCardProps) {
+export default function AuthCard({ mode, locale }: AuthCardProps) {
   const router = useRouter();
-  const { t } = useTranslations();
+  const { t } = useTranslations(locale);
 
   return (
     <div className="mx-auto w-full max-w-md px-4">
