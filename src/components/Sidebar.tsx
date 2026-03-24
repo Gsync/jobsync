@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Briefcase, Settings } from "lucide-react";
-import { SIDEBAR_LINKS } from "@/lib/constants";
+import { SIDEBAR_LINKS, isMockDataEnabled } from "@/lib/constants";
 import NavLink from "./NavLink";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "@/i18n";
@@ -24,7 +24,7 @@ function Sidebar() {
         </Link>
         <TooltipProvider delayDuration={800}>
           {SIDEBAR_LINKS.map((item) => {
-            if (item.devOnly && process.env.NODE_ENV !== "development") {
+            if (item.devOnly && !isMockDataEnabled()) {
               return null;
             }
             return (

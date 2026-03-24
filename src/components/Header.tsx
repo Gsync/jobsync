@@ -9,7 +9,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { SIDEBAR_LINKS } from "@/lib/constants";
+import { SIDEBAR_LINKS, isMockDataEnabled } from "@/lib/constants";
 import { signOut } from "@/auth";
 import { getCurrentUser } from "@/utils/user.utils";
 import { ProfileDropdown } from "./ProfileDropdown";
@@ -41,7 +41,7 @@ async function Header() {
               </Link>
             </SheetClose>
             {SIDEBAR_LINKS.map((item) => {
-              if (item.devOnly && process.env.NODE_ENV !== "development") {
+              if (item.devOnly && !isMockDataEnabled()) {
                 return null;
               }
               return (

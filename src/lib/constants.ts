@@ -46,6 +46,18 @@ export const JOB_STATUSES = [
   { label: "Archived", value: "archived" },
 ] as const;
 
+/**
+ * Returns true when mock-data / developer tools should be accessible.
+ * Enabled automatically in development mode, or when
+ * NEXT_PUBLIC_ENABLE_MOCK_DATA=true is set in .env.
+ */
+export function isMockDataEnabled(): boolean {
+  return (
+    process.env.NODE_ENV === "development" ||
+    process.env.NEXT_PUBLIC_ENABLE_MOCK_DATA === "true"
+  );
+}
+
 export const SIDEBAR_LINKS: {
   icon: typeof LayoutDashboard;
   route: string;

@@ -1,6 +1,7 @@
 "use server";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
+import { isMockDataEnabled } from "@/lib/constants";
 import { getCurrentUser } from "@/utils/user.utils";
 import { generateMockActivities } from "@/lib/mock.utils";
 import {
@@ -24,10 +25,10 @@ export const generateMockActivitiesAction = async (): Promise<any> => {
       throw new Error("Not authenticated");
     }
 
-    // Check if dev mode is enabled
-    if (process.env.NODE_ENV !== "development") {
+    // Check if dev/mock mode is enabled
+    if (!isMockDataEnabled()) {
       throw new Error(
-        "Mock data generation is only available in development mode",
+        "Mock data generation is only available in development mode or when NEXT_PUBLIC_ENABLE_MOCK_DATA=true",
       );
     }
 
@@ -115,10 +116,10 @@ export const clearMockActivitiesAction = async (): Promise<any> => {
       throw new Error("Not authenticated");
     }
 
-    // Check if dev mode is enabled
-    if (process.env.NODE_ENV !== "development") {
+    // Check if dev/mock mode is enabled
+    if (!isMockDataEnabled()) {
       throw new Error(
-        "Mock data clearing is only available in development mode",
+        "Mock data clearing is only available in development mode or when NEXT_PUBLIC_ENABLE_MOCK_DATA=true",
       );
     }
 
@@ -157,9 +158,9 @@ export const generateMockProfileDataAction = async (): Promise<any> => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Not authenticated");
 
-    if (process.env.NODE_ENV !== "development") {
+    if (!isMockDataEnabled()) {
       throw new Error(
-        "Mock data generation is only available in development mode",
+        "Mock data generation is only available in development mode or when NEXT_PUBLIC_ENABLE_MOCK_DATA=true",
       );
     }
 
@@ -347,9 +348,9 @@ export const clearMockProfileDataAction = async (): Promise<any> => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Not authenticated");
 
-    if (process.env.NODE_ENV !== "development") {
+    if (!isMockDataEnabled()) {
       throw new Error(
-        "Mock data clearing is only available in development mode",
+        "Mock data clearing is only available in development mode or when NEXT_PUBLIC_ENABLE_MOCK_DATA=true",
       );
     }
 
