@@ -23,6 +23,7 @@ import { AlertDialog } from "@/models/alertDialog.model";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { deleteJobTitleById } from "@/actions/jobtitle.actions";
 import { toast } from "../ui/use-toast";
+import { useTranslations } from "@/i18n";
 
 type JobTitlesTableProps = {
   jobTitles: JobTitle[];
@@ -30,6 +31,7 @@ type JobTitlesTableProps = {
 };
 
 function JobTitlesTable({ jobTitles, reloadJobTitles }: JobTitlesTableProps) {
+  const { t } = useTranslations();
   const [alert, setAlert] = useState<AlertDialog>({
     openState: false,
     deleteAction: false,
@@ -64,7 +66,7 @@ function JobTitlesTable({ jobTitles, reloadJobTitles }: JobTitlesTableProps) {
       } else {
         toast({
           variant: "destructive",
-          title: "Error!",
+          title: t("common.error"),
           description: message,
         });
       }

@@ -23,6 +23,7 @@ import { MoreHorizontal, Trash } from "lucide-react";
 import { AlertDialog } from "@/models/alertDialog.model";
 import { toast } from "../ui/use-toast";
 import { deleteJobLocationById } from "@/actions/jobLocation.actions";
+import { useTranslations } from "@/i18n";
 
 type JobLocationsTableProps = {
   jobLocations: JobLocation[];
@@ -33,6 +34,7 @@ function JobLocationsTable({
   jobLocations,
   reloadJobLocations,
 }: JobLocationsTableProps) {
+  const { t } = useTranslations();
   const [alert, setAlert] = useState<AlertDialog>({
     openState: false,
     deleteAction: false,
@@ -66,7 +68,7 @@ function JobLocationsTable({
       } else {
         toast({
           variant: "destructive",
-          title: "Error!",
+          title: t("common.error"),
           description: message,
         });
       }

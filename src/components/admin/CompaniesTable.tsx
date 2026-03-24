@@ -22,6 +22,7 @@ import { deleteCompanyById } from "@/actions/company.actions";
 import { toast } from "../ui/use-toast";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { AlertDialog } from "@/models/alertDialog.model";
+import { useTranslations } from "@/i18n";
 
 type CompaniesTableProps = {
   companies: Company[];
@@ -34,6 +35,7 @@ function CompaniesTable({
   reloadCompanies,
   editCompany,
 }: CompaniesTableProps) {
+  const { t } = useTranslations();
   const [alert, setAlert] = useState<AlertDialog>({
     openState: false,
     deleteAction: false,
@@ -69,7 +71,7 @@ function CompaniesTable({
       } else {
         toast({
           variant: "destructive",
-          title: "Error!",
+          title: t("common.error"),
           description: message,
         });
       }
