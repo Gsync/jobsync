@@ -45,7 +45,7 @@ export function NoteDialog({
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<z.infer<typeof NoteFormSchema>>({
-    resolver: zodResolver(NoteFormSchema) as any,
+    resolver: zodResolver(NoteFormSchema) as any, // zod v4 + @hookform/resolvers type mismatch
     defaultValues: {
       jobId,
       content: "",

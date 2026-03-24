@@ -33,6 +33,7 @@ import { Info, CheckCircle, XCircle } from "lucide-react";
 import { checkIfModelIsRunning } from "@/utils/ai.utils";
 import { JobMatchSchema } from "@/models/ai.schemas";
 import { getUserSettings } from "@/actions/userSettings.actions";
+import { useTranslations } from "@/i18n";
 
 interface AiSectionProps {
   aISectionOpen: boolean;
@@ -45,6 +46,7 @@ export const AiJobMatchSection = ({
   triggerChange,
   jobId,
 }: AiSectionProps) => {
+  const { t } = useTranslations();
   const [selectedResumeId, setSelectedResumeId] = useState<string>();
   const [runningModelName, setRunningModelName] = useState<string>("");
   const [runningModelError, setRunningModelError] = useState<string>("");
@@ -79,7 +81,7 @@ export const AiJobMatchSection = ({
     onError: (err) => {
       toast({
         variant: "destructive",
-        title: "Error!",
+        title: t("common.error"),
         description: err.message || "Failed to get job match analysis",
       });
     },
@@ -100,7 +102,7 @@ export const AiJobMatchSection = ({
       const description = error instanceof Error ? error.message : message;
       toast({
         variant: "destructive",
-        title: "Error!",
+        title: t("common.error"),
         description,
       });
     }

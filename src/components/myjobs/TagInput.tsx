@@ -20,6 +20,7 @@ import { Tag } from "@/models/job.model";
 import { createTag } from "@/actions/tag.actions";
 import { toast } from "../ui/use-toast";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n";
 
 const MAX_TAGS = 10;
 
@@ -38,6 +39,7 @@ export function TagInput({
   const [inputValue, setInputValue] = useState("");
   const [localTags, setLocalTags] = useState<Tag[]>(availableTags);
   const [isPending, startTransition] = useTransition();
+  const { t } = useTranslations();
 
   const selectedTags = localTags.filter((t) => selectedTagIds.includes(t.id));
   const isMaxReached = selectedTagIds.length >= MAX_TAGS;
@@ -72,8 +74,8 @@ export function TagInput({
       if (!result?.success) {
         toast({
           variant: "destructive",
-          title: "Error!",
-          description: result?.message ?? "Failed to create skill tag.",
+          title: t("common.error"),
+          description: result?.message ?? t("jobs.skillCreateFailed"),
         });
         return;
       }
@@ -110,21 +112,21 @@ export function TagInput({
             type="button"
           >
             {isMaxReached
-              ? `Max ${MAX_TAGS} skills reached`
-              : "Search or add a skill..."}
+              ? t("jobs.maxSkills")
+              : t("jobs.searchSkill")}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-full p-0" align="start">
           <Command shouldFilter={false}>
             <CommandInput
-              placeholder="Type a skill..."
+              placeholder={t("jobs.typeSkill")}
               value={inputValue}
               onValueChange={setInputValue}
             />
             <CommandList>
               {filteredOptions.length === 0 && !inputValue && (
-                <CommandEmpty>No skills found.</CommandEmpty>
+                <CommandEmpty>{t("jobs.noSkills")}</CommandEmpty>
               )}
               {filteredOptions.length > 0 && (
                 <CommandGroup>
@@ -150,7 +152,7 @@ export function TagInput({
                     ) : (
                       <CirclePlus className="mr-2 h-4 w-4" />
                     )}
-                    Create &quot;{inputValue.trim()}&quot;
+                    {t("jobs.createSkill")} &quot;{inputValue.trim()}&quot;
                   </CommandItem>
                 </CommandGroup>
               )}

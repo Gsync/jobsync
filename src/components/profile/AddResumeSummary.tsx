@@ -28,6 +28,7 @@ import {
   updateResumeSummary,
 } from "@/actions/profile.actions";
 import { ResumeSection } from "@/models/profile.model";
+import { useTranslations } from "@/i18n";
 
 interface AddResumeSummaryProps {
   resumeId: string | undefined;
@@ -43,6 +44,7 @@ function AddResumeSummary({
   summaryToEdit,
 }: AddResumeSummaryProps) {
   const [isPending, startTransition] = useTransition();
+  const { t } = useTranslations();
 
   const pageTitle = summaryToEdit ? "Edit Summary" : "Add Summary";
 
@@ -79,7 +81,7 @@ function AddResumeSummary({
       if (!res.success) {
         toast({
           variant: "destructive",
-          title: "Error!",
+          title: t("common.error"),
           description: res.message,
         });
       } else {

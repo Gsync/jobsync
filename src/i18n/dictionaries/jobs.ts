@@ -67,6 +67,28 @@ export const jobs = {
     "jobs.typeSkill": "Type a skill...",
     "jobs.noSkills": "No skills found.",
     "jobs.noteDeleted": "Note deleted successfully",
+    "jobs.skillCreateFailed": "Failed to create skill tag.",
+    "jobs.createSkill": "Create",
+
+    // Job sources
+    "jobs.sourceIndeed": "Indeed",
+    "jobs.sourceLinkedin": "LinkedIn",
+    "jobs.sourceMonster": "Monster",
+    "jobs.sourceGlassdoor": "Glassdoor",
+    "jobs.sourceCareerPage": "Company Career Page",
+    "jobs.sourceGoogle": "Google",
+    "jobs.sourceZipRecruiter": "ZipRecruiter",
+    "jobs.sourceJobStreet": "Job Street",
+    "jobs.sourceOther": "Other",
+
+    // Job statuses
+    "jobs.statusDraft": "Draft",
+    "jobs.statusApplied": "Applied",
+    "jobs.statusInterview": "Interview",
+    "jobs.statusOffer": "Offer",
+    "jobs.statusRejected": "Rejected",
+    "jobs.statusExpired": "Expired",
+    "jobs.statusArchived": "Archived",
   },
   de: {
     "jobs.title": "Meine Jobs",
@@ -136,6 +158,28 @@ export const jobs = {
     "jobs.typeSkill": "Fähigkeit eingeben...",
     "jobs.noSkills": "Keine Fähigkeiten gefunden.",
     "jobs.noteDeleted": "Notiz erfolgreich gelöscht",
+    "jobs.skillCreateFailed": "Skill-Tag konnte nicht erstellt werden.",
+    "jobs.createSkill": "Erstellen",
+
+    // Job-Quellen
+    "jobs.sourceIndeed": "Indeed",
+    "jobs.sourceLinkedin": "LinkedIn",
+    "jobs.sourceMonster": "Monster",
+    "jobs.sourceGlassdoor": "Glassdoor",
+    "jobs.sourceCareerPage": "Unternehmens-Karriereseite",
+    "jobs.sourceGoogle": "Google",
+    "jobs.sourceZipRecruiter": "ZipRecruiter",
+    "jobs.sourceJobStreet": "Job Street",
+    "jobs.sourceOther": "Sonstige",
+
+    // Job-Status
+    "jobs.statusDraft": "Entwurf",
+    "jobs.statusApplied": "Beworben",
+    "jobs.statusInterview": "Vorstellungsgespräch",
+    "jobs.statusOffer": "Angebot",
+    "jobs.statusRejected": "Abgelehnt",
+    "jobs.statusExpired": "Abgelaufen",
+    "jobs.statusArchived": "Archiviert",
   },
   fr: {
     "jobs.title": "Mes emplois",
@@ -205,6 +249,28 @@ export const jobs = {
     "jobs.typeSkill": "Saisir une compétence...",
     "jobs.noSkills": "Aucune compétence trouvée.",
     "jobs.noteDeleted": "Note supprimée avec succès",
+    "jobs.skillCreateFailed": "Impossible de créer le tag de compétence.",
+    "jobs.createSkill": "Créer",
+
+    // Sources d'emploi
+    "jobs.sourceIndeed": "Indeed",
+    "jobs.sourceLinkedin": "LinkedIn",
+    "jobs.sourceMonster": "Monster",
+    "jobs.sourceGlassdoor": "Glassdoor",
+    "jobs.sourceCareerPage": "Page carrière de l'entreprise",
+    "jobs.sourceGoogle": "Google",
+    "jobs.sourceZipRecruiter": "ZipRecruiter",
+    "jobs.sourceJobStreet": "Job Street",
+    "jobs.sourceOther": "Autre",
+
+    // Statuts d'emploi
+    "jobs.statusDraft": "Brouillon",
+    "jobs.statusApplied": "Candidaté",
+    "jobs.statusInterview": "Entretien",
+    "jobs.statusOffer": "Offre",
+    "jobs.statusRejected": "Refusé",
+    "jobs.statusExpired": "Expiré",
+    "jobs.statusArchived": "Archivé",
   },
   es: {
     "jobs.title": "Mis empleos",
@@ -274,5 +340,27 @@ export const jobs = {
     "jobs.typeSkill": "Escribe una habilidad...",
     "jobs.noSkills": "No se encontraron habilidades.",
     "jobs.noteDeleted": "Nota eliminada con éxito",
+    "jobs.skillCreateFailed": "Error al crear la etiqueta de habilidad.",
+    "jobs.createSkill": "Crear",
+
+    // Fuentes de empleo
+    "jobs.sourceIndeed": "Indeed",
+    "jobs.sourceLinkedin": "LinkedIn",
+    "jobs.sourceMonster": "Monster",
+    "jobs.sourceGlassdoor": "Glassdoor",
+    "jobs.sourceCareerPage": "Página de empleo de la empresa",
+    "jobs.sourceGoogle": "Google",
+    "jobs.sourceZipRecruiter": "ZipRecruiter",
+    "jobs.sourceJobStreet": "Job Street",
+    "jobs.sourceOther": "Otro",
+
+    // Estados de empleo
+    "jobs.statusDraft": "Borrador",
+    "jobs.statusApplied": "Aplicado",
+    "jobs.statusInterview": "Entrevista",
+    "jobs.statusOffer": "Oferta",
+    "jobs.statusRejected": "Rechazado",
+    "jobs.statusExpired": "Expirado",
+    "jobs.statusArchived": "Archivado",
   },
 } as const;

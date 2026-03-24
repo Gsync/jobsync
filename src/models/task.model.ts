@@ -9,6 +9,14 @@ export const TASK_STATUSES = {
 
 export type TaskStatus = keyof typeof TASK_STATUSES;
 
+/** Maps each TaskStatus to its i18n translation key in the tasks dictionary. */
+export const TASK_STATUS_LABEL_KEYS: Record<TaskStatus, string> = {
+  "in-progress": "tasks.statusInProgress",
+  "complete": "tasks.statusComplete",
+  "needs-attention": "tasks.statusNeedsAttention",
+  "cancelled": "tasks.statusCancelled",
+};
+
 export interface Task {
   id: string;
   userId: string;

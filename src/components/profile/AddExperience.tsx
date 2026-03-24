@@ -33,6 +33,7 @@ import { getAllJobTitles } from "@/actions/jobtitle.actions";
 import { getAllJobLocations } from "@/actions/jobLocation.actions";
 import { Switch } from "../ui/switch";
 import { addExperience, updateExperience } from "@/actions/profile.actions";
+import { useTranslations } from "@/i18n";
 
 type AddExperienceProps = {
   resumeId: string | undefined;
@@ -52,6 +53,7 @@ function AddExperience({
   const [companies, setCompanies] = useState<Company[]>([]);
   const [locations, setLocations] = useState<JobLocation[]>([]);
   const [jobTitles, setJobTitles] = useState<JobTitle[]>([]);
+  const { t } = useTranslations();
   const pageTitle = experienceToEdit ? "Edit Experience" : "Add Experience";
   const [isPending, startTransition] = useTransition();
   const getTitleCompanyAndLocationData = useCallback(async () => {
@@ -122,7 +124,7 @@ function AddExperience({
       if (!res.success) {
         toast({
           variant: "destructive",
-          title: "Error!",
+          title: t("common.error"),
           description: res.message,
         });
       } else {

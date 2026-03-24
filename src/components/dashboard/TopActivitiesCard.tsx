@@ -13,6 +13,12 @@ interface TopActivitiesCardProps {
   }[];
 }
 
+// Map English period labels from server to i18n keys
+const periodLabelKeys: Record<string, string> = {
+  "Last 7 days": "dashboard.period7Days",
+  "Last 30 days": "dashboard.period30Days",
+};
+
 export default function TopActivitiesCard({ data }: TopActivitiesCardProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const current = data[activeIndex];
@@ -39,7 +45,7 @@ export default function TopActivitiesCard({ data }: TopActivitiesCardProps) {
                     : "hover:bg-muted",
                 )}
               >
-                {item.label.replace("Last ", "")}
+                {periodLabelKeys[item.label] ? t(periodLabelKeys[item.label]) : item.label}
               </button>
             ))}
           </div>

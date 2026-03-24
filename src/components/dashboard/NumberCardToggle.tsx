@@ -21,6 +21,12 @@ interface NumberCardToggleProps {
   }[];
 }
 
+// Map English period labels from server to i18n keys
+const periodLabelKeys: Record<string, string> = {
+  "Last 7 days": "dashboard.period7Days",
+  "Last 30 days": "dashboard.period30Days",
+};
+
 export default function NumberCardToggle({ data }: NumberCardToggleProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const current = data[activeIndex];
@@ -44,7 +50,7 @@ export default function NumberCardToggle({ data }: NumberCardToggleProps) {
                     : "hover:bg-muted",
                 )}
               >
-                {item.label.replace("Last ", "")}
+                {periodLabelKeys[item.label] ? t(periodLabelKeys[item.label]) : item.label}
               </button>
             ))}
           </div>
@@ -67,7 +73,7 @@ export default function NumberCardToggle({ data }: NumberCardToggleProps) {
       <CardFooter>
         <Progress
           value={current.trend}
-          aria-label={`${current.trend}% increase`}
+          aria-label={`${current.trend}% ${current.trend >= 0 ? "increase" : "decrease"}`}
         />
       </CardFooter>
     </Card>

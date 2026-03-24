@@ -26,12 +26,14 @@ import {
 import { checkIfModelIsRunning } from "@/utils/ai.utils";
 import { ResumeReviewSchema } from "@/models/ai.schemas";
 import { getUserSettings } from "@/actions/userSettings.actions";
+import { useTranslations } from "@/i18n";
 
 interface AiSectionProps {
   resume: Resume;
 }
 
 const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
+  const { t } = useTranslations();
   const [aISectionOpen, setAiSectionOpen] = useState(false);
   const [runningModelName, setRunningModelName] = useState<string>("");
   const [runningModelError, setRunningModelError] = useState<string>("");
@@ -65,7 +67,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
     onError: (err) => {
       toast({
         variant: "destructive",
-        title: "Error!",
+        title: t("common.error"),
         description: err.message || "Failed to get AI review",
       });
     },
@@ -75,7 +77,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
     if (!resume || resume.ResumeSections?.length === 0) {
       toast({
         variant: "destructive",
-        title: "Error!",
+        title: t("common.error"),
         description: "Resume content is required",
       });
       return;

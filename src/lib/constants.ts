@@ -24,27 +24,35 @@ export const SCHEDULER_CONSTANTS = {
   CRON_EXPRESSION: "0 * * * *", // Every hour at minute 0
 } as const;
 
-export const JOB_SOURCES = [
-  { label: "Indeed", value: "indeed" },
-  { label: "Linkedin", value: "linkedin" },
-  { label: "Monster", value: "monster" },
-  { label: "Glassdoor", value: "glassdoor" },
-  { label: "Company Career page", value: "careerpage" },
-  { label: "Google", value: "google" },
-  { label: "ZipRecruiter", value: "ziprecruiter" },
-  { label: "Job Street", value: "jobstreet" },
-  { label: "Other", value: "other" },
-] as const;
+export const JOB_SOURCES: {
+  label: string;
+  value: string;
+  labelKey: TranslationKey;
+}[] = [
+  { label: "Indeed", value: "indeed", labelKey: "jobs.sourceIndeed" },
+  { label: "Linkedin", value: "linkedin", labelKey: "jobs.sourceLinkedin" },
+  { label: "Monster", value: "monster", labelKey: "jobs.sourceMonster" },
+  { label: "Glassdoor", value: "glassdoor", labelKey: "jobs.sourceGlassdoor" },
+  { label: "Company Career page", value: "careerpage", labelKey: "jobs.sourceCareerPage" },
+  { label: "Google", value: "google", labelKey: "jobs.sourceGoogle" },
+  { label: "ZipRecruiter", value: "ziprecruiter", labelKey: "jobs.sourceZipRecruiter" },
+  { label: "Job Street", value: "jobstreet", labelKey: "jobs.sourceJobStreet" },
+  { label: "Other", value: "other", labelKey: "jobs.sourceOther" },
+];
 
-export const JOB_STATUSES = [
-  { label: "Draft", value: "draft" },
-  { label: "Applied", value: "applied" },
-  { label: "Interview", value: "interview" },
-  { label: "Offer", value: "offer" },
-  { label: "Rejected", value: "rejected" },
-  { label: "Expired", value: "expired" },
-  { label: "Archived", value: "archived" },
-] as const;
+export const JOB_STATUSES: {
+  label: string;
+  value: string;
+  labelKey: TranslationKey;
+}[] = [
+  { label: "Draft", value: "draft", labelKey: "jobs.statusDraft" },
+  { label: "Applied", value: "applied", labelKey: "jobs.statusApplied" },
+  { label: "Interview", value: "interview", labelKey: "jobs.statusInterview" },
+  { label: "Offer", value: "offer", labelKey: "jobs.statusOffer" },
+  { label: "Rejected", value: "rejected", labelKey: "jobs.statusRejected" },
+  { label: "Expired", value: "expired", labelKey: "jobs.statusExpired" },
+  { label: "Archived", value: "archived", labelKey: "jobs.statusArchived" },
+];
 
 /**
  * Returns true when mock-data / developer tools should be accessible.

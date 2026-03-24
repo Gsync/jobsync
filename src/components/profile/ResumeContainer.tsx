@@ -54,11 +54,11 @@ function ResumeContainer({ resume }: { resume: Resume }) {
           <CardTitle>Resume</CardTitle>
           <CardDescription>
             {resume.FileId && resume.File?.filePath
-              ? DownloadFileButton(
-                  resume.File?.filePath,
-                  title,
-                  resume.File?.fileName
-                )
+              ? <DownloadFileButton
+                  filePath={resume.File.filePath}
+                  fileTitle={title}
+                  fileName={resume.File.fileName}
+                />
               : title}
           </CardDescription>
           <div className="flex items-center">

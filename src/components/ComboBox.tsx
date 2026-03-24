@@ -29,6 +29,7 @@ import { createJobTitle } from "@/actions/jobtitle.actions";
 import { toast } from "./ui/use-toast";
 import { createActivityType } from "@/actions/activity.actions";
 import { createJobSource } from "@/actions/job.actions";
+import { useTranslations } from "@/i18n";
 
 interface ComboboxProps {
   options: any[];
@@ -39,6 +40,7 @@ interface ComboboxProps {
 export function Combobox({ options, field, creatable }: ComboboxProps) {
   const [newOption, setNewOption] = useState<string>("");
   const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
+  const { t } = useTranslations();
 
   const [isPending, startTransition] = useTransition();
 
@@ -59,7 +61,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
           if (!success) {
             toast({
               variant: "destructive",
-              title: "Error!",
+              title: t("common.error"),
               description: message,
             });
           }
@@ -70,7 +72,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
           if (!sourceRes.success) {
             toast({
               variant: "destructive",
-              title: "Error!",
+              title: t("common.error"),
               description: sourceRes.message,
             });
           }

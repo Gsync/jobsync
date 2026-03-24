@@ -1,6 +1,7 @@
 "use client";
 import { useTranslations } from "@/i18n";
 import { useCallback, useEffect, useState, useTransition } from "react";
+import type { ControllerRenderProps } from "react-hook-form";
 import { NoteResponse } from "@/models/note.model";
 import {
   getNotesByJobId,
@@ -132,9 +133,9 @@ export function NotesCollapsibleSection({
             value: editorContent,
             onChange: (val: string) => setEditorContent(val),
             onBlur: () => {},
-            name: "content" as const,
+            name: "content",
             ref: () => {},
-          } as any
+          } satisfies ControllerRenderProps<{ content: string }, "content">
         }
       />
       <div className="flex justify-end gap-2">

@@ -272,6 +272,6 @@ describe("TagInput Component", () => {
 
     const trigger = screen.getByRole("combobox");
     expect(trigger).toBeDisabled();
-    expect(screen.getByText("Max 10 skills reached")).toBeInTheDocument();
+    expect(screen.getByText("Max skills reached")).toBeInTheDocument();
   });
 });

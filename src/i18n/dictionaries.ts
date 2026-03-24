@@ -42,6 +42,7 @@ const core = {
     "auth.password": "Password",
     "auth.fullName": "Full Name",
     "auth.fullNamePlaceholder": "Your Name",
+    "auth.subtitle": "Track your job search, powered by AI",
     "auth.login": "Login",
     "auth.createAnAccount": "Create an account",
 
@@ -81,6 +82,10 @@ const core = {
     "common.deleteConfirmDesc": "This action cannot be undone. This will permanently delete and remove data from server.",
     "common.showingRecords": "Showing 1 to {count} of {total} {label}",
     "common.recordsPerPage": "Records per page",
+    "common.support": "Support",
+    "common.version": "Version",
+    "common.copyright": "Copyright",
+    "common.allRightsReserved": "All rights reserved.",
   },
   de: {
     "nav.dashboard": "Dashboard",
@@ -107,6 +112,7 @@ const core = {
     "auth.password": "Passwort",
     "auth.fullName": "Vollständiger Name",
     "auth.fullNamePlaceholder": "Dein Name",
+    "auth.subtitle": "Verfolge deine Jobsuche, unterstützt durch KI",
     "auth.login": "Einloggen",
     "auth.createAnAccount": "Konto erstellen",
 
@@ -143,6 +149,10 @@ const core = {
     "common.deleteConfirmDesc": "Diese Aktion kann nicht rückgängig gemacht werden. Die Daten werden dauerhaft vom Server gelöscht.",
     "common.showingRecords": "Zeige 1 bis {count} von {total} {label}",
     "common.recordsPerPage": "Einträge pro Seite",
+    "common.support": "Support",
+    "common.version": "Version",
+    "common.copyright": "Urheberrecht",
+    "common.allRightsReserved": "Alle Rechte vorbehalten.",
   },
   fr: {
     "nav.dashboard": "Tableau de bord",
@@ -169,6 +179,7 @@ const core = {
     "auth.password": "Mot de passe",
     "auth.fullName": "Nom complet",
     "auth.fullNamePlaceholder": "Votre nom",
+    "auth.subtitle": "Suivez votre recherche d'emploi, propulsé par l'IA",
     "auth.login": "Connexion",
     "auth.createAnAccount": "Créer un compte",
 
@@ -205,6 +216,10 @@ const core = {
     "common.deleteConfirmDesc": "Cette action est irréversible. Les données seront définitivement supprimées du serveur.",
     "common.showingRecords": "Affichage de 1 à {count} sur {total} {label}",
     "common.recordsPerPage": "Enregistrements par page",
+    "common.support": "Assistance",
+    "common.version": "Version",
+    "common.copyright": "Droits d'auteur",
+    "common.allRightsReserved": "Tous droits réservés.",
   },
   es: {
     "nav.dashboard": "Panel",
@@ -231,6 +246,7 @@ const core = {
     "auth.password": "Contraseña",
     "auth.fullName": "Nombre completo",
     "auth.fullNamePlaceholder": "Tu nombre",
+    "auth.subtitle": "Gestiona tu búsqueda de empleo, impulsado por IA",
     "auth.login": "Entrar",
     "auth.createAnAccount": "Crear una cuenta",
 
@@ -267,6 +283,10 @@ const core = {
     "common.deleteConfirmDesc": "Esta acción no se puede deshacer. Los datos se eliminarán permanentemente del servidor.",
     "common.showingRecords": "Mostrando 1 a {count} de {total} {label}",
     "common.recordsPerPage": "Registros por página",
+    "common.support": "Soporte",
+    "common.version": "Versión",
+    "common.copyright": "Derechos de autor",
+    "common.allRightsReserved": "Todos los derechos reservados.",
   },
 } as const;
 

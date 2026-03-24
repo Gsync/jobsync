@@ -24,6 +24,7 @@ import {
 import { Input } from "../ui/input";
 import { Resume } from "@/models/profile.model";
 import { toast } from "../ui/use-toast";
+import { useTranslations } from "@/i18n";
 
 type CreateResumeProps = {
   resumeDialogOpen: boolean;
@@ -41,6 +42,7 @@ function CreateResume({
   setNewResumeId,
 }: CreateResumeProps) {
   const [isPending, startTransition] = useTransition();
+  const { t } = useTranslations();
 
   const pageTitle = resumeToEdit ? "Edit Resume Title" : "Create Resume";
 
@@ -87,7 +89,7 @@ function CreateResume({
       if (!response.success) {
         toast({
           variant: "destructive",
-          title: "Error!",
+          title: t("common.error"),
           description: response?.message,
         });
       } else {

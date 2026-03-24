@@ -16,6 +16,8 @@ export const dashboard = {
     "dashboard.na": "N/A",
     "dashboard.unknown": "Unknown",
     "dashboard.hrs": "hrs",
+    "dashboard.period7Days": "7 days",
+    "dashboard.period30Days": "30 days",
   },
   de: {
     "dashboard.title": "Dashboard",
@@ -34,6 +36,8 @@ export const dashboard = {
     "dashboard.na": "k.A.",
     "dashboard.unknown": "Unbekannt",
     "dashboard.hrs": "Std.",
+    "dashboard.period7Days": "7 Tage",
+    "dashboard.period30Days": "30 Tage",
   },
   fr: {
     "dashboard.title": "Tableau de bord",
@@ -52,6 +56,8 @@ export const dashboard = {
     "dashboard.na": "N/D",
     "dashboard.unknown": "Inconnu",
     "dashboard.hrs": "h",
+    "dashboard.period7Days": "7 jours",
+    "dashboard.period30Days": "30 jours",
   },
   es: {
     "dashboard.title": "Panel",
@@ -70,5 +76,7 @@ export const dashboard = {
     "dashboard.na": "N/D",
     "dashboard.unknown": "Desconocido",
     "dashboard.hrs": "h",
+    "dashboard.period7Days": "7 días",
+    "dashboard.period30Days": "30 días",
   },
 } as const;

@@ -31,6 +31,7 @@ import { Combobox } from "../ComboBox";
 import { JobLocation } from "@/models/job.model";
 import { addEducation, updateEducation } from "@/actions/profile.actions";
 import { getAllJobLocations } from "@/actions/jobLocation.actions";
+import { useTranslations } from "@/i18n";
 
 type AddEducationProps = {
   resumeId: string | undefined;
@@ -47,6 +48,7 @@ function AddEducation({
   setDialogOpen,
   educationToEdit,
 }: AddEducationProps) {
+  const { t } = useTranslations();
   const pageTitle = educationToEdit ? "Edit Education" : "Add Education";
   const [isPending, startTransition] = useTransition();
   const [locations, setLocations] = useState<JobLocation[]>([]);
@@ -112,7 +114,7 @@ function AddEducation({
       if (!res.success) {
         toast({
           variant: "destructive",
-          title: "Error!",
+          title: t("common.error"),
           description: res.message,
         });
       } else {

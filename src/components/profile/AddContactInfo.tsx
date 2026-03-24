@@ -25,6 +25,7 @@ import { useEffect, useTransition } from "react";
 import { toast } from "../ui/use-toast";
 import { ContactInfo } from "@/models/profile.model";
 import { addContactInfo, updateContactInfo } from "@/actions/profile.actions";
+import { useTranslations } from "@/i18n";
 
 interface AddContactInfoProps {
   dialogOpen: boolean;
@@ -40,6 +41,7 @@ function AddContactInfo({
   resumeId,
 }: AddContactInfoProps) {
   const [isPending, startTransition] = useTransition();
+  const { t } = useTranslations();
 
   const pageTitle = contactInfoToEdit
     ? "Edit Contact Info"
@@ -82,7 +84,7 @@ function AddContactInfo({
       if (!res.success) {
         toast({
           variant: "destructive",
-          title: "Error!",
+          title: t("common.error"),
           description: res.message,
         });
       } else {

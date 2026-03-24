@@ -9,8 +9,10 @@ import Loading from "../Loading";
 import { Button } from "../ui/button";
 import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
 import { RecordsCount } from "../RecordsCount";
+import { useTranslations } from "@/i18n";
 
 function JobLocationsContainer() {
+  const { t } = useTranslations();
   const [locations, setLocations] = useState<JobTitle[]>([]);
   const [totalJobLocations, setTotalJobLocations] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
@@ -89,7 +91,7 @@ function JobLocationsContainer() {
                   disabled={loading}
                   className="btn btn-primary"
                 >
-                  {loading ? "Loading..." : "Load More"}
+                  {loading ? t("common.loading") : t("common.loadMore")}
                 </Button>
               </div>
             )}

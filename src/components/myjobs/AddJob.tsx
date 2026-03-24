@@ -79,7 +79,7 @@ export function AddJob({
   const [availableTags, setAvailableTags] = useState<Tag[]>(tags);
   const [isPending, startTransition] = useTransition();
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
-    resolver: zodResolver(AddJobFormSchema) as any,
+    resolver: zodResolver(AddJobFormSchema) as any, // zod v4 + @hookform/resolvers type mismatch
     defaultValues: {
       type: Object.keys(JOB_TYPES)[0],
       dueDate: addDays(new Date(), 3),

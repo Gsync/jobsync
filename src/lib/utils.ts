@@ -43,7 +43,7 @@ export function handleError(error: unknown, msg = "Server Error.") {
       error.message =
         "Fetch failed, please make sure selected AI service is running.";
     }
-    if ("code" in error && (error as any).code === "P2003") {
+    if ("code" in error && (error as { code: unknown }).code === "P2003") {
       return {
         success: false,
         message:

@@ -10,8 +10,10 @@ import Loading from "../Loading";
 import { Button } from "../ui/button";
 import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
 import { RecordsCount } from "../RecordsCount";
+import { useTranslations } from "@/i18n";
 
 function CompaniesContainer() {
+  const { t } = useTranslations();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [totalCompanies, setTotalCompanies] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
@@ -109,7 +111,7 @@ function CompaniesContainer() {
                   disabled={loading}
                   className="btn btn-primary"
                 >
-                  {loading ? "Loading..." : "Load More"}
+                  {loading ? t("common.loading") : t("common.loadMore")}
                 </Button>
               </div>
             )}

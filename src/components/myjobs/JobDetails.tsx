@@ -83,11 +83,11 @@ function JobDetails({ job }: { job: JobResponse }) {
             </div>
             <div>
               {job?.Resume && job?.Resume?.File && job.Resume?.File?.filePath
-                ? DownloadFileButton(
-                    job?.Resume?.File?.filePath,
-                    job?.Resume?.title,
-                    job?.Resume?.File?.fileName,
-                  )
+                ? <DownloadFileButton
+                    filePath={job.Resume.File.filePath}
+                    fileTitle={job.Resume.title}
+                    fileName={job.Resume.File.fileName}
+                  />
                 : null}
             </div>
           </CardHeader>

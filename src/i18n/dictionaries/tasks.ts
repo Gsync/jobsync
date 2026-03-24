@@ -47,6 +47,12 @@ export const tasks = {
     "tasks.createdSuccess": "Task has been created successfully",
     "tasks.updatedSuccess": "Task has been updated successfully",
     "tasks.toggleMenu": "Toggle menu",
+
+    // Task statuses
+    "tasks.statusInProgress": "In Progress",
+    "tasks.statusComplete": "Complete",
+    "tasks.statusNeedsAttention": "Needs Attention",
+    "tasks.statusCancelled": "Cancelled",
   },
   de: {
     "tasks.title": "Meine Aufgaben",
@@ -96,6 +102,12 @@ export const tasks = {
     "tasks.createdSuccess": "Aufgabe wurde erfolgreich erstellt",
     "tasks.updatedSuccess": "Aufgabe wurde erfolgreich aktualisiert",
     "tasks.toggleMenu": "Menü umschalten",
+
+    // Aufgabenstatus
+    "tasks.statusInProgress": "In Bearbeitung",
+    "tasks.statusComplete": "Abgeschlossen",
+    "tasks.statusNeedsAttention": "Erfordert Aufmerksamkeit",
+    "tasks.statusCancelled": "Abgebrochen",
   },
   fr: {
     "tasks.title": "Mes tâches",
@@ -145,6 +157,12 @@ export const tasks = {
     "tasks.createdSuccess": "La tâche a été créée avec succès",
     "tasks.updatedSuccess": "La tâche a été mise à jour avec succès",
     "tasks.toggleMenu": "Basculer le menu",
+
+    // Statuts de tâche
+    "tasks.statusInProgress": "En cours",
+    "tasks.statusComplete": "Terminé",
+    "tasks.statusNeedsAttention": "Attention requise",
+    "tasks.statusCancelled": "Annulé",
   },
   es: {
     "tasks.title": "Mis tareas",
@@ -194,5 +212,11 @@ export const tasks = {
     "tasks.createdSuccess": "La tarea se ha creado con éxito",
     "tasks.updatedSuccess": "La tarea se ha actualizado con éxito",
     "tasks.toggleMenu": "Alternar menú",
+
+    // Estados de tarea
+    "tasks.statusInProgress": "En progreso",
+    "tasks.statusComplete": "Completado",
+    "tasks.statusNeedsAttention": "Requiere atención",
+    "tasks.statusCancelled": "Cancelado",
   },
 } as const;

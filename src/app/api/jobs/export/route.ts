@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import Papa from "papaparse";
-import { PassThrough } from "node:stream";
+import { PassThrough, Readable } from "node:stream";
 import { getJobsIterator } from "@/actions/job.actions";
 import { formatISODate } from "@/i18n";
 
@@ -95,7 +95,8 @@ export const POST = async () => {
     }
   })();
 
-  return new NextResponse(passThrough as any, {
+  const webStream = Readable.toWeb(passThrough) as ReadableStream;
+  return new NextResponse(webStream, {
     headers: {
       "Content-Type": "text/csv",
       "Content-Disposition": 'attachment; filename="jobs.csv"',
