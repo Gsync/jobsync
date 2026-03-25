@@ -157,19 +157,30 @@ App (Kernlogik) ↔ Connector (ACL) ↔ Module (Externes System)
 ## 2. UX/UI
 
 ### 2.1 Onboarding-Assistent
-Kontextsensitiver Einrichtungsassistent für neue Benutzer, der sich an deren Ziele und Situation anpasst.
+Kontextsensitiver Einrichtungsassistent für neue Benutzer, der sich an deren Ziele und Situation anpasst. **Jederzeit überspringbar und wieder startbar.**
 
 - **Willkommens-Flow (nach erstem Login):**
+  - **"Überspringen"**-Button immer sichtbar — kein Zwang, alles sofort auszufüllen
   - Schritt 1: **Ziel erfragen** — "Was möchtest du erreichen?"
     - Aktive Jobsuche (→ betont Automations, Job-Matching, CV-Upload)
     - Passive Jobsuche / Marktbeobachtung (→ betont Alerts, Bookmarks)
     - Bewerbungsmanagement (→ betont CRM, Tracking, Follow-Ups)
     - Karriereplanung (→ betont Skills, ESCO-Taxonomie, Gehaltsvergleich)
-  - Schritt 2: **Profil anlegen** — Name, Standort (→ Geo-Referenzpunkt), Sprache
+  - Schritt 2: **Benutzer kennenlernen** — Funktionsrelevante Daten:
+    - Bevorzugte Sprache (UI + API-Sprache, setzt Locale)
+    - Vorname, Nachname (für Bewerbungsunterlagen, CRM)
+    - Geburtsdatum (für CV-Generierung, Altersberechnung in Templates)
+    - Standort / Heimatadresse (→ Geo-Referenzpunkt für Entfernungsfilter)
+    - Unterschrift (Upload/Zeichnen) — für automatisierte Bewerbungsunterlagen
   - Schritt 3: **CV hochladen** (optional) — automatische Skill-Extraktion (→ ESCO/NACE)
-  - Schritt 4: **Connectors aktivieren** — Welche Jobportale? (EURES, Arbeitsagentur, JSearch)
+  - Schritt 4: **Skills bearbeiten** — Extrahierte Skills prüfen, ergänzen, entfernen
+    - Chip-basierte Bearbeitung (→ bestehendes TagInput/ChipList Pattern)
+    - ESCO-Taxonomie-Suche für fehlende Skills
+    - Priorisierung: Kern-Skills vs. Neben-Skills
+    - Wird auch ohne CV-Upload angezeigt (manuelle Eingabe möglich)
+  - Schritt 5: **Connectors aktivieren** — Welche Jobportale? (EURES, Arbeitsagentur, JSearch)
     - Connector-spezifische Einstellungen direkt im Flow (z.B. Umkreis, Land, Sprache)
-  - Schritt 5: **Erste Automation erstellen** — Geführter Mini-Wizard basierend auf Zielen
+  - Schritt 6: **Erste Automation erstellen** — Geführter Mini-Wizard basierend auf Zielen
 - **Kontextsensitivität:**
   - Überspringt Schritte die der Benutzer schon erledigt hat (z.B. CV bereits vorhanden)
   - Passt Empfehlungen an Land/Sprache an (DE → Arbeitsagentur vorschlagen, EU → EURES)
@@ -179,11 +190,12 @@ Kontextsensitiver Einrichtungsassistent für neue Benutzer, der sich an deren Zi
   - Fortgeschrittene Features (CRM, Dokumentengenerator) werden nicht im Onboarding gezeigt
   - Stattdessen: kontextsensitive Tooltips/Hinweise beim ersten Besuch jeder Seite
   - "Wusstest du?" Karten auf dem Dashboard basierend auf Nutzungsverhalten
-- **Wiederaufrufbar:**
-  - Über Settings → "Onboarding wiederholen"
-  - Einzelne Schritte über Hilfe-Menü erreichbar
+- **Jederzeit wieder startbar:**
+  - Über Settings → "Onboarding wiederholen" (startet den kompletten Flow)
+  - Einzelne Schritte über Hilfe-Menü erreichbar (z.B. nur Skills bearbeiten)
+  - Dashboard-Hinweis wenn Profil unvollständig: "Dein Profil ist zu 60% eingerichtet"
 - **Gamification (optional):**
-  - Fortschrittsbalken: "Dein Profil ist zu 60% eingerichtet"
+  - Fortschrittsbalken auf dem Dashboard
   - Checkliste mit empfohlenen nächsten Schritten
 
 ### 2.2 Kununu & Glassdoor Integration
