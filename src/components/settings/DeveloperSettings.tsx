@@ -8,6 +8,7 @@ import { Button } from "../ui/button";
 import { toast } from "../ui/use-toast";
 import { Check, Loader2 } from "lucide-react";
 import { getUserSettings, updateUserSettings } from "@/actions/userSettings.actions";
+import { syncEnvVariable } from "@/lib/env-sync";
 import { useTranslations } from "@/i18n";
 import type { DeveloperSettings as DeveloperSettingsType } from "@/models/userSettings.model";
 
@@ -64,9 +65,20 @@ function DeveloperSettings() {
     try {
       const result = await updateUserSettings({ developer: newSettings });
       if (result.success) {
+        // Sync allowedDevOrigins to .env so it takes effect at runtime
+        if ("allowedDevOrigins" in update) {
+          await syncEnvVariable(
+            "ALLOWED_DEV_ORIGINS",
+            newSettings.allowedDevOrigins || undefined
+          );
+        }
         toast({
           variant: "success",
           title: t("settings.saved"),
+          description:
+            "allowedDevOrigins" in update
+              ? t("settings.allowedDevOriginsSavedHint")
+              : undefined,
         });
       } else {
         toast({
