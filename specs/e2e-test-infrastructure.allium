@@ -1,0 +1,348 @@
+-- allium: 3
+-- e2e-test-infrastructure.allium
+
+-- Scope: E2E test execution infrastructure for JobSync
+-- Includes: Test categorization, auth state management, execution pipeline, data isolation
+-- Excludes:
+--   - Individual test assertions (domain-level, not infrastructure)
+--   - Unit/component test infrastructure (Jest, separate concern)
+--   - CI/CD pipeline definition (GitHub Actions, separate concern)
+-- Dependencies: User entity defined in jobsync.allium
+
+------------------------------------------------------------
+-- External Entities
+------------------------------------------------------------
+
+external entity PlaywrightRunner {
+  projects: List<Project>
+  global_setup: GlobalSetup?
+  workers: Integer
+  timeout: Duration
+}
+
+external entity NextAuthSession {
+  cookies: String                -- serialized cookie jar
+  expires_at: Timestamp
+}
+
+external entity SQLiteDatabase {
+  path: String                   -- "prisma/dev.db"
+  -- Shared across all tests and dev server; no per-test isolation
+}
+
+------------------------------------------------------------
+-- Value Types
+------------------------------------------------------------
+
+value AuthState {
+  storage_state_path: String     -- "e2e/.auth/user.json"
+  user_email: String             -- "admin@example.com"
+  created_at: Timestamp
+  session: NextAuthSession
+}
+
+value TestDataIdentifier {
+  uid: String                    -- Date.now().toString(36), e.g. "m1abc2d"
+  prefix: String                 -- "E2E", distinguishes test data from real data
+}
+
+------------------------------------------------------------
+-- Enumerations
+------------------------------------------------------------
+
+enum TestCategory {
+  smoke                          -- auth-free, read-only tests
+  crud                           -- authenticated CRUD flows
+}
+
+enum DomainAggregate {
+  auth
+  locale
+  job
+  task
+  activity
+  automation
+  question
+  profile
+}
+
+------------------------------------------------------------
+-- Entities
+------------------------------------------------------------
+
+entity Project {
+  name: String                   -- "smoke" | "crud"
+  category: TestCategory
+  test_dir: String               -- relative path, e.g. "e2e/smoke"
+  storage_state: AuthState?      -- null for smoke, set for crud
+  dependencies: List<Project>    -- smoke has none, crud depends on smoke
+  files: List<TestFile>
+}
+
+entity TestFile {
+  path: String                   -- e.g. "e2e/crud/job-crud.spec.ts"
+  aggregate: DomainAggregate
+  category: TestCategory
+  test_count: Integer
+  uses_storage_state: Boolean
+}
+
+entity GlobalSetup {
+  -- Runs once before any project. Performs UI login and persists auth state.
+  auth_state: AuthState
+  executable_path: String?       -- PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH for NixOS
+}
+
+------------------------------------------------------------
+-- Config
+------------------------------------------------------------
+
+config {
+  workers_local: Integer = 4
+  workers_ci: Integer = 1
+  timeout_default: Duration = 60.seconds
+  timeout_expect: Duration = 10.seconds
+  timeout_action: Duration = 10.seconds
+  retries_ci: Integer = 2
+  retries_local: Integer = 0
+  base_url: String = "http://localhost:3737"
+  chromium_executable: String = "/run/current-system/sw/bin/chromium"
+  stability_runs: Integer = 5   -- number of repeated runs for anti-flaky verification
+}
+
+------------------------------------------------------------
+-- Rules: Pipeline Execution
+------------------------------------------------------------
+
+rule GlobalSetupRunsFirst {
+  -- WHEN a test run starts, the global setup authenticates once
+  -- and saves the session to storageState before any project runs.
+  when: TestRunStarted
+  ensures: GlobalSetup.auth_state.storage_state_path exists
+  ensures: GlobalSetup completes before any Project starts
+}
+
+rule PipelineDependencies {
+  -- WHEN projects are scheduled, smoke runs before crud.
+  -- If smoke fails, crud is skipped entirely (fail-fast).
+  when: ProjectScheduled(project)
+  requires: project.dependencies.all(dep => dep.status = passed)
+  ensures: project executes only after all dependencies pass
+}
+
+rule SmokeProjectConfig {
+  -- Smoke tests run WITHOUT storageState.
+  -- They test the authentication flow itself (signin, locale-switching).
+  when: project: Project where category = smoke
+  ensures: project.storage_state = null
+  ensures: project.files.all(f => f.uses_storage_state = false)
+}
+
+rule CrudProjectConfig {
+  -- CRUD tests run WITH storageState from global setup.
+  -- No per-test login is needed.
+  when: project: Project where category = crud
+  requires: GlobalSetup.auth_state != null
+  ensures: project.storage_state = GlobalSetup.auth_state
+  ensures: project.files.all(f => f.uses_storage_state = true)
+}
+
+------------------------------------------------------------
+-- Rules: Self-Contained Tests (Anti-Flaky)
+------------------------------------------------------------
+
+rule SelfContainedCrudTest {
+  -- EVERY CRUD test must be independently runnable.
+  -- Each test creates its own data, asserts, and cleans up.
+  -- No test depends on state from a previous test.
+  when: test in TestFile where category = crud
+  ensures: test creates own test data with unique TestDataIdentifier
+  ensures: test cleans up own data (via afterEach or inline cleanup)
+  ensures: test does not read data created by another test
+}
+
+rule UniqueTestData {
+  -- WHEN a CRUD test creates data, it uses a unique identifier
+  -- derived from Date.now().toString(36) to prevent collision
+  -- when tests run in parallel across workers.
+  when: CrudTestCreatesData(test, entity_name)
+  let uid = TestDataIdentifier(uid: timestamp_base36(), prefix: "E2E")
+  ensures: entity_name contains uid.prefix
+  ensures: entity_name contains uid.uid
+}
+
+rule CleanupOnFailure {
+  -- WHEN a test fails during assertion, cleanup must still execute.
+  -- Use test.afterEach hooks, not inline cleanup after assertions.
+  when: CrudTestFails(test)
+  ensures: test.afterEach executes cleanup
+  ensures: test data created by this test is removed
+}
+
+------------------------------------------------------------
+-- Rules: Shared Helpers
+------------------------------------------------------------
+
+rule SingleSourceHelpers {
+  -- ALL reusable E2E utilities live in e2e/helpers/index.ts.
+  -- No test file duplicates login(), selectOrCreateComboboxOption(),
+  -- expectToast(), or navigateTo().
+  ensures: login defined exactly once in e2e/helpers/
+  ensures: selectOrCreateComboboxOption defined exactly once in e2e/helpers/
+  ensures: expectToast defined exactly once in e2e/helpers/
+  ensures: navigateTo defined exactly once in e2e/helpers/
+  ensures: uniqueId defined exactly once in e2e/helpers/
+}
+
+rule HelperExceptions {
+  -- signin.spec.ts may define inline login (tests the auth flow itself).
+  -- locale-switching.spec.ts may define locale-aware login variant.
+  -- These are the ONLY exceptions to SingleSourceHelpers.
+  ensures: signin.spec.ts may have local login
+  ensures: locale-switching.spec.ts may have local login with locale parameter
+}
+
+------------------------------------------------------------
+-- Rules: Data Isolation
+------------------------------------------------------------
+
+rule SharedDatabaseConstraint {
+  -- All E2E tests share a single SQLite database (prisma/dev.db).
+  -- There is no per-test database isolation.
+  -- Tests must be designed to not interfere with each other.
+  ensures: no test modifies seed data (admin user, job sources, job statuses)
+  ensures: no test reads data created by another test
+  ensures: all test-created data uses "E2E" prefix for identification
+}
+
+rule SeedDataIsReadOnly {
+  -- Seed data (admin user, job sources, job statuses, default profile)
+  -- is shared infrastructure. Tests may READ seed data but never MODIFY it.
+  when: test accesses seed data
+  ensures: seed data unchanged after test completes
+}
+
+------------------------------------------------------------
+-- Rules: One Spec Per Aggregate
+------------------------------------------------------------
+
+rule OneSpecPerAggregate {
+  -- Each domain aggregate has exactly one E2E spec file.
+  -- No legacy duplicates (e.g., both add-job.spec.ts and job-crud.spec.ts).
+  -- This follows DDD's "single source of truth" principle.
+  for_each: aggregate in DomainAggregate
+  ensures: TestFile where aggregate = aggregate | count <= 1
+}
+
+------------------------------------------------------------
+-- Rules: Dev Server
+------------------------------------------------------------
+
+rule ExternalDevServer {
+  -- The dev server MUST be started externally before running E2E tests.
+  -- Playwright config uses reuseExistingServer: true.
+  -- Agents must never start/stop the dev server themselves.
+  ensures: PlaywrightRunner.web_server.reuse_existing_server = true
+}
+
+------------------------------------------------------------
+-- Invariants
+------------------------------------------------------------
+
+invariant ChromiumOnly {
+  -- Only Chromium is configured as a browser project.
+  -- Firefox and WebKit are not included.
+  ensures: PlaywrightRunner.projects.all(p => p.browser = chromium)
+}
+
+invariant BunNotNpm {
+  -- webServer fallback command uses "bun run dev", not "npm run dev".
+  ensures: PlaywrightRunner.web_server.command starts_with "bun"
+}
+
+invariant NoSerialDescribes {
+  -- No test file uses test.describe.serial.
+  -- All tests within a file are independently runnable.
+  ensures: no TestFile contains "test.describe.serial"
+}
+
+invariant NoCrossTestDependency {
+  -- No test reads data created by a different test.
+  -- Each test is hermetic — it can run alone and in any order.
+  for_each: test_a, test_b in TestFile where test_a != test_b
+  ensures: test_a.created_data disjoint_from test_b.read_data
+}
+
+invariant StorageStateGitignored {
+  -- The .auth/ directory containing session cookies is never committed.
+  ensures: "e2e/.auth/" in gitignore
+}
+
+------------------------------------------------------------
+-- Actor Declarations
+------------------------------------------------------------
+
+actor Developer {
+  -- Runs E2E tests locally with parallel workers
+}
+
+actor CI {
+  -- Runs E2E tests in resource-tight NixOS environment with single worker
+}
+
+------------------------------------------------------------
+-- Surfaces
+------------------------------------------------------------
+
+surface LocalExecution {
+  facing runner: Developer
+  context suite: PlaywrightRunner
+
+  provides:
+    RunAll
+      -- npx playwright test --workers=4
+    RunSmoke
+      -- npx playwright test --project=smoke
+    RunCrud
+      -- npx playwright test --project=crud
+    RunSingleFile(path: String)
+      -- npx playwright test <path>
+
+  exposes: html_report, test_results, timing_metrics
+}
+
+surface CIExecution {
+  facing runner: CI
+  context suite: PlaywrightRunner
+
+  provides:
+    RunAll
+      -- nice -n 10 npx playwright test --project=chromium --workers=1
+
+  exposes: test_results, exit_code
+
+  @guarantee ResourceSafe
+    -- CI execution uses nice -n 10 and --workers=1 to avoid
+    -- race conditions under tight NixOS VM resources.
+}
+
+surface PlaywrightConfig {
+  facing runner: Developer
+  context config: PlaywrightRunner
+
+  exposes:
+    global_setup, projects, workers, timeout, web_server,
+    reporter, retry_policy
+
+  @guarantee PipelineOrder
+    -- Projects execute in dependency order: smoke first, then crud.
+    -- Smoke failure prevents crud execution.
+}
+
+------------------------------------------------------------
+-- Open Questions
+------------------------------------------------------------
+
+open question "Should storageState be refreshed mid-run if NextAuth session expires during long test suites?"
+open question "Should a future Phase introduce per-test database transactions for stronger isolation (e.g., SQLite savepoints)?"
+open question "Should waitForTimeout calls be systematically replaced with event-based waits, or is the debounce pattern acceptable?"

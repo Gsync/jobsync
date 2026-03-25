@@ -189,12 +189,7 @@ async function createAutomation(
 // Tests
 // ---------------------------------------------------------------------------
 
-test.beforeEach(async ({ page, baseURL }) => {
-  await page.goto("/");
-  await page.waitForLoadState("networkidle");
-  await login(page);
-  await expect(page).toHaveURL(baseURL + "/dashboard", { timeout: 30000 });
-});
+// storageState handles authentication — no per-test login needed
 
 test.describe.serial("Automation CRUD: Create, Verify, Delete", () => {
   const automationName = "React Developer Jobs Europe";

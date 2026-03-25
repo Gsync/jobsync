@@ -1,9 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
 
-test.beforeEach(async ({ page, baseURL }) => {
-  await page.goto("/");
-  await login(page);
-  await expect(page).toHaveURL(baseURL + "/dashboard", { timeout: 15000 });
+// storageState handles authentication — navigate to dashboard only
+test.beforeEach(async ({ page }) => {
+  await page.goto("/dashboard");
+  await page.waitForLoadState("networkidle");
 });
 
 async function login(page: Page) {

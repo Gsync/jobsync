@@ -51,11 +51,7 @@ async function deleteTask(page: Page, title: string) {
 // Tests
 // ---------------------------------------------------------------------------
 
-test.beforeEach(async ({ page, baseURL }) => {
-  await page.goto("/");
-  await login(page);
-  await expect(page).toHaveURL(baseURL + "/dashboard");
-});
+// storageState handles authentication — no per-test login needed
 
 test.describe.serial("Task CRUD: Create, Edit, Delete", () => {
   const taskTitle = "Prepare portfolio presentation for client review";

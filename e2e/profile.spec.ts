@@ -5,15 +5,10 @@ async function expectToast(page: Page, pattern: RegExp) {
   await expect(page.getByText(pattern).first()).toBeVisible({ timeout: 10000 });
 }
 
-test.beforeEach(async ({ page, baseURL }) => {
-  await page.goto("/");
-  await page.getByPlaceholder("id@example.com").click();
-  await page.getByPlaceholder("id@example.com").fill("admin@example.com");
-  await page.getByLabel("Password").click();
-  await page.getByLabel("Password").fill("password123");
-  await page.getByRole("button", { name: "Login" }).click();
-
-  await expect(page).toHaveURL(baseURL + "/dashboard", { timeout: 15000 });
+// storageState handles authentication — navigate to dashboard only
+test.beforeEach(async ({ page }) => {
+  await page.goto("/dashboard");
+  await page.waitForLoadState("networkidle");
 });
 
 async function createResume(page: Page, title: string) {

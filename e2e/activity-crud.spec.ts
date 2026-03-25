@@ -1,11 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
-test.beforeEach(async ({ page, baseURL }) => {
-  await page.goto("/");
-  await page.waitForLoadState("networkidle");
-  await login(page);
-  await expect(page).toHaveURL(baseURL + "/dashboard", { timeout: 30000 });
-});
+// storageState handles authentication — no per-test login needed
 
 async function login(page: Page) {
   await page.getByPlaceholder("id@example.com").click();

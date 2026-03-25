@@ -145,12 +145,7 @@ async function deleteJob(page: Page, jobTitle: string) {
 // Tests
 // ---------------------------------------------------------------------------
 
-test.beforeEach(async ({ page, baseURL }) => {
-  await page.goto("/");
-  await page.waitForLoadState("networkidle");
-  await login(page);
-  await expect(page).toHaveURL(baseURL + "/dashboard", { timeout: 30000 });
-});
+// storageState handles authentication — no per-test login needed
 
 test.describe.serial("Job CRUD: Create, Edit, Delete", () => {
   const jobTitle = "Senior Frontend Engineer";
