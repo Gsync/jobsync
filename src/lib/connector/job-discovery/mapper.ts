@@ -30,7 +30,7 @@ interface MapperOutput {
   discoveredAt: Date;
 }
 
-export async function mapScrapedJobToJobRecord(
+export async function mapDiscoveredVacancyToJobRecord(
   input: MapperInput
 ): Promise<MapperOutput> {
   const { vacancy, userId, automationId, matchScore, matchData } = input;

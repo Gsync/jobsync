@@ -3,7 +3,7 @@ import {
   normalizeForSearch,
   extractKeywords,
   extractCityName,
-} from "@/lib/scraper/utils";
+} from "@/lib/connector/job-discovery/utils";
 
 describe("normalizeJobUrl", () => {
   it("removes utm_source parameter", () => {

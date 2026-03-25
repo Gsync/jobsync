@@ -3,15 +3,15 @@ import "server-only";
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { streamText, Output } from "ai";
-import { getModel } from "@/lib/ai/providers";
-import { checkRateLimit } from "@/lib/ai/rate-limiter";
+import { getModel } from "@/lib/connector/ai-provider/providers";
+import { checkRateLimit } from "@/lib/connector/ai-provider/rate-limiter";
 import {
   ResumeReviewSchema,
   RESUME_REVIEW_SYSTEM_PROMPT,
   buildResumeReviewPrompt,
   AIUnavailableError,
   preprocessResume,
-} from "@/lib/ai";
+} from "@/lib/connector/ai-provider";
 import { Resume } from "@/models/profile.model";
 import { AiModel } from "@/models/ai.model";
 

@@ -2,8 +2,8 @@ import { JobResponse } from "@/models/job.model";
 import { AiProvider } from "@/models/ai.model";
 
 // Re-export for backwards compatibility
-export { convertResumeToText } from "@/lib/ai/tools/preprocessing";
-export { convertJobToText } from "@/lib/ai/tools/preprocessing-job";
+export { convertResumeToText } from "@/lib/connector/ai-provider/tools/preprocessing";
+export { convertJobToText } from "@/lib/connector/ai-provider/tools/preprocessing-job";
 
 export interface ModelCheckResult {
   isRunning: boolean;

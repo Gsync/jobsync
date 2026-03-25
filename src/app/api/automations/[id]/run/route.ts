@@ -3,7 +3,7 @@ import "server-only";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import db from "@/lib/db";
-import { runAutomation, type RunnerResult } from "@/lib/scraper";
+import { runAutomation, type RunnerResult } from "@/lib/connector/job-discovery";
 
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const MAX_RUNS_PER_HOUR = 5;

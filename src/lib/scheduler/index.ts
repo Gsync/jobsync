@@ -1,7 +1,7 @@
 import cron, { ScheduledTask } from "node-cron";
 import { SCHEDULER_CONSTANTS } from "@/lib/constants";
 import db from "@/lib/db";
-import { runAutomation } from "@/lib/scraper";
+import { runAutomation } from "@/lib/connector/job-discovery";
 import { debugLog, debugError } from "@/lib/debug";
 
 let scheduledTask: ScheduledTask | null = null;

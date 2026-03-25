@@ -6,7 +6,7 @@ import type {
 } from "@/models/automation.model";
 import type { ConnectorError, DiscoveredVacancy } from "./types";
 import { connectorRegistry } from "./connectors";
-import { mapScrapedJobToJobRecord } from "./mapper";
+import { mapDiscoveredVacancyToJobRecord } from "./mapper";
 import { normalizeJobUrl } from "./utils";
 import { calculateNextRunAt } from "./schedule";
 import {
@@ -14,7 +14,7 @@ import {
   JobMatchSchema,
   JOB_MATCH_SYSTEM_PROMPT,
   buildJobMatchPrompt,
-} from "@/lib/ai";
+} from "@/lib/connector/ai-provider";
 import {
   AiProvider,
   OllamaModel,
@@ -381,7 +381,7 @@ export async function runAutomation(
           sourceUrl: normalizeJobUrl(job.sourceUrl),
         };
 
-        const jobRecord = await mapScrapedJobToJobRecord({
+        const jobRecord = await mapDiscoveredVacancyToJobRecord({
           vacancy,
           userId: automation.userId,
           automationId: automation.id,

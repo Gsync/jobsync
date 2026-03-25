@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   EURES_AUTOCOMPLETE_URL,
   type EuresAutocompleteResponse,
-} from "@/lib/scraper/eures/autocomplete";
+} from "@/lib/connector/job-discovery/modules/eures/autocomplete";
 import { getLocaleFromCookie } from "@/i18n/server";
 
 const LANGUAGE_PATTERN = /^[a-z]{2}$/;

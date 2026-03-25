@@ -3,7 +3,7 @@ import type {
   ConnectorResult,
   DiscoveredVacancy,
   SearchParams,
-} from "../types";
+} from "../../types";
 import type {
   ArbeitsagenturSearchResponse,
   ArbeitsagenturJob,

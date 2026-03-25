@@ -3,8 +3,8 @@ import "server-only";
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { streamText, Output } from "ai";
-import { getModel } from "@/lib/ai/providers";
-import { checkRateLimit } from "@/lib/ai/rate-limiter";
+import { getModel } from "@/lib/connector/ai-provider/providers";
+import { checkRateLimit } from "@/lib/connector/ai-provider/rate-limiter";
 import {
   JobMatchSchema,
   JOB_MATCH_SYSTEM_PROMPT,
@@ -12,7 +12,7 @@ import {
   AIUnavailableError,
   preprocessResume,
   preprocessJob,
-} from "@/lib/ai";
+} from "@/lib/connector/ai-provider";
 import { getResumeById } from "@/actions/profile.actions";
 import { getJobDetails } from "@/actions/job.actions";
 import { AiModel } from "@/models/ai.model";

@@ -3,7 +3,7 @@ import type {
   ConnectorResult,
   DiscoveredVacancy,
   SearchParams,
-} from "../types";
+} from "../../types";
 
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
 const JSEARCH_BASE_URL = "https://jsearch.p.rapidapi.com";

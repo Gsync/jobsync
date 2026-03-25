@@ -1,7 +1,7 @@
 import { connectorRegistry } from "./registry";
-import { createJSearchConnector } from "./jsearch";
-import { createEuresConnector } from "./eures";
-import { createArbeitsagenturConnector } from "./arbeitsagentur";
+import { createJSearchConnector } from "./modules/jsearch";
+import { createEuresConnector } from "./modules/eures";
+import { createArbeitsagenturConnector } from "./modules/arbeitsagentur";
 
 // Register all available data source connectors
 connectorRegistry.register("jsearch", createJSearchConnector);

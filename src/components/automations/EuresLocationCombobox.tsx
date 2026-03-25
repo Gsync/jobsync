@@ -10,7 +10,7 @@ import {
   EURES_COUNTRY_MAP,
   getLocationLabel,
   getCountryCode,
-} from "@/lib/scraper/eures/countries";
+} from "@/lib/connector/job-discovery/modules/eures/countries";
 import { Button } from "@/components/ui/button";
 import {
   Popover,

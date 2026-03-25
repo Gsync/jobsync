@@ -2,7 +2,7 @@
 
 import db from "@/lib/db";
 import { getCurrentUser } from "@/utils/user.utils";
-import { calculateNextRunAt } from "@/lib/scraper/schedule";
+import { calculateNextRunAt } from "@/lib/connector/job-discovery/schedule";
 import {
   CreateAutomationSchema,
   UpdateAutomationSchema,

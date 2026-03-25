@@ -1,4 +1,4 @@
-import type { DiscoveredVacancy } from "../types";
+import type { DiscoveredVacancy } from "../../types";
 import type { components } from "./generated";
 
 type EuresJobVacancy = components["schemas"]["JobVacancy"];

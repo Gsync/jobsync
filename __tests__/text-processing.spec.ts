@@ -5,7 +5,7 @@ import {
   normalizeHeadings,
   extractMetadata,
   validateText,
-} from "@/lib/ai/tools/text-processing";
+} from "@/lib/connector/ai-provider/tools/text-processing";
 
 describe("removeHtmlTags", () => {
   it("returns empty string for undefined input", () => {

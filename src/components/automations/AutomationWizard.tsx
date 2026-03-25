@@ -39,7 +39,7 @@ import type { AutomationWithResume } from "@/models/automation.model";
 import { ChevronLeft, ChevronRight, HelpCircle, Loader2 } from "lucide-react";
 import { EuresOccupationCombobox } from "@/components/automations/EuresOccupationCombobox";
 import { EuresLocationCombobox } from "@/components/automations/EuresLocationCombobox";
-import { getLocationLabel, getCountryCode } from "@/lib/scraper/eures/countries";
+import { getLocationLabel, getCountryCode } from "@/lib/connector/job-discovery/modules/eures/countries";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 

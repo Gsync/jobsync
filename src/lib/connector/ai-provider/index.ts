@@ -47,3 +47,12 @@ export {
 } from "./tools/text-processing";
 
 export { checkRateLimit } from "./rate-limiter";
+
+// AI Provider Connector types and registry
+export type {
+  AIProviderConnector,
+  AIConnectorResult,
+  AIConnectorError,
+} from "./types";
+export { aiProviderRegistry } from "./registry";
+export { registerAllAIProviders } from "./modules/connectors";
