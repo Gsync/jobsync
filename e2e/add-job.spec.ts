@@ -3,7 +3,7 @@ import { test, expect, type Page } from "@playwright/test";
 test.beforeEach(async ({ page, baseURL }) => {
   await page.goto("/");
   await login(page);
-  await expect(page).toHaveURL(baseURL + "/dashboard");
+  await expect(page).toHaveURL(baseURL + "/dashboard", { timeout: 15000 });
 });
 
 async function login(page: Page) {
@@ -20,14 +20,14 @@ async function createNewJob(page: Page, jobText: string) {
   const locationText = `location ${suffix}`;
 
   await page.getByRole("button", { name: "New Job" }).click();
-  await expect(page).toHaveURL("/dashboard/myjobs");
+  await expect(page).toHaveURL("/dashboard/myjobs", { timeout: 15000 });
 
   await page.getByTestId("add-job-btn").click();
   await expect(page.getByTestId("add-job-dialog-title")).toBeVisible();
   await page
     .getByPlaceholder("Copy and paste job link here")
     .fill("www.google.com");
-  await page.getByLabel("Job Title").click();
+  await page.getByLabel("Title").click();
   await page.getByPlaceholder("Create or Search title").click();
   await page.getByPlaceholder("Create or Search title").fill(jobText);
   await page.waitForTimeout(500); // Wait for debounce
@@ -42,7 +42,7 @@ async function createNewJob(page: Page, jobText: string) {
   } else if (await createOption.isVisible()) {
     await createOption.click();
   }
-  await expect(page.getByLabel("Job Title")).toContainText(jobText);
+  await expect(page.getByLabel("Title")).toContainText(jobText);
   await page.getByLabel("Company").click();
   await page.getByPlaceholder("Create or Search company").click();
   await page.getByPlaceholder("Create or Search company").fill(companyText);
@@ -59,7 +59,7 @@ async function createNewJob(page: Page, jobText: string) {
     await createCompany.click();
   }
   await expect(page.getByLabel("Company")).toContainText(companyText);
-  await page.getByLabel("Job Location").click();
+  await page.getByLabel("Location").click();
   await page.getByPlaceholder("Create or Search location").click();
   await page.getByPlaceholder("Create or Search location").fill(locationText);
   await page.waitForTimeout(500); // Wait for debounce
@@ -74,7 +74,7 @@ async function createNewJob(page: Page, jobText: string) {
   } else if (await createLocation.isVisible()) {
     await createLocation.click();
   }
-  await expect(page.getByLabel("Job Location")).toContainText(locationText);
+  await expect(page.getByLabel("Location")).toContainText(locationText);
   await page.getByText("Part-time").click();
   await page.getByLabel("Job Source").click();
   await page.getByRole("option", { name: "Indeed" }).click();
@@ -91,8 +91,9 @@ async function deleteJob(page: Page, jobText: string) {
   // Wait for any pending navigations to complete before navigating
   await page.waitForLoadState("load");
   await page.goto("/dashboard/myjobs");
+  await page.waitForLoadState("networkidle");
   const cells = page.getByText(new RegExp(jobText, "i"));
-  await expect(cells.first()).toBeVisible();
+  await expect(cells.first()).toBeVisible({ timeout: 10000 });
   await page
     .getByRole("row", { name: jobText })
     .getByTestId("job-actions-menu-btn")
@@ -131,27 +132,27 @@ test.describe("Add New Job", () => {
     await expect(
       page.getByPlaceholder("Copy and paste job link here"),
     ).toHaveValue("www.google.com");
-    await expect(page.getByLabel("Job Title")).toContainText(
+    await expect(page.getByLabel("Title")).toContainText(
       "developer test title",
     );
     await expect(page.getByLabel("Company")).toContainText(
       `company ${jobText.replace(/\s+/g, "-")}`,
     );
-    await expect(page.getByLabel("Job Location")).toContainText(
+    await expect(page.getByLabel("Location")).toContainText(
       `location ${jobText.replace(/\s+/g, "-")}`,
     );
     await expect(page.getByLabel("Job Source")).toContainText("Indeed");
     await expect(page.getByLabel("Select Job Status")).toContainText("Draft");
-    await expect(page.getByRole("paragraph")).toContainText("test description");
+    await expect(page.getByText("test description")).toBeVisible();
     await page.getByText("test description").click();
     await page
       .getByLabel("Job Description")
       .locator("div")
       .fill("test description edited");
     await page.getByTestId("save-job-btn").click();
-    await expect(page.getByRole("status").first()).toContainText(
-      /Job has been updated/,
-    );
+    await expect(page.getByText(/Job has been updated/).first()).toBeVisible({
+      timeout: 10000,
+    });
     await deleteJob(page, jobText);
   });
 });

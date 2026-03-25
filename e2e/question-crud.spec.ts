@@ -2,8 +2,9 @@ import { test, expect, type Page } from "@playwright/test";
 
 test.beforeEach(async ({ page, baseURL }) => {
   await page.goto("/");
+  await page.waitForLoadState("networkidle");
   await login(page);
-  await expect(page).toHaveURL(baseURL + "/dashboard");
+  await expect(page).toHaveURL(baseURL + "/dashboard", { timeout: 30000 });
 });
 
 async function login(page: Page) {
@@ -25,56 +26,70 @@ async function createQuestion(
   answerText: string,
   tagLabel?: string,
 ) {
-  // Click "New Question" button
+  // Click "New Question" button — t("questions.newQuestion") = "New Question"
   await page.getByRole("button", { name: /New Question/ }).click();
+  // Dialog title — t("questions.addQuestion") = "Add Question"
   await expect(
     page.getByRole("heading", { name: /Add Question/ }),
   ).toBeVisible();
 
-  // Fill in the question text
+  // Fill in the question text — placeholder is t("questions.questionPlaceholder") = "Enter your question..."
   await page.getByPlaceholder("Enter your question").fill(questionText);
 
-  // Add a skill tag if provided
+  // Add a skill tag if provided — TagInput uses a button with text "Search or add a skill..."
+  // and an input with placeholder "Type a skill..."
   if (tagLabel) {
-    await page.getByRole("combobox", { name: /Search or add a skill/ }).click();
+    // Click the tag combobox trigger button. The button text is
+    // t("jobs.searchSkill") = "Search or add a skill...". Use getByText to
+    // locate it within the dialog context.
+    await page.getByText("Search or add a skill").click();
+    // Type in the search input (placeholder from t("jobs.typeSkill") = "Type a skill...")
     await page.getByPlaceholder(/Type a skill/).fill(tagLabel);
     await page.waitForTimeout(500);
-    // Check if the tag already exists, otherwise create it
-    const existingTag = page.getByRole("option", {
+    // Check if the tag already exists as an option, otherwise create it
+    // Create option shows as: Create "tagLabel"
+    const existingOption = page.getByRole("option", {
       name: tagLabel,
       exact: true,
     });
-    const createTag = page.getByRole("option", {
+    const createOption = page.getByRole("option", {
       name: new RegExp(`Create.*${tagLabel}`),
     });
     try {
-      await existingTag.waitFor({ state: "visible", timeout: 3000 });
-      await existingTag.click();
+      await existingOption.waitFor({ state: "visible", timeout: 3000 });
+      await existingOption.click();
     } catch {
-      await createTag.waitFor({ state: "visible", timeout: 3000 });
-      await createTag.click();
+      await createOption.waitFor({ state: "visible", timeout: 3000 });
+      await createOption.click();
     }
     await page.waitForTimeout(300);
   }
 
-  // Fill in the answer using Tiptap editor
+  // Fill in the answer using Tiptap editor — interact via .tiptap CSS selector
   await page.locator(".tiptap").click();
   await page.locator(".tiptap").fill(answerText);
 
-  // Submit the form
+  // Submit the form — button text is t("questions.save") = "Save"
   await page.getByRole("button", { name: "Save" }).click();
 }
 
 async function deleteQuestion(page: Page, questionText: string) {
-  // Find the question card and click the delete button
-  const questionCard = page.locator(".border.rounded-lg", {
-    hasText: questionText,
-  });
+  // Find the specific question card that directly contains the question text button.
+  // Each QuestionCard is a div.border.rounded-lg with the question title as a button.
+  // Use the button with exact text to find the right card, then go to parent card.
+  const questionButton = page
+    .getByRole("button", { name: questionText })
+    .first();
+  // Navigate up to the card container
+  const questionCard = questionButton.locator("xpath=ancestor::div[contains(@class, 'border') and contains(@class, 'rounded-lg')]").first();
+  // Click the delete button — aria-label is t("questions.delete") = "Delete"
   await questionCard
     .getByRole("button", { name: /Delete/ })
+    .first()
     .click({ force: true });
 
   // Confirm deletion in alert dialog
+  // AlertDialogAction text is t("questions.delete") = "Delete"
   await expect(page.getByRole("alertdialog")).toBeVisible();
   await page
     .getByRole("alertdialog")
@@ -93,16 +108,17 @@ test.describe("Question CRUD", () => {
     await navigateToQuestions(page);
     await createQuestion(page, questionText, answerText, tagLabel);
 
-    // Verify toast success message
+    // Verify toast success message — t("questions.createdSuccess") = "Question has been created successfully"
     await expect(page.getByRole("status").first()).toContainText(
       /Question has been created/,
+      { timeout: 10000 },
     );
 
     // Verify the question card appears with the question text
-    await expect(page.getByText(questionText)).toBeVisible();
+    await expect(page.getByText(questionText).first()).toBeVisible();
 
     // Verify the answer preview is visible
-    await expect(page.getByText(answerText)).toBeVisible();
+    await expect(page.getByText(answerText).first()).toBeVisible();
 
     // Verify the tag badge is visible
     await expect(page.getByText(tagLabel).first()).toBeVisible();
@@ -111,6 +127,7 @@ test.describe("Question CRUD", () => {
     await deleteQuestion(page, questionText);
     await expect(page.getByRole("status").first()).toContainText(
       /Question has been deleted/,
+      { timeout: 10000 },
     );
   });
 
@@ -119,12 +136,14 @@ test.describe("Question CRUD", () => {
     await createQuestion(page, questionText, answerText);
     await expect(page.getByRole("status").first()).toContainText(
       /Question has been created/,
+      { timeout: 10000 },
     );
 
-    // Click on the question text to open edit form (click-to-edit pattern)
-    await page.getByText(questionText).click();
+    // Click on the question text to trigger onEdit — the question title is a
+    // clickable button element that calls onEdit
+    await page.getByText(questionText).first().click();
 
-    // Wait for the edit dialog to open
+    // Wait for the edit dialog to open — t("questions.editQuestion") = "Edit Question"
     await expect(
       page.getByRole("heading", { name: /Edit Question/ }),
     ).toBeVisible();
@@ -137,18 +156,20 @@ test.describe("Question CRUD", () => {
     // Save changes
     await page.getByRole("button", { name: "Save" }).click();
 
-    // Verify toast success message
+    // Verify toast success message — t("questions.updatedSuccess") = "Question has been updated successfully"
     await expect(page.getByRole("status").first()).toContainText(
       /Question has been updated/,
+      { timeout: 10000 },
     );
 
     // Verify the updated text appears
-    await expect(page.getByText(updatedQuestionText)).toBeVisible();
+    await expect(page.getByText(updatedQuestionText).first()).toBeVisible();
 
     // Clean up
     await deleteQuestion(page, updatedQuestionText);
     await expect(page.getByRole("status").first()).toContainText(
       /Question has been deleted/,
+      { timeout: 10000 },
     );
   });
 
@@ -159,17 +180,19 @@ test.describe("Question CRUD", () => {
     await createQuestion(page, deleteQuestionText, deleteAnswerText);
     await expect(page.getByRole("status").first()).toContainText(
       /Question has been created/,
+      { timeout: 10000 },
     );
 
     // Verify the question exists
-    await expect(page.getByText(deleteQuestionText)).toBeVisible();
+    await expect(page.getByText(deleteQuestionText).first()).toBeVisible();
 
     // Delete the question via the delete icon button
     await deleteQuestion(page, deleteQuestionText);
 
-    // Verify toast success message
+    // Verify toast success message — t("questions.deletedSuccess") = "Question has been deleted successfully"
     await expect(page.getByRole("status").first()).toContainText(
       /Question has been deleted/,
+      { timeout: 10000 },
     );
   });
 });

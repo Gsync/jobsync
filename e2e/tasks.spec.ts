@@ -1,9 +1,14 @@
 import { test, expect, type Page } from "@playwright/test";
 
+/** Wait for a toast notification matching the given pattern. */
+async function expectToast(page: Page, pattern: RegExp) {
+  await expect(page.getByText(pattern).first()).toBeVisible({ timeout: 10000 });
+}
+
 test.beforeEach(async ({ page, baseURL }) => {
   await page.goto("/");
   await login(page);
-  await expect(page).toHaveURL(baseURL + "/dashboard");
+  await expect(page).toHaveURL(baseURL + "/dashboard", { timeout: 15000 });
 });
 
 async function login(page: Page) {
@@ -136,9 +141,7 @@ test.describe("Tasks Management", () => {
 
     await deleteTask(page, deleteTaskTitle);
 
-    await expect(page.getByRole("status").first()).toContainText(
-      /Task has been deleted/
-    );
+    await expectToast(page, /Task has been deleted/);
   });
 
   test("should change task status via dropdown", async ({ page }) => {
@@ -161,9 +164,7 @@ test.describe("Tasks Management", () => {
       .getByRole("menuitem", { name: "Needs Attention" })
       .click({ force: true });
 
-    await expect(page.getByRole("status").first()).toContainText(
-      /Task status updated/
-    );
+    await expectToast(page, /Task status updated/);
 
     await deleteTask(page, statusTaskTitle);
   });
@@ -211,9 +212,7 @@ test.describe("Tasks Management", () => {
     });
     await completeBtn.click({ force: true });
 
-    await expect(page.getByRole("status").first()).toContainText(
-      /Task status updated/
-    );
+    await expectToast(page, /Task status updated/);
 
     await page
       .getByRole("button", { name: "Status", exact: true })
@@ -262,6 +261,11 @@ test.describe("Tasks Management", () => {
           .first()
       ).toBeVisible({ timeout: 10000 });
 
+      // Wait for the creation toast to disappear before starting activity
+      await expect(
+        page.getByText(/Task has been created/).first()
+      ).not.toBeVisible({ timeout: 10000 });
+
       const taskRow = page
         .getByRole("row", { name: new RegExp(activityTaskTitle, "i") })
         .first();
@@ -270,9 +274,7 @@ test.describe("Tasks Management", () => {
         .getByTestId("task-start-activity-btn")
         .click({ force: true });
 
-      await expect(page.getByRole("status").first()).toContainText(
-        /Activity started from task/
-      );
+      await expectToast(page, /Activity started from task/);
       await expect(page).toHaveURL(/\/dashboard\/activities/);
 
       // Stop the running activity
@@ -305,9 +307,7 @@ test.describe("Tasks Management", () => {
       await taskRow
         .getByTestId("task-start-activity-btn")
         .click({ force: true });
-      await expect(page.getByRole("status").first()).toContainText(
-        /Activity started from task/
-      );
+      await expectToast(page, /Activity started from task/);
       await expect(page).toHaveURL(/\/dashboard\/activities/);
 
       // Stop the activity so we can test the linked state
@@ -377,9 +377,7 @@ test.describe("Tasks Management", () => {
       await taskRow
         .getByRole("button", { name: "Mark as complete" })
         .click({ force: true });
-      await expect(page.getByRole("status").first()).toContainText(
-        /Task status updated/
-      );
+      await expectToast(page, /Task status updated/);
 
       // Add Complete status to filter to see completed tasks
       await page
@@ -401,9 +399,7 @@ test.describe("Tasks Management", () => {
         .getByRole("menuitem", { name: "Start Activity" })
         .click({ force: true });
 
-      await expect(page.getByRole("status").first()).toContainText(
-        /Cannot start an activity from a completed or cancelled task/
-      );
+      await expectToast(page, /Cannot start an activity from a completed or cancelled task/);
 
       await deleteTask(page, completedTaskTitle);
     });

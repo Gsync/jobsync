@@ -1,5 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 
+/** Wait for a toast notification matching the given pattern. */
+async function expectToast(page: Page, pattern: RegExp) {
+  await expect(page.getByText(pattern).first()).toBeVisible({ timeout: 10000 });
+}
+
 test.beforeEach(async ({ page, baseURL }) => {
   await page.goto("/");
   await page.getByPlaceholder("id@example.com").click();
@@ -8,7 +13,7 @@ test.beforeEach(async ({ page, baseURL }) => {
   await page.getByLabel("Password").fill("password123");
   await page.getByRole("button", { name: "Login" }).click();
 
-  await expect(page).toHaveURL(baseURL + "/dashboard");
+  await expect(page).toHaveURL(baseURL + "/dashboard", { timeout: 15000 });
 });
 
 async function createResume(page: Page, title: string) {
@@ -23,14 +28,10 @@ test.describe("Profile page", () => {
     const resumeTitle = "Test Resume 1";
     await page.getByRole("link", { name: "Profile" }).click();
     await createResume(page, resumeTitle);
-    await expect(page.getByRole("status").first()).toContainText(
-      /Resume title has been created/,
-    );
+    await expectToast(page, /Resume title has been created/);
     await expect(page.locator("tbody")).toContainText(resumeTitle);
     await deleteResume(page, resumeTitle);
-    await expect(page.getByRole("status").first()).toContainText(
-      /Resume has been deleted successfully/,
-    );
+    await expectToast(page, /Resume deleted successfully/);
   });
 
   test("should edit the resume title", async ({ page, baseURL }) => {
@@ -52,14 +53,10 @@ test.describe("Profile page", () => {
       .getByRole("dialog")
       .getByRole("button", { name: "Save" })
       .click();
-    await expect(page.getByRole("status").first()).toContainText(
-      /Resume title has been updated/,
-    );
+    await expectToast(page, /Resume title has been updated/);
     await expect(page.locator("tbody")).toContainText(editedTitle);
     await deleteResume(page, editedTitle);
-    await expect(page.getByRole("status").first()).toContainText(
-      /Resume has been deleted successfully/,
-    );
+    await expectToast(page, /Resume deleted successfully/);
   });
   test("should add resume contact info", async ({ page }) => {
     const resumeTitle = `Test Resume 3 ${Date.now()}`;
@@ -70,8 +67,11 @@ test.describe("Profile page", () => {
       .first()
       .getByTestId("resume-actions-menu-btn")
       .click();
-    await page.getByRole("link", { name: "View/Edit Resume" }).click();
-    // await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible();
+    const viewEditLink = page.getByRole("link", { name: "View / Edit Resume" });
+    await viewEditLink.waitFor({ state: "visible", timeout: 5000 });
+    await viewEditLink.click();
+    await page.waitForURL(/\/dashboard\/profile\/resume\//, { timeout: 15000 });
+    await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible({ timeout: 10000 });
     await page.getByRole("button", { name: "Add Section" }).click();
     await page.getByRole("menuitem", { name: "Add Contact Info" }).click();
     await page.getByLabel("First Name").waitFor({ state: "visible" });
@@ -90,14 +90,10 @@ test.describe("Profile page", () => {
     await page.getByLabel("Address").click();
     await page.getByLabel("Address").fill("Calgary");
     await page.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByRole("status").first()).toContainText(
-      /Contact Info has been created/,
-    );
+    await expectToast(page, /Contact Info has been created/);
     await expect(page.getByRole("heading", { name: "John Doe" })).toBeVisible();
     await deleteResume(page, resumeTitle);
-    await expect(page.getByRole("status").first()).toContainText(
-      /Resume has been deleted successfully/,
-    );
+    await expectToast(page, /Resume deleted successfully/);
   });
 
   test("should add resume summary section", async ({ page }) => {
@@ -109,8 +105,8 @@ test.describe("Profile page", () => {
       .first()
       .getByTestId("resume-actions-menu-btn")
       .click();
-    await page.getByRole("link", { name: "View/Edit Resume" }).click();
-    await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible();
+    await page.getByRole("link", { name: "View / Edit Resume" }).click();
+    await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible({ timeout: 10000 });
     await page.getByRole("button", { name: "Add Section" }).click();
     await page.getByRole("menuitem", { name: "Add Summary" }).click();
     await page.getByLabel("Section Title").fill("Summary");
@@ -119,13 +115,9 @@ test.describe("Profile page", () => {
     await page.getByRole("button", { name: "Save" }).click();
     await expect(page.getByRole("heading", { name: "Summary" })).toBeVisible();
     await expect(page.getByText("this is test summary")).toBeVisible();
-    await expect(page.getByRole("status").first()).toContainText(
-      /Summary has been created/,
-    );
+    await expectToast(page, /Summary has been created/);
     await deleteResume(page, resumeTitle);
-    await expect(page.getByRole("status").first()).toContainText(
-      /Resume has been deleted successfully/,
-    );
+    await expectToast(page, /Resume deleted successfully/);
   });
 
   test("should add resume work experience section", async ({ page }) => {
@@ -134,16 +126,12 @@ test.describe("Profile page", () => {
     await page.getByRole("link", { name: "Profile" }).click();
     await createResume(page, resumeTitle);
     await addExperience(page, resumeTitle, jobText);
-    await expect(page.getByRole("status").first()).toContainText(
-      /Experience has been added/,
-    );
+    await expectToast(page, /Experience has been added/);
     await expect(
       page.getByRole("heading", { name: jobText }).first(),
     ).toBeVisible();
     await deleteResume(page, resumeTitle);
-    await expect(page.getByRole("status").first()).toContainText(
-      /Resume has been deleted successfully/,
-    );
+    await expectToast(page, /Resume deleted successfully/);
   });
 
   test("should add resume work experience after clicking Edit Experience section", async ({
@@ -154,9 +142,7 @@ test.describe("Profile page", () => {
     await page.getByRole("link", { name: "Profile" }).click();
     await createResume(page, resumeTitle);
     await addExperience(page, resumeTitle, jobText);
-    await expect(page.getByRole("status").first()).toContainText(
-      /Experience has been added/,
-    );
+    await expectToast(page, /Experience has been added/);
     await expect(
       page.getByRole("heading", { name: jobText }).first(),
     ).toBeVisible();
@@ -175,9 +161,7 @@ test.describe("Profile page", () => {
     ).toBeVisible();
     await page.getByText("Cancel").click();
     await deleteResume(page, resumeTitle);
-    await expect(page.getByRole("status").first()).toContainText(
-      /Resume has been deleted successfully/,
-    );
+    await expectToast(page, /Resume deleted successfully/);
   });
 
   test("should add resume education section", async ({ page }) => {
@@ -190,8 +174,8 @@ test.describe("Profile page", () => {
       .first()
       .getByTestId("resume-actions-menu-btn")
       .click({ force: true });
-    await page.getByRole("link", { name: "View/Edit Resume" }).click();
-    await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible();
+    await page.getByRole("link", { name: "View / Edit Resume" }).click();
+    await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible({ timeout: 10000 });
     await page.getByRole("button", { name: "Add Section" }).click();
     await page.getByRole("menuitem", { name: "Add Education" }).click();
     // Wait for the dialog to open
@@ -234,16 +218,12 @@ test.describe("Profile page", () => {
     await page.locator("div:nth-child(2) > .tiptap").click();
     await page.locator("div:nth-child(2) > .tiptap").fill("test description");
     await page.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByRole("status").first()).toContainText(
-      /Education has been added/,
-    );
+    await expectToast(page, /Education has been added/);
     await expect(
       page.getByRole("heading", { name: "test school" }).first(),
     ).toBeVisible();
     await deleteResume(page, resumeTitle);
-    await expect(page.getByRole("status").first()).toContainText(
-      /Resume has been deleted successfully/,
-    );
+    await expectToast(page, /Resume deleted successfully/);
   });
 });
 
@@ -253,8 +233,11 @@ async function addExperience(page: Page, resumeTitle: string, jobText: string) {
     .first()
     .getByTestId("resume-actions-menu-btn")
     .click();
-  await page.getByRole("link", { name: "View/Edit Resume" }).click();
-  await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible();
+  const viewEditLink = page.getByRole("link", { name: "View / Edit Resume" });
+  await viewEditLink.waitFor({ state: "visible", timeout: 5000 });
+  await viewEditLink.click();
+  await page.waitForURL(/\/dashboard\/profile\/resume\//, { timeout: 15000 });
+  await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible({ timeout: 10000 });
   await page.getByRole("button", { name: "Add Section" }).click();
   await page.getByRole("menuitem", { name: "Add Experience" }).click();
   // Wait for the dialog to open
@@ -308,7 +291,7 @@ async function deleteResume(page: Page, title: string) {
   await row.getByTestId("resume-actions-menu-btn").click({ force: true });
   await page.getByRole("menuitem", { name: "Delete" }).click({ force: true });
   await expect(page.getByRole("alertdialog")).toContainText(
-    "Are you sure you want to delete this resume?",
+    "Are you sure you want to delete this Resume?",
   );
   await page.getByRole("button", { name: "Delete" }).click({ force: true });
 }
@@ -320,16 +303,18 @@ async function selectOrCreateComboboxOption(
   text: string,
 ) {
   await page.getByLabel(label).click();
-  await page.getByPlaceholder(searchPlaceholder).click();
-  await page.getByPlaceholder(searchPlaceholder).fill(text);
+  const searchInput = page.getByPlaceholder(searchPlaceholder);
+  await searchInput.waitFor({ state: "visible", timeout: 5000 });
+  await searchInput.click();
+  await searchInput.fill(text);
   await page.waitForTimeout(500);
   const existingOption = page.getByRole("option", { name: text, exact: true });
   const createOption = page.getByText(`Create: ${text}`);
   try {
-    await existingOption.waitFor({ state: "visible", timeout: 3000 });
+    await existingOption.waitFor({ state: "visible", timeout: 5000 });
     await existingOption.click();
   } catch {
-    await createOption.waitFor({ state: "visible", timeout: 3000 });
+    await createOption.waitFor({ state: "visible", timeout: 5000 });
     await createOption.click();
   }
 }

@@ -2,8 +2,9 @@ import { test, expect, type Page } from "@playwright/test";
 
 test.beforeEach(async ({ page, baseURL }) => {
   await page.goto("/");
+  await page.waitForLoadState("networkidle");
   await login(page);
-  await expect(page).toHaveURL(baseURL + "/dashboard");
+  await expect(page).toHaveURL(baseURL + "/dashboard", { timeout: 30000 });
 });
 
 async function login(page: Page) {
@@ -21,7 +22,8 @@ async function navigateToActivities(page: Page) {
 }
 
 async function stopRunningActivity(page: Page) {
-  const stopButton = page.getByRole("button", { name: "Stop" });
+  // The stop button has sr-only text t("activities.stopActivity") = "Stop Activity"
+  const stopButton = page.getByRole("button", { name: "Stop Activity" });
   try {
     await stopButton.waitFor({ state: "visible", timeout: 3000 });
     await stopButton.click({ force: true });
@@ -33,13 +35,19 @@ async function stopRunningActivity(page: Page) {
   }
 }
 
+/**
+ * Select or create a Combobox option.
+ * The Combobox search input placeholder is: "Create or Search <fieldName>"
+ * or "Search <fieldName>" depending on whether creatable is true.
+ */
 async function selectOrCreateComboboxOption(
   page: Page,
-  buttonText: string,
+  label: string,
   searchPlaceholder: string,
   text: string,
 ) {
-  await page.getByText(buttonText, { exact: false }).click();
+  // The FormLabel creates a <label> pointing to the Combobox trigger button
+  await page.getByLabel(label).click();
   await page.getByPlaceholder(searchPlaceholder).click();
   await page.getByPlaceholder(searchPlaceholder).fill(text);
   await page.waitForTimeout(500);
@@ -63,25 +71,28 @@ async function createActivity(
 ) {
   // Click "Add New Activity" button
   await page.getByTestId("add-activity-btn").click({ force: true });
+  // Dialog title: t("activities.addNewActivity") = "Add New Activity"
   await expect(
     page.getByRole("heading", { name: /Add New Activity/ }),
   ).toBeVisible();
 
-  // Fill activity name
+  // Fill activity name — placeholder: t("activities.activityNamePlaceholder")
   await page
     .getByPlaceholder("Ex: Job Search, Learning skill, etc")
     .fill(activityName);
 
   // Select activity type via combobox
+  // FormLabel text is t("activities.activityType") = "Activity Type"
+  // ComboBox search placeholder: "Create or Search activityType"
   await selectOrCreateComboboxOption(
     page,
-    "Select activityType",
+    "Activity Type",
     "Create or Search activityType",
     activityType,
   );
   await page.waitForTimeout(300);
 
-  // Set start time
+  // Set start time — placeholder: t("activities.timePlaceholder") = "hh:mm AM/PM"
   const startTimeInput = page.getByPlaceholder("hh:mm AM/PM").first();
   await startTimeInput.clear();
   await startTimeInput.fill(startTime);
@@ -104,11 +115,13 @@ async function deleteActivity(page: Page, activityName: string) {
   const activityRow = page
     .getByRole("row", { name: new RegExp(activityName, "i") })
     .first();
+  // The ActivitiesTable dropdown trigger has sr-only text "Toggle menu"
   await activityRow
     .getByRole("button", { name: "Toggle menu" })
     .click({ force: true });
+  // Menu item text is t("common.delete") = "Delete"
   await page.getByRole("menuitem", { name: /Delete/ }).click({ force: true });
-  // Confirm deletion in alert dialog
+  // Confirm deletion in DeleteAlertDialog — button text is t("common.delete") = "Delete"
   await page.getByRole("button", { name: "Delete" }).click({ force: true });
 }
 
@@ -137,6 +150,7 @@ test.describe("Activity CRUD", () => {
     await deleteActivity(page, activityName);
     await expect(page.getByRole("status").first()).toContainText(
       /Activity has been deleted/,
+      { timeout: 10000 },
     );
   });
 
@@ -164,6 +178,7 @@ test.describe("Activity CRUD", () => {
     // Verify toast success message
     await expect(page.getByRole("status").first()).toContainText(
       /Activity has been deleted/,
+      { timeout: 10000 },
     );
   });
 
@@ -189,6 +204,7 @@ test.describe("Activity CRUD", () => {
     await deleteActivity(page, morningActivity);
     await expect(page.getByRole("status").first()).toContainText(
       /Activity has been deleted/,
+      { timeout: 10000 },
     );
   });
 });

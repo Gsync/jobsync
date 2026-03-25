@@ -5,6 +5,8 @@ import { test, expect, type Page } from "@playwright/test";
 // ---------------------------------------------------------------------------
 
 async function login(page: Page) {
+  // Wait for the login form to be fully loaded
+  await page.getByPlaceholder("id@example.com").waitFor({ state: "visible", timeout: 10000 });
   await page.getByPlaceholder("id@example.com").click();
   await page.getByPlaceholder("id@example.com").fill("admin@example.com");
   await page.getByLabel("Password").click();
@@ -32,11 +34,16 @@ async function ensureResumeExists(page: Page): Promise<string> {
     // Resume does not exist yet — create one
   }
 
+  // Click "New Resume" button — t("profile.newResume") = "New Resume"
   await page.getByRole("button", { name: "New Resume" }).click();
+  // Fill title — placeholder in CreateResume is "Ex: Full Stack Developer Angular, Java"
   await page.getByPlaceholder("Ex: Full Stack Developer").fill(resumeTitle);
+  // Click Save button
   await page.getByRole("button", { name: "Save" }).click();
+  // Toast message: "Resume title has been created successfully"
   await expect(page.getByRole("status").first()).toContainText(
-    /Resume title has been created/,
+    /Resume title has been/,
+    { timeout: 10000 },
   );
   return resumeTitle;
 }
@@ -58,10 +65,11 @@ async function createAutomation(
     resumeTitle: string;
   },
 ) {
-  // Click "Create Automation" button
+  // Click "Create Automation" button in AutomationContainer
   await page
     .getByRole("button", { name: /Create Automation/i })
     .click();
+  // Dialog title: t("automations.createAutomation") = "Create Automation"
   await expect(
     page.getByRole("heading", { name: /Create Automation/i }),
   ).toBeVisible();
@@ -69,78 +77,85 @@ async function createAutomation(
   // -----------------------------------------------------------------------
   // Step 1 (Basics): Name + Job Board
   // -----------------------------------------------------------------------
+  // Name input placeholder: t("automations.automationNamePlaceholder") = "e.g. Frontend Jobs Berlin"
   await page
     .getByPlaceholder(/Frontend Jobs Berlin/i)
     .fill(opts.name);
 
-  // Select EURES as the job board (no API key needed)
-  await page.getByRole("combobox").filter({ hasText: /JSearch/i }).click();
+  // Select EURES as the job board (uses Select component, not Combobox)
+  // The SelectTrigger shows the current value — default is "JSearch"
+  // Click the trigger to open the dropdown
+  await page.getByRole("combobox", { name: /Job Board/i }).click();
+  // Select EURES option — t("automations.eures") = "EURES"
   await page.getByRole("option", { name: /EURES/i }).click();
 
-  // Proceed to next step
+  // Proceed to next step — t("automations.next") = "Next"
   await page.getByRole("button", { name: /Next/i }).click();
 
   // -----------------------------------------------------------------------
   // Step 2 (Search): Keywords + Location
   // -----------------------------------------------------------------------
-  // For EURES, keywords and location use special comboboxes.
-  // We use the plain input approach that works for non-EURES boards by
-  // typing into the search inputs of the ESCO occupation / EURES location
-  // comboboxes.
-  //
-  // Keywords field — EURES uses EuresOccupationCombobox
-  // Fill keywords input or combobox search
-  const keywordsInput = page.getByPlaceholder(/Search occupations/i);
-  const keywordsPlainInput = page.getByPlaceholder(
-    /React Developer, Frontend Engineer/i,
-  );
-  if (await keywordsInput.isVisible().catch(() => false)) {
-    await keywordsInput.fill(opts.keywords);
+  // For EURES, keywords use EuresOccupationCombobox
+  // The combobox trigger button text is "Search occupations" initially
+  // Click it to open, then type and press Enter to add custom keyword
+  const keywordsCombobox = page.getByRole("combobox").filter({ hasText: /Search occupations|keyword/i });
+  if (await keywordsCombobox.isVisible().catch(() => false)) {
+    await keywordsCombobox.click();
+    // Search input placeholder: "Search occupations or type custom keyword..."
+    const searchInput = page.getByPlaceholder(/Search occupations/i);
+    await searchInput.fill(opts.keywords);
     await page.waitForTimeout(800);
-    // Select the first matching option if available
+    // Try to select the first option (custom keyword or ESCO match)
     const firstOption = page.getByRole("option").first();
     try {
       await firstOption.waitFor({ state: "visible", timeout: 5000 });
       await firstOption.click();
     } catch {
-      // If no ESCO options load, the field value should still be set
+      // Press Enter to add as custom keyword
+      await searchInput.press("Enter");
     }
-  } else if (await keywordsPlainInput.isVisible().catch(() => false)) {
-    await keywordsPlainInput.fill(opts.keywords);
+    // Close the popover by pressing Escape
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
   }
 
   // Location field — EURES uses EuresLocationCombobox
-  const locationInput = page.getByPlaceholder(/Search location/i);
-  const locationPlainInput = page.getByPlaceholder(
-    /Berlin, Germany/i,
-  );
-  if (await locationInput.isVisible().catch(() => false)) {
+  // The combobox trigger button text is "Select countries or regions" initially
+  const locationCombobox = page.getByRole("combobox").filter({ hasText: /Select countries|location/i });
+  if (await locationCombobox.isVisible().catch(() => false)) {
+    await locationCombobox.click();
+    // Wait for countries to load from API
+    await page.waitForTimeout(2000);
+    // Search input placeholder: "Search countries or NUTS regions..."
+    const locationInput = page.getByPlaceholder(/Search countries/i);
     await locationInput.fill(opts.location);
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(1000);
     const firstLocOption = page.getByRole("option").first();
     try {
-      await firstLocOption.waitFor({ state: "visible", timeout: 5000 });
+      await firstLocOption.waitFor({ state: "visible", timeout: 8000 });
       await firstLocOption.click();
     } catch {
       // fallback: location may be accepted as text
     }
-  } else if (await locationPlainInput.isVisible().catch(() => false)) {
-    await locationPlainInput.fill(opts.location);
+    // Close the popover by pressing Escape
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
   }
 
-  // The Next button should be enabled once both fields are filled
+  // Proceed to next step
   await page.getByRole("button", { name: /Next/i }).click();
 
   // -----------------------------------------------------------------------
   // Step 3 (Resume): Select resume
   // -----------------------------------------------------------------------
-  // Click the resume selector and pick the resume we ensured exists
+  // Uses Select component with placeholder "Select a resume"
+  // The FormLabel is "Resume for Matching"
   await page
-    .getByRole("combobox")
-    .filter({ hasText: /Select a resume/i })
+    .getByRole("combobox", { name: /Resume for Matching/i })
     .click();
   await page
     .getByRole("option", { name: opts.resumeTitle })
+    .first()
     .click();
 
   await page.getByRole("button", { name: /Next/i }).click();
@@ -160,10 +175,11 @@ async function createAutomation(
   // -----------------------------------------------------------------------
   // Step 6 (Review): Submit
   // -----------------------------------------------------------------------
-  // Verify some review fields are populated
-  await expect(page.getByText(opts.name)).toBeVisible();
+  // Verify some review fields are populated (within the dialog)
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText(opts.name)).toBeVisible();
 
-  // Submit
+  // Submit — button text is t("automations.createAutomation") = "Create Automation"
   await page
     .getByRole("button", { name: /Create Automation/i })
     .click();
@@ -175,8 +191,9 @@ async function createAutomation(
 
 test.beforeEach(async ({ page, baseURL }) => {
   await page.goto("/");
+  await page.waitForLoadState("networkidle");
   await login(page);
-  await expect(page).toHaveURL(baseURL + "/dashboard");
+  await expect(page).toHaveURL(baseURL + "/dashboard", { timeout: 30000 });
 });
 
 test.describe.serial("Automation CRUD: Create, Verify, Delete", () => {
@@ -198,11 +215,28 @@ test.describe.serial("Automation CRUD: Create, Verify, Delete", () => {
       resumeTitle,
     });
 
-    // Wait for success toast
-    await expect(page.getByRole("status").first()).toContainText(
-      /Automation Created|Automation has been created/i,
-      { timeout: 10000 },
-    );
+    // After successful creation, the wizard closes and the automation list refreshes.
+    // Wait for the wizard dialog to close.
+    // If there's a validation error, it will show a toast within the dialog.
+    await page.waitForTimeout(3000);
+
+    // Check if the dialog closed successfully
+    const dialogStillOpen = await page
+      .getByRole("dialog")
+      .isVisible()
+      .catch(() => false);
+
+    if (dialogStillOpen) {
+      // If dialog is still open, the submit may have failed. Close it.
+      await page.getByRole("button", { name: "Close" }).click();
+    }
+
+    // Verify the automation appears in the list
+    await page.goto("/dashboard/automations");
+    await page.waitForLoadState("networkidle");
+    await expect(
+      page.getByText(automationName).first(),
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test("should display the automation in the list with correct details", async ({
@@ -214,7 +248,7 @@ test.describe.serial("Automation CRUD: Create, Verify, Delete", () => {
     const automationCard = page.getByText(automationName).first();
     await expect(automationCard).toBeVisible({ timeout: 10000 });
 
-    // Verify the job board badge (EURES)
+    // Verify the job board badge (eures) — Badge text is "eures" (lowercase, from automation.jobBoard)
     await expect(page.getByText("eures").first()).toBeVisible();
 
     // Verify status badge shows "active"
@@ -226,29 +260,32 @@ test.describe.serial("Automation CRUD: Create, Verify, Delete", () => {
   }) => {
     await navigateToAutomations(page);
 
-    // Find the automation and open its actions menu
+    // Find the automation card (rendered as a Link with automation name)
     const automationCard = page
       .locator("a", { hasText: automationName })
       .first();
     await expect(automationCard).toBeVisible({ timeout: 10000 });
 
-    // Click the more-actions button within the automation card
+    // Click the more-actions button (DropdownMenuTrigger with MoreHorizontal icon)
+    // within the automation card. Use preventDefault to avoid navigation.
     const moreButton = automationCard.getByRole("button").first();
-    // Prevent navigation when clicking the dropdown trigger
     await moreButton.click({ force: true });
 
     // Click Delete from the dropdown menu
+    // Menu item text is t("automations.delete") = "Delete"
     await page.getByRole("menuitem", { name: /Delete/i }).click();
 
     // Confirm deletion in the alert dialog
+    // AlertDialogAction text is t("automations.delete") = "Delete"
     await expect(
       page.getByRole("alertdialog"),
     ).toBeVisible();
     await page
+      .getByRole("alertdialog")
       .getByRole("button", { name: /Delete/i })
       .click();
 
-    // Wait for success toast
+    // Wait for success toast — title is "Automation deleted"
     await expect(page.getByRole("status").first()).toContainText(
       /Automation deleted|deleted/i,
       { timeout: 10000 },

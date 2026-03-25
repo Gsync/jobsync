@@ -93,8 +93,6 @@ async function main() {
     const profile = await prisma.profile.create({
       data: {
         userId: user.id,
-        firstName: "Test",
-        lastName: "User",
       },
     });
 

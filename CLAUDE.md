@@ -267,6 +267,12 @@ Formal specifications in `specs/*.allium` capture domain behaviour:
 - `scripts/test.sh` — runs Jest with system Node.js (not bun, due to compatibility)
 - `__tests__/*.spec.ts` — unit + component tests
 - `e2e/*.spec.ts` — Playwright E2E tests
+- **E2E with Chromium**: Use `nice` to lower priority and avoid race conditions under tight resources:
+  ```bash
+  nice -n 10 npx playwright test --project=chromium --workers=1
+  ```
+  Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/run/current-system/sw/bin/chromium` on NixOS.
+  Always start the dev server **externally before** running E2E tests — never let agents manage the server.
 - `src/lib/data/testFixtures.ts` — reusable typed fixtures for all Prisma models
 - System Chromium at `/run/current-system/sw/bin/chromium` for E2E
 
