@@ -2,6 +2,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogOverlay,
   DialogTitle,
@@ -117,6 +118,9 @@ export function QuestionForm({
         <DialogContent className="sm:max-w-[725px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{pageTitle}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {editQuestion ? t("questions.editQuestion") : t("questions.addQuestion")}
+            </DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form

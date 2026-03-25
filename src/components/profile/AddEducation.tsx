@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -137,6 +138,9 @@ function AddEducation({
       <DialogContent className="h-full md:h-[85%] lg:max-h-screen md:max-w-[40rem] overflow-y-scroll">
         <DialogHeader>
           <DialogTitle>{pageTitle}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {educationToEdit ? "Edit education details" : "Add a new education entry"}
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form

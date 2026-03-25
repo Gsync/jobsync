@@ -2,6 +2,7 @@ import { useForm } from "react-hook-form";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -104,6 +105,9 @@ function AddResumeSummary({
       <DialogContent className="lg:max-h-screen overflow-y-scroll">
         <DialogHeader>
           <DialogTitle>{pageTitle}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {summaryToEdit ? "Edit resume summary section" : "Add a new resume summary section"}
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form

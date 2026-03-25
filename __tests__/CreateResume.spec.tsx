@@ -39,7 +39,7 @@ describe("CreateResume Component", () => {
 
     renderComponent(mockResumeToEdit);
 
-    expect(screen.getByText(/edit resume title/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /edit resume title/i })).toBeInTheDocument();
 
     const titleInput = screen.getByTestId("resume-title-input");
     expect(titleInput).toHaveValue("Test Resume");

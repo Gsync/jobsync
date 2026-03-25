@@ -3,6 +3,7 @@ import { useTranslations } from "@/i18n";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -89,6 +90,9 @@ export function NoteDialog({
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editNote ? t("jobs.editNote") : t("jobs.addNoteTitle")}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {editNote ? t("jobs.editNote") : t("jobs.addNoteTitle")}
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

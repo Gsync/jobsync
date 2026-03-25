@@ -86,7 +86,7 @@ describe("AddResumeSummary Component", () => {
     );
 
     expect(screen.getByLabelText(/section title/i)).toBeInTheDocument();
-    expect(screen.getByText(/resume summary/i)).toBeInTheDocument();
+    expect(screen.getByText("Resume Summary")).toBeInTheDocument();
     expect(screen.getByTestId("tiptap-editor")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /save/i })).toBeInTheDocument();

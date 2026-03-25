@@ -9,6 +9,7 @@ import { useEffect, useTransition } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -114,6 +115,9 @@ function CreateResume({
       <DialogContent className="lg:max-h-screen overflow-y-scroll">
         <DialogHeader>
           <DialogTitle>{pageTitle}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {resumeToEdit ? "Edit resume title and upload a new file" : "Create a new resume with a title and file upload"}
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form

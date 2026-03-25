@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -143,6 +144,9 @@ function ActivitiesContainer() {
             <DialogContent className="sm:max-w-[725px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{t("activities.addNewActivity")}</DialogTitle>
+                <DialogDescription className="sr-only">
+                  {t("activities.addNewActivity")}
+                </DialogDescription>
               </DialogHeader>
               <div className="p-4">
                 <ActivityForm

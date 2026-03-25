@@ -8,6 +8,7 @@ import { z } from "zod";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -153,6 +154,9 @@ function AddExperience({
       <DialogContent className="h-full md:h-[85%] lg:max-h-screen md:max-w-[40rem] overflow-y-scroll">
         <DialogHeader>
           <DialogTitle>{pageTitle}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {experienceToEdit ? "Edit work experience details" : "Add a new work experience entry"}
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form

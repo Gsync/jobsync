@@ -3,6 +3,7 @@ import { useTranslations } from "@/i18n";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogOverlay,
   DialogTitle,
@@ -145,6 +146,9 @@ export function TaskForm({
             <DialogTitle data-testid="task-form-dialog-title">
               {pageTitle}
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              {editTask ? t("tasks.editTask") : t("tasks.addTask")}
+            </DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form

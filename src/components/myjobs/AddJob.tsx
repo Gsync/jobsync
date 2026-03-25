@@ -3,6 +3,7 @@ import { useTranslations } from "@/i18n";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogOverlay,
   DialogTitle,
@@ -50,6 +51,33 @@ import { Resume } from "@/models/profile.model";
 import CreateResume from "../profile/CreateResume";
 import { getResumeList } from "@/actions/profile.actions";
 import { TagInput } from "./TagInput";
+import { connectorRegistry } from "@/lib/connector/job-discovery/connectors";
+
+/** Display names for connector modules used as job sources */
+const CONNECTOR_SOURCE_LABELS: Record<string, string> = {
+  eures: "EURES",
+  arbeitsagentur: "Arbeitsagentur",
+  jsearch: "JSearch",
+};
+
+/**
+ * Build the merged job source options list.
+ * Connector module names are prepended so they always appear,
+ * but duplicates (by matching value/label) are skipped.
+ */
+function mergeConnectorSources(dbSources: JobSource[]): JobSource[] {
+  const existingValues = new Set(dbSources.map((s) => s.value.toLowerCase()));
+  const connectorEntries: JobSource[] = connectorRegistry
+    .availableConnectors()
+    .filter((id) => !existingValues.has(id.toLowerCase()))
+    .map((id) => ({
+      id: `connector-${id}`,
+      label: CONNECTOR_SOURCE_LABELS[id] ?? id,
+      value: CONNECTOR_SOURCE_LABELS[id] ?? id,
+      createdBy: "",
+    }));
+  return [...connectorEntries, ...dbSources];
+}
 
 type AddJobProps = {
   jobStatuses: JobStatus[];
@@ -215,6 +243,9 @@ export function AddJob({
               <DialogTitle data-testid="add-job-dialog-title">
                 {pageTitle}
               </DialogTitle>
+              <DialogDescription className="sr-only">
+                {editJob ? t("jobs.editJob") : t("jobs.addJob")}
+              </DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form
@@ -343,7 +374,7 @@ export function AddJob({
                       <FormItem className="flex flex-col">
                         <FormLabel>{t("jobs.jobSource")}</FormLabel>
                         <Combobox
-                          options={jobSources}
+                          options={mergeConnectorSources(jobSources)}
                           field={field}
                           creatable
                         />
