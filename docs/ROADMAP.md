@@ -103,7 +103,27 @@ src/lib/connector/              ← DER Connector (Shared Domain)
     - Übersetzungen der Formulare anbieten
 - **Weitere Länder:** Modulare Architektur für Arbeitsagenturen anderer EU-Länder
 
-### 1.10 Architekturprinzip: App ↔ Connector ↔ Module (ACL)
+### 1.10 Geo/Map Connector
+Entfernungsberechnung und Kartenintegration als Connector mit austauschbaren Modules:
+
+- **Connector Interface (`GeoConnector`):**
+  - `geocode(address)` → `{ lat, lon }` — Adresse in Koordinaten
+  - `reverseGeocode(lat, lon)` → Adresse
+  - `distance(from, to)` → `{ km, duration, mode }` — Entfernung + Fahrzeit
+  - `route(from, to)` → Routengeometrie für Kartenanzeige
+- **Module: OpenStreetMap/Nominatim** (kostenlos, self-hostable, DSGVO-konform)
+  - Geocoding via Nominatim API
+  - Routing via OSRM oder Valhalla
+  - Karten-Tiles via OpenStreetMap
+- **Module: Google Maps** (API-Key, genauere Geocoding-Ergebnisse)
+  - Geocoding, Directions, Distance Matrix APIs
+  - Google Maps JavaScript SDK für Kartenansicht
+- **Module: Mapbox** (API-Key, schöne Kartenstile)
+- **Vorhandene Daten nutzen:**
+  - Arbeitsagentur-Jobs liefern bereits `koordinaten` (lat/lon) pro Stellenangebot
+  - EURES-Jobs liefern `countryCode` + optional Stadt → Geocoding nur bei Bedarf
+
+### 1.11 Architekturprinzip: App ↔ Connector ↔ Module (ACL)
 
 Alle externen Integrationen folgen dem **Anti-Corruption Layer** Pattern:
 
@@ -146,7 +166,20 @@ App (Kernlogik) ↔ Connector (ACL) ↔ Module (Externes System)
   - Manueller Upload als Override möglich (bestehendes `logoUrl`-Feld)
   - Logo-Cache um wiederholte Requests zu vermeiden
 
-### 2.4 Input Fields Verbesserungen
+### 2.4 Kartenansicht & Entfernungsfilter
+- **Standort-Konfiguration:** Benutzer wählt Heimatstandort oder beliebigen Referenzpunkt in Settings
+- **Entfernungsberechnung:** Distanz von Referenzpunkt zu jeder Arbeitsstelle (Luftlinie + Fahrzeit)
+- **Filter:** Jobs nach maximaler Entfernung filtern (Slider: 0-200km)
+- **Kartenansicht:** Jobs auf interaktiver Karte anzeigen (→ Geo/Map Connector 1.10)
+  - Cluster für viele Jobs in einer Region
+  - Click auf Pin → Job-Details
+  - Farbkodierung nach Match-Score oder Status
+- **Integration:**
+  - Job-Tinder (2.5): Entfernung als Swipe-Kriterium
+  - Automation Wizard: Umkreissuche (Arbeitsagentur hat `umkreis` Parameter)
+  - CRM: Karte mit allen Unternehmen/Kontakten
+
+### 2.5 Input Fields Verbesserungen
 - Passende Icons für alle Input-Felder
 - Date Picker: Datumseingabe als Text mit Validierung nach Lokalisation
 - Text Input: Enter-Taste fügt Objekte hinzu (Chip-Pattern)
