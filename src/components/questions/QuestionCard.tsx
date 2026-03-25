@@ -3,13 +3,7 @@ import { useState } from "react";
 import { Question } from "@/models/question.model";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Pencil, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,45 +42,37 @@ export function QuestionCard({
 
   return (
     <>
-      <div
-        className="border rounded-lg p-4 hover:bg-accent/50 transition-colors cursor-pointer"
-        onClick={() => setExpanded(!expanded)}
-      >
+      <div className="border rounded-lg p-4">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-medium flex-1">{question.question}</h3>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(question);
-                }}
-              >
-                <Pencil className="mr-2 h-4 w-4" />
-                {t("questions.edit")}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowDeleteDialog(true);
-                }}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                {t("questions.delete")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <button
+            type="button"
+            className="text-left font-medium hover:underline hover:text-primary cursor-pointer flex-1"
+            onClick={() => onEdit(question)}
+          >
+            {question.question}
+          </button>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              aria-label={t("questions.edit")}
+              onClick={() => onEdit(question)}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              <span className="sr-only">{t("questions.edit")}</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-destructive"
+              aria-label={t("questions.delete")}
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span className="sr-only">{t("questions.delete")}</span>
+            </Button>
+          </div>
         </div>
 
         {hasAnswer && (
@@ -115,10 +101,7 @@ export function QuestionCard({
         {isLongAnswer && (
           <button
             className="text-xs text-primary mt-2 hover:underline"
-            onClick={(e) => {
-              e.stopPropagation();
-              setExpanded(!expanded);
-            }}
+            onClick={() => setExpanded(!expanded)}
           >
             {expanded ? t("questions.showLess") : t("questions.showMore")}
           </button>
