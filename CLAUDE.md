@@ -81,6 +81,30 @@ Use `formatISODate()` for machine-readable dates (CSV, data keys, filenames).
 
 The i18n system uses an **adapter pattern** (`@/i18n/index.ts` + `@/i18n/server.ts`). This allows switching from the current dictionary-based system to LinguiJS macros without changing consumer code. See `src/i18n/README.md` for full documentation.
 
+## Connector Architecture (ACL Pattern)
+
+All external integrations follow the **App ↔ Connector ↔ Module** pattern:
+
+```
+App (Core Logic)
+  ↕ ConnectorResult<T> / DiscoveredVacancy / ActionResult
+Connector (Anti-Corruption Layer)
+  - Translates between Module protocol and App domain
+  - Implements resilience (circuit breaker, retry, rate limit)
+  - Normalizes errors into ConnectorResult
+  ↕ Raw API responses / external protocols
+Module (External System)
+  - EURES API, Arbeitsagentur API, Paperless-ngx, CalDAV, etc.
+  - May crash, timeout, change API — Connector isolates this
+```
+
+**Key principle:** If a Module crashes, the Connector catches it and returns a clean `ConnectorResult<error>` — the App never sees raw exceptions from external systems.
+
+**Current implementation:** `src/lib/scraper/{eures,arbeitsagentur,jsearch}/`
+Each directory contains: `index.ts` (Connector), `types.ts` (Module types), `resilience.ts` (Circuit Breaker/Retry).
+
+**For new integrations:** Always create the Module types first, then the Connector with resilience, then wire into the App via the registry (`src/lib/scraper/connectors.ts`).
+
 ## EURES/ESCO Integration
 
 - EURES Location Combobox: 3-level hierarchy (Country → NUTS Region → City) with SVG flags

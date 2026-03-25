@@ -60,6 +60,20 @@
     - Übersetzungen der Formulare anbieten
 - **Weitere Länder:** Modulare Architektur für Arbeitsagenturen anderer EU-Länder
 
+### 1.10 Architekturprinzip: App ↔ Connector ↔ Module (ACL)
+
+Alle externen Integrationen folgen dem **Anti-Corruption Layer** Pattern:
+
+```
+App (Kernlogik) ↔ Connector (ACL) ↔ Module (Externes System)
+```
+
+- **Module:** Die externe API/Service (EURES, Arbeitsagentur, Paperless-ngx, CalDAV). Kann crashen, Timeouts haben, API-Änderungen durchlaufen.
+- **Connector:** Übersetzt zwischen Module-Protokoll und App-Domäne. Implementiert Resilience (Circuit Breaker, Retry, Rate Limit). Wenn ein Module abstürzt, gibt der Connector einen sauberen Fehler zurück.
+- **App:** Sieht nur `ConnectorResult<T>` — unabhängig davon ob das Module eine REST API, Browser-Instanz oder lokaler Service ist.
+
+**Vorteile:** Fehler-Isolation, Module austauschbar, unabhängiges Testing, klare Verträge.
+
 ---
 
 ## 2. UX/UI
