@@ -8,7 +8,7 @@ import type { ConnectorError, DiscoveredVacancy } from "./types";
 import { connectorRegistry } from "./connectors";
 import { mapDiscoveredVacancyToJobRecord } from "./mapper";
 import { normalizeJobUrl } from "./utils";
-import { calculateNextRunAt } from "./schedule";
+import { calculateNextRunAt, type ScheduleFrequency } from "./schedule";
 import {
   getModel,
   JobMatchSchema,
@@ -128,6 +128,9 @@ export async function runAutomation(
     },
   });
 
+  const connectorParams = automation.connectorParams ? JSON.parse(automation.connectorParams as string) : {};
+  const scheduleFrequency: ScheduleFrequency = connectorParams.scheduleFrequency || "daily";
+
   debugLog("runner", `[Automation ${automation.id}] Created run with ID: ${run.id}`);
   automationLogger.log(
     automation.id,
@@ -178,7 +181,7 @@ export async function runAutomation(
         jobsProcessed: 0,
         jobsMatched: 0,
         jobsSaved: 0,
-      }, automation.scheduleHour);
+      }, automation.scheduleHour, scheduleFrequency);
     }
 
     automationLogger.log(
@@ -226,7 +229,7 @@ export async function runAutomation(
         jobsProcessed: 0,
         jobsMatched: 0,
         jobsSaved: 0,
-      }, automation.scheduleHour);
+      }, automation.scheduleHour, scheduleFrequency);
     }
 
     const jobsSearched = searchResult.data.length;
@@ -253,7 +256,7 @@ export async function runAutomation(
         jobsProcessed: 0,
         jobsMatched: 0,
         jobsSaved: 0,
-      }, automation.scheduleHour);
+      }, automation.scheduleHour, scheduleFrequency);
     }
 
     automationLogger.log(
@@ -449,7 +452,7 @@ export async function runAutomation(
       jobsProcessed,
       jobsMatched,
       jobsSaved,
-    }, automation.scheduleHour);
+    }, automation.scheduleHour, scheduleFrequency);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     automationLogger.log(
@@ -468,7 +471,7 @@ export async function runAutomation(
       jobsProcessed: 0,
       jobsMatched: 0,
       jobsSaved: 0,
-    }, automation.scheduleHour);
+    }, automation.scheduleHour, scheduleFrequency);
   }
 }
 
@@ -631,6 +634,7 @@ async function finalizeRun(
   runId: string,
   data: FinalizeData,
   scheduleHour: number,
+  scheduleFrequency?: ScheduleFrequency,
 ): Promise<RunnerResult> {
   const run = await db.automationRun.update({
     where: { id: runId },
@@ -651,7 +655,7 @@ async function finalizeRun(
     where: { id: run.automationId },
     data: {
       lastRunAt: new Date(),
-      nextRunAt: calculateNextRunAt(scheduleHour),
+      nextRunAt: calculateNextRunAt(scheduleHour, scheduleFrequency),
     },
   });
 
