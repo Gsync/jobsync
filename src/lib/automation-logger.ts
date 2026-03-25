@@ -1,3 +1,5 @@
+import { debugLog } from "@/lib/debug";
+
 export type LogLevel = "info" | "success" | "warning" | "error";
 
 export interface AutomationLog {
@@ -20,14 +22,15 @@ class AutomationLoggerService {
   private readonly LOG_RETENTION_MS = 1000 * 60 * 60; // 1 hour
 
   startRun(automationId: string): void {
-    console.log(`[Logger] Starting run for automation ${automationId}`);
+    debugLog("automationLogger", `[Logger] Starting run for automation ${automationId}`);
     this.logStores.set(automationId, {
       logs: [],
       isRunning: true,
       startedAt: new Date(),
     });
     this.log(automationId, "info", "Automation run started");
-    console.log(
+    debugLog(
+      "automationLogger",
       `[Logger] Log store initialized with ${this.logStores.get(automationId)?.logs.length} logs`,
     );
   }
@@ -68,7 +71,8 @@ class AutomationLoggerService {
     };
 
     store.logs.push(log);
-    console.log(
+    debugLog(
+      "automationLogger",
       `[Logger] Logged [${level}] for ${automationId}: ${message} (total logs: ${store.logs.length})`,
     );
 
