@@ -75,12 +75,21 @@ export function createOllamaProvider(): AIProviderConnector {
     async createModel(
       modelName: string,
       userId?: string,
-    ): Promise<LanguageModel> {
-      const baseUrl = await resolveBaseUrl(userId);
-      const ollama = createOllama({
-        baseURL: baseUrl + "/api",
-      });
-      return ollama(modelName);
+    ): Promise<AIConnectorResult<LanguageModel>> {
+      try {
+        const baseUrl = await resolveBaseUrl(userId);
+        const ollama = createOllama({
+          baseURL: baseUrl + "/api",
+        });
+        return { success: true, data: ollama(modelName) };
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        return {
+          success: false,
+          error: { type: "network", message: `Cannot create Ollama model: ${message}` },
+        };
+      }
     },
   };
 }

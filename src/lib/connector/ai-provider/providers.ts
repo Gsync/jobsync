@@ -1,23 +1,21 @@
+import "./modules/connectors"; // triggers eager registration
 import { aiProviderRegistry } from "./registry";
-import { registerAllAIProviders } from "./modules/connectors";
 
 export type ProviderType = "openai" | "ollama" | "deepseek";
-
-// Ensure all providers are registered on first import
-let registered = false;
-function ensureRegistered() {
-  if (!registered) {
-    registerAllAIProviders();
-    registered = true;
-  }
-}
 
 export async function getModel(
   provider: ProviderType,
   modelName: string,
   userId?: string,
 ) {
-  ensureRegistered();
   const connector = aiProviderRegistry.create(provider);
-  return connector.createModel(modelName, userId);
+  const result = await connector.createModel(modelName, userId);
+  if (!result.success) {
+    const message =
+      "message" in result.error
+        ? result.error.message
+        : `Provider rate limited`;
+    throw new Error(message);
+  }
+  return result.data;
 }

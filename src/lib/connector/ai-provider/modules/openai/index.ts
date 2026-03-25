@@ -109,11 +109,28 @@ export function createOpenAIProvider(): AIProviderConnector {
     async createModel(
       modelName: string,
       userId?: string,
-    ): Promise<LanguageModel> {
-      const apiKey = await resolveApiKey(userId, "openai");
-      if (!apiKey) throw new Error("OpenAI API key not configured");
-      const openai = createOpenAI({ apiKey });
-      return openai(modelName);
+    ): Promise<AIConnectorResult<LanguageModel>> {
+      try {
+        const apiKey = await resolveApiKey(userId, "openai");
+        if (!apiKey) {
+          return {
+            success: false,
+            error: {
+              type: "auth_failed",
+              message: "OpenAI API key not configured",
+            },
+          };
+        }
+        const openai = createOpenAI({ apiKey });
+        return { success: true, data: openai(modelName) };
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        return {
+          success: false,
+          error: { type: "network", message: `Cannot create OpenAI model: ${message}` },
+        };
+      }
     },
   };
 }

@@ -55,4 +55,3 @@ export type {
   AIConnectorError,
 } from "./types";
 export { aiProviderRegistry } from "./registry";
-export { registerAllAIProviders } from "./modules/connectors";

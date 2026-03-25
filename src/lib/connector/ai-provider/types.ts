@@ -17,5 +17,8 @@ export interface AIProviderConnector {
 
   healthCheck(userId?: string): Promise<AIConnectorResult<boolean>>;
   listModels(userId?: string): Promise<AIConnectorResult<string[]>>;
-  createModel(modelName: string, userId?: string): Promise<LanguageModel>;
+  createModel(
+    modelName: string,
+    userId?: string,
+  ): Promise<AIConnectorResult<LanguageModel>>;
 }

@@ -82,21 +82,28 @@ describe("OllamaProvider", () => {
     expect(provider.requiresApiKey).toBe(false);
   });
 
-  it("createModel calls createOllama with correct base URL", async () => {
+  it("createModel returns success result with correct base URL", async () => {
     mockResolveApiKey.mockResolvedValue("http://custom:11434");
 
-    await provider.createModel("llama3.2", "user-1");
+    const result = await provider.createModel("llama3.2", "user-1");
 
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual(
+        expect.objectContaining({ modelId: "llama3.2" }),
+      );
+    }
     expect(createOllama).toHaveBeenCalledWith({
       baseURL: "http://custom:11434/api",
     });
   });
 
-  it("createModel uses default base URL when resolveApiKey returns undefined", async () => {
+  it("createModel returns success result with default base URL when resolveApiKey returns undefined", async () => {
     mockResolveApiKey.mockResolvedValue(undefined);
 
-    await provider.createModel("llama3.1");
+    const result = await provider.createModel("llama3.1");
 
+    expect(result.success).toBe(true);
     expect(createOllama).toHaveBeenCalledWith({
       baseURL: "http://127.0.0.1:11434/api",
     });
@@ -109,8 +116,9 @@ describe("OllamaProvider", () => {
       .spyOn(console, "error")
       .mockImplementation(() => {});
 
-    await provider.createModel("llama3.2", "user-1");
+    const result = await provider.createModel("llama3.2", "user-1");
 
+    expect(result.success).toBe(true);
     expect(mockValidateOllamaUrl).toHaveBeenCalledWith(
       "ftp://malicious-server:11434",
     );
@@ -132,8 +140,9 @@ describe("OllamaProvider", () => {
       .spyOn(console, "error")
       .mockImplementation(() => {});
 
-    await provider.createModel("llama3.2", "user-1");
+    const result = await provider.createModel("llama3.2", "user-1");
 
+    expect(result.success).toBe(true);
     expect(createOllama).toHaveBeenCalledWith({
       baseURL: "http://127.0.0.1:11434/api",
     });
@@ -143,8 +152,9 @@ describe("OllamaProvider", () => {
   it("createModel validates URL even when using default", async () => {
     mockResolveApiKey.mockResolvedValue(undefined);
 
-    await provider.createModel("llama3.2");
+    const result = await provider.createModel("llama3.2");
 
+    expect(result.success).toBe(true);
     expect(mockValidateOllamaUrl).toHaveBeenCalledWith(
       "http://127.0.0.1:11434",
     );
@@ -160,20 +170,33 @@ describe("DeepSeekProvider", () => {
     expect(provider.requiresApiKey).toBe(true);
   });
 
-  it("createModel calls createDeepSeek with API key", async () => {
+  it("createModel returns success result with API key", async () => {
     mockResolveApiKey.mockResolvedValue("ds-key-123");
 
-    await provider.createModel("deepseek-chat", "user-1");
+    const result = await provider.createModel("deepseek-chat", "user-1");
 
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual(
+        expect.objectContaining({ modelId: "deepseek-chat" }),
+      );
+    }
     expect(createDeepSeek).toHaveBeenCalledWith({ apiKey: "ds-key-123" });
   });
 
-  it("createModel throws when no API key is available", async () => {
+  it("createModel returns auth_failed error when no API key is available", async () => {
     mockResolveApiKey.mockResolvedValue(undefined);
 
-    await expect(provider.createModel("deepseek-chat")).rejects.toThrow(
-      "DeepSeek API key not configured",
-    );
+    const result = await provider.createModel("deepseek-chat");
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.type).toBe("auth_failed");
+      expect(result.error).toHaveProperty(
+        "message",
+        "DeepSeek API key not configured",
+      );
+    }
   });
 });
 
@@ -186,19 +209,32 @@ describe("OpenAIProvider", () => {
     expect(provider.requiresApiKey).toBe(true);
   });
 
-  it("createModel calls createOpenAI with API key", async () => {
+  it("createModel returns success result with API key", async () => {
     mockResolveApiKey.mockResolvedValue("sk-test-key");
 
-    await provider.createModel("gpt-4o", "user-1");
+    const result = await provider.createModel("gpt-4o", "user-1");
 
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual(
+        expect.objectContaining({ modelId: "gpt-4o" }),
+      );
+    }
     expect(createOpenAI).toHaveBeenCalledWith({ apiKey: "sk-test-key" });
   });
 
-  it("createModel throws when no API key is available", async () => {
+  it("createModel returns auth_failed error when no API key is available", async () => {
     mockResolveApiKey.mockResolvedValue(undefined);
 
-    await expect(provider.createModel("gpt-4o")).rejects.toThrow(
-      "OpenAI API key not configured",
-    );
+    const result = await provider.createModel("gpt-4o");
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.type).toBe("auth_failed");
+      expect(result.error).toHaveProperty(
+        "message",
+        "OpenAI API key not configured",
+      );
+    }
   });
 });
