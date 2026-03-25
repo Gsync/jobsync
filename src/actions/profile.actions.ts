@@ -397,7 +397,6 @@ export const deleteFile = async (fileId: string) => {
       },
     });
 
-    console.log("file deleted successfully!");
   } catch (error) {
     const msg = "Failed to delete file.";
     return handleError(error, msg);
