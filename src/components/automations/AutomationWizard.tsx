@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import {
   Form,
   FormControl,
@@ -31,12 +32,19 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { CreateAutomationSchema, type CreateAutomationInput } from "@/models/automation.schema";
 import { createAutomation, updateAutomation } from "@/actions/automation.actions";
+import { getUserApiKeys } from "@/actions/apiKey.actions";
 import { toast } from "@/components/ui/use-toast";
 import { useTranslations } from "@/i18n";
 import type { AutomationWithResume } from "@/models/automation.model";
-import { ChevronLeft, ChevronRight, HelpCircle, Loader2 } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, HelpCircle, Loader2 } from "lucide-react";
 import { EuresOccupationCombobox } from "@/components/automations/EuresOccupationCombobox";
 import { EuresLocationCombobox } from "@/components/automations/EuresLocationCombobox";
 import { getLocationLabel, getCountryCode } from "@/lib/connector/job-discovery/modules/eures/countries";
@@ -70,6 +78,18 @@ const HOURS = Array.from({ length: 24 }, (_, i) => ({
   label: `${i.toString().padStart(2, "0")}:00`,
 }));
 
+type ScheduleFrequency = "6h" | "12h" | "daily" | "2d" | "weekly";
+
+const SCHEDULE_FREQUENCIES: ScheduleFrequency[] = ["6h", "12h", "daily", "2d", "weekly"];
+
+const FREQUENCY_TRANSLATION_KEYS: Record<ScheduleFrequency, string> = {
+  "6h": "automations.scheduleEvery6Hours",
+  "12h": "automations.scheduleEvery12Hours",
+  "daily": "automations.scheduleDaily",
+  "2d": "automations.scheduleEvery2Days",
+  "weekly": "automations.scheduleWeekly",
+};
+
 export function AutomationWizard({
   open,
   onOpenChange,
@@ -80,6 +100,9 @@ export function AutomationWizard({
   const { t } = useTranslations();
   const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasRapidApiKey, setHasRapidApiKey] = useState<boolean | null>(null);
+  const [aiScoringEnabled, setAiScoringEnabled] = useState(true);
+  const [scheduleFrequency, setScheduleFrequency] = useState<ScheduleFrequency>("daily");
 
   const form = useForm<CreateAutomationInput>({
     resolver: zodResolver(CreateAutomationSchema),
@@ -95,15 +118,44 @@ export function AutomationWizard({
     },
   });
 
+  // U2: Check if RapidAPI key is configured
   useEffect(() => {
     if (open) {
+      getUserApiKeys().then((result) => {
+        if (result.success && result.data) {
+          const hasKey = result.data.some((k) => k.provider === "rapidapi");
+          setHasRapidApiKey(hasKey);
+        } else {
+          setHasRapidApiKey(false);
+        }
+      }).catch(() => {
+        setHasRapidApiKey(false);
+      });
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      const editParams = editAutomation?.connectorParams
+        ? tryParseConnectorParams(editAutomation.connectorParams)
+        : undefined;
+
+      // Restore AI scoring state from edit automation
+      const editThreshold = editAutomation?.matchThreshold ?? 80;
+      const isAiEnabled = editThreshold > 0;
+      setAiScoringEnabled(isAiEnabled);
+
+      // Restore schedule frequency from connectorParams
+      const editFrequency = editParams?.scheduleFrequency ?? "daily";
+      setScheduleFrequency(editFrequency as ScheduleFrequency);
+
       form.reset({
         name: editAutomation?.name ?? "",
         jobBoard: (editAutomation?.jobBoard as "jsearch" | "eures" | "arbeitsagentur") ?? "jsearch",
         keywords: editAutomation?.keywords ?? "",
         location: editAutomation?.location ?? "",
         resumeId: editAutomation?.resumeId ?? "",
-        matchThreshold: editAutomation?.matchThreshold ?? 80,
+        matchThreshold: editThreshold,
         scheduleHour: editAutomation?.scheduleHour ?? 8,
       });
       setStep(0);
@@ -117,6 +169,12 @@ export function AutomationWizard({
     try { return params ? JSON.parse(params) : undefined; } catch { return undefined; }
   };
 
+  // Helper to update connectorParams while preserving existing values
+  const updateConnectorParams = (updates: Record<string, unknown>) => {
+    const current = tryParseConnectorParams(form.getValues("connectorParams")) ?? {};
+    form.setValue("connectorParams", JSON.stringify({ ...current, ...updates }));
+  };
+
   // Auto-set language in connectorParams from html lang attribute
   useEffect(() => {
     if (jobBoard === "eures" && open) {
@@ -128,9 +186,32 @@ export function AutomationWizard({
     }
   }, [jobBoard, open, form]);
 
+  // U3: Handle AI scoring toggle
+  const handleAiScoringToggle = (enabled: boolean) => {
+    setAiScoringEnabled(enabled);
+    if (!enabled) {
+      form.setValue("matchThreshold", 0);
+    } else {
+      // Restore a sensible default when re-enabling
+      form.setValue("matchThreshold", 80);
+    }
+  };
+
+  // U4: Sync schedule frequency to connectorParams
+  const handleScheduleFrequencyChange = (freq: ScheduleFrequency) => {
+    setScheduleFrequency(freq);
+    updateConnectorParams({ scheduleFrequency: freq });
+  };
+
   const onSubmit = async (data: CreateAutomationInput) => {
     setIsSubmitting(true);
     try {
+      // Ensure schedule frequency is in connectorParams before submit
+      const currentParams = tryParseConnectorParams(data.connectorParams) ?? {};
+      if (scheduleFrequency !== "daily") {
+        data.connectorParams = JSON.stringify({ ...currentParams, scheduleFrequency });
+      }
+
       const result = editAutomation
         ? await updateAutomation(editAutomation.id, data)
         : await createAutomation(data);
@@ -203,6 +284,26 @@ export function AutomationWizard({
 
   const selectedResume = resumes.find((r) => r.id === form.getValues("resumeId"));
 
+  // U4: Get display text for the selected schedule frequency in the review step
+  const getScheduleReviewText = () => {
+    const hour = (form.getValues("scheduleHour") ?? 8).toString().padStart(2, "0");
+    const freqKey = FREQUENCY_TRANSLATION_KEYS[scheduleFrequency];
+    const freqLabel = t(freqKey);
+
+    if (scheduleFrequency === "daily") {
+      return `${t("automations.dailyAt")} ${hour}:00`;
+    }
+    return `${freqLabel} (${hour}:00)`;
+  };
+
+  // U3: Get display text for match threshold in review step
+  const getMatchThresholdReviewText = () => {
+    if (!aiScoringEnabled || (form.getValues("matchThreshold") ?? 80) === 0) {
+      return t("automations.collectOnlyMode");
+    }
+    return `${form.getValues("matchThreshold") ?? 80}%`;
+  };
+
   const renderStepContent = () => {
     return (
       <>
@@ -230,18 +331,50 @@ export function AutomationWizard({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t("automations.jobBoard")}</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select
+                  onValueChange={(val) => {
+                    // U2: Prevent selecting jsearch if no API key
+                    if (val === "jsearch" && hasRapidApiKey === false) {
+                      return;
+                    }
+                    field.onChange(val);
+                  }}
+                  value={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder={t("automations.selectJobBoard")} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="jsearch">{t("automations.jsearch")}</SelectItem>
+                    <TooltipProvider>
+                      {hasRapidApiKey === false ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="relative flex cursor-not-allowed select-none items-center rounded-sm px-2 py-1.5 text-sm text-muted-foreground opacity-50">
+                              <AlertTriangle className="h-4 w-4 mr-2 text-destructive" />
+                              {t("automations.jsearch")}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="left">
+                            <p>{t("automations.jsearchApiKeyRequired")}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <SelectItem value="jsearch">{t("automations.jsearch")}</SelectItem>
+                      )}
+                    </TooltipProvider>
                     <SelectItem value="eures">{t("automations.eures")}</SelectItem>
                     <SelectItem value="arbeitsagentur">{t("automations.arbeitsagentur")}</SelectItem>
                   </SelectContent>
                 </Select>
+                {/* U2: Warning text below the select when JSearch has no API key */}
+                {hasRapidApiKey === false && jobBoard === "jsearch" && (
+                  <p className="flex items-center gap-1.5 text-sm text-destructive">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    {t("automations.jsearchApiKeyRequired")}
+                  </p>
+                )}
                 <FormDescription>
                   {t("automations.jobBoardDesc")}
                 </FormDescription>
@@ -338,23 +471,48 @@ export function AutomationWizard({
           )}
         </div>
 
-        {/* Step 3: Matching */}
+        {/* Step 3: Matching (U3: Threshold Toggle) */}
         <div className={step === 3 ? "space-y-4" : "hidden"}>
+          {/* U3: AI Match Scoring Toggle */}
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="ai-scoring-toggle" className="text-sm font-medium">
+                {t("automations.enableAiScoring")}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t("automations.enableAiScoringDesc")}
+              </p>
+            </div>
+            <Switch
+              id="ai-scoring-toggle"
+              checked={aiScoringEnabled}
+              onCheckedChange={handleAiScoringToggle}
+            />
+          </div>
+
+          {/* U3: Show collect-only info when AI scoring is disabled */}
+          {!aiScoringEnabled && (
+            <p className="text-sm text-muted-foreground rounded-lg bg-muted p-3">
+              {t("automations.collectOnlyDesc")}
+            </p>
+          )}
+
           <FormField
             control={form.control}
             name="matchThreshold"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className={!aiScoringEnabled ? "opacity-50 pointer-events-none" : ""}>
                 <FormLabel>
-                  {t("automations.matchThreshold")}: {field.value}%
+                  {t("automations.matchThreshold")}: {aiScoringEnabled ? `${field.value}%` : t("automations.disabled")}
                 </FormLabel>
                 <FormControl>
                   <Slider
                     min={0}
                     max={100}
                     step={5}
-                    value={[field.value]}
+                    value={[aiScoringEnabled ? field.value : 0]}
                     onValueChange={(value) => field.onChange(value[0])}
+                    disabled={!aiScoringEnabled}
                   />
                 </FormControl>
                 <FormDescription>
@@ -366,14 +524,37 @@ export function AutomationWizard({
           />
         </div>
 
-        {/* Step 4: Schedule */}
+        {/* Step 4: Schedule (U4: Flexible Runtimes) */}
         <div className={step === 4 ? "space-y-4" : "hidden"}>
+          {/* U4: Schedule Frequency Selector */}
+          <div>
+            <Label className="text-sm font-medium">{t("automations.scheduleFrequency")}</Label>
+            <Select
+              onValueChange={(val) => handleScheduleFrequencyChange(val as ScheduleFrequency)}
+              value={scheduleFrequency}
+            >
+              <SelectTrigger className="mt-2">
+                <SelectValue placeholder={t("automations.selectFrequency")} />
+              </SelectTrigger>
+              <SelectContent>
+                {SCHEDULE_FREQUENCIES.map((freq) => (
+                  <SelectItem key={freq} value={freq}>
+                    {t(FREQUENCY_TRANSLATION_KEYS[freq])}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground mt-1.5">
+              {t("automations.scheduleFrequencyDesc")}
+            </p>
+          </div>
+
           <FormField
             control={form.control}
             name="scheduleHour"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t("automations.dailyRunTime")}</FormLabel>
+                <FormLabel>{t("automations.preferredStartTime")}</FormLabel>
                 <Select
                   onValueChange={(val) => field.onChange(parseInt(val))}
                   value={field.value.toString()}
@@ -462,12 +643,12 @@ export function AutomationWizard({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("automations.reviewMatchThreshold")}</span>
-              <span className="font-medium">{form.getValues("matchThreshold") ?? 80}%</span>
+              <span className="font-medium">{getMatchThresholdReviewText()}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("automations.reviewSchedule")}</span>
               <span className="font-medium">
-                {t("automations.dailyAt")} {(form.getValues("scheduleHour") ?? 8).toString().padStart(2, "0")}:00
+                {getScheduleReviewText()}
               </span>
             </div>
           </div>
