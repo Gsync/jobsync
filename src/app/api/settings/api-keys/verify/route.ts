@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
+import { validateOllamaUrl } from "@/lib/url-validation";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -65,11 +66,20 @@ export async function POST(req: NextRequest) {
 
       case "ollama": {
         const baseUrl = key.replace(/\/+$/, "");
-        const res = await fetch(`${baseUrl}/api/tags`);
+        const validation = validateOllamaUrl(baseUrl);
+        if (!validation.valid) {
+          return NextResponse.json(
+            { success: false, error: validation.error },
+            { status: 400 },
+          );
+        }
+        const res = await fetch(`${baseUrl}/api/tags`, {
+          signal: AbortSignal.timeout(5000),
+        });
         if (!res.ok) {
           return NextResponse.json({
             success: false,
-            error: `Cannot connect to Ollama at ${baseUrl}`,
+            error: "Cannot connect to Ollama service",
           });
         }
         return NextResponse.json({ success: true });

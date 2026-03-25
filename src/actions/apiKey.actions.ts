@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/utils/user.utils";
 import { handleError } from "@/lib/utils";
 import { encrypt, getLast4 } from "@/lib/encryption";
 import { apiKeySaveSchema } from "@/models/apiKey.schema";
+import { validateOllamaUrl } from "@/lib/url-validation";
 import type {
   ApiKeyClientResponse,
   ApiKeyProvider,
@@ -163,6 +164,7 @@ export async function getDefaultOllamaBaseUrl(): Promise<string> {
 }
 
 export async function getOllamaBaseUrl(): Promise<string> {
+  const fallback = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
   try {
     const user = await getCurrentUser();
     if (user) {
@@ -172,13 +174,25 @@ export async function getOllamaBaseUrl(): Promise<string> {
         },
       });
       if (apiKey) {
-        if (apiKey.iv === "") return apiKey.encryptedKey;
-        const { decrypt } = await import("@/lib/encryption");
-        return decrypt(apiKey.encryptedKey, apiKey.iv);
+        const url =
+          apiKey.iv === ""
+            ? apiKey.encryptedKey
+            : (await import("@/lib/encryption")).decrypt(
+                apiKey.encryptedKey,
+                apiKey.iv,
+              );
+        const validation = validateOllamaUrl(url);
+        if (!validation.valid) {
+          console.error(
+            "[Security] Stored Ollama URL failed validation, using fallback",
+          );
+          return fallback;
+        }
+        return url;
       }
     }
   } catch {
     // Fall through to defaults
   }
-  return process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
+  return fallback;
 }
