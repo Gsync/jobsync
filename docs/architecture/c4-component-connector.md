@@ -139,7 +139,7 @@ mapDiscoveredVacancyToJobRecord(input: {
 
 ### 4. EURES Module
 
-**Files**: `src/lib/connector/job-discovery/eures/index.ts`, `src/lib/connector/job-discovery/eures/translator.ts`, `src/lib/connector/job-discovery/eures/resilience.ts`, `src/lib/connector/job-discovery/eures/rate-limiter.ts`, `src/lib/connector/job-discovery/eures/types.ts` (autocomplete), `src/lib/connector/job-discovery/eures/generated.ts` (OpenAPI types), `src/lib/connector/job-discovery/eures/countries.ts`
+**Files**: `src/lib/connector/job-discovery/modules/eures/index.ts`, `src/lib/connector/job-discovery/modules/eures/translator.ts`, `src/lib/connector/job-discovery/modules/eures/resilience.ts`, `src/lib/connector/job-discovery/modules/eures/rate-limiter.ts`, `src/lib/connector/job-discovery/modules/eures/types.ts` (autocomplete), `src/lib/connector/job-discovery/modules/eures/generated.ts` (OpenAPI types), `src/lib/connector/job-discovery/modules/eures/countries.ts`
 
 **Purpose**: Implements `DataSourceConnector` for the EU EURES job portal (`europa.eu/eures/api`). Handles pagination over the EURES search API, language-aware vacancy translation, resilient HTTP communication, and optional detail enrichment.
 
@@ -163,7 +163,7 @@ mapDiscoveredVacancyToJobRecord(input: {
 
 ### 5. Arbeitsagentur Module
 
-**Files**: `src/lib/connector/job-discovery/arbeitsagentur/index.ts`, `src/lib/connector/job-discovery/arbeitsagentur/types.ts`, `src/lib/connector/job-discovery/arbeitsagentur/resilience.ts`
+**Files**: `src/lib/connector/job-discovery/modules/arbeitsagentur/index.ts`, `src/lib/connector/job-discovery/modules/arbeitsagentur/types.ts`, `src/lib/connector/job-discovery/modules/arbeitsagentur/resilience.ts`
 
 **Purpose**: Implements `DataSourceConnector` for the German Federal Employment Agency job portal (`rest.arbeitsagentur.de/jobboerse`). Translates the Bundesagentur-specific vocabulary (`refnr`, `beruf`, `arbeitsort`, `arbeitszeit`, `stellenbeschreibung`) into `DiscoveredVacancy`.
 
@@ -188,7 +188,7 @@ mapDiscoveredVacancyToJobRecord(input: {
 
 ### 6. JSearch Module
 
-**Files**: `src/lib/connector/job-discovery/jsearch/index.ts`
+**Files**: `src/lib/connector/job-discovery/modules/jsearch/index.ts`
 
 **Purpose**: Implements `DataSourceConnector` for JSearch via RapidAPI, which aggregates Google Jobs results. Simpler than the EU modules — no pagination, no resilience policy, single-page response with full job details in the search result.
 

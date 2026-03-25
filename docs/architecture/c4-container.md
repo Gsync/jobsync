@@ -39,9 +39,9 @@ This container deploys the following logical components:
 - **Server Actions / Repository Layer** (`src/actions/`) — Typed `ActionResult<T>`-returning database operations for all aggregates (Job, Automation, Profile, Task, Activity, etc.)
 - **Authentication** (`src/auth.ts`, `src/middleware.ts`) — NextAuth.js session management; middleware protects `/dashboard` and `/dashboard/**`
 - **Connector Registry** (`src/lib/connector/job-discovery/registry.ts`) — Factory registry mapping connector IDs to `DataSourceConnector` implementations
-- **EURES Connector** (`src/lib/connector/job-discovery/eures/`) — Calls `https://europa.eu/eures/api`; implements circuit breaker and bulkhead resilience patterns
-- **Bundesagentur Connector** (`src/lib/connector/job-discovery/arbeitsagentur/`) — Calls `https://rest.arbeitsagentur.de`; uses public API key `jobboerse-jobsuche`
-- **JSearch Connector** (`src/lib/connector/job-discovery/jsearch/`) — Calls `https://jsearch.p.rapidapi.com`; requires `RAPIDAPI_KEY`
+- **EURES Connector** (`src/lib/connector/job-discovery/modules/eures/`) — Calls `https://europa.eu/eures/api`; implements circuit breaker and bulkhead resilience patterns
+- **Bundesagentur Connector** (`src/lib/connector/job-discovery/modules/arbeitsagentur/`) — Calls `https://rest.arbeitsagentur.de`; uses public API key `jobboerse-jobsuche`
+- **JSearch Connector** (`src/lib/connector/job-discovery/modules/jsearch/`) — Calls `https://jsearch.p.rapidapi.com`; requires `RAPIDAPI_KEY`
 - **Automation Runner** (`src/lib/connector/job-discovery/runner.ts`) — Orchestrates the search → deduplication → AI matching → persistence pipeline
 - **Background Scheduler** (`src/lib/scheduler/index.ts`) — `node-cron` wrapper polling SQLite for `status=active, nextRunAt<=now`
 - **AI Provider Layer** (`src/lib/connector/ai-provider/`) — Vercel AI SDK integration supporting Ollama (local), OpenAI, and DeepSeek
