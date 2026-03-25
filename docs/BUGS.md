@@ -105,6 +105,6 @@
 |----|-------|----------|--------|
 | D13 | Mock data insufficient for all screens | Low | ✅ Fixed |
 | D14 | No mock data for connectors/modules | Low | ✅ Fixed |
-| D15 | All modals: Tab into Combobox/Select fields should allow typing + Enter to add | Multiple modals | Medium | Open |
+| D15 | All modals: Tab into Combobox/Select fields should allow typing + Enter to add | Multiple modals | Medium | ⚠️ Partial — BaseCombobox refactored, full form UX review pending |
 | D16 | AddCompany: Logo URL validation too strict — rejects valid URLs like Wikipedia SVG links | `AddCompany.tsx` | Medium | ✅ Fixed |
 | D17 | AddCompany: Typo "Unterstutze Formate" — missing ü → "Unterstützte Formate" | `admin.ts` i18n | Low | ✅ Fixed |

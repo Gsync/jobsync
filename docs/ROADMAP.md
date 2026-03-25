@@ -567,7 +567,7 @@ Dynamische Dateipfade und Dateinamen:
 
 **Voraussetzungen:** Playwright + System-Chromium (bereits vorhanden), ffmpeg (für GIF-Konvertierung, nur in devenv)
 
-### 8.2 Client-Side Error Reporting Dashboard
+### 8.2 Client-Side Error Reporting Dashboard -- DONE
 - Error Boundary mit Error-Reporting in Developer Settings UI
 - **Ziel:** React-Errors, Hydration-Mismatches, Client-Side Exceptions in der App sichtbar machen (nicht nur in der Browser-Konsole)
 

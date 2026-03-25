@@ -1,0 +1,339 @@
+-- BaseCombobox: Shared headless combobox wrapper behaviour
+-- Layer 2 component per C4 ComboBox analysis (docs/architecture/c4-component-combobox.md)
+-- Provides Popover + Command + trigger shell consumed by all combobox variants
+
+-- =============================================================================
+-- Types
+-- =============================================================================
+
+value Option {
+    id: String           -- unique identifier, used as field value
+    label: String        -- human-readable display text
+    value: String        -- searchable string for local filter matching
+}
+
+value ComboboxState {
+    open: Boolean        -- whether the dropdown popover is visible
+    inputValue: String   -- current text in the CommandInput search field
+    highlightedIndex: Integer?  -- cmdk-managed aria-selected item index
+    selectedId: String?  -- the id of the currently selected option
+    isCreating: Boolean  -- whether an async onCreateOption call is in flight
+}
+
+-- =============================================================================
+-- Props Interface
+-- =============================================================================
+
+entity BaseComboboxProps {
+    -- Trigger
+    triggerLabel: String            -- text when nothing selected
+    triggerContent: ReactNode?      -- override for trigger button content
+    placeholder: String?            -- CommandInput placeholder text
+    disabled: Boolean?              -- disables the trigger button entirely
+
+    -- State (controlled)
+    open: Boolean
+    onOpenChange: (Boolean) -> Void
+    inputValue: String
+    onInputValueChange: (String) -> Void
+
+    -- Filtering
+    filter: ((value: String, search: String) -> Number)?  -- custom cmdk filter
+
+    -- Children
+    children: ReactNode             -- caller-owned CommandGroup / CommandItem trees
+
+    -- Styling
+    triggerIcon: ReactNode?
+    triggerClassName: String?
+    contentClassName: String?
+}
+
+entity ComboboxProps extends BaseComboboxProps {
+    -- Generic single-select Combobox (src/components/ComboBox.tsx)
+    options: Option[]
+    field: ControllerRenderProps     -- react-hook-form field binding
+    creatable: Boolean?              -- enables creation UI
+    onCreateOption: ((String) -> Promise<Option?>)?  -- async creation callback
+}
+
+-- =============================================================================
+-- 1. Keyboard Behaviour (D15 requirement)
+-- =============================================================================
+
+rule KeyboardTab {
+    -- Tab key focuses the trigger button via normal DOM tab order.
+    -- The trigger button has role="combobox" and is a focusable <Button>.
+    when: focus_reaches_trigger via Tab
+    then: trigger_button.focused = true
+    ensures: trigger_is_focusable
+}
+
+rule KeyboardOpenDropdown {
+    -- Enter or Space on the focused trigger opens the popover dropdown.
+    -- Radix Popover handles this natively for role="combobox" triggers.
+    when: trigger_button.focused AND keypress in {Enter, Space}
+    then: open = true, CommandInput.focused = true
+    ensures: dropdown_opens_on_activation
+}
+
+rule KeyboardTypeToFilter {
+    -- When the dropdown is open, typing in the CommandInput filters options.
+    -- The filter function is either the default cmdk filter or a custom one
+    -- passed via the filter prop.
+    when: open = true AND CommandInput.focused AND keypress is printable_character
+    then: inputValue = inputValue + character
+    then: visible_options = options.filter(o => filter(o.value, inputValue) > 0)
+    ensures: typing_filters_options
+}
+
+rule KeyboardArrowNavigation {
+    -- ArrowDown and ArrowUp move the highlight (aria-selected) through
+    -- the visible CommandItem list. cmdk manages this internally.
+    when: open = true AND keypress in {ArrowDown, ArrowUp}
+    then: highlightedIndex = cmdk_next_or_previous(direction)
+    ensures: arrow_keys_navigate_options
+}
+
+rule KeyboardSelectHighlighted {
+    -- Enter on a highlighted option selects it and closes the dropdown.
+    when: open = true AND highlightedIndex != null AND keypress = Enter
+    then: selectedId = visible_options[highlightedIndex].id
+    then: field.onChange(selectedId)
+    then: open = false
+    then: inputValue = ""
+    ensures: enter_selects_highlighted
+}
+
+rule KeyboardCreateOnEnter {
+    -- Enter with no highlighted option + non-empty inputValue + creatable mode
+    -- triggers the creation flow instead of selection.
+    when: open = true
+        AND highlightedIndex = null
+        AND inputValue.trim() != ""
+        AND creatable = true
+        AND onCreateOption != null
+        AND no_exact_match(inputValue, options)
+    then: invoke onCreateOption(inputValue)
+    ensures: enter_creates_when_no_match
+}
+
+rule KeyboardEscape {
+    -- Escape closes the dropdown without changing the selection.
+    -- Radix Popover handles this natively.
+    when: open = true AND keypress = Escape
+    then: open = false
+    then: inputValue = ""
+    ensures: escape_closes_dropdown
+    ensures: selection_unchanged
+}
+
+rule KeyboardTabOut {
+    -- Tab while the dropdown is open closes it and moves focus to the
+    -- next focusable element in the DOM. Radix Popover handles close-on-blur.
+    when: open = true AND keypress = Tab
+    then: open = false
+    then: inputValue = ""
+    then: focus moves to next_focusable_element
+    ensures: tab_closes_and_moves_focus
+}
+
+-- =============================================================================
+-- 2. Selection Model
+-- =============================================================================
+
+rule SingleSelectDefault {
+    -- BaseCombobox supports single-select mode only.
+    -- Multi-select is handled by specialised variants (TagInput, EURES comboboxes)
+    -- that compose their own selection logic on top of BaseCombobox's shell.
+    ensures: at_most_one_selected_at_a_time
+}
+
+rule ValueBindingViaField {
+    -- The selected value is bound to a react-hook-form field via
+    -- field.onChange(option.id) on selection and field.value for display.
+    -- The trigger button displays the label of the option whose id matches
+    -- field.value, or the triggerLabel placeholder if field.value is empty.
+    when: user selects option
+    then: field.onChange(option.id)
+    ensures: field_value_is_option_id
+
+    when: field.value != null
+    then: trigger displays options.find(o => o.id == field.value).label
+    ensures: trigger_shows_selected_label
+}
+
+rule OptionFormat {
+    -- Every option in the options array must have id, label, and value fields.
+    -- id: unique identifier stored as the field value
+    -- label: displayed to the user in trigger and dropdown
+    -- value: used by the filter function for search matching
+    for_each: option in options
+    ensures: option.id is String AND option.id != ""
+    ensures: option.label is String AND option.label != ""
+    ensures: option.value is String
+}
+
+-- =============================================================================
+-- 3. Creation Behaviour (onCreateOption)
+-- =============================================================================
+
+rule CreationAvailability {
+    -- The "Create X" affordance is only visible when BOTH conditions are met:
+    -- 1. creatable prop is true
+    -- 2. onCreateOption callback prop is provided
+    -- If either is missing, the dropdown shows "No results found" on empty filter.
+    showCreate = (creatable = true) AND (onCreateOption != null)
+    ensures: create_requires_both_props
+}
+
+rule CreateOptionVisibility {
+    -- The "Create X" option appears at the bottom of the dropdown (via CommandEmpty)
+    -- only when the typed inputValue has no exact match in the options list.
+    -- "Exact match" means: options.some(o => o.value == inputValue.toLowerCase())
+    when: showCreate = true
+        AND inputValue.trim() != ""
+        AND no_exact_match(inputValue, options)
+    then: display "Create: {inputValue}" row with CirclePlus icon
+    ensures: create_shown_when_no_exact_match
+}
+
+rule CreateOptionHidden {
+    -- When inputValue is empty or has an exact match, no creation row is shown.
+    when: showCreate = true
+        AND (inputValue.trim() = "" OR exact_match_exists(inputValue, options))
+    then: hide creation row
+    ensures: no_create_for_empty_or_existing
+}
+
+rule CreateAsyncLifecycle {
+    -- Creation is an async operation with distinct lifecycle phases:
+
+    -- Phase 1: Invocation
+    -- User clicks "Create X" or presses Enter with no highlight.
+    -- isCreating = true, trigger icon changes to Loader spinner.
+    when: creation triggered
+    then: isCreating = true
+    then: triggerIcon = <Loader spinner />
+    ensures: loading_state_shown
+
+    -- Phase 2a: Success
+    -- onCreateOption returns a non-null Option.
+    -- New option is prepended to options, selected, dropdown closes.
+    when: onCreateOption resolves with result != null
+    then: options = [result, ...options]
+    then: field.onChange(result.id)
+    then: open = false
+    then: isCreating = false
+    then: inputValue = ""
+    ensures: success_adds_and_selects
+
+    -- Phase 2b: Failure
+    -- onCreateOption returns null (caller handles toast/error display).
+    -- Dropdown stays open, inputValue preserved, user can retry or pick another.
+    when: onCreateOption resolves with null
+    then: isCreating = false
+    then: open remains true
+    then: inputValue remains unchanged
+    ensures: failure_keeps_dropdown_open
+    ensures: caller_handles_error_display
+}
+
+-- =============================================================================
+-- 4. Invariants
+-- =============================================================================
+
+invariant SelectedValueExistsInOptions {
+    -- The selected value (field.value) must always correspond to an option
+    -- that exists in the options array. If the options array changes externally
+    -- and the selected value is no longer present, the trigger falls back to
+    -- displaying the triggerLabel placeholder.
+    when: field.value != null AND field.value != ""
+    ensures: options.some(o => o.id == field.value) = true
+        OR trigger displays triggerLabel (graceful fallback)
+}
+
+invariant AtMostOneSelected {
+    -- Exactly zero or one option is selected at any time.
+    -- There is no intermediate state where multiple options are selected.
+    ensures: count(options where o.id == field.value) <= 1
+}
+
+invariant EmptyStringNeverSelected {
+    -- An empty string is never stored as a valid selection.
+    -- field.onChange is never called with "" or null from the selection path.
+    -- A cleared selection is represented by the field's default value (typically
+    -- undefined), not by an empty string.
+    ensures: field.value != ""
+    note: field.value may be undefined (no selection), but never ""
+}
+
+invariant OptionsNeverMutatedDirectly {
+    -- The options array is never mutated in place. All modifications go through
+    -- React setState. The current implementation in ComboBox.tsx violates this
+    -- via options.unshift(result) — this is a known defect to be fixed.
+    ensures: options reference identity changes on modification
+    ensures: no Array.push, Array.unshift, Array.splice on options
+    known_violation: ComboBox.tsx line 53 uses options.unshift(result)
+    fix: lift options into parent state, pass setter via onCreateOption callback
+}
+
+invariant InputValueClearedOnClose {
+    -- When the dropdown closes (by any mechanism: selection, escape, tab-out,
+    -- click-outside), the inputValue is reset to "".
+    -- This ensures the next open shows the full unfiltered options list.
+    when: open transitions from true to false
+    ensures: inputValue = ""
+}
+
+-- =============================================================================
+-- Accessibility
+-- =============================================================================
+
+rule AriaComboboxRole {
+    -- The trigger button carries role="combobox" per WAI-ARIA combobox pattern.
+    -- aria-expanded reflects the open state.
+    ensures: trigger has role="combobox"
+    ensures: trigger has aria-expanded={open}
+}
+
+rule AriaDisabledState {
+    -- When disabled=true, the trigger button is not focusable and not activatable.
+    when: disabled = true
+    ensures: trigger has disabled attribute
+    ensures: trigger is not keyboard-activatable
+}
+
+-- =============================================================================
+-- Component Boundaries
+-- =============================================================================
+
+rule BaseComboboxOwns {
+    -- BaseCombobox owns and renders:
+    -- 1. Popover (open/close state, positioning)
+    -- 2. Trigger Button (role="combobox", label/content, icon, disabled)
+    -- 3. Command wrapper (filter function delegation)
+    -- 4. CommandInput (controlled value, placeholder)
+    -- 5. CommandList (scroll container for children)
+    ensures: popover_trigger_command_are_internal
+}
+
+rule CallerOwns {
+    -- The caller (e.g. Combobox, TagInput, EuresLocationCombobox) owns:
+    -- 1. CommandGroup / CommandItem tree structure
+    -- 2. CommandEmpty content
+    -- 3. Selection logic (single vs multi, value encoding)
+    -- 4. Data fetching (local static, remote debounced, one-shot)
+    -- 5. Creation dispatch (server actions)
+    -- 6. Chip/badge row below trigger
+    ensures: children_are_caller_owned
+    ensures: no_selection_logic_in_base
+}
+
+-- =============================================================================
+-- Open Questions
+-- =============================================================================
+
+open question "Should BaseCombobox accept an onSearch callback for debounced remote search, or should callers wire onInputValueChange to their own debounce logic?"
+open question "Should the options.unshift mutation in ComboBox.tsx be fixed as part of the BaseCombobox adoption, or tracked as a separate defect?"
+open question "Should BaseCombobox support a maxItems prop and disabled-trigger guard for multi-select variants, or is that purely a Layer 3 concern?"
