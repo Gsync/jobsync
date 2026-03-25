@@ -93,6 +93,8 @@ const activityTypeRows = [
   { id: "type-3", value: "Side Project 2" },
   { id: "type-4", value: "Job Search" },
   { id: "type-5", value: "Interview Preparation" },
+  { id: "type-6", value: "Networking" },
+  { id: "type-7", value: "Coding" },
 ];
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
