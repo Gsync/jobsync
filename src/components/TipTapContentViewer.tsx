@@ -5,6 +5,7 @@ import { useEffect } from "react";
 
 export const TipTapContentViewer = ({ content }: { content: string }) => {
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         heading: {

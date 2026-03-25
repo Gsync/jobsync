@@ -10,6 +10,7 @@ import { Bold, Heading2, Italic, List, ListOrdered } from "lucide-react";
 
 const Tiptap = ({ field }: { field: ControllerRenderProps<any, any> }) => {
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         heading: {
