@@ -205,6 +205,38 @@ Formal specifications in `specs/*.allium` capture domain behaviour:
 - Use `allium:elicit` to build specs through conversation
 - Use `allium:distill` to extract specs from existing code
 
+## Testing Requirements
+
+**CRITICAL: Every feature, bugfix, and refactoring MUST include tests.** No code ships without test coverage.
+
+### Test Pyramid
+
+| Layer | Tool | When | What to test |
+|---|---|---|---|
+| **Unit Tests** | Jest + Testing Library | Every PR | Server actions, utilities, formatters, hooks, pure functions |
+| **Component Tests** | Jest + Testing Library | Every UI change | Component rendering, user interactions, i18n, props |
+| **Integration Tests** | Jest | API routes, DB interactions | Auth flows, ActionResult contracts, Prisma queries (mocked) |
+| **E2E Tests** | Playwright + Chromium | Major features, critical paths | Login flow, automation wizard, CRUD operations, settings |
+| **Dictionary Tests** | bun runtime | Every i18n change | Key consistency across 4 locales, no empty values |
+
+### Rules
+
+- **New feature** → unit tests + component tests + at minimum 1 E2E test for the happy path
+- **Bug fix** → regression test that reproduces the bug before fixing
+- **Refactoring** → existing tests must pass unchanged (or be updated if return shapes change)
+- **New Connector Module** → unit tests for translator, integration test for search/getDetails
+- **i18n changes** → dictionary consistency validation
+- Run `bash scripts/test.sh --no-coverage` before every commit — all 748+ tests must pass
+- Run `source scripts/env.sh && bun run build` — zero type errors
+
+### Test Infrastructure
+
+- `scripts/test.sh` — runs Jest with system Node.js (not bun, due to compatibility)
+- `__tests__/*.spec.ts` — unit + component tests
+- `e2e/*.spec.ts` — Playwright E2E tests
+- `src/lib/data/testFixtures.ts` — reusable typed fixtures for all Prisma models
+- System Chromium at `/run/current-system/sw/bin/chromium` for E2E
+
 ## Code Conventions
 
 - Use `useTranslations()` hook for client components, `t(locale, key)` for server components
