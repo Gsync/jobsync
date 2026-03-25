@@ -47,14 +47,23 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
   const onCreateOption = (label: string) => {
     if (!label) return;
     startTransition(async () => {
-      let response;
+      let response: any;
       switch (field.name) {
         case "company":
           const res = await addCompany({ company: label });
           response = res.data;
           break;
         case "title":
-          response = await createJobTitle(label);
+          const titleRes = await createJobTitle(label);
+          if (!titleRes.success) {
+            toast({
+              variant: "destructive",
+              title: t("common.error"),
+              description: titleRes.message,
+            });
+            return;
+          }
+          response = titleRes.data;
           break;
         case "location":
           const { data, success, message } = await createLocation(label);
@@ -80,7 +89,16 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
           if (!sourceRes.success) return;
           break;
         case "activityType":
-          response = await createActivityType(label);
+          const activityTypeRes = await createActivityType(label);
+          if (!activityTypeRes.success) {
+            toast({
+              variant: "destructive",
+              title: t("common.error"),
+              description: activityTypeRes.message,
+            });
+            return;
+          }
+          response = activityTypeRes.data;
           break;
         default:
           break;
