@@ -1,5 +1,34 @@
 # JobSync Roadmap
 
+## 0. Infrastruktur-Refactoring (Priorität)
+
+### 0.1 App ↔ Connector ↔ Module Umstellung
+Bestehende Connector-Infrastruktur auf das ACL-Pattern (Anti-Corruption Layer) migrieren:
+
+- **Ordnerstruktur umbenennen:** `src/lib/scraper/` → `src/lib/connectors/`
+  - `scraper/eures/` → `connectors/eures/` (Connector + Module)
+  - `scraper/arbeitsagentur/` → `connectors/arbeitsagentur/`
+  - `scraper/jsearch/` → `connectors/jsearch/`
+- **Module-Interface formalisieren:** Jedes Module implementiert ein gemeinsames Interface (`DataSourceModule`) das der Connector konsumiert
+- **Connector Registry refactoren:** `src/lib/scraper/registry.ts` → `src/lib/connectors/registry.ts`
+- **Runner anpassen:** `src/lib/scraper/runner.ts` → `src/lib/connectors/runner.ts`
+- **Imports aktualisieren:** Alle Referenzen auf `@/lib/scraper/` → `@/lib/connectors/`
+- **Tests anpassen:** Bestehende 748+ Tests müssen weiterhin bestehen
+
+### 0.2 ActionResult<T> Typisierung vervollständigen
+- Pattern A (55 Funktionen): `Promise<any>` → `Promise<ActionResult<unknown>>` (in Arbeit)
+- Pattern B (6 Funktionen): Caller-Refactoring damit auch `getAllX` ActionResult nutzt
+- Pattern C (Dashboard): Custom Return-Types statt `any`
+- Endziel: `ActionResult<DomainType>` mit spezifischen Prisma-aligned Domain-Models
+- Siehe `specs/action-result.allium` für die vollständige Klassifikation
+
+### 0.3 Domain-Model Alignment
+- Prisma-generierte Typen und Domain-Model Interfaces (`src/models/`) synchronisieren
+- Ermöglicht `ActionResult<Job>` statt `ActionResult<unknown>`
+- Voraussetzung für automatische API-Dokumentation (Roadmap 8.1)
+
+---
+
 ## 1. Connectors
 
 ### 1.1 Arbeitsagentur Jobsuche (Bundesagentur für Arbeit)
