@@ -131,7 +131,22 @@ App (Kernlogik) ↔ Connector (ACL) ↔ Module (Externes System)
 - Sprachspezifische Anpassungen: Datumsformat, Adressformat, Kommata/Punkt
 - EURES/ISCO/ESCO Suchanpassungen pro Sprache
 
-### 2.3 Input Fields Verbesserungen
+### 2.3 Auto-Fetch Firmenlogos
+- Automatisches Fetching von Firmenlogos beim Anlegen/Import von Unternehmen
+- **Quellen (Fallback-Kette):**
+  - Clearbit Logo API: `https://logo.clearbit.com/{domain}` (kostenlos, kein API-Key)
+  - Google Favicon: `https://www.google.com/s2/favicons?domain={domain}&sz=128`
+  - Brandfetch API (optional, API-Key): hochauflösende Logos
+- **Integration:**
+  - Admin → Companies: Logo wird automatisch beim Erstellen/Bearbeiten gefetcht
+  - Job-Import via Connector: Arbeitgeber-Domain wird extrahiert, Logo automatisch zugeordnet
+  - CRM: Firmenlogos in Kontakt- und Unternehmensansichten
+- **UX:**
+  - Fallback auf Initialen-Avatar wenn kein Logo gefunden
+  - Manueller Upload als Override möglich (bestehendes `logoUrl`-Feld)
+  - Logo-Cache um wiederholte Requests zu vermeiden
+
+### 2.4 Input Fields Verbesserungen
 - Passende Icons für alle Input-Felder
 - Date Picker: Datumseingabe als Text mit Validierung nach Lokalisation
 - Text Input: Enter-Taste fügt Objekte hinzu (Chip-Pattern)
