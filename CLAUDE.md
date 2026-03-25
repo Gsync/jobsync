@@ -126,6 +126,81 @@ Each directory contains: `index.ts` (Connector), `types.ts` (Module types), `res
 - `src/components/ui/info-tooltip.tsx` — Info icon with popover (hover + tap)
 - `src/components/ui/command.tsx` — Has `touch-action: pan-y` for mobile scroll fix
 
+## Domain-Driven Design (DDD) Principles
+
+This project uses DDD idioms. All agents and contributors MUST follow these principles:
+
+### Ubiquitous Language
+
+Use consistent domain terms across code, UI, specs, and documentation:
+
+| Domain Term | Meaning | NOT |
+|---|---|---|
+| `DiscoveredVacancy` | A job found by an automation | "scraped job", "result" |
+| `Connector` | ACL that translates external APIs to domain types | "scraper", "fetcher" |
+| `Module` | External system behind a Connector | "API", "service" |
+| `Automation` | A scheduled job search configuration | "cron job", "task" |
+| `ActionResult<T>` | Typed server action response | `Promise<any>` |
+
+### Bounded Contexts
+
+Each Connector is a Bounded Context with its own internal language:
+
+```
+src/lib/scraper/
+  eures/          ← EURES Context (locationCodes, jvProfiles, requestLanguage)
+  arbeitsagentur/ ← Arbeitsagentur Context (arbeitsort, beruf, refnr)
+  jsearch/        ← JSearch Context (job_city, employer_name)
+```
+
+Contexts communicate ONLY through the shared domain type `DiscoveredVacancy`. Never leak context-specific types (e.g., `ArbeitsagenturJob`) into the App layer.
+
+### Anti-Corruption Layer (ACL)
+
+See "Connector Architecture" section above. Every external integration MUST have a Connector that:
+1. Translates foreign types → domain types
+2. Implements resilience (circuit breaker, retry)
+3. Returns `ConnectorResult<T>` — never raw exceptions
+
+### Value Objects
+
+Prefer Value Objects for domain concepts without identity:
+- `ActionResult<T>` — operation outcome
+- `DiscoveredVacancy` — job data (identity via `externalId`)
+- `EuresCountry` — country reference data
+- Use `as const` for immutable value collections
+
+### Aggregate Boundaries
+
+When modifying data, respect aggregate boundaries:
+- **Job Aggregate:** Job + Notes + Tags + Status (modify together via `job.actions.ts`)
+- **Automation Aggregate:** Automation + Runs + Discovered Jobs (via `automation.actions.ts`)
+- **Profile Aggregate:** Profile + Resumes + Sections + Contact Info (via `profile.actions.ts`)
+- Never modify an aggregate's children from outside its action file
+
+### Repository Pattern
+
+Server actions (`src/actions/*.ts`) serve as Repositories:
+- Each aggregate has one action file (its Repository)
+- Return `ActionResult<T>` for typed responses (Pattern A)
+- Pattern B functions (`getAllX`) may return raw arrays — see `specs/action-result.allium`
+- Dashboard functions (Pattern C) use custom return types
+
+### Domain Events (Future)
+
+Currently implicit in `AutomationRun` status transitions. When implementing CRM features (Roadmap Section 5), introduce an explicit Event Bus for:
+- `JobDiscovered` → trigger notifications, CRM updates
+- `ApplicationStatusChanged` → trigger follow-ups, calendar events
+- `ConnectorHealthChanged` → trigger alerts
+
+### Specification Pattern (Allium)
+
+Formal specifications in `specs/*.allium` capture domain behaviour:
+- Write specs BEFORE implementing complex features
+- Specs are the single source of truth for domain rules
+- Use `allium:elicit` to build specs through conversation
+- Use `allium:distill` to extract specs from existing code
+
 ## Code Conventions
 
 - Use `useTranslations()` hook for client components, `t(locale, key)` for server components
@@ -133,10 +208,10 @@ Each directory contains: `index.ts` (Connector), `types.ts` (Module types), `res
 - Commit messages follow conventional commits: `feat(scope):`, `fix(scope):`, `refactor(scope):`
 - Helper scripts in `./scripts/` can always be run without asking
 - Delegate large-scale changes (translation, formatting) to parallel agents
+- Use DDD terminology in code, comments, commits, and documentation
 
 ## Git Workflow
 
-- Main development branch: `feature/eures-integration`
 - Upstream: `Gsync/jobsync` (fork)
 - Always commit with logical grouping, not one big commit
 - Push explicitly when asked
