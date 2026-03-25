@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
+import { Button } from "../ui/button";
 import { toast } from "../ui/use-toast";
-import { Loader2 } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { getUserSettings, updateUserSettings } from "@/actions/userSettings.actions";
 import { useTranslations } from "@/i18n";
 import type { DeveloperSettings as DeveloperSettingsType } from "@/models/userSettings.model";
@@ -198,17 +199,33 @@ function DeveloperSettings() {
               {t("settings.allowedDevOriginsDesc")}
             </p>
           </div>
-          <Input
-            id="allowed-dev-origins"
-            placeholder="http://192.168.1.100:3737, http://myhost.ts.net:3737"
-            value={settings.allowedDevOrigins ?? ""}
-            onChange={(e) =>
-              setSettings({ ...settings, allowedDevOrigins: e.target.value })
-            }
-            onBlur={() =>
-              handleToggle({ allowedDevOrigins: settings.allowedDevOrigins })
-            }
-          />
+          <div className="flex gap-2">
+            <Input
+              id="allowed-dev-origins"
+              placeholder="http://192.168.1.100:3737, http://myhost.ts.net:3737"
+              value={settings.allowedDevOrigins ?? ""}
+              onChange={(e) =>
+                setSettings({ ...settings, allowedDevOrigins: e.target.value })
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleToggle({ allowedDevOrigins: settings.allowedDevOrigins });
+                }
+              }}
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0"
+              onClick={() =>
+                handleToggle({ allowedDevOrigins: settings.allowedDevOrigins })
+              }
+              aria-label={t("common.save")}
+            >
+              <Check className="h-4 w-4" />
+            </Button>
+          </div>
           <p className="text-xs text-muted-foreground">
             {t("settings.allowedDevOriginsHint")}
           </p>

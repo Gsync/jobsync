@@ -274,7 +274,17 @@ Kontextsensitiver Einrichtungsassistent für neue Benutzer, der sich an deren Zi
   - Bewerbungsunterlagen direkt per E-Mail oder Bewerbungsportale versenden
   - QR-Code für Kontaktdaten und Unterlagen (z.B. auf Job-Messen)
 
-### 2.6 Unified Add Automation Workflow
+### 2.6 API Key Setup-Hilfe
+- Für jeden API-Key-Provider in `/dashboard/settings → API Keys`:
+  - Info-Text/Link wie und wo der API-Key erstellt werden kann
+  - Provider-spezifische Anleitungen (Schritt-für-Schritt oder Link zur Docs-Seite):
+    - **RapidAPI (JSearch):** Link zu RapidAPI JSearch, Erklärung Free-Tier
+    - **OpenAI:** Link zu platform.openai.com/api-keys
+    - **DeepSeek:** Link zu platform.deepseek.com
+    - **Ollama:** Hinweis dass kein Key benötigt, nur URL-Konfiguration
+  - Inline-Hilfe als Tooltip oder ausklappbarer Bereich unter jedem Key-Feld
+
+### 2.7 Unified Add Automation Workflow
 - Einheitlicher Wizard für alle Connectors (JSearch, EURES, Arbeitsagentur, zukünftige)
 - Connector-spezifische Felder werden dynamisch basierend auf dem gewählten Connector geladen
 - Gemeinsame Felder (Name, Resume, Threshold, Schedule) bleiben einheitlich

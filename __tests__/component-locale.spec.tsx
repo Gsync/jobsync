@@ -39,6 +39,7 @@ jest.mock("lucide-react", () => ({
   Pencil: (props: any) => <span data-testid="icon-pencil" {...props} />,
   Trash2: (props: any) => <span data-testid="icon-trash" {...props} />,
   Loader2: (props: any) => <span data-testid="icon-loader" {...props} />,
+  Check: (props: any) => <span data-testid="icon-check" {...props} />,
 }));
 
 // Mock Radix DropdownMenu to render children directly in the DOM
@@ -104,6 +105,13 @@ jest.mock("@/components/ui/alert-dialog", () => ({
     <button data-testid="alert-action" onClick={onClick} {...props}>
       {children}
     </button>
+  ),
+}));
+
+// Mock Button component (used by DeveloperSettings for the confirm button)
+jest.mock("@/components/ui/button", () => ({
+  Button: ({ children, ...props }: { children: React.ReactNode; [key: string]: any }) => (
+    <button {...props}>{children}</button>
   ),
 }));
 
