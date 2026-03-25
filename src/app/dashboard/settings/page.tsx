@@ -3,6 +3,7 @@
 import { useState } from "react";
 import AiSettings from "@/components/settings/AiSettings";
 import ApiKeySettings from "@/components/settings/ApiKeySettings";
+import DeveloperSettings from "@/components/settings/DeveloperSettings";
 import DisplaySettings from "@/components/settings/DisplaySettings";
 import SettingsSidebar, { type SettingsSection } from "@/components/settings/SettingsSidebar";
 
@@ -23,6 +24,7 @@ function Settings() {
           {activeSection === "ai-provider" && <AiSettings />}
           {activeSection === "api-keys" && <ApiKeySettings />}
           {activeSection === "appearance" && <DisplaySettings />}
+          {activeSection === "developer" && <DeveloperSettings />}
         </div>
       </div>
     </div>

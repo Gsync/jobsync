@@ -22,9 +22,19 @@ export interface DisplaySettings {
   format?: FormatSettings;
 }
 
+export interface DeveloperSettings {
+  debugLogging: boolean;
+  logCategories: {
+    scheduler: boolean;
+    runner: boolean;
+    automationLogger: boolean;
+  };
+}
+
 export interface UserSettingsData {
   ai: AiSettings;
   display: DisplaySettings;
+  developer?: DeveloperSettings;
 }
 
 export interface UserSettings {
@@ -40,5 +50,13 @@ export const defaultUserSettings: UserSettingsData = {
   display: {
     theme: "system",
     locale: "en",
+  },
+  developer: {
+    debugLogging: true,
+    logCategories: {
+      scheduler: true,
+      runner: true,
+      automationLogger: true,
+    },
   },
 };

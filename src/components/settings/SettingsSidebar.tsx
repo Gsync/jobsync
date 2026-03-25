@@ -1,12 +1,12 @@
 "use client";
 
-import { Bot, Key, Palette } from "lucide-react";
+import { Bot, Bug, Key, Palette } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n";
 import type { TranslationKey } from "@/i18n";
 
-export type SettingsSection = "ai-provider" | "api-keys" | "appearance";
+export type SettingsSection = "ai-provider" | "api-keys" | "appearance" | "developer";
 
 const SETTINGS_SECTIONS: {
   id: SettingsSection;
@@ -16,6 +16,7 @@ const SETTINGS_SECTIONS: {
   { id: "ai-provider", labelKey: "settings.sidebarAiProvider", icon: Bot },
   { id: "api-keys", labelKey: "settings.sidebarApiKeys", icon: Key },
   { id: "appearance", labelKey: "settings.sidebarAppearance", icon: Palette },
+  { id: "developer", labelKey: "settings.sidebarDeveloper", icon: Bug },
 ];
 
 interface SettingsSidebarProps {
