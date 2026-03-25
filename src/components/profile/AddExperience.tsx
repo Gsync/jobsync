@@ -29,9 +29,11 @@ import { toast } from "../ui/use-toast";
 import { Combobox } from "../ComboBox";
 import { DatePicker } from "../DatePicker";
 import { Company, JobLocation, JobTitle } from "@/models/job.model";
-import { getAllCompanies } from "@/actions/company.actions";
+import { getAllCompanies, addCompany } from "@/actions/company.actions";
 import { getAllJobTitles } from "@/actions/jobtitle.actions";
+import { createJobTitle } from "@/actions/jobtitle.actions";
 import { getAllJobLocations } from "@/actions/jobLocation.actions";
+import { createLocation } from "@/actions/job.actions";
 import { Switch } from "../ui/switch";
 import { addExperience, updateExperience } from "@/actions/profile.actions";
 import { useTranslations } from "@/i18n";
@@ -194,7 +196,23 @@ function AddExperience({
                   <FormItem className="flex flex-col">
                     <FormLabel>Job Title</FormLabel>
                     <FormControl>
-                      <Combobox options={jobTitles} field={field} creatable />
+                      <Combobox
+                        options={jobTitles}
+                        field={field}
+                        creatable
+                        onCreateOption={async (label) => {
+                          const res = await createJobTitle(label);
+                          if (!res.success) {
+                            toast({
+                              variant: "destructive",
+                              title: t("common.error"),
+                              description: res.message,
+                            });
+                            return null;
+                          }
+                          return res.data as { id: string; label: string; value: string };
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -211,7 +229,23 @@ function AddExperience({
                   <FormItem className="flex flex-col">
                     <FormLabel>Company</FormLabel>
                     <FormControl>
-                      <Combobox options={companies} field={field} creatable />
+                      <Combobox
+                        options={companies}
+                        field={field}
+                        creatable
+                        onCreateOption={async (label) => {
+                          const res = await addCompany({ company: label });
+                          if (!res.success) {
+                            toast({
+                              variant: "destructive",
+                              title: t("common.error"),
+                              description: res.message,
+                            });
+                            return null;
+                          }
+                          return res.data as { id: string; label: string; value: string };
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -227,7 +261,23 @@ function AddExperience({
                   <FormItem className="flex flex-col">
                     <FormLabel>Job Location</FormLabel>
                     <FormControl>
-                      <Combobox options={locations!} field={field} creatable />
+                      <Combobox
+                        options={locations!}
+                        field={field}
+                        creatable
+                        onCreateOption={async (label) => {
+                          const res = await createLocation(label);
+                          if (!res.success) {
+                            toast({
+                              variant: "destructive",
+                              title: t("common.error"),
+                              description: res.message,
+                            });
+                            return null;
+                          }
+                          return res.data as { id: string; label: string; value: string };
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

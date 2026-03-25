@@ -35,6 +35,7 @@ import { Input } from "../ui/input";
 import { Combobox } from "../ComboBox";
 import { Slider } from "../ui/slider";
 import { ActivityType } from "@/models/activity.model";
+import { createActivityType } from "@/actions/activity.actions";
 
 type TaskFormProps = {
   activityTypes: ActivityType[];
@@ -183,11 +184,21 @@ export function TaskForm({
                       <FormControl>
                         <Combobox
                           options={activityTypes}
-                          field={{
-                            ...field,
-                            name: "activityType",
-                          }}
+                          field={field}
                           creatable
+                          placeholder="Select activityType"
+                          onCreateOption={async (label) => {
+                            const res = await createActivityType(label);
+                            if (!res.success) {
+                              toast({
+                                variant: "destructive",
+                                title: t("tasks.error"),
+                                description: res.message,
+                              });
+                              return null;
+                            }
+                            return res.data as { id: string; label: string; value: string };
+                          }}
                         />
                       </FormControl>
                       <FormMessage />

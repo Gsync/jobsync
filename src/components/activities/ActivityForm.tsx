@@ -29,8 +29,10 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityType } from "@/models/activity.model";
 import {
   createActivity,
+  createActivityType,
   getAllActivityTypes,
 } from "@/actions/activity.actions";
+import { toast } from "../ui/use-toast";
 import { combineDateAndTime } from "@/lib/utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 
@@ -227,7 +229,23 @@ const ActivityFormComponent = ({
               <FormItem>
                 <FormLabel>{t("activities.activityType")}</FormLabel>
                 <FormControl>
-                  <Combobox options={activityTypes} field={field} creatable />
+                  <Combobox
+                    options={activityTypes}
+                    field={field}
+                    creatable
+                    onCreateOption={async (label) => {
+                      const res = await createActivityType(label);
+                      if (!res.success) {
+                        toast({
+                          variant: "destructive",
+                          title: t("common.error"),
+                          description: res.message,
+                        });
+                        return null;
+                      }
+                      return res.data as { id: string; label: string; value: string };
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

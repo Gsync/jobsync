@@ -32,6 +32,7 @@ import { Combobox } from "../ComboBox";
 import { JobLocation } from "@/models/job.model";
 import { addEducation, updateEducation } from "@/actions/profile.actions";
 import { getAllJobLocations } from "@/actions/jobLocation.actions";
+import { createLocation } from "@/actions/job.actions";
 import { useTranslations } from "@/i18n";
 
 type AddEducationProps = {
@@ -195,7 +196,23 @@ function AddEducation({
                   <FormItem className="flex flex-col">
                     <FormLabel>Location</FormLabel>
                     <FormControl>
-                      <Combobox options={locations!} field={field} creatable />
+                      <Combobox
+                        options={locations!}
+                        field={field}
+                        creatable
+                        onCreateOption={async (label) => {
+                          const res = await createLocation(label);
+                          if (!res.success) {
+                            toast({
+                              variant: "destructive",
+                              title: t("common.error"),
+                              description: res.message,
+                            });
+                            return null;
+                          }
+                          return res.data as { id: string; label: string; value: string };
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

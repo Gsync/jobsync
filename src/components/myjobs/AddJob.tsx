@@ -52,6 +52,9 @@ import CreateResume from "../profile/CreateResume";
 import { getResumeList } from "@/actions/profile.actions";
 import { TagInput } from "./TagInput";
 import { connectorRegistry } from "@/lib/connector/job-discovery/connectors";
+import { createJobTitle } from "@/actions/jobtitle.actions";
+import { addCompany } from "@/actions/company.actions";
+import { createLocation, createJobSource } from "@/actions/job.actions";
 
 /** Display names for connector modules used as job sources */
 const CONNECTOR_SOURCE_LABELS: Record<string, string> = {
@@ -285,6 +288,18 @@ export function AddJob({
                             options={jobTitles}
                             field={field}
                             creatable
+                            onCreateOption={async (label) => {
+                              const res = await createJobTitle(label);
+                              if (!res.success) {
+                                toast({
+                                  variant: "destructive",
+                                  title: t("common.error"),
+                                  description: res.message,
+                                });
+                                return null;
+                              }
+                              return res.data as { id: string; label: string; value: string };
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -305,6 +320,18 @@ export function AddJob({
                             options={companies}
                             field={field}
                             creatable
+                            onCreateOption={async (label) => {
+                              const res = await addCompany({ company: label });
+                              if (!res.success) {
+                                toast({
+                                  variant: "destructive",
+                                  title: t("common.error"),
+                                  description: res.message,
+                                });
+                                return null;
+                              }
+                              return res.data as { id: string; label: string; value: string };
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -325,6 +352,18 @@ export function AddJob({
                             options={locations}
                             field={field}
                             creatable
+                            onCreateOption={async (label) => {
+                              const res = await createLocation(label);
+                              if (!res.success) {
+                                toast({
+                                  variant: "destructive",
+                                  title: t("common.error"),
+                                  description: res.message,
+                                });
+                                return null;
+                              }
+                              return res.data as { id: string; label: string; value: string };
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -377,6 +416,18 @@ export function AddJob({
                           options={mergeConnectorSources(jobSources)}
                           field={field}
                           creatable
+                          onCreateOption={async (label) => {
+                            const res = await createJobSource(label);
+                            if (!res.success) {
+                              toast({
+                                variant: "destructive",
+                                title: t("common.error"),
+                                description: res.message,
+                              });
+                              return null;
+                            }
+                            return res.data as { id: string; label: string; value: string };
+                          }}
                         />
                         <FormMessage />
                       </FormItem>

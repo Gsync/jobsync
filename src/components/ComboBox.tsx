@@ -21,93 +21,42 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "./ui/scroll-area";
 import { useState, useTransition } from "react";
-import { delay } from "@/utils/delay";
-import { createLocation } from "@/actions/job.actions";
-import { JobForm } from "@/models/job.model";
-import { addCompany } from "@/actions/company.actions";
-import { createJobTitle } from "@/actions/jobtitle.actions";
-import { toast } from "./ui/use-toast";
-import { createActivityType } from "@/actions/activity.actions";
-import { createJobSource } from "@/actions/job.actions";
-import { useTranslations } from "@/i18n";
 
 interface ComboboxProps {
   options: any[];
   field: ControllerRenderProps<any, any>;
   creatable?: boolean;
+  onCreateOption?: (
+    label: string,
+  ) => Promise<{ id: string; label: string; value: string } | null>;
+  placeholder?: string;
 }
 
-export function Combobox({ options, field, creatable }: ComboboxProps) {
+export function Combobox({
+  options,
+  field,
+  creatable,
+  onCreateOption,
+  placeholder,
+}: ComboboxProps) {
   const [newOption, setNewOption] = useState<string>("");
   const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
-  const { t } = useTranslations();
 
   const [isPending, startTransition] = useTransition();
 
-  const onCreateOption = (label: string) => {
-    if (!label) return;
+  const handleCreateOption = (label: string) => {
+    if (!label || !onCreateOption) return;
     startTransition(async () => {
-      let response: any;
-      switch (field.name) {
-        case "company":
-          const res = await addCompany({ company: label });
-          response = res.data;
-          break;
-        case "title":
-          const titleRes = await createJobTitle(label);
-          if (!titleRes.success) {
-            toast({
-              variant: "destructive",
-              title: t("common.error"),
-              description: titleRes.message,
-            });
-            return;
-          }
-          response = titleRes.data;
-          break;
-        case "location":
-          const { data, success, message } = await createLocation(label);
-          if (!success) {
-            toast({
-              variant: "destructive",
-              title: t("common.error"),
-              description: message,
-            });
-          }
-          response = data;
-          break;
-        case "source":
-          const sourceRes = await createJobSource(label);
-          if (!sourceRes.success) {
-            toast({
-              variant: "destructive",
-              title: t("common.error"),
-              description: sourceRes.message,
-            });
-          }
-          response = sourceRes.data;
-          if (!sourceRes.success) return;
-          break;
-        case "activityType":
-          const activityTypeRes = await createActivityType(label);
-          if (!activityTypeRes.success) {
-            toast({
-              variant: "destructive",
-              title: t("common.error"),
-              description: activityTypeRes.message,
-            });
-            return;
-          }
-          response = activityTypeRes.data;
-          break;
-        default:
-          break;
+      const result = await onCreateOption(label);
+      if (result) {
+        options.unshift(result);
+        field.onChange(result.id);
+        setIsPopoverOpen(false);
       }
-      options.unshift(response);
-      field.onChange(response.id);
-      setIsPopoverOpen(false);
     });
   };
+
+  const showCreate = creatable && !!onCreateOption;
 
   return (
     <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
@@ -123,7 +72,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
           >
             {field.value
               ? options.find((option) => option.id === field.value)?.label
-              : `Select ${field.name}`}
+              : (placeholder ?? `Select ${field.name}`)}
 
             {isPending ? (
               <Loader className="h-4 w-4 shrink-0 spinner" />
@@ -142,19 +91,22 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
           <CommandInput
             value={newOption}
             onValueChange={(val: string) => setNewOption(val)}
-            placeholder={`${creatable ? "Create or " : ""}Search ${field.name}`}
+            placeholder={`${showCreate ? "Create or " : ""}Search ${field.name}`}
           />
           <CommandEmpty
             onClick={() => {
-              onCreateOption(newOption);
-              setNewOption("");
+              if (showCreate) {
+                handleCreateOption(newOption);
+                setNewOption("");
+              }
             }}
             className={cn(
               "flex cursor-pointer items-center justify-center gap-1 italic mt-2",
-              !newOption && "text-muted-foreground cursor-default"
+              (!newOption || !showCreate) &&
+                "text-muted-foreground cursor-default"
             )}
           >
-            {creatable ? (
+            {showCreate ? (
               <>
                 <CirclePlus className="h-4 w-4" />
                 <p>Create: </p>
@@ -163,7 +115,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
                 </p>
               </>
             ) : (
-              <p className="font-semibold text-primary">No source found!</p>
+              <p className="font-semibold text-primary">No results found!</p>
             )}
           </CommandEmpty>
           <ScrollArea>
