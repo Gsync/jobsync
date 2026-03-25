@@ -40,16 +40,37 @@ jest.mock("@/lib/api-key-resolver", () => ({
   resolveApiKey: jest.fn(),
 }));
 
+jest.mock("@/lib/url-validation", () => ({
+  validateOllamaUrl: jest.fn((url: string) => {
+    try {
+      const parsed = new URL(url);
+      if (!["http:", "https:"].includes(parsed.protocol)) {
+        return { valid: false, error: "Only http and https protocols are allowed" };
+      }
+      if (parsed.username || parsed.password) {
+        return { valid: false, error: "URLs with credentials are not allowed" };
+      }
+      return { valid: true };
+    } catch {
+      return { valid: false, error: "Invalid URL format" };
+    }
+  }),
+}));
+
 import { createOllamaProvider } from "@/lib/connector/ai-provider/modules/ollama";
 import { createDeepSeekProvider } from "@/lib/connector/ai-provider/modules/deepseek";
 import { createOpenAIProvider } from "@/lib/connector/ai-provider/modules/openai";
 import { resolveApiKey } from "@/lib/api-key-resolver";
+import { validateOllamaUrl } from "@/lib/url-validation";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createDeepSeek } from "@ai-sdk/deepseek";
 import { createOllama } from "ollama-ai-provider-v2";
 
 const mockResolveApiKey = resolveApiKey as jest.MockedFunction<
   typeof resolveApiKey
+>;
+const mockValidateOllamaUrl = validateOllamaUrl as jest.MockedFunction<
+  typeof validateOllamaUrl
 >;
 
 describe("OllamaProvider", () => {
@@ -79,6 +100,54 @@ describe("OllamaProvider", () => {
     expect(createOllama).toHaveBeenCalledWith({
       baseURL: "http://127.0.0.1:11434/api",
     });
+  });
+
+  it("createModel falls back to default URL when resolved URL fails SSRF validation", async () => {
+    mockResolveApiKey.mockResolvedValue("ftp://malicious-server:11434");
+
+    const consoleSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    await provider.createModel("llama3.2", "user-1");
+
+    expect(mockValidateOllamaUrl).toHaveBeenCalledWith(
+      "ftp://malicious-server:11434",
+    );
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "[Security] Ollama URL failed validation, using fallback",
+    );
+    expect(createOllama).toHaveBeenCalledWith({
+      baseURL: "http://127.0.0.1:11434/api",
+    });
+    consoleSpy.mockRestore();
+  });
+
+  it("createModel falls back to default URL when resolved URL has credentials", async () => {
+    mockResolveApiKey.mockResolvedValue(
+      "http://admin:password@evil-server:11434",
+    );
+
+    const consoleSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    await provider.createModel("llama3.2", "user-1");
+
+    expect(createOllama).toHaveBeenCalledWith({
+      baseURL: "http://127.0.0.1:11434/api",
+    });
+    consoleSpy.mockRestore();
+  });
+
+  it("createModel validates URL even when using default", async () => {
+    mockResolveApiKey.mockResolvedValue(undefined);
+
+    await provider.createModel("llama3.2");
+
+    expect(mockValidateOllamaUrl).toHaveBeenCalledWith(
+      "http://127.0.0.1:11434",
+    );
   });
 });
 

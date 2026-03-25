@@ -1,6 +1,7 @@
 import { createOllama } from "ollama-ai-provider-v2";
 import type { LanguageModel } from "ai";
 import { resolveApiKey } from "@/lib/api-key-resolver";
+import { validateOllamaUrl } from "@/lib/url-validation";
 import type { AIProviderConnector, AIConnectorResult } from "../../types";
 
 const OLLAMA_DEFAULT_BASE_URL = "http://127.0.0.1:11434";
@@ -86,5 +87,11 @@ export function createOllamaProvider(): AIProviderConnector {
 
 async function resolveBaseUrl(userId?: string): Promise<string> {
   const resolved = await resolveApiKey(userId, "ollama");
-  return resolved || OLLAMA_DEFAULT_BASE_URL;
+  const url = resolved || OLLAMA_DEFAULT_BASE_URL;
+  const validation = validateOllamaUrl(url);
+  if (!validation.valid) {
+    console.error("[Security] Ollama URL failed validation, using fallback");
+    return OLLAMA_DEFAULT_BASE_URL;
+  }
+  return url;
 }

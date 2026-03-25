@@ -29,6 +29,10 @@ export async function resolveApiKey(
           data: { lastUsedAt: new Date() },
         }).catch(() => {});
 
+        // Non-sensitive keys (e.g., Ollama URL) are stored plaintext with empty iv
+        if (apiKey.iv === "") {
+          return apiKey.encryptedKey;
+        }
         return decrypt(apiKey.encryptedKey, apiKey.iv);
       }
     } catch {
