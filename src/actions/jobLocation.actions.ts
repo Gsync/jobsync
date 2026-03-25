@@ -2,10 +2,11 @@
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { ActionResult } from "@/models/actionResult";
+import { JobLocation } from "@/models/job.model";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 
-export const getAllJobLocations = async (): Promise<any> => {
+export const getAllJobLocations = async (): Promise<JobLocation[]> => {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -16,10 +17,10 @@ export const getAllJobLocations = async (): Promise<any> => {
         createdBy: user.id,
       },
     });
-    return list;
+    return list as unknown as JobLocation[];
   } catch (error) {
     const msg = "Failed to fetch job location list. ";
-    return handleError(error, msg);
+    return handleError(error, msg) as unknown as JobLocation[];
   }
 };
 

@@ -3,6 +3,7 @@ import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { AddCompanyFormSchema } from "@/models/addCompanyForm.schema";
 import { ActionResult } from "@/models/actionResult";
+import { Company } from "@/models/job.model";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { revalidatePath } from "next/cache";
@@ -66,7 +67,7 @@ export const getCompanyList = async (
   }
 };
 
-export const getAllCompanies = async (): Promise<any> => {
+export const getAllCompanies = async (): Promise<Company[]> => {
   try {
     const user = await getCurrentUser();
 
@@ -79,10 +80,10 @@ export const getAllCompanies = async (): Promise<any> => {
         createdBy: user.id,
       },
     });
-    return companies;
+    return companies as unknown as Company[];
   } catch (error) {
     const msg = "Failed to fetch all companies. ";
-    return handleError(error, msg);
+    return handleError(error, msg) as unknown as Company[];
   }
 };
 

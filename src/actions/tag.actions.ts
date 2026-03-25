@@ -3,9 +3,10 @@ import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { getCurrentUser } from "@/utils/user.utils";
 import { ActionResult } from "@/models/actionResult";
+import { Tag } from "@/models/job.model";
 import { APP_CONSTANTS } from "@/lib/constants";
 
-export const getAllTags = async (): Promise<any> => {
+export const getAllTags = async (): Promise<Tag[]> => {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -18,7 +19,7 @@ export const getAllTags = async (): Promise<any> => {
     return list;
   } catch (error) {
     const msg = "Failed to fetch tag list. ";
-    return handleError(error, msg);
+    return handleError(error, msg) as unknown as Tag[];
   }
 };
 

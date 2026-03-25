@@ -1,14 +1,14 @@
 "use server";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
-import { Activity } from "@/models/activity.model";
+import { Activity, ActivityType } from "@/models/activity.model";
 import { AddActivityFormSchema } from "@/models/addActivityForm.schema";
 import { ActionResult } from "@/models/actionResult";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { z } from "zod";
 
-export const getAllActivityTypes = async (): Promise<any> => {
+export const getAllActivityTypes = async (): Promise<ActivityType[]> => {
   try {
     const user = await getCurrentUser();
 
@@ -21,16 +21,16 @@ export const getAllActivityTypes = async (): Promise<any> => {
         createdBy: user.id,
       },
     });
-    return activityTypes;
+    return activityTypes as unknown as ActivityType[];
   } catch (error) {
     const msg = "Failed to fetch all activity types. ";
-    return handleError(error, msg);
+    return handleError(error, msg) as unknown as ActivityType[];
   }
 };
 
 export const createActivityType = async (
   label: string
-): Promise<any> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -46,11 +46,10 @@ export const createActivityType = async (
       create: { label, value, createdBy: user.id },
     });
 
-    return upsertedActivityType;
+    return { success: true, data: upsertedActivityType };
   } catch (error) {
     const msg = "Failed to create activity type. ";
-    console.error(msg, error);
-    throw new Error(msg);
+    return handleError(error, msg);
   }
 };
 

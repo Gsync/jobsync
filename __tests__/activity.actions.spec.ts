@@ -1,4 +1,8 @@
-import { getActivitiesList } from "@/actions/activity.actions";
+import {
+  getAllActivityTypes,
+  createActivityType,
+  getActivitiesList,
+} from "@/actions/activity.actions";
 import { getCurrentUser } from "@/utils/user.utils";
 import { PrismaClient } from "@prisma/client";
 
@@ -12,6 +16,7 @@ jest.mock("@prisma/client", () => {
     },
     activityType: {
       findMany: jest.fn(),
+      upsert: jest.fn(),
     },
   };
   return { PrismaClient: jest.fn(() => mPrismaClient) };
@@ -59,6 +64,90 @@ describe("activity.actions", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe("getAllActivityTypes", () => {
+    it("should return all activity types for authenticated user", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      const mockTypes = [
+        { id: "1", label: "Learning", value: "learning" },
+        { id: "2", label: "Side Project", value: "side-project" },
+      ];
+      (prisma.activityType.findMany as jest.Mock).mockResolvedValue(mockTypes);
+
+      const result = await getAllActivityTypes();
+
+      expect(result).toEqual(mockTypes);
+      expect(prisma.activityType.findMany).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id },
+      });
+    });
+
+    it("should return error for unauthenticated user", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+
+      const result = await getAllActivityTypes();
+
+      expect(result).toEqual({ success: false, message: "Not authenticated" });
+      expect(prisma.activityType.findMany).not.toHaveBeenCalled();
+    });
+
+    it("should handle unexpected errors", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (prisma.activityType.findMany as jest.Mock).mockRejectedValue(
+        new Error("Database error")
+      );
+
+      const result = await getAllActivityTypes();
+
+      expect(result).toEqual({ success: false, message: "Database error" });
+    });
+  });
+
+  describe("createActivityType", () => {
+    it("should upsert an activity type successfully", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      const mockType = {
+        id: "type-1",
+        label: "Learning",
+        value: "learning",
+        createdBy: mockUser.id,
+      };
+      (prisma.activityType.upsert as jest.Mock).mockResolvedValue(mockType);
+
+      const result = await createActivityType("Learning");
+
+      expect(result).toEqual({ success: true, data: mockType });
+      expect(prisma.activityType.upsert).toHaveBeenCalledWith({
+        where: { value_createdBy: { value: "learning", createdBy: mockUser.id } },
+        update: { label: "Learning" },
+        create: {
+          label: "Learning",
+          value: "learning",
+          createdBy: mockUser.id,
+        },
+      });
+    });
+
+    it("should return error for unauthenticated user", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+
+      const result = await createActivityType("Learning");
+
+      expect(result).toEqual({ success: false, message: "Not authenticated" });
+      expect(prisma.activityType.upsert).not.toHaveBeenCalled();
+    });
+
+    it("should handle unexpected errors", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (prisma.activityType.upsert as jest.Mock).mockRejectedValue(
+        new Error("Upsert failed")
+      );
+
+      const result = await createActivityType("Learning");
+
+      expect(result).toEqual({ success: false, message: "Upsert failed" });
+    });
   });
 
   describe("getActivitiesList", () => {
