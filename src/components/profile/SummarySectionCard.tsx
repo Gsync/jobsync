@@ -1,8 +1,10 @@
+"use client";
 import { Edit } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { ResumeSection } from "@/models/profile.model";
 import { TipTapContentViewer } from "../TipTapContentViewer";
+import { useTranslations } from "@/i18n";
 
 interface SummarySectionCardProps {
   summarySection: ResumeSection | undefined;
@@ -14,6 +16,7 @@ function SummarySectionCard({
   openDialogForEdit,
 }: SummarySectionCardProps) {
   const { sectionTitle, summary } = summarySection!;
+  const { t } = useTranslations();
   return (
     <>
       <Card>
@@ -27,7 +30,7 @@ function SummarySectionCard({
           >
             <Edit className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-              Edit
+              {t("profile.edit")}
             </span>
           </Button>
         </CardHeader>

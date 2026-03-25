@@ -3,6 +3,7 @@ import { ContactInfo } from "@/models/profile.model";
 import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
+import { useTranslations } from "@/i18n";
 
 interface ContactInfoCardProps {
   contactInfo: ContactInfo | undefined;
@@ -11,6 +12,7 @@ interface ContactInfoCardProps {
 
 function ContactInfoCard({ contactInfo, openDialog }: ContactInfoCardProps) {
   const { firstName, lastName, headline, email, phone, address } = contactInfo!;
+  const { t } = useTranslations();
   return (
     <Card>
       <CardHeader className="flex-row justify-between relative">
@@ -31,7 +33,7 @@ function ContactInfoCard({ contactInfo, openDialog }: ContactInfoCardProps) {
         >
           <Edit className="h-3.5 w-3.5" />
           <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Edit
+            {t("profile.edit")}
           </span>
         </Button>
       </CardHeader>

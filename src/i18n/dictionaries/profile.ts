@@ -20,6 +20,7 @@ export const profile = {
     "profile.jobsMustBeZero": "Remove all jobs from this resume before deleting",
     "profile.error": "Error!",
     "profile.loading": "Loading...",
+    "profile.edit": "Edit",
   },
   de: {
     "profile.title": "Profil",
@@ -42,6 +43,7 @@ export const profile = {
     "profile.jobsMustBeZero": "Entferne alle Jobs von diesem Lebenslauf, bevor du ihn löschst",
     "profile.error": "Fehler!",
     "profile.loading": "Laden...",
+    "profile.edit": "Bearbeiten",
   },
   fr: {
     "profile.title": "Profil",
@@ -64,6 +66,7 @@ export const profile = {
     "profile.jobsMustBeZero": "Supprimez tous les emplois de ce CV avant de le supprimer",
     "profile.error": "Erreur !",
     "profile.loading": "Chargement...",
+    "profile.edit": "Modifier",
   },
   es: {
     "profile.title": "Perfil",
@@ -86,5 +89,6 @@ export const profile = {
     "profile.jobsMustBeZero": "Elimina todos los empleos de este currículum antes de borrarlo",
     "profile.error": "¡Error!",
     "profile.loading": "Cargando...",
+    "profile.edit": "Editar",
   },
 } as const;
