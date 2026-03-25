@@ -259,20 +259,32 @@ Kontextsensitiver Einrichtungsassistent für neue Benutzer, der sich an deren Zi
 - Gemeinsame Felder (Name, Resume, Threshold, Schedule) bleiben einheitlich
 - Connector-spezifische Widgets (z.B. EURES: NUTS-Combobox, Arbeitsagentur: Umkreis-Slider)
 
-### 2.7 Connector Settings
-- **Connector-Verwaltung in Settings:**
-  - Übersicht aller verfügbaren Connectors mit Status (aktiv/inaktiv)
-  - Toggle zum Aktivieren/Deaktivieren einzelner Connectors
-  - Deaktivierte Connectors erscheinen nicht im Automation Wizard
-- **Connector-spezifische Einstellungen:**
-  - API-Keys pro Connector (falls benötigt, z.B. RapidAPI für JSearch)
-  - Default-Parameter pro Connector (z.B. Standard-Umkreis für Arbeitsagentur, Standard-Sprache für EURES)
+### 2.7 Connector & Module Marketplace
+Marketplace-artige Verwaltung von Connectors und Modules in `/dashboard/settings`:
+
+- **Marketplace-Übersicht:**
+  - Alle verfügbaren Connectors mit zugehörigen Modules als aufklappbare Karten
+  - Status-Badge pro Module: aktiv (grün), inaktiv (grau), Fehler (rot)
+  - Ein-Klick Aktivierung/Deaktivierung per Toggle
+- **Aktivierungs-Logik (Dependency Chain):**
+  - Module aktiviert → Connector wird automatisch mit aktiviert
+  - Connector deaktiviert + Module noch aktiv → **Warnung** an User mit Optionen:
+    - "Alle Module auch deaktivieren" / "Abbrechen"
+  - Module ODER Connector deaktiviert + Automation nutzt es → **Automation automatisch pausieren** + User-Benachrichtigung (Toast + optional E-Mail/Push)
+  - Pausierte Automations werden bei Reaktivierung NICHT automatisch gestartet — bewusste User-Aktion
+- **Module-Einstellungen (pro Module konfigurierbar):**
+  - API-Keys (falls benötigt, z.B. RapidAPI für JSearch)
+  - Default-Parameter (z.B. Standard-Umkreis für Arbeitsagentur, Sprache für EURES)
   - Rate-Limit-Konfiguration
   - Proxy-Einstellungen
-- **Connector Health Check:**
-  - Status-Anzeige ob der Connector erreichbar ist
-  - Letzte erfolgreiche Verbindung
-  - Fehlerlog pro Connector
+- **Health Check & Monitoring:**
+  - Status-Anzeige ob das Module erreichbar ist (Ping/Test-Request)
+  - Letzte erfolgreiche Verbindung mit Timestamp
+  - Fehlerlog pro Module (letzte N Fehler mit Details)
+  - Circuit Breaker Status (offen/geschlossen/halb-offen)
+- **Sichtbarkeit:**
+  - Deaktivierte Module erscheinen nicht im Automation Wizard Job-Board-Selector
+  - Onboarding-Assistent zeigt nur aktive Connectors/Module
 
 ---
 

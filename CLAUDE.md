@@ -109,6 +109,34 @@ Modules (each implements DataSourceConnector)
 
 **For new Modules:** Create `src/lib/connector/modules/{name}/` with `index.ts` (implements `DataSourceConnector`), `types.ts`, `resilience.ts`. Register in `registry.ts`.
 
+### Connector & Module Lifecycle (Marketplace Pattern)
+
+Connectors and Modules are **activatable/deactivatable** via `/dashboard/settings`:
+
+```
+Module aktiviert → Connector wird automatisch mit aktiviert
+Connector deaktiviert → Warnung wenn Module noch aktiv
+Module/Connector deaktiviert + Automation nutzt es → Automation pausiert + User benachrichtigt
+```
+
+**Rules:**
+1. **Aktivierung:** Wenn ein Module aktiviert wird, wird der zugehörige Connector automatisch mit aktiviert (Dependency)
+2. **Deaktivierung Connector:** Wenn der Connector deaktiviert wird aber Module noch aktiv sind → **Warnung an User** ("Modul X nutzt diesen Connector — auch deaktivieren?")
+3. **Deaktivierung mit laufenden Automations:** Wenn ein Connector ODER Module deaktiviert wird und eine Automation es nutzt → **Automation automatisch pausieren** + **User-Benachrichtigung** (Toast + E-Mail/Push wenn Job-Alerts aktiv)
+4. **Reaktivierung:** Pausierte Automations werden NICHT automatisch wieder gestartet — User muss bewusst reaktivieren
+5. **Deaktivierte Module** erscheinen nicht im Automation Wizard Job-Board-Selector
+
+**UI in `/dashboard/settings`:**
+- **Connector-Tab:** Übersicht aller Connectors mit Toggle (aktiv/inaktiv)
+  - Connector aufklappbar → zeigt zugehörige Module mit je eigenem Toggle
+  - Health-Check Status-Indikator (grün/gelb/rot) pro Module
+  - Letzte erfolgreiche Verbindung + Fehlerlog
+- **Module-Einstellungen:** Pro Module konfigurierbar
+  - API-Keys (falls benötigt, z.B. RapidAPI für JSearch)
+  - Default-Parameter (z.B. Standard-Umkreis für Arbeitsagentur, Sprache für EURES)
+  - Rate-Limit Konfiguration
+  - Proxy-Einstellungen
+
 ## EURES/ESCO Integration
 
 - EURES Location Combobox: 3-level hierarchy (Country → NUTS Region → City) with SVG flags
