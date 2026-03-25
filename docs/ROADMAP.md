@@ -109,16 +109,31 @@ Entfernungsberechnung und Kartenintegration als Connector mit austauschbaren Mod
 - **Connector Interface (`GeoConnector`):**
   - `geocode(address)` → `{ lat, lon }` — Adresse in Koordinaten
   - `reverseGeocode(lat, lon)` → Adresse
-  - `distance(from, to)` → `{ km, duration, mode }` — Entfernung + Fahrzeit
-  - `route(from, to)` → Routengeometrie für Kartenanzeige
-- **Module: OpenStreetMap/Nominatim** (kostenlos, self-hostable, DSGVO-konform)
-  - Geocoding via Nominatim API
-  - Routing via OSRM oder Valhalla
-  - Karten-Tiles via OpenStreetMap
-- **Module: Google Maps** (API-Key, genauere Geocoding-Ergebnisse)
-  - Geocoding, Directions, Distance Matrix APIs
-  - Google Maps JavaScript SDK für Kartenansicht
-- **Module: Mapbox** (API-Key, schöne Kartenstile)
+  - `distance(from, to, mode)` → `{ km, duration, mode }` — Entfernung + Fahrzeit
+  - `route(from, to, mode)` → Routengeometrie für Kartenanzeige
+  - **Verkehrsmittel (`mode`):** `car` | `transit` | `bike` | `walk`
+- **Geocoding Modules:**
+  - **Module: Nominatim/OSM** (kostenlos, self-hostable, DSGVO-konform)
+  - **Module: Google Geocoding** (API-Key, genauer bei Adressen)
+- **Routing Modules (Auto, Fahrrad, Fußweg):**
+  - **Module: OSRM** (kostenlos, self-hosted, Open Source) — Auto, Fahrrad, Fußweg
+  - **Module: Valhalla** (kostenlos, self-hosted) — Auto, Fahrrad, Fußweg, multimodal
+  - **Module: Google Directions** (API-Key) — Auto, Fahrrad
+  - **Module: Mapbox Directions** (API-Key, schöne Karten)
+- **ÖPNV Modules (Achtung: Google Maps ist bei Fernstrecken in DE ungenau!):**
+  - **Module: HAFAS/Deutsche Bahn** (npm: `hafas-client`) — **Empfohlen für DACH**
+    - DB Fernverkehr (ICE, IC), Regionalverkehr (RE, RB), S-Bahn, U-Bahn, Bus, Tram
+    - Kennt Taktzeiten, Umstiege, Verspätungen
+    - Unterstützt DB, ÖBB, SBB, und weitere HAFAS-Betreiber
+  - **Module: OpenTripPlanner** (Open Source, self-hosted, GTFS-basiert)
+    - Multimodal: ÖPNV + Fahrrad + Fußweg kombiniert
+    - Nutzt offene GTFS-Fahrplandaten
+  - **Module: Transitous/MOTIS** (Open Source, europaweit)
+  - **Module: Google Transit** (API-Key) — nur als Fallback, bei Fernstrecken ungenau
+- **Karten-Tiles:**
+  - **Module: OpenStreetMap** (kostenlos, Standard)
+  - **Module: Google Maps JS SDK** (API-Key)
+  - **Module: Mapbox GL** (API-Key, anpassbare Stile)
 - **Vorhandene Daten nutzen:**
   - Arbeitsagentur-Jobs liefern bereits `koordinaten` (lat/lon) pro Stellenangebot
   - EURES-Jobs liefern `countryCode` + optional Stadt → Geocoding nur bei Bedarf
