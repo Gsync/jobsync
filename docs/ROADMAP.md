@@ -1,5 +1,21 @@
 # JobSync Roadmap
 
+## Index
+
+| Sektion | Bereich | Zielgruppe |
+|---------|---------|------------|
+| [0. Infrastruktur-Refactoring](#0-infrastruktur-refactoring-priorität) | Codebase-Architektur | Dev |
+| [1. Connectors](#1-connectors) | Externe Integrationen | User + Dev |
+| [2. UX/UI](#2-uxui) | Benutzeroberfläche | User |
+| [3. Quality of Life](#3-quality-of-life) | Komfort-Features | User |
+| [4. Bewerbungsunterlagen](#4-bewerbungsunterlagen) | Dokumente & CV | User |
+| [5. CRM](#5-crm) | Kontakt-Management | User |
+| [6. Datenschutz & Compliance](#6-datenschutz--compliance) | Sicherheit | User + Dev |
+| [7. API & Dokumentation](#7-api--dokumentation) | API-Docs | User + Dev |
+| [8. Developer Experience (intern)](#8-developer-experience-intern) | Dev-Tooling, CI, DX | Dev only |
+
+---
+
 ## 0. Infrastruktur-Refactoring (Priorität)
 
 ### 0.1 App ↔ Connector ↔ Module Umstellung -- DONE
@@ -490,6 +506,47 @@ Dynamische Dateipfade und Dateinamen:
 ### 7.1 Automatische API-Dokumentation
 - OpenAPI/Swagger Dokumentation für alle API-Endpunkte
 - Auto-generiert aus den Next.js API Routes
+
+---
+
+## 8. Developer Experience (intern)
+
+> **Hinweis:** Diese Features betreffen nur die Entwicklung, nicht den End-User. Sie werden nicht im Docker-Image ausgeliefert und sind im Projekt unter `tools/` separiert.
+
+### 8.1 Automatische Screenshot/GIF/Video-Dokumentation
+- Playwright-basiertes Capture-Script (`tools/capture-docs/`) für automatische Erstellung von Screenshots, GIFs und Videos der wichtigsten UI-Flows
+- **Ziel:** README.md und Docs bleiben bei UI-Änderungen automatisch aktuell
+
+**Trennung vom End-User-Projekt:**
+- Scripts in `tools/capture-docs/` (nicht `scripts/`) — nicht Teil des App-Builds
+- Dependencies als `devDependencies` — vom Docker-Image ausgeschlossen via `--omit=dev` / `standalone` Output
+- `.dockerignore` schließt `tools/`, `docs/media/` aus
+- `devenv.nix`: optionales Profil für Doc-Capture (ffmpeg)
+- End-User der das Docker-Image nutzt sieht davon nichts
+
+**Screenshots (statisch):**
+- Playwright `page.screenshot()` für definierte Routes (Dashboard, Settings, Profile, Automation Wizard)
+- Ablage in `docs/media/screenshots/` mit konsistenter Namenskonvention (`{flow}-{step}-{timestamp}.png`)
+
+**GIFs/Videos (Flows):**
+- Playwright Traces mit `video: 'on'` für komplette User-Flows
+- ffmpeg-Pipeline: Screenshots → GIF für kurze Animationen
+- Ablage in `docs/media/gifs/` und `docs/media/videos/`
+
+**Zu automatisierende Flows (Top 5-10):**
+1. Dashboard-Übersicht (Hero-Screenshot für README)
+2. Automation Wizard (Schritt-für-Schritt Flow als GIF)
+3. Job-Tinder Swipe UI (wenn implementiert)
+4. Settings / Connector-Aktivierung
+5. Profil + CV-Verwaltung
+
+**Integration:**
+- Als CI-Step oder Hook nach dem Build bei UI-Änderungen
+- Zusammenhängende Medien erhalten gleichbleibende Namenskonvention für Auffindbarkeit
+- Optional: Claude-Skill für on-demand Capture-Erstellung
+- Trade-off: Nur die wichtigsten Flows automatisieren, Rest manuell halten
+
+**Voraussetzungen:** Playwright + System-Chromium (bereits vorhanden), ffmpeg (für GIF-Konvertierung, nur in devenv)
 
 ---
 
