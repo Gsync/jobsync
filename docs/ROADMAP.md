@@ -25,6 +25,41 @@
 - Push-Benachrichtigungen (Browser), E-Mail-Alerts, Webhook-Notifications
 - Konfigurierbar pro Automation (Frequenz, Schwellenwert, Kanal)
 
+### 1.6 Dokumentenworkflow Connector
+- **Modul: Paperless-ngx**
+  - Dokumente aus JobSync an Paperless-ngx senden/empfangen
+  - Automatische Ablage von Bewerbungsunterlagen nach Paperless-ngx Tags/Correspondent-Schema
+  - Bidirektionale Synchronisation
+
+### 1.7 Kalender Integration
+- **Modul: CalDAV** — Standardprotokoll für Kalender-Anbindung
+- **Modul: Google Kalender** — OAuth2-Authentifizierung, Events erstellen/lesen
+- **Modul: Outlook** — Microsoft Graph API, Events + Erinnerungen
+
+### 1.8 Arbeitgeber-Bewertungsportale
+- **Modul: Kununu** — Unternehmensbewertungen abrufen und in Jobdetails anzeigen
+- **Modul: Weitere Portale** — Glassdoor, Indeed Reviews, etc.
+
+### 1.9 Arbeitsagenturen (Multi-Land)
+- **Modul: arbeitsagentur.de (Erweitert)**
+  - Authentifizierung / Login (ggf. Browser-Instanz mit Playwright)
+  - Sitzung aktiv halten (Timeout nach 30 Min Inaktivität)
+  - **Nachrichten:** Empfangen und senden mit Anhang
+  - **Tracking:**
+    - Termine (Arbeitsvermittler Video-Call / vor Ort) + Kalender-Integration (→ 1.7)
+    - Fristen (aus Dokumenten extrahieren)
+    - Eingelegte Widersprüche
+    - Bewerbungsvorschläge vom Arbeitsvermittler
+  - **Dokumentenverwaltung:**
+    - Dokumente abrufen, verwalten, teilen/weiterleiten
+    - Paperless-ngx Integration (→ 1.6)
+  - **Formulare ausfüllen:**
+    - PDF Formulare und Online Formulare
+    - "Lokale Bewerbungsbemühungen" automatisch ausfüllen
+    - Tag für "Bewerbung Online" / "Bewerbung Persönlich"
+    - Übersetzungen der Formulare anbieten
+- **Weitere Länder:** Modulare Architektur für Arbeitsagenturen anderer EU-Länder
+
 ---
 
 ## 2. UX/UI
