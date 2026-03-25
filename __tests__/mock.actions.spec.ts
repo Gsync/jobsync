@@ -159,7 +159,7 @@ describe("mock.actions", () => {
       expect(result.success).toBe(true);
       expect(result.message).toMatch(/Generated \d+ mock activities/);
       expect(result.data).toBeInstanceOf(Array);
-      expect(result.data.length).toBeGreaterThan(0);
+      expect((result.data as any[]).length).toBeGreaterThan(0);
       // createMany was NOT called because all types were already present.
       expect(prisma.activityType.createMany).not.toHaveBeenCalled();
       expect(prisma.activity.create).toHaveBeenCalled();

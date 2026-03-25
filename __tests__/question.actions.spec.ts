@@ -489,7 +489,7 @@ describe("Question Actions", () => {
       const result = await getTagsWithQuestionCounts();
 
       expect(result?.data).toHaveLength(1);
-      expect(result?.data[0].label).toBe("React");
+      expect((result?.data as any[])[0].label).toBe("React");
     });
 
     it("should return error for unauthenticated user", async () => {

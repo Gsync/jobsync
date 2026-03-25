@@ -134,8 +134,8 @@ describe("namespace dictionaries", () => {
         for (const locale of LOCALES) {
           const entries = Object.entries(nsDict[locale]);
           for (const [key, value] of entries) {
-            expect(value).not.toBe("");
-            if (value === "") {
+            expect(value as string).not.toBe("");
+            if ((value as string) === "") {
               throw new Error(
                 `Empty value in namespace "${nsName}", locale="${locale}", key="${key}"`
               );

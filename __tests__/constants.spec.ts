@@ -12,7 +12,7 @@ describe("isMockDataEnabled", () => {
 
   afterEach(() => {
     // Restore env to the state it was in before each test
-    process.env.NODE_ENV = originalNodeEnv;
+    (process.env as any).NODE_ENV = originalNodeEnv;
     if (originalEnableMock === undefined) {
       delete process.env.NEXT_PUBLIC_ENABLE_MOCK_DATA;
     } else {
@@ -22,7 +22,7 @@ describe("isMockDataEnabled", () => {
   });
 
   it("returns true when NODE_ENV is development", () => {
-    process.env.NODE_ENV = "development";
+    (process.env as any).NODE_ENV = "development";
     delete process.env.NEXT_PUBLIC_ENABLE_MOCK_DATA;
 
     // Re-require after resetting modules so constants reads the updated env
@@ -31,7 +31,7 @@ describe("isMockDataEnabled", () => {
   });
 
   it("returns true when NEXT_PUBLIC_ENABLE_MOCK_DATA is 'true' regardless of NODE_ENV", () => {
-    process.env.NODE_ENV = "production";
+    (process.env as any).NODE_ENV = "production";
     process.env.NEXT_PUBLIC_ENABLE_MOCK_DATA = "true";
 
     const { isMockDataEnabled } = require("@/lib/constants");
@@ -39,7 +39,7 @@ describe("isMockDataEnabled", () => {
   });
 
   it("returns false in production without NEXT_PUBLIC_ENABLE_MOCK_DATA", () => {
-    process.env.NODE_ENV = "production";
+    (process.env as any).NODE_ENV = "production";
     delete process.env.NEXT_PUBLIC_ENABLE_MOCK_DATA;
 
     const { isMockDataEnabled } = require("@/lib/constants");
@@ -47,7 +47,7 @@ describe("isMockDataEnabled", () => {
   });
 
   it("returns false when NEXT_PUBLIC_ENABLE_MOCK_DATA is 'false' and NODE_ENV is production", () => {
-    process.env.NODE_ENV = "production";
+    (process.env as any).NODE_ENV = "production";
     process.env.NEXT_PUBLIC_ENABLE_MOCK_DATA = "false";
 
     const { isMockDataEnabled } = require("@/lib/constants");

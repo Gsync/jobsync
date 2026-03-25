@@ -73,7 +73,7 @@ describe("noteActions", () => {
 
       const result = await getNotesByJobId("job-id");
 
-      expect(result.data[0].isEdited).toBe(true);
+      expect((result.data as any[])[0].isEdited).toBe(true);
     });
 
     it("should not mark notes as edited when updatedAt is within 1 second of createdAt", async () => {
@@ -87,7 +87,7 @@ describe("noteActions", () => {
 
       const result = await getNotesByJobId("job-id");
 
-      expect(result.data[0].isEdited).toBe(false);
+      expect((result.data as any[])[0].isEdited).toBe(false);
     });
 
     it("should return empty array when no notes exist", async () => {
