@@ -4,7 +4,7 @@ import { useTranslations } from "@/i18n";
 import { useForm } from "react-hook-form";
 import { Button } from "../ui/button";
 import { DialogFooter } from "../ui/dialog";
-import { AddActivityFormSchema } from "@/models/addActivityForm.schema";
+import { createAddActivityFormSchema } from "@/models/addActivityForm.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -32,6 +32,7 @@ import {
   getAllActivityTypes,
 } from "@/actions/activity.actions";
 import { combineDateAndTime } from "@/lib/utils";
+import { APP_CONSTANTS } from "@/lib/constants";
 
 interface ActivityFormProps {
   onClose: () => void;
@@ -43,6 +44,8 @@ type Duration = {
   minutes: number;
 };
 
+const MAX_DURATION_HOURS = APP_CONSTANTS.ACTIVITY_MAX_DURATION_MINUTES / 60;
+
 const ActivityFormComponent = ({
   onClose,
   reloadActivities,
@@ -50,6 +53,10 @@ const ActivityFormComponent = ({
   const { t, locale } = useTranslations();
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [duration, setDuration] = useState<Duration | null>(null);
+  const [durationExceeded, setDurationExceeded] = useState(false);
+
+  const schema = useMemo(() => createAddActivityFormSchema(locale), [locale]);
+
   const defaultValues = useMemo(() => {
     const now = new Date();
     const currentTime = formatTime(now, locale);
@@ -65,8 +72,8 @@ const ActivityFormComponent = ({
       endTime: estimatedEndTime,
     };
   }, [locale]);
-  const form = useForm<z.infer<typeof AddActivityFormSchema>>({
-    resolver: zodResolver(AddActivityFormSchema),
+  const form = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
     defaultValues,
   });
 
@@ -89,20 +96,42 @@ const ActivityFormComponent = ({
       "endDate",
       "endTime",
     ]);
-    const startDateTime =
-      startDate && startTime ? combineDateAndTime(startDate, startTime) : null;
+    let startDateTime: Date | null = null;
+    let endDateTime: Date | null = null;
 
-    const endDateTime =
-      endDate && endTime ? combineDateAndTime(endDate!, endTime!) : null;
+    try {
+      startDateTime =
+        startDate && startTime ? combineDateAndTime(startDate, startTime) : null;
+    } catch {
+      startDateTime = null;
+    }
+
+    try {
+      endDateTime =
+        endDate && endTime ? combineDateAndTime(endDate!, endTime!) : null;
+    } catch {
+      endDateTime = null;
+    }
 
     if (startDateTime && endDateTime) {
-      const hours = differenceInHours(endDateTime, startDateTime);
       const totalMinutes = differenceInMinutes(endDateTime, startDateTime);
+
+      if (totalMinutes < 0) {
+        setDuration(null);
+        setDurationExceeded(false);
+        return;
+      }
+
+      const exceeded = totalMinutes > APP_CONSTANTS.ACTIVITY_MAX_DURATION_MINUTES;
+      setDurationExceeded(exceeded);
+
+      const hours = differenceInHours(endDateTime, startDateTime);
       const minutes = totalMinutes % 60;
 
       setDuration({ hours, minutes });
     } else {
       setDuration(null);
+      setDurationExceeded(false);
     }
   }, [getValues]);
 
@@ -119,7 +148,7 @@ const ActivityFormComponent = ({
     return () => subscription.unsubscribe();
   }, [calculateDuration, loadActivityTypes, watch]);
 
-  const onSubmit = async (data: z.infer<typeof AddActivityFormSchema>) => {
+  const onSubmit = async (data: z.infer<typeof schema>) => {
     const { startDate, startTime, endDate, endTime, ...rest } = data;
     try {
       const startDateTime = combineDateAndTime(startDate, startTime);
@@ -141,6 +170,22 @@ const ActivityFormComponent = ({
       console.error("Error parsing date and time:", error);
     }
   };
+
+  const formatDurationLabel = (dur: Duration): string => {
+    if (dur.hours > 0) {
+      return t("activities.durationLabel")
+        .replace("{hours}", String(dur.hours))
+        .replace("{minutes}", String(dur.minutes));
+    }
+    if (dur.minutes > 0) {
+      return t("activities.durationMinutesOnly").replace(
+        "{minutes}",
+        String(dur.minutes)
+      );
+    }
+    return t("activities.durationZero");
+  };
+
   return (
     <Form {...form}>
       <form
@@ -252,20 +297,11 @@ const ActivityFormComponent = ({
               <FormItem>
                 <FormLabel>
                   {t("activities.endTime")}
-                  <span className="text-sm">
-                    {duration && (
-                      <span>
-                        {" "}
-                        ({duration.hours > 0 ? `${duration.hours} h` : ""}
-                        {duration.minutes > 0
-                          ? `${duration.hours > 0 ? " " : ""}${
-                              duration.minutes
-                            } min`
-                          : ""}
-                        {!duration.hours && !duration.minutes ? "0 mins" : ""})
-                      </span>
-                    )}
-                  </span>
+                  {duration && (
+                    <span className={`text-sm ml-1 ${durationExceeded ? "text-red-500 font-medium" : ""}`}>
+                      ({formatDurationLabel(duration)})
+                    </span>
+                  )}
                 </FormLabel>
                 <FormControl>
                   <Input {...field} placeholder={t("activities.timePlaceholder")} />
@@ -277,6 +313,14 @@ const ActivityFormComponent = ({
                     </span>
                   )}
                 </FormMessage>
+                {durationExceeded && !errors.endTime && (
+                  <p className="text-sm text-red-500">
+                    {t("activities.durationExceedsMax").replace(
+                      "{max}",
+                      String(MAX_DURATION_HOURS)
+                    )}
+                  </p>
+                )}
               </FormItem>
             )}
           />

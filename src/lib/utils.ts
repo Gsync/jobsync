@@ -68,8 +68,17 @@ export function getTimestampedFileName(originalName: string): string {
 }
 
 export const combineDateAndTime = (date: Date, time: string): Date => {
-  // Parse the time string into a `Date` object using a reference date
-  const parsedTime = parse(time, "hh:mm a", new Date());
+  // Try 12h format first (e.g. "2:30 PM"), then 24h format (e.g. "14:30")
+  let parsedTime = parse(time, "h:mm a", new Date());
+  if (isNaN(parsedTime.getTime())) {
+    parsedTime = parse(time, "hh:mm a", new Date());
+  }
+  if (isNaN(parsedTime.getTime())) {
+    parsedTime = parse(time, "HH:mm", new Date());
+  }
+  if (isNaN(parsedTime.getTime())) {
+    parsedTime = parse(time, "H:mm", new Date());
+  }
   if (isNaN(parsedTime.getTime())) throw new Error("Invalid time format");
 
   return new Date(

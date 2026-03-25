@@ -23,6 +23,10 @@ export const activities = {
     "activities.error": "Error!",
     "activities.failedToLoad": "Failed to load activities. Please try again.",
     "activities.deletedSuccess": "Activity has been deleted successfully",
+    "activities.durationExceedsMax": "Duration exceeds the maximum of {max} hours",
+    "activities.durationLabel": "{hours} h {minutes} min",
+    "activities.durationMinutesOnly": "{minutes} min",
+    "activities.durationZero": "0 min",
   },
   de: {
     "activities.title": "Aktivitäten",
@@ -48,6 +52,10 @@ export const activities = {
     "activities.error": "Fehler!",
     "activities.failedToLoad": "Aktivitäten konnten nicht geladen werden. Bitte versuche es erneut.",
     "activities.deletedSuccess": "Aktivität wurde erfolgreich gelöscht",
+    "activities.durationExceedsMax": "Dauer überschreitet das Maximum von {max} Stunden",
+    "activities.durationLabel": "{hours} h {minutes} min",
+    "activities.durationMinutesOnly": "{minutes} min",
+    "activities.durationZero": "0 min",
   },
   fr: {
     "activities.title": "Activités",
@@ -73,6 +81,10 @@ export const activities = {
     "activities.error": "Erreur !",
     "activities.failedToLoad": "Échec du chargement des activités. Veuillez réessayer.",
     "activities.deletedSuccess": "Activité supprimée avec succès",
+    "activities.durationExceedsMax": "La durée dépasse le maximum de {max} heures",
+    "activities.durationLabel": "{hours} h {minutes} min",
+    "activities.durationMinutesOnly": "{minutes} min",
+    "activities.durationZero": "0 min",
   },
   es: {
     "activities.title": "Actividades",
@@ -98,5 +110,9 @@ export const activities = {
     "activities.error": "¡Error!",
     "activities.failedToLoad": "Error al cargar actividades. Inténtalo de nuevo.",
     "activities.deletedSuccess": "Actividad eliminada con éxito",
+    "activities.durationExceedsMax": "La duracion supera el maximo de {max} horas",
+    "activities.durationLabel": "{hours} h {minutes} min",
+    "activities.durationMinutesOnly": "{minutes} min",
+    "activities.durationZero": "0 min",
   },
 } as const;
