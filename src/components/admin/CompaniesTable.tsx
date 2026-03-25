@@ -1,13 +1,6 @@
 "use client";
 import { Button } from "../ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import {
   Table,
   TableBody,
   TableCell,
@@ -16,7 +9,7 @@ import {
   TableRow,
 } from "../ui/table";
 import { Company } from "@/models/job.model";
-import { MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { deleteCompanyById } from "@/actions/company.actions";
 import { toast } from "../ui/use-toast";
@@ -89,10 +82,7 @@ function CompaniesTable({
             <TableHead>Company Name</TableHead>
             <TableHead className="hidden sm:table-cell">Value</TableHead>
             <TableHead>Jobs Applied</TableHead>
-            <TableHead>Actions</TableHead>
-            <TableHead>
-              <span className="sr-only">Actions</span>
-            </TableHead>
+            <TableHead>{t("common.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -115,31 +105,28 @@ function CompaniesTable({
                   {company._count?.jobsApplied}
                 </TableCell>
                 <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button aria-haspopup="true" size="icon" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem
-                        className="cursor-pointer"
-                        onClick={() => editCompany(company.id)}
-                      >
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit Company
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-red-600 cursor-pointer"
-                        onClick={() => onDeleteCompany(company)}
-                      >
-                        <Trash className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      aria-label={t("common.edit")}
+                      onClick={() => editCompany(company.id)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      <span className="sr-only">{t("common.edit")}</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive"
+                      aria-label={t("common.delete")}
+                      onClick={() => onDeleteCompany(company)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span className="sr-only">{t("common.delete")}</span>
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             );

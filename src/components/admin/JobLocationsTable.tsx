@@ -2,14 +2,6 @@
 import { useState } from "react";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { Button } from "../ui/button";
-
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -19,7 +11,7 @@ import {
   TableRow,
 } from "../ui/table";
 import { JobLocation } from "@/models/job.model";
-import { MoreHorizontal, Trash } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { AlertDialog } from "@/models/alertDialog.model";
 import { toast } from "../ui/use-toast";
 import { deleteJobLocationById } from "@/actions/jobLocation.actions";
@@ -82,10 +74,7 @@ function JobLocationsTable({
             <TableHead>Location</TableHead>
             <TableHead className="hidden sm:table-cell">Value</TableHead>
             <TableHead>Jobs Applied</TableHead>
-            <TableHead>Actions</TableHead>
-            <TableHead>
-              <span className="sr-only">Actions</span>
-            </TableHead>
+            <TableHead>{t("common.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -100,24 +89,16 @@ function JobLocationsTable({
                   {location._count?.jobsApplied}
                 </TableCell>
                 <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button aria-haspopup="true" size="icon" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem
-                        className="text-red-600 cursor-pointer"
-                        onClick={() => onDeleteJobLocation(location)}
-                      >
-                        <Trash className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-destructive"
+                    aria-label={t("common.delete")}
+                    onClick={() => onDeleteJobLocation(location)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span className="sr-only">{t("common.delete")}</span>
+                  </Button>
                 </TableCell>
               </TableRow>
             );

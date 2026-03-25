@@ -1,13 +1,6 @@
 "use client";
 import { Button } from "../ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import {
   Table,
   TableBody,
   TableCell,
@@ -16,7 +9,7 @@ import {
   TableRow,
 } from "../ui/table";
 import { Tag } from "@/models/job.model";
-import { MoreHorizontal, Trash } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { deleteTagById } from "@/actions/tag.actions";
 import { toast } from "../ui/use-toast";
@@ -100,24 +93,16 @@ function TagsTable({ tags, reloadTags }: TagsTableProps) {
                 {tag._count?.questions ?? 0}
               </TableCell>
               <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button aria-haspopup="true" size="icon" variant="ghost">
-                      <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Toggle menu</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>{t("common.actions")}</DropdownMenuLabel>
-                    <DropdownMenuItem
-                      className="text-red-600 cursor-pointer"
-                      onClick={() => onDeleteTag(tag)}
-                    >
-                      <Trash className="mr-2 h-4 w-4" />
-                      {t("common.delete")}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-destructive"
+                  aria-label={t("common.delete")}
+                  onClick={() => onDeleteTag(tag)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span className="sr-only">{t("common.delete")}</span>
+                </Button>
               </TableCell>
             </TableRow>
           ))}

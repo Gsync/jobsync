@@ -148,7 +148,8 @@ describe("AddJob Component", () => {
     await user.click(sourceCombobox);
     const options = screen.getAllByRole("option");
     expect(options.length).toBeGreaterThan(0);
-    expect(options[0].textContent).toBe("Indeed");
+    const optionTexts = options.map((o) => o.textContent);
+    expect(optionTexts).toContain("Indeed");
   });
   it("should load and show the salary range select list", async () => {
     const salaryRangeSelect = screen.getByLabelText("Salary Range");

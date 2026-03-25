@@ -1,5 +1,5 @@
 "use client";
-import { useTransition, useState, useEffect } from "react";
+import { useTransition, useState, useEffect, useCallback } from "react";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
-import { Loader, PlusCircle } from "lucide-react";
+import { ImageIcon, Loader, PlusCircle } from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { AddCompanyFormSchema } from "@/models/addCompanyForm.schema";
@@ -27,6 +27,115 @@ import { toast } from "../ui/use-toast";
 import { addCompany, updateCompany } from "@/actions/company.actions";
 import { Company } from "@/models/job.model";
 import { useTranslations } from "@/i18n";
+
+/** Supported image file extensions for company logo URLs. */
+const SUPPORTED_IMAGE_EXTENSIONS = [
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".webp",
+  ".svg",
+  ".ico",
+];
+
+/**
+ * Checks whether the given URL points to a supported image format.
+ * Strips query strings and fragments before comparing extensions.
+ */
+function isSupportedImageUrl(url: string): boolean {
+  try {
+    const { pathname } = new URL(url);
+    return SUPPORTED_IMAGE_EXTENSIONS.some((ext) =>
+      pathname.toLowerCase().endsWith(ext),
+    );
+  } catch {
+    // Relative URLs (e.g. /icons/logo.svg) — check directly
+    const cleanPath = url.split("?")[0].split("#")[0];
+    return SUPPORTED_IMAGE_EXTENSIONS.some((ext) =>
+      cleanPath.toLowerCase().endsWith(ext),
+    );
+  }
+}
+
+/**
+ * Logo preview component that renders a live preview of the company logo URL.
+ * Handles loading, error, and empty states gracefully.
+ * SVG URLs are rendered via a standard <img> tag which handles them correctly.
+ *
+ * NOTE: File upload integration point — when implementing file upload (future),
+ * add an upload dropzone/button here alongside the URL input. The uploaded file
+ * URL would then be set into the logoUrl form field. Accepted MIME types for
+ * upload: image/png, image/jpeg, image/gif, image/webp, image/svg+xml, image/x-icon.
+ */
+function LogoPreview({
+  url,
+  alt,
+  noPreviewLabel,
+  invalidUrlLabel,
+}: {
+  url: string | undefined;
+  alt: string;
+  noPreviewLabel: string;
+  invalidUrlLabel: string;
+}) {
+  const [imgStatus, setImgStatus] = useState<"idle" | "loading" | "loaded" | "error">("idle");
+
+  useEffect(() => {
+    if (!url) {
+      setImgStatus("idle");
+      return;
+    }
+    if (!isSupportedImageUrl(url)) {
+      setImgStatus("error");
+      return;
+    }
+    setImgStatus("loading");
+  }, [url]);
+
+  const handleLoad = useCallback(() => setImgStatus("loaded"), []);
+  const handleError = useCallback(() => setImgStatus("error"), []);
+
+  // No URL — show placeholder
+  if (!url) {
+    return (
+      <div className="flex items-center justify-center w-full h-24 rounded-md border border-dashed border-muted-foreground/40 bg-muted/30">
+        <div className="flex flex-col items-center gap-1 text-muted-foreground text-sm">
+          <ImageIcon className="h-6 w-6" />
+          <span>{noPreviewLabel}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // URL present but unsupported or image failed to load
+  if (imgStatus === "error") {
+    return (
+      <div className="flex items-center justify-center w-full h-24 rounded-md border border-dashed border-destructive/40 bg-destructive/5">
+        <div className="flex flex-col items-center gap-1 text-destructive text-sm">
+          <ImageIcon className="h-6 w-6" />
+          <span>{invalidUrlLabel}</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-center w-full h-24 rounded-md border border-dashed border-muted-foreground/40 bg-muted/10 overflow-hidden">
+      {imgStatus === "loading" && (
+        <Loader className="h-5 w-5 animate-spin text-muted-foreground" />
+      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt={alt}
+        onLoad={handleLoad}
+        onError={handleError}
+        className={`max-h-20 max-w-[200px] object-contain ${imgStatus === "loading" ? "hidden" : ""}`}
+      />
+    </div>
+  );
+}
 
 type AddCompanyProps = {
   reloadCompanies: () => void;
@@ -162,12 +271,32 @@ function AddCompany({
                     <FormItem>
                       <FormLabel>{t("admin.companyLogoUrl")}</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input
+                          {...field}
+                          placeholder={t("admin.companyLogoUrlPlaceholder")}
+                        />
                       </FormControl>
                       <FormMessage />
+                      <p className="text-xs text-muted-foreground">
+                        {t("admin.companyLogoUrlHint")}
+                      </p>
                     </FormItem>
                   )}
                 />
+              </div>
+
+              {/* LOGO PREVIEW */}
+              <div className="md:col-span-2">
+                <p className="text-sm font-medium mb-2">
+                  {t("admin.companyLogoPreview")}
+                </p>
+                <LogoPreview
+                  url={form.watch("logoUrl")}
+                  alt={form.watch("company") || "Company logo"}
+                  noPreviewLabel={t("admin.companyLogoNoPreview")}
+                  invalidUrlLabel={t("admin.companyLogoInvalidUrl")}
+                />
+                {/* TODO: File upload integration point — add upload dropzone/button here */}
               </div>
               <div className="md:col-span-2 mt-4">
                 <DialogFooter

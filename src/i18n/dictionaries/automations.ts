@@ -83,6 +83,8 @@ export const automations = {
     "automations.resumeLabel": "Resume",
     "automations.daily": "Daily",
     "automations.threshold": "Threshold",
+    "automations.nextRun": "Next",
+    "automations.lastRun": "Last",
 
     // AutomationList - Menu actions
     "automations.pause": "Pause",
@@ -198,6 +200,27 @@ export const automations = {
     "automations.tooltipCustomDesc": "Type any keyword and press Enter to add it as a free-text search term. Useful for non-standard job titles.",
     "automations.tooltipIsco": "ISCO Groups",
     "automations.tooltipIscoDesc": "Click the eye icon on a chip to see the ISCO classification group, which includes related occupations for broader searches.",
+
+    // U2: JSearch API Key Check
+    "automations.jsearchApiKeyRequired": "API Key required — configure in Settings",
+
+    // U3: Threshold Toggle
+    "automations.enableAiScoring": "Enable AI Match Scoring",
+    "automations.enableAiScoringDesc": "Use AI to score and filter discovered jobs against your resume",
+    "automations.collectOnlyMode": "Collect only (no AI scoring)",
+    "automations.collectOnlyDesc": "All discovered jobs will be collected without AI match scoring. You can review them manually.",
+    "automations.disabled": "Disabled",
+
+    // U4: Flexible Runtimes
+    "automations.scheduleFrequency": "Run Frequency",
+    "automations.selectFrequency": "Select frequency",
+    "automations.scheduleFrequencyDesc": "How often the automation should search for new jobs",
+    "automations.scheduleEvery6Hours": "Every 6 hours",
+    "automations.scheduleEvery12Hours": "Every 12 hours",
+    "automations.scheduleDaily": "Daily",
+    "automations.scheduleEvery2Days": "Every 2 days",
+    "automations.scheduleWeekly": "Weekly",
+    "automations.preferredStartTime": "Preferred Start Time",
   },
   de: {
     // AutomationWizard - Steps
@@ -283,6 +306,8 @@ export const automations = {
     "automations.resumeLabel": "Lebenslauf",
     "automations.daily": "Täglich",
     "automations.threshold": "Schwelle",
+    "automations.nextRun": "Nächste",
+    "automations.lastRun": "Letzte",
 
     // AutomationList - Menu actions
     "automations.pause": "Pausieren",
@@ -398,6 +423,27 @@ export const automations = {
     "automations.tooltipCustomDesc": "Geben Sie ein beliebiges Stichwort ein und drücken Sie Enter, um es als Freitextsuchbegriff hinzuzufügen. Nützlich für nicht-standardisierte Berufsbezeichnungen.",
     "automations.tooltipIsco": "ISCO-Gruppen",
     "automations.tooltipIscoDesc": "Klicken Sie auf das Augensymbol auf einem Chip, um die ISCO-Klassifikationsgruppe zu sehen, die verwandte Berufe für breitere Suchen enthält.",
+
+    // U2: JSearch API Key Check
+    "automations.jsearchApiKeyRequired": "API-Schlüssel erforderlich — in Einstellungen konfigurieren",
+
+    // U3: Threshold Toggle
+    "automations.enableAiScoring": "KI-Bewertung aktivieren",
+    "automations.enableAiScoringDesc": "KI verwenden, um gefundene Stellen mit Ihrem Lebenslauf abzugleichen und zu filtern",
+    "automations.collectOnlyMode": "Nur sammeln (keine KI-Bewertung)",
+    "automations.collectOnlyDesc": "Alle gefundenen Stellen werden ohne KI-Bewertung gesammelt. Sie können sie manuell prüfen.",
+    "automations.disabled": "Deaktiviert",
+
+    // U4: Flexible Runtimes
+    "automations.scheduleFrequency": "Ausführungshäufigkeit",
+    "automations.selectFrequency": "Häufigkeit auswählen",
+    "automations.scheduleFrequencyDesc": "Wie oft die Automatisierung nach neuen Stellen suchen soll",
+    "automations.scheduleEvery6Hours": "Alle 6 Stunden",
+    "automations.scheduleEvery12Hours": "Alle 12 Stunden",
+    "automations.scheduleDaily": "Täglich",
+    "automations.scheduleEvery2Days": "Alle 2 Tage",
+    "automations.scheduleWeekly": "Wöchentlich",
+    "automations.preferredStartTime": "Bevorzugte Startzeit",
   },
   fr: {
     // AutomationWizard - Steps
@@ -483,6 +529,8 @@ export const automations = {
     "automations.resumeLabel": "CV",
     "automations.daily": "Quotidien",
     "automations.threshold": "Seuil",
+    "automations.nextRun": "Prochain",
+    "automations.lastRun": "Dernier",
 
     // AutomationList - Menu actions
     "automations.pause": "Mettre en pause",
@@ -598,6 +646,27 @@ export const automations = {
     "automations.tooltipCustomDesc": "Saisissez un mot-clé et appuyez sur Entrée pour l'ajouter comme terme de recherche libre. Utile pour les intitulés de poste non standards.",
     "automations.tooltipIsco": "Groupes ISCO",
     "automations.tooltipIscoDesc": "Cliquez sur l'icône œil sur un badge pour voir le groupe de classification ISCO, qui inclut des professions connexes pour des recherches plus larges.",
+
+    // U2: JSearch API Key Check
+    "automations.jsearchApiKeyRequired": "Clé API requise — configurer dans les Paramètres",
+
+    // U3: Threshold Toggle
+    "automations.enableAiScoring": "Activer la notation IA",
+    "automations.enableAiScoringDesc": "Utiliser l'IA pour noter et filtrer les emplois découverts par rapport à votre CV",
+    "automations.collectOnlyMode": "Collecte uniquement (sans notation IA)",
+    "automations.collectOnlyDesc": "Tous les emplois découverts seront collectés sans notation IA. Vous pourrez les examiner manuellement.",
+    "automations.disabled": "Désactivé",
+
+    // U4: Flexible Runtimes
+    "automations.scheduleFrequency": "Fréquence d'exécution",
+    "automations.selectFrequency": "Sélectionner la fréquence",
+    "automations.scheduleFrequencyDesc": "À quelle fréquence l'automatisation doit rechercher de nouveaux emplois",
+    "automations.scheduleEvery6Hours": "Toutes les 6 heures",
+    "automations.scheduleEvery12Hours": "Toutes les 12 heures",
+    "automations.scheduleDaily": "Quotidien",
+    "automations.scheduleEvery2Days": "Tous les 2 jours",
+    "automations.scheduleWeekly": "Hebdomadaire",
+    "automations.preferredStartTime": "Heure de début préférée",
   },
   es: {
     // AutomationWizard - Steps
@@ -683,6 +752,8 @@ export const automations = {
     "automations.resumeLabel": "Currículum",
     "automations.daily": "Diario",
     "automations.threshold": "Umbral",
+    "automations.nextRun": "Siguiente",
+    "automations.lastRun": "Anterior",
 
     // AutomationList - Menu actions
     "automations.pause": "Pausar",
@@ -798,5 +869,26 @@ export const automations = {
     "automations.tooltipCustomDesc": "Escriba cualquier palabra clave y presione Enter para agregarla como término de búsqueda libre. Útil para títulos de trabajo no estándar.",
     "automations.tooltipIsco": "Grupos ISCO",
     "automations.tooltipIscoDesc": "Haga clic en el icono de ojo en una etiqueta para ver el grupo de clasificación ISCO, que incluye ocupaciones relacionadas para búsquedas más amplias.",
+
+    // U2: JSearch API Key Check
+    "automations.jsearchApiKeyRequired": "Clave API requerida — configurar en Ajustes",
+
+    // U3: Threshold Toggle
+    "automations.enableAiScoring": "Activar puntuación IA",
+    "automations.enableAiScoringDesc": "Usar IA para puntuar y filtrar empleos descubiertos contra su currículum",
+    "automations.collectOnlyMode": "Solo recolectar (sin puntuación IA)",
+    "automations.collectOnlyDesc": "Todos los empleos descubiertos se recolectarán sin puntuación IA. Puede revisarlos manualmente.",
+    "automations.disabled": "Desactivado",
+
+    // U4: Flexible Runtimes
+    "automations.scheduleFrequency": "Frecuencia de ejecución",
+    "automations.selectFrequency": "Seleccionar frecuencia",
+    "automations.scheduleFrequencyDesc": "Con qué frecuencia la automatización debe buscar nuevos empleos",
+    "automations.scheduleEvery6Hours": "Cada 6 horas",
+    "automations.scheduleEvery12Hours": "Cada 12 horas",
+    "automations.scheduleDaily": "Diario",
+    "automations.scheduleEvery2Days": "Cada 2 días",
+    "automations.scheduleWeekly": "Semanal",
+    "automations.preferredStartTime": "Hora de inicio preferida",
   },
 } as const;

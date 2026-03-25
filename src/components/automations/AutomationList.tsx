@@ -42,11 +42,23 @@ import {
   resumeAutomation,
 } from "@/actions/automation.actions";
 import Link from "next/link";
+import { getLocationLabel } from "@/lib/connector/job-discovery/modules/eures/countries";
 
 interface AutomationListProps {
   automations: AutomationWithResume[];
   onEdit: (automation: AutomationWithResume) => void;
   onRefresh: () => void;
+}
+
+/** Resolve a comma-separated location string to readable labels */
+function resolveLocations(location: string, jobBoard: string): string[] {
+  if (!location) return [];
+  const codes = location.split(",").map((c) => c.trim()).filter(Boolean);
+  // Only resolve EURES / arbeitsagentur codes; for other boards, return as-is
+  if (jobBoard === "eures" || jobBoard === "arbeitsagentur") {
+    return codes.map((code) => getLocationLabel(code));
+  }
+  return codes;
 }
 
 export function AutomationList({
@@ -133,115 +145,134 @@ export function AutomationList({
         {automations.map((automation) => {
           const isLoading = loadingAction === automation.id;
           const resumeMissing = !automation.resume;
+          const keywordChips = automation.keywords
+            .split(",")
+            .map((k) => k.trim())
+            .filter(Boolean);
+          const locationLabels = resolveLocations(automation.location, automation.jobBoard);
 
           return (
-            <div
+            <Link
               key={automation.id}
-              className="flex items-start justify-between p-4 rounded-lg border bg-card"
+              href={`/dashboard/automations/${automation.id}`}
+              className="block rounded-lg border bg-card hover:bg-accent/50 transition-colors"
             >
-              <div className="flex-1 min-w-0 space-y-2">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <Link
-                    href={`/dashboard/automations/${automation.id}`}
-                    className="font-semibold hover:underline"
-                  >
-                    {automation.name}
-                  </Link>
-                  <Badge variant="outline" className="capitalize">
-                    {automation.jobBoard}
-                  </Badge>
-                  <Badge
-                    variant={automation.status === "active" ? "default" : "secondary"}
-                    className="capitalize"
-                  >
-                    {automation.status}
-                  </Badge>
-                </div>
-
-                {resumeMissing && (
-                  <div className="flex items-center gap-2 text-amber-600 text-sm">
-                    <AlertTriangle className="h-4 w-4" />
-                    <span>{t("automations.resumeMissing")}</span>
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
-                  <span>
-                    <span className="font-medium text-foreground">{t("automations.keywords")}:</span>{" "}
-                    {automation.keywords}
-                  </span>
-                  <span>
-                    <span className="font-medium text-foreground">{t("automations.locationLabel")}:</span>{" "}
-                    {automation.location}
-                  </span>
-                  {automation.resume && (
-                    <span>
-                      <span className="font-medium text-foreground">{t("automations.resumeLabel")}:</span>{" "}
-                      {automation.resume.title}
+              <div className="flex items-start justify-between p-4">
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="font-semibold">
+                      {automation.name}
                     </span>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>
-                      {automation.scheduleHour.toString().padStart(2, "0")}:00 {t("automations.daily").toLowerCase()}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <FileText className="h-4 w-4" />
-                    <span>{automation.matchThreshold}% {t("automations.threshold").toLowerCase()}</span>
-                  </div>
-                  {automation.nextRunAt && automation.status === "active" && (
-                    <span className="text-xs">
-                      Next: {formatDateCompact(new Date(automation.nextRunAt), locale)}
-                    </span>
-                  )}
-                  {automation.lastRunAt && (
-                    <span className="text-xs">
-                      Last: {formatDateCompact(new Date(automation.lastRunAt), locale)}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" disabled={isLoading}>
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {automation.status === "active" ? (
-                    <DropdownMenuItem onClick={() => handlePause(automation.id)}>
-                      <Pause className="h-4 w-4 mr-2" />
-                      {t("automations.pause")}
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem
-                      onClick={() => handleResume(automation.id)}
-                      disabled={resumeMissing}
+                    <Badge variant="outline" className="capitalize">
+                      {automation.jobBoard}
+                    </Badge>
+                    <Badge
+                      variant={automation.status === "active" ? "default" : "secondary"}
+                      className="capitalize"
                     >
-                      <Play className="h-4 w-4 mr-2" />
-                      {t("automations.resume")}
-                    </DropdownMenuItem>
+                      {automation.status}
+                    </Badge>
+                  </div>
+
+                  {resumeMissing && (
+                    <div className="flex items-center gap-2 text-amber-600 text-sm">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span>{t("automations.resumeMissing")}</span>
+                    </div>
                   )}
-                  <DropdownMenuItem onClick={() => onEdit(automation)}>
-                    <Pencil className="h-4 w-4 mr-2" />
-                    {t("automations.edit")}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onClick={() => setDeleteId(automation.id)}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {t("automations.delete")}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+
+                  <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-medium text-foreground">{t("automations.keywords")}:</span>
+                      {keywordChips.map((keyword, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {keyword}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-medium text-foreground">{t("automations.locationLabel")}:</span>
+                      {locationLabels.map((label, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {label}
+                        </Badge>
+                      ))}
+                    </div>
+                    {automation.resume && (
+                      <span>
+                        <span className="font-medium text-foreground">{t("automations.resumeLabel")}:</span>{" "}
+                        {automation.resume.title}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      <span>
+                        {automation.scheduleHour.toString().padStart(2, "0")}:00 {t("automations.daily").toLowerCase()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <FileText className="h-4 w-4" />
+                      <span>{automation.matchThreshold}% {t("automations.threshold").toLowerCase()}</span>
+                    </div>
+                    {automation.nextRunAt && automation.status === "active" && (
+                      <span className="text-sm">
+                        {t("automations.nextRun")}: {formatDateCompact(new Date(automation.nextRunAt), locale)}
+                      </span>
+                    )}
+                    {automation.lastRunAt && (
+                      <span className="text-sm">
+                        {t("automations.lastRun")}: {formatDateCompact(new Date(automation.lastRunAt), locale)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3 actions (pause/resume + edit + delete) > 2, keep dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={isLoading}
+                      onClick={(e) => e.preventDefault()}
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {automation.status === "active" ? (
+                      <DropdownMenuItem onClick={() => handlePause(automation.id)}>
+                        <Pause className="h-4 w-4 mr-2" />
+                        {t("automations.pause")}
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        onClick={() => handleResume(automation.id)}
+                        disabled={resumeMissing}
+                      >
+                        <Play className="h-4 w-4 mr-2" />
+                        {t("automations.resume")}
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={() => onEdit(automation)}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      {t("automations.edit")}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() => setDeleteId(automation.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {t("automations.delete")}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </Link>
           );
         })}
       </div>
