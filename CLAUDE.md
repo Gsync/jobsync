@@ -281,7 +281,8 @@ Formal specifications in `specs/*.allium` capture domain behaviour:
 
 ## Post-Work Checklist
 
-- **After bugfixes:** Search `docs/BUGS.md` for the fixed bug IDs, mark them as fixed, update counts and status header. If all bugs in a severity group are fixed, note it. Always keep BUGS.md in sync with reality.
+- **When user reports bugs:** IMMEDIATELY add them to `docs/BUGS.md` with ID, description, file, and severity — before starting any fix. BUGS.md is the single source of truth for all known issues.
+- **After bugfixes:** Mark fixed bugs in `docs/BUGS.md`, update counts and status header. Always keep BUGS.md in sync with reality.
 - **After architecture changes:** Run the `/architecture-decision-records` skill to document the decision in `docs/adr/`, unless an ADR was already written by a team agent in the same session.
 - **After UI changes:** Must have consulted the ui-design agent before implementation (design-review, create-component, accessibility-audit). Wait for findings, then implement.
 

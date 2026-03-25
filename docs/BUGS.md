@@ -72,3 +72,36 @@
 | C16 | InfoTooltip button missing aria-label | Added |
 | C17 | DownloadFileButton called as function not JSX | Fixed |
 | C18 | DownloadFileButton silent failure | Fixed |
+
+## Open — Reported 2026-03-25
+
+**Total: 14 new issues (4 bugs, 8 UX improvements, 2 data gaps)**
+
+### Bugs
+
+| ID | Bug | File | Severity | Status |
+|----|-----|------|----------|--------|
+| D1 | Tiptap SSR: missing `immediatelyRender: false` causes hydration mismatch | `TiptapEditor.tsx`, `TipTapContentViewer.tsx` | Medium | ✅ Fixed |
+| D2 | DialogContent missing `Description` or `aria-describedby` — console warnings | 22 Dialog components | Low | ✅ Fixed |
+| D3 | Activity: time validation hardcoded to AM/PM, ignores user locale (DE/FR/ES expect 24h) | `ActivityForm.tsx` | Medium | ✅ Fixed |
+| D4 | Activity: duration shows "47 h 5 min" — max 8h validation not enforced in UI | `ActivityForm.tsx` | Medium | ✅ Fixed |
+
+### UX Improvements
+
+| ID | Issue | File | Severity | Status |
+|----|-------|------|----------|--------|
+| D5 | Add Job: Job Source dropdown missing connector module items | `AddJob.tsx` | Medium | ✅ Fixed |
+| D6 | Automations: JSearch option not grayed out when API key missing, no warning | `AutomationWizard.tsx` | Medium | ✅ Fixed |
+| D7 | Automations Step 4: no option to disable LLM threshold (collect-only mode) | `AutomationWizard.tsx` | Low | ✅ Fixed |
+| D8 | Automations Step 5: limited runtime options (only daily) | `AutomationWizard.tsx` | Low | ✅ Fixed |
+| D9 | Automations table: keywords not as chips, locations not resolved (de1,de3), run text not harmonized, div not fully clickable, 3-dot menu | `AutomationList.tsx` | Medium | ✅ Fixed |
+| D10 | Admin table: 3-dot menu instead of shared visible buttons pattern | Admin components | Low | ✅ Fixed |
+| D11 | Admin New Company: no image upload, no URL preview, no SVG/vector support | `AddCompany.tsx` | Low | ✅ Fixed |
+| D12 | Profile cards: 4x hardcoded "Edit" string not translated | Profile cards | Low | ✅ Fixed |
+
+### Data Gaps
+
+| ID | Issue | Severity | Status |
+|----|-------|----------|--------|
+| D13 | Mock data insufficient for all screens | Low | ✅ Fixed |
+| D14 | No mock data for connectors/modules | Low | ✅ Fixed |

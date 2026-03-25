@@ -29,6 +29,8 @@ export interface DeveloperSettings {
     runner: boolean;
     automationLogger: boolean;
   };
+  /** Comma-separated list of allowed dev origins (e.g., "http://192.168.1.100:3737") */
+  allowedDevOrigins?: string;
 }
 
 export interface UserSettingsData {

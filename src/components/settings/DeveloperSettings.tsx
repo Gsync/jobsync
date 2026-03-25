@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
+import { Input } from "../ui/input";
 import { toast } from "../ui/use-toast";
 import { Loader2 } from "lucide-react";
 import { getUserSettings, updateUserSettings } from "@/actions/userSettings.actions";
@@ -188,6 +189,29 @@ function DeveloperSettings() {
             }
             aria-label={t("settings.automationLoggerLogs")}
           />
+        </div>
+        {/* Allowed Dev Origins */}
+        <div className="rounded-lg border p-4 space-y-2">
+          <div className="space-y-0.5">
+            <Label htmlFor="allowed-dev-origins">{t("settings.allowedDevOrigins")}</Label>
+            <p className="text-sm text-muted-foreground">
+              {t("settings.allowedDevOriginsDesc")}
+            </p>
+          </div>
+          <Input
+            id="allowed-dev-origins"
+            placeholder="http://192.168.1.100:3737, http://myhost.ts.net:3737"
+            value={settings.allowedDevOrigins ?? ""}
+            onChange={(e) =>
+              setSettings({ ...settings, allowedDevOrigins: e.target.value })
+            }
+            onBlur={() =>
+              handleToggle({ allowedDevOrigins: settings.allowedDevOrigins })
+            }
+          />
+          <p className="text-xs text-muted-foreground">
+            {t("settings.allowedDevOriginsHint")}
+          </p>
         </div>
       </div>
     </div>
