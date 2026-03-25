@@ -88,22 +88,26 @@ All external integrations follow the **App ↔ Connector ↔ Module** pattern:
 ```
 App (Core Logic)
   ↕ ConnectorResult<T> / DiscoveredVacancy / ActionResult
-Connector (Anti-Corruption Layer)
-  - Translates between Module protocol and App domain
-  - Implements resilience (circuit breaker, retry, rate limit)
-  - Normalizes errors into ConnectorResult
-  ↕ Raw API responses / external protocols
-Module (External System)
-  - EURES API, Arbeitsagentur API, Paperless-ngx, CalDAV, etc.
-  - May crash, timeout, change API — Connector isolates this
+Connector (Shared ACL — ONE interface, ONE registry)
+  - DataSourceConnector interface: search(), getDetails()
+  - ConnectorRegistry: maps module names → factories
+  - Runner: orchestrates search + matching
+  ↕
+Modules (each implements DataSourceConnector)
+  - EURES Module: speaks EURES API protocol
+  - Arbeitsagentur Module: speaks Bundesagentur API protocol
+  - JSearch Module: speaks RapidAPI/Google Jobs protocol
 ```
 
-**Key principle:** If a Module crashes, the Connector catches it and returns a clean `ConnectorResult<error>` — the App never sees raw exceptions from external systems.
+**Key principle:** The Connector is the shared domain layer. Modules are pluggable implementations. If a Module crashes, the Connector catches it via `ConnectorResult<error>`.
 
-**Current implementation:** `src/lib/scraper/{eures,arbeitsagentur,jsearch}/`
-Each directory contains: `index.ts` (Connector), `types.ts` (Module types), `resilience.ts` (Circuit Breaker/Retry).
+**Current implementation (pre-migration):** `src/lib/scraper/`
+- Shared: `types.ts` (Connector interface), `registry.ts`, `runner.ts`, `mapper.ts`
+- Modules: `eures/`, `arbeitsagentur/`, `jsearch/` (each with `index.ts`, `types.ts`, `resilience.ts`)
 
-**For new integrations:** Always create the Module types first, then the Connector with resilience, then wire into the App via the registry (`src/lib/scraper/connectors.ts`).
+**Target structure (Roadmap 0.1):** `src/lib/connector/` with `modules/` subdirectory.
+
+**For new Modules:** Create `src/lib/connector/modules/{name}/` with `index.ts` (implements `DataSourceConnector`), `types.ts`, `resilience.ts`. Register in `registry.ts`.
 
 ## EURES/ESCO Integration
 

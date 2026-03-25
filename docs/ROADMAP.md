@@ -3,17 +3,31 @@
 ## 0. Infrastruktur-Refactoring (Priorität)
 
 ### 0.1 App ↔ Connector ↔ Module Umstellung
-Bestehende Connector-Infrastruktur auf das ACL-Pattern (Anti-Corruption Layer) migrieren:
+Bestehende Infrastruktur auf das ACL-Pattern (Anti-Corruption Layer) migrieren.
 
-- **Ordnerstruktur umbenennen:** `src/lib/scraper/` → `src/lib/connectors/`
-  - `scraper/eures/` → `connectors/eures/` (Connector + Module)
-  - `scraper/arbeitsagentur/` → `connectors/arbeitsagentur/`
-  - `scraper/jsearch/` → `connectors/jsearch/`
-- **Module-Interface formalisieren:** Jedes Module implementiert ein gemeinsames Interface (`DataSourceModule`) das der Connector konsumiert
-- **Connector Registry refactoren:** `src/lib/scraper/registry.ts` → `src/lib/connectors/registry.ts`
-- **Runner anpassen:** `src/lib/scraper/runner.ts` → `src/lib/connectors/runner.ts`
-- **Imports aktualisieren:** Alle Referenzen auf `@/lib/scraper/` → `@/lib/connectors/`
-- **Tests anpassen:** Bestehende 748+ Tests müssen weiterhin bestehen
+Der **Connector** ist die gemeinsame Schnittstelle (ACL). **Module** sind die konkreten Anbindungen an externe Systeme.
+
+```
+src/lib/connector/              ← DER Connector (Shared Domain)
+  types.ts                      ← ConnectorResult<T>, DiscoveredVacancy, SearchParams
+  connector.ts                  ← DataSourceConnector Interface (der ACL-Vertrag)
+  registry.ts                   ← Context Map (Module-Name → Factory)
+  runner.ts                     ← App-Layer Orchestrierung
+
+  modules/                      ← Konkrete Anbindungen (je ein Bounded Context)
+    eures/                      ← Module: EURES API
+      index.ts                    (implementiert DataSourceConnector)
+      types.ts                    (EURES-spezifische Typen)
+      resilience.ts               (Circuit Breaker, Retry)
+    arbeitsagentur/             ← Module: Arbeitsagentur API
+    jsearch/                    ← Module: JSearch/Google Jobs API
+```
+
+- **Migration:** `src/lib/scraper/` → `src/lib/connector/`
+  - Shared files (`types.ts`, `registry.ts`, `runner.ts`, `mapper.ts`) → `src/lib/connector/`
+  - Module-Ordner (`eures/`, `arbeitsagentur/`, `jsearch/`) → `src/lib/connector/modules/`
+- **Imports aktualisieren:** `@/lib/scraper/` → `@/lib/connector/`
+- **Tests anpassen:** 748+ Tests müssen bestehen
 
 ### 0.2 ActionResult<T> Typisierung vervollständigen
 - Pattern A (55 Funktionen): `Promise<any>` → `Promise<ActionResult<unknown>>` (in Arbeit)
