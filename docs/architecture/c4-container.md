@@ -28,7 +28,7 @@ The container handles four distinct runtime responsibilities:
 1. **Frontend rendering** — Server-side rendered React pages under `/dashboard/*` and static pages under `/` and `/(auth)/*`
 2. **API layer** — REST routes under `/api/*` covering authentication, job data, automations, AI inference, EU taxonomy proxying, and file I/O
 3. **Background scheduler** — In-process `node-cron` job that wakes up hourly, queries for active automations whose `nextRunAt` has passed, and executes the full connector-to-AI-to-database pipeline
-4. **Connector layer** — Anti-Corruption Layer (`src/lib/scraper/`) that translates EURES, Bundesagentur, and JSearch API responses into the canonical `DiscoveredVacancy` domain type
+4. **Connector layer** — Anti-Corruption Layer (`src/lib/connector/job-discovery/`) that translates EURES, Bundesagentur, and JSearch API responses into the canonical `DiscoveredVacancy` domain type
 
 #### Components
 
@@ -38,13 +38,13 @@ This container deploys the following logical components:
 - **API Routes** (`src/app/api/`) — All REST endpoints; see Interfaces section
 - **Server Actions / Repository Layer** (`src/actions/`) — Typed `ActionResult<T>`-returning database operations for all aggregates (Job, Automation, Profile, Task, Activity, etc.)
 - **Authentication** (`src/auth.ts`, `src/middleware.ts`) — NextAuth.js session management; middleware protects `/dashboard` and `/dashboard/**`
-- **Connector Registry** (`src/lib/scraper/registry.ts`) — Factory registry mapping connector IDs to `DataSourceConnector` implementations
-- **EURES Connector** (`src/lib/scraper/eures/`) — Calls `https://europa.eu/eures/api`; implements circuit breaker and bulkhead resilience patterns
-- **Bundesagentur Connector** (`src/lib/scraper/arbeitsagentur/`) — Calls `https://rest.arbeitsagentur.de`; uses public API key `jobboerse-jobsuche`
-- **JSearch Connector** (`src/lib/scraper/jsearch/`) — Calls `https://jsearch.p.rapidapi.com`; requires `RAPIDAPI_KEY`
-- **Automation Runner** (`src/lib/scraper/runner.ts`) — Orchestrates the search → deduplication → AI matching → persistence pipeline
+- **Connector Registry** (`src/lib/connector/job-discovery/registry.ts`) — Factory registry mapping connector IDs to `DataSourceConnector` implementations
+- **EURES Connector** (`src/lib/connector/job-discovery/eures/`) — Calls `https://europa.eu/eures/api`; implements circuit breaker and bulkhead resilience patterns
+- **Bundesagentur Connector** (`src/lib/connector/job-discovery/arbeitsagentur/`) — Calls `https://rest.arbeitsagentur.de`; uses public API key `jobboerse-jobsuche`
+- **JSearch Connector** (`src/lib/connector/job-discovery/jsearch/`) — Calls `https://jsearch.p.rapidapi.com`; requires `RAPIDAPI_KEY`
+- **Automation Runner** (`src/lib/connector/job-discovery/runner.ts`) — Orchestrates the search → deduplication → AI matching → persistence pipeline
 - **Background Scheduler** (`src/lib/scheduler/index.ts`) — `node-cron` wrapper polling SQLite for `status=active, nextRunAt<=now`
-- **AI Provider Layer** (`src/lib/ai/`) — Vercel AI SDK integration supporting Ollama (local), OpenAI, and DeepSeek
+- **AI Provider Layer** (`src/lib/connector/ai-provider/`) — Vercel AI SDK integration supporting Ollama (local), OpenAI, and DeepSeek
 - **Encryption Module** (`src/lib/encryption.ts`) — AES-256-GCM key derivation with PBKDF2 for API key storage
 - **i18n System** (`src/i18n/`) — Dictionary-based internationalization for EN, DE, FR, ES
 

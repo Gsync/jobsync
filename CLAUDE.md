@@ -101,13 +101,17 @@ Modules (each implements DataSourceConnector)
 
 **Key principle:** The Connector is the shared domain layer. Modules are pluggable implementations. If a Module crashes, the Connector catches it via `ConnectorResult<error>`.
 
-**Current implementation (pre-migration):** `src/lib/scraper/`
-- Shared: `types.ts` (Connector interface), `registry.ts`, `runner.ts`, `mapper.ts`
-- Modules: `eures/`, `arbeitsagentur/`, `jsearch/` (each with `index.ts`, `types.ts`, `resilience.ts`)
+**Current structure:** `src/lib/connector/` — unified connector architecture with two connector types:
+- **Job Discovery** (`src/lib/connector/job-discovery/`):
+  - Shared: `types.ts` (DataSourceConnector interface), `registry.ts`, `runner.ts`, `mapper.ts`
+  - Modules: `modules/eures/`, `modules/arbeitsagentur/`, `modules/jsearch/` (each with `index.ts`, `types.ts`, `resilience.ts`)
+- **AI Provider** (`src/lib/connector/ai-provider/`):
+  - Shared: AIProviderConnector interface (mirrors DataSourceConnector pattern)
+  - Modules: `modules/ollama/`, `modules/openai/`, `modules/deepseek/`
 
-**Target structure (Roadmap 0.1):** `src/lib/connector/` with `modules/` subdirectory.
+**For new Job Discovery Modules:** Create `src/lib/connector/job-discovery/modules/{name}/` with `index.ts` (implements `DataSourceConnector`), `types.ts`, `resilience.ts`. Register in `registry.ts`.
 
-**For new Modules:** Create `src/lib/connector/modules/{name}/` with `index.ts` (implements `DataSourceConnector`), `types.ts`, `resilience.ts`. Register in `registry.ts`.
+**For new AI Provider Modules:** Create `src/lib/connector/ai-provider/modules/{name}/` implementing `AIProviderConnector`. Register in the AI provider registry.
 
 ### Connector & Module Lifecycle (Marketplace Pattern)
 
@@ -179,10 +183,11 @@ Use consistent domain terms across code, UI, specs, and documentation:
 Each Connector is a Bounded Context with its own internal language:
 
 ```
-src/lib/scraper/
-  eures/          ← EURES Context (locationCodes, jvProfiles, requestLanguage)
-  arbeitsagentur/ ← Arbeitsagentur Context (arbeitsort, beruf, refnr)
-  jsearch/        ← JSearch Context (job_city, employer_name)
+src/lib/connector/job-discovery/
+  modules/
+    eures/          ← EURES Context (locationCodes, jvProfiles, requestLanguage)
+    arbeitsagentur/ ← Arbeitsagentur Context (arbeitsort, beruf, refnr)
+    jsearch/        ← JSearch Context (job_city, employer_name)
 ```
 
 Contexts communicate ONLY through the shared domain type `DiscoveredVacancy`. Never leak context-specific types (e.g., `ArbeitsagenturJob`) into the App layer.

@@ -14,11 +14,11 @@ External APIs crash, change their contracts, apply rate limits, and time out. Th
 Adopt a three-layer architecture: **App ↔ Connector ↔ Module**.
 
 **Modules** (Bounded Contexts) each encapsulate one external system's protocol:
-- `src/lib/scraper/eures/` — EURES API (`jvProfiles`, `locationCodes`, `requestLanguage`)
-- `src/lib/scraper/arbeitsagentur/` — Bundesagentur API (`arbeitsort`, `beruf`, `refnr`)
-- `src/lib/scraper/jsearch/` — RapidAPI/Google Jobs (`job_city`, `employer_name`)
+- `src/lib/connector/job-discovery/modules/eures/` — EURES API (`jvProfiles`, `locationCodes`, `requestLanguage`)
+- `src/lib/connector/job-discovery/modules/arbeitsagentur/` — Bundesagentur API (`arbeitsort`, `beruf`, `refnr`)
+- `src/lib/connector/job-discovery/modules/jsearch/` — RapidAPI/Google Jobs (`job_city`, `employer_name`)
 
-Each Module implements the `DataSourceConnector` interface (`src/lib/scraper/types.ts`):
+Each Module implements the `DataSourceConnector` interface (`src/lib/connector/job-discovery/types.ts`):
 
 ```ts
 interface DataSourceConnector {
@@ -28,19 +28,19 @@ interface DataSourceConnector {
 }
 ```
 
-**The Connector layer** is the shared domain layer: `types.ts`, `registry.ts`, and `runner.ts` in `src/lib/scraper/`. It owns the `ConnectorRegistry` (factory map keyed by module id), the `runAutomation` orchestrator, and the `ConnectorResult<T>` discriminated union that prevents raw exceptions from reaching the App layer.
+**The Connector layer** is the shared domain layer: `types.ts`, `registry.ts`, and `runner.ts` in `src/lib/connector/job-discovery/`. It owns the `ConnectorRegistry` (factory map keyed by module id), the `runAutomation` orchestrator, and the `ConnectorResult<T>` discriminated union that prevents raw exceptions from reaching the App layer.
 
 **The App layer** (`src/actions/automation.actions.ts`, API routes) interacts exclusively with `ConnectorResult<T>` and the domain Value Object `DiscoveredVacancy`. It never imports Module-internal types such as `EuresVacancyDetail`.
 
 Each Module owns its own `resilience.ts` implementing circuit breaker, bulkhead, and timeout patterns. Module failures are caught and translated to typed `ConnectorError` variants (`blocked`, `rate_limited`, `network`, `parse`) before surfacing to the runner.
 
-The roadmap target is `src/lib/connector/modules/` with the same structure; the current `src/lib/scraper/` layout is the pre-migration form.
+The Roadmap 0.1 migration is complete: job discovery modules are at `src/lib/connector/job-discovery/modules/`, AI provider modules at `src/lib/connector/ai-provider/modules/`. See ADR-010 for the unification decision.
 
 ## Consequences
 
 ### Positive
 - A Module crash or API change is isolated: it cannot affect other Modules or the App layer.
-- Adding a new job board requires only creating `src/lib/scraper/{name}/` and registering it in `registry.ts`.
+- Adding a new job board requires only creating `src/lib/connector/job-discovery/{name}/` and registering it in `registry.ts`.
 - `DiscoveredVacancy` is the sole cross-context type; Module-internal schemas never leak into domain code.
 - Resilience policies (circuit breaker, retry) are per-Module, so a flaky board does not degrade a healthy one.
 

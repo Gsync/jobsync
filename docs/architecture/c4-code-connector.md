@@ -4,11 +4,11 @@
 
 - **Name**: JobSync Connector Layer (Anti-Corruption Layer)
 - **Description**: Shared connector abstraction that decouples external job board APIs from the application core. Implements the DataSourceConnector interface, manages resilience patterns (circuit breaker, retry, rate limiting, bulkhead), and coordinates multi-module searches and job matching workflows.
-- **Location**: `/home/pascal/projekte/jobsync/src/lib/scraper/`
+- **Location**: `/home/pascal/projekte/jobsync/src/lib/connector/job-discovery/`
 - **Language**: TypeScript
 - **Purpose**: Provides a unified interface for integrating external job board APIs (EURES, Arbeitsagentur, JSearch) while isolating network failures, rate limits, and API-specific details from the application layer. Orchestrates job discovery automation pipelines.
 - **Architecture Pattern**: Anti-Corruption Layer (ACL) / Adapter Pattern
-- **Target Refactoring**: Will be renamed to `src/lib/connector/modules/` as part of Roadmap 0.1
+- **Roadmap 0.1 Status**: Complete. Connector architecture unified under `src/lib/connector/` (see ADR-010).
 
 ---
 
@@ -22,7 +22,7 @@
 
 - `DiscoveredVacancy` (interface)
   - **Description**: Canonical domain type representing a job discovered by automation. All external APIs must be translated to this type.
-  - **Location**: `src/lib/scraper/types.ts:2-17`
+  - **Location**: `src/lib/connector/job-discovery/types.ts:2-17`
   - **Properties**:
     - `title: string` — Job title
     - `employerName: string` — Company/employer name
@@ -39,7 +39,7 @@
 
 - `ConnectorError` (discriminated union type)
   - **Description**: Typed error responses from connector operations.
-  - **Location**: `src/lib/scraper/types.ts:19-23`
+  - **Location**: `src/lib/connector/job-discovery/types.ts:19-23`
   - **Variants**:
     - `{ type: "blocked"; reason: string }` — Access blocked by API (e.g., invalid key)
     - `{ type: "rate_limited"; retryAfter?: number }` — Rate limit exceeded (retryAfter in seconds)
@@ -48,14 +48,14 @@
 
 - `ConnectorResult<T>` (discriminated union type)
   - **Description**: Result type for all connector operations. Provides type-safe error handling.
-  - **Location**: `src/lib/scraper/types.ts:25-27`
+  - **Location**: `src/lib/connector/job-discovery/types.ts:25-27`
   - **Variants**:
     - `{ success: true; data: T }` — Successful operation
     - `{ success: false; error: ConnectorError }` — Failed operation with typed error
 
 - `SearchParams` (interface)
   - **Description**: Input parameters for connector search operations.
-  - **Location**: `src/lib/scraper/types.ts:29-33`
+  - **Location**: `src/lib/connector/job-discovery/types.ts:29-33`
   - **Properties**:
     - `keywords: string` — Search terms (may include || delimiters for EURES multi-keyword)
     - `location: string` — Location filter (format varies by connector)
@@ -63,7 +63,7 @@
 
 - `DataSourceConnector` (interface)
   - **Description**: Main contract for all connector modules. Defines the unified API that all external integrations must implement.
-  - **Location**: `src/lib/scraper/types.ts:35-41`
+  - **Location**: `src/lib/connector/job-discovery/types.ts:35-41`
   - **Methods**:
     - `readonly id: string` — Unique identifier ("eures", "arbeitsagentur", "jsearch")
     - `readonly name: string` — Human-readable name for UI display
@@ -77,7 +77,7 @@
 
 - `ConnectorRegistry` (class)
   - **Description**: Registry that maps connector IDs to factory functions. Enables runtime instantiation of connectors without hard-coded dependencies.
-  - **Location**: `src/lib/scraper/registry.ts:5-27`
+  - **Location**: `src/lib/connector/job-discovery/registry.ts:5-27`
   - **Constructor**: `new ConnectorRegistry()`
   - **Methods**:
     - `register(id: string, factory: ConnectorFactory): void`
@@ -107,7 +107,7 @@
 
 - `connectorRegistry` (singleton)
   - **Description**: Global ConnectorRegistry instance used throughout the application.
-  - **Location**: `src/lib/scraper/registry.ts:29`
+  - **Location**: `src/lib/connector/job-discovery/registry.ts:29`
   - **Type**: `ConnectorRegistry`
   - **Usage**: `connectorRegistry.create("eures")` to instantiate a connector
 
@@ -117,7 +117,7 @@
 
 - `runAutomation(automation: Automation): Promise<RunnerResult>`
   - **Description**: Main orchestrator that executes a job search automation. Coordinates connector search, deduplication, detail enrichment, AI matching, and database persistence.
-  - **Location**: `src/lib/scraper/runner.ts:118-472`
+  - **Location**: `src/lib/connector/job-discovery/runner.ts:118-472`
   - **Parameters**:
     - `automation: Automation` — Automation configuration (keywords, location, jobBoard, matchThreshold, etc.)
   - **Returns**: `RunnerResult` with execution metrics and status
@@ -132,7 +132,7 @@
        c. Optionally enrich via `connector.getDetails()` (if available)
        d. For each job, call `matchJobToResume()` with AI matching
        e. Filter matched jobs by `automation.matchThreshold`
-       f. Map to domain model via `mapScrapedJobToJobRecord()`
+       f. Map to domain model via `mapDiscoveredVacancyToJobRecord()`
        g. Persist matched jobs to database
     6. Update `AutomationRun` with final metrics
     7. Calculate next run time via `calculateNextRunAt()`
@@ -150,14 +150,14 @@
     - Calls AI provider for job matching
   - **Dependencies**:
     - `connectorRegistry` — to instantiate connector
-    - `mapScrapedJobToJobRecord()` — to translate DiscoveredVacancy to Job database record
+    - `mapDiscoveredVacancyToJobRecord()` — to translate DiscoveredVacancy to Job database record
     - `getModel()` — to get AI provider instance
     - `automationLogger` — for structured logging
     - `db` (Prisma) — for database operations
 
 - `matchJobToResume(job: DiscoveredVacancy, resume: ResumeWithSections, aiSettings: AiSettings, userId: string): Promise<MatchResult>`
   - **Description**: Uses AI to score job-resume match (0-100).
-  - **Location**: `src/lib/scraper/runner.ts:496-557`
+  - **Location**: `src/lib/connector/job-discovery/runner.ts:496-557`
   - **Parameters**:
     - `job: DiscoveredVacancy` — The discovered job to evaluate
     - `resume: ResumeWithSections` — User's resume with structured sections
@@ -177,7 +177,7 @@
 
 - `convertResumeForMatch(resume: ResumeWithSections): Promise<string>`
   - **Description**: Converts structured resume to markdown text for AI processing.
-  - **Location**: `src/lib/scraper/runner.ts:559-611`
+  - **Location**: `src/lib/connector/job-discovery/runner.ts:559-611`
   - **Parameters**:
     - `resume: ResumeWithSections` — Structured resume data
   - **Returns**: Markdown-formatted resume text
@@ -199,7 +199,7 @@
 
 - `getExistingJobUrls(userId: string): Promise<Set<string>>`
   - **Description**: Fetches all previously discovered job URLs for deduplication.
-  - **Location**: `src/lib/scraper/runner.ts:474-487`
+  - **Location**: `src/lib/connector/job-discovery/runner.ts:474-487`
   - **Parameters**:
     - `userId: string` — User ID
   - **Returns**: Set of normalized job URLs
@@ -207,7 +207,7 @@
 
 - `finalizeRun(runId: string, data: FinalizeData): Promise<RunnerResult>`
   - **Description**: Persists final run metrics and updates automation schedule.
-  - **Location**: `src/lib/scraper/runner.ts:635-673`
+  - **Location**: `src/lib/connector/job-discovery/runner.ts:635-673`
   - **Parameters**:
     - `runId: string` — AutomationRun ID
     - `data: FinalizeData` — Final metrics (jobsSearched, jobsMatched, etc.)
@@ -220,9 +220,9 @@
 
 **`mapper.ts`** — Domain translation from API types to database types
 
-- `mapScrapedJobToJobRecord(input: MapperInput): Promise<MapperOutput>`
+- `mapDiscoveredVacancyToJobRecord(input: MapperInput): Promise<MapperOutput>`
   - **Description**: Translates DiscoveredVacancy (domain type) to Job database record. Handles findOrCreate logic for job titles, locations, companies, and job sources.
-  - **Location**: `src/lib/scraper/mapper.ts:33-62`
+  - **Location**: `src/lib/connector/job-discovery/mapper.ts:33-62`
   - **Parameters**:
     - `input: MapperInput` with:
       - `vacancy: DiscoveredVacancy` — The discovered job
@@ -243,7 +243,7 @@
 
 - `findOrCreateJobTitle(title: string, userId: string): Promise<string>`
   - **Description**: Finds or creates a job title entity. Uses fuzzy matching on keywords to group similar titles.
-  - **Location**: `src/lib/scraper/mapper.ts:64-100`
+  - **Location**: `src/lib/connector/job-discovery/mapper.ts:64-100`
   - **Parameters**:
     - `title: string` — Job title from API
     - `userId: string` — User ID for scoping
@@ -257,7 +257,7 @@
 
 - `findOrCreateLocation(location: string, userId: string): Promise<string | null>`
   - **Description**: Finds or creates a location entity. Returns null if location is empty.
-  - **Location**: `src/lib/scraper/mapper.ts:102-142`
+  - **Location**: `src/lib/connector/job-discovery/mapper.ts:102-142`
   - **Parameters**:
     - `location: string` — Location from API (e.g., "Berlin, Germany")
     - `userId: string` — User ID for scoping
@@ -272,7 +272,7 @@
 
 - `findOrCreateCompany(company: string, userId: string): Promise<string>`
   - **Description**: Finds or creates a company/employer entity. Uses fuzzy keyword matching.
-  - **Location**: `src/lib/scraper/mapper.ts:144-180`
+  - **Location**: `src/lib/connector/job-discovery/mapper.ts:144-180`
   - **Parameters**:
     - `company: string` — Company name from API
     - `userId: string` — User ID for scoping
@@ -282,7 +282,7 @@
 
 - `getOrCreateJobSource(sourceBoard: string, userId: string): Promise<string>`
   - **Description**: Gets or creates a job source record. Sources are global (not user-scoped internally) but stored with user creation context.
-  - **Location**: `src/lib/scraper/mapper.ts:182-203`
+  - **Location**: `src/lib/connector/job-discovery/mapper.ts:182-203`
   - **Parameters**:
     - `sourceBoard: string` — Source identifier ("eures", "arbeitsagentur", "jsearch")
     - `userId: string` — User ID for tracking
@@ -291,7 +291,7 @@
 
 - `getDefaultJobStatus(): Promise<string>`
   - **Description**: Gets or creates the default "new" job status.
-  - **Location**: `src/lib/scraper/mapper.ts:205-215`
+  - **Location**: `src/lib/connector/job-discovery/mapper.ts:205-215`
   - **Returns**: Status ID
   - **Database**: `db.jobStatus.findFirst()`, `db.jobStatus.create()`
 
@@ -301,28 +301,28 @@
 
 - `normalizeJobUrl(url: string): string`
   - **Description**: Removes tracking parameters (UTM, ref, fbclid, etc.) from job URLs to enable deduplication.
-  - **Location**: `src/lib/scraper/utils.ts:17-27`
+  - **Location**: `src/lib/connector/job-discovery/utils.ts:17-27`
   - **Parameters**: `url: string`
   - **Returns**: Normalized URL without tracking params
   - **Implementation**: Parses URL, deletes TRACKING_PARAMS (utm_*, ref, fbclid, gclid, msclkid, tk, from, vjk), reconstructs
 
 - `normalizeForSearch(str: string): string`
   - **Description**: Converts text to lowercase, removes extra spaces, replaces special chars with hyphens. Used for database search fields.
-  - **Location**: `src/lib/scraper/utils.ts:29-35`
+  - **Location**: `src/lib/connector/job-discovery/utils.ts:29-35`
   - **Parameters**: `str: string`
   - **Returns**: Normalized string (e.g., "Senior Developer" → "senior-developer")
   - **Implementation**: toLowerCase → trim → replace spaces with hyphen → remove non-alphanumeric
 
 - `extractKeywords(str: string): string[]`
   - **Description**: Extracts meaningful keywords from text by splitting on delimiters and filtering stop words.
-  - **Location**: `src/lib/scraper/utils.ts:54-59`
+  - **Location**: `src/lib/connector/job-discovery/utils.ts:54-59`
   - **Parameters**: `str: string`
   - **Returns**: Array of keywords (length > 2, not in STOP_WORDS)
   - **Stop Words**: "senior", "jr", "junior", "sr", "inc", "llc", "ltd", "corp", "corporation", "the", "a", "an", "co", "company"
 
 - `extractCityName(location: string): string | null`
   - **Description**: Extracts the first city name from a comma-separated location string.
-  - **Location**: `src/lib/scraper/utils.ts:61-67`
+  - **Location**: `src/lib/connector/job-discovery/utils.ts:61-67`
   - **Parameters**: `location: string` (e.g., "Berlin, Germany")
   - **Returns**: City name or null if not found
   - **Implementation**: Splits on comma, lowercases first part
@@ -334,7 +334,7 @@
 #### Overview
 
 - **Name**: EURES Connector Module
-- **Location**: `src/lib/scraper/eures/`
+- **Location**: `src/lib/connector/job-discovery/modules/eures/`
 - **External API**: EURES Job Search Engine (europa.eu/eures/api)
 - **Base URL**: `https://europa.eu/eures/api/jv-searchengine/public`
 - **Connector ID**: "eures"
@@ -347,7 +347,7 @@
 
 - `createEuresConnector(): DataSourceConnector`
   - **Description**: Factory function that creates the EURES connector instance. Registers metadata and implements search/getDetails.
-  - **Location**: `src/lib/scraper/eures/index.ts:98-257`
+  - **Location**: `src/lib/connector/job-discovery/modules/eures/index.ts:98-257`
   - **Returns**: DataSourceConnector instance with id="eures"
   - **Properties**:
     - `id: "eures"`
@@ -356,7 +356,7 @@
 
 - `search(params: SearchParams): Promise<ConnectorResult<DiscoveredVacancy[]>>`
   - **Description**: Searches EURES for jobs. Supports pagination and multi-location queries.
-  - **Location**: `src/lib/scraper/eures/index.ts:104-211`
+  - **Location**: `src/lib/connector/job-discovery/modules/eures/index.ts:104-211`
   - **Parameters**:
     - `params.keywords` — Search terms (supports || delimited multi-keyword)
     - `params.location` — Comma-separated location codes (e.g., "de-ns,fr-ile")
@@ -384,7 +384,7 @@
 
 - `getDetails(externalId: string): Promise<ConnectorResult<DiscoveredVacancy>>`
   - **Description**: Fetches full job details by EURES vacancy ID. Enriches with application deadline and instructions.
-  - **Location**: `src/lib/scraper/eures/index.ts:213-255`
+  - **Location**: `src/lib/connector/job-discovery/modules/eures/index.ts:213-255`
   - **Parameters**:
     - `externalId: string` — EURES vacancy ID (stored in `DiscoveredVacancy.externalId`)
   - **Returns**: `ConnectorResult<DiscoveredVacancy>`
@@ -397,7 +397,7 @@
 
 - `translateDetail(detail: EuresVacancyDetail, language: string): DiscoveredVacancy`
   - **Description**: Translates EURES detail response to DiscoveredVacancy. Handles missing jvProfiles gracefully.
-  - **Location**: `src/lib/scraper/eures/index.ts:30-67`
+  - **Location**: `src/lib/connector/job-discovery/modules/eures/index.ts:30-67`
   - **Parameters**:
     - `detail: EuresVacancyDetail` — API response
     - `language: string` — Preferred profile language
@@ -412,12 +412,12 @@
 
 - `stripDetailHtml(html: string): string`
   - **Description**: Removes HTML tags and entities from detail text.
-  - **Location**: `src/lib/scraper/eures/index.ts:69-83`
+  - **Location**: `src/lib/connector/job-discovery/modules/eures/index.ts:69-83`
   - **Converts**: `<br/>` → `\n`, `</p>` → `\n\n`, `</li>` → `\n`, `&amp;` → `&`, etc.
 
 - `mapDetailScheduleCode(codes?: string[]): "full_time" | "part_time" | "contract" | undefined`
   - **Description**: Maps EURES schedule codes to canonical employment types.
-  - **Location**: `src/lib/scraper/eures/index.ts:85-96`
+  - **Location**: `src/lib/connector/job-discovery/modules/eures/index.ts:85-96`
   - **Mapping**: "FullTime" → "full_time", "PartTime"/"FlexTime" → "part_time", others → undefined
 
 #### Translator (Search Results)
@@ -426,7 +426,7 @@
 
 - `translateEuresVacancy(jv: EuresJobVacancy, requestLanguage: string): DiscoveredVacancy`
   - **Description**: Translates EURES search-result vacancy (not detail) to DiscoveredVacancy. Used for search results; detail response handled by `translateDetail()`.
-  - **Location**: `src/lib/scraper/eures/translator.ts:13-33`
+  - **Location**: `src/lib/connector/job-discovery/modules/eures/translator.ts:13-33`
   - **Parameters**:
     - `jv: EuresJobVacancy` — Search result from API
     - `requestLanguage: string` — Language to use for translations
@@ -440,12 +440,12 @@
 
 - `formatLocation(locationMap: Record<string, string[]>): string`
   - **Description**: Formats country→cities map to readable location string.
-  - **Location**: `src/lib/scraper/eures/translator.ts:51-61`
+  - **Location**: `src/lib/connector/job-discovery/modules/eures/translator.ts:51-61`
   - **Format**: "City, Country; City2, Country2" or "Europe" if empty
 
 - `mapScheduleCode(codes: string[]): "full_time" | "part_time" | "contract" | undefined`
   - **Description**: Maps EURES schedule codes (lowercase variants).
-  - **Location**: `src/lib/scraper/eures/translator.ts:63-77`
+  - **Location**: `src/lib/connector/job-discovery/modules/eures/translator.ts:63-77`
   - **Mapping**: "fulltime" → "full_time", "parttime"/"flextime" → "part_time"
 
 #### Resilience
@@ -454,7 +454,7 @@
 
 - `resilientFetch<T>(url: string, init: RequestInit): Promise<T>`
   - **Description**: Wraps fetch with cockatiel resilience policies (retry, circuit breaker, timeout, bulkhead, rate limiting).
-  - **Location**: `src/lib/scraper/eures/resilience.ts:64-81`
+  - **Location**: `src/lib/connector/job-discovery/modules/eures/resilience.ts:64-81`
   - **Parameters**:
     - `url: string` — API endpoint URL
     - `init: RequestInit` — Fetch options
@@ -469,13 +469,13 @@
 
 - `EuresApiError` (class)
   - **Description**: Custom error for EURES API responses.
-  - **Location**: `src/lib/scraper/eures/resilience.ts:21-28`
+  - **Location**: `src/lib/connector/job-discovery/modules/eures/resilience.ts:21-28`
   - **Constructor**: `new EuresApiError(status: number, message: string)`
   - **Properties**: `status: number` (HTTP status code)
 
 - `euresPolicy` (composite policy)
   - **Description**: Stacked resilience policies applied to all EURES requests.
-  - **Location**: `src/lib/scraper/eures/resilience.ts:30-60`
+  - **Location**: `src/lib/connector/job-discovery/modules/eures/resilience.ts:30-60`
   - **Policies** (in order):
     1. **Retry** (`euresRetry`): Retry on 5xx, 429, or network errors. Max 3 attempts with exponential backoff.
     2. **Circuit Breaker** (`euresBreaker`): Open after 5 consecutive 5xx errors. Half-open after 30s.
@@ -489,7 +489,7 @@
 
 - `TokenBucketRateLimiter` (class)
   - **Description**: Simple token bucket rate limiter. Allows bursts up to capacity, then paces requests.
-  - **Location**: `src/lib/scraper/eures/rate-limiter.ts:8-43`
+  - **Location**: `src/lib/connector/job-discovery/modules/eures/rate-limiter.ts:8-43`
   - **Constructor**: `new TokenBucketRateLimiter(capacity: number, refillRateMs: number)`
     - `capacity: number` — Tokens available before rate limiting
     - `refillRateMs: number` — Milliseconds to refill one token
@@ -508,7 +508,7 @@
 #### Overview
 
 - **Name**: Arbeitsagentur (German Federal Employment Agency) Connector Module
-- **Location**: `src/lib/scraper/arbeitsagentur/`
+- **Location**: `src/lib/connector/job-discovery/modules/arbeitsagentur/`
 - **External API**: Arbeitsagentur Jobsuche REST API v4 (rest.arbeitsagentur.de/jobboerse/jobsuche-service)
 - **Base URL**: `https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4`
 - **Connector ID**: "arbeitsagentur"
@@ -521,7 +521,7 @@
 
 - `createArbeitsagenturConnector(): DataSourceConnector`
   - **Description**: Factory function for Arbeitsagentur connector.
-  - **Location**: `src/lib/scraper/arbeitsagentur/index.ts:170-271`
+  - **Location**: `src/lib/connector/job-discovery/modules/arbeitsagentur/index.ts:170-271`
   - **Returns**: DataSourceConnector with id="arbeitsagentur"
   - **Properties**:
     - `id: "arbeitsagentur"`
@@ -530,7 +530,7 @@
 
 - `search(params: SearchParams): Promise<ConnectorResult<DiscoveredVacancy[]>>`
   - **Description**: Searches Arbeitsagentur for jobs in Germany.
-  - **Location**: `src/lib/scraper/arbeitsagentur/index.ts:176-232`
+  - **Location**: `src/lib/connector/job-discovery/modules/arbeitsagentur/index.ts:176-232`
   - **Parameters**:
     - `params.keywords` — Search query (single string, not multi-keyword)
     - `params.location` — City or postal code
@@ -552,7 +552,7 @@
 
 - `getDetails(externalId: string): Promise<ConnectorResult<DiscoveredVacancy>>`
   - **Description**: Fetches full job details by reference number (refnr).
-  - **Location**: `src/lib/scraper/arbeitsagentur/index.ts:235-269`
+  - **Location**: `src/lib/connector/job-discovery/modules/arbeitsagentur/index.ts:235-269`
   - **Parameters**:
     - `externalId: string` — Job reference number (refnr)
   - **Returns**: `ConnectorResult<DiscoveredVacancy>`
@@ -566,7 +566,7 @@
 
 - `buildDetailUrl(hashId?: string, refnr?: string): string`
   - **Description**: Constructs public detail URL for Arbeitsagentur job portal.
-  - **Location**: `src/lib/scraper/arbeitsagentur/index.ts:30-38`
+  - **Location**: `src/lib/connector/job-discovery/modules/arbeitsagentur/index.ts:30-38`
   - **Parameters**:
     - `hashId?: string` — Used if available (from detail response)
     - `refnr?: string` — Fallback (reference number)
@@ -575,7 +575,7 @@
 
 - `mapEmploymentType(arbeitszeit?: string): "full_time" | "part_time" | "contract" | undefined`
   - **Description**: Maps Arbeitsagentur employment type codes to canonical types.
-  - **Location**: `src/lib/scraper/arbeitsagentur/index.ts:49-61`
+  - **Location**: `src/lib/connector/job-discovery/modules/arbeitsagentur/index.ts:49-61`
   - **Mapping**:
     - "vz" (Vollzeit) → "full_time"
     - "tz" (Teilzeit) → "part_time"
@@ -583,31 +583,31 @@
 
 - `buildLocationString(arbeitsort: ArbeitsagenturJob["arbeitsort"]): string`
   - **Description**: Formats location object to readable string.
-  - **Location**: `src/lib/scraper/arbeitsagentur/index.ts:66-73`
+  - **Location**: `src/lib/connector/job-discovery/modules/arbeitsagentur/index.ts:66-73`
   - **Returns**: "City, Region" or "Deutschland" if empty
   - **Logic**: Combines ort and region if different, else defaults to "Deutschland"
 
 - `stripHtml(html: string): string`
   - **Description**: Removes HTML tags and entities (same as EURES).
-  - **Location**: `src/lib/scraper/arbeitsagentur/index.ts:78-92`
+  - **Location**: `src/lib/connector/job-discovery/modules/arbeitsagentur/index.ts:78-92`
 
 - `translateJob(job: ArbeitsagenturJob): DiscoveredVacancy`
   - **Description**: Translates search-result job to DiscoveredVacancy. Note: search response includes brief "beruf" field, not full description.
-  - **Location**: `src/lib/scraper/arbeitsagentur/index.ts:99-113`
+  - **Location**: `src/lib/connector/job-discovery/modules/arbeitsagentur/index.ts:99-113`
   - **Parameters**: `job: ArbeitsagenturJob`
   - **Returns**: DiscoveredVacancy with description set to beruf (teaser, not full)
   - **Details**: Uses hashId or refnr for URL, maps arbeitszeit, stores refnr as externalId
 
 - `translateDetail(detail: ArbeitsagenturJobDetail): DiscoveredVacancy`
   - **Description**: Translates detail response to DiscoveredVacancy with full description and application instructions.
-  - **Location**: `src/lib/scraper/arbeitsagentur/index.ts:118-140`
+  - **Location**: `src/lib/connector/job-discovery/modules/arbeitsagentur/index.ts:118-140`
   - **Parameters**: `detail: ArbeitsagenturJobDetail`
   - **Returns**: DiscoveredVacancy with full stellenbeschreibung and bewerbung
   - **Details**: Prefers stellenbeschreibung over beruf for description, includes salary and application instructions
 
 - `buildSearchParams(params: SearchParams, page: number): URLSearchParams`
   - **Description**: Constructs URL search parameters for Arbeitsagentur API.
-  - **Location**: `src/lib/scraper/arbeitsagentur/index.ts:151-168`
+  - **Location**: `src/lib/connector/job-discovery/modules/arbeitsagentur/index.ts:151-168`
   - **Parameters**:
     - `params: SearchParams` — Keywords, location, connectorParams
     - `page: number` — 0-based page index
@@ -625,7 +625,7 @@
 
 - `resilientFetch<T>(url: string, init: RequestInit): Promise<T>`
   - **Description**: Wraps fetch with Arbeitsagentur resilience policy.
-  - **Location**: `src/lib/scraper/arbeitsagentur/resilience.ts:76-93`
+  - **Location**: `src/lib/connector/job-discovery/modules/arbeitsagentur/resilience.ts:76-93`
   - **Parameters**:
     - `url: string` — API endpoint
     - `init: RequestInit` — Fetch options (must include X-API-Key header)
@@ -634,12 +634,12 @@
 
 - `ArbeitsagenturApiError` (class)
   - **Description**: Custom error for Arbeitsagentur API responses.
-  - **Location**: `src/lib/scraper/arbeitsagentur/resilience.ts:21-28`
+  - **Location**: `src/lib/connector/job-discovery/modules/arbeitsagentur/resilience.ts:21-28`
   - **Constructor**: `new ArbeitsagenturApiError(status: number, message: string)`
 
 - `arbeitsagenturPolicy` (composite policy)
   - **Description**: Resilience policy for Arbeitsagentur requests.
-  - **Location**: `src/lib/scraper/arbeitsagentur/resilience.ts:30-64`
+  - **Location**: `src/lib/connector/job-discovery/modules/arbeitsagentur/resilience.ts:30-64`
   - **Policies**:
     1. Retry: 3 attempts on 5xx/429/network errors, exponential backoff
     2. Circuit Breaker: Open after 5 consecutive 5xx, half-open after 30s
@@ -653,7 +653,7 @@
 
 - `ArbeitsagenturSearchResponse` (interface)
   - **Description**: Top-level search response envelope.
-  - **Location**: `src/lib/scraper/arbeitsagentur/types.ts:8-13`
+  - **Location**: `src/lib/connector/job-discovery/modules/arbeitsagentur/types.ts:8-13`
   - **Properties**:
     - `stellenangebote: ArbeitsagenturJob[]` — Array of job listings
     - `maxErgebnisse: number` — Total available results
@@ -662,7 +662,7 @@
 
 - `ArbeitsagenturJob` (interface)
   - **Description**: Single job listing from search response.
-  - **Location**: `src/lib/scraper/arbeitsagentur/types.ts:16-43`
+  - **Location**: `src/lib/connector/job-discovery/modules/arbeitsagentur/types.ts:16-43`
   - **Key Properties**:
     - `refnr: string` — Reference number (unique ID)
     - `hashId?: string` — Hash ID for public URL
@@ -676,12 +676,12 @@
 
 - `ArbeitsagenturArbeitsort` (interface)
   - **Description**: Location details.
-  - **Location**: `src/lib/scraper/arbeitsagentur/types.ts:46-59`
+  - **Location**: `src/lib/connector/job-discovery/modules/arbeitsagentur/types.ts:46-59`
   - **Properties**: `ort` (city), `region` (state), `plz` (postal code), `land` (country), `lat`/`lon` (coordinates)
 
 - `ArbeitsagenturJobDetail` (interface)
   - **Description**: Detail response for single job (GET /jobdetails/{refnr}).
-  - **Location**: `src/lib/scraper/arbeitsagentur/types.ts:62-80`
+  - **Location**: `src/lib/connector/job-discovery/modules/arbeitsagentur/types.ts:62-80`
   - **Additional Properties**:
     - `stellenbeschreibung?: string` — Full job description (HTML)
     - `verguetung?: string` — Salary/compensation description
@@ -694,7 +694,7 @@
 #### Overview
 
 - **Name**: JSearch Connector Module (RapidAPI/Google Jobs)
-- **Location**: `src/lib/scraper/jsearch/`
+- **Location**: `src/lib/connector/job-discovery/modules/jsearch/`
 - **External API**: JSearch via RapidAPI (jsearch.p.rapidapi.com)
 - **Base URL**: `https://jsearch.p.rapidapi.com`
 - **Connector ID**: "jsearch"
@@ -707,7 +707,7 @@
 
 - `createJSearchConnector(): DataSourceConnector`
   - **Description**: Factory function for JSearch connector.
-  - **Location**: `src/lib/scraper/jsearch/index.ts:37-112`
+  - **Location**: `src/lib/connector/job-discovery/modules/jsearch/index.ts:37-112`
   - **Returns**: DataSourceConnector with id="jsearch"
   - **Properties**:
     - `id: "jsearch"`
@@ -716,7 +716,7 @@
 
 - `search(params: SearchParams): Promise<ConnectorResult<DiscoveredVacancy[]>>`
   - **Description**: Searches JSearch (Google Jobs API) for jobs. Returns only first page (100 jobs).
-  - **Location**: `src/lib/scraper/jsearch/index.ts:43-110`
+  - **Location**: `src/lib/connector/job-discovery/modules/jsearch/index.ts:43-110`
   - **Parameters**:
     - `params.keywords` — Job title/keywords
     - `params.location` — City or region
@@ -738,14 +738,14 @@
 
 - `translateJSearchJob(job: JSearchJob): DiscoveredVacancy`
   - **Description**: Translates JSearch result to DiscoveredVacancy.
-  - **Location**: `src/lib/scraper/jsearch/index.ts:114-129`
+  - **Location**: `src/lib/connector/job-discovery/modules/jsearch/index.ts:114-129`
   - **Parameters**: `job: JSearchJob`
   - **Returns**: DiscoveredVacancy
   - **Details**: Includes full description (JSearch returns complete job details), formats salary via `formatSalary()`
 
 - `mapEmploymentType(raw?: string): "full_time" | "part_time" | "contract" | undefined`
   - **Description**: Maps JSearch employment type strings to canonical types.
-  - **Location**: `src/lib/scraper/jsearch/index.ts:131-150`
+  - **Location**: `src/lib/connector/job-discovery/modules/jsearch/index.ts:131-150`
   - **Mapping**:
     - "fulltime"/"full_time"/"full-time" → "full_time"
     - "parttime"/"part_time"/"part-time" → "part_time"
@@ -753,7 +753,7 @@
 
 - `formatSalary(job: JSearchJob): string | undefined`
   - **Description**: Formats min/max salary to readable string.
-  - **Location**: `src/lib/scraper/jsearch/index.ts:152-171`
+  - **Location**: `src/lib/connector/job-discovery/modules/jsearch/index.ts:152-171`
   - **Returns**: "$X - $Y per {period}" or "$X+" or "Up to $Y" or undefined
   - **Format**: Uses job_salary_period (default: "year"), localizes numbers
 
@@ -761,7 +761,7 @@
 
 - `JSearchJob` (interface)
   - **Description**: Single job from JSearch response.
-  - **Location**: `src/lib/scraper/jsearch/index.ts:11-29`
+  - **Location**: `src/lib/connector/job-discovery/modules/jsearch/index.ts:11-29`
   - **Key Properties**:
     - `job_id: string` — Unique job ID (used as externalId)
     - `job_title: string` — Job title
@@ -775,7 +775,7 @@
 
 - `JSearchResponse` (interface)
   - **Description**: Top-level response envelope.
-  - **Location**: `src/lib/scraper/jsearch/index.ts:31-35`
+  - **Location**: `src/lib/connector/job-discovery/modules/jsearch/index.ts:31-35`
   - **Properties**:
     - `status: string` — Response status ("success")
     - `request_id: string` — Request ID for debugging
@@ -788,7 +788,7 @@
 **`connectors.ts`** — Global connector initialization
 
 - **Description**: Registers all available connectors in the global registry.
-- **Location**: `src/lib/scraper/connectors.ts:1-11`
+- **Location**: `src/lib/connector/job-discovery/connectors.ts:1-11`
 - **Code**:
   ```typescript
   connectorRegistry.register("jsearch", createJSearchConnector);
@@ -809,7 +809,7 @@
 - `src/models/userSettings.model` — AiSettings, defaultUserSettings (runner)
 - `src/models/automation.model` — DiscoveryStatus (mapper)
 - `src/lib/db` — Prisma client for database operations (runner, mapper)
-- `src/lib/ai` — AI provider utilities (generateText, getModel, JobMatchSchema, prompts) (runner)
+- `src/lib/connector/ai-provider` — AI provider utilities (generateText, getModel, JobMatchSchema, prompts) (runner)
 - `src/lib/automation-logger` — Structured logging for automations (runner)
 - `src/lib/debug` — Debug logging utility (runner)
 
@@ -861,7 +861,7 @@ runAutomation()
   ├─ For each job:
   │  ├─ matchJobToResume() → AI matching (0-100 score)
   │  ├─ Filter by automation.matchThreshold
-  │  ├─ mapScrapedJobToJobRecord()
+  │  ├─ mapDiscoveredVacancyToJobRecord()
   │  │  ├─ findOrCreateJobTitle()
   │  │  ├─ findOrCreateLocation()
   │  │  ├─ findOrCreateCompany()
@@ -950,7 +950,7 @@ All connectors return `ConnectorResult<T>` — never throw exceptions (except mi
 
 ### Database Error Handling
 
-`mapScrapedJobToJobRecord()` and `db.job.create()` may throw:
+`mapDiscoveredVacancyToJobRecord()` and `db.job.create()` may throw:
 
 | Scenario | Behavior |
 |---|---|
@@ -1067,7 +1067,7 @@ classDiagram
             +matchJobToResume(job, resume, aiSettings, userId) Promise~MatchResult~
         }
         class MapperModule {
-            +mapScrapedJobToJobRecord(input) Promise~MapperOutput~
+            +mapDiscoveredVacancyToJobRecord(input) Promise~MapperOutput~
             -findOrCreateJobTitle(title, userId) Promise~string~
             -findOrCreateLocation(location, userId) Promise~string|null~
             -findOrCreateCompany(company, userId) Promise~string~
@@ -1282,31 +1282,36 @@ classDiagram
 
 ---
 
-## Future Roadmap
+## Current Structure (Post-Roadmap 0.1)
 
-As per CLAUDE.md, the connector layer will be refactored:
+The connector architecture is unified under `src/lib/connector/`:
 
-- **Target Path**: `src/lib/connector/modules/`
 - **Structure**:
   ```
   src/lib/connector/
-    ├── modules/
-    │   ├── eures/
-    │   ├── arbeitsagentur/
-    │   ├── jsearch/
-    │   └── {future-modules}/
-    ├── types.ts        (shared interfaces)
-    ├── registry.ts     (factory registry)
-    ├── runner.ts       (orchestration)
-    ├── mapper.ts       (domain translation)
-    └── utils.ts        (text processing)
+    ├── job-discovery/          ← Job board connectors (DataSourceConnector)
+    │   ├── modules/
+    │   │   ├── eures/
+    │   │   ├── arbeitsagentur/
+    │   │   ├── jsearch/
+    │   │   └── {future-modules}/
+    │   ├── types.ts            (shared interfaces)
+    │   ├── registry.ts         (factory registry)
+    │   ├── runner.ts           (orchestration)
+    │   ├── mapper.ts           (domain translation)
+    │   └── utils.ts            (text processing)
+    └── ai-provider/            ← AI provider connectors (AIProviderConnector)
+        └── modules/
+            ├── ollama/
+            ├── openai/
+            └── deepseek/
   ```
 
-New modules should follow the same pattern:
-1. Create `src/lib/connector/modules/{name}/index.ts` implementing `DataSourceConnector`
-2. Create `src/lib/connector/modules/{name}/types.ts` for API-specific types
-3. Create `src/lib/connector/modules/{name}/resilience.ts` for fault tolerance (if external API)
-4. Register in `src/lib/connector/connectors.ts` via `connectorRegistry.register()`
+New job discovery modules should follow the same pattern:
+1. Create `src/lib/connector/job-discovery/modules/{name}/index.ts` implementing `DataSourceConnector`
+2. Create `src/lib/connector/job-discovery/modules/{name}/types.ts` for API-specific types
+3. Create `src/lib/connector/job-discovery/modules/{name}/resilience.ts` for fault tolerance (if external API)
+4. Register in `src/lib/connector/job-discovery/connectors.ts` via `connectorRegistry.register()`
 
 ---
 

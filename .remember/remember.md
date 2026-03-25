@@ -1,11 +1,13 @@
 # Handoff
 
 ## State
-All 48 audit bugs FIXED (48/48). A18 ActionResult refactoring + Promise<any> typing complete. A21 Developer Settings with debug toggle live. B7 Ollama SSRF patched with defense-in-depth. 9 ADRs in docs/adr/. 808 tests passing. Full i18n (540+ keys, 4 locales). Branch `main` at latest push.
+All 48 audit bugs FIXED (48/48). A18 ActionResult refactoring + Promise<any> typing complete. A21 Developer Settings with debug toggle live. B7 Ollama SSRF patched with defense-in-depth. 10 ADRs in docs/adr/. 808 tests passing. Full i18n (540+ keys, 4 locales). Branch `main` at latest push.
+
+Roadmap 0.1 COMPLETE: Connector architecture unified under `src/lib/connector/`. Job discovery modules at `src/lib/connector/job-discovery/modules/` (eures, arbeitsagentur, jsearch). AI providers at `src/lib/connector/ai-provider/modules/` (ollama, openai, deepseek). `mapScrapedJobToJobRecord` renamed to `mapDiscoveredVacancyToJobRecord`. ADR-010 documents the decision. All documentation updated.
 
 ## Next
-1. Roadmap 0.1: Rename `src/lib/scraper/` → `src/lib/connector/modules/` (ACL structure)
-2. Remaining Low UI bugs (C7, C8, C10, C12, C16, C17, C18) were fixed in earlier sessions
+1. Roadmap 0.2: ActionResult<T> typing completion (Pattern A/B/C)
+2. Roadmap 0.3: Domain-Model Alignment
 3. Continue with Roadmap features (see docs/ROADMAP.md)
 
 ## Context

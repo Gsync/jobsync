@@ -2,32 +2,37 @@
 
 ## 0. Infrastruktur-Refactoring (Priorität)
 
-### 0.1 App ↔ Connector ↔ Module Umstellung
-Bestehende Infrastruktur auf das ACL-Pattern (Anti-Corruption Layer) migrieren.
+### 0.1 App ↔ Connector ↔ Module Umstellung -- DONE
+Bestehende Infrastruktur auf das ACL-Pattern (Anti-Corruption Layer) migriert. Siehe ADR-010.
 
 Der **Connector** ist die gemeinsame Schnittstelle (ACL). **Module** sind die konkreten Anbindungen an externe Systeme.
 
 ```
-src/lib/connector/              ← DER Connector (Shared Domain)
-  types.ts                      ← ConnectorResult<T>, DiscoveredVacancy, SearchParams
-  connector.ts                  ← DataSourceConnector Interface (der ACL-Vertrag)
-  registry.ts                   ← Context Map (Module-Name → Factory)
-  runner.ts                     ← App-Layer Orchestrierung
-
-  modules/                      ← Konkrete Anbindungen (je ein Bounded Context)
-    eures/                      ← Module: EURES API
-      index.ts                    (implementiert DataSourceConnector)
-      types.ts                    (EURES-spezifische Typen)
-      resilience.ts               (Circuit Breaker, Retry)
-    arbeitsagentur/             ← Module: Arbeitsagentur API
-    jsearch/                    ← Module: JSearch/Google Jobs API
+src/lib/connector/                          ← Unified Connector Architecture
+  job-discovery/                            ← Job Board Connectors (DataSourceConnector)
+    types.ts                                ← ConnectorResult<T>, DiscoveredVacancy, SearchParams
+    connector.ts                            ← DataSourceConnector Interface (der ACL-Vertrag)
+    registry.ts                             ← Context Map (Module-Name → Factory)
+    runner.ts                               ← App-Layer Orchestrierung
+    mapper.ts                               ← mapDiscoveredVacancyToJobRecord
+    modules/                                ← Konkrete Anbindungen (je ein Bounded Context)
+      eures/                                ← Module: EURES API
+      arbeitsagentur/                       ← Module: Arbeitsagentur API
+      jsearch/                              ← Module: JSearch/Google Jobs API
+  ai-provider/                              ← AI Provider Connectors (AIProviderConnector)
+    modules/
+      ollama/                               ← Module: Ollama (lokal)
+      openai/                               ← Module: OpenAI (Cloud)
+      deepseek/                             ← Module: DeepSeek (Cloud)
 ```
 
-- **Migration:** `src/lib/scraper/` → `src/lib/connector/`
-  - Shared files (`types.ts`, `registry.ts`, `runner.ts`, `mapper.ts`) → `src/lib/connector/`
-  - Module-Ordner (`eures/`, `arbeitsagentur/`, `jsearch/`) → `src/lib/connector/modules/`
-- **Imports aktualisieren:** `@/lib/scraper/` → `@/lib/connector/`
-- **Tests anpassen:** 748+ Tests müssen bestehen
+- **Migration abgeschlossen:**
+  - `src/lib/scraper/` -> `src/lib/connector/job-discovery/`
+  - `src/lib/ai/` -> `src/lib/connector/ai-provider/`
+  - Module-Ordner (`eures/`, `arbeitsagentur/`, `jsearch/`) -> `src/lib/connector/job-discovery/modules/`
+  - `mapScrapedJobToJobRecord` -> `mapDiscoveredVacancyToJobRecord`
+- **Imports aktualisiert:** `@/lib/scraper/` -> `@/lib/connector/job-discovery/`, `@/lib/ai/` -> `@/lib/connector/ai-provider/`
+- **Tests bestanden**
 
 ### 0.2 ActionResult<T> Typisierung vervollständigen
 - Pattern A (55 Funktionen): `Promise<any>` → `Promise<ActionResult<unknown>>` (in Arbeit)
@@ -488,10 +493,11 @@ Dynamische Dateipfade und Dateinamen:
 
 ---
 
-## Implementierte Features (Stand: 2026-03-23)
+## Implementierte Features (Stand: 2026-03-25)
 
 | Feature | Status |
 |---|---|
+| Roadmap 0.1: Connector Architecture Unification (ADR-010) | ✅ Implementiert |
 | EURES Connector (EU Jobs) | ✅ Implementiert |
 | JSearch Connector (Google Jobs) | ✅ Upstream |
 | EURES Location Combobox (NUTS + Flags) | ✅ Implementiert |

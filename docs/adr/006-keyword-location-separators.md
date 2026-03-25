@@ -12,7 +12,7 @@ Two different separators are needed because the two fields have different value 
 - **Location codes** are short, unambiguous NUTS codes and country codes (e.g. `DE`, `DE-NS`, `FR`). Commas are safe because location codes never contain commas.
 - **Keywords** are free-text job titles and skill terms entered by users (e.g. `Senior Software Engineer`, `React, TypeScript`). Commas appear naturally inside individual keyword phrases, particularly in skill lists. Using a comma as the keyword separator would silently split `"React, TypeScript"` into two separate keywords — `"React"` and `"TypeScript"` — changing search semantics without user awareness.
 
-The EURES connector (`src/lib/scraper/eures/index.ts`) splits these fields as follows:
+The EURES connector (`src/lib/connector/job-discovery/modules/eures/index.ts`) splits these fields as follows:
 
 ```ts
 // Keywords: split on ||

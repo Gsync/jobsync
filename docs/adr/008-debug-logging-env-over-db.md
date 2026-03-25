@@ -5,7 +5,7 @@ Accepted
 
 ## Context
 
-The codebase contained 60+ `console.log`/`console.error` calls across 30 files. Many were debug-level orchestration logs in the scheduler (`src/lib/scheduler/index.ts`), automation runner (`src/lib/scraper/runner.ts`), and automation logger (`src/lib/automation-logger.ts`) that clutter production output but are essential during development and troubleshooting.
+The codebase contained 60+ `console.log`/`console.error` calls across 30 files. Many were debug-level orchestration logs in the scheduler (`src/lib/scheduler/index.ts`), automation runner (`src/lib/connector/job-discovery/runner.ts`), and automation logger (`src/lib/automation-logger.ts`) that clutter production output but are essential during development and troubleshooting.
 
 Bug A21 required a mechanism to gate these logs. Two architectural approaches were considered:
 

@@ -17,7 +17,7 @@ The layer enforces three architectural invariants:
 2. **Uniform error model**: Every operation returns `ConnectorResult<T>` — a discriminated union of success and typed failure. Exceptions never propagate across the ACL boundary.
 3. **Pluggable modules**: New job boards are added by implementing `DataSourceConnector` and registering a factory in `ConnectorRegistry`. No other code changes are required.
 
-> **Note — Roadmap 0.1 rename**: The current source path `src/lib/scraper/` will be renamed to `src/lib/connector/` with module implementations moved to a `modules/` subdirectory. Component names in this document use the target naming to reflect architectural intent.
+> **Note**: The Roadmap 0.1 connector restructuring is complete. Source files are located at `src/lib/connector/job-discovery/` with module implementations in the `modules/` subdirectory. AI providers have been moved to `src/lib/connector/ai-provider/`.
 
 ---
 
@@ -29,7 +29,7 @@ The Connector Architecture container is composed of six logical components.
 
 ### 1. Connector Shared Layer
 
-**Files**: `src/lib/scraper/types.ts`, `src/lib/scraper/registry.ts`, `src/lib/scraper/connectors.ts`, `src/lib/scraper/index.ts`
+**Files**: `src/lib/connector/job-discovery/types.ts`, `src/lib/connector/job-discovery/registry.ts`, `src/lib/connector/job-discovery/connectors.ts`, `src/lib/connector/job-discovery/index.ts`
 
 **Purpose**: Defines the shared domain language and the plugin registry that binds the App layer to the module implementations. This is the ACL kernel — everything else depends on it but it depends on nothing module-specific.
 
@@ -65,7 +65,7 @@ availableConnectors(): string[]
 
 ### 2. Automation Runner
 
-**Files**: `src/lib/scraper/runner.ts`, `src/lib/scraper/schedule.ts`
+**Files**: `src/lib/connector/job-discovery/runner.ts`, `src/lib/connector/job-discovery/schedule.ts`
 
 **Purpose**: Orchestrates the end-to-end lifecycle of a single automation run. Coordinates the connector call, deduplication, AI matching, persistence, and run-state management. This is the highest-level component in the Connector layer; it is the only component with knowledge of both the Connector contracts and the App domain models (`Automation`, `AutomationRun`, `Resume`).
 
@@ -110,7 +110,7 @@ isAutomationDue(nextRunAt: Date | null): boolean
 
 ### 3. Vacancy Mapper
 
-**Files**: `src/lib/scraper/mapper.ts`, `src/lib/scraper/utils.ts`
+**Files**: `src/lib/connector/job-discovery/mapper.ts`, `src/lib/connector/job-discovery/utils.ts`
 
 **Purpose**: Translates a `DiscoveredVacancy` value object into a Prisma-compatible job record, resolving or creating all required reference entities (job title, company, location, job source, default status) via fuzzy matching to avoid duplicates.
 
@@ -126,7 +126,7 @@ isAutomationDue(nextRunAt: Date | null): boolean
 **Interface**:
 
 ```
-mapScrapedJobToJobRecord(input: {
+mapDiscoveredVacancyToJobRecord(input: {
   vacancy: DiscoveredVacancy
   userId: string
   automationId: string
@@ -139,7 +139,7 @@ mapScrapedJobToJobRecord(input: {
 
 ### 4. EURES Module
 
-**Files**: `src/lib/scraper/eures/index.ts`, `src/lib/scraper/eures/translator.ts`, `src/lib/scraper/eures/resilience.ts`, `src/lib/scraper/eures/rate-limiter.ts`, `src/lib/scraper/eures/types.ts` (autocomplete), `src/lib/scraper/eures/generated.ts` (OpenAPI types), `src/lib/scraper/eures/countries.ts`
+**Files**: `src/lib/connector/job-discovery/eures/index.ts`, `src/lib/connector/job-discovery/eures/translator.ts`, `src/lib/connector/job-discovery/eures/resilience.ts`, `src/lib/connector/job-discovery/eures/rate-limiter.ts`, `src/lib/connector/job-discovery/eures/types.ts` (autocomplete), `src/lib/connector/job-discovery/eures/generated.ts` (OpenAPI types), `src/lib/connector/job-discovery/eures/countries.ts`
 
 **Purpose**: Implements `DataSourceConnector` for the EU EURES job portal (`europa.eu/eures/api`). Handles pagination over the EURES search API, language-aware vacancy translation, resilient HTTP communication, and optional detail enrichment.
 
@@ -163,7 +163,7 @@ mapScrapedJobToJobRecord(input: {
 
 ### 5. Arbeitsagentur Module
 
-**Files**: `src/lib/scraper/arbeitsagentur/index.ts`, `src/lib/scraper/arbeitsagentur/types.ts`, `src/lib/scraper/arbeitsagentur/resilience.ts`
+**Files**: `src/lib/connector/job-discovery/arbeitsagentur/index.ts`, `src/lib/connector/job-discovery/arbeitsagentur/types.ts`, `src/lib/connector/job-discovery/arbeitsagentur/resilience.ts`
 
 **Purpose**: Implements `DataSourceConnector` for the German Federal Employment Agency job portal (`rest.arbeitsagentur.de/jobboerse`). Translates the Bundesagentur-specific vocabulary (`refnr`, `beruf`, `arbeitsort`, `arbeitszeit`, `stellenbeschreibung`) into `DiscoveredVacancy`.
 
@@ -188,7 +188,7 @@ mapScrapedJobToJobRecord(input: {
 
 ### 6. JSearch Module
 
-**Files**: `src/lib/scraper/jsearch/index.ts`
+**Files**: `src/lib/connector/job-discovery/jsearch/index.ts`
 
 **Purpose**: Implements `DataSourceConnector` for JSearch via RapidAPI, which aggregates Google Jobs results. Simpler than the EU modules — no pagination, no resilience policy, single-page response with full job details in the search result.
 
@@ -310,7 +310,7 @@ POST /api/automations/[id]/run → RunnerResult projection
 | Consumer | Dependency | Contract |
 |---|---|---|
 | Automation Runner | Connector Shared Layer | `ConnectorRegistry.create()` → `DataSourceConnector.search()` / `getDetails()` |
-| Automation Runner | Vacancy Mapper | `mapScrapedJobToJobRecord()` |
+| Automation Runner | Vacancy Mapper | `mapDiscoveredVacancyToJobRecord()` |
 | Automation Runner | Automation Logger | `automationLogger.log()` / `startRun()` / `endRun()` |
 | Automation Runner | AI Module | `getModel()`, `generateText()`, `JobMatchSchema` |
 | Automation Scheduler | Automation Runner | `runAutomation()` |
@@ -336,7 +336,7 @@ C4Component
         Component(automationActions, "Automation Management Actions", "Next.js Server Action", "CRUD and lifecycle repository for the Automation aggregate")
     }
 
-    Container_Boundary(connectorLayer, "Connector Layer (src/lib/scraper → src/lib/connector)") {
+    Container_Boundary(connectorLayer, "Connector Layer (src/lib/connector/)") {
         Component(sharedLayer, "Connector Shared Layer", "TypeScript", "DataSourceConnector interface, ConnectorResult<T>, DiscoveredVacancy, ConnectorRegistry — the ACL kernel and shared domain language")
         Component(runner, "Automation Runner", "TypeScript / Vercel AI SDK", "Orchestrates search, deduplication, AI matching, threshold filtering, persistence, and run-state management")
         Component(mapper, "Vacancy Mapper", "TypeScript / Prisma", "Translates DiscoveredVacancy to a Prisma job record; find-or-creates reference entities (title, company, location, source)")
@@ -360,7 +360,7 @@ C4Component
     Rel(automationActions, sharedLayer, "Reads schedule utilities from", "calculateNextRunAt()")
 
     Rel(runner, sharedLayer, "Resolves connector via", "ConnectorRegistry.create(jobBoard)")
-    Rel(runner, mapper, "Delegates vacancy translation to", "mapScrapedJobToJobRecord()")
+    Rel(runner, mapper, "Delegates vacancy translation to", "mapDiscoveredVacancyToJobRecord()")
     Rel(runner, logger, "Emits structured log events to", "automationLogger.log()")
     Rel(runner, aiModule, "Requests AI job-match scoring from", "generateText() + JobMatchSchema")
 
@@ -404,7 +404,7 @@ Scheduler (cron tick)
             → getModel(provider, model)
             → generateText({ system, prompt, output: JobMatchSchema })
         → [if score >= matchThreshold]
-            → mapScrapedJobToJobRecord(vacancy, ...)
+            → mapDiscoveredVacancyToJobRecord(vacancy, ...)
                 → findOrCreate JobTitle, Company, Location, JobSource
             → db.job.create(record)
     → db.automationRun.update(status, metrics, completedAt)
@@ -460,7 +460,8 @@ Each module owns its own resilience policy instance (circuit breaker, bulkhead).
 
 ## Future Architecture Notes (Roadmap)
 
-- **`src/lib/connector/`**: Rename from `src/lib/scraper/` (Roadmap 0.1). Module implementations move to `src/lib/connector/modules/{name}/`.
+- **Roadmap 0.1 complete**: Connector unification done. Job discovery modules at `src/lib/connector/job-discovery/modules/`, AI provider modules at `src/lib/connector/ai-provider/modules/`. See ADR-010.
 - **Connector marketplace**: Settings UI to activate/deactivate individual connectors and modules; pauses dependent automations on deactivation (documented in CLAUDE.md).
-- **New modules**: Implement by creating `src/lib/connector/modules/{name}/index.ts` (implements `DataSourceConnector`) and registering in `connectors.ts`. No changes to Runner, Mapper, Scheduler, or Manual Run API are needed.
+- **New job discovery modules**: Implement by creating `src/lib/connector/job-discovery/modules/{name}/index.ts` (implements `DataSourceConnector`) and registering in `connectors.ts`. No changes to Runner, Mapper, Scheduler, or Manual Run API are needed.
+- **New AI provider modules**: Implement by creating `src/lib/connector/ai-provider/modules/{name}/` implementing `AIProviderConnector`.
 - **Domain Events** (Roadmap Section 5): `JobDiscovered` events should be emitted from the Runner on successful job persistence, enabling future CRM and notification integrations without coupling to the Runner directly.
