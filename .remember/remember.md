@@ -1,27 +1,27 @@
 # Handoff
 
 ## State
-All 48 audit bugs FIXED (48/48). 1107 tests passing (52 suites). 10 ADRs in docs/adr/. Full i18n (545+ keys, 4 locales). Branch `main` at latest push.
+All 48+14 issues tracked in BUGS.md (D1-D14 all fixed). 1107 tests passing (52 suites). 10 ADRs. Full i18n (550+ keys, 4 locales). Branch `main` at latest push.
 
-Roadmap 0.1 COMPLETE: Connector architecture unified under `src/lib/connector/`. Review findings H1, M1-M6 all fixed. AIProviderConnector uses ACL Result pattern + eager registration.
+Roadmap 0.1 COMPLETE. Review findings H1, M1-M6 all fixed. Wave 1 sprint (D1-D14) complete: Tiptap SSR, Dialog a11y, Activity locale time, Job Source modules, Automations table UX, Admin visible buttons, AutomationWizard (API check + threshold toggle + flexible runtimes), Company logo preview, expanded mock data, allowed dev origins config.
 
-Locale testing comprehensive: formatters (173 tests), locale resolution (16 tests), component parameterization (81 tests), E2E locale-switching (6 scenarios x 3 browsers).
+Question Bank UX: 3-dot menu → visible edit/delete + click-to-edit title. Same pattern applied to 5 Admin tables.
 
-Question Bank UX improved: 3-dot menu replaced with visible edit/delete buttons + click-to-edit title. NoteCard pattern adopted. Profile cards i18n fixed (4x hardcoded "Edit" → t("profile.edit")).
+Locale testing: formatters (173), resolution (16), component parameterization (81), E2E locale-switching (6x3 browsers).
 
 ## Next
-1. Roadmap 0.2: ActionResult<T> typing completion (Pattern A/B/C)
-2. Roadmap 0.3: Domain-Model Alignment
-3. Low review findings: L2 (EURES barrel re-export), L3 (JSearch barrel asymmetry), L6 (mapper Promise.all), L7 (pagination cap)
-4. Activities table UX: same 2-action pattern as QuestionCard (visible buttons instead of 3-dot menu)
-5. Continue with Roadmap features (see docs/ROADMAP.md)
+1. Roadmap 8.2: Client-Side Error Reporting Dashboard (approved, implement after E2E)
+2. Wave 2: E2E comprehensive tests (New Job, Create Automation, New Task, etc. → Edit → Delete)
+3. Roadmap 0.2: ActionResult<T> typing completion
+4. Low review findings: L2-L8
 
 ## Context
 - NixOS: `scripts/setup-prisma-engines.sh` auto-heals `/tmp` clears. `scripts/test.sh` uses system Node.js 24.
 - Semgrep hook fires but has no token — safe to ignore.
-- User prefers wshobson agent-teams for parallel work (saved in memory).
-- UI changes must consult ui-design agent first (saved in memory).
-- Post-run self-review checklist before reporting completion (saved in memory).
-- `DEBUG_LOGGING` env var controls server-side debug logs (default: enabled).
-- `validateOllamaUrl()` validates at 4 layers (Zod, verify route, Ollama module, getOllamaBaseUrl).
-- 3-tier action pattern: Title click (Tier 1), visible buttons (Tier 2), dropdown for 3+ actions (Tier 3).
+- User prefers wshobson agent-teams for parallel work.
+- UI changes must consult ui-design agent first.
+- Post-run self-review checklist before reporting completion.
+- Monitor BOTH server logs AND Chrome DevTools for client-side errors.
+- `validateOllamaUrl()` at 4 layers. `ALLOWED_DEV_ORIGINS` in env + Developer Settings.
+- 3-tier action pattern: Title click (T1), visible buttons (T2), dropdown 3+ actions (T3).
+- When user reports bugs → IMMEDIATELY add to BUGS.md before fixing.

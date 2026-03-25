@@ -548,7 +548,25 @@ Dynamische Dateipfade und Dateinamen:
 
 **Voraussetzungen:** Playwright + System-Chromium (bereits vorhanden), ffmpeg (für GIF-Konvertierung, nur in devenv)
 
-### 8.2 Dependabot
+### 8.2 Client-Side Error Reporting Dashboard
+- Error Boundary mit Error-Reporting in Developer Settings UI
+- **Ziel:** React-Errors, Hydration-Mismatches, Client-Side Exceptions in der App sichtbar machen (nicht nur in der Browser-Konsole)
+
+**Komponenten:**
+- `src/app/error.tsx` / `src/app/global-error.tsx` — Next.js Error Boundaries (fangen unbehandelte Fehler)
+- `src/lib/error-reporter.ts` — Client-Side Error Collector (in-memory Ring-Buffer, max ~100 Entries)
+- Developer Settings: "Error Log" Tab mit Liste der letzten Fehler (Timestamp, Message, Stack, Component)
+- Toggle: "Client Error Reporting" aktivieren/deaktivieren (default: aktiv in dev, deaktiviert in prod)
+
+**Was wird erfasst:**
+- React Error Boundary Crashes (Component-Stack)
+- Hydration Mismatches (SSR vs Client)
+- Unhandled Promise Rejections (`window.onunhandledrejection`)
+- Console.error Überschreibung (optional, konfigurierbar)
+
+**Trennung:** Nur in dev aktiv. In Production (`NODE_ENV=production`) deaktiviert oder opt-in via Developer Settings.
+
+### 8.3 Dependabot
 - GitHub Dependabot aktivieren und konfigurieren (`.github/dependabot.yml`)
 - Automatische PRs für Dependency-Updates (Security + Version)
 - Konfiguration: wöchentlicher Schedule, gruppierte Updates nach Ecosystem (npm), Auto-Merge für Patch-Updates
