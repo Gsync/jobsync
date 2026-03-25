@@ -55,7 +55,7 @@ export const admin = {
     "admin.companyName": "Unternehmensname",
     "admin.companyLogoUrl": "Unternehmenslogo-URL",
     "admin.companyLogoUrlPlaceholder": "https://beispiel.de/logo.png",
-    "admin.companyLogoUrlHint": "Unterstutzte Formate: PNG, JPG, JPEG, GIF, WebP, SVG, ICO",
+    "admin.companyLogoUrlHint": "Unterstützte Formate: PNG, JPG, JPEG, GIF, WebP, SVG, ICO",
     "admin.companyLogoPreview": "Logo-Vorschau",
     "admin.companyLogoNoPreview": "Keine Logo-URL eingegeben",
     "admin.companyLogoInvalidUrl": "Bild konnte nicht geladen werden",

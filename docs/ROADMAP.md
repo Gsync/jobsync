@@ -330,6 +330,15 @@ Marketplace-artige Verwaltung von Connectors und Modules in `/dashboard/settings
 - Erstellt basierend auf ESCO- und NACE-Codes eine Liste von Skills und Tags
 - Vorschläge für Skills die in Bewerbungsunterlagen hervorgehoben werden sollten
 
+### 3.6 Link-Parsing und Auto-Fill
+- Wenn ein Link (z.B. Job-URL, Company-URL) in ein Formularfeld eingefügt wird:
+  - **Auf Benutzeraktion** (Button "Link auflösen") ODER **automatisch** (konfigurierbar in Settings)
+  - Link wird geparst (Meta-Tags, OpenGraph, strukturierte Daten)
+  - Alle weiteren Felder im Formular werden automatisch befüllt (Titel, Company, Location, Description, Logo etc.)
+  - Wird der Link entfernt → alle auto-gefüllten Felder werden zurückgesetzt
+- Anwendbar auf: Add Job Modal (Job-URL → Titel, Company, Location), Add Company (URL → Name, Logo), Automation Wizard
+- Konfiguration in Settings: Auto-Parse an/aus, Standard-Verhalten (manuell vs. automatisch)
+
 ---
 
 ## 4. Bewerbungsunterlagen

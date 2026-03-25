@@ -40,21 +40,19 @@ const SUPPORTED_IMAGE_EXTENSIONS = [
 ];
 
 /**
- * Checks whether the given URL points to a supported image format.
- * Strips query strings and fragments before comparing extensions.
+ * Checks whether the given string is a plausible image URL.
+ * Accepts any http/https URL — the preview will attempt to load it
+ * and show an error state if it's not a valid image.
+ * This is intentionally permissive: many valid image URLs don't end
+ * in a file extension (CDN URLs, Wikipedia, API-served images).
  */
-function isSupportedImageUrl(url: string): boolean {
+function isPlausibleImageUrl(url: string): boolean {
   try {
-    const { pathname } = new URL(url);
-    return SUPPORTED_IMAGE_EXTENSIONS.some((ext) =>
-      pathname.toLowerCase().endsWith(ext),
-    );
+    const parsed = new URL(url);
+    return ["http:", "https:"].includes(parsed.protocol);
   } catch {
-    // Relative URLs (e.g. /icons/logo.svg) — check directly
-    const cleanPath = url.split("?")[0].split("#")[0];
-    return SUPPORTED_IMAGE_EXTENSIONS.some((ext) =>
-      cleanPath.toLowerCase().endsWith(ext),
-    );
+    // Accept relative paths (e.g., /icons/logo.svg)
+    return url.startsWith("/");
   }
 }
 
@@ -86,7 +84,7 @@ function LogoPreview({
       setImgStatus("idle");
       return;
     }
-    if (!isSupportedImageUrl(url)) {
+    if (!isPlausibleImageUrl(url)) {
       setImgStatus("error");
       return;
     }
