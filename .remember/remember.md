@@ -1,15 +1,16 @@
 # Handoff
 
 ## State
-I completed EURES Location/ESCO Occupation multi-select comboboxes, full i18n (496 keys, 4 locales, 53 components), locale-aware formatting, and all critical code review fixes (auth on API proxies, SSRF protection, connectorParams bug). Branch `feature/eures-integration` on `rorar/jobsync`, latest commit `1506e88`. Build passes, dev server on port 3737. Roadmap at `docs/ROADMAP.md`.
+A18 ActionResult refactoring complete (55 functions typed, 114 files, 748 tests passing). All 48 bugs from audit fixed (45 closed, 3 low remaining). Arbeitsagentur connector on main. Full i18n (529 keys, 4 locales). DDD principles + ACL pattern documented in CLAUDE.md. ADR generation running. Branch `main` at commit `c552d30`.
 
 ## Next
-1. Remaining review suggestions: translate Combobox-internal strings (~10), fix du/Sie inconsistency in DE, translate `TASK_STATUSES`/`JOB_SOURCES` constants
-2. i18n Phase 4 leftover: `setFormatOverrides` dead code cleanup, `TranslationKey` union type
-3. Pick next roadmap feature (Arbeitsagentur connector, Job-Tinder, or CareerBERT)
+1. ADR agent completing — commit when done, then push
+2. Roadmap 0.1: Rename `src/lib/scraper/` → `src/lib/connector/modules/` (ACL structure)
+3. Remaining low bugs: A18 (`Promise<any>` on ~80 actions — now ~6), A21 (console.log cleanup), B7 (Ollama SSRF)
 
 ## Context
-- NixOS: Prisma engines patched in `/tmp/prisma-engines/`, bun patched. Use `./scripts/dev.sh` etc.
-- Jest doesn't run under Bun on NixOS (readonly property bug). Dictionary validation via `bun run /tmp/test-dictionaries.ts`.
-- Always update i18n dictionaries when changing UI strings — use parallel agents. See `CLAUDE.md`.
-- `@/i18n` (client) and `@/i18n/server` (server) barrel imports only — never internal modules.
+- NixOS: `scripts/setup-prisma-engines.sh` auto-heals `/tmp` clears. `scripts/test.sh` uses system Node.js 24.
+- Semgrep hook fires but has no token — safe to ignore.
+- Stream 1 agent was very aggressive (225 tool-calls, 80+ min) — touched caller files outside ownership. Worked but risky.
+- `createJobTitle` return shape changed — `ComboBox.tsx` caller needs `response.data` update (noted by Stream 3).
+- `docs/adr/.pending` has 7 ADR topics — agent is generating them now.
