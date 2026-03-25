@@ -48,4 +48,29 @@ describe("DeveloperSettings defaults", () => {
     expect(dev.debugLogging).toBe(false);
     expect(dev.logCategories.runner).toBe(true);
   });
+
+  it("errorReporting is optional on DeveloperSettings", () => {
+    const dev: DeveloperSettings = {
+      debugLogging: true,
+      logCategories: {
+        scheduler: true,
+        runner: true,
+        automationLogger: true,
+      },
+    };
+    expect(dev.errorReporting).toBeUndefined();
+  });
+
+  it("errorReporting can be set explicitly", () => {
+    const dev: DeveloperSettings = {
+      debugLogging: true,
+      logCategories: {
+        scheduler: true,
+        runner: true,
+        automationLogger: true,
+      },
+      errorReporting: true,
+    };
+    expect(dev.errorReporting).toBe(true);
+  });
 });

@@ -5,6 +5,7 @@ import AiSettings from "@/components/settings/AiSettings";
 import ApiKeySettings from "@/components/settings/ApiKeySettings";
 import DeveloperSettings from "@/components/settings/DeveloperSettings";
 import DisplaySettings from "@/components/settings/DisplaySettings";
+import ErrorLogSettings from "@/components/settings/ErrorLogSettings";
 import SettingsSidebar, { type SettingsSection } from "@/components/settings/SettingsSidebar";
 
 function Settings() {
@@ -25,6 +26,7 @@ function Settings() {
           {activeSection === "api-keys" && <ApiKeySettings />}
           {activeSection === "appearance" && <DisplaySettings />}
           {activeSection === "developer" && <DeveloperSettings />}
+          {activeSection === "error-log" && <ErrorLogSettings />}
         </div>
       </div>
     </div>

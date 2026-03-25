@@ -31,6 +31,8 @@ export interface DeveloperSettings {
   };
   /** Comma-separated list of allowed dev origins (e.g., "http://192.168.1.100:3737") */
   allowedDevOrigins?: string;
+  /** Enable client-side error reporting (default: true in development, false in production) */
+  errorReporting?: boolean;
 }
 
 export interface UserSettingsData {
