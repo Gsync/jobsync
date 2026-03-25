@@ -156,7 +156,37 @@ App (Kernlogik) ↔ Connector (ACL) ↔ Module (Externes System)
 
 ## 2. UX/UI
 
-### 2.1 Kununu & Glassdoor Integration
+### 2.1 Onboarding-Assistent
+Kontextsensitiver Einrichtungsassistent für neue Benutzer, der sich an deren Ziele und Situation anpasst.
+
+- **Willkommens-Flow (nach erstem Login):**
+  - Schritt 1: **Ziel erfragen** — "Was möchtest du erreichen?"
+    - Aktive Jobsuche (→ betont Automations, Job-Matching, CV-Upload)
+    - Passive Jobsuche / Marktbeobachtung (→ betont Alerts, Bookmarks)
+    - Bewerbungsmanagement (→ betont CRM, Tracking, Follow-Ups)
+    - Karriereplanung (→ betont Skills, ESCO-Taxonomie, Gehaltsvergleich)
+  - Schritt 2: **Profil anlegen** — Name, Standort (→ Geo-Referenzpunkt), Sprache
+  - Schritt 3: **CV hochladen** (optional) — automatische Skill-Extraktion (→ ESCO/NACE)
+  - Schritt 4: **Connectors aktivieren** — Welche Jobportale? (EURES, Arbeitsagentur, JSearch)
+    - Connector-spezifische Einstellungen direkt im Flow (z.B. Umkreis, Land, Sprache)
+  - Schritt 5: **Erste Automation erstellen** — Geführter Mini-Wizard basierend auf Zielen
+- **Kontextsensitivität:**
+  - Überspringt Schritte die der Benutzer schon erledigt hat (z.B. CV bereits vorhanden)
+  - Passt Empfehlungen an Land/Sprache an (DE → Arbeitsagentur vorschlagen, EU → EURES)
+  - Zeigt nur relevante Connectors (deaktivierte ausblenden)
+  - LLM-gestützt: Kann Fragen des Benutzers zum Onboarding beantworten
+- **Progressive Disclosure:**
+  - Fortgeschrittene Features (CRM, Dokumentengenerator) werden nicht im Onboarding gezeigt
+  - Stattdessen: kontextsensitive Tooltips/Hinweise beim ersten Besuch jeder Seite
+  - "Wusstest du?" Karten auf dem Dashboard basierend auf Nutzungsverhalten
+- **Wiederaufrufbar:**
+  - Über Settings → "Onboarding wiederholen"
+  - Einzelne Schritte über Hilfe-Menü erreichbar
+- **Gamification (optional):**
+  - Fortschrittsbalken: "Dein Profil ist zu 60% eingerichtet"
+  - Checkliste mit empfohlenen nächsten Schritten
+
+### 2.2 Kununu & Glassdoor Integration
 - Unternehmensbewertungen und Gehaltsinformationen in den Jobdetails anzeigen
 - Filter für Bewertungen und Gehaltsinformationen für fundierte Bewerbungsentscheidungen
 - LLM-gestützte Analyse und Zusammenfassung von Bewertungen (Vor-/Nachteile eines Unternehmens)
