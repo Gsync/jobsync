@@ -1,10 +1,10 @@
 # Bug Tracker — Collected 2026-03-24, Updated 2026-03-25
 
-**Total: 48 bugs found, 45 fixed, 3 remaining (all Low)**
+**Total: 48 bugs found, 48 fixed, 0 remaining**
 
-### Status: ✅ All Critical, High, and Medium bugs are fixed.
+### Status: ✅ All bugs are fixed.
 
-## Critical (7)
+## Critical (7) — ALL FIXED
 
 | ID | Bug | File |
 |----|-----|------|
@@ -16,7 +16,7 @@
 | B1 | NEXTAUTH_URL=localhost:3000 but server runs on :3737 | `.env:9` |
 | -- | Prisma engines missing after /tmp clear | FIXED in Stage 1 |
 
-## High (9)
+## High (9) — ALL FIXED
 
 | ID | Bug | File |
 |----|-----|------|
@@ -30,7 +30,7 @@
 | C11 | `new Date()` in render path causes hydration mismatch | `JobDetails.tsx:93`, `MyJobsTable.tsx:130` |
 | C14 | No error boundaries at any app level | `src/app/error.tsx` MISSING |
 
-## Medium (19)
+## Medium (19) — ALL FIXED
 
 | ID | Bug | File |
 |----|-----|------|
@@ -54,21 +54,21 @@
 | C13 | useMemo missing locale dependency | `ActivityForm.tsx:53` |
 | C15 | ESCO combobox buttons missing aria-labels | `EuresOccupationCombobox.tsx` |
 
-## Low (13)
+## Low (13) — ALL FIXED
 
-| ID | Bug | File |
-|----|-----|------|
-| A18 | Promise any return types on ~80 server actions | Multiple |
-| A19 | 5x `as any` casts suppress type checking | Multiple |
-| A20 | Commented-out time validation allows NaN | `utils.ts:73` |
-| A21 | 50+ console.log calls in production code | Multiple |
-| A22 | Typo: "no user privilages" | `job.actions.ts:338` |
-| A23 | Variable typo: comapnies | `company.actions.ts:76` |
-| B7 | Ollama verify endpoint potential SSRF | `api-keys/verify/route.ts` |
-| C7 | AuthCard hardcoded subtitle | `AuthCard.tsx:23` |
-| C8 | TagInput hardcoded fallback error message | `TagInput.tsx:76` |
-| C10 | NumberCardToggle hardcoded aria-label | `NumberCardToggle.tsx:70` |
-| C12 | SupportDialog year hydration risk | `SupportDialog.tsx:19` |
-| C16 | InfoTooltip button missing aria-label | `info-tooltip.tsx:26` |
-| C17 | DownloadFileButton called as function not JSX | `DownloadFileButton.tsx:3` |
-| C18 | DownloadFileButton silent failure | `DownloadFileButton.tsx:29` |
+| ID | Bug | Fix |
+|----|-----|-----|
+| A18 | Promise any return types on ~80 server actions | Typed all 7 remaining with proper Prisma model types |
+| A19 | 5x `as any` casts suppress type checking | Replaced with proper type assertions (`Resume`, `JobResponse`) and removed unnecessary casts |
+| A20 | Commented-out time validation allows NaN | Validation restored (throws on invalid time) |
+| A21 | 50+ console.log calls in production code | Gated with `debugLog()` utility + Developer Settings UI toggle |
+| A22 | Typo: "no user privilages" | Fixed to "no user privileges" |
+| A23 | Variable typo: comapnies | Fixed to companies |
+| B7 | Ollama verify endpoint potential SSRF | URL validation + defense-in-depth at 3 layers |
+| C7 | AuthCard hardcoded subtitle | Translated |
+| C8 | TagInput hardcoded fallback error message | Translated |
+| C10 | NumberCardToggle hardcoded aria-label | Translated |
+| C12 | SupportDialog year hydration risk | Fixed |
+| C16 | InfoTooltip button missing aria-label | Added |
+| C17 | DownloadFileButton called as function not JSX | Fixed |
+| C18 | DownloadFileButton silent failure | Fixed |

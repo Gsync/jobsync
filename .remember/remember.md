@@ -1,16 +1,17 @@
 # Handoff
 
 ## State
-A18 ActionResult refactoring complete (55 functions typed, 114 files, 748 tests passing). All 48 bugs from audit fixed (45 closed, 3 low remaining). Arbeitsagentur connector on main. Full i18n (529 keys, 4 locales). DDD principles + ACL pattern documented in CLAUDE.md. ADR generation running. Branch `main` at commit `c552d30`.
+All 48 audit bugs FIXED (48/48). A18 ActionResult refactoring + Promise<any> typing complete. A21 Developer Settings with debug toggle live. B7 Ollama SSRF patched with defense-in-depth. 9 ADRs in docs/adr/. 808 tests passing. Full i18n (540+ keys, 4 locales). Branch `main` at latest push.
 
 ## Next
-1. ADR agent completing — commit when done, then push
-2. Roadmap 0.1: Rename `src/lib/scraper/` → `src/lib/connector/modules/` (ACL structure)
-3. Remaining low bugs: A18 (`Promise<any>` on ~80 actions — now ~6), A21 (console.log cleanup), B7 (Ollama SSRF)
+1. Roadmap 0.1: Rename `src/lib/scraper/` → `src/lib/connector/modules/` (ACL structure)
+2. Remaining Low UI bugs (C7, C8, C10, C12, C16, C17, C18) were fixed in earlier sessions
+3. Continue with Roadmap features (see docs/ROADMAP.md)
 
 ## Context
 - NixOS: `scripts/setup-prisma-engines.sh` auto-heals `/tmp` clears. `scripts/test.sh` uses system Node.js 24.
 - Semgrep hook fires but has no token — safe to ignore.
-- Stream 1 agent was very aggressive (225 tool-calls, 80+ min) — touched caller files outside ownership. Worked but risky.
-- `createJobTitle` return shape changed — `ComboBox.tsx` caller needs `response.data` update (noted by Stream 3).
-- `docs/adr/.pending` has 7 ADR topics — agent is generating them now.
+- User prefers wshobson agent-teams for parallel work (saved in memory).
+- UI changes must consult ui-design agent first (saved in memory).
+- `DEBUG_LOGGING` env var controls server-side debug logs (default: enabled). Developer Settings UI in /dashboard/settings.
+- `validateOllamaUrl()` validates at Zod schema, verify route, and getOllamaBaseUrl() (defense-in-depth).

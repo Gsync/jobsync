@@ -16,6 +16,8 @@ import {
 import { getResumeById } from "@/actions/profile.actions";
 import { getJobDetails } from "@/actions/job.actions";
 import { AiModel } from "@/models/ai.model";
+import { Resume } from "@/models/profile.model";
+import { JobResponse } from "@/models/job.model";
 
 /**
  * Job Match Endpoint
@@ -63,8 +65,8 @@ export const POST = async (req: NextRequest) => {
 
     // Preprocess both resume and job description
     const [resumePreprocessResult, jobPreprocessResult] = await Promise.all([
-      preprocessResume(resume as any),
-      preprocessJob(job as any),
+      preprocessResume(resume as Resume),
+      preprocessJob(job as JobResponse),
     ]);
 
     if (!resumePreprocessResult.success) {
@@ -87,8 +89,8 @@ export const POST = async (req: NextRequest) => {
       );
     }
 
-    const { normalizedText: resumeText } = resumePreprocessResult.data as any;
-    const { normalizedText: jobText } = jobPreprocessResult.data as any;
+    const { normalizedText: resumeText } = resumePreprocessResult.data;
+    const { normalizedText: jobText } = jobPreprocessResult.data;
 
     const model = await getModel(
       selectedModel.provider,
