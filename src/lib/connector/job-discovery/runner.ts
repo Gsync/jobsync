@@ -1,4 +1,4 @@
-import { generateText, Output } from "ai";
+import { generateText, Output, type LanguageModel } from "ai";
 import db from "@/lib/db";
 import type {
   Automation,
@@ -178,7 +178,7 @@ export async function runAutomation(
         jobsProcessed: 0,
         jobsMatched: 0,
         jobsSaved: 0,
-      });
+      }, automation.scheduleHour);
     }
 
     automationLogger.log(
@@ -226,7 +226,7 @@ export async function runAutomation(
         jobsProcessed: 0,
         jobsMatched: 0,
         jobsSaved: 0,
-      });
+      }, automation.scheduleHour);
     }
 
     const jobsSearched = searchResult.data.length;
@@ -253,7 +253,7 @@ export async function runAutomation(
         jobsProcessed: 0,
         jobsMatched: 0,
         jobsSaved: 0,
-      });
+      }, automation.scheduleHour);
     }
 
     automationLogger.log(
@@ -308,6 +308,9 @@ export async function runAutomation(
     let aiError: string | null = null;
 
     const aiSettings = await getUserAiSettings(automation.userId);
+    const modelName = aiSettings.model || getDefaultModelForProvider(aiSettings.provider);
+    const resolvedModel = await getModel(aiSettings.provider, modelName, automation.userId);
+    const resumeText = convertResumeForMatch(resume as ResumeWithSections);
 
     // JSearch returns full job details, no separate extraction needed
     for (const job of jobsToProcess) {
@@ -319,7 +322,6 @@ export async function runAutomation(
 
       jobsProcessed++;
 
-      const modelName = aiSettings.model || getDefaultModelForProvider(aiSettings.provider);
       automationLogger.log(
         automation.id,
         "info",
@@ -328,9 +330,8 @@ export async function runAutomation(
 
       const matchResult = await matchJobToResume(
         job,
-        resume as ResumeWithSections,
-        aiSettings,
-        automation.userId,
+        resumeText,
+        resolvedModel,
       );
 
       if (!matchResult.success) {
@@ -448,7 +449,7 @@ export async function runAutomation(
       jobsProcessed,
       jobsMatched,
       jobsSaved,
-    });
+    }, automation.scheduleHour);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     automationLogger.log(
@@ -467,7 +468,7 @@ export async function runAutomation(
       jobsProcessed: 0,
       jobsMatched: 0,
       jobsSaved: 0,
-    });
+    }, automation.scheduleHour);
   }
 }
 
@@ -495,12 +496,10 @@ interface MatchResult {
 
 async function matchJobToResume(
   job: DiscoveredVacancy,
-  resume: ResumeWithSections,
-  aiSettings: AiSettings,
-  userId: string,
+  resumeText: string,
+  resolvedModel: LanguageModel,
 ): Promise<MatchResult> {
   try {
-    const resumeText = await convertResumeForMatch(resume);
     const jobText = `
 Title: ${job.title}
 Company: ${job.employerName}
@@ -513,12 +512,8 @@ Description:
 ${job.description}
 `.trim();
 
-    const provider = aiSettings.provider;
-    const modelName = aiSettings.model || getDefaultModelForProvider(provider);
-    const model = await getModel(provider, modelName, userId);
-
     const result = await generateText({
-      model,
+      model: resolvedModel,
       output: Output.object({
         schema: JobMatchSchema,
       }),
@@ -556,9 +551,9 @@ ${job.description}
   }
 }
 
-async function convertResumeForMatch(
+function convertResumeForMatch(
   resume: ResumeWithSections,
-): Promise<string> {
+): string {
   const parts: string[] = [`# ${resume.title}`];
 
   if (resume.ContactInfo) {
@@ -635,6 +630,7 @@ interface FinalizeData {
 async function finalizeRun(
   runId: string,
   data: FinalizeData,
+  scheduleHour: number,
 ): Promise<RunnerResult> {
   const run = await db.automationRun.update({
     where: { id: runId },
@@ -655,14 +651,7 @@ async function finalizeRun(
     where: { id: run.automationId },
     data: {
       lastRunAt: new Date(),
-      nextRunAt: calculateNextRunAt(
-        (
-          await db.automation.findUnique({
-            where: { id: run.automationId },
-            select: { scheduleHour: true },
-          })
-        )?.scheduleHour || 8,
-      ),
+      nextRunAt: calculateNextRunAt(scheduleHour),
     },
   });
 
