@@ -548,6 +548,12 @@ Dynamische Dateipfade und Dateinamen:
 
 **Voraussetzungen:** Playwright + System-Chromium (bereits vorhanden), ffmpeg (für GIF-Konvertierung, nur in devenv)
 
+### 8.2 Dependabot
+- GitHub Dependabot aktivieren und konfigurieren (`.github/dependabot.yml`)
+- Automatische PRs für Dependency-Updates (Security + Version)
+- Konfiguration: wöchentlicher Schedule, gruppierte Updates nach Ecosystem (npm), Auto-Merge für Patch-Updates
+- Ignorieren von Major-Updates die Breaking Changes erwarten lassen (manuell reviewen)
+
 ---
 
 ## Implementierte Features (Stand: 2026-03-25)
