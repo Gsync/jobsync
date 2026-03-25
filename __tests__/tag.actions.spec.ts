@@ -95,7 +95,7 @@ describe("Tag Actions", () => {
 
       const result = await getTagList(1, 10);
 
-      expect(result).toEqual({ data: mockData, total: 1 });
+      expect(result).toEqual({ success: true, data: mockData, total: 1 });
       expect(prisma.tag.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { createdBy: mockUser.id },
@@ -209,7 +209,7 @@ describe("Tag Actions", () => {
 
       const result = await deleteTagById("tag-1");
 
-      expect(result).toEqual({ res: mockTag, success: true });
+      expect(result).toEqual({ data: mockTag, success: true });
       expect(prisma.tag.delete).toHaveBeenCalledWith({
         where: { id: "tag-1", createdBy: mockUser.id },
       });

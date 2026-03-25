@@ -96,8 +96,8 @@ function CreateResume({
         reset();
         setResumeDialogOpen(false);
         reloadResumes();
-        if (response.data?.id) {
-          setNewResumeId(response.data?.id);
+        if ((response.data as any)?.id) {
+          setNewResumeId((response.data as any)?.id);
         }
         toast({
           variant: "success",

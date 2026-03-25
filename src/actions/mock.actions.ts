@@ -4,6 +4,7 @@ import { handleError } from "@/lib/utils";
 import { isMockDataEnabled } from "@/lib/constants";
 import { getCurrentUser } from "@/utils/user.utils";
 import { generateMockActivities } from "@/lib/mock.utils";
+import { ActionResult } from "@/models/actionResult";
 import {
   mockActivityTypes,
   MOCK_DATA_IDENTIFIER,
@@ -17,7 +18,7 @@ import {
 } from "@/lib/data/mockProfileData";
 import { subYears } from "date-fns";
 
-export const generateMockActivitiesAction = async (): Promise<any> => {
+export const generateMockActivitiesAction = async (): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -108,7 +109,7 @@ export const generateMockActivitiesAction = async (): Promise<any> => {
   }
 };
 
-export const clearMockActivitiesAction = async (): Promise<any> => {
+export const clearMockActivitiesAction = async (): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -145,7 +146,6 @@ export const clearMockActivitiesAction = async (): Promise<any> => {
     return {
       success: true,
       message: `Deleted ${deleteResult.count} mock activities`,
-      deletedCount: deleteResult.count,
     };
   } catch (error) {
     const msg = "Failed to clear mock activities";
@@ -153,7 +153,7 @@ export const clearMockActivitiesAction = async (): Promise<any> => {
   }
 };
 
-export const generateMockProfileDataAction = async (): Promise<any> => {
+export const generateMockProfileDataAction = async (): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
     if (!user) throw new Error("Not authenticated");
@@ -343,7 +343,7 @@ export const generateMockProfileDataAction = async (): Promise<any> => {
   }
 };
 
-export const clearMockProfileDataAction = async (): Promise<any> => {
+export const clearMockProfileDataAction = async (): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
     if (!user) throw new Error("Not authenticated");

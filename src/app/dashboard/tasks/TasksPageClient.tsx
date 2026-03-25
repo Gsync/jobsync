@@ -35,8 +35,8 @@ function TasksPageClient({
   const refreshSidebarCounts = useCallback(async () => {
     const result = await getActivityTypesWithTaskCounts();
     if (result?.success) {
-      setSidebarCounts(result.data);
-      setSidebarTotal(result.totalTasks);
+      setSidebarCounts(result.data as any);
+      setSidebarTotal(result.total || 0);
     }
   }, []);
 

@@ -32,8 +32,8 @@ export function NotesSection({ jobId }: NotesSectionProps) {
   const loadNotes = useCallback(async () => {
     const result = await getNotesByJobId(jobId);
     if (result.success) {
-      setNotes(result.data);
-      if (result.data.length > 0) setIsOpen(true);
+      setNotes(result.data as any);
+      if ((result.data as any[])?.length > 0) setIsOpen(true);
     }
   }, [jobId]);
 

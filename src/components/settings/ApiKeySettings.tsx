@@ -108,7 +108,7 @@ function ApiKeySettings() {
     try {
       const result = await getUserApiKeys();
       if (result.success && result.data) {
-        setKeys(result.data);
+        setKeys(result.data as any);
       }
     } catch (error) {
       console.error("Error fetching API keys:", error);

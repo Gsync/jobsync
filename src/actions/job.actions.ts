@@ -2,13 +2,14 @@
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
+import { ActionResult } from "@/models/actionResult";
 import { JOB_TYPES, JobStatus } from "@/models/job.model";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-export const getStatusList = async (): Promise<any | undefined> => {
+export const getStatusList = async (): Promise<any> => {
   try {
     const statuses = await prisma.jobStatus.findMany();
     return statuses;
@@ -18,7 +19,7 @@ export const getStatusList = async (): Promise<any | undefined> => {
   }
 };
 
-export const getJobSourceList = async (): Promise<any | undefined> => {
+export const getJobSourceList = async (): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -29,7 +30,7 @@ export const getJobSourceList = async (): Promise<any | undefined> => {
         createdBy: user.id,
       },
     });
-    return list;
+    return { success: true, data: list };
   } catch (error) {
     const msg = "Failed to fetch job source list. ";
     return handleError(error, msg);
@@ -41,7 +42,7 @@ export const getJobsList = async (
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
   filter?: string,
   search?: string,
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -163,7 +164,7 @@ export async function* getJobsIterator(filter?: string, pageSize = 200) {
 
 export const getJobDetails = async (
   jobId: string,
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     if (!jobId) {
       throw new Error("Please provide job id");
@@ -192,7 +193,7 @@ export const getJobDetails = async (
         tags: true,
       },
     });
-    return { job, success: true };
+    return { data: job, success: true };
   } catch (error) {
     const msg = "Failed to fetch job details. ";
     return handleError(error, msg);
@@ -201,7 +202,7 @@ export const getJobDetails = async (
 
 export const createLocation = async (
   label: string,
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -235,7 +236,7 @@ export const createLocation = async (
 
 export const createJobSource = async (
   label: string,
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -269,7 +270,7 @@ export const createJobSource = async (
 
 export const addJob = async (
   data: z.infer<typeof AddJobFormSchema>,
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -318,7 +319,7 @@ export const addJob = async (
           : {}),
       },
     });
-    return { job, success: true };
+    return { data: job, success: true };
   } catch (error) {
     const msg = "Failed to create job. ";
     return handleError(error, msg);
@@ -327,7 +328,7 @@ export const addJob = async (
 
 export const updateJob = async (
   data: z.infer<typeof AddJobFormSchema>,
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -381,7 +382,7 @@ export const updateJob = async (
       },
     });
     // revalidatePath("/dashboard/myjobs", "page");
-    return { job, success: true };
+    return { data: job, success: true };
   } catch (error) {
     const msg = "Failed to update job. ";
     return handleError(error, msg);
@@ -391,7 +392,7 @@ export const updateJob = async (
 export const updateJobStatus = async (
   jobId: string,
   status: JobStatus,
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -425,7 +426,7 @@ export const updateJobStatus = async (
       },
       data: dataToUpdate(),
     });
-    return { job, success: true };
+    return { data: job, success: true };
   } catch (error) {
     const msg = "Failed to update job status.";
     return handleError(error, msg);
@@ -434,7 +435,7 @@ export const updateJobStatus = async (
 
 export const deleteJobById = async (
   jobId: string,
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -448,7 +449,7 @@ export const deleteJobById = async (
         userId: user.id,
       },
     });
-    return { res, success: true };
+    return { data: res, success: true };
   } catch (error) {
     const msg = "Failed to delete job.";
     return handleError(error, msg);

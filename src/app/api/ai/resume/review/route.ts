@@ -63,7 +63,7 @@ export const POST = async (req: NextRequest) => {
         { status: 400 },
       );
     }
-    const { normalizedText } = preprocessResult.data;
+    const { normalizedText } = preprocessResult.data as any;
 
     const model = await getModel(
       selectedModel.provider,

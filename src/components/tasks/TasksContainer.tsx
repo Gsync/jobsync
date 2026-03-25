@@ -108,8 +108,8 @@ function TasksContainer({
         search,
       );
       if (success && data) {
-        setTasks((prev) => (pageNum === 1 ? data : [...prev, ...data]));
-        setTotalTasks(total);
+        setTasks((prev) => (pageNum === 1 ? data : [...prev, ...(data as any[])]) as any);
+        setTotalTasks(total ?? 0);
         setPage(pageNum);
         setLoading(false);
       } else {
@@ -156,7 +156,7 @@ function TasksContainer({
       });
       return;
     }
-    setEditTask(data);
+    setEditTask(data as any);
     setDialogOpen(true);
   };
 

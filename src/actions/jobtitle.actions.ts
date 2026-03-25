@@ -1,10 +1,11 @@
 "use server";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
+import { ActionResult } from "@/models/actionResult";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 
-export const getAllJobTitles = async (): Promise<any | undefined> => {
+export const getAllJobTitles = async (): Promise<any> => {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -26,7 +27,7 @@ export const getJobTitleList = async (
   page: number = 1,
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
   countBy?: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -72,7 +73,7 @@ export const getJobTitleList = async (
         },
       }),
     ]);
-    return { data, total };
+    return { success: true, data, total };
   } catch (error) {
     const msg = "Failed to fetch job title list. ";
     return handleError(error, msg);
@@ -81,7 +82,7 @@ export const getJobTitleList = async (
 
 export const createJobTitle = async (
   label: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -97,7 +98,7 @@ export const createJobTitle = async (
       create: { label, value, createdBy: user.id },
     });
 
-    return upsertedTitle;
+    return { success: true, data: upsertedTitle };
   } catch (error) {
     const msg = "Failed to create job title. ";
     return handleError(error, msg);
@@ -106,7 +107,7 @@ export const createJobTitle = async (
 
 export const deleteJobTitleById = async (
   jobTitleId: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -142,7 +143,7 @@ export const deleteJobTitleById = async (
         createdBy: user.id,
       },
     });
-    return { res, success: true };
+    return { success: true, data: res };
   } catch (error) {
     const msg = "Failed to delete job title.";
     return handleError(error, msg);

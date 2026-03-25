@@ -28,8 +28,8 @@ function TagsContainer() {
       try {
         const { data, total } = await getTagList(page, recordsPerPage);
         if (data) {
-          setTags((prev) => (page === 1 ? data : [...prev, ...data]));
-          setTotalTags(total);
+          setTags((prev) => (page === 1 ? data : [...prev, ...(data as any[])]) as any);
+          setTotalTags(total ?? 0);
           setPage(page);
         }
       } finally {

@@ -2,9 +2,10 @@
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { getCurrentUser } from "@/utils/user.utils";
+import { ActionResult } from "@/models/actionResult";
 import { APP_CONSTANTS } from "@/lib/constants";
 
-export const getAllTags = async (): Promise<any | undefined> => {
+export const getAllTags = async (): Promise<any> => {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -24,7 +25,7 @@ export const getAllTags = async (): Promise<any | undefined> => {
 export const getTagList = async (
   page: number = 1,
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -48,14 +49,14 @@ export const getTagList = async (
       prisma.tag.count({ where: { createdBy: user.id } }),
     ]);
 
-    return { data, total };
+    return { success: true, data, total };
   } catch (error) {
     const msg = "Failed to fetch tag list. ";
     return handleError(error, msg);
   }
 };
 
-export const createTag = async (label: string): Promise<any | undefined> => {
+export const createTag = async (label: string): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -84,7 +85,7 @@ export const createTag = async (label: string): Promise<any | undefined> => {
 
 export const deleteTagById = async (
   tagId: string,
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -113,7 +114,7 @@ export const deleteTagById = async (
       where: { id: tagId, createdBy: user.id },
     });
 
-    return { res, success: true };
+    return { data: res, success: true };
   } catch (error) {
     const msg = "Failed to delete tag.";
     return handleError(error, msg);

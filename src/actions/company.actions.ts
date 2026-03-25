@@ -2,6 +2,7 @@
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { AddCompanyFormSchema } from "@/models/addCompanyForm.schema";
+import { ActionResult } from "@/models/actionResult";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { revalidatePath } from "next/cache";
@@ -11,7 +12,7 @@ export const getCompanyList = async (
   page: number = 1,
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
   countBy?: string,
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -58,14 +59,14 @@ export const getCompanyList = async (
         },
       }),
     ]);
-    return { data, total };
+    return { success: true, data, total };
   } catch (error) {
     const msg = "Failed to fetch company list. ";
     return handleError(error, msg);
   }
 };
 
-export const getAllCompanies = async (): Promise<any | undefined> => {
+export const getAllCompanies = async (): Promise<any> => {
   try {
     const user = await getCurrentUser();
 
@@ -101,7 +102,7 @@ const isValidImageUrl = (url: string): boolean => {
 
 export const addCompany = async (
   data: z.infer<typeof AddCompanyFormSchema>,
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -149,7 +150,7 @@ export const addCompany = async (
 
 export const updateCompany = async (
   data: z.infer<typeof AddCompanyFormSchema>,
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -203,7 +204,7 @@ export const updateCompany = async (
 
 export const getCompanyById = async (
   companyId: string,
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     if (!companyId) {
       throw new Error("Please provide company id");
@@ -219,19 +220,20 @@ export const getCompanyById = async (
         id: companyId,
       },
     });
-    return company;
+    return { success: true, data: company };
   } catch (error) {
     const msg = "Failed to fetch company by Id. ";
     console.error(msg);
     if (error instanceof Error) {
       return { success: false, message: error.message };
     }
+    return { success: false, message: msg };
   }
 };
 
 export const deleteCompanyById = async (
   companyId: string,
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -267,7 +269,7 @@ export const deleteCompanyById = async (
         createdBy: user.id,
       },
     });
-    return { res, success: true };
+    return { data: res, success: true };
   } catch (error) {
     const msg = "Failed to delete company.";
     return handleError(error, msg);

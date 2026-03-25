@@ -66,7 +66,7 @@ describe("Company Actions", () => {
 
       const result = await getCompanyList(1, 10);
 
-      expect(result).toEqual({ data: mockData, total: mockTotal });
+      expect(result).toEqual({ success: true, data: mockData, total: mockTotal });
       expect(prisma.company.findMany).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
         skip: 0,
@@ -107,7 +107,7 @@ describe("Company Actions", () => {
 
       const result = await getCompanyList(1, 10, "applied");
 
-      expect(result).toEqual({ data: mockData, total: mockTotal });
+      expect(result).toEqual({ success: true, data: mockData, total: mockTotal });
       expect(prisma.company.findMany).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
         skip: 0,
@@ -527,7 +527,7 @@ describe("Company Actions", () => {
         where: { id: mockCompanyId },
       });
 
-      expect(result).toEqual(mockCompany);
+      expect(result).toEqual({ success: true, data: mockCompany });
     });
 
     it("should throw error when companyId is not provided", async () => {
@@ -577,7 +577,7 @@ describe("Company Actions", () => {
 
       const result = await deleteCompanyById("company-id");
 
-      expect(result).toEqual({ res: mockDeleted, success: true });
+      expect(result).toEqual({ data: mockDeleted, success: true });
       expect(prisma.company.delete).toHaveBeenCalledWith({
         where: { id: "company-id", createdBy: mockUser.id },
       });

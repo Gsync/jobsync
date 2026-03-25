@@ -79,7 +79,7 @@ export function TagInput({
         });
         return;
       }
-      const newTag: Tag = result.data;
+      const newTag: Tag = result.data as Tag;
       // Add to local pool if not already there
       setLocalTags((prev) =>
         prev.some((t) => t.id === newTag.id) ? prev : [...prev, newTag],

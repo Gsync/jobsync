@@ -51,8 +51,8 @@ function ActivitiesContainer() {
           search,
         );
         if (success) {
-          setActivitiesList((prev) => (page === 1 ? data : [...prev, ...data]));
-          setTotalActivities(total);
+          setActivitiesList((prev) => (page === 1 ? data : [...prev, ...(data as any[])]) as any);
+          setTotalActivities(total ?? 0);
           setPage(page);
         } else {
           toast({

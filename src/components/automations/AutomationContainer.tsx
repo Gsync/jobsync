@@ -34,7 +34,7 @@ export function AutomationContainer({ resumes }: AutomationContainerProps) {
     const result = await getAutomationsList();
 
     if (result.success && result.data) {
-      setAutomations(result.data);
+      setAutomations(result.data as any);
     } else {
       toast({
         title: t("automations.validationError"),

@@ -463,7 +463,7 @@ describe("Question Actions", () => {
             questionCount: 3,
           },
         ],
-        totalQuestions: 8,
+        total: 8,
       });
     });
 

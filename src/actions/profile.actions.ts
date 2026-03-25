@@ -8,6 +8,7 @@ import { AddSummarySectionFormSchema } from "@/models/addSummaryForm.schema";
 import { CreateResumeFormSchema } from "@/models/createResumeForm.schema";
 import { ResumeSection, SectionType, Summary } from "@/models/profile.model";
 import { getCurrentUser } from "@/utils/user.utils";
+import { ActionResult } from "@/models/actionResult";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -18,7 +19,7 @@ import { writeFile } from "fs/promises";
 export const getResumeList = async (
   page: number = 1,
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -69,7 +70,7 @@ export const getResumeList = async (
 
 export const getResumeById = async (
   resumeId: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     if (!resumeId) {
       throw new Error("Please provide resume id");
@@ -115,7 +116,7 @@ export const getResumeById = async (
 
 export const addContactInfo = async (
   data: z.infer<typeof AddContactInfoFormSchema>
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -153,7 +154,7 @@ export const addContactInfo = async (
 
 export const updateContactInfo = async (
   data: z.infer<typeof AddContactInfoFormSchema>
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -186,7 +187,7 @@ export const createResumeProfile = async (
   title: string,
   fileName: string,
   filePath?: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -267,7 +268,7 @@ export const editResume = async (
   fileId?: string,
   fileName?: string,
   filePath?: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     let resolvedFileId = fileId;
 
@@ -304,7 +305,7 @@ export const editResume = async (
 export const deleteResumeById = async (
   resumeId: string,
   fileId?: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -405,7 +406,7 @@ export const deleteFile = async (fileId: string) => {
 
 export const addResumeSummary = async (
   data: z.infer<typeof AddSummarySectionFormSchema>
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -442,7 +443,7 @@ export const addResumeSummary = async (
 
 export const updateResumeSummary = async (
   data: z.infer<typeof AddSummarySectionFormSchema>
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -480,7 +481,7 @@ export const updateResumeSummary = async (
 
 export const addExperience = async (
   data: z.infer<typeof AddExperienceFormSchema>
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -529,7 +530,7 @@ export const addExperience = async (
 
 export const updateExperience = async (
   data: z.infer<typeof AddExperienceFormSchema>
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -568,7 +569,7 @@ export const updateExperience = async (
 
 export const addEducation = async (
   data: z.infer<typeof AddEducationFormSchema>
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -613,7 +614,7 @@ export const addEducation = async (
 
 export const updateEducation = async (
   data: z.infer<typeof AddEducationFormSchema>
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 

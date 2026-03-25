@@ -93,7 +93,7 @@ describe("Job Title Actions", () => {
 
       const result = await getJobTitleList(1, 10);
 
-      expect(result).toEqual({ data: mockData, total: mockTotal });
+      expect(result).toEqual({ success: true, data: mockData, total: mockTotal });
       expect(prisma.jobTitle.findMany).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
         skip: 0,
@@ -115,7 +115,7 @@ describe("Job Title Actions", () => {
 
       const result = await getJobTitleList(1, 10, "applied");
 
-      expect(result).toEqual({ data: mockData, total: 1 });
+      expect(result).toEqual({ success: true, data: mockData, total: 1 });
       expect(prisma.jobTitle.findMany).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
         skip: 0,
@@ -181,7 +181,7 @@ describe("Job Title Actions", () => {
 
       const result = await createJobTitle("Senior Developer");
 
-      expect(result).toEqual(mockTitle);
+      expect(result).toEqual({ success: true, data: mockTitle });
       expect(prisma.jobTitle.upsert).toHaveBeenCalledWith({
         where: { value_createdBy: { value: "senior developer", createdBy: mockUser.id } },
         update: { label: "Senior Developer" },
@@ -224,7 +224,7 @@ describe("Job Title Actions", () => {
 
       const result = await deleteJobTitleById("title-1");
 
-      expect(result).toEqual({ res: mockDeleted, success: true });
+      expect(result).toEqual({ data: mockDeleted, success: true });
       expect(prisma.jobTitle.delete).toHaveBeenCalledWith({
         where: { id: "title-1", createdBy: mockUser.id },
       });

@@ -56,15 +56,15 @@ export const POST = async (req: NextRequest) => {
   }
 
   try {
-    const [{ data: resume }, { job }] = await Promise.all([
+    const [{ data: resume }, { data: job }] = await Promise.all([
       getResumeById(resumeId),
       getJobDetails(jobId),
     ]);
 
     // Preprocess both resume and job description
     const [resumePreprocessResult, jobPreprocessResult] = await Promise.all([
-      preprocessResume(resume),
-      preprocessJob(job),
+      preprocessResume(resume as any),
+      preprocessJob(job as any),
     ]);
 
     if (!resumePreprocessResult.success) {
@@ -87,8 +87,8 @@ export const POST = async (req: NextRequest) => {
       );
     }
 
-    const { normalizedText: resumeText } = resumePreprocessResult.data;
-    const { normalizedText: jobText } = jobPreprocessResult.data;
+    const { normalizedText: resumeText } = resumePreprocessResult.data as any;
+    const { normalizedText: jobText } = jobPreprocessResult.data as any;
 
     const model = await getModel(
       selectedModel.provider,

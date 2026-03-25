@@ -6,7 +6,7 @@ async function ResumePage({ params }: { params: Promise<{ id: string }> }) {
   const { data: resume } = await getResumeById(id);
   return (
     <div className="col-span-3">
-      <ResumeContainer resume={resume} />
+      <ResumeContainer resume={resume as any} />
     </div>
   );
 }

@@ -61,9 +61,9 @@ function QuestionsContainer({
       );
       if (result?.success && result.data) {
         setQuestions((prev) =>
-          pageNum === 1 ? result.data : [...prev, ...result.data]
+          (pageNum === 1 ? result.data : [...prev, ...(result.data as any[])]) as any
         );
-        setTotalQuestions(result.total);
+        setTotalQuestions(result.total ?? 0);
         setPage(pageNum);
       } else {
         toast({
@@ -109,7 +109,7 @@ function QuestionsContainer({
       });
       return;
     }
-    setEditQuestion(data);
+    setEditQuestion(data as any);
     setDialogOpen(true);
   };
 

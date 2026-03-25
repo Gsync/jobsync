@@ -128,7 +128,7 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
   const startActivity = useCallback(
     async (activityId: string): Promise<boolean> => {
       setIsLoading(true);
-      const { newActivity, success, message } = await startActivityById(activityId);
+      const { data: newActivity, success, message } = await startActivityById(activityId);
 
       if (!isMountedRef.current) {
         setIsLoading(false);
@@ -157,11 +157,11 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
   );
 
   const refreshCurrentActivity = useCallback(async () => {
-    const { activity, success } = await getCurrentActivity();
+    const { data: activity, success } = await getCurrentActivity();
     if (!isMountedRef.current) return;
 
     if (success && activity) {
-      setCurrentActivity(activity);
+      setCurrentActivity(activity as Activity);
     } else {
       setCurrentActivity(undefined);
       stopTimer();

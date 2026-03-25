@@ -1,6 +1,7 @@
 "use server";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
+import { ActionResult } from "@/models/actionResult";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 
@@ -8,7 +9,7 @@ export const getJobSourceList = async (
   page: number = 1,
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
   countBy?: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -54,7 +55,7 @@ export const getJobSourceList = async (
         },
       }),
     ]);
-    return { data, total };
+    return { success: true, data, total };
   } catch (error) {
     const msg = "Failed to fetch job source list. ";
     return handleError(error, msg);
@@ -63,7 +64,7 @@ export const getJobSourceList = async (
 
 export const deleteJobSourceById = async (
   jobSourceId: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -89,7 +90,7 @@ export const deleteJobSourceById = async (
         createdBy: user.id,
       },
     });
-    return { res, success: true };
+    return { success: true, data: res };
   } catch (error) {
     const msg = "Failed to delete job source.";
     return handleError(error, msg);

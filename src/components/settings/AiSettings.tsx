@@ -87,8 +87,8 @@ function AiSettings() {
       try {
         const settingsResult = await getUserSettings();
 
-        if (settingsResult.success && settingsResult.data?.settings?.ai) {
-          const aiSettings = settingsResult.data.settings.ai;
+        if (settingsResult.success && (settingsResult.data as any)?.settings?.ai) {
+          const aiSettings = (settingsResult.data as any).settings.ai;
           setSelectedModel({
             provider: aiSettings.provider || defaultModel.provider,
             model: aiSettings.model,

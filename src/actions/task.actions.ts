@@ -4,6 +4,7 @@ import { handleError } from "@/lib/utils";
 import { Task, TaskStatus } from "@/models/task.model";
 import { AddTaskFormSchema } from "@/models/addTaskForm.schema";
 import { getCurrentUser } from "@/utils/user.utils";
+import { ActionResult } from "@/models/actionResult";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { z } from "zod";
 
@@ -13,7 +14,7 @@ export const getTasksList = async (
   filter?: string,
   statusFilter?: TaskStatus[],
   search?: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -74,7 +75,7 @@ export const getTasksList = async (
 
 export const getTaskById = async (
   taskId: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -111,7 +112,7 @@ export const getTaskById = async (
 
 export const createTask = async (
   data: z.infer<typeof AddTaskFormSchema>
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -146,7 +147,7 @@ export const createTask = async (
 
 export const updateTask = async (
   data: z.infer<typeof AddTaskFormSchema>
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -189,7 +190,7 @@ export const updateTask = async (
 export const updateTaskStatus = async (
   taskId: string,
   status: TaskStatus
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -219,7 +220,7 @@ export const updateTaskStatus = async (
 
 export const deleteTaskById = async (
   taskId: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -265,7 +266,7 @@ export const deleteTaskById = async (
 
 export const startActivityFromTask = async (
   taskId: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -345,7 +346,7 @@ export const startActivityFromTask = async (
 };
 
 export const getActivityTypesWithTaskCounts = async (): Promise<
-  any | undefined
+  ActionResult<unknown>
 > => {
   try {
     const user = await getCurrentUser();
@@ -387,7 +388,7 @@ export const getActivityTypesWithTaskCounts = async (): Promise<
       },
     });
 
-    return { success: true, data, totalTasks };
+    return { success: true, data, total: totalTasks };
   } catch (error) {
     const msg = "Failed to fetch activity types with task counts.";
     return handleError(error, msg);

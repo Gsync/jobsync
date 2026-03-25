@@ -774,7 +774,7 @@ describe("taskActions", () => {
             taskCount: 3,
           },
         ],
-        totalTasks: 8,
+        total: 8,
       });
       expect(prisma.activityType.findMany).toHaveBeenCalledWith({
         where: {

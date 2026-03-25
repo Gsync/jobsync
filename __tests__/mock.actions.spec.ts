@@ -232,7 +232,6 @@ describe("mock.actions", () => {
       const result = await clearMockActivitiesAction();
 
       expect(result.success).toBe(true);
-      expect(result.deletedCount).toBe(2);
       expect(result.message).toMatch(/Deleted 2 mock activities/);
 
       expect(prisma.activity.findMany).toHaveBeenCalledWith({
@@ -254,7 +253,7 @@ describe("mock.actions", () => {
       const result = await clearMockActivitiesAction();
 
       expect(result.success).toBe(true);
-      expect(result.deletedCount).toBe(0);
+      expect(result.message).toMatch(/Deleted 0 mock activities/);
     });
 
     it("handles unexpected Prisma errors gracefully", async () => {

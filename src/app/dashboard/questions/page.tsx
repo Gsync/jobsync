@@ -12,8 +12,8 @@ async function Questions() {
   return (
     <QuestionsPageClient
       allTags={allTags || []}
-      tagsWithCounts={tagsWithCounts?.data || []}
-      totalQuestions={tagsWithCounts?.totalQuestions || 0}
+      tagsWithCounts={(tagsWithCounts?.data as any) || []}
+      totalQuestions={tagsWithCounts?.total || 0}
     />
   );
 }

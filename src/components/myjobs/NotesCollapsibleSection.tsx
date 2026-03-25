@@ -40,7 +40,7 @@ export function NotesCollapsibleSection({
   const loadNotes = useCallback(async () => {
     const result = await getNotesByJobId(jobId);
     if (result.success) {
-      setNotes(result.data);
+      setNotes(result.data as any);
     }
   }, [jobId]);
 

@@ -103,8 +103,8 @@ function JobsContainer({
         search,
       );
       if (success && data) {
-        setJobs((prev) => (page === 1 ? data : [...prev, ...data]));
-        setTotalJobs(total);
+        setJobs((prev) => (page === 1 ? data : [...prev, ...(data as any[])]) as any);
+        setTotalJobs(total ?? 0);
         setPage(page);
         setLoading(false);
       } else {
@@ -128,7 +128,7 @@ function JobsContainer({
   }, [loadJobs, filterKey, searchTerm]);
 
   const onDeleteJob = async (jobId: string) => {
-    const { res, success, message } = await deleteJobById(jobId);
+    const { data: res, success, message } = await deleteJobById(jobId);
     if (success) {
       toast({
         variant: "success",
@@ -145,7 +145,7 @@ function JobsContainer({
   };
 
   const onEditJob = async (jobId: string) => {
-    const { job, success, message } = await getJobDetails(jobId);
+    const { data: job, success, message } = await getJobDetails(jobId);
     if (!success) {
       toast({
         variant: "destructive",
@@ -154,7 +154,7 @@ function JobsContainer({
       });
       return;
     }
-    setEditJob(job);
+    setEditJob(job as any);
   };
 
   const onChangeJobStatus = async (jobId: string, jobStatus: JobStatus) => {

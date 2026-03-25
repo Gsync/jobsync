@@ -4,7 +4,7 @@ import { AutomationContainer } from "@/components/automations/AutomationContaine
 export default async function AutomationsPage() {
   const resumeResult = await getResumeList(1, 100);
   const resumes =
-    resumeResult?.data?.map((r: { id: string; title: string }) => ({
+    (resumeResult?.data as any[])?.map((r: { id: string; title: string }) => ({
       id: r.id,
       title: r.title,
     })) || [];

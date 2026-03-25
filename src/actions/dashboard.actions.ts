@@ -8,7 +8,7 @@ import { subDays } from "date-fns";
 
 export const getJobsAppliedForPeriod = async (
   daysAgo: number,
-): Promise<any | undefined> => {
+): Promise<{ count: number; trend: number | null }> => {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -44,7 +44,7 @@ export const getJobsAppliedForPeriod = async (
   }
 };
 
-export const getRecentJobs = async (): Promise<any | undefined> => {
+export const getRecentJobs = async (): Promise<any[]> => {
   try {
     const user = await getCurrentUser();
 
@@ -76,7 +76,7 @@ export const getRecentJobs = async (): Promise<any | undefined> => {
   }
 };
 
-export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
+export const getActivityDataForPeriod = async (): Promise<Record<string, any>[]> => {
   try {
     const user = await getCurrentUser();
 
@@ -154,7 +154,7 @@ export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
   }
 };
 
-export const getJobsActivityForPeriod = async (): Promise<any | undefined> => {
+export const getJobsActivityForPeriod = async (): Promise<{ day: string; value: number }[]> => {
   try {
     const user = await getCurrentUser();
 
@@ -326,7 +326,7 @@ export const getRecentActivities = async () => {
   }
 };
 
-export const getActivityCalendarData = async (): Promise<any | undefined> => {
+export const getActivityCalendarData = async (): Promise<Record<string, { day: string; value: number; hours: number }[]>> => {
   try {
     const user = await getCurrentUser();
 

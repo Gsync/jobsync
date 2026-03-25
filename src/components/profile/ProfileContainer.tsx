@@ -35,8 +35,8 @@ const ProfileContainer = () => {
         recordsPerPage,
       );
       if (success && data) {
-        setResumes((prev) => (page === 1 ? data : [...prev, ...data]));
-        setTotalResumes(total);
+        setResumes((prev) => (page === 1 ? data : [...prev, ...(data as any[])]) as any);
+        setTotalResumes(total ?? 0);
         setPage(page);
         setLoading(false);
       } else {

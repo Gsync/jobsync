@@ -94,7 +94,7 @@ describe("Job Location Actions", () => {
 
       const result = await getJobLocationsList(1, 10);
 
-      expect(result).toEqual({ data: mockData, total: mockTotal });
+      expect(result).toEqual({ success: true, data: mockData, total: mockTotal });
       expect(prisma.location.findMany).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
         skip: 0,
@@ -116,7 +116,7 @@ describe("Job Location Actions", () => {
 
       const result = await getJobLocationsList(1, 10, "applied");
 
-      expect(result).toEqual({ data: mockData, total: 1 });
+      expect(result).toEqual({ success: true, data: mockData, total: 1 });
       expect(prisma.location.findMany).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
         skip: 0,
@@ -180,7 +180,7 @@ describe("Job Location Actions", () => {
 
       const result = await deleteJobLocationById("loc-1");
 
-      expect(result).toEqual({ res: mockDeleted, success: true });
+      expect(result).toEqual({ data: mockDeleted, success: true });
       expect(prisma.location.delete).toHaveBeenCalledWith({
         where: { id: "loc-1", createdBy: mockUser.id },
       });

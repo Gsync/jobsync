@@ -33,8 +33,8 @@ function CompaniesContainer() {
         "applied"
       );
       if (data) {
-        setCompanies((prev) => (page === 1 ? data : [...prev, ...data]));
-        setTotalCompanies(total);
+        setCompanies((prev) => (page === 1 ? data : [...prev, ...(data as any[])]) as any);
+        setTotalCompanies(total ?? 0);
         setPage(page);
         setLoading(false);
       }
@@ -55,8 +55,8 @@ function CompaniesContainer() {
   }, [loadCompanies, recordsPerPage]);
 
   const onEditCompany = async (companyId: string) => {
-    const company = await getCompanyById(companyId);
-    setEditCompany(company);
+    const { data: company } = await getCompanyById(companyId);
+    setEditCompany(company as any);
     setDialogOpen(true);
   };
 

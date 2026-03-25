@@ -108,7 +108,7 @@ describe("jobActions", () => {
 
       const result = await getJobSourceList();
 
-      expect(result).toEqual(mockData);
+      expect(result).toEqual({ success: true, data: mockData });
       expect(prisma.jobSource.findMany).toHaveBeenCalledTimes(1);
     });
 
@@ -363,7 +363,7 @@ describe("jobActions", () => {
 
     const result = await getJobDetails("2");
 
-    expect(result).toStrictEqual({ job: mockJob, success: true });
+    expect(result).toStrictEqual({ data: mockJob, success: true });
     expect(prisma.job.findUnique).toHaveBeenCalledWith({
       where: {
         id: "2",
@@ -464,7 +464,7 @@ describe("jobActions", () => {
 
       const result = await addJob(jobData);
 
-      expect(result).toStrictEqual({ job: jobData, success: true });
+      expect(result).toStrictEqual({ data: jobData, success: true });
       expect(prisma.job.create).toHaveBeenCalledTimes(1);
       expect(prisma.job.create).toHaveBeenCalledWith({
         data: {
@@ -514,7 +514,7 @@ describe("jobActions", () => {
           resumeId: jobData.resume,
         },
       });
-      expect(result).toEqual({ job: jobData, success: true });
+      expect(result).toEqual({ data: jobData, success: true });
     });
     it("should handle unexpected errors", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
@@ -544,7 +544,7 @@ describe("jobActions", () => {
 
       const result = await updateJob(jobData);
 
-      expect(result).toStrictEqual({ job: jobData, success: true });
+      expect(result).toStrictEqual({ data: jobData, success: true });
       expect(prisma.job.update).toHaveBeenCalledTimes(1);
     });
     it("should handle unexpected errors", async () => {
@@ -607,7 +607,7 @@ describe("jobActions", () => {
 
       const result = await updateJobStatus(jobData.id, jobData.status);
 
-      expect(result).toStrictEqual({ job: jobData, success: true });
+      expect(result).toStrictEqual({ data: jobData, success: true });
       expect(prisma.job.update).toHaveBeenCalledTimes(1);
       expect(prisma.job.update).toHaveBeenCalledWith({
         where: {
@@ -661,7 +661,7 @@ describe("jobActions", () => {
 
       const result = await deleteJobById("job-id");
 
-      expect(result).toStrictEqual({ res: jobData, success: true });
+      expect(result).toStrictEqual({ data: jobData, success: true });
       expect(prisma.job.delete).toHaveBeenCalledTimes(1);
       expect(prisma.job.delete).toHaveBeenCalledWith({
         where: {

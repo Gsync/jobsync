@@ -58,8 +58,8 @@ export const AiJobMatchSection = ({
     const fetchSettings = async () => {
       try {
         const result = await getUserSettings();
-        if (result.success && result.data?.settings?.ai) {
-          const aiSettings = result.data.settings.ai;
+        if (result.success && (result.data as any)?.settings?.ai) {
+          const aiSettings = (result.data as any).settings.ai;
           setSelectedModel({
             provider: aiSettings.provider || defaultModel.provider,
             model: aiSettings.model,
@@ -90,10 +90,10 @@ export const AiJobMatchSection = ({
   const getResumes = async () => {
     try {
       const { data, success, message } = await getResumeList();
-      if (!data || data.length === 0) {
+      if (!data || (data as any[]).length === 0) {
         return;
       }
-      resumesRef.current = data;
+      resumesRef.current = data as any;
       if (!success) {
         throw new Error(message);
       }

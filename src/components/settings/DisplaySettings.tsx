@@ -57,8 +57,8 @@ function DisplaySettings() {
       setIsLoading(true);
       try {
         const result = await getUserSettings();
-        if (result.success && result.data?.settings?.display) {
-          const display = result.data.settings.display;
+        if (result.success && (result.data as any)?.settings?.display) {
+          const display = (result.data as any).settings.display;
           form.reset({
             theme: display.theme || "system",
             locale: display.locale || DEFAULT_LOCALE,

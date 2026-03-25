@@ -61,7 +61,7 @@ function CompaniesTable({
 
   const deleteCompany = async (companyId: string | undefined) => {
     if (companyId) {
-      const { res, success, message } = await deleteCompanyById(companyId);
+      const { data: res, success, message } = await deleteCompanyById(companyId);
       if (success) {
         toast({
           variant: "success",

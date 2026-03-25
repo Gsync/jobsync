@@ -2,6 +2,7 @@
 import { cookies } from "next/headers";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
+import { ActionResult } from "@/models/actionResult";
 import { getCurrentUser } from "@/utils/user.utils";
 import {
   UserSettingsData,
@@ -10,7 +11,7 @@ import {
   DisplaySettings,
 } from "@/models/userSettings.model";
 
-export const getUserSettings = async (): Promise<any | undefined> => {
+export const getUserSettings = async (): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -52,7 +53,7 @@ export const getUserSettings = async (): Promise<any | undefined> => {
 
 export const updateUserSettings = async (
   settings: Partial<UserSettingsData>
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -122,13 +123,13 @@ export const updateUserSettings = async (
 
 export const updateAiSettings = async (
   aiSettings: AiSettings
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   return updateUserSettings({ ai: aiSettings });
 };
 
 export const updateDisplaySettings = async (
   displaySettings: DisplaySettings
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   // Sync locale to cookie for server-side access without DB query
   if (displaySettings.locale) {
     const cookieStore = await cookies();

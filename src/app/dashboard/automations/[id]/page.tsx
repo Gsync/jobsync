@@ -77,8 +77,8 @@ export default function AutomationDetailPage() {
       ]);
 
       if (automationResult.success && automationResult.data) {
-        setAutomation(automationResult.data);
-        setRuns(automationResult.data.runs || []);
+        setAutomation(automationResult.data as any);
+        setRuns((automationResult.data as any).runs || []);
       } else {
         toast({
           title: "Error",
@@ -90,11 +90,11 @@ export default function AutomationDetailPage() {
       }
 
       if (runsResult.success && runsResult.data) {
-        setRuns(runsResult.data);
+        setRuns(runsResult.data as any);
       }
 
       if (jobsResult.success && jobsResult.data) {
-        setJobs(jobsResult.data);
+        setJobs(jobsResult.data as any);
       }
     } catch (error) {
       toast({
@@ -175,9 +175,9 @@ export default function AutomationDetailPage() {
   const handleViewJobDetails = async (job: DiscoveredJob) => {
     const result = await getDiscoveredJobById(job.id);
     if (result.success && result.data) {
-      setSelectedJob(result.data);
+      setSelectedJob(result.data as any);
       setSelectedJobMatchData(
-        result.data.parsedMatchData as JobMatchResponse | null,
+        (result.data as any).parsedMatchData as JobMatchResponse | null,
       );
       setDetailOpen(true);
     } else {

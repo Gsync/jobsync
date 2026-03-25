@@ -30,8 +30,8 @@ function JobTitlesContainer() {
         "applied"
       );
       if (data) {
-        setTitles((prev) => (page === 1 ? data : [...prev, ...data]));
-        setTotalJobTitles(total);
+        setTitles((prev) => (page === 1 ? data : [...prev, ...(data as any[])]) as any);
+        setTotalJobTitles(total ?? 0);
         setPage(page);
         setLoading(false);
       }

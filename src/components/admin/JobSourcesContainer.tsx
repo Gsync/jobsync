@@ -30,8 +30,8 @@ function JobSourcesContainer() {
         "applied"
       );
       if (data) {
-        setSources((prev) => (page === 1 ? data : [...prev, ...data]));
-        setTotalJobSources(total);
+        setSources((prev) => (page === 1 ? data : [...prev, ...(data as any[])]) as any);
+        setTotalJobSources(total ?? 0);
         setPage(page);
         setLoading(false);
       }

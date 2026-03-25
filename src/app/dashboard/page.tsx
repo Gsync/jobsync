@@ -23,8 +23,8 @@ export const metadata: Metadata = {
 
 export default async function Dashboard() {
   const [
-    { count: jobsAppliedLast7Days, trend: trendFor7Days },
-    { count: jobsAppliedLast30Days, trend: trendFor30Days },
+    { count: jobsAppliedLast7Days, trend: rawTrendFor7Days },
+    { count: jobsAppliedLast30Days, trend: rawTrendFor30Days },
     recentJobs,
     recentActivities,
     weeklyData,
@@ -43,8 +43,10 @@ export default async function Dashboard() {
     getTopActivityTypesByDuration(7),
     getTopActivityTypesByDuration(30),
   ]);
+  const trendFor7Days = rawTrendFor7Days ?? 0;
+  const trendFor30Days = rawTrendFor30Days ?? 0;
   const activityCalendarDataKeys = Object.keys(activityCalendarData);
-  const activitiesDataKeys = (data: string[]) =>
+  const activitiesDataKeys = (data: Record<string, any>[]) =>
     Array.from(
       new Set(
         data.flatMap((entry) =>

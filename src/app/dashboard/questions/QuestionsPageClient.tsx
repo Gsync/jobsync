@@ -35,8 +35,8 @@ function QuestionsPageClient({
   const refreshSidebarCounts = useCallback(async () => {
     const result = await getTagsWithQuestionCounts();
     if (result?.success) {
-      setSidebarCounts(result.data);
-      setSidebarTotal(result.totalQuestions);
+      setSidebarCounts(result.data as any);
+      setSidebarTotal(result.total || 0);
     }
   }, []);
 

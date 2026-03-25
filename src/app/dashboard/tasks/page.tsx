@@ -12,8 +12,8 @@ async function Tasks() {
   return (
     <TasksPageClient
       activityTypes={activityTypes || []}
-      activityTypesWithCounts={activityTypesWithCounts?.data || []}
-      totalTasks={activityTypesWithCounts?.totalTasks || 0}
+      activityTypesWithCounts={(activityTypesWithCounts?.data as any) || []}
+      totalTasks={activityTypesWithCounts?.total || 0}
     />
   );
 }

@@ -3,6 +3,7 @@ import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { AddQuestionFormSchema } from "@/models/addQuestionForm.schema";
 import { getCurrentUser } from "@/utils/user.utils";
+import { ActionResult } from "@/models/actionResult";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { z } from "zod";
 
@@ -11,7 +12,7 @@ export const getQuestionsList = async (
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
   filter?: string,
   search?: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
     if (!user) throw new Error("Not authenticated");
@@ -54,7 +55,7 @@ export const getQuestionsList = async (
 
 export const getQuestionById = async (
   questionId: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
     if (!user) throw new Error("Not authenticated");
@@ -76,7 +77,7 @@ export const getQuestionById = async (
 
 export const createQuestion = async (
   data: z.infer<typeof AddQuestionFormSchema>
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
     if (!user) throw new Error("Not authenticated");
@@ -103,7 +104,7 @@ export const createQuestion = async (
 
 export const updateQuestion = async (
   data: z.infer<typeof AddQuestionFormSchema>
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
     if (!user) throw new Error("Not authenticated");
@@ -132,7 +133,7 @@ export const updateQuestion = async (
 
 export const deleteQuestion = async (
   questionId: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
     if (!user) throw new Error("Not authenticated");
@@ -148,7 +149,7 @@ export const deleteQuestion = async (
 };
 
 export const getTagsWithQuestionCounts = async (): Promise<
-  any | undefined
+  ActionResult<unknown>
 > => {
   try {
     const user = await getCurrentUser();
@@ -177,7 +178,7 @@ export const getTagsWithQuestionCounts = async (): Promise<
       where: { createdBy: user.id },
     });
 
-    return { success: true, data, totalQuestions };
+    return { success: true, data, total: totalQuestions };
   } catch (error) {
     return handleError(error, "Failed to fetch tags with question counts.");
   }

@@ -3,11 +3,12 @@ import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { Activity } from "@/models/activity.model";
 import { AddActivityFormSchema } from "@/models/addActivityForm.schema";
+import { ActionResult } from "@/models/actionResult";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { z } from "zod";
 
-export const getAllActivityTypes = async (): Promise<any | undefined> => {
+export const getAllActivityTypes = async (): Promise<any> => {
   try {
     const user = await getCurrentUser();
 
@@ -29,7 +30,7 @@ export const getAllActivityTypes = async (): Promise<any | undefined> => {
 
 export const createActivityType = async (
   label: string
-): Promise<any | undefined> => {
+): Promise<any> => {
   try {
     const user = await getCurrentUser();
 
@@ -57,7 +58,7 @@ export const getActivitiesList = async (
   page: number = 1,
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
   search?: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -119,7 +120,7 @@ export const getActivitiesList = async (
 
 export const createActivity = async (
   data: Activity
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -147,7 +148,7 @@ export const createActivity = async (
         description,
       },
     });
-    return { activity, success: true };
+    return { data: activity, success: true };
   } catch (error) {
     const msg = "Failed to create activity. ";
     return handleError(error, msg);
@@ -156,7 +157,7 @@ export const createActivity = async (
 
 export const deleteActivityById = async (
   activityId: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -170,7 +171,7 @@ export const deleteActivityById = async (
         userId: user.id,
       },
     });
-    return { res, success: true };
+    return { data: res, success: true };
   } catch (error) {
     const msg = "Failed to delete job.";
     return handleError(error, msg);
@@ -179,7 +180,7 @@ export const deleteActivityById = async (
 
 export const startActivityById = async (
   activityId: string
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -233,7 +234,7 @@ export const startActivityById = async (
         activityType: true,
       },
     });
-    return { newActivity, success: true };
+    return { data: newActivity, success: true };
   } catch (error) {
     const msg = "Failed to start activity. ";
     return handleError(error, msg);
@@ -244,7 +245,7 @@ export const stopActivityById = async (
   activityId: string,
   endTime: Date,
   duration: number
-): Promise<any | undefined> => {
+): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -262,14 +263,14 @@ export const stopActivityById = async (
         duration,
       },
     });
-    return { activity, success: true };
+    return { data: activity, success: true };
   } catch (error) {
     const msg = "Failed to stop activity. ";
     return handleError(error, msg);
   }
 };
 
-export const getCurrentActivity = async (): Promise<any | undefined> => {
+export const getCurrentActivity = async (): Promise<ActionResult<unknown>> => {
   try {
     const user = await getCurrentUser();
 
@@ -296,7 +297,7 @@ export const getCurrentActivity = async (): Promise<any | undefined> => {
       return { success: false };
     }
 
-    return { activity, success: true };
+    return { data: activity, success: true };
   } catch (error) {
     const msg = "Failed to get current activity. ";
     return handleError(error, msg);

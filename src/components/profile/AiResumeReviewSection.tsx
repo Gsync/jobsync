@@ -44,8 +44,8 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
     const fetchSettings = async () => {
       try {
         const result = await getUserSettings();
-        if (result.success && result.data?.settings?.ai) {
-          const aiSettings = result.data.settings.ai;
+        if (result.success && (result.data as any)?.settings?.ai) {
+          const aiSettings = (result.data as any).settings.ai;
           setSelectedModel({
             provider: aiSettings.provider || defaultModel.provider,
             model: aiSettings.model,
