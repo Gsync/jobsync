@@ -93,6 +93,7 @@ export const getJobsList = async (
           appliedDate: true,
           description: false,
           Resume: true,
+          CoverLetter: true,
           matchScore: true,
           _count: { select: { Notes: true } },
         },
@@ -189,6 +190,7 @@ export const getJobDetails = async (
             File: true,
           },
         },
+        CoverLetter: true,
         tags: true,
       },
     });
@@ -291,6 +293,7 @@ export const addJob = async (
       jobUrl,
       applied,
       resume,
+      coverLetter,
       tags,
     } = data;
 
@@ -313,6 +316,7 @@ export const addJob = async (
         jobUrl,
         applied,
         resumeId: resume,
+        coverLetterId: coverLetter,
         ...(tagIds.length > 0
           ? { tags: { connect: tagIds.map((id) => ({ id })) } }
           : {}),
@@ -353,6 +357,7 @@ export const updateJob = async (
       jobUrl,
       applied,
       resume,
+      coverLetter,
       tags,
     } = data;
 
@@ -377,6 +382,7 @@ export const updateJob = async (
         jobUrl,
         applied,
         resumeId: resume,
+        coverLetterId: coverLetter,
         tags: { set: tagIds.map((id) => ({ id })) },
       },
     });
