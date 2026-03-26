@@ -266,15 +266,36 @@ Formal specifications in `specs/*.allium` capture domain behaviour:
 
 - `scripts/test.sh` — runs Jest with system Node.js (not bun, due to compatibility)
 - `__tests__/*.spec.ts` — unit + component tests
-- `e2e/*.spec.ts` — Playwright E2E tests
-- **E2E with Chromium**: Use `nice` to lower priority and avoid race conditions under tight resources:
-  ```bash
-  nice -n 10 npx playwright test --project=chromium --workers=1
-  ```
-  Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/run/current-system/sw/bin/chromium` on NixOS.
-  Always start the dev server **externally before** running E2E tests — never let agents manage the server.
 - `src/lib/data/testFixtures.ts` — reusable typed fixtures for all Prisma models
-- System Chromium at `/run/current-system/sw/bin/chromium` for E2E
+
+### E2E Test Infrastructure (Playwright)
+
+**Directory structure:**
+- `e2e/smoke/` — Auth-free tests (signin, locale-switching). No storageState.
+- `e2e/crud/` — CRUD tests (job, task, activity, automation, question, profile). Uses storageState.
+- `e2e/helpers/index.ts` — Shared utilities (`login`, `expectToast`, `selectOrCreateComboboxOption`, `uniqueId`)
+- `e2e/global-setup.ts` — One-time auth setup, saves session to `e2e/.auth/user.json`
+
+**Pipeline:** `globalSetup` → smoke project → crud project. Smoke tests verify auth works; CRUD tests skip login via storageState.
+
+**Running E2E tests:**
+```bash
+# Resource-tight (NixOS VM, CI) — single worker:
+nice -n 10 npx playwright test --project=chromium --workers=1
+
+# Local development — parallel workers:
+npx playwright test --workers=4
+```
+Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/run/current-system/sw/bin/chromium` on NixOS.
+
+**Dev server:** Agents may start the dev server but must **NEVER stop it**. `reuseExistingServer: true` ensures Playwright reuses a running server.
+
+**E2E conventions:**
+- CRUD tests must be **self-contained** (create → assert → cleanup in one test body)
+- Use `uniqueId()` from `e2e/helpers/` for test data names (prevents parallel collision)
+- **No `test.describe.serial`** — all tests must be independently runnable
+- One spec file per domain aggregate (DDD: single source of truth)
+- System Chromium at `/run/current-system/sw/bin/chromium`
 
 ## Code Conventions
 
