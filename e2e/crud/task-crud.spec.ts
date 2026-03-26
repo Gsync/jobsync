@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { expectToast } from "./helpers";
+import { expectToast } from "../helpers";
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { expectToast, selectOrCreateComboboxOption } from "./helpers";
+import { expectToast, selectOrCreateComboboxOption } from "../helpers";
 
 // ---------------------------------------------------------------------------
 // Helpers

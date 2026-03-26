@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { selectOrCreateComboboxOption } from "./helpers";
+import { selectOrCreateComboboxOption } from "../helpers";
 
 // storageState handles authentication — no per-test login needed
 

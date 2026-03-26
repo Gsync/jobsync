@@ -9,7 +9,6 @@ const chromiumOptions = {
 };
 
 export default defineConfig({
-  testDir: "./e2e",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -28,24 +27,13 @@ export default defineConfig({
   projects: [
     {
       name: "smoke",
-      testDir: "./e2e",
-      testMatch: [
-        "signin.spec.ts",
-        "locale-switching.spec.ts",
-      ],
+      testDir: "./e2e/smoke",
       use: { ...chromiumOptions },
       // NO storageState — these tests verify the auth flow itself
     },
     {
       name: "crud",
-      testDir: "./e2e",
-      testIgnore: [
-        "signin.spec.ts",
-        "locale-switching.spec.ts",
-        "global-setup.ts",
-        "helpers/**",
-      ],
-      // dependencies: ["smoke"], // TODO: re-enable after fixing pre-existing smoke failures
+      testDir: "./e2e/crud",
       use: {
         ...chromiumOptions,
         storageState: "e2e/.auth/user.json",
