@@ -1,14 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
+import { selectOrCreateComboboxOption } from "./helpers";
 
 // storageState handles authentication — no per-test login needed
-
-async function login(page: Page) {
-  await page.getByPlaceholder("id@example.com").click();
-  await page.getByPlaceholder("id@example.com").fill("admin@example.com");
-  await page.getByLabel("Password").click();
-  await page.getByLabel("Password").fill("password123");
-  await page.getByRole("button", { name: "Login" }).click();
-}
 
 async function navigateToActivities(page: Page) {
   await page.goto("/dashboard/activities");
@@ -17,7 +10,6 @@ async function navigateToActivities(page: Page) {
 }
 
 async function stopRunningActivity(page: Page) {
-  // The stop button has sr-only text t("activities.stopActivity") = "Stop Activity"
   const stopButton = page.getByRole("button", { name: "Stop Activity" });
   try {
     await stopButton.waitFor({ state: "visible", timeout: 3000 });
@@ -27,33 +19,6 @@ async function stopRunningActivity(page: Page) {
     await page.waitForLoadState("networkidle");
   } catch {
     // No running activity, continue
-  }
-}
-
-/**
- * Select or create a Combobox option.
- * The Combobox search input placeholder is: "Create or Search <fieldName>"
- * or "Search <fieldName>" depending on whether creatable is true.
- */
-async function selectOrCreateComboboxOption(
-  page: Page,
-  label: string,
-  searchPlaceholder: string,
-  text: string,
-) {
-  // The FormLabel creates a <label> pointing to the Combobox trigger button
-  await page.getByLabel(label).click();
-  await page.getByPlaceholder(searchPlaceholder).click();
-  await page.getByPlaceholder(searchPlaceholder).fill(text);
-  await page.waitForTimeout(500);
-  const existingOption = page.getByRole("option", { name: text, exact: true });
-  const createOption = page.getByText(`Create: ${text}`);
-  try {
-    await existingOption.waitFor({ state: "visible", timeout: 3000 });
-    await existingOption.click();
-  } catch {
-    await createOption.waitFor({ state: "visible", timeout: 3000 });
-    await createOption.click();
   }
 }
 

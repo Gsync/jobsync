@@ -1,13 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
+import { expectToast, selectOrCreateComboboxOption } from "./helpers";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/** Wait for a toast notification matching the given pattern. */
-async function expectToast(page: Page, pattern: RegExp) {
-  await expect(page.getByText(pattern).first()).toBeVisible({ timeout: 10000 });
-}
 
 async function navigateToProfile(page: Page) {
   await page.goto("/dashboard/profile");
@@ -54,37 +50,6 @@ async function deleteResume(page: Page, title: string) {
     .click({ force: true });
   // Wait for the row to disappear from the table
   await expect(row).not.toBeVisible({ timeout: 10000 });
-}
-
-async function selectOrCreateComboboxOption(
-  page: Page,
-  label: string,
-  searchPlaceholder: string,
-  text: string,
-) {
-  await page.getByLabel(label).click();
-  await page.getByPlaceholder(searchPlaceholder).click();
-  await page.getByPlaceholder(searchPlaceholder).fill(text);
-  await page.waitForTimeout(600); // Wait for debounce + filter
-  // Try exact match first, then partial match, then create
-  const exactOption = page.getByRole("option", { name: text, exact: true });
-  const partialOption = page
-    .getByRole("option", { name: new RegExp(text, "i") })
-    .first();
-  const createOption = page.getByText(`Create: ${text}`);
-  try {
-    await exactOption.waitFor({ state: "visible", timeout: 2000 });
-    await exactOption.click();
-  } catch {
-    try {
-      await partialOption.waitFor({ state: "visible", timeout: 2000 });
-      await partialOption.click();
-    } catch {
-      await createOption.waitFor({ state: "visible", timeout: 3000 });
-      await createOption.click();
-    }
-  }
-  await page.waitForTimeout(300);
 }
 
 // ---------------------------------------------------------------------------

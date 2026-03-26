@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { selectOrCreateComboboxOption } from "./helpers";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -8,31 +9,6 @@ async function navigateToJobs(page: Page) {
   await page.goto("/dashboard/myjobs");
   await page.waitForLoadState("networkidle");
   await page.getByTestId("add-job-btn").waitFor({ state: "visible" });
-}
-
-async function selectOrCreateComboboxOption(
-  page: Page,
-  label: string,
-  searchPlaceholder: string,
-  text: string,
-) {
-  await page.getByLabel(label).click();
-  await page.getByPlaceholder(searchPlaceholder).click();
-  await page.getByPlaceholder(searchPlaceholder).fill(text);
-  await page.waitForTimeout(600);
-  const existingOption = page.getByRole("option", {
-    name: text,
-    exact: true,
-  });
-  try {
-    await existingOption.waitFor({ state: "visible", timeout: 3000 });
-    await existingOption.click();
-  } catch {
-    const createOption = page.getByText(`Create: ${text}`);
-    await createOption.waitFor({ state: "visible", timeout: 3000 });
-    await createOption.click();
-  }
-  await page.waitForTimeout(300);
 }
 
 async function createJob(

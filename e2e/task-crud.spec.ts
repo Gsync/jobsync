@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { expectToast } from "./helpers";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -50,10 +51,6 @@ async function createTask(
   await expect(page.getByTestId("task-form-dialog-title")).not.toBeVisible({
     timeout: 10000,
   });
-}
-
-async function expectToast(page: Page, pattern: RegExp) {
-  await expect(page.getByText(pattern).first()).toBeVisible({ timeout: 10000 });
 }
 
 async function stopRunningActivity(page: Page) {

@@ -2,14 +2,6 @@ import { test, expect, type Page } from "@playwright/test";
 
 // storageState handles authentication — no per-test login needed
 
-async function login(page: Page) {
-  await page.getByPlaceholder("id@example.com").click();
-  await page.getByPlaceholder("id@example.com").fill("admin@example.com");
-  await page.getByLabel("Password").click();
-  await page.getByLabel("Password").fill("password123");
-  await page.getByRole("button", { name: "Login" }).click();
-}
-
 async function navigateToQuestions(page: Page) {
   await page.goto("/dashboard/questions");
   await page.waitForLoadState("networkidle");
