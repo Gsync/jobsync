@@ -372,6 +372,7 @@ describe("jobActions", () => {
         JobSource: true,
         JobTitle: true,
         Company: true,
+        CoverLetter: true,
         Status: true,
         Location: true,
         Resume: {

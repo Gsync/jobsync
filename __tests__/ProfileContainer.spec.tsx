@@ -1,10 +1,22 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import ProfileContainer from "@/components/profile/ProfileContainer";
 import React from "react";
 
 jest.mock("@/actions/profile.actions", () => ({
   getResumeList: jest.fn(() =>
+    Promise.resolve({
+      data: [],
+      total: 0,
+      success: true,
+      message: "",
+    }),
+  ),
+}));
+
+jest.mock("@/actions/coverLetter.actions", () => ({
+  getCoverLetterList: jest.fn(() =>
     Promise.resolve({
       data: [],
       total: 0,
@@ -30,12 +42,15 @@ describe("ProfileContainer Component", () => {
   });
 
   it("should open the create resume dialog upon clicking create resume button", async () => {
-    const createResumeButton = screen.getByRole("button", {
-      name: /new resume/i,
+    const user = userEvent.setup();
+
+    const newButton = screen.getByRole("button", {
+      name: /new/i,
     });
-    await act(async () => {
-      fireEvent.click(createResumeButton);
-    });
+    await user.click(newButton);
+
+    const addResumeItem = await screen.findByText(/add new resume/i);
+    await user.click(addResumeItem);
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(
