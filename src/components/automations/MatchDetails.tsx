@@ -43,7 +43,7 @@ export function MatchDetails({ matchData, discoveredAt }: MatchDetailsProps) {
           <AccordionTrigger>Skills Analysis</AccordionTrigger>
           <AccordionContent>
             <div className="space-y-3">
-              {matchData.skills.matched.length > 0 && (
+              {matchData.skills?.matched?.length > 0 && (
                 <div>
                   <h5 className="text-sm font-medium text-green-600">Matched Skills</h5>
                   <div className="flex flex-wrap gap-1 mt-1">
@@ -55,7 +55,7 @@ export function MatchDetails({ matchData, discoveredAt }: MatchDetailsProps) {
                   </div>
                 </div>
               )}
-              {matchData.skills.missing.length > 0 && (
+              {matchData.skills?.missing?.length > 0 && (
                 <div>
                   <h5 className="text-sm font-medium text-amber-600">Missing Skills</h5>
                   <div className="flex flex-wrap gap-1 mt-1">
@@ -67,7 +67,7 @@ export function MatchDetails({ matchData, discoveredAt }: MatchDetailsProps) {
                   </div>
                 </div>
               )}
-              {matchData.skills.transferable.length > 0 && (
+              {matchData.skills?.transferable?.length > 0 && (
                 <div>
                   <h5 className="text-sm font-medium text-blue-600">Transferable Skills</h5>
                   <div className="flex flex-wrap gap-1 mt-1">
@@ -87,7 +87,7 @@ export function MatchDetails({ matchData, discoveredAt }: MatchDetailsProps) {
           <AccordionTrigger>Requirements Analysis</AccordionTrigger>
           <AccordionContent>
             <div className="space-y-3">
-              {matchData.requirements.met.length > 0 && (
+              {matchData.requirements?.met?.length > 0 && (
                 <div>
                   <h5 className="text-sm font-medium text-green-600">Met Requirements</h5>
                   <ul className="text-sm mt-1 space-y-1">
@@ -100,7 +100,7 @@ export function MatchDetails({ matchData, discoveredAt }: MatchDetailsProps) {
                   </ul>
                 </div>
               )}
-              {matchData.requirements.missing.length > 0 && (
+              {matchData.requirements?.missing?.length > 0 && (
                 <div>
                   <h5 className="text-sm font-medium text-red-600">Missing Requirements</h5>
                   <ul className="text-sm mt-1 space-y-1">
@@ -117,7 +117,7 @@ export function MatchDetails({ matchData, discoveredAt }: MatchDetailsProps) {
           </AccordionContent>
         </AccordionItem>
 
-        {matchData.tailoringTips.length > 0 && (
+        {matchData.tailoringTips?.length > 0 && (
           <AccordionItem value="tips">
             <AccordionTrigger>Tailoring Tips</AccordionTrigger>
             <AccordionContent>
@@ -133,7 +133,7 @@ export function MatchDetails({ matchData, discoveredAt }: MatchDetailsProps) {
           </AccordionItem>
         )}
 
-        {matchData.dealBreakers.length > 0 && (
+        {matchData.dealBreakers?.length > 0 && (
           <AccordionItem value="dealbreakers">
             <AccordionTrigger>Potential Deal Breakers</AccordionTrigger>
             <AccordionContent>

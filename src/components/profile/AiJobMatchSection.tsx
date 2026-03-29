@@ -55,6 +55,7 @@ export const AiJobMatchSection = ({
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const resumesRef = useRef<Resume[]>([]);
   const wasLoadingRef = useRef(false);
+  const stoppedByUserRef = useRef(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -96,6 +97,10 @@ export const AiJobMatchSection = ({
     }
     if (!wasLoadingRef.current || !object?.matchScore) return;
     wasLoadingRef.current = false;
+    if (stoppedByUserRef.current) {
+      stoppedByUserRef.current = false;
+      return;
+    }
 
     const resumeTitle =
       resumesRef.current.find((r) => r.id === selectedResumeId)?.title ??
@@ -162,6 +167,7 @@ export const AiJobMatchSection = ({
   const onOpenChange = async (openState: boolean) => {
     triggerChange(openState);
     if (!openState && isLoading) {
+      stoppedByUserRef.current = true;
       stop();
     }
     if (openState && selectedModel.provider === "ollama") {
