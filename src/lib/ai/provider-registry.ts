@@ -46,6 +46,11 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     credentialType: "api-key",
     category: "cloud",
     envVar: "OPENAI_API_KEY",
+    modelsEndpoint: "openai/models",
+    parseModelsResponse: (data) =>
+      (data.data?.map((m: any) => m.id) ?? [])
+        .filter((id: string) => id.startsWith("gpt-") || id.startsWith("o"))
+        .sort(),
     requiresRunningCheck: false,
     supportsKeepAlive: false,
     keyConfig: {

@@ -68,6 +68,7 @@ const ActionVerbsSchema = z.object({
 });
 
 const SectionFeedbackItemSchema = z.object({
+  section: z.string().describe("Section name (e.g., 'Summary', 'Experience', 'Skills', 'Education')"),
   status: z.enum(["good", "needsWork", "missing"]).describe("Section status assessment"),
   feedback: z.string().describe("Specific actionable advice for this section"),
 });
@@ -106,8 +107,8 @@ export const ResumeReviewSchema = z.object({
   keywords: KeywordsSchema.describe("Keyword relevance analysis"),
   actionVerbs: ActionVerbsSchema.describe("Action verb strength analysis with suggestions"),
   sectionFeedback: z
-    .record(z.string(), SectionFeedbackItemSchema)
-    .describe("Section-by-section feedback keyed by section name (e.g., 'Summary', 'Experience', 'Skills', 'Education')"),
+    .array(SectionFeedbackItemSchema)
+    .describe("Section-by-section feedback for each resume section"),
   atsIssues: z
     .array(z.string())
     .describe("Formatting or content issues that may cause ATS rejection (tables, graphics, unusual fonts, missing sections)"),

@@ -283,7 +283,7 @@ const SectionFeedbackSection = ({
 }: {
   sectionFeedback?: DeepPartial<ResumeReviewResponse["sectionFeedback"]>;
 }) => {
-  if (!sectionFeedback || Object.keys(sectionFeedback).length === 0)
+  if (!sectionFeedback || sectionFeedback.length === 0)
     return null;
 
   const getStatusIcon = (status?: string) => {
@@ -306,17 +306,17 @@ const SectionFeedbackSection = ({
       </AccordionTrigger>
       <AccordionContent>
         <div className="space-y-2">
-          {Object.entries(sectionFeedback).map(
-            ([section, feedback]) =>
-              feedback && (
-                <div key={section} className="border-b pb-2 last:border-0">
+          {sectionFeedback.map(
+            (item, i) =>
+              item && (
+                <div key={item.section ?? i} className="border-b pb-2 last:border-0">
                   <div className="flex items-center gap-1 font-medium text-sm">
-                    {getStatusIcon(feedback.status)}
-                    {section}
+                    {getStatusIcon(item.status)}
+                    {item.section}
                   </div>
-                  {feedback.feedback && (
+                  {item.feedback && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      {feedback.feedback}
+                      {item.feedback}
                     </p>
                   )}
                 </div>
