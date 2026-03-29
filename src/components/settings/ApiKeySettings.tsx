@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "../ui/alert-dialog";
-import { Loader2, Plus, Trash2, CheckCircle } from "lucide-react";
+import { Loader2, Plus, Trash2, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import {
   getUserApiKeys,
   saveApiKey,
@@ -36,6 +36,8 @@ import type {
   ApiKeyProvider,
 } from "@/models/apiKey.model";
 import { getAiProviders } from "@/lib/ai/provider-registry";
+import { AiProvider } from "@/models/ai.model";
+import { checkOllamaConnection } from "@/utils/ai.utils";
 
 interface ProviderConfig {
   id: ApiKeyProvider;
@@ -77,10 +79,20 @@ function ApiKeySettings() {
   const [inputValue, setInputValue] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [ollamaConnected, setOllamaConnected] = useState<boolean | null>(null);
+  const [ollamaChecking, setOllamaChecking] = useState(false);
+
+  const recheckOllamaConnection = async () => {
+    setOllamaChecking(true);
+    const result = await checkOllamaConnection(AiProvider.OLLAMA);
+    setOllamaConnected(result.isConnected);
+    setOllamaChecking(false);
+  };
 
   useEffect(() => {
     fetchKeys();
     getDefaultOllamaBaseUrl().then(setDefaultOllamaUrl);
+    recheckOllamaConnection();
   }, []);
 
   const fetchKeys = async () => {
@@ -250,6 +262,37 @@ function ApiKeySettings() {
                   )}
                 </div>
               </CardHeader>
+              {provider.id === "ollama" && (
+                <div className="px-6 pb-3">
+                  <div className="flex items-center gap-2">
+                    {ollamaChecking ? (
+                      <div className="flex items-center gap-1 text-muted-foreground text-sm">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>Checking...</span>
+                      </div>
+                    ) : ollamaConnected === true ? (
+                      <div className="flex items-center gap-1 text-green-600 text-sm">
+                        <CheckCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span>Ollama is running</span>
+                      </div>
+                    ) : ollamaConnected === false ? (
+                      <div className="flex items-center gap-1 text-red-600 text-sm">
+                        <XCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span>Ollama is not running</span>
+                      </div>
+                    ) : null}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0"
+                      onClick={recheckOllamaConnection}
+                      disabled={ollamaChecking}
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${ollamaChecking ? "animate-spin" : ""}`} />
+                    </Button>
+                  </div>
+                </div>
+              )}
               <CardContent>
                 {isEditing ? (
                   <div className="space-y-3">

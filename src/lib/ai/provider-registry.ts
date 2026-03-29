@@ -30,7 +30,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     defaultCredential: "http://127.0.0.1:11434",
     modelsEndpoint: "ollama/tags",
     parseModelsResponse: (data) => data.models?.map((m: any) => m.name) ?? [],
-    requiresRunningCheck: true,
+    requiresRunningCheck: false,
     supportsKeepAlive: true,
     keyConfig: {
       placeholder: "http://127.0.0.1:11434",

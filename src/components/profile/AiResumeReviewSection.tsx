@@ -23,7 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
-import { checkIfModelIsRunning } from "@/utils/ai.utils";
+import { checkOllamaConnection } from "@/utils/ai.utils";
 import { ResumeReviewSchema } from "@/models/ai.schemas";
 import { getUserSettings } from "@/actions/userSettings.actions";
 
@@ -33,8 +33,8 @@ interface AiSectionProps {
 
 const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   const [aISectionOpen, setAiSectionOpen] = useState(false);
-  const [runningModelName, setRunningModelName] = useState<string>("");
-  const [runningModelError, setRunningModelError] = useState<string>("");
+  const [ollamaConnected, setOllamaConnected] = useState<boolean | null>(null);
+  const [connectionError, setConnectionError] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<AiModel>(defaultModel);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
 
@@ -89,21 +89,19 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
     if (!openState && isLoading) {
       stop();
     } else if (openState && selectedModel.provider === "ollama") {
-      await checkModelStatus();
+      await checkConnectionStatus();
     }
   };
 
-  const checkModelStatus = async () => {
-    setRunningModelName("");
-    setRunningModelError("");
-    const result = await checkIfModelIsRunning(
-      selectedModel.model,
-      selectedModel.provider
-    );
-    if (result.isRunning && result.runningModelName) {
-      setRunningModelName(result.runningModelName);
-    } else if (result.error) {
-      setRunningModelError(result.error);
+  const checkConnectionStatus = async () => {
+    setOllamaConnected(null);
+    setConnectionError("");
+    const result = await checkOllamaConnection(selectedModel.provider);
+    if (result.isConnected) {
+      setOllamaConnected(true);
+    } else {
+      setOllamaConnected(false);
+      setConnectionError(result.error || "Ollama is not reachable.");
     }
   };
 
@@ -149,16 +147,16 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
 
           {selectedModel.provider === "ollama" && (
             <>
-              {runningModelName && (
+              {ollamaConnected === true && (
                 <div className="flex items-center gap-1 text-green-600 text-sm mt-4">
                   <CheckCircle className="h-4 w-4 flex-shrink-0" />
-                  <span>{runningModelName} is running</span>
+                  <span>Ollama is connected</span>
                 </div>
               )}
-              {runningModelError && (
+              {ollamaConnected === false && (
                 <div className="flex items-center gap-1 text-red-600 text-sm mt-4">
                   <XCircle className="h-4 w-4 flex-shrink-0" />
-                  <span>{runningModelError}</span>
+                  <span>{connectionError}</span>
                 </div>
               )}
             </>
@@ -172,7 +170,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
               onClick={getResumeReview}
               disabled={
                 isLoading ||
-                (selectedModel.provider === "ollama" && !runningModelName)
+                (selectedModel.provider === "ollama" && ollamaConnected === false)
               }
             >
               <Sparkles className="h-3.5 w-3.5" />

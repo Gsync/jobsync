@@ -31,7 +31,7 @@ import {
   TooltipTrigger,
 } from "../ui/tooltip";
 import { Info, CheckCircle, XCircle } from "lucide-react";
-import { checkIfModelIsRunning } from "@/utils/ai.utils";
+import { checkOllamaConnection } from "@/utils/ai.utils";
 import { JobMatchSchema } from "@/models/ai.schemas";
 import { getUserSettings } from "@/actions/userSettings.actions";
 
@@ -49,8 +49,8 @@ export const AiJobMatchSection = ({
   onMatchSaved,
 }: AiSectionProps) => {
   const [selectedResumeId, setSelectedResumeId] = useState<string>();
-  const [runningModelName, setRunningModelName] = useState<string>("");
-  const [runningModelError, setRunningModelError] = useState<string>("");
+  const [ollamaConnected, setOllamaConnected] = useState<boolean | null>(null);
+  const [connectionError, setConnectionError] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<AiModel>(defaultModel);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const resumesRef = useRef<Resume[]>([]);
@@ -147,19 +147,17 @@ export const AiJobMatchSection = ({
     submit({ resumeId, jobId, selectedModel });
   };
 
-  const checkModelStatus = useCallback(async () => {
-    setRunningModelName("");
-    setRunningModelError("");
-    const result = await checkIfModelIsRunning(
-      selectedModel.model,
-      selectedModel.provider,
-    );
-    if (result.isRunning && result.runningModelName) {
-      setRunningModelName(result.runningModelName);
-    } else if (result.error) {
-      setRunningModelError(result.error);
+  const checkConnectionStatus = useCallback(async () => {
+    setOllamaConnected(null);
+    setConnectionError("");
+    const result = await checkOllamaConnection(selectedModel.provider);
+    if (result.isConnected) {
+      setOllamaConnected(true);
+    } else {
+      setOllamaConnected(false);
+      setConnectionError(result.error || "Ollama is not reachable.");
     }
-  }, [selectedModel.model, selectedModel.provider]);
+  }, [selectedModel.provider]);
 
   const onOpenChange = async (openState: boolean) => {
     triggerChange(openState);
@@ -167,10 +165,10 @@ export const AiJobMatchSection = ({
       stop();
     }
     if (openState && selectedModel.provider === "ollama") {
-      await checkModelStatus();
+      await checkConnectionStatus();
     } else if (!openState) {
-      setRunningModelName("");
-      setRunningModelError("");
+      setOllamaConnected(null);
+      setConnectionError("");
       setSelectedResumeId(undefined);
     }
   };
@@ -186,9 +184,9 @@ export const AiJobMatchSection = ({
 
   useEffect(() => {
     if (aISectionOpen && selectedModel.provider === "ollama") {
-      checkModelStatus();
+      checkConnectionStatus();
     }
-  }, [aISectionOpen, selectedModel.provider, checkModelStatus]);
+  }, [aISectionOpen, selectedModel.provider, checkConnectionStatus]);
 
   // Check if we have any content to show
   const hasContent =
@@ -217,16 +215,16 @@ export const AiJobMatchSection = ({
 
           {selectedModel.provider === "ollama" && (
             <>
-              {runningModelName && (
+              {ollamaConnected === true && (
                 <div className="flex items-center gap-1 text-green-600 text-sm mt-4">
                   <CheckCircle className="h-4 w-4 flex-shrink-0" />
-                  <span>{runningModelName} is running</span>
+                  <span>Ollama is connected</span>
                 </div>
               )}
-              {runningModelError && (
+              {ollamaConnected === false && (
                 <div className="flex items-center gap-1 text-red-600 text-sm mt-4">
                   <XCircle className="h-4 w-4 flex-shrink-0" />
-                  <span>{runningModelError}</span>
+                  <span>{connectionError}</span>
                 </div>
               )}
             </>
@@ -240,7 +238,7 @@ export const AiJobMatchSection = ({
                 disabled={
                   isLoading ||
                   isLoadingSettings ||
-                  (selectedModel.provider === "ollama" && !runningModelName)
+                  (selectedModel.provider === "ollama" && ollamaConnected === false)
                 }
               >
                 <SelectTrigger className="w-[180px]">

@@ -36,7 +36,7 @@ jest.mock("@/actions/userSettings.actions", () => ({
 }));
 
 jest.mock("@/utils/ai.utils", () => ({
-  checkIfModelIsRunning: jest.fn().mockResolvedValue({ isRunning: false }),
+  checkOllamaConnection: jest.fn().mockResolvedValue({ isConnected: true }),
 }));
 
 const mockToast = jest.fn();
