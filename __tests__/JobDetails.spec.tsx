@@ -2,15 +2,19 @@ import React from "react";
 import JobDetails from "@/components/myjobs/JobDetails";
 import { JobResponse, Tag } from "@/models/job.model";
 import "@testing-library/jest-dom";
-import { render, screen } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(() => ({ back: jest.fn() })),
 }));
 
-// Stub heavy sub-components that are not under test
+let capturedOnMatchSaved: ((score: number, data: string) => void) | undefined;
+
 jest.mock("@/components/profile/AiJobMatchSection", () => ({
-  AiJobMatchSection: () => null,
+  AiJobMatchSection: (props: any) => {
+    capturedOnMatchSaved = props.onMatchSaved;
+    return null;
+  },
 }));
 
 jest.mock("@/components/myjobs/NotesSection", () => ({
@@ -22,7 +26,7 @@ jest.mock("@/components/TipTapContentViewer", () => ({
 }));
 
 jest.mock("@/components/automations/MatchDetails", () => ({
-  MatchDetails: () => null,
+  MatchDetails: () => <div data-testid="match-details" />,
 }));
 
 jest.mock("@/components/profile/DownloadFileButton", () => ({
@@ -119,5 +123,73 @@ describe("JobDetails – skill badges", () => {
     // getAllByText returns an array; each label should appear exactly once in the badge area
     expect(screen.getAllByText("React")).toHaveLength(1);
     expect(screen.getAllByText("Vue")).toHaveLength(1);
+  });
+});
+
+describe("JobDetails – match data display", () => {
+  beforeEach(() => {
+    capturedOnMatchSaved = undefined;
+  });
+
+  it("shows inline match analysis when job has matchData", () => {
+    const matchData = JSON.stringify({
+      matchScore: 85,
+      summary: "Good match",
+    });
+    render(<JobDetails job={makeJob({ matchScore: 85, matchData })} />);
+
+    expect(screen.getByText("AI Match Analysis")).toBeInTheDocument();
+    expect(screen.getByText("85% Match")).toBeInTheDocument();
+    expect(screen.getByTestId("match-details")).toBeInTheDocument();
+  });
+
+  it("does not show inline match section when job has no matchData", () => {
+    render(<JobDetails job={makeJob()} />);
+
+    expect(screen.queryByText("AI Match Analysis")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("match-details")).not.toBeInTheDocument();
+  });
+
+  it("updates inline match display when onMatchSaved is called", () => {
+    render(<JobDetails job={makeJob()} />);
+
+    // Initially no match section
+    expect(screen.queryByText("AI Match Analysis")).not.toBeInTheDocument();
+
+    // Simulate save callback from AiJobMatchSection
+    const newMatchData = JSON.stringify({
+      matchScore: 72,
+      summary: "Partial match",
+    });
+
+    act(() => {
+      capturedOnMatchSaved?.(72, newMatchData);
+    });
+
+    expect(screen.getByText("AI Match Analysis")).toBeInTheDocument();
+    expect(screen.getByText("72% Match")).toBeInTheDocument();
+    expect(screen.getByTestId("match-details")).toBeInTheDocument();
+  });
+
+  it("overwrites existing match data when onMatchSaved is called", () => {
+    const oldMatchData = JSON.stringify({
+      matchScore: 60,
+      summary: "Old match",
+    });
+    render(<JobDetails job={makeJob({ matchScore: 60, matchData: oldMatchData })} />);
+
+    expect(screen.getByText("60% Match")).toBeInTheDocument();
+
+    const newMatchData = JSON.stringify({
+      matchScore: 90,
+      summary: "New match",
+    });
+
+    act(() => {
+      capturedOnMatchSaved?.(90, newMatchData);
+    });
+
+    expect(screen.queryByText("60% Match")).not.toBeInTheDocument();
+    expect(screen.getByText("90% Match")).toBeInTheDocument();
   });
 });

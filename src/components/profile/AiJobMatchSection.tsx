@@ -2,6 +2,7 @@
 
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { getResumeList } from "@/actions/profile.actions";
+import { saveJobMatchResult } from "@/actions/job.actions";
 import {
   Sheet,
   SheetContent,
@@ -38,12 +39,14 @@ interface AiSectionProps {
   aISectionOpen: boolean;
   triggerChange: (openState: boolean) => void;
   jobId: string;
+  onMatchSaved?: (matchScore: number, matchData: string) => void;
 }
 
 export const AiJobMatchSection = ({
   aISectionOpen,
   triggerChange,
   jobId,
+  onMatchSaved,
 }: AiSectionProps) => {
   const [selectedResumeId, setSelectedResumeId] = useState<string>();
   const [runningModelName, setRunningModelName] = useState<string>("");
@@ -51,6 +54,7 @@ export const AiJobMatchSection = ({
   const [selectedModel, setSelectedModel] = useState<AiModel>(defaultModel);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const resumesRef = useRef<Resume[]>([]);
+  const wasLoadingRef = useRef(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -84,6 +88,39 @@ export const AiJobMatchSection = ({
       });
     },
   });
+
+  useEffect(() => {
+    if (isLoading) {
+      wasLoadingRef.current = true;
+      return;
+    }
+    if (!wasLoadingRef.current || !object?.matchScore) return;
+    wasLoadingRef.current = false;
+
+    const resumeTitle =
+      resumesRef.current.find((r) => r.id === selectedResumeId)?.title ??
+      "Unknown Resume";
+    const matchData = JSON.stringify({
+      ...object,
+      resumeId: selectedResumeId,
+      resumeTitle,
+      matchedAt: new Date().toISOString(),
+    });
+    const score = object.matchScore;
+
+    saveJobMatchResult(jobId, score, matchData).then((result) => {
+      if (result?.success) {
+        onMatchSaved?.(score, matchData);
+        toast({ title: "Match result saved" });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error!",
+          description: result?.message || "Failed to save match result",
+        });
+      }
+    });
+  }, [isLoading, object, jobId, selectedResumeId, onMatchSaved]);
 
   const getResumes = async () => {
     try {

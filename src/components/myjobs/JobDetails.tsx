@@ -16,24 +16,34 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AiJobMatchSection } from "../profile/AiJobMatchSection";
 import { NotesSection } from "./NotesSection";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { DownloadFileButton } from "../profile/DownloadFileButton";
 import { MatchDetails } from "../automations/MatchDetails";
 import type { JobMatchResponse } from "@/models/ai.schemas";
 
 function JobDetails({ job }: { job: JobResponse }) {
   const [aiSectionOpen, setAiSectionOpen] = useState(false);
+  const [currentMatchScore, setCurrentMatchScore] = useState(job.matchScore);
+  const [currentMatchData, setCurrentMatchData] = useState(job.matchData);
   const router = useRouter();
   const goBack = () => router.back();
 
   const parsedMatchData = useMemo(() => {
-    if (!job.matchData) return null;
+    if (!currentMatchData) return null;
     try {
-      return JSON.parse(job.matchData) as JobMatchResponse;
+      return JSON.parse(currentMatchData) as JobMatchResponse;
     } catch {
       return null;
     }
-  }, [job.matchData]);
+  }, [currentMatchData]);
+
+  const handleMatchSaved = useCallback(
+    (matchScore: number, matchData: string) => {
+      setCurrentMatchScore(matchScore);
+      setCurrentMatchData(matchData);
+    },
+    [],
+  );
   const getAiJobMatch = async () => {
     setAiSectionOpen(true);
   };
@@ -136,8 +146,8 @@ function JobDetails({ job }: { job: JobResponse }) {
               <h4 className="font-medium mb-2 flex items-center gap-2">
                 <Sparkles className="h-4 w-4" />
                 AI Match Analysis
-                {job.matchScore && (
-                  <Badge variant="default">{job.matchScore}% Match</Badge>
+                {currentMatchScore && (
+                  <Badge variant="default">{currentMatchScore}% Match</Badge>
                 )}
               </h4>
               <MatchDetails matchData={parsedMatchData} />
@@ -151,6 +161,7 @@ function JobDetails({ job }: { job: JobResponse }) {
           jobId={job?.id}
           aISectionOpen={aiSectionOpen}
           triggerChange={setAiSectionOpen}
+          onMatchSaved={handleMatchSaved}
         />
       }
     </>
