@@ -2,32 +2,29 @@ import "server-only";
 
 import db from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
+import { PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
 
-const ENV_VAR_MAP: Record<string, string> = {
-  openai: "OPENAI_API_KEY",
-  deepseek: "DEEPSEEK_API_KEY",
+// RapidAPI is not in the AI provider registry but still needs env var resolution
+const EXTRA_ENV_VARS: Record<string, string> = {
   rapidapi: "RAPIDAPI_KEY",
-  ollama: "OLLAMA_BASE_URL",
 };
-
-const OLLAMA_DEFAULT = "http://127.0.0.1:11434";
 
 export async function resolveApiKey(
   userId: string | undefined,
   provider: string,
 ): Promise<string | undefined> {
-  // Try user DB key first
   if (userId) {
     try {
       const apiKey = await db.apiKey.findUnique({
         where: { userId_provider: { userId, provider } },
       });
       if (apiKey) {
-        // Update lastUsedAt in background
-        db.apiKey.update({
-          where: { id: apiKey.id },
-          data: { lastUsedAt: new Date() },
-        }).catch(() => {});
+        db.apiKey
+          .update({
+            where: { id: apiKey.id },
+            data: { lastUsedAt: new Date() },
+          })
+          .catch(() => {});
 
         return decrypt(apiKey.encryptedKey, apiKey.iv);
       }
@@ -36,15 +33,19 @@ export async function resolveApiKey(
     }
   }
 
-  // Env var fallback
-  const envVar = ENV_VAR_MAP[provider];
-  if (envVar) {
-    const value = process.env[envVar];
+  const entry = PROVIDER_REGISTRY[provider];
+  if (entry?.envVar) {
+    const value = process.env[entry.envVar];
     if (value) return value;
   }
 
-  // Ollama default
-  if (provider === "ollama") return OLLAMA_DEFAULT;
+  const extraEnvVar = EXTRA_ENV_VARS[provider];
+  if (extraEnvVar) {
+    const value = process.env[extraEnvVar];
+    if (value) return value;
+  }
+
+  if (entry?.defaultCredential) return entry.defaultCredential;
 
   return undefined;
 }

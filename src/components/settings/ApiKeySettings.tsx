@@ -35,6 +35,7 @@ import type {
   ApiKeyClientResponse,
   ApiKeyProvider,
 } from "@/models/apiKey.model";
+import { getAiProviders } from "@/lib/ai/provider-registry";
 
 interface ProviderConfig {
   id: ApiKeyProvider;
@@ -45,40 +46,22 @@ interface ProviderConfig {
   sensitive: boolean;
 }
 
-const DEFAULT_OLLAMA_PLACEHOLDER = "http://127.0.0.1:11434";
-
 const PROVIDERS: ProviderConfig[] = [
-  {
-    id: "openai",
-    name: "OpenAI",
-    placeholder: "sk-...",
-    inputType: "password",
-    description: "Used for GPT models in resume review and job matching",
-    sensitive: true,
-  },
-  {
-    id: "deepseek",
-    name: "DeepSeek",
-    placeholder: "sk-...",
-    inputType: "password",
-    description: "Used for DeepSeek models in resume review and job matching",
-    sensitive: true,
-  },
+  ...getAiProviders().map((entry) => ({
+    id: entry.id as ApiKeyProvider,
+    name: entry.displayName,
+    placeholder: entry.keyConfig.placeholder,
+    inputType: entry.keyConfig.inputType,
+    description: entry.keyConfig.description,
+    sensitive: entry.keyConfig.sensitive,
+  })),
   {
     id: "rapidapi",
     name: "RapidAPI",
     placeholder: "Your RapidAPI key",
-    inputType: "password",
+    inputType: "password" as const,
     description: "Used for JSearch job discovery automations",
     sensitive: true,
-  },
-  {
-    id: "ollama",
-    name: "Ollama",
-    placeholder: DEFAULT_OLLAMA_PLACEHOLDER,
-    inputType: "text",
-    description: "Base URL for your Ollama instance",
-    sensitive: false,
   },
 ];
 
@@ -86,7 +69,7 @@ function ApiKeySettings() {
   const [keys, setKeys] = useState<ApiKeyClientResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [defaultOllamaUrl, setDefaultOllamaUrl] = useState(
-    DEFAULT_OLLAMA_PLACEHOLDER,
+    "http://127.0.0.1:11434",
   );
   const [editingProvider, setEditingProvider] = useState<ApiKeyProvider | null>(
     null,
@@ -116,6 +99,11 @@ function ApiKeySettings() {
 
   const getKeyForProvider = (provider: ApiKeyProvider) =>
     keys.find((k) => k.provider === provider);
+
+  const isBaseUrlProvider = (providerId: string) => {
+    const entry = getAiProviders().find((e) => e.id === providerId);
+    return entry?.credentialType === "base-url";
+  };
 
   const handleVerifyAndSave = async (provider: ApiKeyProvider) => {
     if (!inputValue.trim()) return;
@@ -233,6 +221,7 @@ function ApiKeySettings() {
         {PROVIDERS.map((provider) => {
           const existingKey = getKeyForProvider(provider.id);
           const isEditing = editingProvider === provider.id;
+          const isBaseUrl = isBaseUrlProvider(provider.id);
 
           return (
             <Card key={provider.id}>
@@ -242,9 +231,9 @@ function ApiKeySettings() {
                     <CardTitle className="text-base">{provider.name}</CardTitle>
                     <CardDescription className="text-sm">
                       {provider.description}
-                      {provider.id === "ollama" && (
+                      {isBaseUrl && (
                         <span className="block text-xs text-muted-foreground/70 mt-0.5">
-                          Default: {defaultOllamaUrl}
+                          Default: {provider.id === "ollama" ? defaultOllamaUrl : provider.placeholder}
                         </span>
                       )}
                     </CardDescription>
@@ -266,13 +255,13 @@ function ApiKeySettings() {
                   <div className="space-y-3">
                     <div>
                       <Label htmlFor={`key-${provider.id}`}>
-                        {provider.id === "ollama" ? "Base URL" : "API Key"}
+                        {isBaseUrl ? "Base URL" : "API Key"}
                       </Label>
                       <Input
                         id={`key-${provider.id}`}
                         type={provider.inputType}
                         placeholder={
-                          provider.id === "ollama"
+                          isBaseUrl && provider.id === "ollama"
                             ? defaultOllamaUrl
                             : provider.placeholder
                         }
