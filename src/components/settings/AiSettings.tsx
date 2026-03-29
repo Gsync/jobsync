@@ -6,6 +6,7 @@ import {
   defaultModel,
   OpenaiModel,
   DeepseekModel,
+  GeminiModel,
 } from "@/models/ai.model";
 import {
   PROVIDER_REGISTRY,
@@ -93,6 +94,8 @@ function AiSettings() {
         return Object.values(OpenaiModel);
       case AiProvider.DEEPSEEK:
         return Object.values(DeepseekModel);
+      case AiProvider.GEMINI:
+        return Object.values(GeminiModel);
       default:
         return [];
     }

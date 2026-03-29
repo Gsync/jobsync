@@ -78,9 +78,27 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
       sensitive: true,
     },
   },
+  gemini: {
+    id: "gemini",
+    displayName: "Google Gemini",
+    credentialType: "api-key",
+    category: "cloud",
+    envVar: "GEMINI_API_KEY",
+    modelsEndpoint: "gemini/models",
+    parseModelsResponse: (data) =>
+      data.models?.map((m: any) => m.name?.replace("models/", "")) ?? [],
+    requiresRunningCheck: false,
+    supportsKeepAlive: false,
+    keyConfig: {
+      placeholder: "AIza...",
+      inputType: "password",
+      description: "Used for Gemini models in resume review and job matching",
+      sensitive: true,
+    },
+  },
 };
 
-export const AI_PROVIDERS = ["ollama", "openai", "deepseek"] as const;
+export const AI_PROVIDERS = ["ollama", "openai", "deepseek", "gemini"] as const;
 export type AiProviderId = (typeof AI_PROVIDERS)[number];
 
 export function getAiProviders(): ProviderRegistryEntry[] {
