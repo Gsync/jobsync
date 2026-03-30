@@ -61,9 +61,10 @@ git pull origin "$BRANCH"
 echo -e "${GREEN}[4/5]${NC} Stopping existing containers..."
 $COMPOSE_CMD down
 
-# Build and start containers
-echo -e "${GREEN}[5/5]${NC} Building and starting containers..."
-$COMPOSE_CMD up -d --build
+# Pull latest images and start containers
+echo -e "${GREEN}[5/5]${NC} Pulling latest images and starting containers..."
+$COMPOSE_CMD pull
+$COMPOSE_CMD up -d --force-recreate
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
