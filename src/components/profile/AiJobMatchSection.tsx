@@ -34,6 +34,8 @@ import { Info, CheckCircle, XCircle } from "lucide-react";
 import { checkOllamaConnection } from "@/utils/ai.utils";
 import { JobMatchSchema } from "@/models/ai.schemas";
 import { getUserSettings } from "@/actions/userSettings.actions";
+import { useSlowResponseWarning } from "@/hooks/useSlowResponseWarning";
+import { SlowResponseWarning } from "../common/SlowResponseWarning";
 
 interface AiSectionProps {
   aISectionOpen: boolean;
@@ -198,6 +200,8 @@ export const AiJobMatchSection = ({
   const hasContent =
     object && (object.matchScore !== undefined || object.summary);
 
+  const showSlowWarning = useSlowResponseWarning(isLoading, !!hasContent);
+
   return (
     <Sheet open={aISectionOpen} onOpenChange={onOpenChange}>
       <SheetPortal>
@@ -272,6 +276,7 @@ export const AiJobMatchSection = ({
               <div className="flex items-center flex-col mt-4">
                 <Loading />
                 <div className="mt-2">Analyzing job match...</div>
+                {showSlowWarning && <SlowResponseWarning />}
               </div>
             ) : (
               <AiJobMatchResponseContent

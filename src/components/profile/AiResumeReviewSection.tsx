@@ -26,6 +26,8 @@ import {
 import { checkOllamaConnection } from "@/utils/ai.utils";
 import { ResumeReviewSchema } from "@/models/ai.schemas";
 import { getUserSettings } from "@/actions/userSettings.actions";
+import { useSlowResponseWarning } from "@/hooks/useSlowResponseWarning";
+import { SlowResponseWarning } from "../common/SlowResponseWarning";
 
 interface AiSectionProps {
   resume: Resume;
@@ -108,6 +110,8 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   // Check if we have any content to show
   const hasContent = object && (object.scores?.overall !== undefined || object.summary);
 
+  const showSlowWarning = useSlowResponseWarning(isLoading, !!hasContent);
+
   return (
     <Sheet open={aISectionOpen} onOpenChange={triggerSheetChange}>
       <div className="ml-2">
@@ -184,6 +188,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
             <div className="flex items-center flex-col mt-4">
               <Loading />
               <div className="mt-2">Analyzing resume...</div>
+              {showSlowWarning && <SlowResponseWarning />}
             </div>
           ) : (
             <AiResumeReviewResponseContent
