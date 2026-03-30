@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.1.7](https://github.com/Gsync/jobsync/compare/v1.1.6...v1.1.7) (2026-03-30)
+
+
+
 ## [1.1.6](https://github.com/Gsync/jobsync/compare/v1.1.4...v1.1.6) (2026-03-30)
 
 
