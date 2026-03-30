@@ -10,6 +10,8 @@ export const PROVIDER_FACTORIES: Record<
   (credential: string, modelName: string) => any
 > = {
   openai: (apiKey, model) => createOpenAI({ apiKey })(model),
+  openrouter: (apiKey, model) =>
+    createOpenAI({ apiKey, baseURL: "https://openrouter.ai/api/v1" })(model),
   deepseek: (apiKey, model) => createDeepSeek({ apiKey })(model),
   ollama: (baseURL, model) =>
     createOllama({ baseURL: baseURL + "/api" })(model),
@@ -31,6 +33,21 @@ export const PROVIDER_VERIFIERS: Record<
           res.status === 401
             ? "Invalid API key"
             : `OpenAI returned ${res.status}`,
+      };
+    return { success: true };
+  },
+
+  openrouter: async (key) => {
+    const res = await fetch("https://openrouter.ai/api/v1/models", {
+      headers: { Authorization: `Bearer ${key}` },
+    });
+    if (!res.ok)
+      return {
+        success: false,
+        error:
+          res.status === 401
+            ? "Invalid API key"
+            : `OpenRouter returned ${res.status}`,
       };
     return { success: true };
   },

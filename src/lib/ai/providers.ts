@@ -2,7 +2,7 @@ import { resolveApiKey } from "@/lib/api-key-resolver";
 import { PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
 import { PROVIDER_FACTORIES } from "@/lib/ai/provider-registry.server";
 
-export type ProviderType = "openai" | "ollama" | "deepseek" | "gemini";
+export type ProviderType = "openai" | "ollama" | "deepseek" | "openrouter" | "gemini";
 
 export async function getModel(
   provider: ProviderType,

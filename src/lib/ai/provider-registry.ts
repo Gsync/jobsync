@@ -78,6 +78,25 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
       sensitive: true,
     },
   },
+  openrouter: {
+    id: "openrouter",
+    displayName: "OpenRouter",
+    credentialType: "api-key",
+    category: "cloud",
+    envVar: "OPENROUTER_API_KEY",
+    modelsEndpoint: "openrouter/models",
+    parseModelsResponse: (data) =>
+      (data.data?.map((m: any) => m.id) ?? []).sort(),
+    requiresRunningCheck: false,
+    supportsKeepAlive: false,
+    keyConfig: {
+      placeholder: "sk-or-...",
+      inputType: "password",
+      description: "Access 200+ models from multiple providers via OpenRouter",
+      sensitive: true,
+    },
+  },
+
   gemini: {
     id: "gemini",
     displayName: "Google Gemini",
@@ -98,7 +117,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
   },
 };
 
-export const AI_PROVIDERS = ["ollama", "openai", "deepseek", "gemini"] as const;
+export const AI_PROVIDERS = ["ollama", "openai", "deepseek", "openrouter", "gemini"] as const;
 export type AiProviderId = (typeof AI_PROVIDERS)[number];
 
 export function getAiProviders(): ProviderRegistryEntry[] {

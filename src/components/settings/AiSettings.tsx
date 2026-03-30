@@ -114,12 +114,13 @@ function AiSettings() {
       }
       const response = await fetch(`/api/ai/${entry.modelsEndpoint}`);
       if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        const errorMsg = errorData?.error
+          || (entry.category === "local"
+            ? `Failed to fetch ${entry.displayName} models. Make sure ${entry.displayName} is running.`
+            : `Failed to fetch ${entry.displayName} models. Please check your API key in API Keys settings.`);
+        setFetchError(errorMsg);
         setFetchedModels(fallback);
-        if (entry.category === "local") {
-          setFetchError(
-            `Failed to fetch ${entry.displayName} models. Make sure ${entry.displayName} is running.`,
-          );
-        }
         return;
       }
       const data = await response.json();
@@ -128,11 +129,11 @@ function AiSettings() {
     } catch (error) {
       console.error(`Error fetching ${entry.displayName} models:`, error);
       setFetchedModels(fallback);
-      if (entry.category === "local") {
-        setFetchError(
-          `Failed to fetch ${entry.displayName} models. Make sure ${entry.displayName} is running.`,
-        );
-      }
+      setFetchError(
+        entry.category === "local"
+          ? `Failed to fetch ${entry.displayName} models. Make sure ${entry.displayName} is running.`
+          : `Failed to fetch ${entry.displayName} models. Please check your API key in API Keys settings.`,
+      );
     } finally {
       setIsLoadingModels(false);
     }

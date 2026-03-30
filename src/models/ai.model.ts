@@ -25,6 +25,7 @@ export enum AiProvider {
   OPENAI = "openai",
   DEEPSEEK = "deepseek",
   GEMINI = "gemini",
+  OPENROUTER = "openrouter",
 }
 
 // Default models per provider
