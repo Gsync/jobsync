@@ -1,5 +1,48 @@
 # Changelog
 
+## [1.1.6](https://github.com/Gsync/jobsync/compare/v1.1.4...v1.1.6) (2026-03-30)
+
+
+### Features
+
+*  Add openrouter ai models support
+*  Save ai job match details
+*  Add google gemini provider support
+*  Add cover letter
+*  Add activity types tab on admin page
+*  Improve calender label, add hrs activity
+
+### Bug Fixes
+
+*  Healthcheck
+*  AI settings lint error
+* Fix: Present date issue during ai resume review
+*  stop job match streaming error
+*  Auto load ollama model & lint errors
+*  Openai models list and response
+*  Add handlebar security patch
+* Fix failing unit tests
+*  Combo box search/filter logic
+*  foreign key constraint error, & sort skill by jobs
+
+### Other Changes
+
+* Update release
+* Add unit tests for openrouter
+* Update readme
+* Add warning for delayed ai response
+* Add jobs mock data & allow local icons for companies
+*  Cleanup unused code
+* Refactor: AI models provider registry
+*  Add unit tests for cover letter
+* Minor label adjustment
+*  Bump next to 15.5.14
+* Address deprecation: Migrate lint from next to eslint
+* Sort activity types list in sidebar
+* Add unit tests for activity types
+* Change docker internal port
+
+
 ## [1.1.4](https://github.com/Gsync/jobsync/compare/v1.1.3...v1.1.4) (2026-03-06)
 
 
