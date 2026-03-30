@@ -37,7 +37,6 @@ function AiSettings() {
   const [fetchError, setFetchError] = useState<string>("");
   const [connectionError, setConnectionError] = useState<string>("");
 
-  const currentEntry = PROVIDER_REGISTRY[selectedModel.provider];
 
   const setSelectedProvider = (provider: AiProvider) => {
     setSelectedModel({ provider, model: undefined });
@@ -90,54 +89,64 @@ function AiSettings() {
     const entry = PROVIDER_REGISTRY[selectedModel.provider];
     if (!entry) return;
 
-    if (entry.modelsEndpoint) {
-      fetchModels(entry);
-    } else {
+    if (!entry.modelsEndpoint) {
       setFetchedModels(getFallbackModels(selectedModel.provider));
+      return;
     }
-  }, [selectedModel.provider, isInitialized]);
 
-  const fetchModels = async (entry: typeof currentEntry) => {
-    if (!entry?.modelsEndpoint) return;
     const fallback = getFallbackModels(selectedModel.provider);
+    let cancelled = false;
     setIsLoadingModels(true);
     setFetchError("");
     setConnectionError("");
-    try {
-      if (entry.category === "local") {
-        const connResult = await checkOllamaConnection(selectedModel.provider as AiProvider);
-        if (!connResult.isConnected) {
-          setFetchedModels(fallback);
-          setConnectionError(connResult.error || "Ollama is not reachable.");
+
+    (async () => {
+      try {
+        if (entry.category === "local") {
+          const connResult = await checkOllamaConnection(selectedModel.provider as AiProvider);
+          if (!connResult.isConnected) {
+            if (!cancelled) {
+              setFetchedModels(fallback);
+              setConnectionError(connResult.error || "Ollama is not reachable.");
+            }
+            return;
+          }
+        }
+        const response = await fetch(`/api/ai/${entry.modelsEndpoint}`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          const errorMsg = errorData?.error
+            || (entry.category === "local"
+              ? `Failed to fetch ${entry.displayName} models. Make sure ${entry.displayName} is running.`
+              : `Failed to fetch ${entry.displayName} models. Please check your API key in API Keys settings.`);
+          if (!cancelled) {
+            setFetchError(errorMsg);
+            setFetchedModels(fallback);
+          }
           return;
         }
+        const data = await response.json();
+        const models = entry.parseModelsResponse?.(data) ?? [];
+        if (!cancelled) {
+          setFetchedModels(models.length > 0 ? models : fallback);
+        }
+      } catch (error) {
+        console.error(`Error fetching ${entry.displayName} models:`, error);
+        if (!cancelled) {
+          setFetchedModels(fallback);
+          setFetchError(
+            entry.category === "local"
+              ? `Failed to fetch ${entry.displayName} models. Make sure ${entry.displayName} is running.`
+              : `Failed to fetch ${entry.displayName} models. Please check your API key in API Keys settings.`,
+          );
+        }
+      } finally {
+        if (!cancelled) setIsLoadingModels(false);
       }
-      const response = await fetch(`/api/ai/${entry.modelsEndpoint}`);
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        const errorMsg = errorData?.error
-          || (entry.category === "local"
-            ? `Failed to fetch ${entry.displayName} models. Make sure ${entry.displayName} is running.`
-            : `Failed to fetch ${entry.displayName} models. Please check your API key in API Keys settings.`);
-        setFetchError(errorMsg);
-        setFetchedModels(fallback);
-        return;
-      }
-      const data = await response.json();
-      const models = entry.parseModelsResponse?.(data) ?? [];
-      setFetchedModels(models.length > 0 ? models : fallback);
-    } catch (error) {
-      console.error(`Error fetching ${entry.displayName} models:`, error);
-      setFetchedModels(fallback);
-      setFetchError(
-        entry.category === "local"
-          ? `Failed to fetch ${entry.displayName} models. Make sure ${entry.displayName} is running.`
-          : `Failed to fetch ${entry.displayName} models. Please check your API key in API Keys settings.`,
-      );
-    } finally {
-      setIsLoadingModels(false);
-    }
-  };
+    })();
+
+    return () => { cancelled = true; };
+  }, [selectedModel.provider, isInitialized]);
 
   const saveModelSettings = async () => {
     if (!selectedModel.model) {
