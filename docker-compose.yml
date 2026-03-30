@@ -7,7 +7,7 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/data/dev.db
-      - AUTH_SECRET=${AUTH_SECRET:-}
+      - AUTH_SECRET=${AUTH_SECRET:-your-auth-secret}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-you-encryption-key-here}
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3737}
       - AUTH_TRUST_HOST=${AUTH_TRUST_HOST:-true}
