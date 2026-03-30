@@ -6,7 +6,12 @@ import {
   defaultModel,
   OpenaiModel,
   DeepseekModel,
+  GeminiModel,
 } from "@/models/ai.model";
+import {
+  PROVIDER_REGISTRY,
+  AI_PROVIDERS,
+} from "@/lib/ai/provider-registry";
 import {
   Select,
   SelectContent,
@@ -18,65 +23,29 @@ import {
 import { Label } from "../ui/label";
 import { Button } from "../ui/button";
 import { toast } from "../ui/use-toast";
-import { XCircle, CheckCircle, Loader2 } from "lucide-react";
-import { checkIfModelIsRunning } from "@/utils/ai.utils";
+import { XCircle, Loader2 } from "lucide-react";
+import { checkOllamaConnection } from "@/utils/ai.utils";
 import { getUserSettings, updateAiSettings } from "@/actions/userSettings.actions";
-
-interface OllamaModelResponse {
-  models: {
-    name: string;
-    model: string;
-  }[];
-}
-
-interface OllamaRunningModelResponse {
-  models: {
-    name: string;
-    model: string;
-  }[];
-}
-
-interface DeepseekModelResponse {
-  object: string;
-  data: {
-    id: string;
-    object: string;
-    owned_by: string;
-  }[];
-}
 
 function AiSettings() {
   const [selectedModel, setSelectedModel] = useState<AiModel>(defaultModel);
-  const [ollamaModels, setOllamaModels] = useState<string[]>([]);
-  const [deepseekModels, setDeepseekModels] = useState<string[]>([]);
+  const [fetchedModels, setFetchedModels] = useState<string[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [fetchError, setFetchError] = useState<string>("");
-  const [runningModelError, setRunningModelError] = useState<string>("");
-  const [runningModelName, setRunningModelName] = useState<string>("");
+  const [connectionError, setConnectionError] = useState<string>("");
+
 
   const setSelectedProvider = (provider: AiProvider) => {
     setSelectedModel({ provider, model: undefined });
     setFetchError("");
-    setRunningModelError("");
-    setRunningModelName("");
+    setConnectionError("");
   };
-  const setSelectedProviderModel = async (model: string) => {
-    setSelectedModel({ ...selectedModel, model });
-    setRunningModelName("");
-    setRunningModelError("");
 
-    if (selectedModel.provider === AiProvider.OLLAMA) {
-      const result = await checkIfModelIsRunning(model, selectedModel.provider);
-      if (result.isRunning && result.runningModelName) {
-        setRunningModelName(result.runningModelName);
-        await keepModelAlive(result.runningModelName);
-      } else if (result.error) {
-        setRunningModelError(result.error);
-      }
-    }
+  const setSelectedProviderModel = (model: string) => {
+    setSelectedModel({ ...selectedModel, model });
   };
 
   useEffect(() => {
@@ -102,145 +71,83 @@ function AiSettings() {
     fetchSettings();
   }, []);
 
-  useEffect(() => {
-    if (isInitialized && selectedModel.provider === AiProvider.OLLAMA) {
-      fetchOllamaModels();
-    }
-    if (isInitialized && selectedModel.provider === AiProvider.DEEPSEEK) {
-      fetchDeepseekModels();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedModel.provider, isInitialized]);
-
-  const fetchOllamaModels = async () => {
-    setIsLoadingModels(true);
-    setFetchError("");
-    try {
-      const response = await fetch("/api/ai/ollama/tags");
-      if (!response.ok) {
-        if (selectedModel.provider === AiProvider.OLLAMA) {
-          setFetchError(
-            "Failed to fetch Ollama models. Make sure Ollama is running.",
-          );
-        }
-        return;
-      }
-      const data: OllamaModelResponse = await response.json();
-      const modelNames = data.models.map((model) => model.name);
-      setOllamaModels(modelNames);
-
-      await fetchRunningModel();
-    } catch (error) {
-      console.error("Error fetching Ollama models:", error);
-      if (selectedModel.provider === AiProvider.OLLAMA) {
-        setFetchError(
-          "Failed to fetch Ollama models. Make sure Ollama is running.",
-        );
-      }
-    } finally {
-      setIsLoadingModels(false);
-    }
-  };
-
-  const keepModelAlive = async (modelName: string) => {
-    try {
-      await fetch("/api/ai/ollama/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: modelName,
-          prompt: "",
-          keep_alive: "1h",
-          stream: false,
-        }),
-      });
-    } catch (error) {
-      console.error("Error keeping model alive:", error);
-    }
-  };
-
-  const fetchRunningModel = async () => {
-    setRunningModelError("");
-    setRunningModelName("");
-    try {
-      const response = await fetch("/api/ai/ollama/ps");
-      if (!response.ok) {
-        if (selectedModel.provider === AiProvider.OLLAMA) {
-          setRunningModelError(
-            "No model is currently running. Please start a model first.",
-          );
-        }
-        return;
-      }
-      const data: OllamaRunningModelResponse = await response.json();
-      if (data.models && data.models.length > 0) {
-        const runningModelName = data.models[0].name;
-        setSelectedModel({
-          provider: AiProvider.OLLAMA,
-          model: runningModelName,
-        });
-        const result = await checkIfModelIsRunning(
-          runningModelName,
-          AiProvider.OLLAMA,
-        );
-        if (result.isRunning && result.runningModelName) {
-          setRunningModelName(result.runningModelName);
-          await keepModelAlive(result.runningModelName);
-        } else if (result.error) {
-          setRunningModelError(result.error);
-        }
-      } else {
-        if (selectedModel.provider === AiProvider.OLLAMA) {
-          setRunningModelError(
-            "No model is currently running. Please run the ollama model first.",
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching running model:", error);
-      if (selectedModel.provider === AiProvider.OLLAMA) {
-        setRunningModelError(
-          "No model is currently running. Please run the ollama model first.",
-        );
-      }
-    }
-  };
-
-  const fetchDeepseekModels = async () => {
-    setIsLoadingModels(true);
-    setFetchError("");
-    try {
-      const response = await fetch("/api/ai/deepseek/models");
-      if (!response.ok) {
-        const fallbackModels = Object.values(DeepseekModel);
-        setDeepseekModels(fallbackModels);
-        return;
-      }
-      const data: DeepseekModelResponse = await response.json();
-      const modelNames = data.data.map((model) => model.id);
-      setDeepseekModels(
-        modelNames.length > 0 ? modelNames : Object.values(DeepseekModel),
-      );
-    } catch (error) {
-      console.error("Error fetching DeepSeek models:", error);
-      setDeepseekModels(Object.values(DeepseekModel));
-    } finally {
-      setIsLoadingModels(false);
-    }
-  };
-
-  const getModelsList = (provider: AiProvider) => {
+  const getFallbackModels = (provider: AiProvider): string[] => {
     switch (provider) {
-      case AiProvider.OLLAMA:
-        return ollamaModels.map((model) => [model, model]);
       case AiProvider.OPENAI:
-        return Object.entries(OpenaiModel);
+        return Object.values(OpenaiModel);
       case AiProvider.DEEPSEEK:
-        return deepseekModels.map((model) => [model, model]);
+        return Object.values(DeepseekModel);
+      case AiProvider.GEMINI:
+        return Object.values(GeminiModel);
       default:
         return [];
     }
   };
+
+  useEffect(() => {
+    if (!isInitialized) return;
+    const entry = PROVIDER_REGISTRY[selectedModel.provider];
+    if (!entry) return;
+
+    if (!entry.modelsEndpoint) {
+      setFetchedModels(getFallbackModels(selectedModel.provider));
+      return;
+    }
+
+    const fallback = getFallbackModels(selectedModel.provider);
+    let cancelled = false;
+    setIsLoadingModels(true);
+    setFetchError("");
+    setConnectionError("");
+
+    (async () => {
+      try {
+        if (entry.category === "local") {
+          const connResult = await checkOllamaConnection(selectedModel.provider as AiProvider);
+          if (!connResult.isConnected) {
+            if (!cancelled) {
+              setFetchedModels(fallback);
+              setConnectionError(connResult.error || "Ollama is not reachable.");
+            }
+            return;
+          }
+        }
+        const response = await fetch(`/api/ai/${entry.modelsEndpoint}`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          const errorMsg = errorData?.error
+            || (entry.category === "local"
+              ? `Failed to fetch ${entry.displayName} models. Make sure ${entry.displayName} is running.`
+              : `Failed to fetch ${entry.displayName} models. Please check your API key in API Keys settings.`);
+          if (!cancelled) {
+            setFetchError(errorMsg);
+            setFetchedModels(fallback);
+          }
+          return;
+        }
+        const data = await response.json();
+        const models = entry.parseModelsResponse?.(data) ?? [];
+        if (!cancelled) {
+          setFetchedModels(models.length > 0 ? models : fallback);
+        }
+      } catch (error) {
+        console.error(`Error fetching ${entry.displayName} models:`, error);
+        if (!cancelled) {
+          setFetchedModels(fallback);
+          setFetchError(
+            entry.category === "local"
+              ? `Failed to fetch ${entry.displayName} models. Make sure ${entry.displayName} is running.`
+              : `Failed to fetch ${entry.displayName} models. Please check your API key in API Keys settings.`,
+          );
+        }
+      } finally {
+        if (!cancelled) setIsLoadingModels(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [selectedModel.provider, isInitialized]);
+
   const saveModelSettings = async () => {
     if (!selectedModel.model) {
       toast({
@@ -280,6 +187,7 @@ function AiSettings() {
       setIsSaving(false);
     }
   };
+
   if (isLoadingSettings) {
     return (
       <div className="space-y-4">
@@ -322,11 +230,14 @@ function AiSettings() {
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              {Object.entries(AiProvider).map(([key, value]) => (
-                <SelectItem key={key} value={value} className="capitalize">
-                  {value}
-                </SelectItem>
-              ))}
+              {AI_PROVIDERS.map((id) => {
+                const entry = PROVIDER_REGISTRY[id];
+                return (
+                  <SelectItem key={id} value={id} className="capitalize">
+                    {entry.displayName}
+                  </SelectItem>
+                );
+              })}
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -354,9 +265,9 @@ function AiSettings() {
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {getModelsList(selectedModel.provider).map(([key, value]) => (
-                  <SelectItem key={key} value={value} className="capitalize">
-                    {value}
+                {fetchedModels.map((model) => (
+                  <SelectItem key={model} value={model} className="capitalize">
+                    {model}
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -368,30 +279,18 @@ function AiSettings() {
               <span>{fetchError}</span>
             </div>
           )}
+          {connectionError && (
+            <div className="flex items-center gap-1 text-red-600 text-sm mt-2">
+              <XCircle className="h-4 w-4 flex-shrink-0" />
+              <span>{connectionError}</span>
+            </div>
+          )}
         </div>
-        {runningModelName && (
-          <div className="flex items-center gap-1 text-green-600 text-sm mt-2">
-            <CheckCircle className="h-4 w-4 flex-shrink-0" />
-            <span>{runningModelName} is running</span>
-          </div>
-        )}
-        {runningModelError && (
-          <div className="flex items-center gap-1 text-red-600 text-sm mt-2">
-            <XCircle className="h-4 w-4 flex-shrink-0" />
-            <span>{runningModelError}</span>
-          </div>
-        )}
       </div>
       <Button
         className="mt-4"
         onClick={saveModelSettings}
-        disabled={
-          !selectedModel.model ||
-          (selectedModel.provider === AiProvider.OLLAMA &&
-            !runningModelName) ||
-          isLoadingModels ||
-          isSaving
-        }
+        disabled={!selectedModel.model || isLoadingModels || isSaving}
       >
         {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Save

@@ -86,21 +86,62 @@ We welcome contributions! Please read our [Contributing Guidelines](./CONTRIBUTI
 - <a href="https://github.com/vercel/ai">Vercel AI-SDK</a>
 - <a href="https://github.com/ollama/ollama">Ollama</a>
 
-### AI Integration
+### Supported AI Model Providers
 
-#### Ollama (llama3.2)
+API keys for all cloud providers can be configured in **Settings > AI Settings** after signing in. Ollama is selected as the default provider.
 
-Works with ollama https://ollama.com to review the resume.
+> **Note:** Selected models must support **structured output** for AI features to work correctly.
 
-Please make sure ollama is installed and running on the same system to use the resume review and job matching feature.
+<details>
+<summary><strong>Ollama (Local)</strong></summary>
 
-AI settings will show a list of available models based on what you have in Ollama, has been tested with llama3.2 and qwen 8B variant, please make sure it is downloaded and currently running.
+Works with [Ollama](https://ollama.com) to run AI models locally on your machine.
 
-***Note:*** It is recommended to increase the ollama context length from default 4k.
+- Make sure Ollama is installed and running on the same system
+- AI settings will show a list of available models based on what you have downloaded in Ollama
+- **Recommended:** Increase the Ollama context length from the default 4k for better results
+- No API key required — runs entirely on your hardware
 
-#### Deepseek
+</details>
 
-You must add your valid API key under settings, also please make sure deepseek provider and model is selected from the settings page, ollama is selected as the default provider.
+<details>
+<summary><strong>OpenAI</strong></summary>
+
+- Get your API key at [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+- Add your API key in **Settings > AI Settings**
+- Select **OpenAI** as the provider and choose your preferred model
+- Available models are fetched dynamically from the OpenAI API
+
+</details>
+
+<details>
+<summary><strong>DeepSeek</strong></summary>
+
+- Get your API key at [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys)
+- Add your API key in **Settings > AI Settings**
+- Select **DeepSeek** as the provider and choose your preferred model
+
+</details>
+
+<details>
+<summary><strong>Google Gemini</strong></summary>
+
+- Get your API key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+- Add your API key in **Settings > AI Settings**
+- Select **Gemini** as the provider and choose your preferred model
+
+</details>
+
+<details>
+<summary><strong>OpenRouter</strong></summary>
+
+Access a wide range of AI models from multiple providers through a single API.
+
+- Get your API key at [openrouter.ai/keys](https://openrouter.ai/keys)
+- Add your API key in **Settings > AI Settings**
+- Select **OpenRouter** as the provider and choose from available models
+
+</details>
 
 ### Note
 

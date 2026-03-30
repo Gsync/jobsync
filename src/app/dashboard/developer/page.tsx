@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import {
   MockActivitiesCard,
   MockProfileCard,
+  MockJobsCard,
 } from "@/components/developer/DeveloperContainer";
 
 export const metadata: Metadata = {
@@ -23,6 +24,9 @@ export default function DeveloperPage() {
       </div>
       <div className="col-start-2 self-start">
         <MockProfileCard />
+      </div>
+      <div className="col-start-3 self-start">
+        <MockJobsCard />
       </div>
     </>
   );

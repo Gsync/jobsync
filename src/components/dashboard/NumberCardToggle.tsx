@@ -27,7 +27,10 @@ export default function NumberCardToggle({ data }: NumberCardToggleProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium text-green-600">
+            Jobs
+          </CardTitle>
           <div className="flex rounded-md border text-xs">
             {data.map((item, index) => (
               <button

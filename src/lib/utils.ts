@@ -43,6 +43,13 @@ export function handleError(error: unknown, msg = "Server Error.") {
       error.message =
         "Fetch failed, please make sure selected AI service is running.";
     }
+    if ("code" in error && (error as any).code === "P2003") {
+      return {
+        success: false,
+        message:
+          "Your session appears invalid. Please sign out and sign back in.",
+      };
+    }
     return { success: false, message: error.message || msg };
   }
 }

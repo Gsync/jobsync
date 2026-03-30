@@ -2,6 +2,7 @@
 
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { getResumeList } from "@/actions/profile.actions";
+import { saveJobMatchResult } from "@/actions/job.actions";
 import {
   Sheet,
   SheetContent,
@@ -30,27 +31,33 @@ import {
   TooltipTrigger,
 } from "../ui/tooltip";
 import { Info, CheckCircle, XCircle } from "lucide-react";
-import { checkIfModelIsRunning } from "@/utils/ai.utils";
+import { checkOllamaConnection } from "@/utils/ai.utils";
 import { JobMatchSchema } from "@/models/ai.schemas";
 import { getUserSettings } from "@/actions/userSettings.actions";
+import { useSlowResponseWarning } from "@/hooks/useSlowResponseWarning";
+import { SlowResponseWarning } from "../common/SlowResponseWarning";
 
 interface AiSectionProps {
   aISectionOpen: boolean;
   triggerChange: (openState: boolean) => void;
   jobId: string;
+  onMatchSaved?: (matchScore: number, matchData: string) => void;
 }
 
 export const AiJobMatchSection = ({
   aISectionOpen,
   triggerChange,
   jobId,
+  onMatchSaved,
 }: AiSectionProps) => {
   const [selectedResumeId, setSelectedResumeId] = useState<string>();
-  const [runningModelName, setRunningModelName] = useState<string>("");
-  const [runningModelError, setRunningModelError] = useState<string>("");
+  const [ollamaConnected, setOllamaConnected] = useState<boolean | null>(null);
+  const [connectionError, setConnectionError] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<AiModel>(defaultModel);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const resumesRef = useRef<Resume[]>([]);
+  const wasLoadingRef = useRef(false);
+  const stoppedByUserRef = useRef(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -85,6 +92,43 @@ export const AiJobMatchSection = ({
     },
   });
 
+  useEffect(() => {
+    if (isLoading) {
+      wasLoadingRef.current = true;
+      return;
+    }
+    if (!wasLoadingRef.current || !object?.matchScore) return;
+    wasLoadingRef.current = false;
+    if (stoppedByUserRef.current) {
+      stoppedByUserRef.current = false;
+      return;
+    }
+
+    const resumeTitle =
+      resumesRef.current.find((r) => r.id === selectedResumeId)?.title ??
+      "Unknown Resume";
+    const matchData = JSON.stringify({
+      ...object,
+      resumeId: selectedResumeId,
+      resumeTitle,
+      matchedAt: new Date().toISOString(),
+    });
+    const score = object.matchScore;
+
+    saveJobMatchResult(jobId, score, matchData).then((result) => {
+      if (result?.success) {
+        onMatchSaved?.(score, matchData);
+        toast({ title: "Match result saved" });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error!",
+          description: result?.message || "Failed to save match result",
+        });
+      }
+    });
+  }, [isLoading, object, jobId, selectedResumeId, onMatchSaved]);
+
   const getResumes = async () => {
     try {
       const { data, success, message } = await getResumeList();
@@ -110,30 +154,29 @@ export const AiJobMatchSection = ({
     submit({ resumeId, jobId, selectedModel });
   };
 
-  const checkModelStatus = useCallback(async () => {
-    setRunningModelName("");
-    setRunningModelError("");
-    const result = await checkIfModelIsRunning(
-      selectedModel.model,
-      selectedModel.provider,
-    );
-    if (result.isRunning && result.runningModelName) {
-      setRunningModelName(result.runningModelName);
-    } else if (result.error) {
-      setRunningModelError(result.error);
+  const checkConnectionStatus = useCallback(async () => {
+    setOllamaConnected(null);
+    setConnectionError("");
+    const result = await checkOllamaConnection(selectedModel.provider);
+    if (result.isConnected) {
+      setOllamaConnected(true);
+    } else {
+      setOllamaConnected(false);
+      setConnectionError(result.error || "Ollama is not reachable.");
     }
-  }, [selectedModel.model, selectedModel.provider]);
+  }, [selectedModel.provider]);
 
   const onOpenChange = async (openState: boolean) => {
     triggerChange(openState);
     if (!openState && isLoading) {
+      stoppedByUserRef.current = true;
       stop();
     }
     if (openState && selectedModel.provider === "ollama") {
-      await checkModelStatus();
+      await checkConnectionStatus();
     } else if (!openState) {
-      setRunningModelName("");
-      setRunningModelError("");
+      setOllamaConnected(null);
+      setConnectionError("");
       setSelectedResumeId(undefined);
     }
   };
@@ -149,13 +192,15 @@ export const AiJobMatchSection = ({
 
   useEffect(() => {
     if (aISectionOpen && selectedModel.provider === "ollama") {
-      checkModelStatus();
+      checkConnectionStatus();
     }
-  }, [aISectionOpen, selectedModel.provider, checkModelStatus]);
+  }, [aISectionOpen, selectedModel.provider, checkConnectionStatus]);
 
   // Check if we have any content to show
   const hasContent =
     object && (object.matchScore !== undefined || object.summary);
+
+  const showSlowWarning = useSlowResponseWarning(isLoading, !!hasContent);
 
   return (
     <Sheet open={aISectionOpen} onOpenChange={onOpenChange}>
@@ -180,16 +225,16 @@ export const AiJobMatchSection = ({
 
           {selectedModel.provider === "ollama" && (
             <>
-              {runningModelName && (
+              {ollamaConnected === true && (
                 <div className="flex items-center gap-1 text-green-600 text-sm mt-4">
                   <CheckCircle className="h-4 w-4 flex-shrink-0" />
-                  <span>{runningModelName} is running</span>
+                  <span>Ollama is connected</span>
                 </div>
               )}
-              {runningModelError && (
+              {ollamaConnected === false && (
                 <div className="flex items-center gap-1 text-red-600 text-sm mt-4">
                   <XCircle className="h-4 w-4 flex-shrink-0" />
-                  <span>{runningModelError}</span>
+                  <span>{connectionError}</span>
                 </div>
               )}
             </>
@@ -203,7 +248,7 @@ export const AiJobMatchSection = ({
                 disabled={
                   isLoading ||
                   isLoadingSettings ||
-                  (selectedModel.provider === "ollama" && !runningModelName)
+                  (selectedModel.provider === "ollama" && ollamaConnected === false)
                 }
               >
                 <SelectTrigger className="w-[180px]">
@@ -231,6 +276,7 @@ export const AiJobMatchSection = ({
               <div className="flex items-center flex-col mt-4">
                 <Loading />
                 <div className="mt-2">Analyzing job match...</div>
+                {showSlowWarning && <SlowResponseWarning />}
               </div>
             ) : (
               <AiJobMatchResponseContent

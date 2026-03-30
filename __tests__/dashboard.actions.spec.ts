@@ -298,6 +298,7 @@ describe("Dashboard Actions", () => {
         },
       ];
       (prisma.job.groupBy as jest.Mock).mockResolvedValue(mockJobData);
+      (prisma.activity.findMany as jest.Mock).mockResolvedValue([]);
 
       const result = await getActivityCalendarData();
 
@@ -327,6 +328,7 @@ describe("Dashboard Actions", () => {
     it("should return empty object when no job data", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
       (prisma.job.groupBy as jest.Mock).mockResolvedValue([]);
+      (prisma.activity.findMany as jest.Mock).mockResolvedValue([]);
 
       const result = await getActivityCalendarData();
 
@@ -346,6 +348,7 @@ describe("Dashboard Actions", () => {
         },
       ];
       (prisma.job.groupBy as jest.Mock).mockResolvedValue(mockJobData);
+      (prisma.activity.findMany as jest.Mock).mockResolvedValue([]);
 
       const result = await getActivityCalendarData();
 
@@ -371,6 +374,7 @@ describe("Dashboard Actions", () => {
         },
       ];
       (prisma.job.groupBy as jest.Mock).mockResolvedValue(mockJobData);
+      (prisma.activity.findMany as jest.Mock).mockResolvedValue([]);
 
       const result = await getActivityCalendarData();
 

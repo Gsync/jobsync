@@ -43,7 +43,7 @@ export const getTagList = async (
           value: true,
           _count: { select: { jobs: true, questions: true } },
         },
-        orderBy: { label: "asc" },
+        orderBy: { jobs: { _count: "desc" } },
       }),
       prisma.tag.count({ where: { createdBy: user.id } }),
     ]);

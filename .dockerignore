@@ -3,3 +3,4 @@ npm-debug.log
 .next
 .vscode
 .git
+.env*

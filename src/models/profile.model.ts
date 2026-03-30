@@ -98,3 +98,28 @@ export interface Education {
   description?: string;
   location: JobLocation;
 }
+
+export interface CoverLetter {
+  id?: string;
+  profileId?: string;
+  title: string;
+  content: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  _count?: {
+    Job?: number;
+  };
+}
+
+export type ProfileDocumentType = "resume" | "cover-letter";
+
+export interface ProfileDocument {
+  id: string;
+  title: string;
+  type: ProfileDocumentType;
+  createdAt: Date;
+  updatedAt: Date;
+  jobCount: number;
+  FileId?: string;
+  content?: string;
+}

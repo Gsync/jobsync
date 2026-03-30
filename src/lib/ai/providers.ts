@@ -1,32 +1,23 @@
-import { createOpenAI } from "@ai-sdk/openai";
-import { createOllama } from "ollama-ai-provider-v2";
-import { createDeepSeek } from "@ai-sdk/deepseek";
 import { resolveApiKey } from "@/lib/api-key-resolver";
+import { PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
+import { PROVIDER_FACTORIES } from "@/lib/ai/provider-registry.server";
 
-export type ProviderType = "openai" | "ollama" | "deepseek";
+export type ProviderType = "openai" | "ollama" | "deepseek" | "openrouter" | "gemini";
 
 export async function getModel(
   provider: ProviderType,
   modelName: string,
   userId?: string,
 ) {
-  if (provider === "openai") {
-    const apiKey = await resolveApiKey(userId, "openai");
-    if (!apiKey) throw new Error("OpenAI API key not configured");
-    const openai = createOpenAI({ apiKey });
-    return openai(modelName);
-  }
+  const entry = PROVIDER_REGISTRY[provider];
+  if (!entry) throw new Error(`Unknown AI provider: ${provider}`);
 
-  if (provider === "deepseek") {
-    const apiKey = await resolveApiKey(userId, "deepseek");
-    if (!apiKey) throw new Error("DeepSeek API key not configured");
-    const deepseek = createDeepSeek({ apiKey });
-    return deepseek(modelName);
-  }
+  const factory = PROVIDER_FACTORIES[provider];
+  if (!factory) throw new Error(`No factory for provider: ${provider}`);
 
-  const baseURL = await resolveApiKey(userId, "ollama");
-  const ollama = createOllama({
-    baseURL: (baseURL || "http://127.0.0.1:11434") + "/api",
-  });
-  return ollama(modelName);
+  const credential = await resolveApiKey(userId, provider);
+  if (!credential)
+    throw new Error(`${entry.displayName} credential not configured`);
+
+  return factory(credential, modelName);
 }

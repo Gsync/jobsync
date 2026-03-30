@@ -368,30 +368,48 @@ export const getActivityCalendarData = async (): Promise<any | undefined> => {
       },
     });
 
-    type InputObject = {
-      [key: string]: number;
-    };
+    const activityData = await prisma.activity.findMany({
+      where: {
+        userId: user.id,
+        startTime: { gte: daysAgo, lte: today },
+        duration: { not: null },
+      },
+      select: { startTime: true, duration: true },
+    });
 
-    type OutputObject = {
-      day: string;
-      value: number;
-    };
+    const groupedJobs: Record<string, number> = jobData.reduce(
+      (acc: Record<string, number>, job: any) => {
+        if (!job.appliedDate) return acc;
+        const date = format(new Date(job.appliedDate), "yyyy-MM-dd");
+        acc[date] = (acc[date] || 0) + job._count._all;
+        return acc;
+      },
+      {},
+    );
 
-    // Reduce to a format that groups by unique date (YYYY-MM-DD)
-    const groupedJobs = jobData.reduce((acc: any, job: any) => {
-      if (!job.appliedDate) return acc;
-      const date = format(new Date(job.appliedDate), "yyyy-MM-dd");
-      acc[date] = (acc[date] || 0) + job._count._all;
-      return acc;
-    }, {});
+    const groupedHours: Record<string, number> = activityData.reduce(
+      (acc: Record<string, number>, activity) => {
+        const date = format(new Date(activity.startTime), "yyyy-MM-dd");
+        acc[date] = (acc[date] || 0) + (activity.duration || 0) / 60;
+        return acc;
+      },
+      {},
+    );
 
-    const groupedByYear = Object.entries(groupedJobs).reduce(
-      (acc: any, [date, value]) => {
+    const allDates = new Set([
+      ...Object.keys(groupedJobs),
+      ...Object.keys(groupedHours),
+    ]);
+
+    const groupedByYear = [...allDates].reduce(
+      (acc: Record<string, any[]>, date) => {
         const year = date.split("-")[0];
-        if (!acc[year]) {
-          acc[year] = [];
-        }
-        acc[year].push({ day: date, value });
+        if (!acc[year]) acc[year] = [];
+        acc[year].push({
+          day: date,
+          value: groupedJobs[date] || 0,
+          hours: Math.round((groupedHours[date] || 0) * 10) / 10,
+        });
         return acc;
       },
       {},

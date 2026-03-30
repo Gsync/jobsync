@@ -16,6 +16,7 @@ export const APP_CONSTANTS = {
   ACTIVITY_MAX_DURATION_MINUTES: 8 * 60, // 8 Hours
   ACTIVITY_MAX_DURATION_MS: 8 * 60 * 60 * 1000, // 8 hours in milliseconds
   RECENT_NUM_JOBS_ACTIVITIES: 7,
+  AI_SLOW_RESPONSE_THRESHOLD_MS: 15_000, // 15 seconds
 } as const;
 
 export const SCHEDULER_CONSTANTS = {

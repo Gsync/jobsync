@@ -164,14 +164,14 @@ docker buildx inspect jobsync-builder >/dev/null 2>&1 || \
 
 docker buildx use jobsync-builder
 
-docker buildx build \
+git archive HEAD | docker buildx build \
   --platform linux/amd64,linux/arm64 \
   --tag "${REGISTRY}/${IMAGE_NAME}:${VERSION_NUMBER}" \
   --tag "${REGISTRY}/${IMAGE_NAME}:${MINOR}" \
   --tag "${REGISTRY}/${IMAGE_NAME}:${MAJOR}" \
   --tag "${REGISTRY}/${IMAGE_NAME}:latest" \
   --push \
-  .
+  -
 
 # Step 10: Create GitHub Release
 echo -e "${GREEN}[10/10]${NC} Creating GitHub Release..."

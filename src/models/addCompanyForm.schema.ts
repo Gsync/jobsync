@@ -22,7 +22,7 @@ export const AddCompanyFormSchema = z.object({
     .default("")
     .optional()
     .refine(
-      (url) => !url || isValidUrl(url),
-      "Please enter a valid URL (e.g., https://example.com/logo.png)",
+      (url) => !url || url.startsWith("/") || isValidUrl(url),
+      "Please enter a valid URL (e.g., https://example.com/logo.png or /icons/logo.svg)",
     ),
 });

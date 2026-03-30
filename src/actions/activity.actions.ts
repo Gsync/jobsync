@@ -302,3 +302,91 @@ export const getCurrentActivity = async (): Promise<any | undefined> => {
     return handleError(error, msg);
   }
 };
+
+export const getActivityTypeList = async (
+  page: number = 1,
+  limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const skip = (page - 1) * limit;
+    const whereClause = { createdBy: user.id };
+
+    const [total, durationSums] = await Promise.all([
+      prisma.activityType.count({ where: whereClause }),
+      prisma.activity.groupBy({
+        by: ["activityTypeId"],
+        where: { userId: user.id, endTime: { not: null } },
+        _sum: { duration: true },
+      }),
+    ]);
+
+    const durationMap = new Map(
+      durationSums.map((d) => [d.activityTypeId, d._sum.duration ?? 0]),
+    );
+
+    // Fetch all activity types with counts, then sort by total duration
+    const allTypes = await prisma.activityType.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        label: true,
+        value: true,
+        _count: { select: { Activities: true, Tasks: true } },
+      },
+    });
+
+    const sorted = allTypes
+      .map((t) => ({ ...t, totalDuration: durationMap.get(t.id) ?? 0 }))
+      .sort((a, b) => b.totalDuration - a.totalDuration);
+
+    const data = sorted.slice(skip, skip + limit);
+
+    return { data, total };
+  } catch (error) {
+    const msg = "Failed to fetch activity type list. ";
+    return handleError(error, msg);
+  }
+};
+
+export const deleteActivityTypeById = async (
+  activityTypeId: string,
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const [activities, tasks] = await Promise.all([
+      prisma.activity.count({ where: { activityTypeId } }),
+      prisma.task.count({ where: { activityTypeId } }),
+    ]);
+
+    if (activities > 0 || tasks > 0) {
+      const links = [
+        activities > 0 ? `${activities} activity(ies)` : "",
+        tasks > 0 ? `${tasks} task(s)` : "",
+      ]
+        .filter(Boolean)
+        .join(" and ");
+
+      throw new Error(
+        `Activity type cannot be deleted because it is linked to ${links}.`,
+      );
+    }
+
+    const res = await prisma.activityType.delete({
+      where: { id: activityTypeId, createdBy: user.id },
+    });
+
+    return { res, success: true };
+  } catch (error) {
+    const msg = "Failed to delete activity type.";
+    return handleError(error, msg);
+  }
+};

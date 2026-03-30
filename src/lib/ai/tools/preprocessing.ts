@@ -118,9 +118,10 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
         .map((experience) => {
           const desc = removeHtmlTags(experience.description);
           const startDate = formatDate(experience.startDate);
-          const endDate = experience.currentJob
-            ? "Present"
-            : formatDate(experience.endDate);
+          const endDate =
+            experience.currentJob || !experience.endDate
+              ? "Present"
+              : formatDate(experience.endDate);
           const parts = [
             `Company: ${experience.Company.label}`,
             `Job Title: ${experience.jobTitle.label}`,

@@ -63,10 +63,11 @@ model UserSettings {
 }
 
 model Profile {
-  id      String   @id @default(uuid())
-  userId  String
-  user    User     @relation(fields: [userId], references: [id])
-  resumes Resume[]
+  id           String        @id @default(uuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  resumes      Resume[]
+  coverLetters CoverLetter[]
 }
 
 model Resume {
@@ -82,6 +83,17 @@ model Resume {
   FileId         String?         @unique
   Job            Job[]
   Automation     Automation[]
+}
+
+model CoverLetter {
+  id        String   @id @default(uuid())
+  profileId String
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  profile   Profile  @relation(fields: [profileId], references: [id])
+  Job       Job[]
 }
 
 model File {
@@ -283,9 +295,11 @@ model Job {
   Location    Location?   @relation(fields: [locationId], references: [id])
   locationId  String?
   Interview   Interview[]
-  Resume      Resume?     @relation(fields: [resumeId], references: [id])
-  resumeId    String?
-  Notes       Note[]
+  Resume        Resume?      @relation(fields: [resumeId], references: [id])
+  resumeId      String?
+  CoverLetter   CoverLetter? @relation(fields: [coverLetterId], references: [id])
+  coverLetterId String?
+  Notes         Note[]
   tags        Tag[]
 
   // Automation discovery fields

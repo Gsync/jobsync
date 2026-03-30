@@ -22,6 +22,7 @@ import {
   OllamaModel,
   OpenaiModel,
   DeepseekModel,
+  GeminiModel,
 } from "@/models/ai.model";
 import type { Resume as PrismaResume } from "@prisma/client";
 import { automationLogger } from "@/lib/automation-logger";
@@ -41,6 +42,10 @@ function getDefaultModelForProvider(provider: AiProvider): string {
       return OpenaiModel.GPT4O_MINI;
     case AiProvider.DEEPSEEK:
       return DeepseekModel.DEEPSEEK_CHAT;
+    case AiProvider.GEMINI:
+      return GeminiModel.GEMINI_2_0_FLASH;
+    case AiProvider.OPENROUTER:
+      return "anthropic/claude-3.5-sonnet";
   }
 }
 

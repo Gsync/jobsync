@@ -3,24 +3,28 @@ services:
     image: ghcr.io/gsync/jobsync:latest
     container_name: jobsync_app
     ports:
-      - "3737:3000"
+      - "3737:3737"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/data/dev.db
-      - AUTH_SECRET=${AUTH_SECRET:-}
+      - AUTH_SECRET=${AUTH_SECRET:-your-auth-secret}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-you-encryption-key-here}
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3737}
       - AUTH_TRUST_HOST=${AUTH_TRUST_HOST:-true}
       - TZ=${TZ:-America/Edmonton}
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - RAPIDAPI_KEY=${RAPIDAPI_KEY:-}
     volumes:
       - ./jobsyncdb/data:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3737"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3737"]
       interval: 30s
       timeout: 10s
       retries: 3

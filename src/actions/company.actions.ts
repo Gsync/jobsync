@@ -87,9 +87,9 @@ export const getAllCompanies = async (): Promise<any | undefined> => {
 
 const isValidImageUrl = (url: string): boolean => {
   if (!url) return true;
+  if (url.startsWith("/")) return true;
   try {
     const urlObj = new URL(url);
-    // Only allow http and https protocols
     if (!["http:", "https:"].includes(urlObj.protocol)) {
       return false;
     }
