@@ -14,6 +14,8 @@ import {
   clearMockActivitiesAction,
   generateMockProfileDataAction,
   clearMockProfileDataAction,
+  generateMockJobsAction,
+  clearMockJobsAction,
 } from "@/actions/mock.actions";
 
 type StatusMessage = { type: "success" | "error"; text: string };
@@ -226,6 +228,102 @@ export function MockProfileCard() {
             >
               {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isClearing ? "Clearing..." : "Clear Mock Profile Data"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export function MockJobsCard() {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const [message, setMessage] = useState<StatusMessage | null>(null);
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    setMessage(null);
+    const result = await generateMockJobsAction();
+    setMessage({
+      type: result.success ? "success" : "error",
+      text:
+        result.message ||
+        (result.success
+          ? "Mock jobs generated successfully"
+          : "Failed to generate mock jobs"),
+    });
+    setIsGenerating(false);
+  };
+
+  const handleClear = async () => {
+    if (
+      !confirm(
+        "Are you sure you want to delete all mock jobs? This action cannot be undone.",
+      )
+    )
+      return;
+
+    setIsClearing(true);
+    setMessage(null);
+    const result = await clearMockJobsAction();
+    setMessage({
+      type: result.success ? "success" : "error",
+      text:
+        result.message ||
+        (result.success
+          ? "Mock jobs cleared successfully"
+          : "Failed to clear mock jobs"),
+    });
+    setIsClearing(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      {message && <StatusBanner message={message} />}
+      <Card>
+        <CardHeader>
+          <CardTitle>Mock Jobs Data</CardTitle>
+          <CardDescription>
+            Generate or clear mock jobs for testing
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <h3 className="font-semibold mb-2">Generate Mock Jobs</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Creates 30-40 mock jobs spread across the last 30 days using mock
+              profile data (companies, locations, job titles, resumes). Status
+              distribution is realistic: mostly Applied/Rejected, some
+              Interviews, few Offers. Requires mock profile data to be generated
+              first.
+            </p>
+            <Button
+              onClick={handleGenerate}
+              disabled={isGenerating || isClearing}
+              className="w-full"
+            >
+              {isGenerating && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {isGenerating ? "Generating..." : "Generate Mock Jobs"}
+            </Button>
+          </div>
+
+          <div className="border-t pt-4">
+            <h3 className="font-semibold mb-2">Clear Mock Jobs</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Deletes only mock jobs (marked with [MOCK_DATA] identifier).
+              Regular jobs are not affected.
+            </p>
+            <Button
+              onClick={handleClear}
+              disabled={isClearing || isGenerating}
+              variant="destructive"
+              className="w-full"
+            >
+              {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isClearing ? "Clearing..." : "Clear Mock Jobs"}
             </Button>
           </div>
         </CardContent>

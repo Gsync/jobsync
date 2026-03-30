@@ -14,7 +14,14 @@ import {
   mockResumePeople,
   MOCK_VALUE_PREFIX,
 } from "@/lib/data/mockProfileData";
-import { subYears } from "date-fns";
+import { subYears, subDays } from "date-fns";
+import { getRandomInt } from "@/lib/mock.utils";
+import {
+  mockJobDescriptions,
+  mockSalaryRanges,
+  mockJobTypes,
+  STATUS_WEIGHTS,
+} from "@/lib/data/mockJobsData";
 
 export const generateMockActivitiesAction = async (): Promise<any> => {
   try {
@@ -439,5 +446,191 @@ export const clearMockProfileDataAction = async (): Promise<any> => {
     };
   } catch (error) {
     return handleError(error, "Failed to clear mock profile data");
+  }
+};
+
+function pickWeightedStatus(statusMap: Map<string, string>): string {
+  const roll = Math.random() * 100;
+  let cumulative = 0;
+  for (const { value, weight } of STATUS_WEIGHTS) {
+    cumulative += weight;
+    if (roll < cumulative) {
+      const id = statusMap.get(value);
+      if (id) return id;
+    }
+  }
+  return statusMap.values().next().value!;
+}
+
+export const generateMockJobsAction = async (): Promise<any> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
+
+    if (process.env.NODE_ENV !== "development") {
+      throw new Error(
+        "Mock data generation is only available in development mode",
+      );
+    }
+
+    // Check for mock profile data
+    const mockCompanyCount = await prisma.company.count({
+      where: { value: { startsWith: MOCK_VALUE_PREFIX }, createdBy: user.id },
+    });
+    if (mockCompanyCount === 0) {
+      return {
+        success: false,
+        message:
+          "Please generate mock profile data first (companies, locations, job titles, and resumes are required).",
+      };
+    }
+
+    // Fetch mock reference data
+    const [companies, locations, jobTitles, statuses, resumes] =
+      await Promise.all([
+        prisma.company.findMany({
+          where: {
+            value: { startsWith: MOCK_VALUE_PREFIX },
+            createdBy: user.id,
+          },
+        }),
+        prisma.location.findMany({
+          where: {
+            value: { startsWith: MOCK_VALUE_PREFIX },
+            createdBy: user.id,
+          },
+        }),
+        prisma.jobTitle.findMany({
+          where: {
+            value: { startsWith: MOCK_VALUE_PREFIX },
+            createdBy: user.id,
+          },
+        }),
+        prisma.jobStatus.findMany(),
+        prisma.resume.findMany({
+          where: {
+            title: { contains: "[MOCK_DATA]" },
+            profile: { userId: user.id },
+          },
+        }),
+      ]);
+
+    if (statuses.length === 0) {
+      return { success: false, message: "No job statuses found in database." };
+    }
+
+    const statusMap = new Map(statuses.map((s) => [s.value, s.id]));
+    const totalJobs = getRandomInt(30, 40);
+    const now = new Date();
+
+    const jobsData = Array.from({ length: totalJobs }, () => {
+      const company = companies[getRandomInt(0, companies.length - 1)];
+      const jobTitle = jobTitles[getRandomInt(0, jobTitles.length - 1)];
+      const location = locations[getRandomInt(0, locations.length - 1)];
+      const statusId = pickWeightedStatus(statusMap);
+      const statusValue =
+        statuses.find((s) => s.id === statusId)?.value ?? "draft";
+
+      const daysAgo = getRandomInt(0, 30);
+      const createdAt = subDays(now, daysAgo);
+
+      const isApplied = ["applied", "interview", "offer", "rejected"].includes(
+        statusValue,
+      );
+      const appliedDate = isApplied
+        ? subDays(now, Math.max(0, daysAgo - getRandomInt(0, 2)))
+        : null;
+
+      const description =
+        mockJobDescriptions[getRandomInt(0, mockJobDescriptions.length - 1)];
+      const hasSalary = Math.random() < 0.5;
+      const salaryRange = hasSalary
+        ? mockSalaryRanges[getRandomInt(0, mockSalaryRanges.length - 1)]
+        : null;
+      const jobType = mockJobTypes[getRandomInt(0, mockJobTypes.length - 1)];
+
+      // ~80% of jobs link to a resume
+      const resume =
+        resumes.length > 0 && Math.random() < 0.8
+          ? resumes[getRandomInt(0, resumes.length - 1)]
+          : null;
+
+      return {
+        userId: user.id,
+        companyId: company.id,
+        jobTitleId: jobTitle.id,
+        locationId: location.id,
+        statusId,
+        createdAt,
+        applied: isApplied,
+        appliedDate,
+        description: `${description} ${MOCK_DATA_IDENTIFIER}`,
+        jobType,
+        salaryRange,
+        resumeId: resume?.id ?? null,
+      };
+    });
+
+    const created = await prisma.job.createMany({ data: jobsData });
+
+    return {
+      success: true,
+      message: `Generated ${created.count} mock jobs across the last 30 days.`,
+    };
+  } catch (error) {
+    return handleError(error, "Failed to generate mock jobs");
+  }
+};
+
+export const clearMockJobsAction = async (): Promise<any> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
+
+    if (process.env.NODE_ENV !== "development") {
+      throw new Error(
+        "Mock data clearing is only available in development mode",
+      );
+    }
+
+    // Find mock jobs
+    const mockJobs = await prisma.job.findMany({
+      where: {
+        userId: user.id,
+        description: { contains: MOCK_DATA_IDENTIFIER },
+      },
+      select: { id: true },
+    });
+
+    const jobIds = mockJobs.map((j) => j.id);
+
+    if (jobIds.length === 0) {
+      return { success: true, message: "No mock jobs found to delete." };
+    }
+
+    // Delete related records first (FK constraints)
+    await prisma.note.deleteMany({ where: { jobId: { in: jobIds } } });
+    await prisma.interview.deleteMany({ where: { jobId: { in: jobIds } } });
+
+    // Disconnect tags (M2M)
+    await Promise.all(
+      jobIds.map((id) =>
+        prisma.job.update({
+          where: { id },
+          data: { tags: { set: [] } },
+        }),
+      ),
+    );
+
+    const deleteResult = await prisma.job.deleteMany({
+      where: { id: { in: jobIds } },
+    });
+
+    return {
+      success: true,
+      message: `Deleted ${deleteResult.count} mock jobs.`,
+    };
+  } catch (error) {
+    return handleError(error, "Failed to clear mock jobs");
   }
 };
