@@ -368,6 +368,7 @@ describe("jobActions", () => {
     expect(prisma.job.findUnique).toHaveBeenCalledWith({
       where: {
         id: "2",
+        userId: "user-id",
       },
       include: {
         JobSource: true,
@@ -577,7 +578,7 @@ describe("jobActions", () => {
         updateJob({ ...jobData, id: undefined }),
       ).resolves.toStrictEqual({
         success: false,
-        message: "Id is not provide or no user privilages",
+        message: "Job id is required",
       });
     });
   });

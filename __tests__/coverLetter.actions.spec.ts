@@ -276,7 +276,7 @@ describe("coverLetterActions", () => {
         data: updated,
       });
       expect(prisma.coverLetter.update).toHaveBeenCalledWith({
-        where: { id: "cl-id" },
+        where: { id: "cl-id", profile: { userId: "user-id" } },
         data: { title: "Updated Title", content: "Updated content for the cover letter." },
       });
     });
@@ -318,7 +318,7 @@ describe("coverLetterActions", () => {
 
       expect(result).toEqual({ success: true });
       expect(prisma.coverLetter.delete).toHaveBeenCalledWith({
-        where: { id: "cl-id" },
+        where: { id: "cl-id", profile: { userId: "user-id" } },
       });
     });
 
