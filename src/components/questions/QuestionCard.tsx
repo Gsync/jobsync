@@ -20,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { TipTapContentViewer } from "@/components/TipTapContentViewer";
 
 type QuestionCardProps = {
   question: Question;
@@ -87,15 +88,15 @@ export function QuestionCard({
         </div>
 
         {hasAnswer && (
-          <div
-            className="mt-2 text-sm text-muted-foreground prose prose-sm max-w-none dark:prose-invert"
-            dangerouslySetInnerHTML={{
-              __html:
+          <div className="mt-2 text-sm text-muted-foreground prose prose-sm max-w-none dark:prose-invert">
+            <TipTapContentViewer
+              content={
                 expanded || !isLongAnswer
                   ? question.answer!
-                  : truncateHtml(question.answer!, 300),
-            }}
-          />
+                  : truncateHtml(question.answer!, 300)
+              }
+            />
+          </div>
         )}
 
         {question.tags && question.tags.length > 0 && (
