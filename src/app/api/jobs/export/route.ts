@@ -3,6 +3,7 @@ import Papa from "papaparse";
 import { PassThrough } from "node:stream";
 import { getJobsIterator } from "@/actions/job.actions";
 import { format } from "date-fns";
+import { auth } from "@/auth";
 
 const FIELDS: string[] = [
   "index",
@@ -57,6 +58,11 @@ const transformJobData = (
 };
 
 export const POST = async () => {
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const passThrough = new PassThrough();
   let isFirstChunk = true;
   let hasError = false;
