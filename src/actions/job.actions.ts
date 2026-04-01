@@ -178,6 +178,7 @@ export const getJobDetails = async (
     const job = await prisma.job.findUnique({
       where: {
         id: jobId,
+        userId: user.id,
       },
       include: {
         JobSource: true,
@@ -338,8 +339,8 @@ export const updateJob = async (
     if (!user) {
       throw new Error("Not authenticated");
     }
-    if (!data.id || user.id != data.userId) {
-      throw new Error("Id is not provide or no user privilages");
+    if (!data.id) {
+      throw new Error("Job id is required");
     }
 
     const {
@@ -366,6 +367,7 @@ export const updateJob = async (
     const job = await prisma.job.update({
       where: {
         id,
+        userId: user.id,
       },
       data: {
         jobTitleId: title,

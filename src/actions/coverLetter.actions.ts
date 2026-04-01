@@ -122,7 +122,7 @@ export const updateCoverLetter = async (
     }
 
     const res = await prisma.coverLetter.update({
-      where: { id },
+      where: { id, profile: { userId: user.id } },
       data: { title, content },
     });
 
@@ -143,7 +143,7 @@ export const deleteCoverLetterById = async (
     }
 
     await prisma.coverLetter.delete({
-      where: { id: coverLetterId },
+      where: { id: coverLetterId, profile: { userId: user.id } },
     });
 
     return { success: true };

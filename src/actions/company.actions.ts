@@ -159,8 +159,8 @@ export const updateCompany = async (
 
     const { id, company, logoUrl, createdBy } = data;
 
-    if (!id || user.id != createdBy) {
-      throw new Error("Id is not provided or no user privilages");
+    if (!id) {
+      throw new Error("Company id is required");
     }
 
     // Validate image URL
@@ -186,6 +186,7 @@ export const updateCompany = async (
     const res = await prisma.company.update({
       where: {
         id,
+        createdBy: user.id,
       },
       data: {
         value,
@@ -217,6 +218,7 @@ export const getCompanyById = async (
     const company = await prisma.company.findUnique({
       where: {
         id: companyId,
+        createdBy: user.id,
       },
     });
     return company;

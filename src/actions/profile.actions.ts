@@ -83,6 +83,7 @@ export const getResumeById = async (
     const resume = await prisma.resume.findUnique({
       where: {
         id: resumeId,
+        profile: { userId: user.id },
       },
       include: {
         ContactInfo: true,
@@ -126,6 +127,7 @@ export const addContactInfo = async (
     const res = await prisma.resume.update({
       where: {
         id: data.resumeId,
+        profile: { userId: user.id },
       },
       data: {
         ContactInfo: {
@@ -164,6 +166,7 @@ export const updateContactInfo = async (
     const res = await prisma.contactInfo.update({
       where: {
         id: data.id,
+        resume: { profile: { userId: user.id } },
       },
       data: {
         firstName: data.firstName,
@@ -287,8 +290,13 @@ export const editResume = async (
       }
     }
 
+    const user = await getCurrentUser();
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
     const res = await prisma.resume.update({
-      where: { id },
+      where: { id, profile: { userId: user.id } },
       data: {
         title,
         FileId: resolvedFileId || null,
@@ -452,6 +460,7 @@ export const updateResumeSummary = async (
     const res = await prisma.resumeSection.update({
       where: {
         id: data.id,
+        Resume: { profile: { userId: user.id } },
       },
       data: {
         sectionTitle: data.sectionTitle!,
@@ -461,6 +470,7 @@ export const updateResumeSummary = async (
     const summary = await prisma.resumeSection.update({
       where: {
         id: data.id,
+        Resume: { profile: { userId: user.id } },
       },
       data: {
         summary: {
@@ -548,6 +558,7 @@ export const updateExperience = async (
     const summary = await prisma.workExperience.update({
       where: {
         id: data.id,
+        ResumeSection: { Resume: { profile: { userId: user.id } } },
       },
       data: {
         jobTitleId: data.title,
@@ -632,6 +643,7 @@ export const updateEducation = async (
     const summary = await prisma.education.update({
       where: {
         id: data.id,
+        ResumeSection: { Resume: { profile: { userId: user.id } } },
       },
       data: {
         institution: data.institution,
