@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.1.10](https://github.com/Gsync/jobsync/compare/v1.1.9...v1.1.10) (2026-03-31)
+
+
+### Bug Fixes
+
+* Fix: Missing user validations
+* Fix: Replace dangerouslySetInnerHTML with TipTapContentViewer
+* Fix: Hydration issue
+
+### Other Changes
+
+* Address mock jobs data issue
+* Add recommended security headers
+* Refactor: API Key encryption
+* Add auth to API routes
+* Add auth to export route
+* Address failing unit tests
+
+
 ## [1.1.9](https://github.com/Gsync/jobsync/compare/v1.1.8...v1.1.9) (2026-03-30)
 
 
