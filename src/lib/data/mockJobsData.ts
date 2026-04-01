@@ -17,19 +17,6 @@ export const mockJobDescriptions = [
   "Join our platform team to build shared services and libraries used by dozens of engineering teams. You'll design APIs, write documentation, and support internal customers.",
 ];
 
-export const mockSalaryRanges = [
-  "$80k - $110k",
-  "$90k - $130k",
-  "$100k - $140k",
-  "$110k - $150k",
-  "$120k - $160k",
-  "$130k - $170k",
-  "$140k - $180k",
-  "$150k - $200k",
-  "$160k - $220k",
-  "$180k - $250k",
-];
-
 export const mockJobTypes = [
   "Full-time",
   "Full-time",

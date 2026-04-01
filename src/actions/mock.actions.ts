@@ -18,10 +18,10 @@ import { subYears, subDays } from "date-fns";
 import { getRandomInt } from "@/lib/mock.utils";
 import {
   mockJobDescriptions,
-  mockSalaryRanges,
   mockJobTypes,
   STATUS_WEIGHTS,
 } from "@/lib/data/mockJobsData";
+import { SALARY_RANGES } from "@/lib/data/salaryRangeData";
 
 export const generateMockActivitiesAction = async (): Promise<any> => {
   try {
@@ -486,7 +486,7 @@ export const generateMockJobsAction = async (): Promise<any> => {
     }
 
     // Fetch mock reference data
-    const [companies, locations, jobTitles, statuses, resumes] =
+    const [companies, locations, jobTitles, statuses, resumes, jobSources] =
       await Promise.all([
         prisma.company.findMany({
           where: {
@@ -513,10 +513,17 @@ export const generateMockJobsAction = async (): Promise<any> => {
             profile: { userId: user.id },
           },
         }),
+        prisma.jobSource.findMany({
+          where: { createdBy: user.id },
+        }),
       ]);
 
     if (statuses.length === 0) {
       return { success: false, message: "No job statuses found in database." };
+    }
+
+    if (jobSources.length === 0) {
+      return { success: false, message: "No job sources found. Please add at least one job source first." };
     }
 
     const statusMap = new Map(statuses.map((s) => [s.value, s.id]));
@@ -527,6 +534,7 @@ export const generateMockJobsAction = async (): Promise<any> => {
       const company = companies[getRandomInt(0, companies.length - 1)];
       const jobTitle = jobTitles[getRandomInt(0, jobTitles.length - 1)];
       const location = locations[getRandomInt(0, locations.length - 1)];
+      const jobSource = jobSources[getRandomInt(0, jobSources.length - 1)];
       const statusId = pickWeightedStatus(statusMap);
       const statusValue =
         statuses.find((s) => s.id === statusId)?.value ?? "draft";
@@ -543,10 +551,9 @@ export const generateMockJobsAction = async (): Promise<any> => {
 
       const description =
         mockJobDescriptions[getRandomInt(0, mockJobDescriptions.length - 1)];
-      const hasSalary = Math.random() < 0.5;
-      const salaryRange = hasSalary
-        ? mockSalaryRanges[getRandomInt(0, mockSalaryRanges.length - 1)]
-        : null;
+      const salaryRange =
+        SALARY_RANGES[getRandomInt(0, SALARY_RANGES.length - 1)].id;
+      const dueDate = subDays(now, daysAgo - getRandomInt(7, 21));
       const jobType = mockJobTypes[getRandomInt(0, mockJobTypes.length - 1)];
 
       // ~80% of jobs link to a resume
@@ -567,6 +574,8 @@ export const generateMockJobsAction = async (): Promise<any> => {
         description: `${description} ${MOCK_DATA_IDENTIFIER}`,
         jobType,
         salaryRange,
+        dueDate,
+        jobSourceId: jobSource.id,
         resumeId: resume?.id ?? null,
       };
     });
