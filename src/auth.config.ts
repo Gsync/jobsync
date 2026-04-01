@@ -20,10 +20,10 @@ export const authConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const isOnDashboard = nextUrl.pathname.startsWith("/dashboard");
+      const isApiRoute = nextUrl.pathname.startsWith("/api");
 
-      if (isOnDashboard) {
-        if (isLoggedIn) return true;
-        return false;
+      if (isOnDashboard || isApiRoute) {
+        return isLoggedIn;
       } else if (isLoggedIn) {
         return Response.redirect(new URL("/dashboard", nextUrl));
       }
