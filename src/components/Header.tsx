@@ -73,7 +73,7 @@ async function Header() {
         user={user}
         signOutAction={async () => {
           "use server";
-          await signOut();
+          await signOut({ redirectTo: "/signin" });
         }}
       />
     </header>

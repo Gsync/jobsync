@@ -56,7 +56,7 @@ function SignupForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+      <form method="POST" onSubmit={form.handleSubmit(onSubmit)}>
         <div className="grid gap-4">
           <div className="grid gap-2">
             <FormField
