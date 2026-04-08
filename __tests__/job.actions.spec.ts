@@ -436,6 +436,79 @@ describe("jobActions", () => {
         expect(findManyCall.where.applied).toBeUndefined();
       });
     });
+
+    describe("title filter", () => {
+      it("should filter by title value when titleValue is provided", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, undefined, undefined, undefined, "full stack developer");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          JobTitle: { value: "full stack developer" },
+        });
+      });
+
+      it("should combine title filter with applied filter", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, undefined, undefined, true, "full stack developer");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          JobTitle: { value: "full stack developer" },
+          applied: true,
+        });
+      });
+
+      it("should exclude JobTitle from search OR when titleValue is set", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, "React", undefined, undefined, "full stack developer");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where.OR).not.toContainEqual(
+          { JobTitle: { label: { contains: "React" } } },
+        );
+      });
+
+      it("should include JobTitle in search OR when titleValue is not set", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, "React");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where.OR).toContainEqual(
+          { JobTitle: { label: { contains: "React" } } },
+        );
+      });
+
+      it("should not add JobTitle when titleValue is undefined", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10);
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where.JobTitle).toBeUndefined();
+      });
+    });
   });
   describe("getJobDetails", () => {
     it("should throw error when jobId is not provided", async () => {

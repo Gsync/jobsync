@@ -78,6 +78,9 @@ function JobsContainer({
   const [companyFilter, setCompanyFilter] = useState<string | null>(
     queryParams.get("company"),
   );
+  const [titleFilter, setTitleFilter] = useState<string | null>(
+    queryParams.get("title"),
+  );
   const [appliedFilter, setAppliedFilter] = useState(
     queryParams.get("applied") === "true",
   );
@@ -99,16 +102,28 @@ function JobsContainer({
     ? companies.find((c) => c.value === companyFilter)?.label
     : null;
 
+  const titleLabel = titleFilter
+    ? titles.find((t) => t.value === titleFilter)?.label
+    : null;
+
   const clearCompanyFilter = () => {
     setCompanyFilter(null);
     setAppliedFilter(false);
     router.push(pathname);
   };
 
+  const clearTitleFilter = () => {
+    setTitleFilter(null);
+    setAppliedFilter(false);
+    router.push(pathname);
+  };
+
   useEffect(() => {
     const cp = queryParams.get("company");
+    const tp = queryParams.get("title");
     const ap = queryParams.get("applied") === "true";
     setCompanyFilter(cp);
+    setTitleFilter(tp);
     setAppliedFilter(ap);
   }, [queryParams]);
 
@@ -124,6 +139,7 @@ function JobsContainer({
         search,
         companyFilter || undefined,
         appliedFilter || undefined,
+        titleFilter || undefined,
       );
       if (success && data) {
         setJobs((prev) => (page === 1 ? data : [...prev, ...data]));
@@ -140,7 +156,7 @@ function JobsContainer({
         return;
       }
     },
-    [jobsPerPage, companyFilter, appliedFilter],
+    [jobsPerPage, companyFilter, appliedFilter, titleFilter],
   );
 
   const reloadJobs = useCallback(async () => {
@@ -280,6 +296,15 @@ function JobsContainer({
                 className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
               >
                 {companyLabel}
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {titleLabel && (
+              <button
+                onClick={clearTitleFilter}
+                className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
+              >
+                {titleLabel}
                 <X className="h-3.5 w-3.5" />
               </button>
             )}

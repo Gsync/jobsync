@@ -19,6 +19,7 @@ import {
 } from "../ui/table";
 import { JobTitle } from "@/models/job.model";
 import { MoreHorizontal, Trash } from "lucide-react";
+import Link from "next/link";
 import { AlertDialog } from "@/models/alertDialog.model";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { deleteJobTitleById } from "@/actions/jobtitle.actions";
@@ -94,7 +95,16 @@ function JobTitlesTable({ jobTitles, reloadJobTitles }: JobTitlesTableProps) {
                   {title.value}
                 </TableCell>
                 <TableCell className="font-medium">
-                  {title._count?.jobs}
+                  {title._count?.jobs ? (
+                    <Link
+                      href={`/dashboard/myjobs?title=${encodeURIComponent(title.value)}&applied=true`}
+                      className="text-primary underline-offset-4 hover:underline"
+                    >
+                      {title._count.jobs}
+                    </Link>
+                  ) : (
+                    title._count?.jobs ?? 0
+                  )}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
