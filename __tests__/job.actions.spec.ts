@@ -582,6 +582,51 @@ describe("jobActions", () => {
         expect(findManyCall.where.Location).toBeUndefined();
       });
     });
+
+    describe("source filter", () => {
+      it("should filter by source value when sourceValue is provided", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, undefined, undefined, undefined, undefined, undefined, "indeed");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          JobSource: { value: "indeed" },
+        });
+      });
+
+      it("should combine source filter with applied filter", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, undefined, undefined, true, undefined, undefined, "indeed");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          JobSource: { value: "indeed" },
+          applied: true,
+        });
+      });
+
+      it("should not add JobSource when sourceValue is undefined", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10);
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where.JobSource).toBeUndefined();
+      });
+    });
   });
   describe("getJobDetails", () => {
     it("should throw error when jobId is not provided", async () => {

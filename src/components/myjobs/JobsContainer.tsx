@@ -84,6 +84,9 @@ function JobsContainer({
   const [locationFilter, setLocationFilter] = useState<string | null>(
     queryParams.get("location"),
   );
+  const [sourceFilter, setSourceFilter] = useState<string | null>(
+    queryParams.get("source"),
+  );
   const [appliedFilter, setAppliedFilter] = useState(
     queryParams.get("applied") === "true",
   );
@@ -113,6 +116,10 @@ function JobsContainer({
     ? locations.find((l) => l.value === locationFilter)?.label
     : null;
 
+  const sourceLabel = sourceFilter
+    ? sources.find((s) => s.value === sourceFilter)?.label
+    : null;
+
   const clearCompanyFilter = () => {
     setCompanyFilter(null);
     setAppliedFilter(false);
@@ -131,14 +138,22 @@ function JobsContainer({
     router.push(pathname);
   };
 
+  const clearSourceFilter = () => {
+    setSourceFilter(null);
+    setAppliedFilter(false);
+    router.push(pathname);
+  };
+
   useEffect(() => {
     const cp = queryParams.get("company");
     const tp = queryParams.get("title");
     const lp = queryParams.get("location");
+    const sp = queryParams.get("source");
     const ap = queryParams.get("applied") === "true";
     setCompanyFilter(cp);
     setTitleFilter(tp);
     setLocationFilter(lp);
+    setSourceFilter(sp);
     setAppliedFilter(ap);
   }, [queryParams]);
 
@@ -156,6 +171,7 @@ function JobsContainer({
         appliedFilter || undefined,
         titleFilter || undefined,
         locationFilter || undefined,
+        sourceFilter || undefined,
       );
       if (success && data) {
         setJobs((prev) => (page === 1 ? data : [...prev, ...data]));
@@ -172,7 +188,7 @@ function JobsContainer({
         return;
       }
     },
-    [jobsPerPage, companyFilter, appliedFilter, titleFilter, locationFilter],
+    [jobsPerPage, companyFilter, appliedFilter, titleFilter, locationFilter, sourceFilter],
   );
 
   const reloadJobs = useCallback(async () => {
@@ -330,6 +346,15 @@ function JobsContainer({
                 className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
               >
                 {locationLabel}
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {sourceLabel && (
+              <button
+                onClick={clearSourceFilter}
+                className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
+              >
+                {sourceLabel}
                 <X className="h-3.5 w-3.5" />
               </button>
             )}

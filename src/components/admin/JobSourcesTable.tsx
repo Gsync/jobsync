@@ -19,6 +19,7 @@ import {
 } from "../ui/table";
 import { JobSource } from "@/models/job.model";
 import { MoreHorizontal, Trash } from "lucide-react";
+import Link from "next/link";
 import { AlertDialog } from "@/models/alertDialog.model";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { deleteJobSourceById } from "@/actions/jobSource.actions";
@@ -98,7 +99,16 @@ function JobSourcesTable({
                   {source.value}
                 </TableCell>
                 <TableCell className="font-medium">
-                  {source._count?.jobsApplied}
+                  {source._count?.jobsApplied ? (
+                    <Link
+                      href={`/dashboard/myjobs?source=${encodeURIComponent(source.value)}&applied=true`}
+                      className="text-primary underline-offset-4 hover:underline"
+                    >
+                      {source._count.jobsApplied}
+                    </Link>
+                  ) : (
+                    source._count?.jobsApplied ?? 0
+                  )}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>

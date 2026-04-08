@@ -45,6 +45,7 @@ export const getJobsList = async (
   appliedOnly?: boolean,
   titleValue?: string,
   locationValue?: string,
+  sourceValue?: string,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -81,6 +82,10 @@ export const getJobsList = async (
 
     if (locationValue) {
       whereClause.Location = { value: locationValue };
+    }
+
+    if (sourceValue) {
+      whereClause.JobSource = { value: sourceValue };
     }
 
     if (appliedOnly) {
