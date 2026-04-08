@@ -340,6 +340,102 @@ describe("jobActions", () => {
         });
       });
     });
+
+    describe("company filter", () => {
+      it("should filter by company value when companyValue is provided", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, undefined, "google");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          Company: { value: "google" },
+        });
+      });
+
+      it("should filter by applied when appliedOnly is true", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, undefined, "google", true);
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          Company: { value: "google" },
+          applied: true,
+        });
+      });
+
+      it("should exclude Company from search OR when companyValue is set", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, "Developer", "google");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where.OR).toEqual([
+          { JobTitle: { label: { contains: "Developer" } } },
+          { Location: { label: { contains: "Developer" } } },
+          { description: { contains: "Developer" } },
+        ]);
+        expect(findManyCall.where.OR).not.toContainEqual(
+          { Company: { label: { contains: "Developer" } } },
+        );
+      });
+
+      it("should include Company in search OR when companyValue is not set", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, "Developer");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where.OR).toContainEqual(
+          { Company: { label: { contains: "Developer" } } },
+        );
+      });
+
+      it("should combine company filter with status filter", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, "applied", undefined, "google", true);
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          Status: { value: "applied" },
+          Company: { value: "google" },
+          applied: true,
+        });
+      });
+
+      it("should not add Company or applied when params are undefined", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10);
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where.Company).toBeUndefined();
+        expect(findManyCall.where.applied).toBeUndefined();
+      });
+    });
   });
   describe("getJobDetails", () => {
     it("should throw error when jobId is not provided", async () => {

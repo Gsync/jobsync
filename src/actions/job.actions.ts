@@ -80,12 +80,14 @@ export const getJobsList = async (
     if (search) {
       const searchConditions: Record<string, any>[] = [
         { JobTitle: { label: { contains: search } } },
-        { Location: { label: { contains: search } } },
-        { description: { contains: search } },
       ];
       if (!companyValue) {
         searchConditions.push({ Company: { label: { contains: search } } });
       }
+      searchConditions.push(
+        { Location: { label: { contains: search } } },
+        { description: { contains: search } },
+      );
       whereClause.OR = searchConditions;
     }
 
