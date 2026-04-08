@@ -9,7 +9,7 @@ import {
 } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { File, ListFilter, Search } from "lucide-react";
+import { File, ListFilter, Search, X } from "lucide-react";
 import {
   deleteJobById,
   getJobDetails,
@@ -75,6 +75,12 @@ function JobsContainer({
     },
     [queryParams],
   );
+  const [companyFilter, setCompanyFilter] = useState<string | null>(
+    queryParams.get("company"),
+  );
+  const [appliedFilter, setAppliedFilter] = useState(
+    queryParams.get("applied") === "true",
+  );
   const [jobs, setJobs] = useState<JobResponse[]>([]);
   const [page, setPage] = useState(1);
   const [totalJobs, setTotalJobs] = useState(0);
@@ -89,6 +95,23 @@ function JobsContainer({
   const [noteJobId, setNoteJobId] = useState("");
   const hasSearched = useRef(false);
 
+  const companyLabel = companyFilter
+    ? companies.find((c) => c.value === companyFilter)?.label
+    : null;
+
+  const clearCompanyFilter = () => {
+    setCompanyFilter(null);
+    setAppliedFilter(false);
+    router.push(pathname);
+  };
+
+  useEffect(() => {
+    const cp = queryParams.get("company");
+    const ap = queryParams.get("applied") === "true";
+    setCompanyFilter(cp);
+    setAppliedFilter(ap);
+  }, [queryParams]);
+
   const jobsPerPage = recordsPerPage;
 
   const loadJobs = useCallback(
@@ -99,6 +122,8 @@ function JobsContainer({
         jobsPerPage,
         filter,
         search,
+        companyFilter || undefined,
+        appliedFilter || undefined,
       );
       if (success && data) {
         setJobs((prev) => (page === 1 ? data : [...prev, ...data]));
@@ -115,7 +140,7 @@ function JobsContainer({
         return;
       }
     },
-    [jobsPerPage],
+    [jobsPerPage, companyFilter, appliedFilter],
   );
 
   const reloadJobs = useCallback(async () => {
@@ -249,6 +274,15 @@ function JobsContainer({
         <CardHeader className="flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
           <CardTitle>My Jobs</CardTitle>
           <div className="flex flex-wrap items-center gap-2">
+            {companyLabel && (
+              <button
+                onClick={clearCompanyFilter}
+                className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
+              >
+                {companyLabel}
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
             <div className="relative flex-1 min-w-[140px] sm:flex-none">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input

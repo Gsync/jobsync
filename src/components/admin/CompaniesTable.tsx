@@ -18,6 +18,7 @@ import {
 import { Company } from "@/models/job.model";
 import { MoreHorizontal, Pencil, Trash } from "lucide-react";
 import { useState } from "react";
+import Link from "next/link";
 import { deleteCompanyById } from "@/actions/company.actions";
 import { toast } from "../ui/use-toast";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
@@ -110,7 +111,16 @@ function CompaniesTable({
                   {company.value}
                 </TableCell>
                 <TableCell className="font-medium">
-                  {company._count?.jobsApplied}
+                  {company._count?.jobsApplied ? (
+                    <Link
+                      href={`/dashboard/myjobs?company=${encodeURIComponent(company.value)}&applied=true`}
+                      className="text-primary underline-offset-4 hover:underline"
+                    >
+                      {company._count.jobsApplied}
+                    </Link>
+                  ) : (
+                    company._count?.jobsApplied ?? 0
+                  )}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
