@@ -322,7 +322,7 @@ describe("JobsContainer Search Functionality", () => {
       });
 
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Amazon", undefined, undefined, undefined);
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Amazon", undefined, undefined, undefined, undefined);
       });
     });
 
@@ -340,7 +340,7 @@ describe("JobsContainer Search Functionality", () => {
       });
 
       // Initial call should not have search parameter
-      expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, undefined, undefined, undefined, undefined);
+      expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, undefined, undefined, undefined, undefined, undefined);
     });
 
     it("should trigger search when clearing search term after searching", async () => {
@@ -368,7 +368,7 @@ describe("JobsContainer Search Functionality", () => {
       });
 
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Test", undefined, undefined, undefined);
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Test", undefined, undefined, undefined, undefined);
       });
 
       // Clear the search input
@@ -382,7 +382,7 @@ describe("JobsContainer Search Functionality", () => {
 
       // Should call with undefined when cleared after having searched
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, undefined, undefined, undefined, undefined);
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, undefined, undefined, undefined, undefined, undefined);
       });
     });
   });
@@ -414,7 +414,7 @@ describe("JobsContainer Search Functionality", () => {
       });
 
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Developer", undefined, undefined, undefined);
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Developer", undefined, undefined, undefined, undefined);
       });
 
       // Now change filter
@@ -429,7 +429,7 @@ describe("JobsContainer Search Functionality", () => {
       });
 
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, "applied", "Developer", undefined, undefined, undefined);
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, "applied", "Developer", undefined, undefined, undefined, undefined);
       });
     });
 
@@ -457,7 +457,7 @@ describe("JobsContainer Search Functionality", () => {
       });
 
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Amazon", undefined, undefined, undefined);
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Amazon", undefined, undefined, undefined, undefined);
       });
 
       // Change filter
@@ -473,7 +473,7 @@ describe("JobsContainer Search Functionality", () => {
 
       // Search term should still be present
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, "interview", "Amazon", undefined, undefined, undefined);
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, "interview", "Amazon", undefined, undefined, undefined, undefined);
       });
     });
 
@@ -512,7 +512,7 @@ describe("JobsContainer Search Functionality", () => {
       });
 
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, "applied", "Developer", undefined, undefined, undefined);
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, "applied", "Developer", undefined, undefined, undefined, undefined);
       });
 
       // Now clear filter by selecting None
@@ -527,7 +527,7 @@ describe("JobsContainer Search Functionality", () => {
 
       // Filter should be cleared but search preserved
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Developer", undefined, undefined, undefined);
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Developer", undefined, undefined, undefined, undefined);
       });
     });
   });
@@ -639,7 +639,7 @@ describe("JobsContainer Search Functionality", () => {
       });
 
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Developer", undefined, undefined, undefined);
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Developer", undefined, undefined, undefined, undefined);
       });
 
       // Click load more
@@ -650,7 +650,7 @@ describe("JobsContainer Search Functionality", () => {
 
       // Should include search term in load more call
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(2, 25, undefined, "Developer", undefined, undefined, undefined);
+        expect(getJobsList).toHaveBeenCalledWith(2, 25, undefined, "Developer", undefined, undefined, undefined, undefined);
       });
     });
   });
@@ -684,7 +684,7 @@ describe("JobsContainer Search Functionality", () => {
       });
 
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "test", undefined, undefined, undefined);
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "test", undefined, undefined, undefined, undefined);
       });
     });
   });
@@ -702,7 +702,7 @@ describe("JobsContainer Search Functionality", () => {
       renderComponent();
 
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, undefined, "google", true, undefined);
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, undefined, "google", true, undefined, undefined);
       });
     });
 
@@ -776,7 +776,7 @@ describe("JobsContainer Search Functionality", () => {
       renderComponent();
 
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, undefined, "google", true, undefined);
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, undefined, "google", true, undefined, undefined);
       });
 
       const filterTrigger = screen.getByRole("combobox");
@@ -790,7 +790,7 @@ describe("JobsContainer Search Functionality", () => {
       });
 
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, "applied", undefined, "google", true, undefined);
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, "applied", undefined, "google", true, undefined, undefined);
       });
     });
   });
@@ -808,7 +808,7 @@ describe("JobsContainer Search Functionality", () => {
       renderComponent();
 
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, undefined, undefined, true, "full stack developer");
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, undefined, undefined, true, "full stack developer", undefined);
       });
     });
 
@@ -844,6 +844,63 @@ describe("JobsContainer Search Functionality", () => {
       });
 
       const badge = screen.getByText("Full Stack Developer").closest("button")!;
+      await act(async () => {
+        await user.click(badge);
+      });
+
+      expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/myjobs");
+    });
+  });
+
+  describe("Location Filter from URL", () => {
+    it("should pass location filter to getJobsList when URL has location param", async () => {
+      const locationSearchParams = new URLSearchParams("location=remote&applied=true");
+      (useSearchParams as jest.Mock).mockReturnValue(locationSearchParams);
+      (getJobsList as jest.Mock).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, undefined, undefined, true, undefined, "remote");
+      });
+    });
+
+    it("should show location badge when location param is present", async () => {
+      const locationSearchParams = new URLSearchParams("location=remote&applied=true");
+      (useSearchParams as jest.Mock).mockReturnValue(locationSearchParams);
+      (getJobsList as jest.Mock).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText("Remote")).toBeInTheDocument();
+      });
+    });
+
+    it("should clear location filter when badge is clicked", async () => {
+      const locationSearchParams = new URLSearchParams("location=remote&applied=true");
+      (useSearchParams as jest.Mock).mockReturnValue(locationSearchParams);
+      (getJobsList as jest.Mock).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText("Remote")).toBeInTheDocument();
+      });
+
+      const badge = screen.getByText("Remote").closest("button")!;
       await act(async () => {
         await user.click(badge);
       });

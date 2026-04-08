@@ -44,6 +44,7 @@ export const getJobsList = async (
   companyValue?: string,
   appliedOnly?: boolean,
   titleValue?: string,
+  locationValue?: string,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -78,6 +79,10 @@ export const getJobsList = async (
       whereClause.JobTitle = { value: titleValue };
     }
 
+    if (locationValue) {
+      whereClause.Location = { value: locationValue };
+    }
+
     if (appliedOnly) {
       whereClause.applied = true;
     }
@@ -90,8 +95,10 @@ export const getJobsList = async (
       if (!companyValue) {
         searchConditions.push({ Company: { label: { contains: search } } });
       }
+      if (!locationValue) {
+        searchConditions.push({ Location: { label: { contains: search } } });
+      }
       searchConditions.push(
-        { Location: { label: { contains: search } } },
         { description: { contains: search } },
       );
       whereClause.OR = searchConditions;

@@ -509,6 +509,79 @@ describe("jobActions", () => {
         expect(findManyCall.where.JobTitle).toBeUndefined();
       });
     });
+
+    describe("location filter", () => {
+      it("should filter by location value when locationValue is provided", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, undefined, undefined, undefined, undefined, "remote");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          Location: { value: "remote" },
+        });
+      });
+
+      it("should combine location filter with applied filter", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, undefined, undefined, true, undefined, "remote");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          Location: { value: "remote" },
+          applied: true,
+        });
+      });
+
+      it("should exclude Location from search OR when locationValue is set", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, "React", undefined, undefined, undefined, "remote");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where.OR).not.toContainEqual(
+          { Location: { label: { contains: "React" } } },
+        );
+      });
+
+      it("should include Location in search OR when locationValue is not set", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, "React");
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where.OR).toContainEqual(
+          { Location: { label: { contains: "React" } } },
+        );
+      });
+
+      it("should not add Location when locationValue is undefined", async () => {
+        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+        (prisma.job.count as jest.Mock).mockResolvedValue(0);
+
+        await getJobsList(1, 10);
+
+        const findManyCall = (prisma.job.findMany as jest.Mock).mock
+          .calls[0][0];
+        expect(findManyCall.where.Location).toBeUndefined();
+      });
+    });
   });
   describe("getJobDetails", () => {
     it("should throw error when jobId is not provided", async () => {

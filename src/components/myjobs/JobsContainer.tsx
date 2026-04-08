@@ -81,6 +81,9 @@ function JobsContainer({
   const [titleFilter, setTitleFilter] = useState<string | null>(
     queryParams.get("title"),
   );
+  const [locationFilter, setLocationFilter] = useState<string | null>(
+    queryParams.get("location"),
+  );
   const [appliedFilter, setAppliedFilter] = useState(
     queryParams.get("applied") === "true",
   );
@@ -106,6 +109,10 @@ function JobsContainer({
     ? titles.find((t) => t.value === titleFilter)?.label
     : null;
 
+  const locationLabel = locationFilter
+    ? locations.find((l) => l.value === locationFilter)?.label
+    : null;
+
   const clearCompanyFilter = () => {
     setCompanyFilter(null);
     setAppliedFilter(false);
@@ -118,12 +125,20 @@ function JobsContainer({
     router.push(pathname);
   };
 
+  const clearLocationFilter = () => {
+    setLocationFilter(null);
+    setAppliedFilter(false);
+    router.push(pathname);
+  };
+
   useEffect(() => {
     const cp = queryParams.get("company");
     const tp = queryParams.get("title");
+    const lp = queryParams.get("location");
     const ap = queryParams.get("applied") === "true";
     setCompanyFilter(cp);
     setTitleFilter(tp);
+    setLocationFilter(lp);
     setAppliedFilter(ap);
   }, [queryParams]);
 
@@ -140,6 +155,7 @@ function JobsContainer({
         companyFilter || undefined,
         appliedFilter || undefined,
         titleFilter || undefined,
+        locationFilter || undefined,
       );
       if (success && data) {
         setJobs((prev) => (page === 1 ? data : [...prev, ...data]));
@@ -156,7 +172,7 @@ function JobsContainer({
         return;
       }
     },
-    [jobsPerPage, companyFilter, appliedFilter, titleFilter],
+    [jobsPerPage, companyFilter, appliedFilter, titleFilter, locationFilter],
   );
 
   const reloadJobs = useCallback(async () => {
@@ -305,6 +321,15 @@ function JobsContainer({
                 className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
               >
                 {titleLabel}
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {locationLabel && (
+              <button
+                onClick={clearLocationFilter}
+                className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
+              >
+                {locationLabel}
                 <X className="h-3.5 w-3.5" />
               </button>
             )}
