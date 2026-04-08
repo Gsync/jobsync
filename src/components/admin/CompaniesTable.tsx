@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "../ui/table";
 import { Company } from "@/models/job.model";
-import { MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { Briefcase, MoreHorizontal, Pencil, Trash } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { deleteCompanyById } from "@/actions/company.actions";
@@ -119,7 +119,7 @@ function CompaniesTable({
                       {company._count.jobsApplied}
                     </Link>
                   ) : (
-                    company._count?.jobsApplied ?? 0
+                    (company._count?.jobsApplied ?? 0)
                   )}
                 </TableCell>
                 <TableCell>
@@ -132,6 +132,16 @@ function CompaniesTable({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      {company._count?.jobsApplied ? (
+                        <DropdownMenuItem className="cursor-pointer" asChild>
+                          <Link
+                            href={`/dashboard/myjobs?company=${encodeURIComponent(company.value)}&applied=true`}
+                          >
+                            <Briefcase className="mr-2 h-4 w-4" />
+                            View Jobs
+                          </Link>
+                        </DropdownMenuItem>
+                      ) : null}
                       <DropdownMenuItem
                         className="cursor-pointer"
                         onClick={() => editCompany(company.id)}

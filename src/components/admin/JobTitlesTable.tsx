@@ -18,7 +18,7 @@ import {
   TableRow,
 } from "../ui/table";
 import { JobTitle } from "@/models/job.model";
-import { MoreHorizontal, Trash } from "lucide-react";
+import { Briefcase, MoreHorizontal, Trash } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog } from "@/models/alertDialog.model";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
@@ -103,7 +103,7 @@ function JobTitlesTable({ jobTitles, reloadJobTitles }: JobTitlesTableProps) {
                       {title._count.jobs}
                     </Link>
                   ) : (
-                    title._count?.jobs ?? 0
+                    (title._count?.jobs ?? 0)
                   )}
                 </TableCell>
                 <TableCell>
@@ -116,6 +116,16 @@ function JobTitlesTable({ jobTitles, reloadJobTitles }: JobTitlesTableProps) {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      {title._count?.jobs ? (
+                        <DropdownMenuItem className="cursor-pointer" asChild>
+                          <Link
+                            href={`/dashboard/myjobs?title=${encodeURIComponent(title.value)}&applied=true`}
+                          >
+                            <Briefcase className="mr-2 h-4 w-4" />
+                            View Jobs
+                          </Link>
+                        </DropdownMenuItem>
+                      ) : null}
                       <DropdownMenuItem
                         className="text-red-600 cursor-pointer"
                         onClick={() => onDeleteJobTitle(title)}
