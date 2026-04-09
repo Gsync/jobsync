@@ -1,4 +1,4 @@
-import { RadialChartComponent } from "../RadialChart";
+import { RadialChartComponent } from "../RadialChartSvg";
 import { SheetDescription } from "../ui/sheet";
 import { JobMatchResponse } from "@/models/ai.model";
 import type { DeepPartial } from "ai";

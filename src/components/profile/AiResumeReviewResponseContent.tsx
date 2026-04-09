@@ -1,4 +1,4 @@
-import { RadialChartComponent } from "../RadialChart";
+import { RadialChartComponent } from "../RadialChartSvg";
 import { SheetDescription } from "../ui/sheet";
 import { ResumeReviewResponse } from "@/models/ai.model";
 import type { DeepPartial } from "ai";
@@ -34,7 +34,7 @@ const ScoresSection = ({
           <RadialChartComponent score={scores.overall} />
         </div>
       )}
-      <div className="grid grid-cols-4 gap-2 mt-[-40px]">
+      <div className="grid grid-cols-4 gap-2 mt-[-10px]">
         {scoreItems.map(
           (item) =>
             item.value !== undefined && (
