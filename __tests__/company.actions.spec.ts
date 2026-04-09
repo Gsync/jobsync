@@ -13,44 +13,44 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // Mock the Prisma Client
-jest.mock("@prisma/client", () => {
+vi.mock("@prisma/client", () => {
   const mPrismaClient = {
     company: {
-      findMany: jest.fn(),
-      count: jest.fn(),
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
     workExperience: {
-      count: jest.fn(),
+      count: vi.fn(),
     },
     job: {
-      count: jest.fn(),
+      count: vi.fn(),
     },
   };
-  return { PrismaClient: jest.fn(() => mPrismaClient) };
+  return { PrismaClient: vi.fn(function() { return mPrismaClient; }) };
 });
 
-jest.mock("@/utils/user.utils", () => ({
-  getCurrentUser: jest.fn(),
+vi.mock("@/utils/user.utils", () => ({
+  getCurrentUser: vi.fn(),
 }));
 
-jest.mock("next/cache", () => ({
-  revalidatePath: jest.fn(),
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
 }));
 
 describe("Company Actions", () => {
   const mockUser = { id: "user-id" };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
   describe("getCompanyList", () => {
     it("should return company list for authenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockData = [
         {
           id: "company-id",
@@ -61,8 +61,8 @@ describe("Company Actions", () => {
       ];
       const mockTotal = 1;
 
-      (prisma.company.findMany as jest.Mock).mockResolvedValue(mockData);
-      (prisma.company.count as jest.Mock).mockResolvedValue(mockTotal);
+      (prisma.company.findMany as any).mockResolvedValue(mockData);
+      (prisma.company.count as any).mockResolvedValue(mockTotal);
 
       const result = await getCompanyList(1, 10);
 
@@ -79,7 +79,7 @@ describe("Company Actions", () => {
     });
 
     it("should throw an error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       await expect(getCompanyList(1, 10)).resolves.toStrictEqual({
         success: false,
@@ -91,7 +91,7 @@ describe("Company Actions", () => {
     });
 
     it("should filter by status when countBy is provided", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockData = [
         {
           id: "company-id",
@@ -102,8 +102,8 @@ describe("Company Actions", () => {
       ];
       const mockTotal = 1;
 
-      (prisma.company.findMany as jest.Mock).mockResolvedValue(mockData);
-      (prisma.company.count as jest.Mock).mockResolvedValue(mockTotal);
+      (prisma.company.findMany as any).mockResolvedValue(mockData);
+      (prisma.company.count as any).mockResolvedValue(mockTotal);
 
       const result = await getCompanyList(1, 10, "applied");
 
@@ -135,7 +135,7 @@ describe("Company Actions", () => {
     });
 
     it("should handle errors", async () => {
-      (getCurrentUser as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockRejectedValue(
         new Error("Database error"),
       );
 
@@ -151,13 +151,13 @@ describe("Company Actions", () => {
 
   describe("getAllCompanies", () => {
     it("should return all companies for authenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockCompanies = [
         { id: "company1", name: "Company 1" },
         { id: "company2", name: "Company 2" },
       ];
 
-      (prisma.company.findMany as jest.Mock).mockResolvedValue(mockCompanies);
+      (prisma.company.findMany as any).mockResolvedValue(mockCompanies);
 
       const result = await getAllCompanies();
 
@@ -168,7 +168,7 @@ describe("Company Actions", () => {
     });
 
     it("should throw an error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       await expect(getAllCompanies()).resolves.toStrictEqual({
         success: false,
@@ -179,8 +179,8 @@ describe("Company Actions", () => {
     });
 
     it("should handle unexpected errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.company.findMany as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findMany as any).mockRejectedValue(
         new Error("Unexpected error"),
       );
 
@@ -200,8 +200,8 @@ describe("Company Actions", () => {
     };
 
     it("should create a new company successfully", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.company.findFirst as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findFirst as any).mockResolvedValue(null);
       const mockCompany = {
         id: "company-id",
         label: "New Company",
@@ -209,9 +209,9 @@ describe("Company Actions", () => {
         logoUrl: "http://example.com/logo.png",
         createdBy: mockUser.id,
       };
-      (prisma.company.create as jest.Mock).mockResolvedValue(mockCompany);
+      (prisma.company.create as any).mockResolvedValue(mockCompany);
       // Mock revalidatePath to prevent any errors during the test
-      (revalidatePath as jest.Mock).mockResolvedValue(undefined);
+      (revalidatePath as any).mockResolvedValue(undefined);
 
       const result = await addCompany(validData);
 
@@ -231,7 +231,7 @@ describe("Company Actions", () => {
     });
 
     it("should return an error if the user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await addCompany(validData);
 
@@ -241,14 +241,14 @@ describe("Company Actions", () => {
     });
 
     it("should return an error if the company already exists", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockExistingCompany = {
         id: "existing-company-id",
         ...validData,
         value: "new company",
         createdBy: mockUser.id,
       };
-      (prisma.company.findFirst as jest.Mock).mockResolvedValue(
+      (prisma.company.findFirst as any).mockResolvedValue(
         mockExistingCompany,
       );
 
@@ -265,8 +265,8 @@ describe("Company Actions", () => {
     });
 
     it("should handle unexpected errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.company.findFirst as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findFirst as any).mockRejectedValue(
         new Error("Unexpected error"),
       );
 
@@ -280,7 +280,7 @@ describe("Company Actions", () => {
     });
 
     it("should return error if logo URL is invalid", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const invalidData = {
         company: "New Company",
@@ -299,7 +299,7 @@ describe("Company Actions", () => {
     });
 
     it("should return error if logo URL has data protocol", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const invalidData = {
         company: "New Company",
@@ -317,8 +317,8 @@ describe("Company Actions", () => {
     });
 
     it("should allow empty logo URL", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.company.findFirst as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findFirst as any).mockResolvedValue(null);
       const mockCompany = {
         id: "company-id",
         label: "New Company",
@@ -326,8 +326,8 @@ describe("Company Actions", () => {
         logoUrl: "",
         createdBy: mockUser.id,
       };
-      (prisma.company.create as jest.Mock).mockResolvedValue(mockCompany);
-      (revalidatePath as jest.Mock).mockResolvedValue(undefined);
+      (prisma.company.create as any).mockResolvedValue(mockCompany);
+      (revalidatePath as any).mockResolvedValue(undefined);
 
       const result = await addCompany({
         company: "New Company",
@@ -339,8 +339,8 @@ describe("Company Actions", () => {
     });
 
     it("should allow https URLs", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.company.findFirst as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findFirst as any).mockResolvedValue(null);
       const mockCompany = {
         id: "company-id",
         label: "New Company",
@@ -348,8 +348,8 @@ describe("Company Actions", () => {
         logoUrl: "https://example.com/logo.png",
         createdBy: mockUser.id,
       };
-      (prisma.company.create as jest.Mock).mockResolvedValue(mockCompany);
-      (revalidatePath as jest.Mock).mockResolvedValue(undefined);
+      (prisma.company.create as any).mockResolvedValue(mockCompany);
+      (revalidatePath as any).mockResolvedValue(undefined);
 
       const result = await addCompany({
         company: "New Company",
@@ -370,16 +370,16 @@ describe("Company Actions", () => {
     };
 
     it("should update a company successfully", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
-      (prisma.company.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.company.findFirst as any).mockResolvedValue(null);
 
       const mockUpdatedCompany = {
         id: "company-id",
         value: "updated company",
       };
 
-      (prisma.company.update as jest.Mock).mockResolvedValue(
+      (prisma.company.update as any).mockResolvedValue(
         mockUpdatedCompany,
       );
 
@@ -402,7 +402,7 @@ describe("Company Actions", () => {
     });
 
     it("should return error if user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await updateCompany(validData);
 
@@ -413,9 +413,9 @@ describe("Company Actions", () => {
     });
 
     it("should return error if company already exists", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
-      (prisma.company.findFirst as jest.Mock).mockResolvedValue({
+      (prisma.company.findFirst as any).mockResolvedValue({
         id: "existing-company-id",
       });
 
@@ -430,7 +430,7 @@ describe("Company Actions", () => {
     });
 
     it("should return error if id is not provided or no user privileges", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const invalidData = { ...validData, id: "", createdBy: "other-user-id" };
 
@@ -446,7 +446,7 @@ describe("Company Actions", () => {
     });
 
     it("should return error if logo URL is invalid", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const invalidData = {
         ...validData,
@@ -465,7 +465,7 @@ describe("Company Actions", () => {
     });
 
     it("should return error if logo URL has data protocol", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const invalidData = {
         ...validData,
@@ -483,16 +483,16 @@ describe("Company Actions", () => {
     });
 
     it("should allow empty logo URL", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
-      (prisma.company.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.company.findFirst as any).mockResolvedValue(null);
 
       const mockUpdatedCompany = {
         id: "company-id",
         value: "updated company",
       };
 
-      (prisma.company.update as jest.Mock).mockResolvedValue(
+      (prisma.company.update as any).mockResolvedValue(
         mockUpdatedCompany,
       );
 
@@ -517,9 +517,9 @@ describe("Company Actions", () => {
     };
 
     it("should fetch company by id successfully", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
-      (prisma.company.findUnique as jest.Mock).mockResolvedValue(mockCompany);
+      (prisma.company.findUnique as any).mockResolvedValue(mockCompany);
 
       const result = await getCompanyById(mockCompanyId);
 
@@ -540,7 +540,7 @@ describe("Company Actions", () => {
     });
 
     it("should throw error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       await expect(getCompanyById(mockCompanyId)).resolves.toStrictEqual({
         success: false,
@@ -551,8 +551,8 @@ describe("Company Actions", () => {
     });
 
     it("should handle unexpected errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.company.findUnique as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findUnique as any).mockRejectedValue(
         new Error("Unexpected error"),
       );
 
@@ -569,11 +569,11 @@ describe("Company Actions", () => {
 
   describe("deleteCompanyById", () => {
     it("should delete a company successfully", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as jest.Mock).mockResolvedValue(0);
-      (prisma.job.count as jest.Mock).mockResolvedValue(0);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(0);
+      (prisma.job.count as any).mockResolvedValue(0);
       const mockDeleted = { id: "company-id", label: "Test Company" };
-      (prisma.company.delete as jest.Mock).mockResolvedValue(mockDeleted);
+      (prisma.company.delete as any).mockResolvedValue(mockDeleted);
 
       const result = await deleteCompanyById("company-id");
 
@@ -584,7 +584,7 @@ describe("Company Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await deleteCompanyById("company-id");
 
@@ -593,8 +593,8 @@ describe("Company Actions", () => {
     });
 
     it("should prevent deletion when work experiences exist", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as jest.Mock).mockResolvedValue(1);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(1);
 
       const result = await deleteCompanyById("company-id");
 
@@ -608,9 +608,9 @@ describe("Company Actions", () => {
     });
 
     it("should prevent deletion when associated jobs exist", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as jest.Mock).mockResolvedValue(0);
-      (prisma.job.count as jest.Mock).mockResolvedValue(3);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(0);
+      (prisma.job.count as any).mockResolvedValue(3);
 
       const result = await deleteCompanyById("company-id");
 
@@ -623,10 +623,10 @@ describe("Company Actions", () => {
     });
 
     it("should handle unexpected errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as jest.Mock).mockResolvedValue(0);
-      (prisma.job.count as jest.Mock).mockResolvedValue(0);
-      (prisma.company.delete as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(0);
+      (prisma.job.count as any).mockResolvedValue(0);
+      (prisma.company.delete as any).mockRejectedValue(
         new Error("Delete failed"),
       );
 

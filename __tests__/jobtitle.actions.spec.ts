@@ -9,47 +9,47 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-jest.mock("@prisma/client", () => {
+vi.mock("@prisma/client", () => {
   const mPrismaClient = {
     jobTitle: {
-      findMany: jest.fn(),
-      count: jest.fn(),
-      upsert: jest.fn(),
-      delete: jest.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+      upsert: vi.fn(),
+      delete: vi.fn(),
     },
     workExperience: {
-      count: jest.fn(),
+      count: vi.fn(),
     },
     job: {
-      count: jest.fn(),
+      count: vi.fn(),
     },
   };
-  return { PrismaClient: jest.fn(() => mPrismaClient) };
+  return { PrismaClient: vi.fn(function() { return mPrismaClient; }) };
 });
 
-jest.mock("@/utils/user.utils", () => ({
-  getCurrentUser: jest.fn(),
+vi.mock("@/utils/user.utils", () => ({
+  getCurrentUser: vi.fn(),
 }));
 
-jest.mock("next/cache", () => ({
-  revalidatePath: jest.fn(),
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
 }));
 
 describe("Job Title Actions", () => {
   const mockUser = { id: "user-id" };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("getAllJobTitles", () => {
     it("should return all job titles for authenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockTitles = [
         { id: "title-1", label: "Developer", value: "developer" },
         { id: "title-2", label: "Designer", value: "designer" },
       ];
-      (prisma.jobTitle.findMany as jest.Mock).mockResolvedValue(mockTitles);
+      (prisma.jobTitle.findMany as any).mockResolvedValue(mockTitles);
 
       const result = await getAllJobTitles();
 
@@ -60,7 +60,7 @@ describe("Job Title Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await getAllJobTitles();
 
@@ -69,8 +69,8 @@ describe("Job Title Actions", () => {
     });
 
     it("should handle unexpected errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.jobTitle.findMany as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.jobTitle.findMany as any).mockRejectedValue(
         new Error("Database error")
       );
 
@@ -82,14 +82,14 @@ describe("Job Title Actions", () => {
 
   describe("getJobTitleList", () => {
     it("should return paginated job title list", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockData = [
         { id: "title-1", label: "Developer", value: "developer" },
       ];
       const mockTotal = 1;
 
-      (prisma.jobTitle.findMany as jest.Mock).mockResolvedValue(mockData);
-      (prisma.jobTitle.count as jest.Mock).mockResolvedValue(mockTotal);
+      (prisma.jobTitle.findMany as any).mockResolvedValue(mockData);
+      (prisma.jobTitle.count as any).mockResolvedValue(mockTotal);
 
       const result = await getJobTitleList(1, 10);
 
@@ -106,12 +106,12 @@ describe("Job Title Actions", () => {
     });
 
     it("should filter by countBy when provided", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockData = [
         { id: "title-1", label: "Developer", value: "developer" },
       ];
-      (prisma.jobTitle.findMany as jest.Mock).mockResolvedValue(mockData);
-      (prisma.jobTitle.count as jest.Mock).mockResolvedValue(1);
+      (prisma.jobTitle.findMany as any).mockResolvedValue(mockData);
+      (prisma.jobTitle.count as any).mockResolvedValue(1);
 
       const result = await getJobTitleList(1, 10, "applied");
 
@@ -137,9 +137,9 @@ describe("Job Title Actions", () => {
     });
 
     it("should calculate skip correctly for page 2", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.jobTitle.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.jobTitle.count as jest.Mock).mockResolvedValue(0);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.jobTitle.findMany as any).mockResolvedValue([]);
+      (prisma.jobTitle.count as any).mockResolvedValue(0);
 
       await getJobTitleList(2, 10);
 
@@ -149,7 +149,7 @@ describe("Job Title Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await getJobTitleList(1, 10);
 
@@ -158,7 +158,7 @@ describe("Job Title Actions", () => {
     });
 
     it("should handle errors", async () => {
-      (getCurrentUser as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockRejectedValue(
         new Error("Database error")
       );
 
@@ -170,14 +170,14 @@ describe("Job Title Actions", () => {
 
   describe("createJobTitle", () => {
     it("should upsert a job title successfully", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockTitle = {
         id: "title-1",
         label: "Senior Developer",
         value: "senior developer",
         createdBy: mockUser.id,
       };
-      (prisma.jobTitle.upsert as jest.Mock).mockResolvedValue(mockTitle);
+      (prisma.jobTitle.upsert as any).mockResolvedValue(mockTitle);
 
       const result = await createJobTitle("Senior Developer");
 
@@ -194,7 +194,7 @@ describe("Job Title Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await createJobTitle("Developer");
 
@@ -203,8 +203,8 @@ describe("Job Title Actions", () => {
     });
 
     it("should handle unexpected errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.jobTitle.upsert as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.jobTitle.upsert as any).mockRejectedValue(
         new Error("Upsert failed")
       );
 
@@ -216,11 +216,11 @@ describe("Job Title Actions", () => {
 
   describe("deleteJobTitleById", () => {
     it("should delete a job title successfully", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as jest.Mock).mockResolvedValue(0);
-      (prisma.job.count as jest.Mock).mockResolvedValue(0);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(0);
+      (prisma.job.count as any).mockResolvedValue(0);
       const mockDeleted = { id: "title-1", label: "Developer" };
-      (prisma.jobTitle.delete as jest.Mock).mockResolvedValue(mockDeleted);
+      (prisma.jobTitle.delete as any).mockResolvedValue(mockDeleted);
 
       const result = await deleteJobTitleById("title-1");
 
@@ -231,7 +231,7 @@ describe("Job Title Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await deleteJobTitleById("title-1");
 
@@ -240,8 +240,8 @@ describe("Job Title Actions", () => {
     });
 
     it("should prevent deletion when work experiences exist", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as jest.Mock).mockResolvedValue(2);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(2);
 
       const result = await deleteJobTitleById("title-1");
 
@@ -255,9 +255,9 @@ describe("Job Title Actions", () => {
     });
 
     it("should prevent deletion when associated jobs exist", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as jest.Mock).mockResolvedValue(0);
-      (prisma.job.count as jest.Mock).mockResolvedValue(3);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(0);
+      (prisma.job.count as any).mockResolvedValue(3);
 
       const result = await deleteJobTitleById("title-1");
 
@@ -270,10 +270,10 @@ describe("Job Title Actions", () => {
     });
 
     it("should handle unexpected errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as jest.Mock).mockResolvedValue(0);
-      (prisma.job.count as jest.Mock).mockResolvedValue(0);
-      (prisma.jobTitle.delete as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(0);
+      (prisma.job.count as any).mockResolvedValue(0);
+      (prisma.jobTitle.delete as any).mockRejectedValue(
         new Error("Delete failed")
       );
 

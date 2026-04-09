@@ -1,15 +1,15 @@
 // Mock server-only dependencies to allow importing getModel in the jsdom environment
-jest.mock("@/lib/api-key-resolver", () => ({
-  resolveApiKey: jest.fn(),
+vi.mock("@/lib/api-key-resolver", () => ({
+  resolveApiKey: vi.fn(),
 }));
 
-jest.mock("@/lib/ai/provider-registry.server", () => ({
+vi.mock("@/lib/ai/provider-registry.server", () => ({
   PROVIDER_FACTORIES: {
-    openrouter: jest.fn(),
-    openai: jest.fn(),
-    deepseek: jest.fn(),
-    ollama: jest.fn(),
-    gemini: jest.fn(),
+    openrouter: vi.fn(),
+    openai: vi.fn(),
+    deepseek: vi.fn(),
+    ollama: vi.fn(),
+    gemini: vi.fn(),
   },
 }));
 
@@ -21,13 +21,13 @@ describe("getModel – openrouter", () => {
   const mockModelInstance = { modelId: "openai/gpt-4o" };
 
   beforeEach(() => {
-    (PROVIDER_FACTORIES.openrouter as jest.Mock).mockReturnValue(
+    (PROVIDER_FACTORIES.openrouter as any).mockReturnValue(
       mockModelInstance,
     );
   });
 
   it("resolves credentials and returns a model instance", async () => {
-    (resolveApiKey as jest.Mock).mockResolvedValue("sk-or-test-key");
+    (resolveApiKey as any).mockResolvedValue("sk-or-test-key");
 
     const result = await getModel("openrouter", "openai/gpt-4o", "user-1");
 
@@ -40,7 +40,7 @@ describe("getModel – openrouter", () => {
   });
 
   it("works without a userId (falls back to env var resolution)", async () => {
-    (resolveApiKey as jest.Mock).mockResolvedValue("sk-or-from-env");
+    (resolveApiKey as any).mockResolvedValue("sk-or-from-env");
 
     const result = await getModel("openrouter", "openai/gpt-4o");
 
@@ -49,7 +49,7 @@ describe("getModel – openrouter", () => {
   });
 
   it("throws when OpenRouter credential is not configured", async () => {
-    (resolveApiKey as jest.Mock).mockResolvedValue(undefined);
+    (resolveApiKey as any).mockResolvedValue(undefined);
 
     await expect(
       getModel("openrouter", "openai/gpt-4o", "user-1"),
@@ -57,7 +57,7 @@ describe("getModel – openrouter", () => {
   });
 
   it("passes the model name to the factory", async () => {
-    (resolveApiKey as jest.Mock).mockResolvedValue("sk-or-key");
+    (resolveApiKey as any).mockResolvedValue("sk-or-key");
 
     await getModel("openrouter", "anthropic/claude-3-opus", "user-1");
 
@@ -70,7 +70,7 @@ describe("getModel – openrouter", () => {
 
 describe("getModel – provider validation", () => {
   it("throws for unknown provider", async () => {
-    (resolveApiKey as jest.Mock).mockResolvedValue("some-key");
+    (resolveApiKey as any).mockResolvedValue("some-key");
 
     await expect(
       getModel("unknown-provider" as any, "some-model"),
@@ -78,8 +78,8 @@ describe("getModel – provider validation", () => {
   });
 
   it("recognizes openrouter as a valid ProviderType", async () => {
-    (resolveApiKey as jest.Mock).mockResolvedValue("sk-or-key");
-    (PROVIDER_FACTORIES.openrouter as jest.Mock).mockReturnValue({});
+    (resolveApiKey as any).mockResolvedValue("sk-or-key");
+    (PROVIDER_FACTORIES.openrouter as any).mockReturnValue({});
 
     // Should resolve without throwing
     await expect(

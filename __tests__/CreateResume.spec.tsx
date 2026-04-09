@@ -1,17 +1,16 @@
 import CreateResume from "@/components/profile/CreateResume";
 import { Resume } from "@/models/profile.model";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import "@testing-library/jest-dom";
 
 describe("CreateResume Component", () => {
-  const mockReloadResumes = jest.fn();
-  const mockSetResumeDialogOpen = jest.fn();
-  const mockSetNewResumeId = jest.fn();
+  const mockReloadResumes = vi.fn();
+  const mockSetResumeDialogOpen = vi.fn();
+  const mockSetNewResumeId = vi.fn();
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
   const renderComponent = (resumeToEdit?: Resume) => {
     render(

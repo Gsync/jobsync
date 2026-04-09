@@ -1,13 +1,13 @@
-jest.mock("@/auth", () => ({
-  auth: jest.fn(),
+vi.mock("@/auth", () => ({
+  auth: vi.fn(),
 }));
 
-jest.mock("@/lib/api-key-resolver", () => ({
-  resolveApiKey: jest.fn(),
+vi.mock("@/lib/api-key-resolver", () => ({
+  resolveApiKey: vi.fn(),
 }));
 
 // NextResponse.json uses Response.json() internally; provide a working implementation
-jest.mock("next/server", () => ({
+vi.mock("next/server", () => ({
   NextResponse: {
     json: (data: unknown, init?: { status?: number }) => ({
       status: init?.status ?? 200,
@@ -22,12 +22,12 @@ import { resolveApiKey } from "@/lib/api-key-resolver";
 
 describe("GET /api/ai/openrouter/models", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("returns 401 when no API key is configured", async () => {
-    (auth as jest.Mock).mockResolvedValue({ user: { id: "user-1" } });
-    (resolveApiKey as jest.Mock).mockResolvedValue(null);
+    (auth as any).mockResolvedValue({ user: { id: "user-1" } });
+    (resolveApiKey as any).mockResolvedValue(null);
 
     const response = await GET();
     const data = await response.json();
@@ -37,13 +37,13 @@ describe("GET /api/ai/openrouter/models", () => {
   });
 
   it("returns model data on successful fetch", async () => {
-    (auth as jest.Mock).mockResolvedValue({ user: { id: "user-1" } });
-    (resolveApiKey as jest.Mock).mockResolvedValue("sk-or-valid");
+    (auth as any).mockResolvedValue({ user: { id: "user-1" } });
+    (resolveApiKey as any).mockResolvedValue("sk-or-valid");
 
     const mockModels = {
       data: [{ id: "openai/gpt-4o" }, { id: "google/gemini-flash" }],
     };
-    global.fetch = jest.fn().mockResolvedValue({
+    global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => mockModels,
     });
@@ -60,9 +60,9 @@ describe("GET /api/ai/openrouter/models", () => {
   });
 
   it("passes the resolved API key as a Bearer token", async () => {
-    (auth as jest.Mock).mockResolvedValue({ user: { id: "user-1" } });
-    (resolveApiKey as jest.Mock).mockResolvedValue("sk-or-my-key");
-    global.fetch = jest.fn().mockResolvedValue({
+    (auth as any).mockResolvedValue({ user: { id: "user-1" } });
+    (resolveApiKey as any).mockResolvedValue("sk-or-my-key");
+    global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ data: [] }),
     });
@@ -78,9 +78,9 @@ describe("GET /api/ai/openrouter/models", () => {
   });
 
   it("returns the upstream status code when OpenRouter fetch fails", async () => {
-    (auth as jest.Mock).mockResolvedValue({ user: { id: "user-1" } });
-    (resolveApiKey as jest.Mock).mockResolvedValue("sk-or-valid");
-    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 503 });
+    (auth as any).mockResolvedValue({ user: { id: "user-1" } });
+    (resolveApiKey as any).mockResolvedValue("sk-or-valid");
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
 
     const response = await GET();
     const data = await response.json();
@@ -90,9 +90,9 @@ describe("GET /api/ai/openrouter/models", () => {
   });
 
   it("returns 500 on unexpected fetch error", async () => {
-    (auth as jest.Mock).mockResolvedValue({ user: { id: "user-1" } });
-    (resolveApiKey as jest.Mock).mockResolvedValue("sk-or-valid");
-    global.fetch = jest.fn().mockRejectedValue(new Error("Network failure"));
+    (auth as any).mockResolvedValue({ user: { id: "user-1" } });
+    (resolveApiKey as any).mockResolvedValue("sk-or-valid");
+    global.fetch = vi.fn().mockRejectedValue(new Error("Network failure"));
 
     const response = await GET();
 
@@ -100,8 +100,8 @@ describe("GET /api/ai/openrouter/models", () => {
   });
 
   it("handles missing session by passing undefined userId to resolveApiKey", async () => {
-    (auth as jest.Mock).mockResolvedValue(null);
-    (resolveApiKey as jest.Mock).mockResolvedValue(undefined);
+    (auth as any).mockResolvedValue(null);
+    (resolveApiKey as any).mockResolvedValue(undefined);
 
     const response = await GET();
 
@@ -110,8 +110,8 @@ describe("GET /api/ai/openrouter/models", () => {
   });
 
   it("resolves the API key using the authenticated user's id", async () => {
-    (auth as jest.Mock).mockResolvedValue({ user: { id: "user-42" } });
-    (resolveApiKey as jest.Mock).mockResolvedValue(null);
+    (auth as any).mockResolvedValue({ user: { id: "user-42" } });
+    (resolveApiKey as any).mockResolvedValue(null);
 
     await GET();
 

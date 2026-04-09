@@ -1,35 +1,34 @@
 import React from "react";
 import JobDetails from "@/components/myjobs/JobDetails";
 import { JobResponse, Tag } from "@/models/job.model";
-import "@testing-library/jest-dom";
 import { render, screen, act } from "@testing-library/react";
 
-jest.mock("next/navigation", () => ({
-  useRouter: jest.fn(() => ({ back: jest.fn() })),
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(() => ({ back: vi.fn() })),
 }));
 
 let capturedOnMatchSaved: ((score: number, data: string) => void) | undefined;
 
-jest.mock("@/components/profile/AiJobMatchSection", () => ({
+vi.mock("@/components/profile/AiJobMatchSection", () => ({
   AiJobMatchSection: (props: any) => {
     capturedOnMatchSaved = props.onMatchSaved;
     return null;
   },
 }));
 
-jest.mock("@/components/myjobs/NotesSection", () => ({
+vi.mock("@/components/myjobs/NotesSection", () => ({
   NotesSection: () => null,
 }));
 
-jest.mock("@/components/TipTapContentViewer", () => ({
+vi.mock("@/components/TipTapContentViewer", () => ({
   TipTapContentViewer: () => null,
 }));
 
-jest.mock("@/components/automations/MatchDetails", () => ({
+vi.mock("@/components/automations/MatchDetails", () => ({
   MatchDetails: () => <div data-testid="match-details" />,
 }));
 
-jest.mock("@/components/profile/DownloadFileButton", () => ({
+vi.mock("@/components/profile/DownloadFileButton", () => ({
   DownloadFileButton: () => null,
 }));
 

@@ -9,26 +9,26 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-jest.mock("@prisma/client", () => {
+vi.mock("@prisma/client", () => {
   const mPrismaClient = {
     coverLetter: {
-      findMany: jest.fn(),
-      findFirst: jest.fn(),
-      count: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      count: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
     profile: {
-      findFirst: jest.fn(),
-      create: jest.fn(),
+      findFirst: vi.fn(),
+      create: vi.fn(),
     },
   };
-  return { PrismaClient: jest.fn(() => mPrismaClient) };
+  return { PrismaClient: vi.fn(function() { return mPrismaClient; }) };
 });
 
-jest.mock("@/utils/user.utils", () => ({
-  getCurrentUser: jest.fn(),
+vi.mock("@/utils/user.utils", () => ({
+  getCurrentUser: vi.fn(),
 }));
 
 describe("coverLetterActions", () => {
@@ -44,16 +44,16 @@ describe("coverLetterActions", () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("getCoverLetterList", () => {
     it("should return cover letter list with default parameters", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.coverLetter.findMany as jest.Mock).mockResolvedValue([
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.coverLetter.findMany as any).mockResolvedValue([
         mockCoverLetter,
       ]);
-      (prisma.coverLetter.count as jest.Mock).mockResolvedValue(1);
+      (prisma.coverLetter.count as any).mockResolvedValue(1);
 
       const result = await getCoverLetterList();
 
@@ -89,9 +89,9 @@ describe("coverLetterActions", () => {
     });
 
     it("should return cover letter list with pagination", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.coverLetter.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.coverLetter.count as jest.Mock).mockResolvedValue(15);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.coverLetter.findMany as any).mockResolvedValue([]);
+      (prisma.coverLetter.count as any).mockResolvedValue(15);
 
       const result = await getCoverLetterList(2, 5);
 
@@ -109,7 +109,7 @@ describe("coverLetterActions", () => {
     });
 
     it("should return error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await getCoverLetterList();
 
@@ -120,8 +120,8 @@ describe("coverLetterActions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.coverLetter.findMany as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.coverLetter.findMany as any).mockRejectedValue(
         new Error("Database error"),
       );
 
@@ -136,12 +136,12 @@ describe("coverLetterActions", () => {
 
   describe("createCoverLetter", () => {
     it("should create a cover letter when profile exists", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.coverLetter.findFirst as jest.Mock).mockResolvedValue(null);
-      (prisma.profile.findFirst as jest.Mock).mockResolvedValue({
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.coverLetter.findFirst as any).mockResolvedValue(null);
+      (prisma.profile.findFirst as any).mockResolvedValue({
         id: "profile-id",
       });
-      (prisma.coverLetter.create as jest.Mock).mockResolvedValue(
+      (prisma.coverLetter.create as any).mockResolvedValue(
         mockCoverLetter,
       );
 
@@ -165,10 +165,10 @@ describe("coverLetterActions", () => {
     });
 
     it("should create a profile and cover letter when no profile exists", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.coverLetter.findFirst as jest.Mock).mockResolvedValue(null);
-      (prisma.profile.findFirst as jest.Mock).mockResolvedValue(null);
-      (prisma.profile.create as jest.Mock).mockResolvedValue({
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.coverLetter.findFirst as any).mockResolvedValue(null);
+      (prisma.profile.findFirst as any).mockResolvedValue(null);
+      (prisma.profile.create as any).mockResolvedValue({
         id: "new-profile-id",
       });
 
@@ -192,8 +192,8 @@ describe("coverLetterActions", () => {
     });
 
     it("should return error when title already exists", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.coverLetter.findFirst as jest.Mock).mockResolvedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.coverLetter.findFirst as any).mockResolvedValue(
         mockCoverLetter,
       );
 
@@ -211,12 +211,12 @@ describe("coverLetterActions", () => {
     });
 
     it("should check title case-insensitively with trimming", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.coverLetter.findFirst as jest.Mock).mockResolvedValue(null);
-      (prisma.profile.findFirst as jest.Mock).mockResolvedValue({
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.coverLetter.findFirst as any).mockResolvedValue(null);
+      (prisma.profile.findFirst as any).mockResolvedValue({
         id: "profile-id",
       });
-      (prisma.coverLetter.create as jest.Mock).mockResolvedValue(
+      (prisma.coverLetter.create as any).mockResolvedValue(
         mockCoverLetter,
       );
 
@@ -234,7 +234,7 @@ describe("coverLetterActions", () => {
     });
 
     it("should return error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await createCoverLetter("Title", "Some content here.");
 
@@ -245,8 +245,8 @@ describe("coverLetterActions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.coverLetter.findFirst as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.coverLetter.findFirst as any).mockRejectedValue(
         new Error("Database error"),
       );
 
@@ -261,9 +261,9 @@ describe("coverLetterActions", () => {
 
   describe("updateCoverLetter", () => {
     it("should update a cover letter successfully", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const updated = { ...mockCoverLetter, title: "Updated Title" };
-      (prisma.coverLetter.update as jest.Mock).mockResolvedValue(updated);
+      (prisma.coverLetter.update as any).mockResolvedValue(updated);
 
       const result = await updateCoverLetter(
         "cl-id",
@@ -282,7 +282,7 @@ describe("coverLetterActions", () => {
     });
 
     it("should return error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await updateCoverLetter("cl-id", "Title", "Content");
 
@@ -293,8 +293,8 @@ describe("coverLetterActions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.coverLetter.update as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.coverLetter.update as any).mockRejectedValue(
         new Error("Database error"),
       );
 
@@ -309,8 +309,8 @@ describe("coverLetterActions", () => {
 
   describe("deleteCoverLetterById", () => {
     it("should delete a cover letter successfully", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.coverLetter.delete as jest.Mock).mockResolvedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.coverLetter.delete as any).mockResolvedValue(
         mockCoverLetter,
       );
 
@@ -323,7 +323,7 @@ describe("coverLetterActions", () => {
     });
 
     it("should return error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await deleteCoverLetterById("cl-id");
 
@@ -334,8 +334,8 @@ describe("coverLetterActions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.coverLetter.delete as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.coverLetter.delete as any).mockRejectedValue(
         new Error("Database error"),
       );
 

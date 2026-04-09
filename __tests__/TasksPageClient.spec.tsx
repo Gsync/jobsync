@@ -1,18 +1,17 @@
 import TasksPageClient from "@/app/dashboard/tasks/TasksPageClient";
-import "@testing-library/jest-dom";
 import { screen, render, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { getTasksList } from "@/actions/task.actions";
 
-jest.mock("next-auth", () => {
-  const mockAuth = jest.fn();
-  const mockSignIn = jest.fn();
-  const mockSignOut = jest.fn();
-  const mockHandlers = { GET: jest.fn(), POST: jest.fn() };
+vi.mock("next-auth", () => {
+  const mockAuth = vi.fn();
+  const mockSignIn = vi.fn();
+  const mockSignOut = vi.fn();
+  const mockHandlers = { GET: vi.fn(), POST: vi.fn() };
 
   return {
     __esModule: true,
-    default: jest.fn(() => ({
+    default: vi.fn(() => ({
       auth: mockAuth,
       handlers: mockHandlers,
       signIn: mockSignIn,
@@ -25,46 +24,46 @@ jest.mock("next-auth", () => {
   };
 });
 
-jest.mock("next-auth/providers/credentials", () => ({
+vi.mock("next-auth/providers/credentials", () => ({
   __esModule: true,
-  default: jest.fn(() => ({
+  default: vi.fn(() => ({
     id: "credentials",
     name: "Credentials",
     type: "credentials",
   })),
 }));
 
-jest.mock("@/actions/task.actions", () => ({
-  getTasksList: jest.fn(),
+vi.mock("@/actions/task.actions", () => ({
+  getTasksList: vi.fn(),
 }));
 
-jest.mock("next/navigation", () => ({
-  useRouter: jest.fn().mockReturnValue({
-    push: jest.fn(),
-    back: jest.fn(),
-    forward: jest.fn(),
-    refresh: jest.fn(),
-    replace: jest.fn(),
-    prefetch: jest.fn(),
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn().mockReturnValue({
+    push: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
   }),
 }));
 
-jest.mock("@/context/ActivityContext", () => ({
-  useActivity: jest.fn(() => ({
-    refreshCurrentActivity: jest.fn(),
+vi.mock("@/context/ActivityContext", () => ({
+  useActivity: vi.fn(() => ({
+    refreshCurrentActivity: vi.fn(),
   })),
 }));
 
-global.ResizeObserver = jest.fn().mockImplementation(() => ({
-  observe: jest.fn(),
-  unobserve: jest.fn(),
-  disconnect: jest.fn(),
-}));
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
 document.createRange = () => {
   const range = new Range();
 
-  range.getBoundingClientRect = jest.fn().mockReturnValue({
+  range.getBoundingClientRect = vi.fn().mockReturnValue({
     bottom: 0,
     height: 0,
     left: 0,
@@ -77,7 +76,7 @@ document.createRange = () => {
     return {
       item: () => null,
       length: 0,
-      [Symbol.iterator]: jest.fn(),
+      [Symbol.iterator]: vi.fn(),
     };
   };
 
@@ -122,12 +121,12 @@ describe("TasksPageClient Component", () => {
   ];
 
   const user = userEvent.setup({ skipHover: true });
-  window.HTMLElement.prototype.scrollIntoView = jest.fn();
-  window.HTMLElement.prototype.hasPointerCapture = jest.fn();
+  window.HTMLElement.prototype.scrollIntoView = vi.fn();
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (getTasksList as jest.Mock).mockResolvedValue({
+    vi.clearAllMocks();
+    (getTasksList as any).mockResolvedValue({
       success: true,
       data: [],
       total: 0,
@@ -194,7 +193,7 @@ describe("TasksPageClient Component", () => {
     });
 
     it("should update filter when activity type is clicked in sidebar", async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: [],
         total: 0,
@@ -219,7 +218,7 @@ describe("TasksPageClient Component", () => {
     });
 
     it("should reset filter when 'All' is clicked", async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: [],
         total: 0,
@@ -253,7 +252,7 @@ describe("TasksPageClient Component", () => {
     });
 
     it("should apply different filters sequentially", async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: [],
         total: 0,
@@ -360,7 +359,7 @@ describe("TasksPageClient Component", () => {
 
   describe("Filter Synchronization", () => {
     it("should pass filter to TasksContainer", async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: [],
         total: 0,
@@ -392,7 +391,7 @@ describe("TasksPageClient Component", () => {
     });
 
     it("should clear filter when All is selected", async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: [],
         total: 0,
@@ -423,7 +422,7 @@ describe("TasksPageClient Component", () => {
       });
 
       // Clear mock calls
-      (getTasksList as jest.Mock).mockClear();
+      (getTasksList as any).mockClear();
 
       // Then click All
       const allButton = screen.getByRole("button", { name: /All/i });
@@ -530,7 +529,7 @@ describe("TasksPageClient Component", () => {
         },
       ];
 
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: [],
         total: 0,

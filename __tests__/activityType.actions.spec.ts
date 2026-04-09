@@ -7,26 +7,26 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-jest.mock("@prisma/client", () => {
+vi.mock("@prisma/client", () => {
   const mPrismaClient = {
     activityType: {
-      findMany: jest.fn(),
-      count: jest.fn(),
-      delete: jest.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+      delete: vi.fn(),
     },
     activity: {
-      groupBy: jest.fn(),
-      count: jest.fn(),
+      groupBy: vi.fn(),
+      count: vi.fn(),
     },
     task: {
-      count: jest.fn(),
+      count: vi.fn(),
     },
   };
-  return { PrismaClient: jest.fn(() => mPrismaClient) };
+  return { PrismaClient: vi.fn(function() { return mPrismaClient; }) };
 });
 
-jest.mock("@/utils/user.utils", () => ({
-  getCurrentUser: jest.fn(),
+vi.mock("@/utils/user.utils", () => ({
+  getCurrentUser: vi.fn(),
 }));
 
 describe("Activity Type Actions", () => {
@@ -59,15 +59,15 @@ describe("Activity Type Actions", () => {
   ];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("getActivityTypeList", () => {
     it("should return paginated activity types sorted by total duration", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.activityType.count as jest.Mock).mockResolvedValue(3);
-      (prisma.activity.groupBy as jest.Mock).mockResolvedValue(mockDurationSums);
-      (prisma.activityType.findMany as jest.Mock).mockResolvedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.activityType.count as any).mockResolvedValue(3);
+      (prisma.activity.groupBy as any).mockResolvedValue(mockDurationSums);
+      (prisma.activityType.findMany as any).mockResolvedValue(
         mockActivityTypes,
       );
 
@@ -84,10 +84,10 @@ describe("Activity Type Actions", () => {
     });
 
     it("should handle pagination correctly for page 2", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.activityType.count as jest.Mock).mockResolvedValue(3);
-      (prisma.activity.groupBy as jest.Mock).mockResolvedValue(mockDurationSums);
-      (prisma.activityType.findMany as jest.Mock).mockResolvedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.activityType.count as any).mockResolvedValue(3);
+      (prisma.activity.groupBy as any).mockResolvedValue(mockDurationSums);
+      (prisma.activityType.findMany as any).mockResolvedValue(
         mockActivityTypes,
       );
 
@@ -98,10 +98,10 @@ describe("Activity Type Actions", () => {
     });
 
     it("should return empty data when page exceeds total", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.activityType.count as jest.Mock).mockResolvedValue(3);
-      (prisma.activity.groupBy as jest.Mock).mockResolvedValue(mockDurationSums);
-      (prisma.activityType.findMany as jest.Mock).mockResolvedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.activityType.count as any).mockResolvedValue(3);
+      (prisma.activity.groupBy as any).mockResolvedValue(mockDurationSums);
+      (prisma.activityType.findMany as any).mockResolvedValue(
         mockActivityTypes,
       );
 
@@ -111,10 +111,10 @@ describe("Activity Type Actions", () => {
     });
 
     it("should assign 0 duration for types with no completed activities", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.activityType.count as jest.Mock).mockResolvedValue(3);
-      (prisma.activity.groupBy as jest.Mock).mockResolvedValue([]);
-      (prisma.activityType.findMany as jest.Mock).mockResolvedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.activityType.count as any).mockResolvedValue(3);
+      (prisma.activity.groupBy as any).mockResolvedValue([]);
+      (prisma.activityType.findMany as any).mockResolvedValue(
         mockActivityTypes,
       );
 
@@ -126,10 +126,10 @@ describe("Activity Type Actions", () => {
     });
 
     it("should only sum completed activities (endTime not null)", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.activityType.count as jest.Mock).mockResolvedValue(0);
-      (prisma.activity.groupBy as jest.Mock).mockResolvedValue([]);
-      (prisma.activityType.findMany as jest.Mock).mockResolvedValue([]);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.activityType.count as any).mockResolvedValue(0);
+      (prisma.activity.groupBy as any).mockResolvedValue([]);
+      (prisma.activityType.findMany as any).mockResolvedValue([]);
 
       await getActivityTypeList(1, 10);
 
@@ -141,7 +141,7 @@ describe("Activity Type Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await getActivityTypeList(1, 10);
 
@@ -150,8 +150,8 @@ describe("Activity Type Actions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.activityType.count as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.activityType.count as any).mockRejectedValue(
         new Error("DB error"),
       );
 
@@ -163,11 +163,11 @@ describe("Activity Type Actions", () => {
 
   describe("deleteActivityTypeById", () => {
     it("should delete an activity type with no linked records", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.activity.count as jest.Mock).mockResolvedValue(0);
-      (prisma.task.count as jest.Mock).mockResolvedValue(0);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.activity.count as any).mockResolvedValue(0);
+      (prisma.task.count as any).mockResolvedValue(0);
       const mockDeleted = { id: "at-3", label: "Networking", value: "networking" };
-      (prisma.activityType.delete as jest.Mock).mockResolvedValue(mockDeleted);
+      (prisma.activityType.delete as any).mockResolvedValue(mockDeleted);
 
       const result = await deleteActivityTypeById("at-3");
 
@@ -178,9 +178,9 @@ describe("Activity Type Actions", () => {
     });
 
     it("should return error when linked to activities only", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.activity.count as jest.Mock).mockResolvedValue(5);
-      (prisma.task.count as jest.Mock).mockResolvedValue(0);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.activity.count as any).mockResolvedValue(5);
+      (prisma.task.count as any).mockResolvedValue(0);
 
       const result = await deleteActivityTypeById("at-1");
 
@@ -193,9 +193,9 @@ describe("Activity Type Actions", () => {
     });
 
     it("should return error when linked to tasks only", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.activity.count as jest.Mock).mockResolvedValue(0);
-      (prisma.task.count as jest.Mock).mockResolvedValue(3);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.activity.count as any).mockResolvedValue(0);
+      (prisma.task.count as any).mockResolvedValue(3);
 
       const result = await deleteActivityTypeById("at-1");
 
@@ -208,9 +208,9 @@ describe("Activity Type Actions", () => {
     });
 
     it("should return error when linked to both activities and tasks", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.activity.count as jest.Mock).mockResolvedValue(5);
-      (prisma.task.count as jest.Mock).mockResolvedValue(3);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.activity.count as any).mockResolvedValue(5);
+      (prisma.task.count as any).mockResolvedValue(3);
 
       const result = await deleteActivityTypeById("at-1");
 
@@ -223,7 +223,7 @@ describe("Activity Type Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await deleteActivityTypeById("at-1");
 
@@ -234,10 +234,10 @@ describe("Activity Type Actions", () => {
     });
 
     it("should handle database errors during deletion", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.activity.count as jest.Mock).mockResolvedValue(0);
-      (prisma.task.count as jest.Mock).mockResolvedValue(0);
-      (prisma.activityType.delete as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.activity.count as any).mockResolvedValue(0);
+      (prisma.task.count as any).mockResolvedValue(0);
+      (prisma.activityType.delete as any).mockRejectedValue(
         new Error("DB error"),
       );
 

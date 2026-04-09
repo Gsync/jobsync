@@ -1,16 +1,17 @@
-const mockAuth = jest.fn();
-const mockSignIn = jest.fn();
-const mockSignOut = jest.fn();
-const mockHandlers = { GET: jest.fn(), POST: jest.fn() };
+import { vi } from "vitest";
 
-const NextAuth = jest.fn(() => ({
+const mockAuth = vi.fn();
+const mockSignIn = vi.fn();
+const mockSignOut = vi.fn();
+const mockHandlers = { GET: vi.fn(), POST: vi.fn() };
+
+const NextAuth = vi.fn(() => ({
   auth: mockAuth,
   handlers: mockHandlers,
   signIn: mockSignIn,
   signOut: mockSignOut,
 }));
 
-// Export both default and named exports
 export default NextAuth;
 export const auth = mockAuth;
 export const signIn = mockSignIn;

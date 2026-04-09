@@ -1,29 +1,28 @@
 import { signup, authenticate } from "@/actions/auth.actions";
 import SignupForm from "@/components/auth/SignupForm";
-import "@testing-library/jest-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useRouter } from "next/navigation";
 
 // Mock the external dependencies
-jest.mock("@/actions/auth.actions", () => ({
-  signup: jest.fn(),
-  authenticate: jest.fn(),
+vi.mock("@/actions/auth.actions", () => ({
+  signup: vi.fn(),
+  authenticate: vi.fn(),
 }));
 
-jest.mock("next/navigation", () => ({
-  useRouter: jest.fn(),
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(),
 }));
 
 describe("SignupForm Component", () => {
-  const mockPush = jest.fn();
+  const mockPush = vi.fn();
 
   beforeEach(() => {
-    (useRouter as jest.Mock).mockReturnValue({ push: mockPush });
+    (useRouter as any).mockReturnValue({ push: mockPush });
     render(<SignupForm />);
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("renders the SignupForm component correctly", () => {
@@ -105,7 +104,7 @@ describe("SignupForm Component", () => {
 
   it("should display error message when signup fails", async () => {
     const errorMessage = "An account with this email already exists.";
-    (signup as jest.Mock).mockResolvedValueOnce({ error: errorMessage });
+    (signup as any).mockResolvedValueOnce({ error: errorMessage });
 
     fireEvent.change(screen.getByLabelText("Full Name"), {
       target: { value: "John Doe" },
@@ -132,8 +131,8 @@ describe("SignupForm Component", () => {
 
   it("should display error message when authentication fails after signup", async () => {
     const authError = "Something went wrong.";
-    (signup as jest.Mock).mockResolvedValueOnce({ success: true });
-    (authenticate as jest.Mock).mockResolvedValueOnce(authError);
+    (signup as any).mockResolvedValueOnce({ success: true });
+    (authenticate as any).mockResolvedValueOnce(authError);
 
     fireEvent.change(screen.getByLabelText("Full Name"), {
       target: { value: "John Doe" },
@@ -160,8 +159,8 @@ describe("SignupForm Component", () => {
   });
 
   it("submits the form successfully and redirects to dashboard", async () => {
-    (signup as jest.Mock).mockResolvedValueOnce({ success: true });
-    (authenticate as jest.Mock).mockResolvedValueOnce(null);
+    (signup as any).mockResolvedValueOnce({ success: true });
+    (authenticate as any).mockResolvedValueOnce(null);
 
     fireEvent.change(screen.getByLabelText("Full Name"), {
       target: { value: "John Doe" },

@@ -1,20 +1,19 @@
 import { addCompany, updateCompany } from "@/actions/company.actions";
 import AddCompany from "@/components/admin/AddCompany";
-import "@testing-library/jest-dom";
 import { screen, render, waitFor, fireEvent } from "@testing-library/react";
 
-jest.mock("@/actions/company.actions", () => ({
-  addCompany: jest.fn(),
-  updateCompany: jest.fn(),
+vi.mock("@/actions/company.actions", () => ({
+  addCompany: vi.fn(),
+  updateCompany: vi.fn(),
 }));
 
 describe("AddCompany Component", () => {
-  const mockReloadCompanies = jest.fn();
-  const mockResetEditCompany = jest.fn();
-  const mockSetDialogOpen = jest.fn();
+  const mockReloadCompanies = vi.fn();
+  const mockResetEditCompany = vi.fn();
+  const mockSetDialogOpen = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("should render Add Company button", async () => {

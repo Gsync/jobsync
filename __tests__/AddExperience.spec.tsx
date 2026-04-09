@@ -3,31 +3,31 @@ import { addExperience, updateExperience } from "@/actions/profile.actions";
 import { getAllCompanies } from "@/actions/company.actions";
 import { getAllJobTitles } from "@/actions/jobtitle.actions";
 import { getAllJobLocations } from "@/actions/jobLocation.actions";
-import "@testing-library/jest-dom";
 import { screen, render, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ResumeSection } from "@/models/profile.model";
+import { toast } from "@/components/ui/use-toast";
 
-jest.mock("@/actions/profile.actions", () => ({
-  addExperience: jest.fn(),
-  updateExperience: jest.fn(),
+vi.mock("@/actions/profile.actions", () => ({
+  addExperience: vi.fn(),
+  updateExperience: vi.fn(),
 }));
 
-jest.mock("@/actions/company.actions", () => ({
-  getAllCompanies: jest.fn(),
+vi.mock("@/actions/company.actions", () => ({
+  getAllCompanies: vi.fn(),
 }));
 
-jest.mock("@/actions/jobtitle.actions", () => ({
-  getAllJobTitles: jest.fn(),
+vi.mock("@/actions/jobtitle.actions", () => ({
+  getAllJobTitles: vi.fn(),
 }));
 
-jest.mock("@/actions/jobLocation.actions", () => ({
-  getAllJobLocations: jest.fn(),
+vi.mock("@/actions/jobLocation.actions", () => ({
+  getAllJobLocations: vi.fn(),
 }));
 
 // Mock TiptapEditor component
-jest.mock("@/components/TiptapEditor", () => {
-  return function TiptapEditor({ field }: any) {
+vi.mock("@/components/TiptapEditor", () => ({
+  default: function TiptapEditor({ field }: any) {
     return (
       <textarea
         data-testid="tiptap-editor"
@@ -36,11 +36,11 @@ jest.mock("@/components/TiptapEditor", () => {
         placeholder="Enter job description"
       />
     );
-  };
-});
+  },
+}));
 
 // Mock Combobox component
-jest.mock("@/components/ComboBox", () => ({
+vi.mock("@/components/ComboBox", () => ({
   Combobox: ({ field, options }: any) => {
     return (
       <select
@@ -60,7 +60,7 @@ jest.mock("@/components/ComboBox", () => ({
 }));
 
 // Mock DatePicker component
-jest.mock("@/components/DatePicker", () => ({
+vi.mock("@/components/DatePicker", () => ({
   DatePicker: ({ field, isEnabled }: any) => {
     return (
       <input
@@ -79,12 +79,12 @@ jest.mock("@/components/DatePicker", () => ({
 }));
 
 // Mock toast
-jest.mock("@/components/ui/use-toast", () => ({
-  toast: jest.fn(),
+vi.mock("@/components/ui/use-toast", () => ({
+  toast: vi.fn(),
 }));
 
 describe("AddExperience Component", () => {
-  const mockSetDialogOpen = jest.fn();
+  const mockSetDialogOpen = vi.fn();
   const mockResumeId = "resume-123";
   const mockSectionId = "section-123";
   const user = userEvent.setup();
@@ -105,10 +105,10 @@ describe("AddExperience Component", () => {
   ];
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (getAllCompanies as jest.Mock).mockResolvedValue(mockCompanies);
-    (getAllJobTitles as jest.Mock).mockResolvedValue(mockJobTitles);
-    (getAllJobLocations as jest.Mock).mockResolvedValue(mockLocations);
+    vi.clearAllMocks();
+    (getAllCompanies as any).mockResolvedValue(mockCompanies);
+    (getAllJobTitles as any).mockResolvedValue(mockJobTitles);
+    (getAllJobLocations as any).mockResolvedValue(mockLocations);
   });
 
   it("should render Add Experience dialog with correct title", async () => {
@@ -357,7 +357,7 @@ describe("AddExperience Component", () => {
   });
 
   it("should call addExperience when submitting a new experience", async () => {
-    (addExperience as jest.Mock).mockResolvedValue({
+    (addExperience as any).mockResolvedValue({
       success: true,
       message: "Experience added successfully",
     });
@@ -443,7 +443,7 @@ describe("AddExperience Component", () => {
       ],
     };
 
-    (updateExperience as jest.Mock).mockResolvedValue({
+    (updateExperience as any).mockResolvedValue({
       success: true,
       message: "Experience updated successfully",
     });
@@ -488,9 +488,9 @@ describe("AddExperience Component", () => {
   });
 
   it("should close dialog and show success toast on successful submission", async () => {
-    const { toast } = require("@/components/ui/use-toast");
 
-    (addExperience as jest.Mock).mockResolvedValue({
+
+    (addExperience as any).mockResolvedValue({
       success: true,
       message: "Experience added successfully",
     });
@@ -551,9 +551,9 @@ describe("AddExperience Component", () => {
   });
 
   it("should show error toast on failed submission", async () => {
-    const { toast } = require("@/components/ui/use-toast");
 
-    (addExperience as jest.Mock).mockResolvedValue({
+
+    (addExperience as any).mockResolvedValue({
       success: false,
       message: "Failed to add experience",
     });
@@ -615,7 +615,7 @@ describe("AddExperience Component", () => {
   });
 
   it("should show updated success message when editing", async () => {
-    const { toast } = require("@/components/ui/use-toast");
+
 
     const mockExperienceToEdit: ResumeSection = {
       id: "section-1",
@@ -636,7 +636,7 @@ describe("AddExperience Component", () => {
       ],
     };
 
-    (updateExperience as jest.Mock).mockResolvedValue({
+    (updateExperience as any).mockResolvedValue({
       success: true,
       message: "Experience updated successfully",
     });
@@ -710,7 +710,7 @@ describe("AddExperience Component", () => {
   });
 
   it("should display loading indicator when form is submitting", async () => {
-    (addExperience as jest.Mock).mockImplementation(
+    (addExperience as any).mockImplementation(
       () =>
         new Promise((resolve) => {
           setTimeout(() => resolve({ success: true }), 100);

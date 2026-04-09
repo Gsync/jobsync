@@ -1,10 +1,9 @@
 import React from "react";
 import { render, waitFor } from "@testing-library/react";
-import "@testing-library/jest-dom";
 import { AiJobMatchSection } from "@/components/profile/AiJobMatchSection";
 
-const mockSubmit = jest.fn();
-const mockStop = jest.fn();
+const mockSubmit = vi.fn();
+const mockStop = vi.fn();
 let mockUseObjectReturn = {
   object: null as any,
   submit: mockSubmit,
@@ -12,49 +11,49 @@ let mockUseObjectReturn = {
   stop: mockStop,
 };
 
-jest.mock("@ai-sdk/react", () => ({
+vi.mock("@ai-sdk/react", () => ({
   experimental_useObject: () => mockUseObjectReturn,
 }));
 
-const mockSaveJobMatchResult = jest.fn();
-jest.mock("@/actions/job.actions", () => ({
+const mockSaveJobMatchResult = vi.fn();
+vi.mock("@/actions/job.actions", () => ({
   saveJobMatchResult: (...args: any[]) => mockSaveJobMatchResult(...args),
 }));
 
-jest.mock("@/actions/profile.actions", () => ({
-  getResumeList: jest.fn().mockResolvedValue({
+vi.mock("@/actions/profile.actions", () => ({
+  getResumeList: vi.fn().mockResolvedValue({
     success: true,
     data: [{ id: "resume-1", title: "My Resume" }],
   }),
 }));
 
-jest.mock("@/actions/userSettings.actions", () => ({
-  getUserSettings: jest.fn().mockResolvedValue({
+vi.mock("@/actions/userSettings.actions", () => ({
+  getUserSettings: vi.fn().mockResolvedValue({
     success: true,
     data: { settings: { ai: { provider: "openai", model: "gpt-4o" } } },
   }),
 }));
 
-jest.mock("@/utils/ai.utils", () => ({
-  checkOllamaConnection: jest.fn().mockResolvedValue({ isConnected: true }),
+vi.mock("@/utils/ai.utils", () => ({
+  checkOllamaConnection: vi.fn().mockResolvedValue({ isConnected: true }),
 }));
 
-const mockToast = jest.fn();
-jest.mock("@/components/ui/use-toast", () => ({
+const mockToast = vi.fn();
+vi.mock("@/components/ui/use-toast", () => ({
   toast: (...args: any[]) => mockToast(...args),
 }));
 
-jest.mock("@/components/profile/AiJobMatchResponseContent", () => ({
+vi.mock("@/components/profile/AiJobMatchResponseContent", () => ({
   AiJobMatchResponseContent: () => <div data-testid="match-content" />,
 }));
 
-jest.mock("@/components/Loading", () => ({
+vi.mock("@/components/Loading", () => ({
   __esModule: true,
   default: () => <div data-testid="loading" />,
 }));
 
 // Mock Radix UI portals to render inline
-jest.mock("@/components/ui/sheet", () => ({
+vi.mock("@/components/ui/sheet", () => ({
   Sheet: ({ children, open }: any) => (open ? <div>{children}</div> : null),
   SheetPortal: ({ children }: any) => <div>{children}</div>,
   SheetContent: ({ children }: any) => <div>{children}</div>,
@@ -62,14 +61,14 @@ jest.mock("@/components/ui/sheet", () => ({
   SheetTitle: ({ children }: any) => <div>{children}</div>,
 }));
 
-jest.mock("@/components/ui/tooltip", () => ({
+vi.mock("@/components/ui/tooltip", () => ({
   Tooltip: ({ children }: any) => <div>{children}</div>,
   TooltipContent: ({ children }: any) => <div>{children}</div>,
   TooltipProvider: ({ children }: any) => <div>{children}</div>,
   TooltipTrigger: ({ children }: any) => <div>{children}</div>,
 }));
 
-jest.mock("@/components/ui/select", () => ({
+vi.mock("@/components/ui/select", () => ({
   Select: ({ children }: any) => <div>{children}</div>,
   SelectContent: ({ children }: any) => <div>{children}</div>,
   SelectGroup: ({ children }: any) => <div>{children}</div>,
@@ -98,13 +97,13 @@ const completedMatchObject = {
 describe("AiJobMatchSection – auto-save", () => {
   const defaultProps = {
     aISectionOpen: true,
-    triggerChange: jest.fn(),
+    triggerChange: vi.fn(),
     jobId: "job-1",
-    onMatchSaved: jest.fn(),
+    onMatchSaved: vi.fn(),
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockUseObjectReturn = {
       object: null,
       submit: mockSubmit,

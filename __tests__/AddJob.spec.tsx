@@ -2,34 +2,33 @@ import { AddJob } from "@/components/myjobs/AddJob";
 import { JOB_SOURCES } from "@/lib/data/jobSourcesData";
 import { JOB_STATUSES } from "@/lib/data/jobStatusesData";
 import { getMockJobDetails, getMockList } from "@/lib/mock.utils";
-import "@testing-library/jest-dom";
 import { screen, render, waitFor } from "@testing-library/react";
 import { getCurrentUser } from "@/utils/user.utils";
 import userEvent from "@testing-library/user-event";
 import { format } from "date-fns";
 import { addJob } from "@/actions/job.actions";
-jest.mock("@/utils/user.utils", () => ({
-  getCurrentUser: jest.fn(),
+vi.mock("@/utils/user.utils", () => ({
+  getCurrentUser: vi.fn(),
 }));
 
-jest.mock("@/actions/job.actions", () => ({
-  addJob: jest.fn().mockResolvedValue({ success: true }),
+vi.mock("@/actions/job.actions", () => ({
+  addJob: vi.fn().mockResolvedValue({ success: true }),
 }));
 
-jest.mock("next/navigation", () => ({
-  redirect: jest.fn(),
+vi.mock("next/navigation", () => ({
+  redirect: vi.fn(),
 }));
 
-global.ResizeObserver = jest.fn().mockImplementation(() => ({
-  observe: jest.fn(),
-  unobserve: jest.fn(),
-  disconnect: jest.fn(),
-}));
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
 document.createRange = () => {
   const range = new Range();
 
-  range.getBoundingClientRect = jest.fn().mockReturnValue({
+  range.getBoundingClientRect = vi.fn().mockReturnValue({
     bottom: 0,
     height: 0,
     left: 0,
@@ -42,7 +41,7 @@ document.createRange = () => {
     return {
       item: () => null,
       length: 0,
-      [Symbol.iterator]: jest.fn(),
+      [Symbol.iterator]: vi.fn(),
     };
   };
 
@@ -53,16 +52,16 @@ describe("AddJob Component", () => {
   const mockUser = { id: "user-id" };
   const mockJobStatuses = JOB_STATUSES;
   const mockJobSources = JOB_SOURCES;
-  const mockResetEditJob = jest.fn();
+  const mockResetEditJob = vi.fn();
   const user = userEvent.setup({ skipHover: true });
-  window.HTMLElement.prototype.scrollIntoView = jest.fn(); // Fixes the issue with combobox
-  window.HTMLElement.prototype.hasPointerCapture = jest.fn();
+  window.HTMLElement.prototype.scrollIntoView = vi.fn(); // Fixes the issue with combobox
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn();
 
   beforeEach(async () => {
     const mockCompanies = (await getMockList(1, 10, "companies")).data;
     const mockJobTitles = (await getMockList(1, 10, "jobTitles")).data;
     const mockLocations = (await getMockList(1, 10, "locations")).data;
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     render(
       <AddJob
         jobStatuses={mockJobStatuses}
@@ -80,7 +79,7 @@ describe("AddJob Component", () => {
   });
 
   it("should open the dialog when clicked on add job button with title 'Add Job'", async () => {
-    (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+    (getCurrentUser as any).mockResolvedValue(mockUser);
 
     const dialogTitle = screen.getByTestId("add-job-dialog-title");
     expect(dialogTitle).toBeInTheDocument();

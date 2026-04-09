@@ -4,21 +4,21 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-jest.mock("@prisma/client", () => {
+vi.mock("@prisma/client", () => {
   const mPrismaClient = {
     activity: {
-      findMany: jest.fn(),
-      count: jest.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
     },
     activityType: {
-      findMany: jest.fn(),
+      findMany: vi.fn(),
     },
   };
-  return { PrismaClient: jest.fn(() => mPrismaClient) };
+  return { PrismaClient: vi.fn(function() { return mPrismaClient; }) };
 });
 
-jest.mock("@/utils/user.utils", () => ({
-  getCurrentUser: jest.fn(),
+vi.mock("@/utils/user.utils", () => ({
+  getCurrentUser: vi.fn(),
 }));
 
 describe("activity.actions", () => {
@@ -58,14 +58,14 @@ describe("activity.actions", () => {
   ];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("getActivitiesList", () => {
     it("should retrieve activities with default parameters", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.activity.findMany as jest.Mock).mockResolvedValue(mockActivities);
-      (prisma.activity.count as jest.Mock).mockResolvedValue(3);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.activity.findMany as any).mockResolvedValue(mockActivities);
+      (prisma.activity.count as any).mockResolvedValue(3);
 
       const result = await getActivitiesList();
 
@@ -79,7 +79,7 @@ describe("activity.actions", () => {
     });
 
     it("should return error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await getActivitiesList();
 
@@ -90,8 +90,8 @@ describe("activity.actions", () => {
     });
 
     it("should return error when fetching data fails", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.activity.findMany as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.activity.findMany as any).mockRejectedValue(
         new Error("Database error")
       );
 
@@ -105,9 +105,9 @@ describe("activity.actions", () => {
 
     describe("search functionality", () => {
       it("should build OR clause when search parameter is provided", async () => {
-        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-        (prisma.activity.findMany as jest.Mock).mockResolvedValue([]);
-        (prisma.activity.count as jest.Mock).mockResolvedValue(0);
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.activity.findMany as any).mockResolvedValue([]);
+        (prisma.activity.count as any).mockResolvedValue(0);
 
         await getActivitiesList(1, 25, "TypeScript");
 
@@ -138,13 +138,13 @@ describe("activity.actions", () => {
       });
 
       it("should search across activity name", async () => {
-        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-        (prisma.activity.findMany as jest.Mock).mockResolvedValue([]);
-        (prisma.activity.count as jest.Mock).mockResolvedValue(0);
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.activity.findMany as any).mockResolvedValue([]);
+        (prisma.activity.count as any).mockResolvedValue(0);
 
         await getActivitiesList(1, 25, "Portfolio");
 
-        const findManyCall = (prisma.activity.findMany as jest.Mock).mock
+        const findManyCall = (prisma.activity.findMany as any).mock
           .calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
           activityName: { contains: "Portfolio" },
@@ -152,13 +152,13 @@ describe("activity.actions", () => {
       });
 
       it("should search across description", async () => {
-        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-        (prisma.activity.findMany as jest.Mock).mockResolvedValue([]);
-        (prisma.activity.count as jest.Mock).mockResolvedValue(0);
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.activity.findMany as any).mockResolvedValue([]);
+        (prisma.activity.count as any).mockResolvedValue(0);
 
         await getActivitiesList(1, 25, "developer");
 
-        const findManyCall = (prisma.activity.findMany as jest.Mock).mock
+        const findManyCall = (prisma.activity.findMany as any).mock
           .calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
           description: { contains: "developer" },
@@ -166,13 +166,13 @@ describe("activity.actions", () => {
       });
 
       it("should search across activity type label", async () => {
-        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-        (prisma.activity.findMany as jest.Mock).mockResolvedValue([]);
-        (prisma.activity.count as jest.Mock).mockResolvedValue(0);
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.activity.findMany as any).mockResolvedValue([]);
+        (prisma.activity.count as any).mockResolvedValue(0);
 
         await getActivitiesList(1, 25, "Learning");
 
-        const findManyCall = (prisma.activity.findMany as jest.Mock).mock
+        const findManyCall = (prisma.activity.findMany as any).mock
           .calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
           activityType: { label: { contains: "Learning" } },
@@ -180,36 +180,36 @@ describe("activity.actions", () => {
       });
 
       it("should not include OR clause when search is undefined", async () => {
-        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-        (prisma.activity.findMany as jest.Mock).mockResolvedValue([]);
-        (prisma.activity.count as jest.Mock).mockResolvedValue(0);
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.activity.findMany as any).mockResolvedValue([]);
+        (prisma.activity.count as any).mockResolvedValue(0);
 
         await getActivitiesList(1, 25, undefined);
 
-        const findManyCall = (prisma.activity.findMany as jest.Mock).mock
+        const findManyCall = (prisma.activity.findMany as any).mock
           .calls[0][0];
         expect(findManyCall.where.OR).toBeUndefined();
       });
 
       it("should not include OR clause when search is empty string", async () => {
-        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-        (prisma.activity.findMany as jest.Mock).mockResolvedValue([]);
-        (prisma.activity.count as jest.Mock).mockResolvedValue(0);
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.activity.findMany as any).mockResolvedValue([]);
+        (prisma.activity.count as any).mockResolvedValue(0);
 
         await getActivitiesList(1, 25, "");
 
-        const findManyCall = (prisma.activity.findMany as jest.Mock).mock
+        const findManyCall = (prisma.activity.findMany as any).mock
           .calls[0][0];
         expect(findManyCall.where.OR).toBeUndefined();
       });
 
       it("should return filtered results with correct pagination", async () => {
-        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+        (getCurrentUser as any).mockResolvedValue(mockUser);
         const mockFilteredData = [mockActivities[0]];
-        (prisma.activity.findMany as jest.Mock).mockResolvedValue(
+        (prisma.activity.findMany as any).mockResolvedValue(
           mockFilteredData
         );
-        (prisma.activity.count as jest.Mock).mockResolvedValue(1);
+        (prisma.activity.count as any).mockResolvedValue(1);
 
         const result = await getActivitiesList(1, 25, "TypeScript");
 
@@ -221,9 +221,9 @@ describe("activity.actions", () => {
       });
 
       it("should apply pagination with skip and take", async () => {
-        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-        (prisma.activity.findMany as jest.Mock).mockResolvedValue([]);
-        (prisma.activity.count as jest.Mock).mockResolvedValue(0);
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.activity.findMany as any).mockResolvedValue([]);
+        (prisma.activity.count as any).mockResolvedValue(0);
 
         await getActivitiesList(2, 10, "test");
 
@@ -236,9 +236,9 @@ describe("activity.actions", () => {
       });
 
       it("should order results by createdAt descending", async () => {
-        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-        (prisma.activity.findMany as jest.Mock).mockResolvedValue([]);
-        (prisma.activity.count as jest.Mock).mockResolvedValue(0);
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.activity.findMany as any).mockResolvedValue([]);
+        (prisma.activity.count as any).mockResolvedValue(0);
 
         await getActivitiesList(1, 25, "test");
 
@@ -250,13 +250,13 @@ describe("activity.actions", () => {
       });
 
       it("should only return completed activities (with endTime)", async () => {
-        (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-        (prisma.activity.findMany as jest.Mock).mockResolvedValue([]);
-        (prisma.activity.count as jest.Mock).mockResolvedValue(0);
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.activity.findMany as any).mockResolvedValue([]);
+        (prisma.activity.count as any).mockResolvedValue(0);
 
         await getActivitiesList(1, 25, "test");
 
-        const findManyCall = (prisma.activity.findMany as jest.Mock).mock
+        const findManyCall = (prisma.activity.findMany as any).mock
           .calls[0][0];
         expect(findManyCall.where.endTime).toEqual({ not: null });
       });

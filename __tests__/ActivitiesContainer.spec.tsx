@@ -1,6 +1,5 @@
 import ActivitiesContainer from "@/components/activities/ActivitiesContainer";
 import { ActivityProvider } from "@/context/ActivityContext";
-import "@testing-library/jest-dom";
 import { screen, render, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
@@ -10,15 +9,15 @@ import {
   stopActivityById,
 } from "@/actions/activity.actions";
 
-jest.mock("next-auth", () => {
-  const mockAuth = jest.fn();
-  const mockSignIn = jest.fn();
-  const mockSignOut = jest.fn();
-  const mockHandlers = { GET: jest.fn(), POST: jest.fn() };
+vi.mock("next-auth", () => {
+  const mockAuth = vi.fn();
+  const mockSignIn = vi.fn();
+  const mockSignOut = vi.fn();
+  const mockHandlers = { GET: vi.fn(), POST: vi.fn() };
 
   return {
     __esModule: true,
-    default: jest.fn(() => ({
+    default: vi.fn(() => ({
       auth: mockAuth,
       handlers: mockHandlers,
       signIn: mockSignIn,
@@ -31,36 +30,36 @@ jest.mock("next-auth", () => {
   };
 });
 
-jest.mock("next-auth/providers/credentials", () => ({
+vi.mock("next-auth/providers/credentials", () => ({
   __esModule: true,
-  default: jest.fn(() => ({
+  default: vi.fn(() => ({
     id: "credentials",
     name: "Credentials",
     type: "credentials",
   })),
 }));
 
-jest.mock("@/actions/activity.actions", () => ({
-  getActivitiesList: jest.fn(),
-  getCurrentActivity: jest.fn(),
-  startActivityById: jest.fn(),
-  stopActivityById: jest.fn(),
-  getAllActivityTypes: jest.fn(),
-  createActivityType: jest.fn(),
-  createActivity: jest.fn(),
-  deleteActivityById: jest.fn(),
+vi.mock("@/actions/activity.actions", () => ({
+  getActivitiesList: vi.fn(),
+  getCurrentActivity: vi.fn(),
+  startActivityById: vi.fn(),
+  stopActivityById: vi.fn(),
+  getAllActivityTypes: vi.fn(),
+  createActivityType: vi.fn(),
+  createActivity: vi.fn(),
+  deleteActivityById: vi.fn(),
 }));
 
-global.ResizeObserver = jest.fn().mockImplementation(() => ({
-  observe: jest.fn(),
-  unobserve: jest.fn(),
-  disconnect: jest.fn(),
-}));
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
 document.createRange = () => {
   const range = new Range();
 
-  range.getBoundingClientRect = jest.fn().mockReturnValue({
+  range.getBoundingClientRect = vi.fn().mockReturnValue({
     bottom: 0,
     height: 0,
     left: 0,
@@ -73,7 +72,7 @@ document.createRange = () => {
     return {
       item: () => null,
       length: 0,
-      [Symbol.iterator]: jest.fn(),
+      [Symbol.iterator]: vi.fn(),
     };
   };
 
@@ -115,17 +114,17 @@ describe("ActivitiesContainer Search Functionality", () => {
   ];
 
   const user = userEvent.setup({ delay: null });
-  window.HTMLElement.prototype.scrollIntoView = jest.fn();
-  window.HTMLElement.prototype.hasPointerCapture = jest.fn();
+  window.HTMLElement.prototype.scrollIntoView = vi.fn();
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
-    (getCurrentActivity as jest.Mock).mockResolvedValue({ success: false });
+    vi.clearAllMocks();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    (getCurrentActivity as any).mockResolvedValue({ success: false });
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   const renderComponent = () => {
@@ -138,7 +137,7 @@ describe("ActivitiesContainer Search Functionality", () => {
 
   describe("Search Input", () => {
     it("should render search input with placeholder", async () => {
-      (getActivitiesList as jest.Mock).mockResolvedValue({
+      (getActivitiesList as any).mockResolvedValue({
         success: true,
         data: mockActivities,
         total: 3,
@@ -154,7 +153,7 @@ describe("ActivitiesContainer Search Functionality", () => {
     });
 
     it("should update search input value when typing", async () => {
-      (getActivitiesList as jest.Mock).mockResolvedValue({
+      (getActivitiesList as any).mockResolvedValue({
         success: true,
         data: mockActivities,
         total: 3,
@@ -178,7 +177,7 @@ describe("ActivitiesContainer Search Functionality", () => {
     });
 
     it("should debounce search input for 300ms", async () => {
-      (getActivitiesList as jest.Mock).mockResolvedValue({
+      (getActivitiesList as any).mockResolvedValue({
         success: true,
         data: mockActivities,
         total: 3,
@@ -201,7 +200,7 @@ describe("ActivitiesContainer Search Functionality", () => {
 
       // Advance timer by 300ms to trigger debounce
       await act(async () => {
-        jest.advanceTimersByTime(300);
+        vi.advanceTimersByTime(300);
       });
 
       // Now search should have been triggered
@@ -211,7 +210,7 @@ describe("ActivitiesContainer Search Functionality", () => {
     });
 
     it("should call getActivitiesList with search term after debounce", async () => {
-      (getActivitiesList as jest.Mock).mockResolvedValue({
+      (getActivitiesList as any).mockResolvedValue({
         success: true,
         data: mockActivities,
         total: 3,
@@ -230,7 +229,7 @@ describe("ActivitiesContainer Search Functionality", () => {
       });
 
       await act(async () => {
-        jest.advanceTimersByTime(300);
+        vi.advanceTimersByTime(300);
       });
 
       await waitFor(() => {
@@ -239,7 +238,7 @@ describe("ActivitiesContainer Search Functionality", () => {
     });
 
     it("should not trigger search on initial mount with empty search", async () => {
-      (getActivitiesList as jest.Mock).mockResolvedValue({
+      (getActivitiesList as any).mockResolvedValue({
         success: true,
         data: mockActivities,
         total: 3,
@@ -256,7 +255,7 @@ describe("ActivitiesContainer Search Functionality", () => {
     });
 
     it("should trigger search when clearing search term after searching", async () => {
-      (getActivitiesList as jest.Mock).mockResolvedValue({
+      (getActivitiesList as any).mockResolvedValue({
         success: true,
         data: mockActivities,
         total: 3,
@@ -276,7 +275,7 @@ describe("ActivitiesContainer Search Functionality", () => {
       });
 
       await act(async () => {
-        jest.advanceTimersByTime(300);
+        vi.advanceTimersByTime(300);
       });
 
       await waitFor(() => {
@@ -289,7 +288,7 @@ describe("ActivitiesContainer Search Functionality", () => {
       });
 
       await act(async () => {
-        jest.advanceTimersByTime(300);
+        vi.advanceTimersByTime(300);
       });
 
       // Should call with undefined when cleared after having searched
@@ -303,7 +302,7 @@ describe("ActivitiesContainer Search Functionality", () => {
     it("should display filtered activities after search", async () => {
       const learningActivity = [mockActivities[0]];
 
-      (getActivitiesList as jest.Mock)
+      (getActivitiesList as any)
         .mockResolvedValueOnce({
           success: true,
           data: mockActivities,
@@ -328,7 +327,7 @@ describe("ActivitiesContainer Search Functionality", () => {
       });
 
       await act(async () => {
-        jest.advanceTimersByTime(300);
+        vi.advanceTimersByTime(300);
       });
 
       await waitFor(() => {
@@ -342,7 +341,7 @@ describe("ActivitiesContainer Search Functionality", () => {
         resolvePromise = resolve;
       });
 
-      (getActivitiesList as jest.Mock)
+      (getActivitiesList as any)
         .mockResolvedValueOnce({
           success: true,
           data: mockActivities,
@@ -362,7 +361,7 @@ describe("ActivitiesContainer Search Functionality", () => {
       });
 
       await act(async () => {
-        jest.advanceTimersByTime(300);
+        vi.advanceTimersByTime(300);
       });
 
       // Should show loading indicator
@@ -383,7 +382,7 @@ describe("ActivitiesContainer Search Functionality", () => {
 
   describe("Load More with Search", () => {
     it("should preserve search term when loading more", async () => {
-      (getActivitiesList as jest.Mock).mockResolvedValue({
+      (getActivitiesList as any).mockResolvedValue({
         success: true,
         data: mockActivities,
         total: 50,
@@ -402,7 +401,7 @@ describe("ActivitiesContainer Search Functionality", () => {
       });
 
       await act(async () => {
-        jest.advanceTimersByTime(300);
+        vi.advanceTimersByTime(300);
       });
 
       await waitFor(() => {
@@ -424,7 +423,7 @@ describe("ActivitiesContainer Search Functionality", () => {
 
   describe("Error Handling", () => {
     it("should handle search error gracefully", async () => {
-      (getActivitiesList as jest.Mock)
+      (getActivitiesList as any)
         .mockResolvedValueOnce({
           success: true,
           data: mockActivities,
@@ -447,7 +446,7 @@ describe("ActivitiesContainer Search Functionality", () => {
       });
 
       await act(async () => {
-        jest.advanceTimersByTime(300);
+        vi.advanceTimersByTime(300);
       });
 
       await waitFor(() => {
@@ -458,7 +457,7 @@ describe("ActivitiesContainer Search Functionality", () => {
 
   describe("Search UI Elements", () => {
     it("should render search icon", async () => {
-      (getActivitiesList as jest.Mock).mockResolvedValue({
+      (getActivitiesList as any).mockResolvedValue({
         success: true,
         data: mockActivities,
         total: 3,
@@ -478,7 +477,7 @@ describe("ActivitiesContainer Search Functionality", () => {
     });
 
     it("should have correct input type", async () => {
-      (getActivitiesList as jest.Mock).mockResolvedValue({
+      (getActivitiesList as any).mockResolvedValue({
         success: true,
         data: mockActivities,
         total: 3,

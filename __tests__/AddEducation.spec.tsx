@@ -3,24 +3,25 @@ import userEvent from "@testing-library/user-event";
 import AddEducation from "@/components/profile/AddEducation";
 import { addEducation, updateEducation } from "@/actions/profile.actions";
 import { getAllJobLocations } from "@/actions/jobLocation.actions";
+import { toast } from "@/components/ui/use-toast";
 
 // Mock the actions
-jest.mock("@/actions/profile.actions", () => ({
-  addEducation: jest.fn(),
-  updateEducation: jest.fn(),
+vi.mock("@/actions/profile.actions", () => ({
+  addEducation: vi.fn(),
+  updateEducation: vi.fn(),
 }));
 
-jest.mock("@/actions/jobLocation.actions", () => ({
-  getAllJobLocations: jest.fn(),
+vi.mock("@/actions/jobLocation.actions", () => ({
+  getAllJobLocations: vi.fn(),
 }));
 
 // Mock toast
-jest.mock("@/components/ui/use-toast", () => ({
-  toast: jest.fn(),
+vi.mock("@/components/ui/use-toast", () => ({
+  toast: vi.fn(),
 }));
 
 // Mock Combobox component
-jest.mock("@/components/ComboBox", () => ({
+vi.mock("@/components/ComboBox", () => ({
   Combobox: ({ field, options }: any) => (
     <select
       data-testid="combobox-location"
@@ -38,7 +39,7 @@ jest.mock("@/components/ComboBox", () => ({
 }));
 
 // Mock DatePicker component
-jest.mock("@/components/DatePicker", () => ({
+vi.mock("@/components/DatePicker", () => ({
   DatePicker: ({ field, isEnabled }: any) => (
     <input
       type="date"
@@ -53,7 +54,7 @@ jest.mock("@/components/DatePicker", () => ({
 }));
 
 // Mock TiptapEditor component
-jest.mock("@/components/TiptapEditor", () => ({
+vi.mock("@/components/TiptapEditor", () => ({
   __esModule: true,
   default: ({ field }: any) => (
     <textarea
@@ -68,7 +69,7 @@ describe("AddEducation Component", () => {
   const user = userEvent.setup();
   const mockResumeId = "resume-123";
   const mockSectionId = "section-456";
-  const mockSetDialogOpen = jest.fn();
+  const mockSetDialogOpen = vi.fn();
 
   const mockLocations = [
     { id: "location-1", label: "New York, NY", value: "New York, NY" },
@@ -80,8 +81,8 @@ describe("AddEducation Component", () => {
   ];
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (getAllJobLocations as jest.Mock).mockResolvedValue(mockLocations);
+    vi.clearAllMocks();
+    (getAllJobLocations as any).mockResolvedValue(mockLocations);
   });
 
   it("should render Add Education dialog with correct title", async () => {
@@ -281,7 +282,7 @@ describe("AddEducation Component", () => {
   });
 
   it("should call addEducation when submitting a new education", async () => {
-    (addEducation as jest.Mock).mockResolvedValue({
+    (addEducation as any).mockResolvedValue({
       success: true,
       message: "Education added successfully",
     });
@@ -373,7 +374,7 @@ describe("AddEducation Component", () => {
       ],
     };
 
-    (updateEducation as jest.Mock).mockResolvedValue({
+    (updateEducation as any).mockResolvedValue({
       success: true,
       message: "Education updated successfully",
     });
@@ -422,9 +423,9 @@ describe("AddEducation Component", () => {
   });
 
   it("should close dialog and show success toast on successful submission", async () => {
-    const { toast } = require("@/components/ui/use-toast");
 
-    (addEducation as jest.Mock).mockResolvedValue({
+
+    (addEducation as any).mockResolvedValue({
       success: true,
       message: "Education added successfully",
     });
@@ -489,9 +490,9 @@ describe("AddEducation Component", () => {
   });
 
   it("should show error toast on failed submission", async () => {
-    const { toast } = require("@/components/ui/use-toast");
 
-    (addEducation as jest.Mock).mockResolvedValue({
+
+    (addEducation as any).mockResolvedValue({
       success: false,
       message: "Failed to add education",
     });
@@ -557,7 +558,7 @@ describe("AddEducation Component", () => {
   });
 
   it("should show updated success message when editing", async () => {
-    const { toast } = require("@/components/ui/use-toast");
+
 
     const mockEducationToEdit = {
       id: "education-1",
@@ -579,7 +580,7 @@ describe("AddEducation Component", () => {
       ],
     };
 
-    (updateEducation as jest.Mock).mockResolvedValue({
+    (updateEducation as any).mockResolvedValue({
       success: true,
       message: "Education updated successfully",
     });
@@ -663,7 +664,7 @@ describe("AddEducation Component", () => {
   });
 
   it("should display loading indicator when form is submitting", async () => {
-    (addEducation as jest.Mock).mockImplementation(
+    (addEducation as any).mockImplementation(
       () =>
         new Promise((resolve) =>
           setTimeout(() => resolve({ success: true, message: "Success" }), 100)

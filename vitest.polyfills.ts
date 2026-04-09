@@ -1,8 +1,6 @@
-// Polyfills for Node.js globals required by Next.js 15
 import { TextEncoder, TextDecoder } from "util";
 import { ReadableStream, TransformStream } from "stream/web";
 
-// Set up polyfills before any imports
 if (typeof global.TextEncoder === "undefined") {
   global.TextEncoder = TextEncoder;
 }
@@ -16,7 +14,6 @@ if (typeof global.TransformStream === "undefined") {
   global.TransformStream = TransformStream as typeof global.TransformStream;
 }
 
-// Mock fetch API globals for Next.js 15
 if (typeof global.Request === "undefined") {
   global.Request = class Request {} as any;
 }

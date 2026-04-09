@@ -14,29 +14,29 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // Mock the Prisma Client
-jest.mock("@prisma/client", () => {
+vi.mock("@prisma/client", () => {
   const mPrismaClient = {
     task: {
-      findMany: jest.fn(),
-      findFirst: jest.fn(),
-      count: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      count: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
     activity: {
-      findFirst: jest.fn(),
-      create: jest.fn(),
+      findFirst: vi.fn(),
+      create: vi.fn(),
     },
     activityType: {
-      findMany: jest.fn(),
+      findMany: vi.fn(),
     },
   };
-  return { PrismaClient: jest.fn(() => mPrismaClient) };
+  return { PrismaClient: vi.fn(function() { return mPrismaClient; }) };
 });
 
-jest.mock("@/utils/user.utils", () => ({
-  getCurrentUser: jest.fn(),
+vi.mock("@/utils/user.utils", () => ({
+  getCurrentUser: vi.fn(),
 }));
 
 describe("taskActions", () => {
@@ -62,16 +62,16 @@ describe("taskActions", () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("getTasksList", () => {
     it("should return tasks list on successful query with default parameters", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const mockTasks = [mockTask];
-      (prisma.task.findMany as jest.Mock).mockResolvedValue(mockTasks);
-      (prisma.task.count as jest.Mock).mockResolvedValue(1);
+      (prisma.task.findMany as any).mockResolvedValue(mockTasks);
+      (prisma.task.count as any).mockResolvedValue(1);
 
       const result = await getTasksList();
 
@@ -98,11 +98,11 @@ describe("taskActions", () => {
     });
 
     it("should return tasks list with pagination", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const mockTasks = [mockTask];
-      (prisma.task.findMany as jest.Mock).mockResolvedValue(mockTasks);
-      (prisma.task.count as jest.Mock).mockResolvedValue(25);
+      (prisma.task.findMany as any).mockResolvedValue(mockTasks);
+      (prisma.task.count as any).mockResolvedValue(25);
 
       const result = await getTasksList(2, 10);
 
@@ -126,11 +126,11 @@ describe("taskActions", () => {
     });
 
     it("should return tasks list with activity type filter", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const mockTasks = [mockTask];
-      (prisma.task.findMany as jest.Mock).mockResolvedValue(mockTasks);
-      (prisma.task.count as jest.Mock).mockResolvedValue(1);
+      (prisma.task.findMany as any).mockResolvedValue(mockTasks);
+      (prisma.task.count as any).mockResolvedValue(1);
 
       const result = await getTasksList(1, 10, "activity-type-id");
 
@@ -157,11 +157,11 @@ describe("taskActions", () => {
     });
 
     it("should return tasks list with status filter", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const mockTasks = [mockTask];
-      (prisma.task.findMany as jest.Mock).mockResolvedValue(mockTasks);
-      (prisma.task.count as jest.Mock).mockResolvedValue(1);
+      (prisma.task.findMany as any).mockResolvedValue(mockTasks);
+      (prisma.task.count as any).mockResolvedValue(1);
 
       const result = await getTasksList(1, 10, undefined, [
         "in-progress",
@@ -191,7 +191,7 @@ describe("taskActions", () => {
     });
 
     it("should return error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await getTasksList();
 
@@ -202,8 +202,8 @@ describe("taskActions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.task.findMany as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.task.findMany as any).mockRejectedValue(
         new Error("Database error")
       );
 
@@ -218,8 +218,8 @@ describe("taskActions", () => {
 
   describe("getTaskById", () => {
     it("should return task on successful query", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.task.findFirst as jest.Mock).mockResolvedValue(mockTask);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.task.findFirst as any).mockResolvedValue(mockTask);
 
       const result = await getTaskById("task-id");
 
@@ -242,8 +242,8 @@ describe("taskActions", () => {
     });
 
     it("should return error when task is not found", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.task.findFirst as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.task.findFirst as any).mockResolvedValue(null);
 
       const result = await getTaskById("non-existent-id");
 
@@ -254,7 +254,7 @@ describe("taskActions", () => {
     });
 
     it("should return error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await getTaskById("task-id");
 
@@ -265,8 +265,8 @@ describe("taskActions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.task.findFirst as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.task.findFirst as any).mockRejectedValue(
         new Error("Database error")
       );
 
@@ -291,8 +291,8 @@ describe("taskActions", () => {
     };
 
     it("should create a task successfully", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.task.create as jest.Mock).mockResolvedValue(mockTask);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.task.create as any).mockResolvedValue(mockTask);
 
       const result = await createTask(taskData);
 
@@ -318,7 +318,7 @@ describe("taskActions", () => {
     });
 
     it("should return error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await createTask(taskData);
 
@@ -329,7 +329,7 @@ describe("taskActions", () => {
     });
 
     it("should handle validation errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const invalidData = {
         ...taskData,
@@ -343,8 +343,8 @@ describe("taskActions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.task.create as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.task.create as any).mockRejectedValue(
         new Error("Database error")
       );
 
@@ -370,9 +370,9 @@ describe("taskActions", () => {
     };
 
     it("should update a task successfully", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const updatedTask = { ...mockTask, ...updateData };
-      (prisma.task.update as jest.Mock).mockResolvedValue(updatedTask);
+      (prisma.task.update as any).mockResolvedValue(updatedTask);
 
       const result = await updateTask(updateData);
 
@@ -401,7 +401,7 @@ describe("taskActions", () => {
     });
 
     it("should return error when task ID is missing", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const dataWithoutId = { ...updateData };
       delete (dataWithoutId as any).id;
@@ -415,7 +415,7 @@ describe("taskActions", () => {
     });
 
     it("should return error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await updateTask(updateData);
 
@@ -426,8 +426,8 @@ describe("taskActions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.task.update as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.task.update as any).mockRejectedValue(
         new Error("Database error")
       );
 
@@ -442,9 +442,9 @@ describe("taskActions", () => {
 
   describe("updateTaskStatus", () => {
     it("should update task status successfully", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const updatedTask = { ...mockTask, status: "complete" as const };
-      (prisma.task.update as jest.Mock).mockResolvedValue(updatedTask);
+      (prisma.task.update as any).mockResolvedValue(updatedTask);
 
       const result = await updateTaskStatus("task-id", "complete");
 
@@ -467,7 +467,7 @@ describe("taskActions", () => {
     });
 
     it("should return error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await updateTaskStatus("task-id", "complete");
 
@@ -478,8 +478,8 @@ describe("taskActions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.task.update as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.task.update as any).mockRejectedValue(
         new Error("Database error")
       );
 
@@ -494,9 +494,9 @@ describe("taskActions", () => {
 
   describe("deleteTaskById", () => {
     it("should delete task successfully when no linked activity", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.task.findFirst as jest.Mock).mockResolvedValue(mockTask);
-      (prisma.task.delete as jest.Mock).mockResolvedValue(mockTask);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.task.findFirst as any).mockResolvedValue(mockTask);
+      (prisma.task.delete as any).mockResolvedValue(mockTask);
 
       const result = await deleteTaskById("task-id");
 
@@ -512,8 +512,8 @@ describe("taskActions", () => {
     });
 
     it("should return error when task is not found", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.task.findFirst as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.task.findFirst as any).mockResolvedValue(null);
 
       const result = await deleteTaskById("non-existent-id");
 
@@ -524,12 +524,12 @@ describe("taskActions", () => {
     });
 
     it("should return error when task has linked activity", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const taskWithActivity = {
         ...mockTask,
         activity: { id: "activity-id" },
       };
-      (prisma.task.findFirst as jest.Mock).mockResolvedValue(taskWithActivity);
+      (prisma.task.findFirst as any).mockResolvedValue(taskWithActivity);
 
       const result = await deleteTaskById("task-id");
 
@@ -542,7 +542,7 @@ describe("taskActions", () => {
     });
 
     it("should return error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await deleteTaskById("task-id");
 
@@ -553,8 +553,8 @@ describe("taskActions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.task.findFirst as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.task.findFirst as any).mockRejectedValue(
         new Error("Database error")
       );
 
@@ -584,10 +584,10 @@ describe("taskActions", () => {
     };
 
     it("should start activity from task successfully", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.task.findFirst as jest.Mock).mockResolvedValue(mockTask);
-      (prisma.activity.findFirst as jest.Mock).mockResolvedValue(null);
-      (prisma.activity.create as jest.Mock).mockResolvedValue(mockActivity);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.task.findFirst as any).mockResolvedValue(mockTask);
+      (prisma.activity.findFirst as any).mockResolvedValue(null);
+      (prisma.activity.create as any).mockResolvedValue(mockActivity);
 
       const result = await startActivityFromTask("task-id");
 
@@ -611,8 +611,8 @@ describe("taskActions", () => {
     });
 
     it("should return error when task is not found", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.task.findFirst as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.task.findFirst as any).mockResolvedValue(null);
 
       const result = await startActivityFromTask("non-existent-id");
 
@@ -623,12 +623,12 @@ describe("taskActions", () => {
     });
 
     it("should return error when task already has linked activity", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const taskWithActivity = {
         ...mockTask,
         activity: { id: "activity-id" },
       };
-      (prisma.task.findFirst as jest.Mock).mockResolvedValue(taskWithActivity);
+      (prisma.task.findFirst as any).mockResolvedValue(taskWithActivity);
 
       const result = await startActivityFromTask("task-id");
 
@@ -639,12 +639,12 @@ describe("taskActions", () => {
     });
 
     it("should return error when task has no activity type", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const taskWithoutActivityType = {
         ...mockTask,
         activityTypeId: null,
       };
-      (prisma.task.findFirst as jest.Mock).mockResolvedValue(
+      (prisma.task.findFirst as any).mockResolvedValue(
         taskWithoutActivityType
       );
 
@@ -657,12 +657,12 @@ describe("taskActions", () => {
     });
 
     it("should return error when task status is complete", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const completedTask = {
         ...mockTask,
         status: "complete" as const,
       };
-      (prisma.task.findFirst as jest.Mock).mockResolvedValue(completedTask);
+      (prisma.task.findFirst as any).mockResolvedValue(completedTask);
 
       const result = await startActivityFromTask("task-id");
 
@@ -673,12 +673,12 @@ describe("taskActions", () => {
     });
 
     it("should return error when task status is cancelled", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const cancelledTask = {
         ...mockTask,
         status: "cancelled" as const,
       };
-      (prisma.task.findFirst as jest.Mock).mockResolvedValue(cancelledTask);
+      (prisma.task.findFirst as any).mockResolvedValue(cancelledTask);
 
       const result = await startActivityFromTask("task-id");
 
@@ -689,9 +689,9 @@ describe("taskActions", () => {
     });
 
     it("should return error when user already has a running activity", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.task.findFirst as jest.Mock).mockResolvedValue(mockTask);
-      (prisma.activity.findFirst as jest.Mock).mockResolvedValue({
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.task.findFirst as any).mockResolvedValue(mockTask);
+      (prisma.activity.findFirst as any).mockResolvedValue({
         id: "existing-activity-id",
         endTime: null,
       });
@@ -706,7 +706,7 @@ describe("taskActions", () => {
     });
 
     it("should return error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await startActivityFromTask("task-id");
 
@@ -717,8 +717,8 @@ describe("taskActions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.task.findFirst as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.task.findFirst as any).mockRejectedValue(
         new Error("Database error")
       );
 
@@ -733,7 +733,7 @@ describe("taskActions", () => {
 
   describe("getActivityTypesWithTaskCounts", () => {
     it("should return activity types with task counts successfully", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const mockActivityTypes = [
         {
@@ -751,10 +751,10 @@ describe("taskActions", () => {
           _count: { Tasks: 3 },
         },
       ];
-      (prisma.activityType.findMany as jest.Mock).mockResolvedValue(
+      (prisma.activityType.findMany as any).mockResolvedValue(
         mockActivityTypes
       );
-      (prisma.task.count as jest.Mock).mockResolvedValue(8);
+      (prisma.task.count as any).mockResolvedValue(8);
 
       const result = await getActivityTypesWithTaskCounts();
 
@@ -801,7 +801,7 @@ describe("taskActions", () => {
     });
 
     it("should return error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await getActivityTypesWithTaskCounts();
 
@@ -812,8 +812,8 @@ describe("taskActions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.activityType.findMany as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.activityType.findMany as any).mockRejectedValue(
         new Error("Database error")
       );
 

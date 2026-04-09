@@ -1,11 +1,10 @@
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import "@testing-library/jest-dom";
 import ProfileContainer from "@/components/profile/ProfileContainer";
 import React from "react";
 
-jest.mock("@/actions/profile.actions", () => ({
-  getResumeList: jest.fn(() =>
+vi.mock("@/actions/profile.actions", () => ({
+  getResumeList: vi.fn(() =>
     Promise.resolve({
       data: [],
       total: 0,
@@ -15,8 +14,8 @@ jest.mock("@/actions/profile.actions", () => ({
   ),
 }));
 
-jest.mock("@/actions/coverLetter.actions", () => ({
-  getCoverLetterList: jest.fn(() =>
+vi.mock("@/actions/coverLetter.actions", () => ({
+  getCoverLetterList: vi.fn(() =>
     Promise.resolve({
       data: [],
       total: 0,
@@ -28,14 +27,14 @@ jest.mock("@/actions/coverLetter.actions", () => ({
 
 describe("ProfileContainer Component", () => {
   beforeEach(async () => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     await act(async () => {
       render(<ProfileContainer />);
     });
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
   it("should render the profile container component", () => {
     expect(screen.getByText(/profile/i)).toBeInTheDocument();

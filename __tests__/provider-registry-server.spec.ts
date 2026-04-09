@@ -1,11 +1,11 @@
 // Mock server-only so the module can be imported in the jest (jsdom) environment
-jest.mock("server-only", () => ({}));
+vi.mock("server-only", () => ({}));
 
 // Mock AI SDK packages to avoid loading provider implementations in tests
-jest.mock("@ai-sdk/openai", () => ({ createOpenAI: jest.fn() }));
-jest.mock("@ai-sdk/deepseek", () => ({ createDeepSeek: jest.fn() }));
-jest.mock("@ai-sdk/google", () => ({ createGoogleGenerativeAI: jest.fn() }));
-jest.mock("ollama-ai-provider-v2", () => ({ createOllama: jest.fn() }));
+vi.mock("@ai-sdk/openai", () => ({ createOpenAI: vi.fn() }));
+vi.mock("@ai-sdk/deepseek", () => ({ createDeepSeek: vi.fn() }));
+vi.mock("@ai-sdk/google", () => ({ createGoogleGenerativeAI: vi.fn() }));
+vi.mock("ollama-ai-provider-v2", () => ({ createOllama: vi.fn() }));
 
 import { createOpenAI } from "@ai-sdk/openai";
 import {
@@ -15,7 +15,7 @@ import {
 
 describe("PROVIDER_VERIFIERS – openrouter", () => {
   it("returns { success: true } on a 200 OK response", async () => {
-    global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200 });
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200 });
 
     const result = await PROVIDER_VERIFIERS.openrouter("sk-or-valid");
 
@@ -27,7 +27,7 @@ describe("PROVIDER_VERIFIERS – openrouter", () => {
   });
 
   it("returns 'Invalid API key' error on 401", async () => {
-    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 401 });
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 401 });
 
     const result = await PROVIDER_VERIFIERS.openrouter("sk-or-bad-key");
 
@@ -35,7 +35,7 @@ describe("PROVIDER_VERIFIERS – openrouter", () => {
   });
 
   it("returns status-based error message on 500", async () => {
-    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500 });
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 500 });
 
     const result = await PROVIDER_VERIFIERS.openrouter("sk-or-key");
 
@@ -46,7 +46,7 @@ describe("PROVIDER_VERIFIERS – openrouter", () => {
   });
 
   it("returns status-based error message on 503", async () => {
-    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 503 });
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
 
     const result = await PROVIDER_VERIFIERS.openrouter("sk-or-key");
 
@@ -57,7 +57,7 @@ describe("PROVIDER_VERIFIERS – openrouter", () => {
   });
 
   it("includes the API key in the Authorization header", async () => {
-    global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200 });
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200 });
 
     await PROVIDER_VERIFIERS.openrouter("sk-or-my-secret-key");
 
@@ -73,8 +73,8 @@ describe("PROVIDER_VERIFIERS – openrouter", () => {
 describe("PROVIDER_FACTORIES – openrouter", () => {
   it("uses createOpenAI with the openrouter baseURL", () => {
     const mockModelInstance = { modelId: "openai/gpt-4o" };
-    const mockChainFn = jest.fn().mockReturnValue(mockModelInstance);
-    (createOpenAI as jest.Mock).mockReturnValue(mockChainFn);
+    const mockChainFn = vi.fn().mockReturnValue(mockModelInstance);
+    (createOpenAI as any).mockReturnValue(mockChainFn);
 
     const result = PROVIDER_FACTORIES.openrouter(
       "sk-or-apikey",
@@ -90,8 +90,8 @@ describe("PROVIDER_FACTORIES – openrouter", () => {
   });
 
   it("passes the model name through to the factory chain", () => {
-    const mockChainFn = jest.fn().mockReturnValue({});
-    (createOpenAI as jest.Mock).mockReturnValue(mockChainFn);
+    const mockChainFn = vi.fn().mockReturnValue({});
+    (createOpenAI as any).mockReturnValue(mockChainFn);
 
     PROVIDER_FACTORIES.openrouter("sk-or-key", "google/gemini-flash");
 
@@ -99,8 +99,8 @@ describe("PROVIDER_FACTORIES – openrouter", () => {
   });
 
   it("passes the API key through to createOpenAI", () => {
-    const mockChainFn = jest.fn().mockReturnValue({});
-    (createOpenAI as jest.Mock).mockReturnValue(mockChainFn);
+    const mockChainFn = vi.fn().mockReturnValue({});
+    (createOpenAI as any).mockReturnValue(mockChainFn);
 
     PROVIDER_FACTORIES.openrouter("sk-or-specific-key", "any-model");
 

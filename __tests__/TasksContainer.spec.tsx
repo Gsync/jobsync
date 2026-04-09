@@ -1,5 +1,4 @@
 import TasksContainer from "@/components/tasks/TasksContainer";
-import "@testing-library/jest-dom";
 import { screen, render, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
@@ -13,15 +12,15 @@ import { Task } from "@/models/task.model";
 import { useRouter } from "next/navigation";
 import { useActivity } from "@/context/ActivityContext";
 
-jest.mock("next-auth", () => {
-  const mockAuth = jest.fn();
-  const mockSignIn = jest.fn();
-  const mockSignOut = jest.fn();
-  const mockHandlers = { GET: jest.fn(), POST: jest.fn() };
+vi.mock("next-auth", () => {
+  const mockAuth = vi.fn();
+  const mockSignIn = vi.fn();
+  const mockSignOut = vi.fn();
+  const mockHandlers = { GET: vi.fn(), POST: vi.fn() };
 
   return {
     __esModule: true,
-    default: jest.fn(() => ({
+    default: vi.fn(() => ({
       auth: mockAuth,
       handlers: mockHandlers,
       signIn: mockSignIn,
@@ -34,43 +33,43 @@ jest.mock("next-auth", () => {
   };
 });
 
-jest.mock("next-auth/providers/credentials", () => ({
+vi.mock("next-auth/providers/credentials", () => ({
   __esModule: true,
-  default: jest.fn(() => ({
+  default: vi.fn(() => ({
     id: "credentials",
     name: "Credentials",
     type: "credentials",
   })),
 }));
 
-jest.mock("@/actions/task.actions", () => ({
-  getTasksList: jest.fn(),
-  getTaskById: jest.fn(),
-  deleteTaskById: jest.fn(),
-  updateTaskStatus: jest.fn(),
-  startActivityFromTask: jest.fn(),
+vi.mock("@/actions/task.actions", () => ({
+  getTasksList: vi.fn(),
+  getTaskById: vi.fn(),
+  deleteTaskById: vi.fn(),
+  updateTaskStatus: vi.fn(),
+  startActivityFromTask: vi.fn(),
 }));
 
-jest.mock("next/navigation", () => ({
-  useRouter: jest.fn(),
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(),
 }));
 
-jest.mock("@/context/ActivityContext", () => ({
-  useActivity: jest.fn(() => ({
-    refreshCurrentActivity: jest.fn(),
+vi.mock("@/context/ActivityContext", () => ({
+  useActivity: vi.fn(() => ({
+    refreshCurrentActivity: vi.fn(),
   })),
 }));
 
-global.ResizeObserver = jest.fn().mockImplementation(() => ({
-  observe: jest.fn(),
-  unobserve: jest.fn(),
-  disconnect: jest.fn(),
-}));
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
 document.createRange = () => {
   const range = new Range();
 
-  range.getBoundingClientRect = jest.fn().mockReturnValue({
+  range.getBoundingClientRect = vi.fn().mockReturnValue({
     bottom: 0,
     height: 0,
     left: 0,
@@ -83,7 +82,7 @@ document.createRange = () => {
     return {
       item: () => null,
       length: 0,
-      [Symbol.iterator]: jest.fn(),
+      [Symbol.iterator]: vi.fn(),
     };
   };
 
@@ -92,15 +91,15 @@ document.createRange = () => {
 
 describe("TasksContainer Component", () => {
   const mockRouter = {
-    push: jest.fn(),
-    back: jest.fn(),
-    forward: jest.fn(),
-    refresh: jest.fn(),
-    replace: jest.fn(),
-    prefetch: jest.fn(),
+    push: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
   };
 
-  const mockRefreshCurrentActivity = jest.fn();
+  const mockRefreshCurrentActivity = vi.fn();
 
   const mockActivityTypes = [
     {
@@ -165,20 +164,20 @@ describe("TasksContainer Component", () => {
   ];
 
   const user = userEvent.setup({ skipHover: true });
-  window.HTMLElement.prototype.scrollIntoView = jest.fn();
-  window.HTMLElement.prototype.hasPointerCapture = jest.fn();
+  window.HTMLElement.prototype.scrollIntoView = vi.fn();
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (useRouter as jest.Mock).mockReturnValue(mockRouter);
-    (useActivity as jest.Mock).mockReturnValue({
+    vi.clearAllMocks();
+    (useRouter as any).mockReturnValue(mockRouter);
+    (useActivity as any).mockReturnValue({
       refreshCurrentActivity: mockRefreshCurrentActivity,
     });
   });
 
   describe("Initial Load", () => {
     it("should load and display tasks on mount", async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: mockTasks,
         total: 2,
@@ -200,7 +199,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should show loading state while fetching tasks", () => {
-      (getTasksList as jest.Mock).mockImplementation(
+      (getTasksList as any).mockImplementation(
         () => new Promise(() => {}) // Never resolves to keep loading state
       );
 
@@ -210,7 +209,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should show empty state when no tasks are found", async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: [],
         total: 0,
@@ -226,7 +225,7 @@ describe("TasksContainer Component", () => {
 
   describe("Task Actions", () => {
     beforeEach(async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: mockTasks,
         total: 2,
@@ -254,10 +253,10 @@ describe("TasksContainer Component", () => {
     });
 
     it("should handle task deletion successfully", async () => {
-      (deleteTaskById as jest.Mock).mockResolvedValue({
+      (deleteTaskById as any).mockResolvedValue({
         success: true,
       });
-      (getTasksList as jest.Mock)
+      (getTasksList as any)
         .mockResolvedValueOnce({
           success: true,
           data: mockTasks,
@@ -295,7 +294,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should handle task deletion failure", async () => {
-      (deleteTaskById as jest.Mock).mockResolvedValue({
+      (deleteTaskById as any).mockResolvedValue({
         success: false,
         message: "Failed to delete task",
       });
@@ -326,7 +325,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should open edit task dialog when edit is clicked", async () => {
-      (getTaskById as jest.Mock).mockResolvedValue({
+      (getTaskById as any).mockResolvedValue({
         success: true,
         data: mockTasks[0],
       });
@@ -350,7 +349,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should handle edit task failure when task not found", async () => {
-      (getTaskById as jest.Mock).mockResolvedValue({
+      (getTaskById as any).mockResolvedValue({
         success: false,
         message: "Task not found",
       });
@@ -378,7 +377,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should update task status successfully", async () => {
-      (updateTaskStatus as jest.Mock).mockResolvedValue({
+      (updateTaskStatus as any).mockResolvedValue({
         success: true,
       });
 
@@ -408,7 +407,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should handle task status update failure", async () => {
-      (updateTaskStatus as jest.Mock).mockResolvedValue({
+      (updateTaskStatus as any).mockResolvedValue({
         success: false,
         message: "Failed to update status",
       });
@@ -439,7 +438,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should start activity from task successfully", async () => {
-      (startActivityFromTask as jest.Mock).mockResolvedValue({
+      (startActivityFromTask as any).mockResolvedValue({
         success: true,
       });
 
@@ -453,7 +452,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should handle start activity failure", async () => {
-      (startActivityFromTask as jest.Mock).mockResolvedValue({
+      (startActivityFromTask as any).mockResolvedValue({
         success: false,
         message: "Failed to start activity",
       });
@@ -470,7 +469,7 @@ describe("TasksContainer Component", () => {
 
   describe("Filtering and Grouping", () => {
     beforeEach(async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: mockTasks,
         total: 2,
@@ -527,7 +526,7 @@ describe("TasksContainer Component", () => {
 
   describe("Pagination", () => {
     it("should show load more button when there are more tasks", async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: mockTasks,
         total: 20,
@@ -541,7 +540,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should load more tasks when load more button is clicked", async () => {
-      (getTasksList as jest.Mock)
+      (getTasksList as any)
         .mockResolvedValueOnce({
           success: true,
           data: mockTasks,
@@ -577,7 +576,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should not show load more button when all tasks are loaded", async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: mockTasks,
         total: 2,
@@ -591,7 +590,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should show correct task count", async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: mockTasks,
         total: 10,
@@ -611,7 +610,7 @@ describe("TasksContainer Component", () => {
 
   describe("Error Handling", () => {
     it("should handle getTasksList error", async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: false,
         message: "Failed to fetch tasks",
       });
@@ -626,9 +625,9 @@ describe("TasksContainer Component", () => {
 
   describe("Filter Change Callback", () => {
     it("should call onFilterChange when filter changes", async () => {
-      const mockOnFilterChange = jest.fn();
+      const mockOnFilterChange = vi.fn();
 
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: mockTasks,
         total: 2,
@@ -654,15 +653,15 @@ describe("TasksContainer Component", () => {
 
   describe("Search Feature", () => {
     beforeEach(() => {
-      jest.useFakeTimers();
+      vi.useFakeTimers({ shouldAdvanceTime: true });
     });
 
     afterEach(() => {
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it("should render search input", async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: mockTasks,
         total: 2,
@@ -675,7 +674,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should call getTasksList with search term after debounce", async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: mockTasks,
         total: 2,
@@ -693,10 +692,10 @@ describe("TasksContainer Component", () => {
         );
       });
 
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       const searchInput = screen.getByPlaceholderText("Search tasks...");
-      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).type(
+      await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).type(
         searchInput,
         "Task 1"
       );
@@ -705,7 +704,7 @@ describe("TasksContainer Component", () => {
       expect(getTasksList).not.toHaveBeenCalled();
 
       // Fast-forward past the 300ms debounce
-      jest.advanceTimersByTime(300);
+      vi.advanceTimersByTime(300);
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(
@@ -721,7 +720,7 @@ describe("TasksContainer Component", () => {
     it("should filter tasks based on search term", async () => {
       const filteredTasks = [mockTasks[0]];
 
-      (getTasksList as jest.Mock)
+      (getTasksList as any)
         .mockResolvedValueOnce({
           success: true,
           data: mockTasks,
@@ -741,12 +740,12 @@ describe("TasksContainer Component", () => {
       });
 
       const searchInput = screen.getByPlaceholderText("Search tasks...");
-      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).type(
+      await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).type(
         searchInput,
         "Task 1"
       );
 
-      jest.advanceTimersByTime(300);
+      vi.advanceTimersByTime(300);
 
       await waitFor(() => {
         expect(screen.getByText("Task 1")).toBeInTheDocument();
@@ -755,7 +754,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should show no tasks found when search returns empty results", async () => {
-      (getTasksList as jest.Mock)
+      (getTasksList as any)
         .mockResolvedValueOnce({
           success: true,
           data: mockTasks,
@@ -774,12 +773,12 @@ describe("TasksContainer Component", () => {
       });
 
       const searchInput = screen.getByPlaceholderText("Search tasks...");
-      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).type(
+      await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).type(
         searchInput,
         "nonexistent"
       );
 
-      jest.advanceTimersByTime(300);
+      vi.advanceTimersByTime(300);
 
       await waitFor(() => {
         expect(screen.getByText(/No tasks found/i)).toBeInTheDocument();
@@ -787,7 +786,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should combine search with status filter", async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: mockTasks,
         total: 2,
@@ -801,14 +800,14 @@ describe("TasksContainer Component", () => {
 
       // Toggle status filter first
       const filterButton = screen.getByRole("button", { name: /status/i });
-      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).click(
+      await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).click(
         filterButton
       );
 
       const inProgressCheckbox = screen.getByRole("menuitemcheckbox", {
         name: "In Progress",
       });
-      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).click(
+      await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).click(
         inProgressCheckbox
       );
 
@@ -822,16 +821,16 @@ describe("TasksContainer Component", () => {
         );
       });
 
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       // Now search
       const searchInput = screen.getByPlaceholderText("Search tasks...");
-      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).type(
+      await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).type(
         searchInput,
         "Task"
       );
 
-      jest.advanceTimersByTime(300);
+      vi.advanceTimersByTime(300);
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(
@@ -845,7 +844,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should combine search with activity type filter", async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: mockTasks,
         total: 2,
@@ -865,15 +864,15 @@ describe("TasksContainer Component", () => {
         );
       });
 
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       const searchInput = screen.getByPlaceholderText("Search tasks...");
-      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).type(
+      await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).type(
         searchInput,
         "Development"
       );
 
-      jest.advanceTimersByTime(300);
+      vi.advanceTimersByTime(300);
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(
@@ -887,7 +886,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should pass search term when loading more tasks", async () => {
-      (getTasksList as jest.Mock)
+      (getTasksList as any)
         .mockResolvedValueOnce({
           success: true,
           data: mockTasks,
@@ -912,12 +911,12 @@ describe("TasksContainer Component", () => {
 
       // Type search term
       const searchInput = screen.getByPlaceholderText("Search tasks...");
-      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).type(
+      await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).type(
         searchInput,
         "Task"
       );
 
-      jest.advanceTimersByTime(300);
+      vi.advanceTimersByTime(300);
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(
@@ -929,11 +928,11 @@ describe("TasksContainer Component", () => {
         );
       });
 
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       // Click Load More
       const loadMoreButton = screen.getByText("Load More");
-      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).click(
+      await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).click(
         loadMoreButton
       );
 
@@ -949,7 +948,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should reset to page 1 when search term changes", async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: mockTasks,
         total: 2,
@@ -961,15 +960,15 @@ describe("TasksContainer Component", () => {
         expect(screen.getByText("Task 1")).toBeInTheDocument();
       });
 
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       const searchInput = screen.getByPlaceholderText("Search tasks...");
-      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).type(
+      await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).type(
         searchInput,
         "first search"
       );
 
-      jest.advanceTimersByTime(300);
+      vi.advanceTimersByTime(300);
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(
@@ -981,18 +980,18 @@ describe("TasksContainer Component", () => {
         );
       });
 
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       // Change search term
-      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).clear(
+      await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).clear(
         searchInput
       );
-      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).type(
+      await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).type(
         searchInput,
         "second search"
       );
 
-      jest.advanceTimersByTime(300);
+      vi.advanceTimersByTime(300);
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(
@@ -1006,14 +1005,14 @@ describe("TasksContainer Component", () => {
     });
 
     it("should debounce multiple rapid keystrokes", async () => {
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: mockTasks,
         total: 2,
       });
 
       const typingUser = userEvent.setup({
-        advanceTimers: jest.advanceTimersByTime,
+        advanceTimers: vi.advanceTimersByTime,
       });
 
       render(<TasksContainer activityTypes={mockActivityTypes} />);
@@ -1022,7 +1021,7 @@ describe("TasksContainer Component", () => {
         expect(screen.getByText("Task 1")).toBeInTheDocument();
       });
 
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       const searchInput = screen.getByPlaceholderText("Search tasks...");
 
@@ -1030,7 +1029,7 @@ describe("TasksContainer Component", () => {
       await typingUser.type(searchInput, "Task");
 
       // Only after full debounce should API be called
-      jest.advanceTimersByTime(300);
+      vi.advanceTimersByTime(300);
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenLastCalledWith(
@@ -1044,9 +1043,9 @@ describe("TasksContainer Component", () => {
     });
 
     it("should reload tasks with search term after task is saved", async () => {
-      const mockOnTasksChanged = jest.fn();
+      const mockOnTasksChanged = vi.fn();
 
-      (getTasksList as jest.Mock).mockResolvedValue({
+      (getTasksList as any).mockResolvedValue({
         success: true,
         data: mockTasks,
         total: 2,
@@ -1065,12 +1064,12 @@ describe("TasksContainer Component", () => {
 
       // Type search term
       const searchInput = screen.getByPlaceholderText("Search tasks...");
-      await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).type(
+      await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).type(
         searchInput,
         "Task"
       );
 
-      jest.advanceTimersByTime(300);
+      vi.advanceTimersByTime(300);
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(

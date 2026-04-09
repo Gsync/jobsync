@@ -4,34 +4,39 @@ import prisma from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { JOB_SOURCES, JOB_STATUSES } from "@/lib/constants";
 import { delay } from "@/utils/delay";
+import { AuthError } from "next-auth";
 
 // Mock dependencies
-jest.mock("@/lib/db", () => ({
-  user: {
-    findUnique: jest.fn(),
-    create: jest.fn(),
-  },
-  jobSource: {
-    createMany: jest.fn(),
-  },
-  jobStatus: {
-    upsert: jest.fn(),
-  },
+vi.mock("@/lib/db", () => {
+  const mockPrisma = {
+    user: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+    },
+    jobSource: {
+      createMany: vi.fn(),
+    },
+    jobStatus: {
+      upsert: vi.fn(),
+    },
+  };
+  return { default: mockPrisma };
+});
+
+vi.mock("@/auth", () => ({
+  signIn: vi.fn(),
 }));
 
-jest.mock("@/auth", () => ({
-  signIn: jest.fn(),
+vi.mock("bcryptjs", () => ({
+  default: { hash: vi.fn() },
+  hash: vi.fn(),
 }));
 
-jest.mock("bcryptjs", () => ({
-  hash: jest.fn(),
+vi.mock("@/utils/delay", () => ({
+  delay: vi.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock("@/utils/delay", () => ({
-  delay: jest.fn().mockResolvedValue(undefined),
-}));
-
-jest.mock("next-auth", () => {
+vi.mock("next-auth", () => {
   class MockAuthError extends Error {
     type: string;
 
@@ -47,12 +52,11 @@ jest.mock("next-auth", () => {
   };
 });
 
-// Import the mocked AuthError to use in tests
-const { AuthError } = require("next-auth");
+
 
 describe("Auth Actions", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("signup", () => {
@@ -70,11 +74,11 @@ describe("Auth Actions", () => {
     };
 
     it("should successfully create a new user", async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue("hashed_password_123");
-      (prisma.user.create as jest.Mock).mockResolvedValue(mockNewUser);
-      (prisma.jobSource.createMany as jest.Mock).mockResolvedValue(undefined);
-      (prisma.jobStatus.upsert as jest.Mock).mockResolvedValue(undefined);
+      (prisma.user.findUnique as any).mockResolvedValue(null);
+      (bcrypt.hash as any).mockResolvedValue("hashed_password_123");
+      (prisma.user.create as any).mockResolvedValue(mockNewUser);
+      (prisma.jobSource.createMany as any).mockResolvedValue(undefined);
+      (prisma.jobStatus.upsert as any).mockResolvedValue(undefined);
 
       const result = await signup(validSignupData);
 
@@ -104,7 +108,7 @@ describe("Auth Actions", () => {
         id: "existing-user-id",
         email: validSignupData.email,
       };
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(existingUser);
+      (prisma.user.findUnique as any).mockResolvedValue(existingUser);
 
       const result = await signup(validSignupData);
 
@@ -172,11 +176,11 @@ describe("Auth Actions", () => {
     });
 
     it("should create job sources for new user", async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue("hashed_password_123");
-      (prisma.user.create as jest.Mock).mockResolvedValue(mockNewUser);
-      (prisma.jobSource.createMany as jest.Mock).mockResolvedValue(undefined);
-      (prisma.jobStatus.upsert as jest.Mock).mockResolvedValue(undefined);
+      (prisma.user.findUnique as any).mockResolvedValue(null);
+      (bcrypt.hash as any).mockResolvedValue("hashed_password_123");
+      (prisma.user.create as any).mockResolvedValue(mockNewUser);
+      (prisma.jobSource.createMany as any).mockResolvedValue(undefined);
+      (prisma.jobStatus.upsert as any).mockResolvedValue(undefined);
 
       await signup(validSignupData);
 
@@ -190,15 +194,15 @@ describe("Auth Actions", () => {
     });
 
     it("should create job sources with correct structure", async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue("hashed_password_123");
-      (prisma.user.create as jest.Mock).mockResolvedValue(mockNewUser);
-      (prisma.jobSource.createMany as jest.Mock).mockResolvedValue(undefined);
-      (prisma.jobStatus.upsert as jest.Mock).mockResolvedValue(undefined);
+      (prisma.user.findUnique as any).mockResolvedValue(null);
+      (bcrypt.hash as any).mockResolvedValue("hashed_password_123");
+      (prisma.user.create as any).mockResolvedValue(mockNewUser);
+      (prisma.jobSource.createMany as any).mockResolvedValue(undefined);
+      (prisma.jobStatus.upsert as any).mockResolvedValue(undefined);
 
       await signup(validSignupData);
 
-      const jobSourcesCall = (prisma.jobSource.createMany as jest.Mock).mock
+      const jobSourcesCall = (prisma.jobSource.createMany as any).mock
         .calls[0][0];
       expect(jobSourcesCall.data).toHaveLength(JOB_SOURCES.length);
       jobSourcesCall.data.forEach((source: any, index: number) => {
@@ -211,15 +215,15 @@ describe("Auth Actions", () => {
     });
 
     it("should include createdBy field in all job sources", async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue("hashed_password_123");
-      (prisma.user.create as jest.Mock).mockResolvedValue(mockNewUser);
-      (prisma.jobSource.createMany as jest.Mock).mockResolvedValue(undefined);
-      (prisma.jobStatus.upsert as jest.Mock).mockResolvedValue(undefined);
+      (prisma.user.findUnique as any).mockResolvedValue(null);
+      (bcrypt.hash as any).mockResolvedValue("hashed_password_123");
+      (prisma.user.create as any).mockResolvedValue(mockNewUser);
+      (prisma.jobSource.createMany as any).mockResolvedValue(undefined);
+      (prisma.jobStatus.upsert as any).mockResolvedValue(undefined);
 
       await signup(validSignupData);
 
-      const jobSourcesCall = (prisma.jobSource.createMany as jest.Mock).mock
+      const jobSourcesCall = (prisma.jobSource.createMany as any).mock
         .calls[0][0];
       jobSourcesCall.data.forEach((source: any) => {
         expect(source).toHaveProperty("createdBy");
@@ -228,11 +232,11 @@ describe("Auth Actions", () => {
     });
 
     it("should create job statuses for new user", async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue("hashed_password_123");
-      (prisma.user.create as jest.Mock).mockResolvedValue(mockNewUser);
-      (prisma.jobSource.createMany as jest.Mock).mockResolvedValue(undefined);
-      (prisma.jobStatus.upsert as jest.Mock).mockResolvedValue(undefined);
+      (prisma.user.findUnique as any).mockResolvedValue(null);
+      (bcrypt.hash as any).mockResolvedValue("hashed_password_123");
+      (prisma.user.create as any).mockResolvedValue(mockNewUser);
+      (prisma.jobSource.createMany as any).mockResolvedValue(undefined);
+      (prisma.jobStatus.upsert as any).mockResolvedValue(undefined);
 
       await signup(validSignupData);
 
@@ -249,16 +253,16 @@ describe("Auth Actions", () => {
     });
 
     it("should upsert all job statuses with correct data", async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue("hashed_password_123");
-      (prisma.user.create as jest.Mock).mockResolvedValue(mockNewUser);
-      (prisma.jobSource.createMany as jest.Mock).mockResolvedValue(undefined);
-      (prisma.jobStatus.upsert as jest.Mock).mockResolvedValue(undefined);
+      (prisma.user.findUnique as any).mockResolvedValue(null);
+      (bcrypt.hash as any).mockResolvedValue("hashed_password_123");
+      (prisma.user.create as any).mockResolvedValue(mockNewUser);
+      (prisma.jobSource.createMany as any).mockResolvedValue(undefined);
+      (prisma.jobStatus.upsert as any).mockResolvedValue(undefined);
 
       await signup(validSignupData);
 
       JOB_STATUSES.forEach((status, index) => {
-        const callArgs = (prisma.jobStatus.upsert as jest.Mock).mock.calls[
+        const callArgs = (prisma.jobStatus.upsert as any).mock.calls[
           index
         ][0];
         expect(callArgs.where.value).toBe(status.value);
@@ -268,26 +272,26 @@ describe("Auth Actions", () => {
     });
 
     it("should create job sources before job statuses", async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue("hashed_password_123");
-      (prisma.user.create as jest.Mock).mockResolvedValue(mockNewUser);
-      (prisma.jobSource.createMany as jest.Mock).mockResolvedValue(undefined);
-      (prisma.jobStatus.upsert as jest.Mock).mockResolvedValue(undefined);
+      (prisma.user.findUnique as any).mockResolvedValue(null);
+      (bcrypt.hash as any).mockResolvedValue("hashed_password_123");
+      (prisma.user.create as any).mockResolvedValue(mockNewUser);
+      (prisma.jobSource.createMany as any).mockResolvedValue(undefined);
+      (prisma.jobStatus.upsert as any).mockResolvedValue(undefined);
 
       await signup(validSignupData);
 
-      const jobSourcesCallOrder = (prisma.jobSource.createMany as jest.Mock)
+      const jobSourcesCallOrder = (prisma.jobSource.createMany as any)
         .mock.invocationCallOrder[0];
-      const jobStatusCallOrder = (prisma.jobStatus.upsert as jest.Mock).mock
+      const jobStatusCallOrder = (prisma.jobStatus.upsert as any).mock
         .invocationCallOrder[0];
 
       expect(jobSourcesCallOrder).toBeLessThan(jobStatusCallOrder);
     });
 
     it("should not create job sources if user creation fails", async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue("hashed_password_123");
-      (prisma.user.create as jest.Mock).mockRejectedValue(
+      (prisma.user.findUnique as any).mockResolvedValue(null);
+      (bcrypt.hash as any).mockResolvedValue("hashed_password_123");
+      (prisma.user.create as any).mockRejectedValue(
         new Error("Database error"),
       );
 
@@ -298,10 +302,10 @@ describe("Auth Actions", () => {
     });
 
     it("should handle job source creation error", async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue("hashed_password_123");
-      (prisma.user.create as jest.Mock).mockResolvedValue(mockNewUser);
-      (prisma.jobSource.createMany as jest.Mock).mockRejectedValue(
+      (prisma.user.findUnique as any).mockResolvedValue(null);
+      (bcrypt.hash as any).mockResolvedValue("hashed_password_123");
+      (prisma.user.create as any).mockResolvedValue(mockNewUser);
+      (prisma.jobSource.createMany as any).mockRejectedValue(
         new Error("Failed to create job sources"),
       );
 
@@ -313,11 +317,11 @@ describe("Auth Actions", () => {
     });
 
     it("should handle job status creation error", async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue("hashed_password_123");
-      (prisma.user.create as jest.Mock).mockResolvedValue(mockNewUser);
-      (prisma.jobSource.createMany as jest.Mock).mockResolvedValue(undefined);
-      (prisma.jobStatus.upsert as jest.Mock).mockRejectedValue(
+      (prisma.user.findUnique as any).mockResolvedValue(null);
+      (bcrypt.hash as any).mockResolvedValue("hashed_password_123");
+      (prisma.user.create as any).mockResolvedValue(mockNewUser);
+      (prisma.jobSource.createMany as any).mockResolvedValue(undefined);
+      (prisma.jobStatus.upsert as any).mockRejectedValue(
         new Error("Failed to create job status"),
       );
 
@@ -327,11 +331,11 @@ describe("Auth Actions", () => {
     });
 
     it("should hash password with correct salt rounds", async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue("hashed_password_123");
-      (prisma.user.create as jest.Mock).mockResolvedValue(mockNewUser);
-      (prisma.jobSource.createMany as jest.Mock).mockResolvedValue(undefined);
-      (prisma.jobStatus.upsert as jest.Mock).mockResolvedValue(undefined);
+      (prisma.user.findUnique as any).mockResolvedValue(null);
+      (bcrypt.hash as any).mockResolvedValue("hashed_password_123");
+      (prisma.user.create as any).mockResolvedValue(mockNewUser);
+      (prisma.jobSource.createMany as any).mockResolvedValue(undefined);
+      (prisma.jobStatus.upsert as any).mockResolvedValue(undefined);
 
       await signup(validSignupData);
 
@@ -369,7 +373,7 @@ describe("Auth Actions", () => {
     mockFormData.set("password", "password123");
 
     it("should return null on successful authentication", async () => {
-      (signIn as jest.Mock).mockResolvedValue(undefined);
+      (signIn as any).mockResolvedValue(undefined);
 
       const result = await authenticate("", mockFormData);
 
@@ -384,7 +388,7 @@ describe("Auth Actions", () => {
 
     it("should return error message on invalid credentials", async () => {
       const authError = new AuthError("CredentialsSignin");
-      (signIn as jest.Mock).mockRejectedValue(authError);
+      (signIn as any).mockRejectedValue(authError);
 
       const result = await authenticate("", mockFormData);
 
@@ -398,7 +402,7 @@ describe("Auth Actions", () => {
 
     it("should return generic error message on unknown error", async () => {
       const authError = new AuthError("UnknownError");
-      (signIn as jest.Mock).mockRejectedValue(authError);
+      (signIn as any).mockRejectedValue(authError);
 
       const result = await authenticate("", mockFormData);
 
@@ -406,20 +410,20 @@ describe("Auth Actions", () => {
     });
 
     it("should call delay before signing in", async () => {
-      (signIn as jest.Mock).mockResolvedValue(undefined);
+      (signIn as any).mockResolvedValue(undefined);
 
       await authenticate("", mockFormData);
 
       expect(delay).toHaveBeenCalledWith(1000);
       expect(signIn).toHaveBeenCalled();
-      const delayCallOrder = (delay as jest.Mock).mock.invocationCallOrder[0];
-      const signInCallOrder = (signIn as jest.Mock).mock.invocationCallOrder[0];
+      const delayCallOrder = (delay as any).mock.invocationCallOrder[0];
+      const signInCallOrder = (signIn as any).mock.invocationCallOrder[0];
       expect(delayCallOrder).toBeLessThan(signInCallOrder);
     });
 
     it("should rethrow non-AuthError exceptions", async () => {
       const error = new Error("Database error");
-      (signIn as jest.Mock).mockRejectedValue(error);
+      (signIn as any).mockRejectedValue(error);
 
       try {
         await authenticate("", mockFormData);
@@ -430,7 +434,7 @@ describe("Auth Actions", () => {
     });
 
     it("should extract form data correctly", async () => {
-      (signIn as jest.Mock).mockResolvedValue(undefined);
+      (signIn as any).mockResolvedValue(undefined);
       const testFormData = new FormData();
       testFormData.set("email", "test@example.com");
       testFormData.set("password", "testpass123");

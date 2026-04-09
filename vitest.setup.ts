@@ -1,11 +1,10 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
+import { vi } from "vitest";
 
-// Mock fetch if not defined
 if (typeof global.fetch === "undefined") {
-  global.fetch = jest.fn();
+  global.fetch = vi.fn();
 }
 
-// Mock ResizeObserver for Radix UI components
 global.ResizeObserver = class ResizeObserver {
   observe() {}
   unobserve() {}

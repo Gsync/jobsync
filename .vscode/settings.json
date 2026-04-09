@@ -1,5 +1,7 @@
 {
   "editor.fontVariations": false,
+  "jestrunner.jestCommand": "npx vitest",
+  "jestrunner.configPath": "vitest.config.ts",
   "css.lint.unknownAtRules": "ignore",
   "chat.promptFilesRecommendations": {
     "speckit.constitution": true,

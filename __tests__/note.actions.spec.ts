@@ -9,23 +9,23 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-jest.mock("@prisma/client", () => {
+vi.mock("@prisma/client", () => {
   const mPrismaClient = {
     note: {
-      findMany: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
     job: {
-      findFirst: jest.fn(),
+      findFirst: vi.fn(),
     },
   };
-  return { PrismaClient: jest.fn(() => mPrismaClient) };
+  return { PrismaClient: vi.fn(function() { return mPrismaClient; }) };
 });
 
-jest.mock("@/utils/user.utils", () => ({
-  getCurrentUser: jest.fn(),
+vi.mock("@/utils/user.utils", () => ({
+  getCurrentUser: vi.fn(),
 }));
 
 describe("noteActions", () => {
@@ -41,14 +41,14 @@ describe("noteActions", () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("getNotesByJobId", () => {
     it("should return notes ordered newest-first", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.findFirst as jest.Mock).mockResolvedValue({ id: "job-id" });
-      (prisma.note.findMany as jest.Mock).mockResolvedValue([mockNote]);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.findFirst as any).mockResolvedValue({ id: "job-id" });
+      (prisma.note.findMany as any).mockResolvedValue([mockNote]);
 
       const result = await getNotesByJobId("job-id");
 
@@ -63,13 +63,13 @@ describe("noteActions", () => {
     });
 
     it("should mark notes as edited when updatedAt differs from createdAt by more than 1 second", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.findFirst as jest.Mock).mockResolvedValue({ id: "job-id" });
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.findFirst as any).mockResolvedValue({ id: "job-id" });
 
       const createdAt = new Date("2026-01-01T10:00:00Z");
       const updatedAt = new Date("2026-01-01T10:05:00Z");
       const editedNote = { ...mockNote, createdAt, updatedAt };
-      (prisma.note.findMany as jest.Mock).mockResolvedValue([editedNote]);
+      (prisma.note.findMany as any).mockResolvedValue([editedNote]);
 
       const result = await getNotesByJobId("job-id");
 
@@ -77,13 +77,13 @@ describe("noteActions", () => {
     });
 
     it("should not mark notes as edited when updatedAt is within 1 second of createdAt", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.findFirst as jest.Mock).mockResolvedValue({ id: "job-id" });
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.findFirst as any).mockResolvedValue({ id: "job-id" });
 
       const createdAt = new Date("2026-01-01T10:00:00.000Z");
       const updatedAt = new Date("2026-01-01T10:00:00.500Z");
       const freshNote = { ...mockNote, createdAt, updatedAt };
-      (prisma.note.findMany as jest.Mock).mockResolvedValue([freshNote]);
+      (prisma.note.findMany as any).mockResolvedValue([freshNote]);
 
       const result = await getNotesByJobId("job-id");
 
@@ -91,9 +91,9 @@ describe("noteActions", () => {
     });
 
     it("should return empty array when no notes exist", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.findFirst as jest.Mock).mockResolvedValue({ id: "job-id" });
-      (prisma.note.findMany as jest.Mock).mockResolvedValue([]);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.findFirst as any).mockResolvedValue({ id: "job-id" });
+      (prisma.note.findMany as any).mockResolvedValue([]);
 
       const result = await getNotesByJobId("job-id");
 
@@ -101,8 +101,8 @@ describe("noteActions", () => {
     });
 
     it("should return error when job is not found", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.findFirst as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.findFirst as any).mockResolvedValue(null);
 
       const result = await getNotesByJobId("non-existent-job");
 
@@ -110,7 +110,7 @@ describe("noteActions", () => {
     });
 
     it("should return error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await getNotesByJobId("job-id");
 
@@ -118,8 +118,8 @@ describe("noteActions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.findFirst as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.findFirst as any).mockRejectedValue(
         new Error("Database error")
       );
 
@@ -133,9 +133,9 @@ describe("noteActions", () => {
     const noteData = { jobId: "job-id", content: "<p>New note</p>" };
 
     it("should create a note successfully", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.findFirst as jest.Mock).mockResolvedValue({ id: "job-id" });
-      (prisma.note.create as jest.Mock).mockResolvedValue(mockNote);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.findFirst as any).mockResolvedValue({ id: "job-id" });
+      (prisma.note.create as any).mockResolvedValue(mockNote);
 
       const result = await addNote(noteData);
 
@@ -150,8 +150,8 @@ describe("noteActions", () => {
     });
 
     it("should verify job ownership before creating", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.findFirst as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.findFirst as any).mockResolvedValue(null);
 
       const result = await addNote(noteData);
 
@@ -160,7 +160,7 @@ describe("noteActions", () => {
     });
 
     it("should return error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await addNote(noteData);
 
@@ -168,7 +168,7 @@ describe("noteActions", () => {
     });
 
     it("should reject empty content via validation", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const result = await addNote({ jobId: "job-id", content: "" });
 
@@ -177,9 +177,9 @@ describe("noteActions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.findFirst as jest.Mock).mockResolvedValue({ id: "job-id" });
-      (prisma.note.create as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.findFirst as any).mockResolvedValue({ id: "job-id" });
+      (prisma.note.create as any).mockRejectedValue(
         new Error("Database error")
       );
 
@@ -197,9 +197,9 @@ describe("noteActions", () => {
     };
 
     it("should update a note successfully", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const updatedNote = { ...mockNote, content: updateData.content };
-      (prisma.note.update as jest.Mock).mockResolvedValue(updatedNote);
+      (prisma.note.update as any).mockResolvedValue(updatedNote);
 
       const result = await updateNote(updateData);
 
@@ -211,7 +211,7 @@ describe("noteActions", () => {
     });
 
     it("should return error when note ID is missing", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const result = await updateNote({ jobId: "job-id", content: "test" });
 
@@ -222,7 +222,7 @@ describe("noteActions", () => {
     });
 
     it("should return error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await updateNote(updateData);
 
@@ -230,8 +230,8 @@ describe("noteActions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.note.update as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.note.update as any).mockRejectedValue(
         new Error("Database error")
       );
 
@@ -243,8 +243,8 @@ describe("noteActions", () => {
 
   describe("deleteNote", () => {
     it("should delete a note successfully", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.note.delete as jest.Mock).mockResolvedValue(mockNote);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.note.delete as any).mockResolvedValue(mockNote);
 
       const result = await deleteNote("note-id");
 
@@ -255,7 +255,7 @@ describe("noteActions", () => {
     });
 
     it("should return error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await deleteNote("note-id");
 
@@ -263,8 +263,8 @@ describe("noteActions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.note.delete as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.note.delete as any).mockRejectedValue(
         new Error("Database error")
       );
 
@@ -274,8 +274,8 @@ describe("noteActions", () => {
     });
 
     it("should handle deleting non-existent note", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.note.delete as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.note.delete as any).mockRejectedValue(
         new Error("Record to delete does not exist.")
       );
 

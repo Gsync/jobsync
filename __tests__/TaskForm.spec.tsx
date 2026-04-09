@@ -1,30 +1,29 @@
 import { TaskForm } from "@/components/tasks/TaskForm";
-import "@testing-library/jest-dom";
 import { screen, render, waitFor } from "@testing-library/react";
 import { getCurrentUser } from "@/utils/user.utils";
 import userEvent from "@testing-library/user-event";
 import { createTask, updateTask } from "@/actions/task.actions";
 import { Task } from "@/models/task.model";
 
-jest.mock("@/utils/user.utils", () => ({
-  getCurrentUser: jest.fn(),
+vi.mock("@/utils/user.utils", () => ({
+  getCurrentUser: vi.fn(),
 }));
 
-jest.mock("@/actions/task.actions", () => ({
-  createTask: jest.fn().mockResolvedValue({ success: true }),
-  updateTask: jest.fn().mockResolvedValue({ success: true }),
+vi.mock("@/actions/task.actions", () => ({
+  createTask: vi.fn().mockResolvedValue({ success: true }),
+  updateTask: vi.fn().mockResolvedValue({ success: true }),
 }));
 
-global.ResizeObserver = jest.fn().mockImplementation(() => ({
-  observe: jest.fn(),
-  unobserve: jest.fn(),
-  disconnect: jest.fn(),
-}));
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
 document.createRange = () => {
   const range = new Range();
 
-  range.getBoundingClientRect = jest.fn().mockReturnValue({
+  range.getBoundingClientRect = vi.fn().mockReturnValue({
     bottom: 0,
     height: 0,
     left: 0,
@@ -37,7 +36,7 @@ document.createRange = () => {
     return {
       item: () => null,
       length: 0,
-      [Symbol.iterator]: jest.fn(),
+      [Symbol.iterator]: vi.fn(),
     };
   };
 
@@ -62,17 +61,17 @@ describe("TaskForm Component", () => {
       updatedAt: new Date(),
     },
   ];
-  const mockResetEditTask = jest.fn();
-  const mockOnTaskSaved = jest.fn();
-  const mockSetDialogOpen = jest.fn();
+  const mockResetEditTask = vi.fn();
+  const mockOnTaskSaved = vi.fn();
+  const mockSetDialogOpen = vi.fn();
   const user = userEvent.setup({ skipHover: true });
 
-  window.HTMLElement.prototype.scrollIntoView = jest.fn();
-  window.HTMLElement.prototype.hasPointerCapture = jest.fn();
+  window.HTMLElement.prototype.scrollIntoView = vi.fn();
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn();
 
   beforeEach(() => {
-    (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-    jest.clearAllMocks();
+    (getCurrentUser as any).mockResolvedValue(mockUser);
+    vi.clearAllMocks();
   });
 
   describe("Add Task Mode", () => {
@@ -352,7 +351,7 @@ describe("TaskForm Component", () => {
     });
 
     it("should handle create task failure", async () => {
-      (createTask as jest.Mock).mockResolvedValue({
+      (createTask as any).mockResolvedValue({
         success: false,
         message: "Failed to create task",
       });
@@ -387,7 +386,7 @@ describe("TaskForm Component", () => {
         updatedAt: new Date(),
       };
 
-      (updateTask as jest.Mock).mockResolvedValue({
+      (updateTask as any).mockResolvedValue({
         success: false,
         message: "Failed to update task",
       });

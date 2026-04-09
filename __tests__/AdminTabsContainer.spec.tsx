@@ -1,39 +1,38 @@
-import "@testing-library/jest-dom";
 import { screen, render, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import AdminTabsContainer from "@/components/admin/AdminTabsContainer";
 
-const mockPush = jest.fn();
+const mockPush = vi.fn();
 
-jest.mock("next/navigation", () => ({
+vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
   usePathname: () => "/dashboard/admin",
   useSearchParams: () => new URLSearchParams(""),
 }));
 
-jest.mock("@/actions/company.actions", () => ({
-  getCompanyList: jest.fn().mockResolvedValue({ data: [], total: 0 }),
-  getCompanyById: jest.fn(),
+vi.mock("@/actions/company.actions", () => ({
+  getCompanyList: vi.fn().mockResolvedValue({ data: [], total: 0 }),
+  getCompanyById: vi.fn(),
 }));
 
-jest.mock("@/actions/jobtitle.actions", () => ({
-  getJobTitleList: jest.fn().mockResolvedValue({ data: [], total: 0 }),
+vi.mock("@/actions/jobtitle.actions", () => ({
+  getJobTitleList: vi.fn().mockResolvedValue({ data: [], total: 0 }),
 }));
 
-jest.mock("@/actions/jobLocation.actions", () => ({
-  getJobLocationsList: jest.fn().mockResolvedValue({ data: [], total: 0 }),
+vi.mock("@/actions/jobLocation.actions", () => ({
+  getJobLocationsList: vi.fn().mockResolvedValue({ data: [], total: 0 }),
 }));
 
-jest.mock("@/actions/activity.actions", () => ({
-  getActivityTypeList: jest.fn().mockResolvedValue({ data: [], total: 0 }),
-  createActivityType: jest.fn(),
+vi.mock("@/actions/activity.actions", () => ({
+  getActivityTypeList: vi.fn().mockResolvedValue({ data: [], total: 0 }),
+  createActivityType: vi.fn(),
 }));
 
 describe("AdminTabsContainer", () => {
   const user = userEvent.setup({ skipHover: true });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("should render all tabs", () => {

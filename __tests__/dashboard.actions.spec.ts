@@ -12,36 +12,36 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // Mock the Prisma Client
-jest.mock("@prisma/client", () => {
+vi.mock("@prisma/client", () => {
   const mPrismaClient = {
     job: {
-      findMany: jest.fn(),
-      count: jest.fn(),
-      groupBy: jest.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+      groupBy: vi.fn(),
     },
     activity: {
-      findMany: jest.fn(),
+      findMany: vi.fn(),
     },
-    $transaction: jest.fn(),
+    $transaction: vi.fn(),
   };
-  return { PrismaClient: jest.fn(() => mPrismaClient) };
+  return { PrismaClient: vi.fn(function() { return mPrismaClient; }) };
 });
 
-jest.mock("@/utils/user.utils", () => ({
-  getCurrentUser: jest.fn(),
+vi.mock("@/utils/user.utils", () => ({
+  getCurrentUser: vi.fn(),
 }));
 
 describe("Dashboard Actions", () => {
   const mockUser = { id: "user-id" };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("getJobsAppliedForPeriod", () => {
     it("should return count and trend for authenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.$transaction as jest.Mock).mockResolvedValue([10, 15]);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.$transaction as any).mockResolvedValue([10, 15]);
 
       const result = await getJobsAppliedForPeriod(7);
 
@@ -50,7 +50,7 @@ describe("Dashboard Actions", () => {
     });
 
     it("should throw error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       await expect(getJobsAppliedForPeriod(7)).rejects.toThrow(
         "Not authenticated",
@@ -58,8 +58,8 @@ describe("Dashboard Actions", () => {
     });
 
     it("should calculate zero trend when both counts are zero", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.$transaction as jest.Mock).mockResolvedValue([0, 0]);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.$transaction as any).mockResolvedValue([0, 0]);
 
       const result = await getJobsAppliedForPeriod(7);
 
@@ -67,8 +67,8 @@ describe("Dashboard Actions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.$transaction as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.$transaction as any).mockRejectedValue(
         new Error("Database error"),
       );
 
@@ -80,7 +80,7 @@ describe("Dashboard Actions", () => {
 
   describe("getRecentJobs", () => {
     it("should return recent jobs for authenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockJobs = [
         {
           id: "job-1",
@@ -95,7 +95,7 @@ describe("Dashboard Actions", () => {
           Status: { label: "Interview" },
         },
       ];
-      (prisma.job.findMany as jest.Mock).mockResolvedValue(mockJobs);
+      (prisma.job.findMany as any).mockResolvedValue(mockJobs);
 
       const result = await getRecentJobs();
 
@@ -120,7 +120,7 @@ describe("Dashboard Actions", () => {
     });
 
     it("should throw error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       await expect(getRecentJobs()).rejects.toThrow(
         "Failed to fetch jobs list. ",
@@ -128,8 +128,8 @@ describe("Dashboard Actions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.findMany as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.findMany as any).mockRejectedValue(
         new Error("Database error"),
       );
 
@@ -139,8 +139,8 @@ describe("Dashboard Actions", () => {
     });
 
     it("should return empty array when no jobs found", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.findMany as jest.Mock).mockResolvedValue([]);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.findMany as any).mockResolvedValue([]);
 
       const result = await getRecentJobs();
 
@@ -150,7 +150,7 @@ describe("Dashboard Actions", () => {
 
   describe("getActivityDataForPeriod", () => {
     it("should return activity data grouped by day for authenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockActivities = [
         {
           endTime: new Date("2024-01-01T10:00:00Z"),
@@ -163,7 +163,7 @@ describe("Dashboard Actions", () => {
           activityType: { label: "Interviewing" },
         },
       ];
-      (prisma.activity.findMany as jest.Mock).mockResolvedValue(mockActivities);
+      (prisma.activity.findMany as any).mockResolvedValue(mockActivities);
 
       const result = await getActivityDataForPeriod();
 
@@ -174,7 +174,7 @@ describe("Dashboard Actions", () => {
     });
 
     it("should throw error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       await expect(getActivityDataForPeriod()).rejects.toThrow(
         "Failed to fetch activities data.",
@@ -182,8 +182,8 @@ describe("Dashboard Actions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.activity.findMany as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.activity.findMany as any).mockRejectedValue(
         new Error("Database error"),
       );
 
@@ -193,8 +193,8 @@ describe("Dashboard Actions", () => {
     });
 
     it("should return data for all 7 days even with no activities", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.activity.findMany as jest.Mock).mockResolvedValue([]);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.activity.findMany as any).mockResolvedValue([]);
 
       const result = await getActivityDataForPeriod();
 
@@ -205,7 +205,7 @@ describe("Dashboard Actions", () => {
     });
 
     it("should handle activities with missing activityType", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockActivities = [
         {
           endTime: new Date("2024-01-01T10:00:00Z"),
@@ -213,7 +213,7 @@ describe("Dashboard Actions", () => {
           activityType: null,
         },
       ];
-      (prisma.activity.findMany as jest.Mock).mockResolvedValue(mockActivities);
+      (prisma.activity.findMany as any).mockResolvedValue(mockActivities);
 
       const result = await getActivityDataForPeriod();
 
@@ -224,7 +224,7 @@ describe("Dashboard Actions", () => {
 
   describe("getJobsActivityForPeriod", () => {
     it("should return jobs activity data for authenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockJobData = [
         {
           appliedDate: new Date("2024-01-01"),
@@ -235,7 +235,7 @@ describe("Dashboard Actions", () => {
           _count: { _all: 5 },
         },
       ];
-      (prisma.job.groupBy as jest.Mock).mockResolvedValue(mockJobData);
+      (prisma.job.groupBy as any).mockResolvedValue(mockJobData);
 
       const result = await getJobsActivityForPeriod();
 
@@ -249,7 +249,7 @@ describe("Dashboard Actions", () => {
     });
 
     it("should throw error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       await expect(getJobsActivityForPeriod()).rejects.toThrow(
         "Failed to fetch jobs list. ",
@@ -257,8 +257,8 @@ describe("Dashboard Actions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.groupBy as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.groupBy as any).mockRejectedValue(
         new Error("Database error"),
       );
 
@@ -268,8 +268,8 @@ describe("Dashboard Actions", () => {
     });
 
     it("should return zero values for days with no jobs", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.groupBy as jest.Mock).mockResolvedValue([]);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.groupBy as any).mockResolvedValue([]);
 
       const result = await getJobsActivityForPeriod();
 
@@ -282,7 +282,7 @@ describe("Dashboard Actions", () => {
 
   describe("getActivityCalendarData", () => {
     it("should return calendar data grouped by year for authenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockJobData = [
         {
           appliedDate: new Date("2024-01-15"),
@@ -297,8 +297,8 @@ describe("Dashboard Actions", () => {
           _count: { _all: 1 },
         },
       ];
-      (prisma.job.groupBy as jest.Mock).mockResolvedValue(mockJobData);
-      (prisma.activity.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.job.groupBy as any).mockResolvedValue(mockJobData);
+      (prisma.activity.findMany as any).mockResolvedValue([]);
 
       const result = await getActivityCalendarData();
 
@@ -307,7 +307,7 @@ describe("Dashboard Actions", () => {
     });
 
     it("should throw error when user is not authenticated", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       await expect(getActivityCalendarData()).rejects.toThrow(
         "Failed to fetch jobs list. ",
@@ -315,8 +315,8 @@ describe("Dashboard Actions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.groupBy as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.groupBy as any).mockRejectedValue(
         new Error("Database error"),
       );
 
@@ -326,9 +326,9 @@ describe("Dashboard Actions", () => {
     });
 
     it("should return empty object when no job data", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.groupBy as jest.Mock).mockResolvedValue([]);
-      (prisma.activity.findMany as jest.Mock).mockResolvedValue([]);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.groupBy as any).mockResolvedValue([]);
+      (prisma.activity.findMany as any).mockResolvedValue([]);
 
       const result = await getActivityCalendarData();
 
@@ -336,7 +336,7 @@ describe("Dashboard Actions", () => {
     });
 
     it("should correctly group jobs by year", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockJobData = [
         {
           appliedDate: new Date("2024-06-15"),
@@ -347,8 +347,8 @@ describe("Dashboard Actions", () => {
           _count: { _all: 3 },
         },
       ];
-      (prisma.job.groupBy as jest.Mock).mockResolvedValue(mockJobData);
-      (prisma.activity.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.job.groupBy as any).mockResolvedValue(mockJobData);
+      (prisma.activity.findMany as any).mockResolvedValue([]);
 
       const result = await getActivityCalendarData();
 
@@ -362,7 +362,7 @@ describe("Dashboard Actions", () => {
     });
 
     it("should aggregate counts for same date", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockJobData = [
         {
           appliedDate: new Date("2024-06-15T10:00:00Z"),
@@ -373,8 +373,8 @@ describe("Dashboard Actions", () => {
           _count: { _all: 3 },
         },
       ];
-      (prisma.job.groupBy as jest.Mock).mockResolvedValue(mockJobData);
-      (prisma.activity.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.job.groupBy as any).mockResolvedValue(mockJobData);
+      (prisma.activity.findMany as any).mockResolvedValue([]);
 
       const result = await getActivityCalendarData();
 

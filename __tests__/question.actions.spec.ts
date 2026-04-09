@@ -11,25 +11,25 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-jest.mock("@prisma/client", () => {
+vi.mock("@prisma/client", () => {
   const mPrismaClient = {
     question: {
-      findMany: jest.fn(),
-      findFirst: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      count: jest.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      count: vi.fn(),
     },
     tag: {
-      findMany: jest.fn(),
+      findMany: vi.fn(),
     },
   };
-  return { PrismaClient: jest.fn(() => mPrismaClient) };
+  return { PrismaClient: vi.fn(function() { return mPrismaClient; }) };
 });
 
-jest.mock("@/utils/user.utils", () => ({
-  getCurrentUser: jest.fn(),
+vi.mock("@/utils/user.utils", () => ({
+  getCurrentUser: vi.fn(),
 }));
 
 describe("Question Actions", () => {
@@ -46,15 +46,15 @@ describe("Question Actions", () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // getQuestionsList
   describe("getQuestionsList", () => {
     it("should return paginated questions", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.question.findMany as jest.Mock).mockResolvedValue([mockQuestion]);
-      (prisma.question.count as jest.Mock).mockResolvedValue(1);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.findMany as any).mockResolvedValue([mockQuestion]);
+      (prisma.question.count as any).mockResolvedValue(1);
 
       const result = await getQuestionsList(1, 10);
 
@@ -71,9 +71,9 @@ describe("Question Actions", () => {
     });
 
     it("should calculate offset for page 2", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.question.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.question.count as jest.Mock).mockResolvedValue(0);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.findMany as any).mockResolvedValue([]);
+      (prisma.question.count as any).mockResolvedValue(0);
 
       await getQuestionsList(2, 10);
 
@@ -83,9 +83,9 @@ describe("Question Actions", () => {
     });
 
     it("should filter by tag when filter is provided", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.question.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.question.count as jest.Mock).mockResolvedValue(0);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.findMany as any).mockResolvedValue([]);
+      (prisma.question.count as any).mockResolvedValue(0);
 
       await getQuestionsList(1, 10, "tag-1");
 
@@ -100,9 +100,9 @@ describe("Question Actions", () => {
     });
 
     it("should search by question and answer content", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.question.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.question.count as jest.Mock).mockResolvedValue(0);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.findMany as any).mockResolvedValue([]);
+      (prisma.question.count as any).mockResolvedValue(0);
 
       await getQuestionsList(1, 10, undefined, "react");
 
@@ -120,9 +120,9 @@ describe("Question Actions", () => {
     });
 
     it("should apply both filter and search together", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.question.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.question.count as jest.Mock).mockResolvedValue(0);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.findMany as any).mockResolvedValue([]);
+      (prisma.question.count as any).mockResolvedValue(0);
 
       await getQuestionsList(1, 10, "tag-1", "react");
 
@@ -141,7 +141,7 @@ describe("Question Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await getQuestionsList(1, 10);
 
@@ -153,8 +153,8 @@ describe("Question Actions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.question.findMany as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.findMany as any).mockRejectedValue(
         new Error("DB error"),
       );
 
@@ -167,8 +167,8 @@ describe("Question Actions", () => {
   // getQuestionById
   describe("getQuestionById", () => {
     it("should return question by id", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.question.findFirst as jest.Mock).mockResolvedValue(mockQuestion);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.findFirst as any).mockResolvedValue(mockQuestion);
 
       const result = await getQuestionById("q-1");
 
@@ -180,8 +180,8 @@ describe("Question Actions", () => {
     });
 
     it("should return not found when question does not exist", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.question.findFirst as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.findFirst as any).mockResolvedValue(null);
 
       const result = await getQuestionById("nonexistent");
 
@@ -192,7 +192,7 @@ describe("Question Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await getQuestionById("q-1");
 
@@ -204,8 +204,8 @@ describe("Question Actions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.question.findFirst as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.findFirst as any).mockRejectedValue(
         new Error("DB error"),
       );
 
@@ -218,8 +218,8 @@ describe("Question Actions", () => {
   // createQuestion
   describe("createQuestion", () => {
     it("should create a question with tags", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.question.create as jest.Mock).mockResolvedValue(mockQuestion);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.create as any).mockResolvedValue(mockQuestion);
 
       const result = await createQuestion({
         question: "What is React?",
@@ -240,8 +240,8 @@ describe("Question Actions", () => {
     });
 
     it("should create a question without tags", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.question.create as jest.Mock).mockResolvedValue({
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.create as any).mockResolvedValue({
         ...mockQuestion,
         tags: [],
       });
@@ -263,8 +263,8 @@ describe("Question Actions", () => {
     });
 
     it("should create a question with null answer", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.question.create as jest.Mock).mockResolvedValue(mockQuestion);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.create as any).mockResolvedValue(mockQuestion);
 
       await createQuestion({ question: "What?", answer: null });
 
@@ -276,7 +276,7 @@ describe("Question Actions", () => {
     });
 
     it("should reject invalid data (question too short)", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const result = await createQuestion({ question: "a" });
 
@@ -285,7 +285,7 @@ describe("Question Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await createQuestion({ question: "What is React?" });
 
@@ -297,8 +297,8 @@ describe("Question Actions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.question.create as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.create as any).mockRejectedValue(
         new Error("DB error"),
       );
 
@@ -311,8 +311,8 @@ describe("Question Actions", () => {
   // updateQuestion
   describe("updateQuestion", () => {
     it("should update a question with new tags", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.question.update as jest.Mock).mockResolvedValue(mockQuestion);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.update as any).mockResolvedValue(mockQuestion);
 
       const result = await updateQuestion({
         id: "q-1",
@@ -334,8 +334,8 @@ describe("Question Actions", () => {
     });
 
     it("should clear tags when tagIds is empty", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.question.update as jest.Mock).mockResolvedValue(mockQuestion);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.update as any).mockResolvedValue(mockQuestion);
 
       await updateQuestion({
         id: "q-1",
@@ -353,7 +353,7 @@ describe("Question Actions", () => {
     });
 
     it("should return error when id is missing", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const result = await updateQuestion({ question: "No ID?" });
 
@@ -362,7 +362,7 @@ describe("Question Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await updateQuestion({
         id: "q-1",
@@ -377,8 +377,8 @@ describe("Question Actions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.question.update as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.update as any).mockRejectedValue(
         new Error("DB error"),
       );
 
@@ -394,8 +394,8 @@ describe("Question Actions", () => {
   // deleteQuestion
   describe("deleteQuestion", () => {
     it("should delete a question", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.question.delete as jest.Mock).mockResolvedValue(mockQuestion);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.delete as any).mockResolvedValue(mockQuestion);
 
       const result = await deleteQuestion("q-1");
 
@@ -406,7 +406,7 @@ describe("Question Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await deleteQuestion("q-1");
 
@@ -418,8 +418,8 @@ describe("Question Actions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.question.delete as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.delete as any).mockRejectedValue(
         new Error("DB error"),
       );
 
@@ -432,7 +432,7 @@ describe("Question Actions", () => {
   // getTagsWithQuestionCounts
   describe("getTagsWithQuestionCounts", () => {
     it("should return tags with question counts", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockTags = [
         {
           id: "tag-1",
@@ -447,8 +447,8 @@ describe("Question Actions", () => {
           _count: { questions: 3 },
         },
       ];
-      (prisma.tag.findMany as jest.Mock).mockResolvedValue(mockTags);
-      (prisma.question.count as jest.Mock).mockResolvedValue(8);
+      (prisma.tag.findMany as any).mockResolvedValue(mockTags);
+      (prisma.question.count as any).mockResolvedValue(8);
 
       const result = await getTagsWithQuestionCounts();
 
@@ -468,7 +468,7 @@ describe("Question Actions", () => {
     });
 
     it("should filter out tags with zero questions", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockTags = [
         {
           id: "tag-1",
@@ -483,8 +483,8 @@ describe("Question Actions", () => {
           _count: { questions: 0 },
         },
       ];
-      (prisma.tag.findMany as jest.Mock).mockResolvedValue(mockTags);
-      (prisma.question.count as jest.Mock).mockResolvedValue(2);
+      (prisma.tag.findMany as any).mockResolvedValue(mockTags);
+      (prisma.question.count as any).mockResolvedValue(2);
 
       const result = await getTagsWithQuestionCounts();
 
@@ -493,7 +493,7 @@ describe("Question Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await getTagsWithQuestionCounts();
 
@@ -505,8 +505,8 @@ describe("Question Actions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.tag.findMany as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.tag.findMany as any).mockRejectedValue(
         new Error("DB error"),
       );
 

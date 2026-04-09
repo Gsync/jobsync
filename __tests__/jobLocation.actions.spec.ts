@@ -8,49 +8,49 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-jest.mock("@prisma/client", () => {
+vi.mock("@prisma/client", () => {
   const mPrismaClient = {
     location: {
-      findMany: jest.fn(),
-      count: jest.fn(),
-      delete: jest.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+      delete: vi.fn(),
     },
     workExperience: {
-      count: jest.fn(),
+      count: vi.fn(),
     },
     education: {
-      count: jest.fn(),
+      count: vi.fn(),
     },
     job: {
-      count: jest.fn(),
+      count: vi.fn(),
     },
   };
-  return { PrismaClient: jest.fn(() => mPrismaClient) };
+  return { PrismaClient: vi.fn(function() { return mPrismaClient; }) };
 });
 
-jest.mock("@/utils/user.utils", () => ({
-  getCurrentUser: jest.fn(),
+vi.mock("@/utils/user.utils", () => ({
+  getCurrentUser: vi.fn(),
 }));
 
-jest.mock("next/cache", () => ({
-  revalidatePath: jest.fn(),
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
 }));
 
 describe("Job Location Actions", () => {
   const mockUser = { id: "user-id" };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("getAllJobLocations", () => {
     it("should return job locations for authenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockLocations = [
         { id: "loc-1", label: "New York", value: "new york" },
         { id: "loc-2", label: "Remote", value: "remote" },
       ];
-      (prisma.location.findMany as jest.Mock).mockResolvedValue(mockLocations);
+      (prisma.location.findMany as any).mockResolvedValue(mockLocations);
 
       const result = await getAllJobLocations();
 
@@ -61,7 +61,7 @@ describe("Job Location Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await getAllJobLocations();
 
@@ -70,8 +70,8 @@ describe("Job Location Actions", () => {
     });
 
     it("should handle errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.location.findMany as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.location.findMany as any).mockRejectedValue(
         new Error("Database error")
       );
 
@@ -83,14 +83,14 @@ describe("Job Location Actions", () => {
 
   describe("getJobLocationsList", () => {
     it("should return paginated location list", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockData = [
         { id: "loc-1", label: "New York", value: "new york" },
       ];
       const mockTotal = 1;
 
-      (prisma.location.findMany as jest.Mock).mockResolvedValue(mockData);
-      (prisma.location.count as jest.Mock).mockResolvedValue(mockTotal);
+      (prisma.location.findMany as any).mockResolvedValue(mockData);
+      (prisma.location.count as any).mockResolvedValue(mockTotal);
 
       const result = await getJobLocationsList(1, 10);
 
@@ -107,12 +107,12 @@ describe("Job Location Actions", () => {
     });
 
     it("should filter by countBy when provided", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockData = [
         { id: "loc-1", label: "New York", value: "new york" },
       ];
-      (prisma.location.findMany as jest.Mock).mockResolvedValue(mockData);
-      (prisma.location.count as jest.Mock).mockResolvedValue(1);
+      (prisma.location.findMany as any).mockResolvedValue(mockData);
+      (prisma.location.count as any).mockResolvedValue(1);
 
       const result = await getJobLocationsList(1, 10, "applied");
 
@@ -138,9 +138,9 @@ describe("Job Location Actions", () => {
     });
 
     it("should calculate skip correctly for page 3", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.location.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.location.count as jest.Mock).mockResolvedValue(0);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.location.findMany as any).mockResolvedValue([]);
+      (prisma.location.count as any).mockResolvedValue(0);
 
       await getJobLocationsList(3, 5);
 
@@ -150,7 +150,7 @@ describe("Job Location Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await getJobLocationsList(1, 10);
 
@@ -159,7 +159,7 @@ describe("Job Location Actions", () => {
     });
 
     it("should handle errors", async () => {
-      (getCurrentUser as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockRejectedValue(
         new Error("Database error")
       );
 
@@ -171,12 +171,12 @@ describe("Job Location Actions", () => {
 
   describe("deleteJobLocationById", () => {
     it("should delete a location successfully", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as jest.Mock).mockResolvedValue(0);
-      (prisma.education.count as jest.Mock).mockResolvedValue(0);
-      (prisma.job.count as jest.Mock).mockResolvedValue(0);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(0);
+      (prisma.education.count as any).mockResolvedValue(0);
+      (prisma.job.count as any).mockResolvedValue(0);
       const mockDeleted = { id: "loc-1", label: "New York" };
-      (prisma.location.delete as jest.Mock).mockResolvedValue(mockDeleted);
+      (prisma.location.delete as any).mockResolvedValue(mockDeleted);
 
       const result = await deleteJobLocationById("loc-1");
 
@@ -187,7 +187,7 @@ describe("Job Location Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await deleteJobLocationById("loc-1");
 
@@ -196,8 +196,8 @@ describe("Job Location Actions", () => {
     });
 
     it("should prevent deletion when work experiences exist", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as jest.Mock).mockResolvedValue(1);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(1);
 
       const result = await deleteJobLocationById("loc-1");
 
@@ -211,9 +211,9 @@ describe("Job Location Actions", () => {
     });
 
     it("should prevent deletion when education records exist", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as jest.Mock).mockResolvedValue(0);
-      (prisma.education.count as jest.Mock).mockResolvedValue(2);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(0);
+      (prisma.education.count as any).mockResolvedValue(2);
 
       const result = await deleteJobLocationById("loc-1");
 
@@ -227,10 +227,10 @@ describe("Job Location Actions", () => {
     });
 
     it("should prevent deletion when associated jobs exist", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as jest.Mock).mockResolvedValue(0);
-      (prisma.education.count as jest.Mock).mockResolvedValue(0);
-      (prisma.job.count as jest.Mock).mockResolvedValue(5);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(0);
+      (prisma.education.count as any).mockResolvedValue(0);
+      (prisma.job.count as any).mockResolvedValue(5);
 
       const result = await deleteJobLocationById("loc-1");
 
@@ -243,11 +243,11 @@ describe("Job Location Actions", () => {
     });
 
     it("should handle unexpected errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as jest.Mock).mockResolvedValue(0);
-      (prisma.education.count as jest.Mock).mockResolvedValue(0);
-      (prisma.job.count as jest.Mock).mockResolvedValue(0);
-      (prisma.location.delete as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(0);
+      (prisma.education.count as any).mockResolvedValue(0);
+      (prisma.job.count as any).mockResolvedValue(0);
+      (prisma.location.delete as any).mockRejectedValue(
         new Error("Delete failed")
       );
 

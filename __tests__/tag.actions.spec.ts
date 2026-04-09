@@ -9,26 +9,26 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-jest.mock("@prisma/client", () => {
+vi.mock("@prisma/client", () => {
   const mPrismaClient = {
     tag: {
-      findMany: jest.fn(),
-      count: jest.fn(),
-      upsert: jest.fn(),
-      delete: jest.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+      upsert: vi.fn(),
+      delete: vi.fn(),
     },
     job: {
-      count: jest.fn(),
+      count: vi.fn(),
     },
     question: {
-      count: jest.fn(),
+      count: vi.fn(),
     },
   };
-  return { PrismaClient: jest.fn(() => mPrismaClient) };
+  return { PrismaClient: vi.fn(function() { return mPrismaClient; }) };
 });
 
-jest.mock("@/utils/user.utils", () => ({
-  getCurrentUser: jest.fn(),
+vi.mock("@/utils/user.utils", () => ({
+  getCurrentUser: vi.fn(),
 }));
 
 describe("Tag Actions", () => {
@@ -42,18 +42,18 @@ describe("Tag Actions", () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // getAllTags
   describe("getAllTags", () => {
     it("should return all tags for the authenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockTags = [
         mockTag,
         { ...mockTag, id: "tag-2", label: "TypeScript", value: "typescript" },
       ];
-      (prisma.tag.findMany as jest.Mock).mockResolvedValue(mockTags);
+      (prisma.tag.findMany as any).mockResolvedValue(mockTags);
 
       const result = await getAllTags();
 
@@ -65,7 +65,7 @@ describe("Tag Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await getAllTags();
 
@@ -74,8 +74,8 @@ describe("Tag Actions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.tag.findMany as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.tag.findMany as any).mockRejectedValue(
         new Error("DB error"),
       );
 
@@ -88,10 +88,10 @@ describe("Tag Actions", () => {
   // getTagList
   describe("getTagList", () => {
     it("should return paginated tag list with counts", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockData = [{ ...mockTag, _count: { jobs: 3, questions: 2 } }];
-      (prisma.tag.findMany as jest.Mock).mockResolvedValue(mockData);
-      (prisma.tag.count as jest.Mock).mockResolvedValue(1);
+      (prisma.tag.findMany as any).mockResolvedValue(mockData);
+      (prisma.tag.count as any).mockResolvedValue(1);
 
       const result = await getTagList(1, 10);
 
@@ -107,9 +107,9 @@ describe("Tag Actions", () => {
     });
 
     it("should calculate skip correctly for page 2", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.tag.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.tag.count as jest.Mock).mockResolvedValue(0);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.tag.findMany as any).mockResolvedValue([]);
+      (prisma.tag.count as any).mockResolvedValue(0);
 
       await getTagList(2, 10);
 
@@ -119,7 +119,7 @@ describe("Tag Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await getTagList(1, 10);
 
@@ -128,8 +128,8 @@ describe("Tag Actions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.tag.findMany as jest.Mock).mockRejectedValue(
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.tag.findMany as any).mockRejectedValue(
         new Error("DB error"),
       );
 
@@ -142,8 +142,8 @@ describe("Tag Actions", () => {
   // createTag
   describe("createTag", () => {
     it("should upsert and return the tag on success", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.tag.upsert as jest.Mock).mockResolvedValue(mockTag);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.tag.upsert as any).mockResolvedValue(mockTag);
 
       const result = await createTag("React");
 
@@ -156,8 +156,8 @@ describe("Tag Actions", () => {
     });
 
     it("should trim label and lowercase the value", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.tag.upsert as jest.Mock).mockResolvedValue(mockTag);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.tag.upsert as any).mockResolvedValue(mockTag);
 
       await createTag("  React  ");
 
@@ -169,7 +169,7 @@ describe("Tag Actions", () => {
     });
 
     it("should return error for empty label", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const result = await createTag("   ");
 
@@ -181,7 +181,7 @@ describe("Tag Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await createTag("React");
 
@@ -190,8 +190,8 @@ describe("Tag Actions", () => {
     });
 
     it("should handle database errors", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.tag.upsert as jest.Mock).mockRejectedValue(new Error("DB error"));
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.tag.upsert as any).mockRejectedValue(new Error("DB error"));
 
       const result = await createTag("React");
 
@@ -202,10 +202,10 @@ describe("Tag Actions", () => {
   // deleteTagById
   describe("deleteTagById", () => {
     it("should delete a tag that has no linked jobs or questions", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.count as jest.Mock).mockResolvedValue(0);
-      (prisma.question.count as jest.Mock).mockResolvedValue(0);
-      (prisma.tag.delete as jest.Mock).mockResolvedValue(mockTag);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.count as any).mockResolvedValue(0);
+      (prisma.question.count as any).mockResolvedValue(0);
+      (prisma.tag.delete as any).mockResolvedValue(mockTag);
 
       const result = await deleteTagById("tag-1");
 
@@ -216,9 +216,9 @@ describe("Tag Actions", () => {
     });
 
     it("should return error when tag is linked to jobs only", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.count as jest.Mock).mockResolvedValue(3);
-      (prisma.question.count as jest.Mock).mockResolvedValue(0);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.count as any).mockResolvedValue(3);
+      (prisma.question.count as any).mockResolvedValue(0);
 
       const result = await deleteTagById("tag-1");
 
@@ -231,9 +231,9 @@ describe("Tag Actions", () => {
     });
 
     it("should return error when tag is linked to questions only", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.count as jest.Mock).mockResolvedValue(0);
-      (prisma.question.count as jest.Mock).mockResolvedValue(5);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.count as any).mockResolvedValue(0);
+      (prisma.question.count as any).mockResolvedValue(5);
 
       const result = await deleteTagById("tag-1");
 
@@ -246,9 +246,9 @@ describe("Tag Actions", () => {
     });
 
     it("should return error when tag is linked to both jobs and questions", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.count as jest.Mock).mockResolvedValue(2);
-      (prisma.question.count as jest.Mock).mockResolvedValue(4);
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.count as any).mockResolvedValue(2);
+      (prisma.question.count as any).mockResolvedValue(4);
 
       const result = await deleteTagById("tag-1");
 
@@ -261,7 +261,7 @@ describe("Tag Actions", () => {
     });
 
     it("should return error for unauthenticated user", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (getCurrentUser as any).mockResolvedValue(null);
 
       const result = await deleteTagById("tag-1");
 
@@ -272,10 +272,10 @@ describe("Tag Actions", () => {
     });
 
     it("should handle database errors during deletion", async () => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.job.count as jest.Mock).mockResolvedValue(0);
-      (prisma.question.count as jest.Mock).mockResolvedValue(0);
-      (prisma.tag.delete as jest.Mock).mockRejectedValue(new Error("DB error"));
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.count as any).mockResolvedValue(0);
+      (prisma.question.count as any).mockResolvedValue(0);
+      (prisma.tag.delete as any).mockRejectedValue(new Error("DB error"));
 
       const result = await deleteTagById("tag-1");
 

@@ -3,19 +3,19 @@ import {
   addResumeSummary,
   updateResumeSummary,
 } from "@/actions/profile.actions";
-import "@testing-library/jest-dom";
 import { screen, render, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ResumeSection } from "@/models/profile.model";
+import { toast } from "@/components/ui/use-toast";
 
-jest.mock("@/actions/profile.actions", () => ({
-  addResumeSummary: jest.fn(),
-  updateResumeSummary: jest.fn(),
+vi.mock("@/actions/profile.actions", () => ({
+  addResumeSummary: vi.fn(),
+  updateResumeSummary: vi.fn(),
 }));
 
 // Mock TiptapEditor component
-jest.mock("@/components/TiptapEditor", () => {
-  return function TiptapEditor({ field }: any) {
+vi.mock("@/components/TiptapEditor", () => ({
+  default: function TiptapEditor({ field }: any) {
     return (
       <textarea
         data-testid="tiptap-editor"
@@ -24,21 +24,21 @@ jest.mock("@/components/TiptapEditor", () => {
         placeholder="Enter summary content"
       />
     );
-  };
-});
+  },
+}));
 
 // Mock toast
-jest.mock("@/components/ui/use-toast", () => ({
-  toast: jest.fn(),
+vi.mock("@/components/ui/use-toast", () => ({
+  toast: vi.fn(),
 }));
 
 describe("AddResumeSummary Component", () => {
-  const mockSetDialogOpen = jest.fn();
+  const mockSetDialogOpen = vi.fn();
   const mockResumeId = "resume-123";
   const user = userEvent.setup();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("should render Add Summary dialog with correct title", () => {
@@ -150,7 +150,7 @@ describe("AddResumeSummary Component", () => {
   });
 
   it("should call addResumeSummary when submitting a new summary", async () => {
-    (addResumeSummary as jest.Mock).mockResolvedValue({
+    (addResumeSummary as any).mockResolvedValue({
       success: true,
       message: "Summary created successfully",
     });
@@ -198,7 +198,7 @@ describe("AddResumeSummary Component", () => {
       },
     };
 
-    (updateResumeSummary as jest.Mock).mockResolvedValue({
+    (updateResumeSummary as any).mockResolvedValue({
       success: true,
       message: "Summary updated successfully",
     });
@@ -231,9 +231,9 @@ describe("AddResumeSummary Component", () => {
   });
 
   it("should close dialog and show success toast on successful submission", async () => {
-    const { toast } = require("@/components/ui/use-toast");
 
-    (addResumeSummary as jest.Mock).mockResolvedValue({
+
+    (addResumeSummary as any).mockResolvedValue({
       success: true,
       message: "Summary created successfully",
     });
@@ -271,9 +271,9 @@ describe("AddResumeSummary Component", () => {
   });
 
   it("should show error toast on failed submission", async () => {
-    const { toast } = require("@/components/ui/use-toast");
 
-    (addResumeSummary as jest.Mock).mockResolvedValue({
+
+    (addResumeSummary as any).mockResolvedValue({
       success: false,
       message: "Failed to create summary",
     });
@@ -312,7 +312,7 @@ describe("AddResumeSummary Component", () => {
   });
 
   it("should display loading indicator when form is submitting", async () => {
-    (addResumeSummary as jest.Mock).mockImplementation(
+    (addResumeSummary as any).mockImplementation(
       () =>
         new Promise((resolve) => {
           setTimeout(() => resolve({ success: true }), 100);
@@ -352,7 +352,7 @@ describe("AddResumeSummary Component", () => {
   });
 
   it("should show updated success message when editing", async () => {
-    const { toast } = require("@/components/ui/use-toast");
+
 
     const mockSummaryToEdit: ResumeSection = {
       id: "summary-1",
@@ -364,7 +364,7 @@ describe("AddResumeSummary Component", () => {
       },
     };
 
-    (updateResumeSummary as jest.Mock).mockResolvedValue({
+    (updateResumeSummary as any).mockResolvedValue({
       success: true,
       message: "Summary updated successfully",
     });

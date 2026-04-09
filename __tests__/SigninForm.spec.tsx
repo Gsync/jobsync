@@ -1,28 +1,27 @@
 import { authenticate } from "@/actions/auth.actions";
 import SigninForm from "@/components/auth/SigninForm";
-import "@testing-library/jest-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useRouter } from "next/navigation";
 
 // Mock the external dependencies
-jest.mock("@/actions/auth.actions", () => ({
-  authenticate: jest.fn(),
+vi.mock("@/actions/auth.actions", () => ({
+  authenticate: vi.fn(),
 }));
 
-jest.mock("next/navigation", () => ({
-  useRouter: jest.fn(),
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(),
 }));
 
 describe("SigninForm Component", () => {
-  const mockPush = jest.fn();
+  const mockPush = vi.fn();
 
   beforeEach(() => {
-    (useRouter as jest.Mock).mockReturnValue({ push: mockPush });
+    (useRouter as any).mockReturnValue({ push: mockPush });
     render(<SigninForm />);
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("renders the SigninForm component correctly", () => {
@@ -61,7 +60,7 @@ describe("SigninForm Component", () => {
   });
 
   it("submits the form successfully", async () => {
-    (authenticate as jest.Mock).mockResolvedValueOnce(null);
+    (authenticate as any).mockResolvedValueOnce(null);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "admin@example.com" },
@@ -80,7 +79,7 @@ describe("SigninForm Component", () => {
 
   it("shows an error message on failed submit", async () => {
     const errorMessage = "Invalid credentials";
-    (authenticate as jest.Mock).mockResolvedValueOnce(errorMessage);
+    (authenticate as any).mockResolvedValueOnce(errorMessage);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "admin@example.com" },

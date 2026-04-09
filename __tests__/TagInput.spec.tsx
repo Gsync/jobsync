@@ -1,32 +1,32 @@
 import React, { useState } from "react";
 import { TagInput } from "@/components/myjobs/TagInput";
 import { Tag } from "@/models/job.model";
-import "@testing-library/jest-dom";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createTag } from "@/actions/tag.actions";
+import { toast } from "@/components/ui/use-toast";
 
-jest.mock("@/actions/tag.actions", () => ({
-  createTag: jest.fn(),
+vi.mock("@/actions/tag.actions", () => ({
+  createTag: vi.fn(),
 }));
 
-jest.mock("@/components/ui/use-toast", () => ({
-  toast: jest.fn(),
+vi.mock("@/components/ui/use-toast", () => ({
+  toast: vi.fn(),
 }));
 
 // Required by Radix UI Popover / Command components
-global.ResizeObserver = jest.fn().mockImplementation(() => ({
-  observe: jest.fn(),
-  unobserve: jest.fn(),
-  disconnect: jest.fn(),
-}));
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
-window.HTMLElement.prototype.scrollIntoView = jest.fn();
-window.HTMLElement.prototype.hasPointerCapture = jest.fn();
+window.HTMLElement.prototype.scrollIntoView = vi.fn();
+window.HTMLElement.prototype.hasPointerCapture = vi.fn();
 
 document.createRange = () => {
   const range = new Range();
-  range.getBoundingClientRect = jest.fn().mockReturnValue({
+  range.getBoundingClientRect = vi.fn().mockReturnValue({
     bottom: 0,
     height: 0,
     left: 0,
@@ -37,7 +37,7 @@ document.createRange = () => {
   range.getClientRects = () => ({
     item: () => null,
     length: 0,
-    [Symbol.iterator]: jest.fn(),
+    [Symbol.iterator]: vi.fn(),
   });
   return range;
 };
@@ -75,7 +75,7 @@ describe("TagInput Component", () => {
   const user = userEvent.setup({ skipHover: true });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("renders the trigger button with default placeholder text", () => {
@@ -213,7 +213,7 @@ describe("TagInput Component", () => {
       value: "graphql",
       createdBy: "user-1",
     };
-    (createTag as jest.Mock).mockResolvedValue({ success: true, data: newTag });
+    (createTag as any).mockResolvedValue({ success: true, data: newTag });
 
     render(<ControlledTagInput availableTags={MOCK_TAGS} />);
 
@@ -231,8 +231,8 @@ describe("TagInput Component", () => {
   });
 
   it("shows a toast error and keeps the popover open when createTag fails", async () => {
-    const { toast } = require("@/components/ui/use-toast");
-    (createTag as jest.Mock).mockResolvedValue({
+
+    (createTag as any).mockResolvedValue({
       success: false,
       message: "Server error",
     });
