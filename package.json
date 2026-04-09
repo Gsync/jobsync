@@ -95,6 +95,7 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "handlebars": ">=4.7.9",
-    "lodash": ">=4.18.0"
+    "lodash": ">=4.18.0",
+    "picomatch": ">=2.3.2"
   }
 }
