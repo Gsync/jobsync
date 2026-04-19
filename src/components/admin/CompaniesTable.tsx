@@ -88,6 +88,7 @@ function CompaniesTable({
             <TableHead>Company Name</TableHead>
             <TableHead className="hidden sm:table-cell">Value</TableHead>
             <TableHead>Jobs Applied</TableHead>
+            <TableHead>Rejected</TableHead>
             <TableHead>Actions</TableHead>
             <TableHead>
               <span className="sr-only">Actions</span>
@@ -121,6 +122,9 @@ function CompaniesTable({
                   ) : (
                     (company._count?.jobsApplied ?? 0)
                   )}
+                </TableCell>
+                <TableCell className="font-medium">
+                  {company._count?.jobsRejected ?? 0}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>

@@ -20,7 +20,7 @@ export const getCompanyList = async (
     }
     const skip = (page - 1) * limit;
 
-    const [data, total] = await Promise.all([
+    const [data, total, rejectedCounts] = await Promise.all([
       prisma.company.findMany({
         where: {
           createdBy: user.id,
@@ -57,8 +57,35 @@ export const getCompanyList = async (
           createdBy: user.id,
         },
       }),
+      countBy
+        ? prisma.job.groupBy({
+            by: ["companyId"],
+            where: {
+              userId: user.id,
+              Status: { value: "rejected" },
+            },
+            _count: { id: true },
+          })
+        : Promise.resolve([]),
     ]);
-    return { data, total };
+
+    const rejectedMap = new Map(
+      (rejectedCounts as { companyId: string; _count: { id: number } }[]).map(
+        (r) => [r.companyId, r._count.id],
+      ),
+    );
+
+    const dataWithRejected = countBy
+      ? (data as any[]).map((company) => ({
+          ...company,
+          _count: {
+            ...(company._count ?? {}),
+            jobsRejected: rejectedMap.get(company.id) ?? 0,
+          },
+        }))
+      : data;
+
+    return { data: dataWithRejected, total };
   } catch (error) {
     const msg = "Failed to fetch company list. ";
     return handleError(error, msg);

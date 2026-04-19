@@ -72,6 +72,7 @@ export interface Company {
   logoUrl?: string;
   _count?: {
     jobsApplied: number;
+    jobsRejected?: number;
   };
 }
 
