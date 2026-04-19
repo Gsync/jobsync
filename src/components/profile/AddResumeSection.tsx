@@ -19,6 +19,7 @@ import {
 import AddResumeSummary from "./AddResumeSummary";
 import AddExperience from "./AddExperience";
 import AddEducation from "./AddEducation";
+import AddCertification from "./AddCertification";
 
 interface AddResumeSectionProps {
   resume: Resume;
@@ -29,6 +30,7 @@ export interface AddResumeSectionRef {
   openSummaryDialog: (s: ResumeSection) => void;
   openExperienceDialog: (s: ResumeSection) => void;
   openEducationDialog: (s: ResumeSection) => void;
+  openCertificationDialog: (s: ResumeSection) => void;
 }
 
 const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
@@ -37,14 +39,18 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
     const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
     const [experienceDialogOpen, setExperienceDialogOpen] = useState(false);
     const [educationDialogOpen, setEducationDialogOpen] = useState(false);
+    const [certificationDialogOpen, setCertificationDialogOpen] =
+      useState(false);
     const [contactInfoToEdit, setContactInfoToEdit] =
       useState<ContactInfo | null>(null);
     const [summaryToEdit, setSummaryToEdit] = useState<ResumeSection | null>(
-      null
+      null,
     );
     const [experienceToEdit, setExperienceToEdit] =
       useState<ResumeSection | null>(null);
     const [educationToEdit, setEducationToEdit] =
+      useState<ResumeSection | null>(null);
+    const [certificationToEdit, setCertificationToEdit] =
       useState<ResumeSection | null>(null);
     useImperativeHandle(ref, () => ({
       openContactInfoDialog(contactInfo: ContactInfo) {
@@ -63,21 +69,31 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
         setEducationDialogOpen(true);
         setEducationToEdit({ ...educationSection });
       },
+      openCertificationDialog(certificationSection: ResumeSection) {
+        setCertificationDialogOpen(true);
+        setCertificationToEdit({ ...certificationSection });
+      },
     }));
     const summarySection = resume?.ResumeSections?.find(
-      (section) => section.sectionType === SectionType.SUMMARY
+      (section) => section.sectionType === SectionType.SUMMARY,
     );
     const experienceSection = resume?.ResumeSections?.find(
-      (section) => section.sectionType === SectionType.EXPERIENCE
+      (section) => section.sectionType === SectionType.EXPERIENCE,
     );
     const educationSection = resume?.ResumeSections?.find(
-      (section) => section.sectionType === SectionType.EDUCATION
+      (section) => section.sectionType === SectionType.EDUCATION,
+    );
+    const certificationSection = resume?.ResumeSections?.find(
+      (section) => section.sectionType === SectionType.CERTIFICATION,
     );
     const resetExperienceToEdit = () => {
       setExperienceToEdit(null);
     };
     const resetEducationToEdit = () => {
       setEducationToEdit(null);
+    };
+    const resetCertificationToEdit = () => {
+      setCertificationToEdit(null);
     };
     const openContactInfoDialog = () => setContactInfoDialogOpen(true);
     const openSummaryDialog = () => setSummaryDialogOpen(true);
@@ -92,6 +108,12 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
         resetEducationToEdit();
       }
       setEducationDialogOpen(true);
+    };
+    const openCertificationDialog = () => {
+      if (certificationToEdit) {
+        resetCertificationToEdit();
+      }
+      setCertificationDialogOpen(true);
     };
     return (
       <>
@@ -136,6 +158,12 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
               >
                 Add Education
               </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={openCertificationDialog}
+              >
+                Add Certification / License
+              </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -165,9 +193,16 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
           setDialogOpen={setEducationDialogOpen}
           educationToEdit={educationToEdit!}
         />
+        <AddCertification
+          resumeId={resume?.id}
+          sectionId={certificationSection?.id}
+          dialogOpen={certificationDialogOpen}
+          setDialogOpen={setCertificationDialogOpen}
+          certificationToEdit={certificationToEdit!}
+        />
       </>
     );
-  }
+  },
 );
 
 AddResumeSection.displayName = "AddResumeSection";

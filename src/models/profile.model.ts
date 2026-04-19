@@ -63,6 +63,15 @@ export interface SummarySectionForm {
   content: string;
 }
 
+export interface LicenseOrCertification {
+  id?: string;
+  title: string;
+  organization: string;
+  issueDate?: Date;
+  expirationDate?: Date;
+  credentialUrl?: string;
+}
+
 export interface ResumeSection {
   id?: string;
   resumeId: string;
@@ -71,6 +80,7 @@ export interface ResumeSection {
   summary?: Summary;
   workExperiences?: WorkExperience[];
   educations?: Education[];
+  licenseOrCertifications?: LicenseOrCertification[];
 }
 
 export interface WorkExperience {

@@ -118,6 +118,13 @@ interface ResumeWithSections extends PrismaResume {
       description: string | null;
       location: { label: string };
     }>;
+    licenseOrCertifications: Array<{
+      title: string;
+      organization: string;
+      issueDate: Date | null;
+      expirationDate: Date | null;
+      credentialUrl: string | null;
+    }>;
   }>;
 }
 
@@ -163,6 +170,7 @@ export async function runAutomation(
                 location: true,
               },
             },
+            licenseOrCertifications: true,
           },
         },
       },
@@ -307,7 +315,8 @@ export async function runAutomation(
 
       jobsProcessed++;
 
-      const modelName = aiSettings.model || getDefaultModelForProvider(aiSettings.provider);
+      const modelName =
+        aiSettings.model || getDefaultModelForProvider(aiSettings.provider);
       automationLogger.log(
         automation.id,
         "info",
@@ -593,6 +602,27 @@ async function convertResumeForMatch(
           `Degree: ${edu.degree}`,
           `Field: ${edu.fieldOfStudy}`,
           edu.description ? `Description: ${edu.description}` : "",
+          "",
+        );
+      }
+    }
+
+    if (
+      (section.sectionType === "certification" ||
+        section.sectionType === "license") &&
+      section.licenseOrCertifications.length > 0
+    ) {
+      parts.push(`## ${section.sectionType.toUpperCase()}S`);
+      for (const cert of section.licenseOrCertifications) {
+        parts.push(
+          `Title: ${cert.title}`,
+          `Organization: ${cert.organization}`,
+          cert.issueDate
+            ? `Issue Date: ${new Date(cert.issueDate).toLocaleDateString("en-US", { month: "short", year: "numeric" })}`
+            : "",
+          cert.expirationDate
+            ? `Expiration Date: ${new Date(cert.expirationDate).toLocaleDateString("en-US", { month: "short", year: "numeric" })}`
+            : "No Expiration",
           "",
         );
       }

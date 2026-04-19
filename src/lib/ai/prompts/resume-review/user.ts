@@ -37,8 +37,9 @@ ${resumeText}
    - suggestions: Specific replacement recommendations
 
 5. **Section Feedback** - Evaluate each resume section:
-   - Key by section name (Summary, Experience, Skills, Education, etc.)
+   - Key by section name (Summary, Experience, Skills, Education, Certifications, etc.)
    - Provide status (good/needsWork/missing) and specific feedback
+   - For Certifications/Licenses: assess relevance to the target role and whether any key certs are missing
 
 6. **ATS Issues** - Only list issues that ACTUALLY EXIST in this resume:
    - Check for: tables, graphics, unusual fonts (only report if found)

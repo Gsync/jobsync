@@ -3,6 +3,7 @@ import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { AddEducationFormSchema } from "@/models/AddEductionForm.schema";
 import { AddContactInfoFormSchema } from "@/models/addContactInfoForm.schema";
+import { AddCertificationFormSchema } from "@/models/addCertificationForm.schema";
 import { AddExperienceFormSchema } from "@/models/addExperienceForm.schema";
 import { AddSummarySectionFormSchema } from "@/models/addSummaryForm.schema";
 import { CreateResumeFormSchema } from "@/models/createResumeForm.schema";
@@ -17,7 +18,7 @@ import { writeFile } from "fs/promises";
 
 export const getResumeList = async (
   page: number = 1,
-  limit: number = APP_CONSTANTS.RECORDS_PER_PAGE
+  limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -68,7 +69,7 @@ export const getResumeList = async (
 };
 
 export const getResumeById = async (
-  resumeId: string
+  resumeId: string,
 ): Promise<any | undefined> => {
   try {
     if (!resumeId) {
@@ -103,6 +104,7 @@ export const getResumeById = async (
                 location: true,
               },
             },
+            licenseOrCertifications: true,
           },
         },
       },
@@ -115,7 +117,7 @@ export const getResumeById = async (
 };
 
 export const addContactInfo = async (
-  data: z.infer<typeof AddContactInfoFormSchema>
+  data: z.infer<typeof AddContactInfoFormSchema>,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -154,7 +156,7 @@ export const addContactInfo = async (
 };
 
 export const updateContactInfo = async (
-  data: z.infer<typeof AddContactInfoFormSchema>
+  data: z.infer<typeof AddContactInfoFormSchema>,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -188,7 +190,7 @@ export const updateContactInfo = async (
 export const createResumeProfile = async (
   title: string,
   fileName: string,
-  filePath?: string
+  filePath?: string,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -252,7 +254,7 @@ export const createResumeProfile = async (
 
 const createFileEntry = async (
   fileName: string | undefined,
-  filePath: string | undefined
+  filePath: string | undefined,
 ) => {
   const newFileEntry = await prisma.file.create({
     data: {
@@ -269,7 +271,7 @@ export const editResume = async (
   title: string,
   fileId?: string,
   fileName?: string,
-  filePath?: string
+  filePath?: string,
 ): Promise<any | undefined> => {
   try {
     let resolvedFileId = fileId;
@@ -285,7 +287,7 @@ export const editResume = async (
 
       if (!isValidFileId) {
         throw new Error(
-          `The provided FileId "${resolvedFileId}" does not exist.`
+          `The provided FileId "${resolvedFileId}" does not exist.`,
         );
       }
     }
@@ -311,7 +313,7 @@ export const editResume = async (
 
 export const deleteResumeById = async (
   resumeId: string,
-  fileId?: string
+  fileId?: string,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -347,6 +349,14 @@ export const deleteResumeById = async (
       });
 
       await prisma.education.deleteMany({
+        where: {
+          ResumeSection: {
+            resumeId: resumeId,
+          },
+        },
+      });
+
+      await prisma.licenseOrCertification.deleteMany({
         where: {
           ResumeSection: {
             resumeId: resumeId,
@@ -412,7 +422,7 @@ export const deleteFile = async (fileId: string) => {
 };
 
 export const addResumeSummary = async (
-  data: z.infer<typeof AddSummarySectionFormSchema>
+  data: z.infer<typeof AddSummarySectionFormSchema>,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -449,7 +459,7 @@ export const addResumeSummary = async (
 };
 
 export const updateResumeSummary = async (
-  data: z.infer<typeof AddSummarySectionFormSchema>
+  data: z.infer<typeof AddSummarySectionFormSchema>,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -489,7 +499,7 @@ export const updateResumeSummary = async (
 };
 
 export const addExperience = async (
-  data: z.infer<typeof AddExperienceFormSchema>
+  data: z.infer<typeof AddExperienceFormSchema>,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -538,7 +548,7 @@ export const addExperience = async (
 };
 
 export const updateExperience = async (
-  data: z.infer<typeof AddExperienceFormSchema>
+  data: z.infer<typeof AddExperienceFormSchema>,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -578,7 +588,7 @@ export const updateExperience = async (
 };
 
 export const addEducation = async (
-  data: z.infer<typeof AddEducationFormSchema>
+  data: z.infer<typeof AddEducationFormSchema>,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -623,7 +633,7 @@ export const addEducation = async (
 };
 
 export const updateEducation = async (
-  data: z.infer<typeof AddEducationFormSchema>
+  data: z.infer<typeof AddEducationFormSchema>,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -659,6 +669,81 @@ export const updateEducation = async (
     return { data: summary, success: true };
   } catch (error) {
     const msg = "Failed to update education.";
+    return handleError(error, msg);
+  }
+};
+
+export const addCertification = async (
+  data: z.infer<typeof AddCertificationFormSchema>,
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const section = !data.sectionId
+      ? await prisma.resumeSection.create({
+          data: {
+            resumeId: data.resumeId!,
+            sectionTitle: data.sectionTitle!,
+            sectionType: SectionType.CERTIFICATION,
+          },
+        })
+      : undefined;
+
+    const result = await prisma.resumeSection.update({
+      where: {
+        id: section ? section.id : data.sectionId,
+      },
+      data: {
+        licenseOrCertifications: {
+          create: {
+            title: data.title,
+            organization: data.organization,
+            issueDate: data.issueDate,
+            expirationDate: data.expirationDate,
+            credentialUrl: data.credentialUrl,
+          },
+        },
+      },
+    });
+    revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
+    return { data: result, success: true };
+  } catch (error) {
+    const msg = "Failed to create certification.";
+    return handleError(error, msg);
+  }
+};
+
+export const updateCertification = async (
+  data: z.infer<typeof AddCertificationFormSchema>,
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const result = await prisma.licenseOrCertification.update({
+      where: {
+        id: data.id,
+        ResumeSection: { Resume: { profile: { userId: user.id } } },
+      },
+      data: {
+        title: data.title,
+        organization: data.organization,
+        issueDate: data.issueDate,
+        expirationDate: data.expirationDate,
+        credentialUrl: data.credentialUrl,
+      },
+    });
+    revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
+    return { data: result, success: true };
+  } catch (error) {
+    const msg = "Failed to update certification.";
     return handleError(error, msg);
   }
 };

@@ -29,9 +29,14 @@ vi.mock("@prisma/client", () => {
     },
     job: {
       count: vi.fn(),
+      groupBy: vi.fn(),
     },
   };
-  return { PrismaClient: vi.fn(function() { return mPrismaClient; }) };
+  return {
+    PrismaClient: vi.fn(function () {
+      return mPrismaClient;
+    }),
+  };
 });
 
 vi.mock("@/utils/user.utils", () => ({
@@ -104,10 +109,15 @@ describe("Company Actions", () => {
 
       (prisma.company.findMany as any).mockResolvedValue(mockData);
       (prisma.company.count as any).mockResolvedValue(mockTotal);
+      (prisma.job.groupBy as any).mockResolvedValue([]);
 
       const result = await getCompanyList(1, 10, "applied");
 
-      expect(result).toEqual({ data: mockData, total: mockTotal });
+      const expectedData = mockData.map((c) => ({
+        ...c,
+        _count: { jobsRejected: 0 },
+      }));
+      expect(result).toEqual({ data: expectedData, total: mockTotal });
       expect(prisma.company.findMany).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
         skip: 0,
@@ -135,9 +145,7 @@ describe("Company Actions", () => {
     });
 
     it("should handle errors", async () => {
-      (getCurrentUser as any).mockRejectedValue(
-        new Error("Database error"),
-      );
+      (getCurrentUser as any).mockRejectedValue(new Error("Database error"));
 
       await expect(getCompanyList(1, 10)).resolves.toStrictEqual({
         success: false,
@@ -248,9 +256,7 @@ describe("Company Actions", () => {
         value: "new company",
         createdBy: mockUser.id,
       };
-      (prisma.company.findFirst as any).mockResolvedValue(
-        mockExistingCompany,
-      );
+      (prisma.company.findFirst as any).mockResolvedValue(mockExistingCompany);
 
       const result = await addCompany(validData);
 
@@ -379,9 +385,7 @@ describe("Company Actions", () => {
         value: "updated company",
       };
 
-      (prisma.company.update as any).mockResolvedValue(
-        mockUpdatedCompany,
-      );
+      (prisma.company.update as any).mockResolvedValue(mockUpdatedCompany);
 
       const result = await updateCompany(validData);
 
@@ -492,9 +496,7 @@ describe("Company Actions", () => {
         value: "updated company",
       };
 
-      (prisma.company.update as any).mockResolvedValue(
-        mockUpdatedCompany,
-      );
+      (prisma.company.update as any).mockResolvedValue(mockUpdatedCompany);
 
       const result = await updateCompany({
         ...validData,

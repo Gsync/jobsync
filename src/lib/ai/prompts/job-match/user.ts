@@ -8,7 +8,7 @@
  */
 export function buildJobMatchPrompt(
   resumeText: string,
-  jobDescription: string
+  jobDescription: string,
 ): string {
   return `Compare this resume against the job description and return a JSON analysis.
 
@@ -25,7 +25,7 @@ Analyze the match and provide:
 - skills comparison (matched, missing, transferable, bonus)
 - experience assessment (level match, years, relevance)
 - keywords (matched, missing, phrases to add)
-- dealBreakers (critical missing requirements)
+- dealBreakers (critical missing requirements, including mandatory certifications or licenses)
 - tailoringTips (specific resume changes)
 - summary (2-3 sentence assessment)
 

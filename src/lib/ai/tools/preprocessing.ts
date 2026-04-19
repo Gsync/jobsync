@@ -7,6 +7,7 @@
 import {
   ContactInfo,
   Education,
+  LicenseOrCertification,
   Resume,
   ResumeSection,
   SectionType,
@@ -156,6 +157,26 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
         .join("\n\n");
     };
 
+    const formatCertifications = (certs?: LicenseOrCertification[]) => {
+      if (!certs || certs.length === 0) return "";
+      return certs
+        .map((cert) => {
+          const issueDate = cert.issueDate ? formatDate(cert.issueDate) : null;
+          const expirationDate = cert.expirationDate
+            ? formatDate(cert.expirationDate)
+            : "No Expiration";
+          const parts = [
+            `Title: ${cert.title}`,
+            `Organization: ${cert.organization}`,
+            issueDate ? `Issue Date: ${issueDate}` : "",
+            issueDate ? `Expiration Date: ${expirationDate}` : "",
+            cert.credentialUrl ? `Credential URL: ${cert.credentialUrl}` : "",
+          ].filter(Boolean);
+          return parts.join("\n");
+        })
+        .join("\n\n");
+    };
+
     const formatResumeSections = (sections?: ResumeSection[]) => {
       if (!sections || sections.length === 0) return "";
       return sections
@@ -172,6 +193,15 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
             case SectionType.EDUCATION: {
               const content = formatEducation(section.educations);
               return content ? `## EDUCATION\n${content}` : "";
+            }
+            case SectionType.CERTIFICATION:
+            case SectionType.LICENSE: {
+              const content = formatCertifications(
+                section.licenseOrCertifications,
+              );
+              return content
+                ? `## ${section.sectionTitle.toUpperCase()}\n${content}`
+                : "";
             }
             default:
               return "";

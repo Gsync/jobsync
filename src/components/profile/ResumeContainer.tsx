@@ -7,6 +7,7 @@ import { useRef } from "react";
 import SummarySectionCard from "./SummarySectionCard";
 import ExperienceCard from "./ExperienceCard";
 import EducationCard from "./EducationCard";
+import CertificationCard from "./CertificationCard";
 import AiResumeReviewSection from "./AiResumeReviewSection";
 import { DownloadFileButton } from "./DownloadFileButton";
 
@@ -14,13 +15,16 @@ function ResumeContainer({ resume }: { resume: Resume }) {
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
   const { title, ContactInfo, ResumeSections } = resume ?? {};
   const summarySection = ResumeSections?.find(
-    (section) => section.sectionType === SectionType.SUMMARY
+    (section) => section.sectionType === SectionType.SUMMARY,
   );
   const experienceSection = ResumeSections?.find(
-    (section) => section.sectionType === SectionType.EXPERIENCE
+    (section) => section.sectionType === SectionType.EXPERIENCE,
   );
   const educationSection = ResumeSections?.find(
-    (section) => section.sectionType === SectionType.EDUCATION
+    (section) => section.sectionType === SectionType.EDUCATION,
+  );
+  const certificationSection = ResumeSections?.find(
+    (section) => section.sectionType === SectionType.CERTIFICATION,
   );
   const openContactInfoDialog = () => {
     resumeSectionRef.current?.openContactInfoDialog(ContactInfo!);
@@ -32,7 +36,7 @@ function ResumeContainer({ resume }: { resume: Resume }) {
     const section: ResumeSection = {
       ...experienceSection!,
       workExperiences: experienceSection?.workExperiences?.filter(
-        (exp) => exp.id === experienceId
+        (exp) => exp.id === experienceId,
       ),
     };
     resumeSectionRef.current?.openExperienceDialog(section);
@@ -41,10 +45,20 @@ function ResumeContainer({ resume }: { resume: Resume }) {
     const section: ResumeSection = {
       ...educationSection!,
       educations: educationSection?.educations?.filter(
-        (edu) => edu.id === educationId
+        (edu) => edu.id === educationId,
       ),
     };
     resumeSectionRef.current?.openEducationDialog(section);
+  };
+  const openCertificationDialogForEdit = (certificationId: string) => {
+    const section: ResumeSection = {
+      ...certificationSection!,
+      licenseOrCertifications:
+        certificationSection?.licenseOrCertifications?.filter(
+          (cert) => cert.id === certificationId,
+        ),
+    };
+    resumeSectionRef.current?.openCertificationDialog(section);
   };
 
   return (
@@ -57,7 +71,7 @@ function ResumeContainer({ resume }: { resume: Resume }) {
               ? DownloadFileButton(
                   resume.File?.filePath,
                   title,
-                  resume.File?.fileName
+                  resume.File?.fileName,
                 )
               : title}
           </CardDescription>
@@ -89,6 +103,12 @@ function ResumeContainer({ resume }: { resume: Resume }) {
         <EducationCard
           educationSection={educationSection}
           openDialogForEdit={openEducationDialogForEdit}
+        />
+      )}
+      {certificationSection && (
+        <CertificationCard
+          certificationSection={certificationSection}
+          openDialogForEdit={openCertificationDialogForEdit}
         />
       )}
     </>
