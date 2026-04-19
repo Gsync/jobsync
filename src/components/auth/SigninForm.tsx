@@ -17,6 +17,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { SigninFormSchema } from "@/models/signinForm.schema";
 import Loading from "../Loading";
+import { Eye, EyeOff } from "lucide-react";
 
 function SigninForm() {
   const [isPending, startTransition] = useTransition();
@@ -31,6 +32,7 @@ function SigninForm() {
   });
 
   const [errorMessage, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const onSubmit = async (data: z.infer<typeof SigninFormSchema>) => {
@@ -67,6 +69,8 @@ function SigninForm() {
                     <FormControl>
                       <Input
                         id="email"
+                        type="email"
+                        autoComplete="email"
                         placeholder="id@example.com"
                         {...field}
                       />
@@ -84,7 +88,34 @@ function SigninForm() {
                   <FormItem>
                     <FormLabel htmlFor="password">Password</FormLabel>
                     <FormControl>
-                      <Input id="password" type="password" {...field} />
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          autoComplete="current-password"
+                          spellCheck={false}
+                          autoCorrect="off"
+                          autoCapitalize="off"
+                          {...field}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3 text-muted-foreground"
+                          onClick={() => setShowPassword((v) => !v)}
+                          aria-label={
+                            showPassword ? "Hide password" : "Show password"
+                          }
+                          tabIndex={-1}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" aria-hidden="true" />
+                          ) : (
+                            <Eye className="h-4 w-4" aria-hidden="true" />
+                          )}
+                        </Button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -44,6 +44,14 @@ export function SupportDialog({ open, onOpenChange }: SupportDialogProps) {
             <p className="text-sm text-muted-foreground">
               © {currentYear} JobSync. All rights reserved.
             </p>
+            <a
+              href="https://jobsync.ca/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-primary hover:underline"
+            >
+              https://jobsync.ca/
+            </a>
           </div>
         </div>
       </DialogContent>

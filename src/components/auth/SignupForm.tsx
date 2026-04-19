@@ -17,6 +17,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { SignupFormSchema } from "@/models/signupForm.schema";
 import Loading from "../Loading";
+import { Eye, EyeOff } from "lucide-react";
 
 function SignupForm() {
   const [isPending, startTransition] = useTransition();
@@ -32,6 +33,7 @@ function SignupForm() {
   });
 
   const [errorMessage, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const onSubmit = async (data: z.infer<typeof SignupFormSchema>) => {
@@ -81,7 +83,12 @@ function SignupForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="id@example.com" {...field} />
+                    <Input
+                      type="email"
+                      autoComplete="email"
+                      placeholder="id@example.com"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -96,7 +103,33 @@ function SignupForm() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" {...field} />
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        spellCheck={false}
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        {...field}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 text-muted-foreground"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={
+                          showPassword ? "Hide password" : "Show password"
+                        }
+                        tabIndex={-1}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" aria-hidden="true" />
+                        ) : (
+                          <Eye className="h-4 w-4" aria-hidden="true" />
+                        )}
+                      </Button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
