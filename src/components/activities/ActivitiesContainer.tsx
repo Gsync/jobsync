@@ -3,7 +3,7 @@ import ActivitiesTable from "./ActivitiesTable";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { PlusCircle, Search } from "lucide-react";
+import { Loader, PlusCircle, Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Dialog,
@@ -27,12 +27,14 @@ function ActivitiesContainer() {
   const [activitiesList, setActivitiesList] = useState<Activity[]>([]);
   const [page, setPage] = useState<number>(1);
   const [totalActivities, setTotalActivities] = useState<number>(0);
-  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [recordsPerPage, setRecordsPerPage] = useState<number>(
     APP_CONSTANTS.RECORDS_PER_PAGE,
   );
   const [searchTerm, setSearchTerm] = useState("");
   const hasSearched = useRef(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const { currentActivity, startActivity } = useActivity();
   const prevActivityRef = useRef<Activity | undefined>(undefined);
@@ -41,7 +43,8 @@ function ActivitiesContainer() {
 
   const loadActivities = useCallback(
     async (page: number, limit: number, search?: string) => {
-      setLoading(true);
+      if (page === 1) setInitialLoading(true);
+      else setLoadingMore(true);
       try {
         const { data, success, message, total } = await getActivitiesList(
           page,
@@ -66,7 +69,8 @@ function ActivitiesContainer() {
           description: "Failed to load activities. Please try again.",
         });
       } finally {
-        setLoading(false);
+        setInitialLoading(false);
+        setLoadingMore(false);
       }
     },
     [],
@@ -108,6 +112,38 @@ function ActivitiesContainer() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm]);
+
+  // Infinite scroll: auto-load next page when sentinel is visible
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          !initialLoading &&
+          !loadingMore &&
+          activitiesList.length < totalActivities
+        ) {
+          loadActivities(page + 1, recordsPerPage, searchTerm || undefined);
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [
+    activitiesList.length,
+    totalActivities,
+    page,
+    recordsPerPage,
+    searchTerm,
+    initialLoading,
+    loadingMore,
+    loadActivities,
+  ]);
 
   return (
     <Card>
@@ -153,7 +189,7 @@ function ActivitiesContainer() {
         </div>
       </CardHeader>
       <CardContent>
-        {loading && <Loading />}
+        {initialLoading && <Loading />}
         {activitiesList.length > 0 && (
           <>
             <ActivitiesTable
@@ -178,22 +214,10 @@ function ActivitiesContainer() {
           </>
         )}
         {activitiesList.length < totalActivities && (
-          <div className="flex justify-center p-4">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() =>
-                loadActivities(
-                  page + 1,
-                  recordsPerPage,
-                  searchTerm || undefined,
-                )
-              }
-              disabled={loading}
-              className="btn btn-primary"
-            >
-              {loading ? "Loading..." : "Load More"}
-            </Button>
+          <div ref={sentinelRef} className="flex justify-center p-4">
+            {loadingMore && (
+              <Loader className="h-5 w-5 animate-spin text-blue-500" />
+            )}
           </div>
         )}
       </CardContent>

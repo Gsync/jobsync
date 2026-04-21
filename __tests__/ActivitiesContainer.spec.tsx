@@ -56,6 +56,16 @@ global.ResizeObserver = class ResizeObserver {
   disconnect() {}
 };
 
+let intersectionCallback: IntersectionObserverCallback;
+global.IntersectionObserver = class IntersectionObserver {
+  constructor(callback: IntersectionObserverCallback) {
+    intersectionCallback = callback;
+  }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as any;
+
 document.createRange = () => {
   const range = new Range();
 
@@ -380,8 +390,8 @@ describe("ActivitiesContainer Search Functionality", () => {
     });
   });
 
-  describe("Load More with Search", () => {
-    it("should preserve search term when loading more", async () => {
+  describe("Infinite Scroll with Search", () => {
+    it("should preserve search term when loading more via scroll", async () => {
       (getActivitiesList as any).mockResolvedValue({
         success: true,
         data: mockActivities,
@@ -391,7 +401,7 @@ describe("ActivitiesContainer Search Functionality", () => {
       renderComponent();
 
       await waitFor(() => {
-        expect(screen.getByText("Load More")).toBeInTheDocument();
+        expect(screen.getByText("TypeScript Learning")).toBeInTheDocument();
       });
 
       // Type search
@@ -408,13 +418,15 @@ describe("ActivitiesContainer Search Functionality", () => {
         expect(getActivitiesList).toHaveBeenCalledWith(1, 25, "Learning");
       });
 
-      // Click load more
-      const loadMoreButton = screen.getByText("Load More");
+      // Simulate sentinel becoming visible
       await act(async () => {
-        await user.click(loadMoreButton);
+        intersectionCallback(
+          [{ isIntersecting: true }] as IntersectionObserverEntry[],
+          {} as IntersectionObserver,
+        );
       });
 
-      // Should include search term in load more call
+      // Should include search term in infinite scroll call
       await waitFor(() => {
         expect(getActivitiesList).toHaveBeenCalledWith(2, 25, "Learning");
       });

@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "../ui/card";
 import { Button } from "../ui/button";
-import { ListFilter, PlusCircle, Filter, Search } from "lucide-react";
+import { ListFilter, Loader, PlusCircle, Filter, Search } from "lucide-react";
 import { Input } from "../ui/input";
 import {
   deleteTaskById,
@@ -68,7 +68,8 @@ function TasksContainer({
   const [page, setPage] = useState(1);
   const [totalTasks, setTotalTasks] = useState(0);
   const [editTask, setEditTask] = useState<Task | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [groupBy, setGroupBy] = useState<
     "none" | "createdDate" | "dueDate" | "updatedDate" | "activityType"
   >("none");
@@ -81,6 +82,7 @@ function TasksContainer({
   );
   const [searchTerm, setSearchTerm] = useState("");
   const hasSearched = useRef(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
 
   // Avoid hydration mismatch with Radix UI components
@@ -97,7 +99,8 @@ function TasksContainer({
       statuses?: TaskStatus[],
       search?: string,
     ) => {
-      setLoading(true);
+      if (pageNum === 1) setInitialLoading(true);
+      else setLoadingMore(true);
       const { success, data, total, message } = await getTasksList(
         pageNum,
         tasksPerPage,
@@ -109,15 +112,15 @@ function TasksContainer({
         setTasks((prev) => (pageNum === 1 ? data : [...prev, ...data]));
         setTotalTasks(total);
         setPage(pageNum);
-        setLoading(false);
       } else {
         toast({
           variant: "destructive",
           title: "Error!",
           description: message,
         });
-        setLoading(false);
       }
+      setInitialLoading(false);
+      setLoadingMore(false);
     },
     [tasksPerPage],
   );
@@ -227,6 +230,44 @@ function TasksContainer({
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm]);
+
+  // Infinite scroll: auto-load next page when sentinel is visible
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          !initialLoading &&
+          !loadingMore &&
+          tasks.length < totalTasks
+        ) {
+          loadTasks(
+            page + 1,
+            filterKey,
+            statusFilter,
+            searchTerm || undefined,
+          );
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [
+    tasks.length,
+    totalTasks,
+    page,
+    filterKey,
+    statusFilter,
+    searchTerm,
+    initialLoading,
+    loadingMore,
+    loadTasks,
+  ]);
 
   const onGroupByChange = (value: string) => {
     setGroupBy(
@@ -344,8 +385,8 @@ function TasksContainer({
           </div>
         </CardHeader>
         <CardContent>
-          {loading && <Loading />}
-          {!loading && tasks.length > 0 && (
+          {initialLoading && <Loading />}
+          {!initialLoading && tasks.length > 0 && (
             <>
               <TasksTable
                 tasks={tasks}
@@ -370,29 +411,16 @@ function TasksContainer({
               </div>
             </>
           )}
-          {!loading && tasks.length === 0 && (
+          {!initialLoading && tasks.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               No tasks found. Create your first task to get started.
             </div>
           )}
           {tasks.length < totalTasks && (
-            <div className="flex justify-center p-4">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  loadTasks(
-                    page + 1,
-                    filterKey,
-                    statusFilter,
-                    searchTerm || undefined,
-                  )
-                }
-                disabled={loading}
-                className="btn btn-primary"
-              >
-                {loading ? "Loading..." : "Load More"}
-              </Button>
+            <div ref={sentinelRef} className="flex justify-center p-4">
+              {loadingMore && (
+                <Loader className="h-5 w-5 animate-spin text-blue-500" />
+              )}
             </div>
           )}
         </CardContent>

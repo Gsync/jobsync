@@ -58,6 +58,16 @@ global.ResizeObserver = class ResizeObserver {
   disconnect() {}
 };
 
+let intersectionCallback: IntersectionObserverCallback;
+global.IntersectionObserver = class IntersectionObserver {
+  constructor(callback: IntersectionObserverCallback) {
+    intersectionCallback = callback;
+  }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as any;
+
 document.createRange = () => {
   const range = new Range();
 
@@ -613,8 +623,8 @@ describe("JobsContainer Search Functionality", () => {
     });
   });
 
-  describe("Load More with Search", () => {
-    it("should preserve search term when loading more", async () => {
+  describe("Infinite Scroll with Search", () => {
+    it("should preserve search term when loading more via scroll", async () => {
       (getJobsList as any).mockResolvedValue({
         success: true,
         data: mockJobs,
@@ -624,7 +634,7 @@ describe("JobsContainer Search Functionality", () => {
       renderComponent();
 
       await waitFor(() => {
-        expect(screen.getByText("Load More")).toBeInTheDocument();
+        expect(screen.getByText("Amazon")).toBeInTheDocument();
       });
 
       // Type search
@@ -641,13 +651,15 @@ describe("JobsContainer Search Functionality", () => {
         expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Developer", undefined, undefined, undefined, undefined, undefined);
       });
 
-      // Click load more
-      const loadMoreButton = screen.getByText("Load More");
+      // Simulate sentinel becoming visible
       await act(async () => {
-        await user.click(loadMoreButton);
+        intersectionCallback(
+          [{ isIntersecting: true }] as IntersectionObserverEntry[],
+          {} as IntersectionObserver,
+        );
       });
 
-      // Should include search term in load more call
+      // Should include search term in infinite scroll call
       await waitFor(() => {
         expect(getJobsList).toHaveBeenCalledWith(2, 25, undefined, "Developer", undefined, undefined, undefined, undefined, undefined);
       });

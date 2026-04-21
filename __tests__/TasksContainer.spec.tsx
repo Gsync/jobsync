@@ -66,6 +66,16 @@ global.ResizeObserver = class ResizeObserver {
   disconnect() {}
 };
 
+let intersectionCallback: IntersectionObserverCallback;
+global.IntersectionObserver = class IntersectionObserver {
+  constructor(callback: IntersectionObserverCallback) {
+    intersectionCallback = callback;
+  }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as any;
+
 document.createRange = () => {
   const range = new Range();
 
@@ -525,7 +535,7 @@ describe("TasksContainer Component", () => {
   });
 
   describe("Pagination", () => {
-    it("should show load more button when there are more tasks", async () => {
+    it("should show sentinel when there are more tasks", async () => {
       (getTasksList as any).mockResolvedValue({
         success: true,
         data: mockTasks,
@@ -535,11 +545,12 @@ describe("TasksContainer Component", () => {
       render(<TasksContainer activityTypes={mockActivityTypes} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Load More")).toBeInTheDocument();
+        expect(screen.getByText("Task 1")).toBeInTheDocument();
+        expect(screen.queryByText("Load More")).not.toBeInTheDocument();
       });
     });
 
-    it("should load more tasks when load more button is clicked", async () => {
+    it("should load more tasks when sentinel becomes visible", async () => {
       (getTasksList as any)
         .mockResolvedValueOnce({
           success: true,
@@ -561,11 +572,14 @@ describe("TasksContainer Component", () => {
       render(<TasksContainer activityTypes={mockActivityTypes} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Load More")).toBeInTheDocument();
+        expect(screen.getByText("Task 1")).toBeInTheDocument();
       });
 
-      const loadMoreButton = screen.getByText("Load More");
-      await user.click(loadMoreButton);
+      // Simulate sentinel becoming visible
+      intersectionCallback(
+        [{ isIntersecting: true }] as IntersectionObserverEntry[],
+        {} as IntersectionObserver,
+      );
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(2, 25, undefined, [
@@ -575,7 +589,7 @@ describe("TasksContainer Component", () => {
       });
     });
 
-    it("should not show load more button when all tasks are loaded", async () => {
+    it("should not show sentinel when all tasks are loaded", async () => {
       (getTasksList as any).mockResolvedValue({
         success: true,
         data: mockTasks,
@@ -885,7 +899,7 @@ describe("TasksContainer Component", () => {
       });
     });
 
-    it("should pass search term when loading more tasks", async () => {
+    it("should pass search term when loading more tasks via scroll", async () => {
       (getTasksList as any)
         .mockResolvedValueOnce({
           success: true,
@@ -930,10 +944,10 @@ describe("TasksContainer Component", () => {
 
       vi.clearAllMocks();
 
-      // Click Load More
-      const loadMoreButton = screen.getByText("Load More");
-      await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).click(
-        loadMoreButton
+      // Simulate sentinel becoming visible
+      intersectionCallback(
+        [{ isIntersecting: true }] as IntersectionObserverEntry[],
+        {} as IntersectionObserver,
       );
 
       await waitFor(() => {

@@ -60,12 +60,12 @@ export default async function Dashboard() {
           <NumberCardToggle
             data={[
               {
-                label: "Last 7 days",
+                label: "7d",
                 num: jobsAppliedLast7Days,
                 trend: trendFor7Days,
               },
               {
-                label: "Last 30 days",
+                label: "30d",
                 num: jobsAppliedLast30Days,
                 trend: trendFor30Days,
               },
@@ -73,8 +73,8 @@ export default async function Dashboard() {
           />
           <TopActivitiesCard
             data={[
-              { label: "Last 7 days", activities: topActivities7Days },
-              { label: "Last 30 days", activities: topActivities30Days },
+              { label: "7d", activities: topActivities7Days },
+              { label: "30d", activities: topActivities30Days },
             ]}
           />
         </div>
