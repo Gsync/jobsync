@@ -51,16 +51,16 @@ export default function TopActivitiesCard({ data }: TopActivitiesCardProps) {
         ) : (
           <div className="space-y-3">
             {current.activities.map((activity, index) => (
-              <div key={activity.label} className="flex items-center gap-3">
-                <span className="text-lg font-semibold text-muted-foreground w-5">
-                  {index + 1}
-                </span>
+              <div key={activity.label} className="flex items-center gap-3 min-w-0">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">
                     {activity.label}
                   </p>
+                  <p className="text-xs text-muted-foreground tabular-nums xl:hidden">
+                    {activity.hours}h
+                  </p>
                 </div>
-                <span className="text-sm font-semibold tabular-nums">
+                <span className="hidden xl:block text-sm font-semibold tabular-nums shrink-0">
                   {activity.hours}h
                 </span>
               </div>
