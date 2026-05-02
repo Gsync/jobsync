@@ -11,6 +11,7 @@ type ChartConfig = {
   keys: string[];
   groupMode?: "grouped" | "stacked";
   axisLeftLegend: string;
+  tooltipLabel?: (key: string) => string;
 };
 
 type WeeklyBarChartToggleProps = {
@@ -32,6 +33,19 @@ export default function WeeklyBarChartToggle({
     });
     return newItem;
   });
+
+  const isJobsChart = current.label !== "Activities";
+  const maxValue = isJobsChart
+    ? Math.max(
+        0,
+        ...roundedData.flatMap((item) =>
+          current.keys.map((key) => (typeof item[key] === "number" ? item[key] : 0)),
+        ),
+      )
+    : undefined;
+  const intTickValues = isJobsChart
+    ? Array.from({ length: (maxValue as number) + 1 }, (_, i) => i)
+    : undefined;
 
   const totalHours =
     current.label === "Activities"
@@ -141,8 +155,47 @@ export default function WeeklyBarChartToggle({
               legendPosition: "middle",
               legendOffset: -40,
               truncateTickAt: 0,
+              tickValues: intTickValues,
             }}
             motionConfig="gentle"
+            tooltip={({ id, value, indexValue, color }) => (
+              <div
+                style={{
+                  background: "#1e293b",
+                  color: "#fff",
+                  padding: "6px 10px",
+                  borderRadius: 4,
+                  fontSize: 13,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: 10,
+                    height: 10,
+                    background: color,
+                    borderRadius: 2,
+                    marginRight: 6,
+                  }}
+                />
+                {current.tooltipLabel
+                  ? current.tooltipLabel(String(id))
+                  : String(id) === "value"
+                    ? current.axisLeftLegend
+                        .toLowerCase()
+                        .replace(/\(.*\)/, "")
+                        .trim()
+                        .replace(/\b\w/g, (c) => c.toUpperCase())
+                    : String(id)}{" "}
+                – {indexValue}:{" "}
+                <strong>
+                  {current.label === "Activities"
+                    ? Number(value).toFixed(1)
+                    : value}
+                </strong>
+              </div>
+            )}
           />
         </div>
       </CardContent>
