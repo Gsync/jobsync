@@ -1,5 +1,39 @@
 # Changelog
 
+## [1.1.11](https://github.com/Gsync/jobsync/compare/v1.1.10...v1.1.11) (2026-05-05)
+
+
+### Features
+
+*  Impove weekly jobs chart
+*  Switch pagination to infinite scroll
+*  Add certification section to resume profile
+*  Add rejected number of jobs column to companies table
+*  Show/hide password input
+*  Make secondary sidebar collapsable
+*  Clickable number of jobs for sources
+*  Clickable number of jobs for locations
+*  Clickable number of jobs for job titles
+*  Clickable number of jobs applied for companies
+
+### Bug Fixes
+
+* Fix: Profile e2e tests
+* Fix: Activities card title truncate issue
+* Fix: Gemini key error
+
+### Other Changes
+
+*  Migrate to vitest
+* Refactor: Replace rechart with svg radial chart
+*  Upgrade nextjs to 15.5.15
+*  Upgrade jest
+*  Override picomatch
+*  Override lodash
+* Add view jobs link under actions
+* Add unit tests
+
+
 ## [1.1.10](https://github.com/Gsync/jobsync/compare/v1.1.9...v1.1.10) (2026-03-31)
 
 
