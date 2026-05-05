@@ -51,6 +51,13 @@ export const getTasksList = async (
           activity: {
             select: { id: true },
           },
+          job: {
+            select: {
+              id: true,
+              JobTitle: { select: { label: true } },
+              Company: { select: { label: true } },
+            },
+          },
         },
         orderBy: [{ priority: "desc" }, { createdAt: "desc" }, { updatedAt: "desc" }],
         skip: offset,
@@ -92,6 +99,13 @@ export const getTaskById = async (
         activity: {
           select: { id: true },
         },
+        job: {
+          select: {
+            id: true,
+            JobTitle: { select: { label: true } },
+            Company: { select: { label: true } },
+          },
+        },
       },
     });
 
@@ -130,10 +144,18 @@ export const createTask = async (
         percentComplete: validatedData.percentComplete,
         dueDate: validatedData.dueDate,
         activityTypeId: validatedData.activityTypeId,
+        jobId: validatedData.jobId,
         userId: user.id,
       },
       include: {
         activityType: true,
+        job: {
+          select: {
+            id: true,
+            JobTitle: { select: { label: true } },
+            Company: { select: { label: true } },
+          },
+        },
       },
     });
 
@@ -173,9 +195,17 @@ export const updateTask = async (
         percentComplete: validatedData.percentComplete,
         dueDate: validatedData.dueDate,
         activityTypeId: validatedData.activityTypeId,
+        jobId: validatedData.jobId,
       },
       include: {
         activityType: true,
+        job: {
+          select: {
+            id: true,
+            JobTitle: { select: { label: true } },
+            Company: { select: { label: true } },
+          },
+        },
       },
     });
 
@@ -341,6 +371,34 @@ export const startActivityFromTask = async (
   } catch (error) {
     const msg = "Failed to start activity from task.";
     return handleError(error, msg);
+  }
+};
+
+export const getTasksForJob = async (
+  jobId: string
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const tasks = await prisma.task.findMany({
+      where: {
+        jobId,
+        userId: user.id,
+      },
+      include: {
+        activityType: true,
+        activity: { select: { id: true } },
+      },
+      orderBy: [{ status: "asc" }, { dueDate: "asc" }, { createdAt: "desc" }],
+    });
+
+    return { success: true, data: tasks };
+  } catch (error) {
+    return handleError(error, "Failed to fetch tasks for job.");
   }
 };
 

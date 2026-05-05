@@ -9,6 +9,12 @@ export const TASK_STATUSES = {
 
 export type TaskStatus = keyof typeof TASK_STATUSES;
 
+export interface TaskJob {
+  id: string;
+  JobTitle?: { label: string } | null;
+  Company?: { label: string } | null;
+}
+
 export interface Task {
   id: string;
   userId: string;
@@ -21,6 +27,8 @@ export interface Task {
   activityTypeId?: string | null;
   activityType?: ActivityType | null;
   activity?: { id: string } | null;
+  jobId?: string | null;
+  job?: TaskJob | null;
   createdAt: Date;
   updatedAt: Date;
 }

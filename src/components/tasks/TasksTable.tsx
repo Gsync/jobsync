@@ -46,6 +46,8 @@ import { Button } from "../ui/button";
 import { useState } from "react";
 import { Task, TASK_STATUSES, TaskStatus } from "@/models/task.model";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
+import Link from "next/link";
+import { Briefcase } from "lucide-react";
 
 type TasksTableProps = {
   tasks: Task[];
@@ -245,6 +247,16 @@ function TasksTable({
         >
           {task.title}
         </button>
+        {task.job && (
+          <Link
+            href={`/dashboard/myjobs/${task.job.id}`}
+            className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Briefcase className="h-3 w-3" />
+            {task.job.Company?.label || task.job.JobTitle?.label || "Job"}
+          </Link>
+        )}
       </TableCell>
       <TableCell className="py-1 px-2">
         {task.activityType?.label || "—"}

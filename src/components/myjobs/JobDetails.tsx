@@ -16,6 +16,7 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AiJobMatchSection } from "../profile/AiJobMatchSection";
 import { NotesSection } from "./NotesSection";
+import { JobTasksSection } from "./JobTasksSection";
 import { useState, useMemo, useCallback } from "react";
 import { DownloadFileButton } from "../profile/DownloadFileButton";
 import { MatchDetails } from "../automations/MatchDetails";
@@ -140,6 +141,7 @@ function JobDetails({ job }: { job: JobResponse }) {
           <div className="my-4 ml-4">
             <TipTapContentViewer content={job?.description} />
           </div>
+          <JobTasksSection jobId={job.id} />
           <NotesSection jobId={job.id} />
           {parsedMatchData && (
             <div className="mx-4 mb-4">

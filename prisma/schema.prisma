@@ -301,6 +301,7 @@ model Job {
   coverLetterId String?
   Notes         Note[]
   tags        Tag[]
+  Tasks         Task[]
 
   // Automation discovery fields
   automationId    String?
@@ -366,6 +367,9 @@ model Task {
 
   activity Activity?
 
+  jobId String?
+  job   Job?    @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -373,6 +377,7 @@ model Task {
   @@index([userId, status])
   @@index([userId, activityTypeId])
   @@index([userId, dueDate])
+  @@index([userId, jobId])
 }
 
 model Automation {
