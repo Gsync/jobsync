@@ -12,7 +12,8 @@ test.beforeEach(async ({ page, baseURL }) => {
 });
 
 async function createResume(page: Page, title: string) {
-  await page.getByRole("button", { name: "New Resume" }).click();
+  await page.getByRole("button", { name: "New", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Add New Resume" }).click();
   await page.getByPlaceholder("Ex: Full Stack Developer").fill(title);
   await page.getByRole("button", { name: "Save" }).click();
 }
@@ -43,7 +44,7 @@ test.describe("Profile page", () => {
     await expect(cells.first()).toBeVisible();
     await page
       .getByRole("row", { name: resumeTitle })
-      .getByTestId("resume-actions-menu-btn")
+      .getByTestId("document-actions-menu-btn")
       .first()
       .click();
     await page.getByRole("menuitem", { name: /Edit Resume Title/ }).click();
@@ -68,7 +69,7 @@ test.describe("Profile page", () => {
     await page
       .getByRole("row", { name: new RegExp(resumeTitle, "i") })
       .first()
-      .getByTestId("resume-actions-menu-btn")
+      .getByTestId("document-actions-menu-btn")
       .click();
     await page.getByRole("link", { name: "View/Edit Resume" }).click();
     // await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible();
@@ -107,7 +108,7 @@ test.describe("Profile page", () => {
     await page
       .getByRole("row", { name: new RegExp(resumeTitle, "i") })
       .first()
-      .getByTestId("resume-actions-menu-btn")
+      .getByTestId("document-actions-menu-btn")
       .click();
     await page.getByRole("link", { name: "View/Edit Resume" }).click();
     await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible();
@@ -188,7 +189,7 @@ test.describe("Profile page", () => {
     await page
       .getByRole("row", { name: new RegExp(resumeTitle, "i") })
       .first()
-      .getByTestId("resume-actions-menu-btn")
+      .getByTestId("document-actions-menu-btn")
       .click({ force: true });
     await page.getByRole("link", { name: "View/Edit Resume" }).click();
     await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible();
@@ -251,7 +252,7 @@ async function addExperience(page: Page, resumeTitle: string, jobText: string) {
   await page
     .getByRole("row", { name: new RegExp(resumeTitle, "i") })
     .first()
-    .getByTestId("resume-actions-menu-btn")
+    .getByTestId("document-actions-menu-btn")
     .click();
   await page.getByRole("link", { name: "View/Edit Resume" }).click();
   await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible();
@@ -305,7 +306,7 @@ async function deleteResume(page: Page, title: string) {
   await page.waitForLoadState("networkidle");
   const row = page.getByRole("row", { name: new RegExp(title, "i") }).first();
   await row.waitFor({ state: "visible", timeout: 10000 });
-  await row.getByTestId("resume-actions-menu-btn").click({ force: true });
+  await row.getByTestId("document-actions-menu-btn").click({ force: true });
   await page.getByRole("menuitem", { name: "Delete" }).click({ force: true });
   await expect(page.getByRole("alertdialog")).toContainText(
     "Are you sure you want to delete this resume?",
