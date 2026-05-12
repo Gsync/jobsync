@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ResponsiveBar } from "@nivo/bar";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { cn } from "@/lib/utils";
@@ -22,7 +22,16 @@ export default function WeeklyBarChartToggle({
   charts,
 }: WeeklyBarChartToggleProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
   const current = charts[activeIndex];
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    setIsSmallScreen(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsSmallScreen(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   const roundedData = current.data.map((item) => {
     const newItem: any = { ...item };
@@ -39,7 +48,9 @@ export default function WeeklyBarChartToggle({
     ? Math.max(
         0,
         ...roundedData.flatMap((item) =>
-          current.keys.map((key) => (typeof item[key] === "number" ? item[key] : 0)),
+          current.keys.map((key) =>
+            typeof item[key] === "number" ? item[key] : 0,
+          ),
         ),
       )
     : undefined;
@@ -146,6 +157,9 @@ export default function WeeklyBarChartToggle({
               legendPosition: "middle",
               legendOffset: 32,
               truncateTickAt: 0,
+              format: isSmallScreen
+                ? (value: string) => value.split(", ")[1] ?? value
+                : undefined,
             }}
             axisLeft={{
               tickSize: 5,
