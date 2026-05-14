@@ -356,6 +356,7 @@ export const addJob = async (
           : {}),
       },
     });
+    revalidatePath("/dashboard");
     return { job, success: true };
   } catch (error) {
     const msg = "Failed to create job. ";
@@ -421,7 +422,7 @@ export const updateJob = async (
         tags: { set: tagIds.map((id) => ({ id })) },
       },
     });
-    // revalidatePath("/dashboard/myjobs", "page");
+    revalidatePath("/dashboard");
     return { job, success: true };
   } catch (error) {
     const msg = "Failed to update job. ";
@@ -466,6 +467,7 @@ export const updateJobStatus = async (
       },
       data: dataToUpdate(),
     });
+    revalidatePath("/dashboard");
     return { job, success: true };
   } catch (error) {
     const msg = "Failed to update job status.";
@@ -512,6 +514,7 @@ export const deleteJobById = async (
         userId: user.id,
       },
     });
+    revalidatePath("/dashboard");
     return { res, success: true };
   } catch (error) {
     const msg = "Failed to delete job.";

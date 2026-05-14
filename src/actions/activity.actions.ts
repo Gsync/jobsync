@@ -6,6 +6,7 @@ import { AddActivityFormSchema } from "@/models/addActivityForm.schema";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 export const getAllActivityTypes = async (): Promise<any | undefined> => {
   try {
@@ -147,6 +148,7 @@ export const createActivity = async (
         description,
       },
     });
+    revalidatePath("/dashboard");
     return { activity, success: true };
   } catch (error) {
     const msg = "Failed to create activity. ";
@@ -170,6 +172,7 @@ export const deleteActivityById = async (
         userId: user.id,
       },
     });
+    revalidatePath("/dashboard");
     return { res, success: true };
   } catch (error) {
     const msg = "Failed to delete job.";
@@ -262,6 +265,7 @@ export const stopActivityById = async (
         duration,
       },
     });
+    revalidatePath("/dashboard");
     return { activity, success: true };
   } catch (error) {
     const msg = "Failed to stop activity. ";
