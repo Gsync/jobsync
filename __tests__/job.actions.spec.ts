@@ -42,11 +42,19 @@ vi.mock("@prisma/client", () => {
       update: vi.fn(),
     },
   };
-  return { PrismaClient: vi.fn(function() { return mPrismaClient; }) };
+  return {
+    PrismaClient: vi.fn(function () {
+      return mPrismaClient;
+    }),
+  };
 });
 
 vi.mock("@/utils/user.utils", () => ({
   getCurrentUser: vi.fn(),
+}));
+
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
 }));
 
 describe("jobActions", () => {
@@ -214,8 +222,7 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10, undefined, "Developer");
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
           JobTitle: { label: { contains: "Developer" } },
         });
@@ -228,8 +235,7 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10, undefined, "Google");
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
           Company: { label: { contains: "Google" } },
         });
@@ -242,8 +248,7 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10, undefined, "Remote");
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
           Location: { label: { contains: "Remote" } },
         });
@@ -256,8 +261,7 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10, undefined, "React");
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
           description: { contains: "React" },
         });
@@ -270,8 +274,7 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10, "applied", "Developer");
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where).toMatchObject({
           userId: mockUser.id,
           Status: { value: "applied" },
@@ -286,8 +289,7 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10, undefined, undefined);
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).toBeUndefined();
       });
 
@@ -298,8 +300,7 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10, undefined, "");
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).toBeUndefined();
       });
 
@@ -331,8 +332,7 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10, "PT", "Developer");
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where).toMatchObject({
           userId: mockUser.id,
           jobType: "PT",
@@ -349,8 +349,7 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10, undefined, undefined, "google");
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where).toMatchObject({
           userId: mockUser.id,
           Company: { value: "google" },
@@ -364,8 +363,7 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10, undefined, undefined, "google", true);
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where).toMatchObject({
           userId: mockUser.id,
           Company: { value: "google" },
@@ -380,16 +378,15 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10, undefined, "Developer", "google");
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).toEqual([
           { JobTitle: { label: { contains: "Developer" } } },
           { Location: { label: { contains: "Developer" } } },
           { description: { contains: "Developer" } },
         ]);
-        expect(findManyCall.where.OR).not.toContainEqual(
-          { Company: { label: { contains: "Developer" } } },
-        );
+        expect(findManyCall.where.OR).not.toContainEqual({
+          Company: { label: { contains: "Developer" } },
+        });
       });
 
       it("should include Company in search OR when companyValue is not set", async () => {
@@ -399,11 +396,10 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10, undefined, "Developer");
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
-        expect(findManyCall.where.OR).toContainEqual(
-          { Company: { label: { contains: "Developer" } } },
-        );
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.OR).toContainEqual({
+          Company: { label: { contains: "Developer" } },
+        });
       });
 
       it("should combine company filter with status filter", async () => {
@@ -413,8 +409,7 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10, "applied", undefined, "google", true);
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where).toMatchObject({
           userId: mockUser.id,
           Status: { value: "applied" },
@@ -430,8 +425,7 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10);
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.Company).toBeUndefined();
         expect(findManyCall.where.applied).toBeUndefined();
       });
@@ -443,10 +437,17 @@ describe("jobActions", () => {
         (prisma.job.findMany as any).mockResolvedValue([]);
         (prisma.job.count as any).mockResolvedValue(0);
 
-        await getJobsList(1, 10, undefined, undefined, undefined, undefined, "full stack developer");
+        await getJobsList(
+          1,
+          10,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "full stack developer",
+        );
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where).toMatchObject({
           userId: mockUser.id,
           JobTitle: { value: "full stack developer" },
@@ -458,10 +459,17 @@ describe("jobActions", () => {
         (prisma.job.findMany as any).mockResolvedValue([]);
         (prisma.job.count as any).mockResolvedValue(0);
 
-        await getJobsList(1, 10, undefined, undefined, undefined, true, "full stack developer");
+        await getJobsList(
+          1,
+          10,
+          undefined,
+          undefined,
+          undefined,
+          true,
+          "full stack developer",
+        );
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where).toMatchObject({
           userId: mockUser.id,
           JobTitle: { value: "full stack developer" },
@@ -474,13 +482,20 @@ describe("jobActions", () => {
         (prisma.job.findMany as any).mockResolvedValue([]);
         (prisma.job.count as any).mockResolvedValue(0);
 
-        await getJobsList(1, 10, undefined, "React", undefined, undefined, "full stack developer");
-
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
-        expect(findManyCall.where.OR).not.toContainEqual(
-          { JobTitle: { label: { contains: "React" } } },
+        await getJobsList(
+          1,
+          10,
+          undefined,
+          "React",
+          undefined,
+          undefined,
+          "full stack developer",
         );
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.OR).not.toContainEqual({
+          JobTitle: { label: { contains: "React" } },
+        });
       });
 
       it("should include JobTitle in search OR when titleValue is not set", async () => {
@@ -490,11 +505,10 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10, undefined, "React");
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
-        expect(findManyCall.where.OR).toContainEqual(
-          { JobTitle: { label: { contains: "React" } } },
-        );
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.OR).toContainEqual({
+          JobTitle: { label: { contains: "React" } },
+        });
       });
 
       it("should not add JobTitle when titleValue is undefined", async () => {
@@ -504,8 +518,7 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10);
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.JobTitle).toBeUndefined();
       });
     });
@@ -516,10 +529,18 @@ describe("jobActions", () => {
         (prisma.job.findMany as any).mockResolvedValue([]);
         (prisma.job.count as any).mockResolvedValue(0);
 
-        await getJobsList(1, 10, undefined, undefined, undefined, undefined, undefined, "remote");
+        await getJobsList(
+          1,
+          10,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "remote",
+        );
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where).toMatchObject({
           userId: mockUser.id,
           Location: { value: "remote" },
@@ -531,10 +552,18 @@ describe("jobActions", () => {
         (prisma.job.findMany as any).mockResolvedValue([]);
         (prisma.job.count as any).mockResolvedValue(0);
 
-        await getJobsList(1, 10, undefined, undefined, undefined, true, undefined, "remote");
+        await getJobsList(
+          1,
+          10,
+          undefined,
+          undefined,
+          undefined,
+          true,
+          undefined,
+          "remote",
+        );
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where).toMatchObject({
           userId: mockUser.id,
           Location: { value: "remote" },
@@ -547,13 +576,21 @@ describe("jobActions", () => {
         (prisma.job.findMany as any).mockResolvedValue([]);
         (prisma.job.count as any).mockResolvedValue(0);
 
-        await getJobsList(1, 10, undefined, "React", undefined, undefined, undefined, "remote");
-
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
-        expect(findManyCall.where.OR).not.toContainEqual(
-          { Location: { label: { contains: "React" } } },
+        await getJobsList(
+          1,
+          10,
+          undefined,
+          "React",
+          undefined,
+          undefined,
+          undefined,
+          "remote",
         );
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.OR).not.toContainEqual({
+          Location: { label: { contains: "React" } },
+        });
       });
 
       it("should include Location in search OR when locationValue is not set", async () => {
@@ -563,11 +600,10 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10, undefined, "React");
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
-        expect(findManyCall.where.OR).toContainEqual(
-          { Location: { label: { contains: "React" } } },
-        );
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.OR).toContainEqual({
+          Location: { label: { contains: "React" } },
+        });
       });
 
       it("should not add Location when locationValue is undefined", async () => {
@@ -577,8 +613,7 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10);
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.Location).toBeUndefined();
       });
     });
@@ -589,10 +624,19 @@ describe("jobActions", () => {
         (prisma.job.findMany as any).mockResolvedValue([]);
         (prisma.job.count as any).mockResolvedValue(0);
 
-        await getJobsList(1, 10, undefined, undefined, undefined, undefined, undefined, undefined, "indeed");
+        await getJobsList(
+          1,
+          10,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "indeed",
+        );
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where).toMatchObject({
           userId: mockUser.id,
           JobSource: { value: "indeed" },
@@ -604,10 +648,19 @@ describe("jobActions", () => {
         (prisma.job.findMany as any).mockResolvedValue([]);
         (prisma.job.count as any).mockResolvedValue(0);
 
-        await getJobsList(1, 10, undefined, undefined, undefined, true, undefined, undefined, "indeed");
+        await getJobsList(
+          1,
+          10,
+          undefined,
+          undefined,
+          undefined,
+          true,
+          undefined,
+          undefined,
+          "indeed",
+        );
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where).toMatchObject({
           userId: mockUser.id,
           JobSource: { value: "indeed" },
@@ -622,8 +675,7 @@ describe("jobActions", () => {
 
         await getJobsList(1, 10);
 
-        const findManyCall = (prisma.job.findMany as any).mock
-          .calls[0][0];
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.JobSource).toBeUndefined();
       });
     });
@@ -977,7 +1029,11 @@ describe("jobActions", () => {
     it("should return error when user is not authenticated", async () => {
       (getCurrentUser as any).mockResolvedValue(null);
 
-      const result = await saveJobMatchResult("job-id", 85, '{"summary":"test"}');
+      const result = await saveJobMatchResult(
+        "job-id",
+        85,
+        '{"summary":"test"}',
+      );
 
       expect(result).toStrictEqual({
         success: false,
@@ -1014,7 +1070,7 @@ describe("jobActions", () => {
         new Error("Record not found"),
       );
 
-      const result = await saveJobMatchResult("job-id", 75, '{}');
+      const result = await saveJobMatchResult("job-id", 75, "{}");
 
       expect(result).toStrictEqual({
         success: false,
