@@ -78,6 +78,7 @@ function AddExperience({
   const currentJobValue = watch("currentJob");
 
   useEffect(() => {
+    if (!dialogOpen) return;
     getTitleCompanyAndLocationData();
     if (experienceToEdit) {
       const experience: WorkExperience =
@@ -95,7 +96,7 @@ function AddExperience({
         },
         {
           keepDefaultValues: true,
-        }
+        },
       );
     } else {
       reset(
@@ -103,10 +104,11 @@ function AddExperience({
           resumeId,
           sectionId,
         },
-        { keepDefaultValues: true }
+        { keepDefaultValues: true },
       );
     }
   }, [
+    dialogOpen,
     getTitleCompanyAndLocationData,
     experienceToEdit,
     reset,

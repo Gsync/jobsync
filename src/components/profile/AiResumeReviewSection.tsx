@@ -41,6 +41,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
 
   useEffect(() => {
+    if (!aISectionOpen) return;
     const fetchSettings = async () => {
       try {
         const result = await getUserSettings();
@@ -58,7 +59,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
       }
     };
     fetchSettings();
-  }, []);
+  }, [aISectionOpen]);
 
   // Standard single-agent mode
   const { object, submit, isLoading, stop } = useObject({
@@ -108,7 +109,8 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   };
 
   // Check if we have any content to show
-  const hasContent = object && (object.scores?.overall !== undefined || object.summary);
+  const hasContent =
+    object && (object.scores?.overall !== undefined || object.summary);
 
   const showSlowWarning = useSlowResponseWarning(isLoading, !!hasContent);
 
@@ -121,7 +123,11 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
             variant="outline"
             className="h-8 gap-1 cursor-pointer"
             onClick={() => triggerSheetChange(true)}
-            disabled={isLoading || isLoadingSettings || resume.ResumeSections?.length! < 2}
+            disabled={
+              isLoading ||
+              isLoadingSettings ||
+              resume.ResumeSections?.length! < 2
+            }
           >
             <Sparkles className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
@@ -174,7 +180,8 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
               onClick={getResumeReview}
               disabled={
                 isLoading ||
-                (selectedModel.provider === "ollama" && ollamaConnected === false)
+                (selectedModel.provider === "ollama" &&
+                  ollamaConnected === false)
               }
             >
               <Sparkles className="h-3.5 w-3.5" />

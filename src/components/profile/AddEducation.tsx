@@ -70,6 +70,7 @@ function AddEducation({
   const degreeCompletedValue = watch("degreeCompleted");
 
   useEffect(() => {
+    if (!dialogOpen) return;
     getLocationData();
     if (educationToEdit) {
       const education: Education = educationToEdit?.educations?.at(0)!;
@@ -85,7 +86,7 @@ function AddEducation({
           description: education?.description,
           degreeCompleted: !!education?.endDate,
         },
-        { keepDefaultValues: true }
+        { keepDefaultValues: true },
       );
     } else {
       reset(
@@ -93,10 +94,17 @@ function AddEducation({
           resumeId,
           sectionId,
         },
-        { keepDefaultValues: true }
+        { keepDefaultValues: true },
       );
     }
-  }, [getLocationData, educationToEdit, resumeId, sectionId, reset]);
+  }, [
+    dialogOpen,
+    getLocationData,
+    educationToEdit,
+    resumeId,
+    sectionId,
+    reset,
+  ]);
 
   const onDegreeCompleted = (completed: boolean) => {
     if (completed) {

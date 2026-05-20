@@ -147,9 +147,10 @@ export function AddJob({
   }, [editJob, reset]);
 
   useEffect(() => {
+    if (!dialogOpen) return;
     loadResumes();
     loadCoverLetters();
-  }, [loadResumes, loadCoverLetters]);
+  }, [dialogOpen, loadResumes, loadCoverLetters]);
 
   const setNewResumeId = (id: string) => {
     setTimeout(() => {
