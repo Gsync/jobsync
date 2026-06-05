@@ -75,11 +75,12 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   });
 
   const getResumeReview = () => {
-    if (!resume || resume.ResumeSections?.length === 0) {
+    if (!resume || (resume.ResumeSections?.length ?? 0) < 2) {
       toast({
         variant: "destructive",
-        title: "Error!",
-        description: "Resume content is required",
+        title: "Not enough content",
+        description:
+          "Add at least 2 sections (e.g. Summary and Experience) before running a review.",
       });
       return;
     }
@@ -123,11 +124,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
             variant="outline"
             className="h-8 gap-1 cursor-pointer"
             onClick={() => triggerSheetChange(true)}
-            disabled={
-              isLoading ||
-              isLoadingSettings ||
-              resume.ResumeSections?.length! < 2
-            }
+            disabled={isLoading || isLoadingSettings}
           >
             <Sparkles className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
