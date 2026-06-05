@@ -40,6 +40,8 @@ next-env.d.ts
 # prisma sqlite database
 dev.db
 dev.db-journal
+# local runtime data dir (sqlite db + uploaded files) after repo relocation
+jobsyncdb/
 /test-results/
 /playwright-report/
 /blob-report/
