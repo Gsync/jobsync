@@ -10,6 +10,14 @@ import EducationCard from "./EducationCard";
 import CertificationCard from "./CertificationCard";
 import AiResumeReviewSection from "./AiResumeReviewSection";
 import { DownloadFileButton } from "./DownloadFileButton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { Button } from "../ui/button";
+import { MoreHorizontal, FileDown } from "lucide-react";
 
 function ResumeContainer({ resume }: { resume: Resume }) {
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
@@ -64,9 +72,9 @@ function ResumeContainer({ resume }: { resume: Resume }) {
   return (
     <>
       <Card>
-        <CardHeader className="flex-row justify-between items-center">
+        <CardHeader className="flex-col gap-2 sm:flex-row sm:justify-between sm:items-center lg:grid lg:grid-cols-3 lg:items-center">
           <CardTitle>Resume</CardTitle>
-          <CardDescription>
+          <CardDescription className="mt-0 lg:flex lg:justify-center">
             {resume.FileId && resume.File?.filePath
               ? DownloadFileButton(
                   resume.File?.filePath,
@@ -75,9 +83,22 @@ function ResumeContainer({ resume }: { resume: Resume }) {
                 )
               : title}
           </CardDescription>
-          <div className="flex items-center">
+          <div className="flex items-center gap-2 flex-wrap lg:justify-end">
             <AddResumeSection resume={resume} ref={resumeSectionRef} />
             <AiResumeReviewSection resume={resume} />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => window.print()}>
+                  <FileDown className="h-4 w-4 mr-2" />
+                  Export to PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </CardHeader>
       </Card>

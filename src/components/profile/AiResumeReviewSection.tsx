@@ -38,7 +38,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   const [ollamaConnected, setOllamaConnected] = useState<boolean | null>(null);
   const [connectionError, setConnectionError] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<AiModel>(defaultModel);
-  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(false);
 
   useEffect(() => {
     if (!aISectionOpen) return;
