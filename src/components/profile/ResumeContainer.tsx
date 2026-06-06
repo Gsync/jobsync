@@ -3,7 +3,8 @@ import { Resume, ResumeSection, SectionType } from "@/models/profile.model";
 import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import AddResumeSection, { AddResumeSectionRef } from "./AddResumeSection";
 import ContactInfoCard from "./ContactInfoCard";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { toast } from "../ui/use-toast";
 import SummarySectionCard from "./SummarySectionCard";
 import ExperienceCard from "./ExperienceCard";
 import EducationCard from "./EducationCard";
@@ -21,6 +22,21 @@ import { MoreHorizontal, FileDown } from "lucide-react";
 
 function ResumeContainer({ resume }: { resume: Resume }) {
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const handleExportPdf = async () => {
+    setIsExporting(true);
+    try {
+      const { downloadResumePdf } = await import("./resume-pdf");
+      await downloadResumePdf(resume);
+    } catch {
+      toast({
+        title: "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
   const { title, ContactInfo, ResumeSections } = resume ?? {};
   const summarySection = ResumeSections?.find(
     (section) => section.sectionType === SectionType.SUMMARY,
@@ -93,9 +109,13 @@ function ResumeContainer({ resume }: { resume: Resume }) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => window.print()}>
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={handleExportPdf}
+                  disabled={isExporting}
+                >
                   <FileDown className="h-4 w-4 mr-2" />
-                  Export to PDF
+                  {isExporting ? "Generating…" : "Export to PDF"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
