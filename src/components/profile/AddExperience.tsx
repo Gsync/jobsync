@@ -84,21 +84,16 @@ function AddExperience({
     if (experienceToEdit) {
       const experience: WorkExperience =
         experienceToEdit.workExperiences?.at(0)!;
-      reset(
-        {
-          id: experience?.id,
-          title: experience?.jobTitle.id,
-          company: experience?.Company.id,
-          location: experience?.location.id,
-          startDate: experience?.startDate,
-          endDate: experience?.endDate,
-          jobDescription: experience?.description,
-          currentJob: !!!experience?.endDate,
-        },
-        {
-          keepDefaultValues: true,
-        },
-      );
+      reset({
+        id: experience?.id,
+        title: experience?.jobTitle.id,
+        company: experience?.Company.id,
+        location: experience?.location.id,
+        startDate: experience?.startDate,
+        endDate: experience?.endDate,
+        jobDescription: experience?.description,
+        currentJob: !!!experience?.endDate,
+      });
     } else {
       reset(
         {

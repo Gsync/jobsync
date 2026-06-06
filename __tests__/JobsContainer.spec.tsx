@@ -980,4 +980,45 @@ describe("JobsContainer Search Functionality", () => {
       expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/myjobs");
     });
   });
+
+  describe("add-job query param", () => {
+    it("should open the Add Job dialog when add-job=true is in the URL", async () => {
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: [],
+        total: 0,
+      });
+      const params = new URLSearchParams("add-job=true");
+      (useSearchParams as any).mockReturnValue(params);
+
+      render(
+        <JobsContainer
+          statuses={mockStatuses}
+          companies={mockCompanies}
+          titles={mockTitles}
+          locations={mockLocations}
+          sources={mockSources}
+          tags={[]}
+        />,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId("add-job-dialog-title")).toBeInTheDocument();
+      });
+    });
+
+    it("should not open the Add Job dialog when add-job param is absent", async () => {
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: [],
+        total: 0,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("add-job-dialog-title")).not.toBeInTheDocument();
+      });
+    });
+  });
 });

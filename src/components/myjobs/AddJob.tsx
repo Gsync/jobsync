@@ -42,7 +42,7 @@ import { SALARY_RANGES } from "@/lib/data/salaryRangeData";
 import TiptapEditor from "../TiptapEditor";
 import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
-import { redirect } from "next/navigation";
+import { redirect, useRouter, useSearchParams } from "next/navigation";
 import { Combobox } from "../ComboBox";
 import { NotesCollapsibleSection } from "./NotesCollapsibleSection";
 import { CoverLetter, Resume } from "@/models/profile.model";
@@ -60,6 +60,7 @@ type AddJobProps = {
   tags: Tag[];
   editJob?: JobResponse | null;
   resetEditJob: () => void;
+  initialOpen?: boolean;
 };
 
 export function AddJob({
@@ -71,13 +72,25 @@ export function AddJob({
   tags,
   editJob,
   resetEditJob,
+  initialOpen,
 }: AddJobProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [dialogOpen, setDialogOpen] = useState(initialOpen ?? false);
   const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [coverLetters, setCoverLetters] = useState<CoverLetter[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>(tags);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (!dialogOpen && searchParams.get("add-job") === "true") {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("add-job");
+      const newPath = params.toString() ? `?${params.toString()}` : window.location.pathname;
+      router.replace(newPath);
+    }
+  }, [dialogOpen, router, searchParams]);
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
     resolver: zodResolver(AddJobFormSchema) as any,
     defaultValues: {

@@ -23,7 +23,7 @@ export default function JobsAppliedCard() {
       <CardFooter className="flex flex-col gap-2 items-start">
         <Button
           variant="outline"
-          onClick={() => router.push("/dashboard/myjobs")}
+          onClick={() => router.push("/dashboard/myjobs?add-job=true")}
         >
           <PlusCircle className="h-3.5 w-3.5 mr-1" />
           <span className="sm:not-sr-only sm:whitespace-nowrap">New Job</span>

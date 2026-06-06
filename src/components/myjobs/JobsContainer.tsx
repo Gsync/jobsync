@@ -441,6 +441,7 @@ function JobsContainer({
               tags={tags}
               editJob={editJob}
               resetEditJob={resetEditJob}
+              initialOpen={queryParams.get("add-job") === "true"}
             />
           </div>
         </CardHeader>

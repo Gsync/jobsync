@@ -17,6 +17,8 @@ vi.mock("@/actions/job.actions", () => ({
 
 vi.mock("next/navigation", () => ({
   redirect: vi.fn(),
+  useRouter: vi.fn(() => ({ replace: vi.fn() })),
+  useSearchParams: vi.fn(() => new URLSearchParams()),
 }));
 
 global.ResizeObserver = class ResizeObserver {
@@ -103,6 +105,28 @@ describe("AddJob Component", () => {
   });
   it("should open the dialog when clicked on add job button with title 'Edit Job'", async () => {
     // TODO: To be tested with job container and jobs table component
+  });
+
+  it("should open the dialog immediately when initialOpen is true", async () => {
+    const mockCompanies = (await getMockList(1, 10, "companies")).data;
+    const mockJobTitles = (await getMockList(1, 10, "jobTitles")).data;
+    const mockLocations = (await getMockList(1, 10, "locations")).data;
+    render(
+      <AddJob
+        jobStatuses={mockJobStatuses}
+        companies={mockCompanies}
+        jobTitles={mockJobTitles}
+        locations={mockLocations}
+        jobSources={mockJobSources}
+        tags={[]}
+        editJob={null}
+        resetEditJob={mockResetEditJob}
+        initialOpen={true}
+      />,
+    );
+    const dialogTitle = screen.getAllByTestId("add-job-dialog-title")[0];
+    expect(dialogTitle).toBeInTheDocument();
+    expect(dialogTitle).toHaveTextContent("Add Job");
   });
   it("should show relevant react-hook-form errors", async () => {
     const saveBtn = screen.getByTestId("save-job-btn");

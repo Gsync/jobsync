@@ -747,9 +747,8 @@ describe("AddExperience Component", () => {
     const saveButton = screen.getByRole("button", { name: /save/i });
     await user.click(saveButton);
 
-    const loader = screen
-      .getByText(/save/i)
-      .parentElement?.querySelector(".spinner");
+    const saveBtn = screen.getByRole("button", { name: /save/i });
+    const loader = saveBtn.querySelector(".spinner");
     expect(loader).toBeInTheDocument();
 
     await waitFor(() => {
