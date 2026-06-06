@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.1.12](https://github.com/Gsync/jobsync/compare/v1.1.11...v1.1.12) (2026-06-05)
+
+
+### Features
+
+*  Add new job directly from dashboard
+*  attach pdf generated resume & fix failing tests
+*  add PDF export functionality for resumes
+
+### Bug Fixes
+
+*  add default values for contact info, education, experience, and summary sections
+*  address security vulnerability
+*  update resume validation logic and add tests for AiResumeReviewSection
+*  update loading state in AiResumeReviewSection and enhance ResumeContainer layout with dropdown menu
+*  failing job actions tests
+*  revalidate dashboard path after activity and job actions
+*  Date format overlap on chart of smaller screens
+*  update next.js version to 15.5.18
+
+### Other Changes
+
+* check resume content sections before exporting
+* Update readme
+* Optimize performance, reduce unnecessary fetch
+
+
 ## [1.1.11](https://github.com/Gsync/jobsync/compare/v1.1.10...v1.1.11) (2026-05-05)
 
 
