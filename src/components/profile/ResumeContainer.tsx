@@ -74,6 +74,26 @@ function ResumeContainer({ resume }: { resume: Resume }) {
   };
 
   const handleExportPdf = async () => {
+    const hasName =
+      resume.ContactInfo?.firstName?.trim() ||
+      resume.ContactInfo?.lastName?.trim();
+    const hasSections = resume.ResumeSections?.some(
+      (s) =>
+        s.summary?.content ||
+        s.workExperiences?.length ||
+        s.educations?.length ||
+        s.licenseOrCertifications?.length,
+    );
+    if (!hasName && !hasSections) {
+      toast({
+        title: "Nothing to export",
+        description:
+          "Add your contact info and at least one section (Summary, Experience, or Education) before exporting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsExporting(true);
     try {
       const { generateResumePdfBlob } = await import("./resume-pdf");
