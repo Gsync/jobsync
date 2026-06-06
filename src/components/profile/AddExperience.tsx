@@ -70,6 +70,7 @@ function AddExperience({
     defaultValues: {
       resumeId,
       sectionId,
+      sectionTitle: "",
     },
   });
 
@@ -103,6 +104,7 @@ function AddExperience({
         {
           resumeId,
           sectionId,
+          sectionTitle: "",
         },
         { keepDefaultValues: true },
       );

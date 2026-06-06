@@ -62,6 +62,10 @@ function AddEducation({
       resumeId,
       sectionId,
       degreeCompleted: true,
+      sectionTitle: "",
+      institution: "",
+      degree: "",
+      fieldOfStudy: "",
     },
   });
 
@@ -93,6 +97,10 @@ function AddEducation({
         {
           resumeId,
           sectionId,
+          sectionTitle: "",
+          institution: "",
+          degree: "",
+          fieldOfStudy: "",
         },
         { keepDefaultValues: true },
       );

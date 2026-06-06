@@ -50,6 +50,7 @@ function AddResumeSummary({
     resolver: zodResolver(AddSummarySectionFormSchema),
     defaultValues: {
       resumeId,
+      sectionTitle: "",
     },
   });
 
