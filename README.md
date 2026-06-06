@@ -22,12 +22,16 @@ Job searching can be overwhelming, with numerous applications to track and deadl
 
 ![JobSync AI Demo](./screenshots/jobsync-ai-jobmatch.gif)
 
+### PDF Resume Export
+
+Export any resume as a professionally formatted PDF directly from the resume page. The generated PDF is automatically saved to your Downloads folder and attached to the resume for use with AI job matching and review features. If a PDF attachment already exists, you'll be prompted to replace it or keep the download only.
+
 ## Key Features
 - **Application Tracker:** Keep a detailed record of all your job applications, including company details, job titles, application dates, and current status.
 
 - **Monitoring Dashboard:** Visualize your job search progress with an interactive dashboard that provides insights into your application activities, success rates, and upcoming tasks.
 
-- **Resume Management:** Store and manage your resumes, and use it with AI to get reviews and match with job descriptions.
+- **Resume Management:** Store and manage your resumes, export them as professionally formatted PDFs, and use them with AI to get reviews and match with job descriptions.
 
 - **Task & Activity Management:** Manage tasks, track activites linked with tasks included with time tracking. 
 
@@ -148,4 +152,12 @@ Access a wide range of AI models from multiple providers through a single API.
 ### Note
 
 - If you are updating from an old version and already logged in, please try logging out and login again.
+
+## Support the Project
+
+If JobSync has been helpful in your job search, consider giving it a star on GitHub! It helps others discover the project and motivates continued development.
+
+[![GitHub Stars](https://img.shields.io/github/stars/Gsync/jobsync?style=social)](https://github.com/Gsync/jobsync)
+
+Every star means a lot — thank you for your support!
 
