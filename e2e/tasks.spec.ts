@@ -9,8 +9,8 @@ test.beforeEach(async ({ page, baseURL }) => {
 async function login(page: Page) {
   await page.getByPlaceholder("id@example.com").click();
   await page.getByPlaceholder("id@example.com").fill("admin@example.com");
-  await page.getByLabel("Password").click();
-  await page.getByLabel("Password").fill("password123");
+  await page.getByRole("textbox", { name: "Password" }).click();
+  await page.getByRole("textbox", { name: "Password" }).fill("password123");
   await page.getByRole("button", { name: "Login" }).click();
 }
 
@@ -23,7 +23,7 @@ async function navigateToTasks(page: Page) {
 async function createTask(
   page: Page,
   title: string,
-  options?: { activityType?: string }
+  options?: { activityType?: string },
 ) {
   await page.getByTestId("add-task-btn").click({ force: true });
   await expect(page.getByTestId("task-form-dialog-title")).toBeVisible();
@@ -79,7 +79,7 @@ test.describe("Tasks Management", () => {
 
     // Wait for the task to appear in the table
     await expect(
-      page.getByRole("row", { name: new RegExp(testTaskTitle, "i") }).first()
+      page.getByRole("row", { name: new RegExp(testTaskTitle, "i") }).first(),
     ).toBeVisible({ timeout: 10000 });
 
     // Clean up
@@ -91,7 +91,7 @@ test.describe("Tasks Management", () => {
     await navigateToTasks(page);
     await createTask(page, editTaskTitle);
     await expect(
-      page.getByRole("row", { name: new RegExp(editTaskTitle, "i") }).first()
+      page.getByRole("row", { name: new RegExp(editTaskTitle, "i") }).first(),
     ).toBeVisible({ timeout: 10000 });
 
     await page
@@ -104,7 +104,7 @@ test.describe("Tasks Management", () => {
       .click({ force: true });
     await expect(page.getByTestId("task-form-dialog-title")).toBeVisible();
     await expect(page.getByPlaceholder("Enter task title")).toHaveValue(
-      editTaskTitle
+      editTaskTitle,
     );
 
     const updatedTitle = "E2E Edit Task Updated";
@@ -120,7 +120,7 @@ test.describe("Tasks Management", () => {
     });
 
     await expect(
-      page.getByRole("row", { name: new RegExp(updatedTitle, "i") }).first()
+      page.getByRole("row", { name: new RegExp(updatedTitle, "i") }).first(),
     ).toBeVisible({ timeout: 10000 });
 
     await deleteTask(page, updatedTitle);
@@ -131,13 +131,13 @@ test.describe("Tasks Management", () => {
     await navigateToTasks(page);
     await createTask(page, deleteTaskTitle);
     await expect(
-      page.getByRole("row", { name: new RegExp(deleteTaskTitle, "i") }).first()
+      page.getByRole("row", { name: new RegExp(deleteTaskTitle, "i") }).first(),
     ).toBeVisible({ timeout: 10000 });
 
     await deleteTask(page, deleteTaskTitle);
 
     await expect(page.getByRole("status").first()).toContainText(
-      /Task has been deleted/
+      /Task has been deleted/,
     );
   });
 
@@ -146,7 +146,7 @@ test.describe("Tasks Management", () => {
     await navigateToTasks(page);
     await createTask(page, statusTaskTitle);
     await expect(
-      page.getByRole("row", { name: new RegExp(statusTaskTitle, "i") }).first()
+      page.getByRole("row", { name: new RegExp(statusTaskTitle, "i") }).first(),
     ).toBeVisible({ timeout: 10000 });
 
     await page
@@ -162,7 +162,7 @@ test.describe("Tasks Management", () => {
       .click({ force: true });
 
     await expect(page.getByRole("status").first()).toContainText(
-      /Task status updated/
+      /Task status updated/,
     );
 
     await deleteTask(page, statusTaskTitle);
@@ -200,7 +200,7 @@ test.describe("Tasks Management", () => {
     await navigateToTasks(page);
     await createTask(page, toggleTaskTitle);
     await expect(
-      page.getByRole("row", { name: new RegExp(toggleTaskTitle, "i") }).first()
+      page.getByRole("row", { name: new RegExp(toggleTaskTitle, "i") }).first(),
     ).toBeVisible({ timeout: 10000 });
 
     const taskRow = page
@@ -212,7 +212,7 @@ test.describe("Tasks Management", () => {
     await completeBtn.click({ force: true });
 
     await expect(page.getByRole("status").first()).toContainText(
-      /Task status updated/
+      /Task status updated/,
     );
 
     await page
@@ -259,7 +259,7 @@ test.describe("Tasks Management", () => {
       await expect(
         page
           .getByRole("row", { name: new RegExp(activityTaskTitle, "i") })
-          .first()
+          .first(),
       ).toBeVisible({ timeout: 10000 });
 
       const taskRow = page
@@ -271,7 +271,7 @@ test.describe("Tasks Management", () => {
         .click({ force: true });
 
       await expect(page.getByRole("status").first()).toContainText(
-        /Activity started from task/
+        /Activity started from task/,
       );
       await expect(page).toHaveURL(/\/dashboard\/activities/);
 
@@ -294,7 +294,7 @@ test.describe("Tasks Management", () => {
       await expect(
         page
           .getByRole("row", { name: new RegExp(linkedActivityTaskTitle, "i") })
-          .first()
+          .first(),
       ).toBeVisible({ timeout: 10000 });
 
       // Start activity from task
@@ -306,7 +306,7 @@ test.describe("Tasks Management", () => {
         .getByTestId("task-start-activity-btn")
         .click({ force: true });
       await expect(page.getByRole("status").first()).toContainText(
-        /Activity started from task/
+        /Activity started from task/,
       );
       await expect(page).toHaveURL(/\/dashboard\/activities/);
 
@@ -322,7 +322,7 @@ test.describe("Tasks Management", () => {
       // Start activity button should not be visible (task has linked activity)
       await taskRowAfter.hover();
       await expect(
-        taskRowAfter.getByTestId("task-start-activity-btn")
+        taskRowAfter.getByTestId("task-start-activity-btn"),
       ).not.toBeVisible();
 
       // Menu item should be disabled
@@ -367,7 +367,7 @@ test.describe("Tasks Management", () => {
       await expect(
         page
           .getByRole("row", { name: new RegExp(completedTaskTitle, "i") })
-          .first()
+          .first(),
       ).toBeVisible({ timeout: 10000 });
 
       // Mark task as complete
@@ -378,7 +378,7 @@ test.describe("Tasks Management", () => {
         .getByRole("button", { name: "Mark as complete" })
         .click({ force: true });
       await expect(page.getByRole("status").first()).toContainText(
-        /Task status updated/
+        /Task status updated/,
       );
 
       // Add Complete status to filter to see completed tasks
@@ -402,7 +402,7 @@ test.describe("Tasks Management", () => {
         .click({ force: true });
 
       await expect(page.getByRole("status").first()).toContainText(
-        /Cannot start an activity from a completed or cancelled task/
+        /Cannot start an activity from a completed or cancelled task/,
       );
 
       await deleteTask(page, completedTaskTitle);

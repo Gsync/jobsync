@@ -4,6 +4,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import AddResumeSection, { AddResumeSectionRef } from "./AddResumeSection";
 import ContactInfoCard from "./ContactInfoCard";
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "../ui/use-toast";
 import SummarySectionCard from "./SummarySectionCard";
 import ExperienceCard from "./ExperienceCard";
@@ -17,17 +18,78 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import { MoreHorizontal, FileDown } from "lucide-react";
 
 function ResumeContainer({ resume }: { resume: Resume }) {
+  const router = useRouter();
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [pendingPdf, setPendingPdf] = useState<{
+    blob: Blob;
+    filename: string;
+  } | null>(null);
+  const [showAttachConfirm, setShowAttachConfirm] = useState(false);
+
+  const triggerDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const uploadPdfAsAttachment = async (
+    blob: Blob,
+    filename: string,
+    replaceExisting: boolean,
+  ) => {
+    const formData = new FormData();
+    formData.append(
+      "file",
+      new File([blob], filename, { type: "application/pdf" }),
+    );
+    formData.append("title", resume.title);
+    formData.append("id", resume.id!);
+    if (replaceExisting && resume.FileId) {
+      formData.append("fileId", resume.FileId);
+    }
+    const res = await fetch("/api/profile/resume", {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) throw new Error("Upload failed");
+    router.refresh();
+  };
+
   const handleExportPdf = async () => {
     setIsExporting(true);
     try {
-      const { downloadResumePdf } = await import("./resume-pdf");
-      await downloadResumePdf(resume);
+      const { generateResumePdfBlob } = await import("./resume-pdf");
+      const { blob, filename } = await generateResumePdfBlob(resume);
+
+      if (!resume.FileId) {
+        triggerDownload(blob, filename);
+        await uploadPdfAsAttachment(blob, filename, false);
+        toast({
+          title: "PDF exported",
+          description: "Saved to Downloads and attached to this resume.",
+        });
+      } else {
+        setPendingPdf({ blob, filename });
+        setShowAttachConfirm(true);
+      }
     } catch {
       toast({
         title: "Failed to generate PDF. Please try again.",
@@ -35,6 +97,36 @@ function ResumeContainer({ resume }: { resume: Resume }) {
       });
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleAttachChoice = async (choice: "replace" | "download-only") => {
+    if (!pendingPdf) return;
+    setShowAttachConfirm(false);
+    setIsExporting(true);
+    try {
+      const { blob, filename } = pendingPdf;
+      triggerDownload(blob, filename);
+      if (choice === "replace") {
+        await uploadPdfAsAttachment(blob, filename, true);
+        toast({
+          title: "PDF exported",
+          description: "Saved to Downloads and attachment replaced.",
+        });
+      } else {
+        toast({
+          title: "PDF exported",
+          description: "Saved to your Downloads folder.",
+        });
+      }
+    } catch {
+      toast({
+        title: "Failed to upload PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+      setPendingPdf(null);
     }
   };
   const { title, ContactInfo, ResumeSections } = resume ?? {};
@@ -152,6 +244,36 @@ function ResumeContainer({ resume }: { resume: Resume }) {
           openDialogForEdit={openCertificationDialogForEdit}
         />
       )}
+      <AlertDialog open={showAttachConfirm} onOpenChange={setShowAttachConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Replace existing attachment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This resume already has a file attached. Would you like to replace
+              it with the exported PDF?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setShowAttachConfirm(false);
+                setPendingPdf(null);
+              }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <Button
+              variant="outline"
+              onClick={() => handleAttachChoice("download-only")}
+            >
+              Download only
+            </Button>
+            <AlertDialogAction onClick={() => handleAttachChoice("replace")}>
+              Replace attachment
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

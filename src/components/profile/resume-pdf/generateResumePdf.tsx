@@ -19,7 +19,9 @@ export function sanitizeFilename(name: string): string {
   return sanitized || "resume";
 }
 
-export async function downloadResumePdf(resume: Resume): Promise<void> {
+export async function generateResumePdfBlob(
+  resume: Resume,
+): Promise<{ blob: Blob; filename: string }> {
   // Parse HTML in the browser main thread before entering react-pdf's rendering context
   const summarySection = resume.ResumeSections?.find(
     (s) => s.sectionType === SectionType.SUMMARY,
@@ -50,6 +52,11 @@ export async function downloadResumePdf(resume: Resume): Promise<void> {
     <ProfessionalResumeDocument resume={resume} htmlNodes={htmlNodes} />,
   ).toBlob();
   const filename = `${sanitizeFilename(resume.title)}.pdf`;
+  return { blob, filename };
+}
+
+export async function downloadResumePdf(resume: Resume): Promise<void> {
+  const { blob, filename } = await generateResumePdfBlob(resume);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
