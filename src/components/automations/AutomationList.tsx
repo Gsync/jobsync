@@ -33,6 +33,7 @@ import {
   FileText,
   AlertTriangle,
   Zap,
+  Loader2,
 } from "lucide-react";
 import type { AutomationWithResume } from "@/models/automation.model";
 import {
@@ -56,6 +57,7 @@ export function AutomationList({
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [runningId, setRunningId] = useState<string | null>(null);
 
   const handlePause = async (id: string) => {
     setLoadingAction(id);
@@ -88,6 +90,47 @@ export function AutomationList({
         description: result.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const handleRunNow = async (id: string) => {
+    setRunningId(id);
+    try {
+      const res = await fetch(`/api/automations/${id}/run`, { method: "POST" });
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast({
+          title: "Run failed",
+          description: data.message || "Something went wrong.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { run } = data;
+      if (run.status === "completed" || run.status === "completed_with_errors") {
+        toast({
+          title: run.jobsSaved > 0 ? `${run.jobsSaved} job${run.jobsSaved === 1 ? "" : "s"} saved` : "Run complete — no new matches",
+          description: run.status === "completed_with_errors" ? "Some jobs could not be processed." : undefined,
+        });
+      } else {
+        const errorMap: Record<string, string> = {
+          "RAPIDAPI_KEY is not configured": "RapidAPI key missing — add it in Settings → API Keys.",
+          "resume_missing": "No resume linked — edit the automation to select one.",
+        };
+        toast({
+          title: "Run failed",
+          description: errorMap[run.errorMessage ?? ""] ?? run.errorMessage ?? "Check the logs tab for details.",
+          variant: "destructive",
+        });
+      }
+
+      onRefresh();
+    } catch {
+      toast({ title: "Run failed", description: "Network error.", variant: "destructive" });
+    } finally {
+      setRunningId(null);
     }
   };
 
@@ -203,6 +246,21 @@ export function AutomationList({
                 </div>
               </div>
 
+              <div className="flex items-center gap-1 ml-2 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  disabled={automation.status !== "active" || runningId === automation.id}
+                  onClick={() => handleRunNow(automation.id)}
+                  title="Run now"
+                >
+                  {runningId === automation.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Zap className="h-4 w-4" />
+                  )}
+                </Button>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" disabled={isLoading}>
@@ -238,6 +296,7 @@ export function AutomationList({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              </div>
             </div>
           );
         })}
