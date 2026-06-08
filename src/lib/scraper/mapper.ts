@@ -66,23 +66,11 @@ async function findOrCreateJobTitle(
 ): Promise<string> {
   const normalized = normalizeForSearch(title);
 
-  let existing = await db.jobTitle.findFirst({
+  // Exact match only — fuzzy keyword fallback was causing all jobs with common
+  // words like "principal" or "product" to collapse onto the same JobTitle entity.
+  const existing = await db.jobTitle.findFirst({
     where: { value: normalized, createdBy: userId },
   });
-
-  if (!existing) {
-    const keywords = extractKeywords(title);
-    if (keywords.length > 0) {
-      existing = await db.jobTitle.findFirst({
-        where: {
-          createdBy: userId,
-          OR: keywords.map((keyword) => ({
-            value: { contains: keyword },
-          })),
-        },
-      });
-    }
-  }
 
   if (existing) {
     return existing.id;
@@ -146,23 +134,11 @@ async function findOrCreateCompany(
 ): Promise<string> {
   const normalized = normalizeForSearch(company);
 
-  let existing = await db.company.findFirst({
+  // Exact match only — fuzzy keyword fallback caused substring collisions
+  // (e.g. "ai" in "Jerry.ai" matched inside "Caterpillar").
+  const existing = await db.company.findFirst({
     where: { value: normalized, createdBy: userId },
   });
-
-  if (!existing) {
-    const companyKeywords = extractKeywords(company);
-    if (companyKeywords.length > 0) {
-      existing = await db.company.findFirst({
-        where: {
-          createdBy: userId,
-          OR: companyKeywords.map((keyword) => ({
-            label: { contains: keyword },
-          })),
-        },
-      });
-    }
-  }
 
   if (existing) {
     return existing.id;
