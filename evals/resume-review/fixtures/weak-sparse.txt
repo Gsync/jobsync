@@ -1,0 +1,18 @@
+Alex Kim
+alex.kim@email.com
+
+EXPERIENCE
+
+Software Developer — Generic Tech Company (2019 – Present)
+- Responsible for writing code for various projects
+- Helped with the development of software applications
+- Worked on the team to complete tasks assigned by manager
+- Did some testing of the software
+- Assisted with fixing bugs when they came up
+
+SKILLS
+Python, JavaScript, Git
+
+EDUCATION
+Bachelor of Science, Computer Science
+State University

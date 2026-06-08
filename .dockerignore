@@ -4,3 +4,8 @@ npm-debug.log
 .vscode
 .git
 .env*
+
+**/*.db
+**/*.db-journal
+data/
+jobsyncdb/

@@ -1,0 +1,36 @@
+Jordan Ellis
+jordan.ellis@email.com | (555) 204-8812 | Vancouver, BC | linkedin.com/in/jordanellis | github.com/jordanellis
+
+SUMMARY
+Senior software engineer with 9 years of experience building distributed systems and developer tooling at scale. Led platform migrations serving 40M+ users, reduced infrastructure costs by 35%, and managed cross-functional teams of 8-12 engineers. Deep expertise in Go, Kubernetes, and cloud-native architectures.
+
+EXPERIENCE
+
+Staff Software Engineer — Meridian Technologies, Vancouver, BC (Jan 2021 – Present)
+- Architected and led migration of monolithic Rails application to microservices on Kubernetes, reducing p99 latency from 820ms to 140ms and cutting AWS spend by $1.2M annually
+- Built distributed job queue processing 4.5M tasks/day with 99.97% reliability; reduced failed job rate from 2.1% to 0.03%
+- Mentored 6 junior and mid-level engineers; 4 promoted within 18 months
+- Designed observability platform (Prometheus, Grafana, OpenTelemetry) adopted by 14 teams, reducing mean time to detect incidents from 47 minutes to 6 minutes
+- Led technical interviews and hired 11 engineers across 3 product teams
+
+Senior Software Engineer — Stackline Inc., Toronto, ON (Mar 2018 – Dec 2020)
+- Rebuilt search indexing pipeline in Go, improving throughput from 12K to 95K documents/second (7x improvement)
+- Reduced CI/CD pipeline duration from 38 minutes to 9 minutes by parallelizing test suites and caching build artifacts; saved ~120 engineer-hours per week
+- Implemented rate-limiting and circuit-breaker layer that absorbed 3 DDoS events with zero customer-facing downtime
+- Grew team from 4 to 9 engineers; conducted 60+ technical screens over 2 years
+
+Software Engineer — Luminary Digital, Ottawa, ON (Jun 2015 – Feb 2018)
+- Developed RESTful APIs consumed by 200K daily active users; maintained 99.95% uptime SLA
+- Migrated 18TB PostgreSQL database to partitioned schema; reduced query times by 62% for the top 10 slowest queries
+- Built internal CLI tool for environment provisioning adopted by all 35 engineers on the team
+
+SKILLS
+Go, Python, TypeScript, Ruby, SQL | Kubernetes, Docker, Helm, Terraform, Ansible | AWS (EKS, RDS, S3, Lambda, CloudWatch), GCP | PostgreSQL, Redis, Kafka, Elasticsearch | Prometheus, Grafana, OpenTelemetry, Datadog | gRPC, REST, GraphQL | GitHub Actions, ArgoCD, Jenkins | Linux, Bash
+
+EDUCATION
+Bachelor of Science, Computer Science — University of Waterloo, 2015
+GPA: 3.8/4.0 | Dean's List (4 semesters)
+
+CERTIFICATIONS
+AWS Certified Solutions Architect – Professional (2023)
+Certified Kubernetes Administrator (CKA) (2022)
