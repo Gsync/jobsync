@@ -26,12 +26,16 @@ Job searching can be overwhelming, with numerous applications to track and deadl
 
 Export any resume as a professionally formatted PDF directly from the resume page. The generated PDF is automatically saved to your Downloads folder and attached to the resume for use with AI job matching and review features. If a PDF attachment already exists, you'll be prompted to replace it or keep the download only.
 
+### Resume Import
+
+Import an existing resume from a PDF or Word (.docx) file. AI extracts structured data — contact info, summary, work experience, education, and certifications — and presents each section as a review card. You can accept or skip individual sections before saving them to your resume.
+
 ## Key Features
 - **Application Tracker:** Keep a detailed record of all your job applications, including company details, job titles, application dates, and current status.
 
 - **Monitoring Dashboard:** Visualize your job search progress with an interactive dashboard that provides insights into your application activities, success rates, and upcoming tasks.
 
-- **Resume Management:** Store and manage your resumes, export them as professionally formatted PDFs, and use them with AI to get reviews and match with job descriptions.
+- **Resume Management:** Store and manage your resumes, export them as professionally formatted PDFs, and use them with AI to get reviews and match with job descriptions. Import existing resumes from PDF or Word (.docx) files — AI extracts and structures your contact info, experience, education, and certifications so you can review and save each section individually.
 
 - **Task & Activity Management:** Manage tasks, track activites linked with tasks included with time tracking. 
 
