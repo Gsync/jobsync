@@ -30,7 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
 import { RecordsCount } from "../RecordsCount";
 import {
   DropdownMenu,
@@ -77,9 +76,6 @@ function TasksContainer({
   const [statusFilter, setStatusFilter] = useState<TaskStatus[]>(
     DEFAULT_STATUS_FILTER,
   );
-  const [recordsPerPage, setRecordsPerPage] = useState<number>(
-    APP_CONSTANTS.RECORDS_PER_PAGE,
-  );
   const [searchTerm, setSearchTerm] = useState("");
   const hasSearched = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -90,7 +86,7 @@ function TasksContainer({
     setMounted(true);
   }, []);
 
-  const tasksPerPage = recordsPerPage;
+  const tasksPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
 
   const loadTasks = useCallback(
     async (
@@ -215,7 +211,7 @@ function TasksContainer({
     (async () =>
       await loadTasks(1, filterKey, statusFilter, searchTerm || undefined))();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadTasks, filterKey, statusFilter, recordsPerPage]);
+  }, [loadTasks, filterKey, statusFilter]);
 
   // Debounced search effect
   useEffect(() => {
@@ -292,7 +288,12 @@ function TasksContainer({
     <>
       <Card x-chunk="dashboard-tasks-chunk-0" className="h-full">
         <CardHeader className="flex-row justify-between items-center">
-          <CardTitle>My Tasks</CardTitle>
+          <div className="flex items-baseline gap-2">
+            <CardTitle>My Tasks</CardTitle>
+            {!initialLoading && totalTasks > 0 && (
+              <RecordsCount count={tasks.length} total={totalTasks} label="tasks" />
+            )}
+          </div>
           <div className="flex items-center">
             <div className="ml-auto flex items-center gap-2">
               <div className="relative">
@@ -396,19 +397,6 @@ function TasksContainer({
                 onStartActivity={onStartActivity}
                 groupBy={groupBy}
               />
-              <div className="flex items-center justify-between mt-4">
-                <RecordsCount
-                  count={tasks.length}
-                  total={totalTasks}
-                  label="tasks"
-                />
-                {totalTasks > APP_CONSTANTS.RECORDS_PER_PAGE && (
-                  <RecordsPerPageSelector
-                    value={recordsPerPage}
-                    onChange={setRecordsPerPage}
-                  />
-                )}
-              </div>
             </>
           )}
           {!initialLoading && tasks.length === 0 && (

@@ -18,7 +18,6 @@ import {
 import { toast } from "../ui/use-toast";
 import { Question } from "@/models/question.model";
 import { Tag } from "@/models/job.model";
-import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
 import { RecordsCount } from "../RecordsCount";
 import { APP_CONSTANTS } from "@/lib/constants";
 import Loading from "../Loading";
@@ -42,9 +41,6 @@ function QuestionsContainer({
   const [editQuestion, setEditQuestion] = useState<Question | null>(null);
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [recordsPerPage, setRecordsPerPage] = useState<number>(
-    APP_CONSTANTS.RECORDS_PER_PAGE
-  );
   const [searchTerm, setSearchTerm] = useState("");
   const hasSearched = useRef(false);
 
@@ -53,7 +49,7 @@ function QuestionsContainer({
       setLoading(true);
       const result = await getQuestionsList(
         pageNum,
-        recordsPerPage,
+        APP_CONSTANTS.RECORDS_PER_PAGE,
         filter,
         search
       );
@@ -72,7 +68,7 @@ function QuestionsContainer({
       }
       setLoading(false);
     },
-    [recordsPerPage]
+    []
   );
 
   const reloadQuestions = useCallback(async () => {
@@ -119,7 +115,7 @@ function QuestionsContainer({
   useEffect(() => {
     loadQuestions(1, filterKey, searchTerm || undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadQuestions, filterKey, recordsPerPage]);
+  }, [loadQuestions, filterKey]);
 
   // Debounced search
   useEffect(() => {
@@ -139,7 +135,12 @@ function QuestionsContainer({
     <>
       <Card className="h-full">
         <CardHeader className="flex-row justify-between items-center">
-          <CardTitle>Question Bank</CardTitle>
+          <div className="flex items-baseline gap-2">
+            <CardTitle>Question Bank</CardTitle>
+            {!loading && totalQuestions > 0 && (
+              <RecordsCount count={questions.length} total={totalQuestions} label="questions" />
+            )}
+          </div>
           <div className="flex items-center">
             <div className="ml-auto flex items-center gap-2">
               <div className="relative">
@@ -175,21 +176,6 @@ function QuestionsContainer({
                 onEdit={onEditQuestion}
                 onDelete={onDeleteQuestion}
               />
-              {questions.length > 0 && (
-                <div className="flex items-center justify-between mt-4">
-                  <RecordsCount
-                    count={questions.length}
-                    total={totalQuestions}
-                    label="questions"
-                  />
-                  {totalQuestions > APP_CONSTANTS.RECORDS_PER_PAGE && (
-                    <RecordsPerPageSelector
-                      value={recordsPerPage}
-                      onChange={setRecordsPerPage}
-                    />
-                  )}
-                </div>
-              )}
             </>
           )}
           {!loading && questions.length < totalQuestions && (

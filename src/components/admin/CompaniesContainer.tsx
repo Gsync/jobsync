@@ -8,7 +8,6 @@ import { getCompanyById, getCompanyList } from "@/actions/company.actions";
 import { APP_CONSTANTS } from "@/lib/constants";
 import Loading from "../Loading";
 import { Button } from "../ui/button";
-import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
 import { RecordsCount } from "../RecordsCount";
 
 function CompaniesContainer() {
@@ -18,16 +17,12 @@ function CompaniesContainer() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editCompany, setEditCompany] = useState(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [recordsPerPage, setRecordsPerPage] = useState<number>(
-    APP_CONSTANTS.RECORDS_PER_PAGE,
-  );
-
   const loadCompanies = useCallback(
     async (page: number) => {
       setLoading(true);
       const { data, total } = await getCompanyList(
         page,
-        recordsPerPage,
+        APP_CONSTANTS.RECORDS_PER_PAGE,
         "applied"
       );
       if (data) {
@@ -37,7 +32,7 @@ function CompaniesContainer() {
         setLoading(false);
       }
     },
-    [recordsPerPage]
+    []
   );
 
   const reloadCompanies = useCallback(async () => {
@@ -50,7 +45,7 @@ function CompaniesContainer() {
 
   useEffect(() => {
     (async () => await loadCompanies(1))();
-  }, [loadCompanies, recordsPerPage]);
+  }, [loadCompanies]);
 
   const onEditCompany = async (companyId: string) => {
     const company = await getCompanyById(companyId);
@@ -63,7 +58,12 @@ function CompaniesContainer() {
       <div className="col-span-3">
         <Card x-chunk="dashboard-06-chunk-0">
           <CardHeader className="flex-row justify-between items-center">
-            <CardTitle>Companies</CardTitle>
+            <div className="flex items-baseline gap-2">
+              <CardTitle>Companies</CardTitle>
+              {!loading && totalCompanies > 0 && (
+                <RecordsCount count={companies.length} total={totalCompanies} label="companies" />
+              )}
+            </div>
             <div className="flex items-center">
               <div className="ml-auto flex items-center gap-2">
                 <AddCompany
@@ -85,19 +85,6 @@ function CompaniesContainer() {
                   reloadCompanies={reloadCompanies}
                   editCompany={onEditCompany}
                 />
-                <div className="flex items-center justify-between mt-4">
-                  <RecordsCount
-                    count={companies.length}
-                    total={totalCompanies}
-                    label="companies"
-                  />
-                  {totalCompanies > APP_CONSTANTS.RECORDS_PER_PAGE && (
-                    <RecordsPerPageSelector
-                      value={recordsPerPage}
-                      onChange={setRecordsPerPage}
-                    />
-                  )}
-                </div>
               </>
             )}
             {companies.length < totalCompanies && (

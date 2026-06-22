@@ -16,7 +16,6 @@ import DocumentTable from "./ResumeTable";
 import { toast } from "../ui/use-toast";
 import { ChevronDown, PlusCircle } from "lucide-react";
 import { Button } from "../ui/button";
-import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
 import { RecordsCount } from "../RecordsCount";
 import {
   DropdownMenu,
@@ -38,15 +37,11 @@ const ProfileContainer = () => {
   const [totalCoverLetters, setTotalCoverLetters] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState(false);
-  const [recordsPerPage, setRecordsPerPage] = useState<number>(
-    APP_CONSTANTS.RECORDS_PER_PAGE,
-  );
-
   const loadResumes = useCallback(
     async (page: number) => {
       const { data, total, success, message } = await getResumeList(
         page,
-        recordsPerPage,
+        APP_CONSTANTS.RECORDS_PER_PAGE,
       );
       if (success && data) {
         setResumes((prev) => (page === 1 ? data : [...prev, ...data]));
@@ -60,7 +55,7 @@ const ProfileContainer = () => {
         });
       }
     },
-    [recordsPerPage],
+    [],
   );
 
   const loadCoverLetters = useCallback(async () => {
@@ -95,7 +90,7 @@ const ProfileContainer = () => {
 
   useEffect(() => {
     (async () => await loadDocuments(1))();
-  }, [loadDocuments, recordsPerPage]);
+  }, [loadDocuments]);
 
   const documents: ProfileDocument[] = useMemo(() => {
     const resumeDocs: ProfileDocument[] = resumes.map((r) => ({
@@ -157,7 +152,12 @@ const ProfileContainer = () => {
   return (
     <Card>
       <CardHeader className="flex-row justify-between items-center">
-        <CardTitle>Profile</CardTitle>
+        <div className="flex items-baseline gap-2">
+          <CardTitle>Profile</CardTitle>
+          {!loading && totalDocuments > 0 && (
+            <RecordsCount count={documents.length} total={totalDocuments} label="documents" />
+          )}
+        </div>
         <div className="flex items-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -209,19 +209,6 @@ const ProfileContainer = () => {
               editCoverLetter={onEditCoverLetter}
               reloadDocuments={reloadDocuments}
             />
-            <div className="flex items-center justify-between mt-4">
-              <RecordsCount
-                count={documents.length}
-                total={totalDocuments}
-                label="documents"
-              />
-              {totalDocuments > APP_CONSTANTS.RECORDS_PER_PAGE && (
-                <RecordsPerPageSelector
-                  value={recordsPerPage}
-                  onChange={setRecordsPerPage}
-                />
-              )}
-            </div>
           </>
         )}
         {resumes.length < totalResumes && (

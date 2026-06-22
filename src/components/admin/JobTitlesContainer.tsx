@@ -7,7 +7,6 @@ import JobTitlesTable from "./JobTitlesTable";
 import { getJobTitleList } from "@/actions/jobtitle.actions";
 import Loading from "../Loading";
 import { Button } from "../ui/button";
-import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
 import { RecordsCount } from "../RecordsCount";
 
 function JobTitlesContainer() {
@@ -15,16 +14,12 @@ function JobTitlesContainer() {
   const [totalJobTitles, setTotalJobTitles] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
-  const [recordsPerPage, setRecordsPerPage] = useState<number>(
-    APP_CONSTANTS.RECORDS_PER_PAGE,
-  );
-
   const loadJobTitles = useCallback(
     async (page: number) => {
       setLoading(true);
       const { data, total } = await getJobTitleList(
         page,
-        recordsPerPage,
+        APP_CONSTANTS.RECORDS_PER_PAGE,
         "applied"
       );
       if (data) {
@@ -34,7 +29,7 @@ function JobTitlesContainer() {
         setLoading(false);
       }
     },
-    [recordsPerPage]
+    []
   );
 
   const reloadJobTitles = useCallback(async () => {
@@ -43,14 +38,19 @@ function JobTitlesContainer() {
 
   useEffect(() => {
     (async () => await loadJobTitles(1))();
-  }, [loadJobTitles, recordsPerPage]);
+  }, [loadJobTitles]);
 
   return (
     <>
       <div className="col-span-3">
         <Card x-chunk="dashboard-06-chunk-0">
           <CardHeader className="flex-row justify-between items-center">
-            <CardTitle>Job Titles</CardTitle>
+            <div className="flex items-baseline gap-2">
+              <CardTitle>Job Titles</CardTitle>
+              {!loading && totalJobTitles > 0 && (
+                <RecordsCount count={titles.length} total={totalJobTitles} label="job titles" />
+              )}
+            </div>
             <div className="flex items-center">
               <div className="ml-auto flex items-center gap-2">
                 {/* <AddCompany reloadCompanies={reloadJobTitles} /> */}
@@ -65,19 +65,6 @@ function JobTitlesContainer() {
                   jobTitles={titles}
                   reloadJobTitles={reloadJobTitles}
                 />
-                <div className="flex items-center justify-between mt-4">
-                  <RecordsCount
-                    count={titles.length}
-                    total={totalJobTitles}
-                    label="job titles"
-                  />
-                  {totalJobTitles > APP_CONSTANTS.RECORDS_PER_PAGE && (
-                    <RecordsPerPageSelector
-                      value={recordsPerPage}
-                      onChange={setRecordsPerPage}
-                    />
-                  )}
-                </div>
               </>
             )}
             {titles.length < totalJobTitles && (

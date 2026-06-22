@@ -43,7 +43,6 @@ import { AddJob } from "./AddJob";
 import MyJobsTable from "./MyJobsTable";
 import { NoteDialog } from "./NoteDialog";
 import { format } from "date-fns";
-import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
 import { RecordsCount } from "../RecordsCount";
 
 type MyJobsProps = {
@@ -98,9 +97,6 @@ function JobsContainer({
   const [editJob, setEditJob] = useState(null);
   const [initialLoading, setInitialLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [recordsPerPage, setRecordsPerPage] = useState<number>(
-    APP_CONSTANTS.RECORDS_PER_PAGE,
-  );
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [noteJobId, setNoteJobId] = useState("");
   const hasSearched = useRef(false);
@@ -159,7 +155,7 @@ function JobsContainer({
     setAppliedFilter(ap);
   }, [queryParams]);
 
-  const jobsPerPage = recordsPerPage;
+  const jobsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
 
   const loadJobs = useCallback(
     async (page: number, filter?: string, search?: string) => {
@@ -354,7 +350,12 @@ function JobsContainer({
     <>
       <Card x-chunk="dashboard-06-chunk-0">
         <CardHeader className="flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
-          <CardTitle>My Jobs</CardTitle>
+          <div className="flex items-baseline gap-2">
+            <CardTitle>My Jobs</CardTitle>
+            {!initialLoading && totalJobs > 0 && (
+              <RecordsCount count={jobs.length} total={totalJobs} label="jobs" />
+            )}
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             {companyLabel && (
               <button
@@ -457,19 +458,6 @@ function JobsContainer({
                 onChangeJobStatus={onChangeJobStatus}
                 onAddNote={onAddNote}
               />
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mt-4">
-                <RecordsCount
-                  count={jobs.length}
-                  total={totalJobs}
-                  label="jobs"
-                />
-                {totalJobs > APP_CONSTANTS.RECORDS_PER_PAGE && (
-                  <RecordsPerPageSelector
-                    value={recordsPerPage}
-                    onChange={setRecordsPerPage}
-                  />
-                )}
-              </div>
             </>
           )}
           {jobs.length < totalJobs && (

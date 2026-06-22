@@ -18,7 +18,6 @@ import { Activity } from "@/models/activity.model";
 import { toast } from "../ui/use-toast";
 import Loading from "../Loading";
 import { APP_CONSTANTS } from "@/lib/constants";
-import { RecordsPerPageSelector } from "../RecordsPerPageSelector";
 import { RecordsCount } from "../RecordsCount";
 import { useActivity } from "@/context/ActivityContext";
 
@@ -29,9 +28,6 @@ function ActivitiesContainer() {
   const [totalActivities, setTotalActivities] = useState<number>(0);
   const [initialLoading, setInitialLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [recordsPerPage, setRecordsPerPage] = useState<number>(
-    APP_CONSTANTS.RECORDS_PER_PAGE,
-  );
   const [searchTerm, setSearchTerm] = useState("");
   const hasSearched = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -77,8 +73,8 @@ function ActivitiesContainer() {
   );
 
   const reloadActivities = useCallback(async () => {
-    await loadActivities(1, recordsPerPage, searchTerm || undefined);
-  }, [loadActivities, recordsPerPage, searchTerm]);
+    await loadActivities(1, APP_CONSTANTS.RECORDS_PER_PAGE, searchTerm || undefined);
+  }, [loadActivities, searchTerm]);
 
   const handleStartActivity = async (activityId: string) => {
     const success = await startActivity(activityId);
@@ -88,8 +84,8 @@ function ActivitiesContainer() {
   };
 
   useEffect(() => {
-    loadActivities(1, recordsPerPage);
-  }, [loadActivities, recordsPerPage]);
+    loadActivities(1, APP_CONSTANTS.RECORDS_PER_PAGE);
+  }, [loadActivities]);
 
   // Reload activities when an activity is stopped (via global banner or otherwise)
   useEffect(() => {
@@ -107,7 +103,7 @@ function ActivitiesContainer() {
     if (searchTerm === "" && !hasSearched.current) return;
 
     const timer = setTimeout(() => {
-      loadActivities(1, recordsPerPage, searchTerm || undefined);
+      loadActivities(1, APP_CONSTANTS.RECORDS_PER_PAGE, searchTerm || undefined);
     }, 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -126,7 +122,7 @@ function ActivitiesContainer() {
           !loadingMore &&
           activitiesList.length < totalActivities
         ) {
-          loadActivities(page + 1, recordsPerPage, searchTerm || undefined);
+          loadActivities(page + 1, APP_CONSTANTS.RECORDS_PER_PAGE, searchTerm || undefined);
         }
       },
       { threshold: 0.1 },
@@ -138,7 +134,6 @@ function ActivitiesContainer() {
     activitiesList.length,
     totalActivities,
     page,
-    recordsPerPage,
     searchTerm,
     initialLoading,
     loadingMore,
@@ -148,7 +143,12 @@ function ActivitiesContainer() {
   return (
     <Card>
       <CardHeader className="flex-row justify-between items-center">
-        <CardTitle>Activities</CardTitle>
+        <div className="flex items-baseline gap-2">
+          <CardTitle>Activities</CardTitle>
+          {!initialLoading && totalActivities > 0 && (
+            <RecordsCount count={activitiesList.length} total={totalActivities} label="activities" />
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -198,19 +198,6 @@ function ActivitiesContainer() {
               onStartActivity={handleStartActivity}
               activityExist={Boolean(currentActivity)}
             />
-            <div className="flex items-center justify-between mt-4">
-              <RecordsCount
-                count={activitiesList.length}
-                total={totalActivities}
-                label="activities"
-              />
-              {totalActivities > APP_CONSTANTS.RECORDS_PER_PAGE && (
-                <RecordsPerPageSelector
-                  value={recordsPerPage}
-                  onChange={setRecordsPerPage}
-                />
-              )}
-            </div>
           </>
         )}
         {activitiesList.length < totalActivities && (
