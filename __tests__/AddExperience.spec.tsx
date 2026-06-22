@@ -488,8 +488,6 @@ describe("AddExperience Component", () => {
   });
 
   it("should close dialog and show success toast on successful submission", async () => {
-
-
     (addExperience as any).mockResolvedValue({
       success: true,
       message: "Experience added successfully",
@@ -505,7 +503,8 @@ describe("AddExperience Component", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("combobox-title")).toBeInTheDocument();
+      const jobTitleSelect = screen.getByTestId("combobox-title") as HTMLSelectElement;
+      expect(jobTitleSelect.options.length).toBeGreaterThan(1);
     });
 
     const jobTitleSelect = screen.getByTestId(

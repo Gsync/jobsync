@@ -199,17 +199,17 @@ export const createResumeProfile = async (
       throw new Error("Not authenticated");
     }
 
-    //check if title exists
-    const value = title.trim().toLowerCase();
-
-    const titleExists = await prisma.resume.findFirst({
-      where: {
-        title: value,
-      },
+    // Build a unique title: if base title is taken, append (2), (3), …
+    const existingTitles = await prisma.resume.findMany({
+      where: { profile: { userId: user.id } },
+      select: { title: true },
     });
-
-    if (titleExists) {
-      throw new Error("Title already exists!");
+    const taken = new Set(existingTitles.map((r) => r.title.toLowerCase()));
+    const base = title.trim();
+    let uniqueTitle = base;
+    let counter = 2;
+    while (taken.has(uniqueTitle.toLowerCase())) {
+      uniqueTitle = `${base} (${counter++})`;
     }
 
     const profile = await prisma.profile.findFirst({
@@ -223,7 +223,7 @@ export const createResumeProfile = async (
         ? await prisma.resume.create({
             data: {
               profileId: profile!.id,
-              title,
+              title: uniqueTitle,
               FileId: fileName
                 ? await createFileEntry(fileName, filePath)
                 : null,
@@ -235,7 +235,7 @@ export const createResumeProfile = async (
               resumes: {
                 create: [
                   {
-                    title,
+                    title: uniqueTitle,
                     FileId: fileName
                       ? await createFileEntry(fileName, filePath)
                       : null,
@@ -313,7 +313,6 @@ export const editResume = async (
 
 export const deleteResumeById = async (
   resumeId: string,
-  fileId?: string,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -321,57 +320,41 @@ export const deleteResumeById = async (
     if (!user) {
       throw new Error("Not authenticated");
     }
-    if (fileId) {
-      await deleteFile(fileId);
+
+    // Verify ownership and get associated fileId
+    const resume = await prisma.resume.findUnique({
+      where: { id: resumeId, profile: { userId: user.id } },
+      select: { FileId: true },
+    });
+
+    if (!resume) {
+      throw new Error("Resume not found or access denied");
     }
 
-    await prisma.$transaction(async (prisma) => {
-      await prisma.contactInfo.deleteMany({
-        where: {
-          resumeId: resumeId,
-        },
-      });
+    // Delete disk file + DB record before the resume row (avoid orphan on cascade failure)
+    if (resume.FileId) {
+      await deleteFile(resume.FileId);
+    }
 
-      await prisma.summary.deleteMany({
-        where: {
-          ResumeSection: {
-            resumeId: resumeId,
-          },
-        },
-      });
+    await prisma.$transaction(async (tx) => {
+      await tx.contactInfo.deleteMany({ where: { resumeId } });
 
-      await prisma.workExperience.deleteMany({
-        where: {
-          ResumeSection: {
-            resumeId: resumeId,
-          },
-        },
+      await tx.summary.deleteMany({
+        where: { ResumeSection: { resumeId } },
       });
-
-      await prisma.education.deleteMany({
-        where: {
-          ResumeSection: {
-            resumeId: resumeId,
-          },
-        },
+      await tx.workExperience.deleteMany({
+        where: { ResumeSection: { resumeId } },
       });
-
-      await prisma.licenseOrCertification.deleteMany({
-        where: {
-          ResumeSection: {
-            resumeId: resumeId,
-          },
-        },
+      await tx.education.deleteMany({
+        where: { ResumeSection: { resumeId } },
       });
-
-      await prisma.resumeSection.deleteMany({
-        where: {
-          resumeId: resumeId,
-        },
+      await tx.licenseOrCertification.deleteMany({
+        where: { ResumeSection: { resumeId } },
       });
+      await tx.resumeSection.deleteMany({ where: { resumeId } });
 
-      await prisma.resume.delete({
-        where: { id: resumeId },
+      await tx.resume.delete({
+        where: { id: resumeId, profile: { userId: user.id } },
       });
     });
     return { success: true };
@@ -393,32 +376,27 @@ export const uploadFile = async (file: File, dir: string, path: string) => {
 };
 
 export const deleteFile = async (fileId: string) => {
-  try {
-    const file = await prisma.file.findFirst({
-      where: {
-        id: fileId,
-      },
-    });
-
-    const filePath = file?.filePath as string;
-
-    const fullFilePath = path.join(filePath);
-    if (!fs.existsSync(filePath)) {
-      throw new Error("File not found");
-    }
-    fs.unlinkSync(filePath);
-
-    await prisma.file.delete({
-      where: {
-        id: fileId,
-      },
-    });
-
-    console.log("file deleted successfully!");
-  } catch (error) {
-    const msg = "Failed to delete file.";
-    return handleError(error, msg);
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new Error("Not authenticated");
   }
+
+  const file = await prisma.file.findFirst({
+    where: {
+      id: fileId,
+      Resume: { profile: { userId: user.id } },
+    },
+  });
+
+  if (!file) {
+    throw new Error("File not found or access denied");
+  }
+
+  if (fs.existsSync(file.filePath)) {
+    fs.unlinkSync(file.filePath);
+  }
+
+  await prisma.file.delete({ where: { id: fileId } });
 };
 
 export const addResumeSummary = async (
@@ -430,6 +408,13 @@ export const addResumeSummary = async (
     if (!user) {
       throw new Error("Not authenticated");
     }
+
+    const owned = await prisma.resume.findUnique({
+      where: { id: data.resumeId!, profile: { userId: user.id } },
+      select: { id: true },
+    });
+    if (!owned) throw new Error("Resume not found or access denied");
+
     const res = await prisma.resumeSection.create({
       data: {
         resumeId: data.resumeId!,
@@ -507,6 +492,12 @@ export const addExperience = async (
     if (!user) {
       throw new Error("Not authenticated");
     }
+
+    const owned = await prisma.resume.findUnique({
+      where: { id: data.resumeId!, profile: { userId: user.id } },
+      select: { id: true },
+    });
+    if (!owned) throw new Error("Resume not found or access denied");
 
     if (!data.sectionId && !data.sectionTitle) {
       throw new Error("SectionTitle is required.");
@@ -596,6 +587,13 @@ export const addEducation = async (
     if (!user) {
       throw new Error("Not authenticated");
     }
+
+    const owned = await prisma.resume.findUnique({
+      where: { id: data.resumeId!, profile: { userId: user.id } },
+      select: { id: true },
+    });
+    if (!owned) throw new Error("Resume not found or access denied");
+
     const section = !data.sectionId
       ? await prisma.resumeSection.create({
           data: {
@@ -682,6 +680,12 @@ export const addCertification = async (
     if (!user) {
       throw new Error("Not authenticated");
     }
+
+    const owned = await prisma.resume.findUnique({
+      where: { id: data.resumeId!, profile: { userId: user.id } },
+      select: { id: true },
+    });
+    if (!owned) throw new Error("Resume not found or access denied");
 
     const section = !data.sectionId
       ? await prisma.resumeSection.create({

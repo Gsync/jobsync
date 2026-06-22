@@ -47,10 +47,15 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
         const result = await getUserSettings();
         if (result.success && result.data?.settings?.ai) {
           const aiSettings = result.data.settings.ai;
-          setSelectedModel({
+          const model: AiModel = {
             provider: aiSettings.provider || defaultModel.provider,
             model: aiSettings.model,
-          });
+          };
+          setSelectedModel(model);
+          // Only check Ollama connectivity once we know the actual provider
+          if (model.provider === "ollama") {
+            await checkConnectionStatus(model.provider);
+          }
         }
       } catch (error) {
         console.error("Error fetching AI settings:", error);
@@ -88,19 +93,17 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
     submit({ selectedModel, resume });
   };
 
-  const triggerSheetChange = async (openState: boolean) => {
+  const triggerSheetChange = (openState: boolean) => {
     setAiSectionOpen(openState);
     if (!openState && isLoading) {
       stop();
-    } else if (openState && selectedModel.provider === "ollama") {
-      await checkConnectionStatus();
     }
   };
 
-  const checkConnectionStatus = async () => {
+  const checkConnectionStatus = async (provider = selectedModel.provider) => {
     setOllamaConnected(null);
     setConnectionError("");
-    const result = await checkOllamaConnection(selectedModel.provider);
+    const result = await checkOllamaConnection(provider);
     if (result.isConnected) {
       setOllamaConnected(true);
     } else {

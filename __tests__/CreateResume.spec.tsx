@@ -2,6 +2,15 @@ import CreateResume from "@/components/profile/CreateResume";
 import { Resume } from "@/models/profile.model";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => "/",
+}));
+
+vi.mock("@/actions/userSettings.actions", () => ({
+  getUserSettings: vi.fn().mockResolvedValue({ success: false }),
+}));
+
 describe("CreateResume Component", () => {
   const mockReloadResumes = vi.fn();
   const mockSetResumeDialogOpen = vi.fn();

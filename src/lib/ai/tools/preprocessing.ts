@@ -226,13 +226,11 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
 
 // MAIN ORCHESTRATOR
 
-export const preprocessResume = async (
-  resume: Resume,
+// preprocessText accepts already-extracted raw text (used by the import flow)
+export const preprocessText = async (
+  rawText: string,
 ): Promise<PreprocessingResult> => {
   try {
-    // Convert resume object to raw text
-    const rawText = await convertResumeToText(resume);
-    // Quick validation - fail fast if obviously invalid
     if (!rawText || rawText.trim().length < MIN_CHAR_COUNT) {
       const charCount = rawText?.trim().length || 0;
       return {
@@ -248,32 +246,19 @@ export const preprocessResume = async (
       };
     }
 
-    // Apply normalization pipeline
     let normalizedText = rawText;
     normalizedText = normalizeWhitespace(normalizedText);
     normalizedText = normalizeBullets(normalizedText);
     normalizedText = normalizeHeadings(normalizedText);
 
-    // Extract metadata
     const metadata = extractMetadata(normalizedText);
 
-    // Full validation
     const validationResult = validateResume(normalizedText, metadata);
     if (!validationResult.isValid) {
-      return {
-        success: false,
-        error: validationResult.error!,
-      };
+      return { success: false, error: validationResult.error! };
     }
 
-    return {
-      success: true,
-      data: {
-        normalizedText,
-        metadata,
-        isValid: true,
-      },
-    };
+    return { success: true, data: { normalizedText, metadata, isValid: true } };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return {
@@ -284,4 +269,11 @@ export const preprocessResume = async (
       },
     };
   }
+};
+
+export const preprocessResume = async (
+  resume: Resume,
+): Promise<PreprocessingResult> => {
+  const rawText = await convertResumeToText(resume);
+  return preprocessText(rawText);
 };

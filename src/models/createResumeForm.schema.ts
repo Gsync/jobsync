@@ -1,12 +1,5 @@
 import { z } from "zod";
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-
-const SUPPORTED_MIME_TYPES = [
-  "application/pdf", // PDF
-  "application/msword", // Word .doc
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // Word .docx
-];
+import { APP_CONSTANTS } from "@/lib/constants";
 
 export const CreateResumeFormSchema = z.object({
   id: z.string().optional(),
@@ -18,10 +11,10 @@ export const CreateResumeFormSchema = z.object({
   profileId: z.string().optional(),
   file: z
     .instanceof(File)
-    .refine((file) => SUPPORTED_MIME_TYPES.includes(file.type), {
+    .refine((file) => (APP_CONSTANTS.RESUME_ALLOWED_MIME_TYPES as readonly string[]).includes(file.type), {
       message: "Only PDF and Word documents are allowed.",
     })
-    .refine((file) => file.size <= MAX_FILE_SIZE, {
+    .refine((file) => file.size <= APP_CONSTANTS.MAX_RESUME_FILE_SIZE_BYTES, {
       message: "File size must be less than 5MB",
     })
     .optional(),

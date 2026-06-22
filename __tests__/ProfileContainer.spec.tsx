@@ -3,6 +3,15 @@ import userEvent from "@testing-library/user-event";
 import ProfileContainer from "@/components/profile/ProfileContainer";
 import React from "react";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => "/",
+}));
+
+vi.mock("@/actions/userSettings.actions", () => ({
+  getUserSettings: vi.fn().mockResolvedValue({ success: false }),
+}));
+
 vi.mock("@/actions/profile.actions", () => ({
   getResumeList: vi.fn(() =>
     Promise.resolve({

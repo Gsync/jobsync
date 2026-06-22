@@ -71,7 +71,7 @@ function DocumentTable({
 
     const { success, message } =
       doc.type === "resume"
-        ? await deleteResumeById(doc.id, doc.FileId)
+        ? await deleteResumeById(doc.id)
         : await deleteCoverLetterById(doc.id);
 
     if (success) {

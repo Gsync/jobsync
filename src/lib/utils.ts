@@ -57,13 +57,21 @@ export function handleError(error: unknown, msg = "Server Error.") {
 export function getTimestampedFileName(originalName: string): string {
   const timestamp = new Date()
     .toISOString()
-    .replace(/:/g, "-") // Replace colons with dashes for file system compatibility
-    .replace(/\..+/, ""); // Remove milliseconds
+    .replace(/:/g, "-")
+    .replace(/\..+/, "");
 
-  const extension = originalName.split(".").pop();
-  const baseName = originalName.replace(`.${extension}`, "");
+  // Simulate path.basename: keep only the last path segment
+  const segments = originalName.replace(/\\/g, "/").split("/");
+  const base = segments[segments.length - 1] || "file";
 
-  return `${baseName}_${timestamp}.${extension}`;
+  // Strip control characters
+  const safe = base.replace(/[\x00-\x1f\x7f]/g, "");
+
+  const lastDot = safe.lastIndexOf(".");
+  const ext = lastDot >= 0 ? safe.slice(lastDot + 1) : "";
+  const name = lastDot >= 0 ? safe.slice(0, lastDot) : safe;
+
+  return `${name || "file"}_${timestamp}${ext ? "." + ext : ""}`;
 }
 
 export const combineDateAndTime = (date: Date, time: string): Date => {

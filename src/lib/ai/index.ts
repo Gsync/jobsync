@@ -20,6 +20,7 @@ export { AIUnavailableError } from "./tools";
 // Resume preprocessing
 export {
   preprocessResume,
+  preprocessText,
   convertResumeToText,
   type PreprocessingResult,
   type ResumeMetadata,

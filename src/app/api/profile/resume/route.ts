@@ -9,11 +9,22 @@ import {
 import path from "path";
 import fs from "fs";
 import { getTimestampedFileName } from "@/lib/utils";
+import { APP_CONSTANTS } from "@/lib/constants";
+import { PDF_MAGIC, ZIP_MAGIC } from "@/lib/ai/import/extract-text";
+
+const ALLOWED_MIME = new Set(APP_CONSTANTS.RESUME_ALLOWED_MIME_TYPES);
+
+function validateFileBytes(buf: Buffer, mimeType: string): boolean {
+  if (mimeType === "application/pdf") return buf.subarray(0, 4).equals(PDF_MAGIC);
+  if (mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+    return buf.subarray(0, 4).equals(ZIP_MAGIC);
+  }
+  return false;
+}
 
 export const POST = async (req: NextRequest) => {
   const session = await auth();
   const userId = session?.user?.id;
-  const dataPath = process.env.NODE_ENV !== "production" ? "data" : "/data";
   let filePath;
 
   try {
@@ -33,8 +44,21 @@ export const POST = async (req: NextRequest) => {
     const resumeId = (formData.get("id") as string) ?? null;
     let fileId: string | undefined =
       (formData.get("fileId") as string) ?? undefined;
-    if (file && file.name) {
-      const uploadDir = path.join(dataPath, "files", "resumes");
+
+    if (file && file.name && file.size > 0) {
+      // Server-side validation: size, MIME type, and magic bytes
+      if (file.size > APP_CONSTANTS.MAX_RESUME_FILE_SIZE_BYTES) {
+        return NextResponse.json({ error: "File size must be less than 5MB" }, { status: 400 });
+      }
+      if (!ALLOWED_MIME.has(file.type)) {
+        return NextResponse.json({ error: "Only PDF and .docx files are supported" }, { status: 400 });
+      }
+      const fileBytes = Buffer.from(await file.arrayBuffer());
+      if (!validateFileBytes(fileBytes, file.type)) {
+        return NextResponse.json({ error: "File content does not match declared type" }, { status: 400 });
+      }
+
+      const uploadDir = path.join(APP_CONSTANTS.UPLOADS_DIR, "files", "resumes");
       const timestampedFileName = getTimestampedFileName(file.name);
       filePath = path.join(uploadDir, timestampedFileName);
       await uploadFile(file, uploadDir, filePath);
@@ -127,10 +151,12 @@ export const GET = async (req: NextRequest) => {
 
     const fileContent = fs.readFileSync(fullFilePath);
 
+    // Strip CR/LF from filename to prevent header injection
+    const safeFileName = fileName.replace(/[\r\n"]/g, "_");
     const response = new NextResponse(fileContent, {
       headers: {
         "Content-Type": contentType,
-        "Content-Disposition": `attachment; filename="${fileName}"`,
+        "Content-Disposition": `attachment; filename="${safeFileName}"`,
       },
     });
 
