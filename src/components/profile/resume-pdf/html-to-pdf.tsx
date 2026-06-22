@@ -119,7 +119,19 @@ function walkNode(
   }
 }
 
-export function htmlToPdfNodes(html: string, s: HtmlStyleSet): React.ReactElement[] {
+const DEFAULT_STYLE_SET: HtmlStyleSet = {
+  bodyText: {},
+  bold: { fontFamily: "Helvetica-Bold" },
+  italic: { fontFamily: "Helvetica-Oblique" },
+  boldItalic: { fontFamily: "Helvetica-BoldOblique" },
+  h2text: {},
+  listRow: { flexDirection: "row" },
+  bullet: {},
+  listText: {},
+  bulletChar: "•",
+};
+
+export function htmlToPdfNodes(html: string, s: HtmlStyleSet = DEFAULT_STYLE_SET): React.ReactElement[] {
   if (!html || !html.trim()) return [];
   try {
     const doc = new DOMParser().parseFromString(html, "text/html");

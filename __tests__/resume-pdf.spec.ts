@@ -1,8 +1,27 @@
 import { describe, it, expect } from "vitest";
-import { sanitizeFilename } from "@/components/profile/resume-pdf";
+import { sanitizeFilename, RESUME_LAYOUT_LABELS } from "@/components/profile/resume-pdf";
 
 // DOMParser is available in jsdom (vitest environment)
 import { htmlToPdfNodes } from "@/components/profile/resume-pdf/html-to-pdf";
+import type { HtmlStyleSet } from "@/components/profile/resume-pdf/types";
+
+// Minimal style sets — avoid @react-pdf StyleSheet.create in test env
+const simpleStyleSet: HtmlStyleSet = {
+  bodyText: {},
+  bold: { fontFamily: "Helvetica-Bold" },
+  italic: { fontFamily: "Helvetica-Oblique" },
+  boldItalic: { fontFamily: "Helvetica-BoldOblique" },
+  h2text: {},
+  listRow: {},
+  bullet: {},
+  listText: {},
+  bulletChar: "•",
+};
+
+const professionalStyleSet: HtmlStyleSet = {
+  ...simpleStyleSet,
+  bulletChar: "▪",
+};
 
 describe("sanitizeFilename", () => {
   it("returns 'resume' for empty string", () => {
@@ -77,5 +96,79 @@ describe("htmlToPdfNodes", () => {
     expect(JSON.stringify(nodes[0])).toContain(
       "Motivated developer with experience.",
     );
+  });
+});
+
+describe("RESUME_LAYOUT_LABELS", () => {
+  it("maps 'simple' to 'Simple'", () => {
+    expect(RESUME_LAYOUT_LABELS["simple"]).toBe("Simple");
+  });
+
+  it("maps 'professional' to 'Professional'", () => {
+    expect(RESUME_LAYOUT_LABELS["professional"]).toBe("Professional");
+  });
+
+  it("covers exactly the two expected layouts", () => {
+    expect(Object.keys(RESUME_LAYOUT_LABELS)).toEqual(["simple", "professional"]);
+  });
+});
+
+describe("htmlToPdfNodes — layout style sets", () => {
+  it("uses the simple bullet char (•) for list items", () => {
+    const nodes = htmlToPdfNodes("<ul><li>Foo</li></ul>", simpleStyleSet);
+    expect(JSON.stringify(nodes)).toContain("•");
+  });
+
+  it("uses the professional bullet char (▪) for list items", () => {
+    const nodes = htmlToPdfNodes("<ul><li>Foo</li></ul>", professionalStyleSet);
+    expect(JSON.stringify(nodes)).toContain("▪");
+    expect(JSON.stringify(nodes)).not.toContain("•");
+  });
+
+  it("renders <h2> and includes its text content", () => {
+    const nodes = htmlToPdfNodes("<h2>Skills</h2>", simpleStyleSet);
+    expect(nodes).toHaveLength(1);
+    expect(JSON.stringify(nodes[0])).toContain("Skills");
+  });
+
+  it("renders <ol> with incrementing numeric markers", () => {
+    const nodes = htmlToPdfNodes(
+      "<ol><li>First</li><li>Second</li></ol>",
+      simpleStyleSet,
+    );
+    expect(nodes).toHaveLength(1);
+    const serialized = JSON.stringify(nodes[0]);
+    expect(serialized).toContain("1.");
+    expect(serialized).toContain("2.");
+    expect(serialized).not.toContain("•");
+  });
+
+  it("renders <br> as a newline within paragraph text", () => {
+    const nodes = htmlToPdfNodes("<p>line one<br/>line two</p>", simpleStyleSet);
+    expect(nodes).toHaveLength(1);
+    // JSON.stringify encodes the \n character as \\n
+    expect(JSON.stringify(nodes)).toContain("\\n");
+  });
+
+  it("renders <strong> with bold font and no italic", () => {
+    const nodes = htmlToPdfNodes(
+      "<p><strong>bold text</strong></p>",
+      simpleStyleSet,
+    );
+    expect(nodes).toHaveLength(1);
+    const serialized = JSON.stringify(nodes[0]);
+    expect(serialized).toContain("Helvetica-Bold");
+    expect(serialized).not.toContain("Oblique");
+  });
+
+  it("renders <em> with italic font and no bold", () => {
+    const nodes = htmlToPdfNodes(
+      "<p><em>italic text</em></p>",
+      simpleStyleSet,
+    );
+    expect(nodes).toHaveLength(1);
+    const serialized = JSON.stringify(nodes[0]);
+    expect(serialized).toContain("Helvetica-Oblique");
+    expect(serialized).not.toContain("Bold");
   });
 });

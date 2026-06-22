@@ -246,4 +246,36 @@ describe("getTimestampedFileName", () => {
     const timestampPart = result.replace("test_", "").replace(".pdf", "");
     expect(timestampPart).not.toContain(".");
   });
+
+  it("strips path segments to prevent path traversal", () => {
+    const result = getTimestampedFileName("../../etc/passwd.pdf");
+    expect(result).toMatch(/^passwd_/);
+  });
+
+  it("strips Windows backslash path segments", () => {
+    const result = getTimestampedFileName("C:\\Users\\admin\\resume.pdf");
+    expect(result).toMatch(/^resume_/);
+  });
+
+  it("strips control characters from the filename", () => {
+    const result = getTimestampedFileName("resum\x00e.pdf");
+    expect(result).not.toContain("\x00");
+    expect(result).toMatch(/^resum/);
+  });
+
+  it("falls back to 'file' when name is empty after stripping control chars", () => {
+    const result = getTimestampedFileName("\x00\x01\x02.pdf");
+    expect(result).toMatch(/^file_/);
+  });
+
+  it("handles a filename with no extension", () => {
+    const result = getTimestampedFileName("resume_noext");
+    expect(result).toMatch(/^resume_noext_/);
+    expect(result).not.toMatch(/\.$/);
+  });
+
+  it("uses the last path segment when given a Unix path", () => {
+    const result = getTimestampedFileName("/tmp/uploads/cover.pdf");
+    expect(result).toMatch(/^cover_/);
+  });
 });
