@@ -16,8 +16,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import type { ResumeLayout } from "./resume-pdf";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -381,7 +385,7 @@ function ResumeContainer({ resume }: { resume: Resume }) {
     router.refresh();
   };
 
-  const handleExportPdf = async () => {
+  const handleExportPdf = async (layout: ResumeLayout) => {
     const hasName =
       resume.ContactInfo?.firstName?.trim() || resume.ContactInfo?.lastName?.trim();
     const hasSections = resume.ResumeSections?.some(
@@ -404,7 +408,7 @@ function ResumeContainer({ resume }: { resume: Resume }) {
     setIsExporting(true);
     try {
       const { generateResumePdfBlob } = await import("./resume-pdf");
-      const { blob, filename } = await generateResumePdfBlob(resume);
+      const { blob, filename } = await generateResumePdfBlob(resume, layout);
 
       if (!resume.FileId) {
         triggerDownload(blob, filename);
@@ -498,14 +502,31 @@ function ResumeContainer({ resume }: { resume: Resume }) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={handleExportPdf}
-                  disabled={isExporting}
-                >
-                  <FileDown className="h-4 w-4 mr-2" />
-                  {isExporting ? "Generating…" : "Export to PDF"}
-                </DropdownMenuItem>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger
+                    className="cursor-pointer"
+                    disabled={isExporting}
+                  >
+                    <FileDown className="h-4 w-4 mr-2" />
+                    {isExporting ? "Generating…" : "Export to PDF"}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={() => handleExportPdf("simple")}
+                      disabled={isExporting}
+                    >
+                      Simple
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={() => handleExportPdf("professional")}
+                      disabled={isExporting}
+                    >
+                      Professional
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

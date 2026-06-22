@@ -1,6 +1,7 @@
-import { StyleSheet, Text, View } from "@react-pdf/renderer";
+import { StyleSheet } from "@react-pdf/renderer";
+import { HtmlStyleSet } from "../types";
 
-export const styles = StyleSheet.create({
+export const simpleStyles = StyleSheet.create({
   page: {
     fontFamily: "Helvetica",
     fontSize: 11,
@@ -65,11 +66,14 @@ export const styles = StyleSheet.create({
   },
 });
 
-export function SectionHeading({ title }: { title: string }) {
-  return (
-    <View>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <View style={styles.divider} />
-    </View>
-  );
-}
+export const simpleHtmlStyles: HtmlStyleSet = {
+  bodyText: simpleStyles.bodyText,
+  bold: simpleStyles.bold,
+  italic: simpleStyles.italic,
+  boldItalic: simpleStyles.boldItalic,
+  h2text: simpleStyles.h2text,
+  listRow: simpleStyles.listRow,
+  bullet: simpleStyles.bullet,
+  listText: simpleStyles.listText,
+  bulletChar: "•",
+};

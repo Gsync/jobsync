@@ -1,6 +1,6 @@
 import React from "react";
 import { Text, View } from "@react-pdf/renderer";
-import { styles } from "./primitives";
+import { HtmlStyleSet } from "./types";
 
 // Use numeric constants — the `Node` global is not available in all rendering contexts
 const TEXT_NODE = 3;
@@ -11,10 +11,10 @@ type InheritedStyle = {
   italic?: boolean;
 };
 
-function inlineStyle(inherited: InheritedStyle) {
-  if (inherited.bold && inherited.italic) return styles.boldItalic;
-  if (inherited.bold) return styles.bold;
-  if (inherited.italic) return styles.italic;
+function inlineStyle(inherited: InheritedStyle, s: HtmlStyleSet) {
+  if (inherited.bold && inherited.italic) return s.boldItalic;
+  if (inherited.bold) return s.bold;
+  if (inherited.italic) return s.italic;
   return undefined;
 }
 
@@ -22,13 +22,14 @@ function walkNode(
   node: ChildNode,
   inherited: InheritedStyle,
   key: string,
+  s: HtmlStyleSet,
 ): React.ReactElement | string | null {
   if (node.nodeType === TEXT_NODE) {
     const text = node.textContent ?? "";
     if (!text) return null;
-    const s = inlineStyle(inherited);
-    return s ? (
-      <Text key={key} style={s}>
+    const style = inlineStyle(inherited, s);
+    return style ? (
+      <Text key={key} style={style}>
         {text}
       </Text>
     ) : (
@@ -41,20 +42,20 @@ function walkNode(
   const tag = el.tagName.toLowerCase();
 
   const children = Array.from(el.childNodes)
-    .map((child, i) => walkNode(child, inherited, `${key}-${i}`))
+    .map((child, i) => walkNode(child, inherited, `${key}-${i}`, s))
     .filter(Boolean);
 
   switch (tag) {
     case "p": {
       return (
-        <Text key={key} style={styles.bodyText}>
+        <Text key={key} style={s.bodyText}>
           {children}
         </Text>
       );
     }
     case "h2": {
       return (
-        <Text key={key} style={styles.h2text}>
+        <Text key={key} style={s.h2text}>
           {children}
         </Text>
       );
@@ -63,11 +64,10 @@ function walkNode(
     case "b": {
       const next = { ...inherited, bold: true };
       const inner = Array.from(el.childNodes)
-        .map((child, i) => walkNode(child, next, `${key}-${i}`))
+        .map((child, i) => walkNode(child, next, `${key}-${i}`, s))
         .filter(Boolean);
-      const s = inlineStyle(next);
       return (
-        <Text key={key} style={s}>
+        <Text key={key} style={inlineStyle(next, s)}>
           {inner}
         </Text>
       );
@@ -76,11 +76,10 @@ function walkNode(
     case "i": {
       const next = { ...inherited, italic: true };
       const inner = Array.from(el.childNodes)
-        .map((child, i) => walkNode(child, next, `${key}-${i}`))
+        .map((child, i) => walkNode(child, next, `${key}-${i}`, s))
         .filter(Boolean);
-      const s = inlineStyle(next);
       return (
-        <Text key={key} style={s}>
+        <Text key={key} style={inlineStyle(next, s)}>
           {inner}
         </Text>
       );
@@ -90,16 +89,14 @@ function walkNode(
       const items = Array.from(el.children)
         .filter((c) => c.tagName.toLowerCase() === "li")
         .map((li, i) => {
-          const marker = tag === "ol" ? `${i + 1}.` : "•";
+          const marker = tag === "ol" ? `${i + 1}.` : s.bulletChar;
           const liChildren = Array.from(li.childNodes)
-            .map((child, j) =>
-              walkNode(child, inherited, `${key}-li${i}-${j}`),
-            )
+            .map((child, j) => walkNode(child, inherited, `${key}-li${i}-${j}`, s))
             .filter(Boolean);
           return (
-            <View key={`${key}-li${i}`} style={styles.listRow}>
-              <Text style={styles.bullet}>{marker}</Text>
-              <Text style={styles.listText}>{liChildren}</Text>
+            <View key={`${key}-li${i}`} style={s.listRow}>
+              <Text style={s.bullet}>{marker}</Text>
+              <Text style={s.listText}>{liChildren}</Text>
             </View>
           );
         });
@@ -115,27 +112,26 @@ function walkNode(
     default:
       if (children.length === 0) return null;
       return (
-        <Text key={key} style={inlineStyle(inherited)}>
+        <Text key={key} style={inlineStyle(inherited, s)}>
           {children}
         </Text>
       );
   }
 }
 
-export function htmlToPdfNodes(html: string): React.ReactElement[] {
+export function htmlToPdfNodes(html: string, s: HtmlStyleSet): React.ReactElement[] {
   if (!html || !html.trim()) return [];
   try {
     const doc = new DOMParser().parseFromString(html, "text/html");
     const nodes: React.ReactElement[] = [];
     Array.from(doc.body.childNodes).forEach((node, i) => {
-      const result = walkNode(node, {}, `node-${i}`);
+      const result = walkNode(node, {}, `node-${i}`, s);
       if (!result) return;
       if (typeof result === "string") {
-        // Wrap top-level bare text (plain-text content with no block wrapper)
-        // so it is not silently dropped from the PDF.
+        // Wrap top-level bare text so it is not silently dropped from the PDF.
         if (!result.trim()) return;
         nodes.push(
-          <Text key={`node-${i}`} style={styles.bodyText}>
+          <Text key={`node-${i}`} style={s.bodyText}>
             {result}
           </Text>,
         );
