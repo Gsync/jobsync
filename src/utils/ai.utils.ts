@@ -1,5 +1,6 @@
 import { JobResponse } from "@/models/job.model";
 import { AiProvider } from "@/models/ai.model";
+import { APP_CONSTANTS } from "@/lib/constants";
 
 // Re-export for backwards compatibility
 export { convertResumeToText } from "@/lib/ai/tools/preprocessing";
@@ -20,7 +21,7 @@ export const checkOllamaConnection = async (
 
   try {
     const response = await fetch("/api/ai/ollama/tags", {
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(APP_CONSTANTS.AI_OLLAMA_LIST_TIMEOUT_MS),
     });
 
     if (!response.ok) {

@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { getOllamaBaseUrl } from "@/actions/apiKey.actions";
 import { NextResponse } from "next/server";
+import { APP_CONSTANTS } from "@/lib/constants";
 
 export async function POST(request: Request) {
   try {
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(APP_CONSTANTS.AI_OLLAMA_GENERATE_TIMEOUT_MS),
     });
 
     if (!response.ok) {

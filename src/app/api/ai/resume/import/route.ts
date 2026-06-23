@@ -7,6 +7,7 @@ import path from "path";
 import fs from "fs";
 import { getModel } from "@/lib/ai/providers";
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
+import { TEMPERATURES } from "@/lib/ai/config";
 import { preprocessText } from "@/lib/ai";
 import { extractText } from "@/lib/ai/import/extract-text";
 import { ResumeImportSchema } from "@/models/resumeImport.schema";
@@ -115,7 +116,7 @@ export const POST = async (req: NextRequest) => {
         output: Output.object({ schema: ResumeImportSchema }),
         system: RESUME_IMPORT_SYSTEM_PROMPT,
         prompt: buildResumeImportPrompt(preprocessResult.data.normalizedText),
-        temperature: 0.1,
+        temperature: TEMPERATURES.ANALYSIS,
         abortSignal: controller.signal,
       }));
     } finally {

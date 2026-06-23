@@ -4,9 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import db from "@/lib/db";
 import { runAutomation, type RunnerResult } from "@/lib/scraper";
-
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
-const MAX_RUNS_PER_HOUR = 5;
+import { APP_CONSTANTS } from "@/lib/constants";
 
 const recentRuns = new Map<string, number[]>();
 
@@ -14,10 +12,10 @@ function checkRateLimit(userId: string): boolean {
   const now = Date.now();
   const userRuns = recentRuns.get(userId) || [];
 
-  const validRuns = userRuns.filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS);
+  const validRuns = userRuns.filter((timestamp) => now - timestamp < APP_CONSTANTS.AUTOMATION_RATE_LIMIT_WINDOW_MS);
   recentRuns.set(userId, validRuns);
 
-  if (validRuns.length >= MAX_RUNS_PER_HOUR) {
+  if (validRuns.length >= APP_CONSTANTS.AUTOMATION_MAX_MANUAL_RUNS_PER_HOUR) {
     return false;
   }
 
@@ -41,7 +39,7 @@ export async function POST(
 
   if (!checkRateLimit(userId)) {
     return NextResponse.json(
-      { message: `Rate limit exceeded. Maximum ${MAX_RUNS_PER_HOUR} manual runs per hour.` },
+      { message: `Rate limit exceeded. Maximum ${APP_CONSTANTS.AUTOMATION_MAX_MANUAL_RUNS_PER_HOUR} manual runs per hour.` },
       { status: 429 }
     );
   }

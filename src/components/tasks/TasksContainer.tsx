@@ -240,15 +240,10 @@ function TasksContainer({
           !loadingMore &&
           tasks.length < totalTasks
         ) {
-          loadTasks(
-            page + 1,
-            filterKey,
-            statusFilter,
-            searchTerm || undefined,
-          );
+          loadTasks(page + 1, filterKey, statusFilter, searchTerm || undefined);
         }
       },
-      { threshold: 0.1 },
+      { threshold: APP_CONSTANTS.INTERSECTION_OBSERVER_THRESHOLD },
     );
 
     observer.observe(sentinel);
@@ -289,9 +284,13 @@ function TasksContainer({
       <Card x-chunk="dashboard-tasks-chunk-0" className="h-full">
         <CardHeader className="flex-row justify-between items-center">
           <div className="flex items-baseline gap-2">
-            <CardTitle>My Tasks</CardTitle>
+            <CardTitle>Tasks</CardTitle>
             {!initialLoading && totalTasks > 0 && (
-              <RecordsCount count={tasks.length} total={totalTasks} label="tasks" />
+              <RecordsCount
+                count={tasks.length}
+                total={totalTasks}
+                label="tasks"
+              />
             )}
           </div>
           <div className="flex items-center">

@@ -13,10 +13,21 @@ import {
 export const APP_CONSTANTS = {
   RECORDS_PER_PAGE: 25,
   MAX_AUTOMATIONS_PER_USER: 10,
+  MAX_JOB_TAGS: 10,
   ACTIVITY_MAX_DURATION_MINUTES: 8 * 60, // 8 Hours
   ACTIVITY_MAX_DURATION_MS: 8 * 60 * 60 * 1000, // 8 hours in milliseconds
   RECENT_NUM_JOBS_ACTIVITIES: 7,
   AI_SLOW_RESPONSE_THRESHOLD_MS: 15_000, // 15 seconds
+  INTERSECTION_OBSERVER_THRESHOLD: 0.1,
+  TOAST_LIMIT: 1,
+
+  // Ollama API timeouts
+  AI_OLLAMA_LIST_TIMEOUT_MS: 5_000,
+  AI_OLLAMA_GENERATE_TIMEOUT_MS: 10_000,
+
+  // Automation manual run rate limiting
+  AUTOMATION_MAX_MANUAL_RUNS_PER_HOUR: 5,
+  AUTOMATION_RATE_LIMIT_WINDOW_MS: 60 * 60 * 1000, // 1 hour
 
   // File uploads
   UPLOADS_DIR: process.env.NODE_ENV !== "production" ? "data" : "/data",
@@ -70,7 +81,7 @@ export const SIDEBAR_LINKS = [
   {
     icon: BriefcaseBusiness,
     route: "/dashboard/myjobs",
-    label: "My Jobs",
+    label: "Jobs",
   },
   {
     icon: Zap,

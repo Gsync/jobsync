@@ -125,7 +125,7 @@ function ActivitiesContainer() {
           loadActivities(page + 1, APP_CONSTANTS.RECORDS_PER_PAGE, searchTerm || undefined);
         }
       },
-      { threshold: 0.1 },
+      { threshold: APP_CONSTANTS.INTERSECTION_OBSERVER_THRESHOLD },
     );
 
     observer.observe(sentinel);

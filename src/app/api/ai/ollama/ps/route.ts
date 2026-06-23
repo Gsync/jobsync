@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { getOllamaBaseUrl } from "@/actions/apiKey.actions";
 import { NextResponse } from "next/server";
+import { APP_CONSTANTS } from "@/lib/constants";
 
 export async function GET() {
   try {
@@ -11,7 +12,7 @@ export async function GET() {
 
     const baseUrl = await getOllamaBaseUrl();
     const response = await fetch(`${baseUrl}/api/ps`, {
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(APP_CONSTANTS.AI_OLLAMA_LIST_TIMEOUT_MS),
     });
 
     if (!response.ok) {

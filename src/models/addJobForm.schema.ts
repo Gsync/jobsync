@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { APP_CONSTANTS } from "@/lib/constants";
 
 export const AddJobFormSchema = z.object({
   id: z.string().optional(),
@@ -59,5 +60,5 @@ export const AddJobFormSchema = z.object({
   applied: z.boolean().default(false),
   resume: z.string().optional(),
   coverLetter: z.string().optional(),
-  tags: z.array(z.string()).max(10).optional().default([]),
+  tags: z.array(z.string()).max(APP_CONSTANTS.MAX_JOB_TAGS).optional().default([]),
 });

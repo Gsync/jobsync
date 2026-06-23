@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { APP_CONSTANTS } from "@/lib/constants";
 
 export const AddQuestionFormSchema = z.object({
   id: z.string().optional(),
@@ -12,6 +13,6 @@ export const AddQuestionFormSchema = z.object({
     .nullable(),
   tagIds: z
     .array(z.string())
-    .max(10, { message: "Maximum 10 skill tags allowed." })
+    .max(APP_CONSTANTS.MAX_JOB_TAGS, { message: `Maximum ${APP_CONSTANTS.MAX_JOB_TAGS} skill tags allowed.` })
     .optional(),
 });

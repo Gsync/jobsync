@@ -186,7 +186,14 @@ function JobsContainer({
       setInitialLoading(false);
       setLoadingMore(false);
     },
-    [jobsPerPage, companyFilter, appliedFilter, titleFilter, locationFilter, sourceFilter],
+    [
+      jobsPerPage,
+      companyFilter,
+      appliedFilter,
+      titleFilter,
+      locationFilter,
+      sourceFilter,
+    ],
   );
 
   const reloadJobs = useCallback(async () => {
@@ -287,7 +294,7 @@ function JobsContainer({
           loadJobs(page + 1, filterKey, searchTerm || undefined);
         }
       },
-      { threshold: 0.1 },
+      { threshold: APP_CONSTANTS.INTERSECTION_OBSERVER_THRESHOLD },
     );
 
     observer.observe(sentinel);
@@ -351,9 +358,13 @@ function JobsContainer({
       <Card x-chunk="dashboard-06-chunk-0">
         <CardHeader className="flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
           <div className="flex items-baseline gap-2">
-            <CardTitle>My Jobs</CardTitle>
+            <CardTitle>Jobs</CardTitle>
             {!initialLoading && totalJobs > 0 && (
-              <RecordsCount count={jobs.length} total={totalJobs} label="jobs" />
+              <RecordsCount
+                count={jobs.length}
+                total={totalJobs}
+                label="jobs"
+              />
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">

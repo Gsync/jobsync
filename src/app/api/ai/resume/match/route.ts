@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { streamText, Output } from "ai";
 import { getModel } from "@/lib/ai/providers";
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
+import { TEMPERATURES } from "@/lib/ai/config";
 import {
   JobMatchSchema,
   JOB_MATCH_SYSTEM_PROMPT,
@@ -104,7 +105,7 @@ export const POST = async (req: NextRequest) => {
       }),
       system: JOB_MATCH_SYSTEM_PROMPT,
       prompt: buildJobMatchPrompt(resumeText, jobText),
-      temperature: 0.3,
+      temperature: TEMPERATURES.FEEDBACK,
     });
 
     return result.toTextStreamResponse();

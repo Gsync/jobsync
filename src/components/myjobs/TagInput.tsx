@@ -20,8 +20,7 @@ import { Tag } from "@/models/job.model";
 import { createTag } from "@/actions/tag.actions";
 import { toast } from "../ui/use-toast";
 import { cn } from "@/lib/utils";
-
-const MAX_TAGS = 10;
+import { APP_CONSTANTS } from "@/lib/constants";
 
 interface TagInputProps {
   availableTags: Tag[];
@@ -40,7 +39,7 @@ export function TagInput({
   const [isPending, startTransition] = useTransition();
 
   const selectedTags = localTags.filter((t) => selectedTagIds.includes(t.id));
-  const isMaxReached = selectedTagIds.length >= MAX_TAGS;
+  const isMaxReached = selectedTagIds.length >= APP_CONSTANTS.MAX_JOB_TAGS;
 
   // Tags not yet selected, filtered by input
   const filteredOptions = localTags.filter(
@@ -55,7 +54,7 @@ export function TagInput({
   );
 
   const addTagById = (id: string) => {
-    if (selectedTagIds.length >= MAX_TAGS) return;
+    if (selectedTagIds.length >= APP_CONSTANTS.MAX_JOB_TAGS) return;
     onChange([...selectedTagIds, id]);
   };
 
@@ -110,7 +109,7 @@ export function TagInput({
             type="button"
           >
             {isMaxReached
-              ? `Max ${MAX_TAGS} skills reached`
+              ? `Max ${APP_CONSTANTS.MAX_JOB_TAGS} skills reached`
               : "Search or add a skill..."}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
