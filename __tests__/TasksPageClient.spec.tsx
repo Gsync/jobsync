@@ -149,7 +149,7 @@ describe("TasksPageClient Component", () => {
       expect(screen.getByText("Testing")).toBeInTheDocument();
 
       // Check if container is rendered
-      expect(screen.getByText("My Tasks")).toBeInTheDocument();
+      expect(screen.getByText("Tasks")).toBeInTheDocument();
     });
 
     it("should display total task count in sidebar", () => {
@@ -295,7 +295,7 @@ describe("TasksPageClient Component", () => {
       );
 
       expect(screen.getByText("Activity Types")).toBeInTheDocument();
-      expect(screen.getByText("My Tasks")).toBeInTheDocument();
+      expect(screen.getByText("Tasks")).toBeInTheDocument();
     });
 
     it("should show 0 total tasks when no tasks exist", () => {
