@@ -54,6 +54,16 @@ type PendingCard = {
   card: ImportCardPayload;
 };
 
+// Keywords that map to supported section types — filter these out of unrecognizedSections
+const SUPPORTED_KEYWORDS = ["contact", "summary", "experience", "education", "certification", "certifications"];
+
+function filterUnrecognizedSections(sections: string[]): string[] {
+  return sections.filter((section) => {
+    const lower = section.toLowerCase();
+    return !SUPPORTED_KEYWORDS.some((kw) => lower.includes(kw));
+  });
+}
+
 function buildPendingCards(data: ResumeImportData): PendingCard[] {
   const cards: PendingCard[] = [];
 
@@ -121,7 +131,7 @@ function PendingCardDetail({ card }: { card: ImportCardPayload }) {
 
   if (card.type === "summary") {
     return (
-      <p className="text-xs text-foreground mt-1 whitespace-pre-wrap line-clamp-6">
+      <p className="text-xs text-foreground mt-1 whitespace-pre-wrap">
         {card.data}
       </p>
     );
@@ -137,7 +147,7 @@ function PendingCardDetail({ card }: { card: ImportCardPayload }) {
         <DetailRow label="Location" value={d.location} />
         {dates && <DetailRow label="Dates" value={dates} />}
         {d.description && (
-          <p className="text-xs text-foreground mt-1 whitespace-pre-wrap line-clamp-4 pl-[5.5rem]">
+          <p className="text-xs text-foreground mt-1 whitespace-pre-wrap pl-[5.5rem]">
             {d.description}
           </p>
         )}
@@ -156,7 +166,7 @@ function PendingCardDetail({ card }: { card: ImportCardPayload }) {
         <DetailRow label="Location" value={d.location} />
         {dates && <DetailRow label="Dates" value={dates} />}
         {d.description && (
-          <p className="text-xs text-foreground mt-1 whitespace-pre-wrap line-clamp-3 pl-[5.5rem]">
+          <p className="text-xs text-foreground mt-1 whitespace-pre-wrap pl-[5.5rem]">
             {d.description}
           </p>
         )}
@@ -269,7 +279,7 @@ function ResumeContainer({ resume }: { resume: Resume }) {
         setPendingCards(cards);
         setImportMode(true);
         setImportTruncated(truncated ?? false);
-        setUnrecognizedSections(data.unrecognizedSections ?? []);
+        setUnrecognizedSections(filterUnrecognizedSections(data.unrecognizedSections ?? []));
       }
     } catch {
       // Malformed sessionStorage entry — ignore

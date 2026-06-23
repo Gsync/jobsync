@@ -25,6 +25,11 @@ export const APP_CONSTANTS = {
   AI_OLLAMA_LIST_TIMEOUT_MS: 5_000,
   AI_OLLAMA_GENERATE_TIMEOUT_MS: 10_000,
 
+  // Ollama context window. Defaults to 2048, which a resume plus the system
+  // prompt and JSON output overflow — truncating generation mid-field (e.g.
+  // only the first few description bullets get imported).
+  AI_OLLAMA_NUM_CTX: 8192,
+
   // Automation manual run rate limiting
   AUTOMATION_MAX_MANUAL_RUNS_PER_HOUR: 5,
   AUTOMATION_RATE_LIMIT_WINDOW_MS: 60 * 60 * 1000, // 1 hour

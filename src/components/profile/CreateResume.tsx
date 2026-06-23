@@ -292,7 +292,7 @@ function CreateResume({
                 <Button
                   type="reset"
                   variant="outline"
-                  className="mt-2 md:mt-0 w-full"
+                  className="mt-2 md:mt-0"
                   onClick={closeDialog}
                 >
                   Cancel

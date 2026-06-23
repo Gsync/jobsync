@@ -118,6 +118,9 @@ export const POST = async (req: NextRequest) => {
         prompt: buildResumeImportPrompt(preprocessResult.data.normalizedText),
         temperature: TEMPERATURES.ANALYSIS,
         abortSignal: controller.signal,
+        providerOptions: {
+          ollama: { options: { num_ctx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX } },
+        },
       }));
     } finally {
       clearTimeout(timer);

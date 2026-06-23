@@ -20,7 +20,7 @@ export const ImportExperienceSchema = z.object({
   location: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(), // null / "Present" / "Current" = current job
-  description: z.string().optional(),
+  description: z.string().catch(""),
   confidence,
 });
 
@@ -31,7 +31,7 @@ export const ImportEducationSchema = z.object({
   location: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  description: z.string().optional(),
+  description: z.string().catch(""),
   confidence,
 });
 
@@ -46,7 +46,7 @@ export const ImportCertificationSchema = z.object({
 
 export const ResumeImportSchema = z.object({
   contactInfo: ImportContactInfoSchema.optional(),
-  summary: z.string().optional(),
+  summary: z.string().catch(""),
   experience: z.array(ImportExperienceSchema).default([]),
   education: z.array(ImportEducationSchema).default([]),
   certifications: z.array(ImportCertificationSchema).default([]),
