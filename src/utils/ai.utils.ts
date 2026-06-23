@@ -33,7 +33,7 @@ export const checkOllamaConnection = async (
 
     return { isConnected: true };
   } catch (error) {
-    console.error("Error checking Ollama connection:", error);
+    console.warn("Ollama connection check failed:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
     return {

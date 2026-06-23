@@ -46,9 +46,8 @@ import {
 import { deleteResumeById } from "@/actions/profile.actions";
 import { resolveImportCard, ImportCardPayload } from "@/actions/resumeImport.actions";
 import { ResumeImportData } from "@/models/resumeImport.schema";
-import { AiModel, AiProvider, defaultModel } from "@/models/ai.model";
+import { AiModel, defaultModel } from "@/models/ai.model";
 import { getUserSettings } from "@/actions/userSettings.actions";
-import { checkOllamaConnection } from "@/utils/ai.utils";
 
 type PendingCard = {
   id: string;
@@ -295,11 +294,7 @@ function ResumeContainer({ resume }: { resume: Resume }) {
           const ai = result.data.settings.ai;
           const model: AiModel = { provider: ai.provider || defaultModel.provider, model: ai.model };
           setAiModel(model);
-          if (model.provider === AiProvider.OLLAMA) {
-            checkOllamaConnection(AiProvider.OLLAMA).then((r) => setAiReady(r.isConnected));
-          } else {
-            setAiReady(true);
-          }
+          setAiReady(true);
         }
       });
     }

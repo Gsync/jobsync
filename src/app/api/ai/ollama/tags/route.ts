@@ -24,7 +24,7 @@ export async function GET() {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Error proxying Ollama tags:", error);
+    console.warn("Ollama tags unreachable:", error);
     return NextResponse.json(
       { error: "Cannot connect to Ollama service" },
       { status: 502 },
