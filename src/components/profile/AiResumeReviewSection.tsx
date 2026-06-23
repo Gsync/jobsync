@@ -15,7 +15,7 @@ import Loading from "../Loading";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "../ui/use-toast";
 import { Resume } from "@/models/profile.model";
-import { AiModel, defaultModel } from "@/models/ai.model";
+import { AiModel, AiProvider, defaultModel } from "@/models/ai.model";
 import { AiResumeReviewResponseContent } from "./AiResumeReviewResponseContent";
 import {
   Tooltip,
@@ -40,7 +40,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   const [selectedModel, setSelectedModel] = useState<AiModel>(defaultModel);
   const [isLoadingSettings, setIsLoadingSettings] = useState(false);
 
-  const checkConnectionStatus = useCallback(async (provider: string) => {
+  const checkConnectionStatus = useCallback(async (provider: AiProvider) => {
     setOllamaConnected(null);
     setConnectionError("");
     const result = await checkOllamaConnection(provider);

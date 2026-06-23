@@ -63,7 +63,7 @@ export async function generateResumePdfBlob(
     document = <SimpleResumeDocument resume={resume} htmlNodes={htmlNodes} />;
   }
 
-  const blob = await pdf(document).toBlob();
+  const blob = await pdf(document as any).toBlob();
   const filename = `${sanitizeFilename(resume.title)} - ${RESUME_LAYOUT_LABELS[layout]}.pdf`;
   return { blob, filename };
 }

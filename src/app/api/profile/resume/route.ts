@@ -12,7 +12,7 @@ import { getTimestampedFileName } from "@/lib/utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { PDF_MAGIC, ZIP_MAGIC } from "@/lib/ai/import/extract-text";
 
-const ALLOWED_MIME = new Set(APP_CONSTANTS.RESUME_ALLOWED_MIME_TYPES);
+const ALLOWED_MIME = new Set<string>(APP_CONSTANTS.RESUME_ALLOWED_MIME_TYPES);
 
 function validateFileBytes(buf: Buffer, mimeType: string): boolean {
   if (mimeType === "application/pdf") return buf.subarray(0, 4).equals(PDF_MAGIC);

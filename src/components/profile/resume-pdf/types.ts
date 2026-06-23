@@ -1,3 +1,5 @@
+import type { Style } from "@react-pdf/types";
+
 export type ResumeLayout = "simple" | "professional";
 
 export const RESUME_LAYOUT_LABELS: Record<ResumeLayout, string> = {
@@ -6,13 +8,13 @@ export const RESUME_LAYOUT_LABELS: Record<ResumeLayout, string> = {
 };
 
 export type HtmlStyleSet = {
-  bodyText: object;
-  bold: object;
-  italic: object;
-  boldItalic: object;
-  h2text: object;
-  listRow: object;
-  bullet: object;
-  listText: object;
+  bodyText: Style;
+  bold: Style;
+  italic: Style;
+  boldItalic: Style;
+  h2text: Style;
+  listRow: Style;
+  bullet: Style;
+  listText: Style;
   bulletChar: string;
 };
