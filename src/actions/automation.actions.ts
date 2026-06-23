@@ -16,8 +16,8 @@ import type {
   DiscoveryStatus,
 } from "@/models/automation.model";
 import { APP_CONSTANTS } from "@/lib/constants";
+import { syncSchedulerState } from "@/lib/scheduler";
 
-const MAX_AUTOMATIONS_PER_USER = 10;
 
 function formatError(error: unknown, fallback: string): { success: false; message: string } {
   console.error(error, fallback);
@@ -122,8 +122,8 @@ export async function createAutomation(
     const validated = CreateAutomationSchema.parse(input);
 
     const count = await db.automation.count({ where: { userId: user.id } });
-    if (count >= MAX_AUTOMATIONS_PER_USER) {
-      return { success: false, message: `Maximum of ${MAX_AUTOMATIONS_PER_USER} automations allowed per user` };
+    if (count >= APP_CONSTANTS.MAX_AUTOMATIONS_PER_USER) {
+      return { success: false, message: `Maximum of ${APP_CONSTANTS.MAX_AUTOMATIONS_PER_USER} automations allowed per user` };
     }
 
     const resume = await db.resume.findFirst({
@@ -158,6 +158,8 @@ export async function createAutomation(
         },
       },
     });
+
+    await syncSchedulerState();
 
     return {
       success: true,
@@ -249,6 +251,8 @@ export async function deleteAutomation(id: string): Promise<{
 
     await db.automation.delete({ where: { id } });
 
+    await syncSchedulerState();
+
     return { success: true };
   } catch (error) {
     return formatError(error, "Failed to delete automation");
@@ -286,6 +290,8 @@ export async function pauseAutomation(id: string): Promise<{
         },
       },
     });
+
+    await syncSchedulerState();
 
     return {
       success: true,
@@ -329,6 +335,8 @@ export async function resumeAutomation(id: string): Promise<{
         },
       },
     });
+
+    await syncSchedulerState();
 
     return {
       success: true,

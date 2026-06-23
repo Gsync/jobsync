@@ -108,3 +108,13 @@ export function stopScheduler() {
 export function isSchedulerRunning(): boolean {
   return scheduledTask !== null;
 }
+
+// Starts or stops the scheduler based on whether active automations exist
+export async function syncSchedulerState() {
+  const activeCount = await db.automation.count({ where: { status: "active" } });
+  if (activeCount > 0) {
+    startScheduler();
+  } else {
+    stopScheduler();
+  }
+}

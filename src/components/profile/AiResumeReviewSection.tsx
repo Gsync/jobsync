@@ -12,7 +12,7 @@ import {
   SheetTrigger,
 } from "../ui/sheet";
 import Loading from "../Loading";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "../ui/use-toast";
 import { Resume } from "@/models/profile.model";
 import { AiModel, defaultModel } from "@/models/ai.model";
@@ -40,6 +40,18 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   const [selectedModel, setSelectedModel] = useState<AiModel>(defaultModel);
   const [isLoadingSettings, setIsLoadingSettings] = useState(false);
 
+  const checkConnectionStatus = useCallback(async (provider: string) => {
+    setOllamaConnected(null);
+    setConnectionError("");
+    const result = await checkOllamaConnection(provider);
+    if (result.isConnected) {
+      setOllamaConnected(true);
+    } else {
+      setOllamaConnected(false);
+      setConnectionError(result.error || "Ollama is not reachable.");
+    }
+  }, []);
+
   useEffect(() => {
     if (!aISectionOpen) return;
     const fetchSettings = async () => {
@@ -64,7 +76,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
       }
     };
     fetchSettings();
-  }, [aISectionOpen]);
+  }, [aISectionOpen, checkConnectionStatus]);
 
   // Standard single-agent mode
   const { object, submit, isLoading, stop } = useObject({
@@ -97,18 +109,6 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
     setAiSectionOpen(openState);
     if (!openState && isLoading) {
       stop();
-    }
-  };
-
-  const checkConnectionStatus = async (provider = selectedModel.provider) => {
-    setOllamaConnected(null);
-    setConnectionError("");
-    const result = await checkOllamaConnection(provider);
-    if (result.isConnected) {
-      setOllamaConnected(true);
-    } else {
-      setOllamaConnected(false);
-      setConnectionError(result.error || "Ollama is not reachable.");
     }
   };
 
