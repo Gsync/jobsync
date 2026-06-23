@@ -90,7 +90,13 @@ function AiSettings() {
     if (!entry) return;
 
     if (!entry.modelsEndpoint) {
-      setFetchedModels(getFallbackModels(selectedModel.provider));
+      const fallbackModels = getFallbackModels(selectedModel.provider);
+      setFetchedModels(fallbackModels);
+      setSelectedModel((prev) =>
+        prev.model && !fallbackModels.includes(prev.model)
+          ? { ...prev, model: undefined }
+          : prev,
+      );
       return;
     }
 
@@ -127,8 +133,14 @@ function AiSettings() {
         }
         const data = await response.json();
         const models = entry.parseModelsResponse?.(data) ?? [];
+        const finalModels = models.length > 0 ? models : fallback;
         if (!cancelled) {
-          setFetchedModels(models.length > 0 ? models : fallback);
+          setFetchedModels(finalModels);
+          setSelectedModel((prev) =>
+            prev.model && !finalModels.includes(prev.model)
+              ? { ...prev, model: undefined }
+              : prev,
+          );
         }
       } catch (error) {
         console.error(`Error fetching ${entry.displayName} models:`, error);
@@ -248,7 +260,7 @@ function AiSettings() {
         </Label>
         <div className="flex items-start gap-2">
           <Select
-            value={selectedModel.model}
+            value={isLoadingModels ? undefined : selectedModel.model}
             onValueChange={setSelectedProviderModel}
             disabled={isLoadingModels}
           >

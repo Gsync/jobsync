@@ -44,7 +44,10 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { deleteResumeById } from "@/actions/profile.actions";
-import { resolveImportCard, ImportCardPayload } from "@/actions/resumeImport.actions";
+import {
+  resolveImportCard,
+  ImportCardPayload,
+} from "@/actions/resumeImport.actions";
 import { ResumeImportData } from "@/models/resumeImport.schema";
 import { AiModel, defaultModel } from "@/models/ai.model";
 import { getUserSettings } from "@/actions/userSettings.actions";
@@ -55,7 +58,14 @@ type PendingCard = {
 };
 
 // Keywords that map to supported section types — filter these out of unrecognizedSections
-const SUPPORTED_KEYWORDS = ["contact", "summary", "experience", "education", "certification", "certifications"];
+const SUPPORTED_KEYWORDS = [
+  "contact",
+  "summary",
+  "experience",
+  "education",
+  "certification",
+  "certifications",
+];
 
 function filterUnrecognizedSections(sections: string[]): string[] {
   return sections.filter((section) => {
@@ -67,31 +77,48 @@ function filterUnrecognizedSections(sections: string[]): string[] {
 function buildPendingCards(data: ResumeImportData): PendingCard[] {
   const cards: PendingCard[] = [];
 
-  if (data.contactInfo && Object.keys(data.contactInfo).some(
-    (k) => k !== "confidence" && !!(data.contactInfo as any)[k],
-  )) {
-    cards.push({ id: "contactInfo", card: { type: "contactInfo", data: data.contactInfo } });
+  if (
+    data.contactInfo &&
+    Object.keys(data.contactInfo).some(
+      (k) => k !== "confidence" && !!(data.contactInfo as any)[k],
+    )
+  ) {
+    cards.push({
+      id: "contactInfo",
+      card: { type: "contactInfo", data: data.contactInfo },
+    });
   }
 
   if (data.summary?.trim()) {
-    cards.push({ id: "summary", card: { type: "summary", data: data.summary } });
+    cards.push({
+      id: "summary",
+      card: { type: "summary", data: data.summary },
+    });
   }
 
   data.experience.forEach((exp, i) => {
-    cards.push({ id: `experience-${i}`, card: { type: "experience", data: exp } });
+    cards.push({
+      id: `experience-${i}`,
+      card: { type: "experience", data: exp },
+    });
   });
 
   data.education.forEach((edu, i) => {
-    cards.push({ id: `education-${i}`, card: { type: "education", data: edu } });
+    cards.push({
+      id: `education-${i}`,
+      card: { type: "education", data: edu },
+    });
   });
 
   data.certifications.forEach((cert, i) => {
-    cards.push({ id: `certification-${i}`, card: { type: "certification", data: cert } });
+    cards.push({
+      id: `certification-${i}`,
+      card: { type: "certification", data: cert },
+    });
   });
 
   return cards;
 }
-
 
 function cardSectionLabel(type: ImportCardPayload["type"]): string {
   const map: Record<string, string> = {
@@ -139,7 +166,9 @@ function PendingCardDetail({ card }: { card: ImportCardPayload }) {
 
   if (card.type === "experience") {
     const d = card.data;
-    const dates = [d.startDate, d.endDate ? d.endDate : "Present"].filter(Boolean).join(" – ");
+    const dates = [d.startDate, d.endDate ? d.endDate : "Present"]
+      .filter(Boolean)
+      .join(" – ");
     return (
       <div className="space-y-1 mt-1">
         <DetailRow label="Title" value={d.jobTitle} />
@@ -247,14 +276,20 @@ function ResumeContainer({ resume }: { resume: Resume }) {
   const router = useRouter();
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [pendingPdf, setPendingPdf] = useState<{ blob: Blob; filename: string } | null>(null);
+  const [pendingPdf, setPendingPdf] = useState<{
+    blob: Blob;
+    filename: string;
+  } | null>(null);
   const [showAttachConfirm, setShowAttachConfirm] = useState(false);
-  const [showDiscardImportConfirm, setShowDiscardImportConfirm] = useState(false);
+  const [showDiscardImportConfirm, setShowDiscardImportConfirm] =
+    useState(false);
 
   // Import review mode state
   const [pendingCards, setPendingCards] = useState<PendingCard[]>([]);
   const [importTruncated, setImportTruncated] = useState(false);
-  const [unrecognizedSections, setUnrecognizedSections] = useState<string[]>([]);
+  const [unrecognizedSections, setUnrecognizedSections] = useState<string[]>(
+    [],
+  );
   const [importMode, setImportMode] = useState(false);
 
   // AI availability for "Structure with AI" button
@@ -279,7 +314,9 @@ function ResumeContainer({ resume }: { resume: Resume }) {
         setPendingCards(cards);
         setImportMode(true);
         setImportTruncated(truncated ?? false);
-        setUnrecognizedSections(filterUnrecognizedSections(data.unrecognizedSections ?? []));
+        setUnrecognizedSections(
+          filterUnrecognizedSections(data.unrecognizedSections ?? []),
+        );
       }
     } catch {
       // Malformed sessionStorage entry — ignore
@@ -302,7 +339,10 @@ function ResumeContainer({ resume }: { resume: Resume }) {
       getUserSettings().then((result) => {
         if (result.success && result.data?.settings?.ai) {
           const ai = result.data.settings.ai;
-          const model: AiModel = { provider: ai.provider || defaultModel.provider, model: ai.model };
+          const model: AiModel = {
+            provider: ai.provider || defaultModel.provider,
+            model: ai.model,
+          };
           setAiModel(model);
           setAiReady(true);
         }
@@ -319,7 +359,11 @@ function ResumeContainer({ resume }: { resume: Resume }) {
         setPendingCards((prev) => prev.filter((c) => c.id !== cardId));
         router.refresh();
       } else {
-        toast({ variant: "destructive", title: "Error", description: result.message });
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.message,
+        });
       }
     },
     [pendingCards, resume.id, router],
@@ -335,7 +379,11 @@ function ResumeContainer({ resume }: { resume: Resume }) {
     if (result?.success) {
       router.push("/dashboard/profile");
     } else {
-      toast({ variant: "destructive", title: "Error", description: result?.message });
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: result?.message,
+      });
     }
   };
 
@@ -350,20 +398,34 @@ function ResumeContainer({ resume }: { resume: Resume }) {
         });
         const json = await res.json();
         if (!json.success) {
-          toast({ variant: "destructive", title: "Error", description: json.error });
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: json.error,
+          });
           return;
         }
         const cards = buildPendingCards(json.data as ResumeImportData);
         if (cards.length === 0) {
-          toast({ title: "No sections found", description: "No structured data could be extracted from the document." });
+          toast({
+            title: "No sections found",
+            description:
+              "No structured data could be extracted from the document.",
+          });
           return;
         }
         setPendingCards(cards);
         setImportMode(true);
         setImportTruncated(json.truncated ?? false);
-        setUnrecognizedSections((json.data as ResumeImportData).unrecognizedSections ?? []);
+        setUnrecognizedSections(
+          (json.data as ResumeImportData).unrecognizedSections ?? [],
+        );
       } catch {
-        toast({ variant: "destructive", title: "Error", description: "Failed to contact AI service." });
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to contact AI service.",
+        });
       }
     });
   };
@@ -377,22 +439,33 @@ function ResumeContainer({ resume }: { resume: Resume }) {
     URL.revokeObjectURL(url);
   };
 
-  const uploadPdfAsAttachment = async (blob: Blob, filename: string, replaceExisting: boolean) => {
+  const uploadPdfAsAttachment = async (
+    blob: Blob,
+    filename: string,
+    replaceExisting: boolean,
+  ) => {
     const formData = new FormData();
-    formData.append("file", new File([blob], filename, { type: "application/pdf" }));
+    formData.append(
+      "file",
+      new File([blob], filename, { type: "application/pdf" }),
+    );
     formData.append("title", resume.title);
     formData.append("id", resume.id!);
     if (replaceExisting && resume.FileId) {
       formData.append("fileId", resume.FileId);
     }
-    const res = await fetch("/api/profile/resume", { method: "POST", body: formData });
+    const res = await fetch("/api/profile/resume", {
+      method: "POST",
+      body: formData,
+    });
     if (!res.ok) throw new Error("Upload failed");
     router.refresh();
   };
 
   const handleExportPdf = async (layout: ResumeLayout) => {
     const hasName =
-      resume.ContactInfo?.firstName?.trim() || resume.ContactInfo?.lastName?.trim();
+      resume.ContactInfo?.firstName?.trim() ||
+      resume.ContactInfo?.lastName?.trim();
     const hasSections = resume.ResumeSections?.some(
       (s) =>
         s.summary?.content ||
@@ -418,13 +491,19 @@ function ResumeContainer({ resume }: { resume: Resume }) {
       if (!resume.FileId) {
         triggerDownload(blob, filename);
         await uploadPdfAsAttachment(blob, filename, false);
-        toast({ title: "PDF exported", description: "Saved to Downloads and attached to this resume." });
+        toast({
+          title: "PDF exported",
+          description: "Saved to Downloads and attached to this resume.",
+        });
       } else {
         setPendingPdf({ blob, filename });
         setShowAttachConfirm(true);
       }
     } catch {
-      toast({ title: "Failed to generate PDF. Please try again.", variant: "destructive" });
+      toast({
+        title: "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsExporting(false);
     }
@@ -439,12 +518,21 @@ function ResumeContainer({ resume }: { resume: Resume }) {
       triggerDownload(blob, filename);
       if (choice === "replace") {
         await uploadPdfAsAttachment(blob, filename, true);
-        toast({ title: "PDF exported", description: "Saved to Downloads and attachment replaced." });
+        toast({
+          title: "PDF exported",
+          description: "Saved to Downloads and attachment replaced.",
+        });
       } else {
-        toast({ title: "PDF exported", description: "Saved to your Downloads folder." });
+        toast({
+          title: "PDF exported",
+          description: "Saved to your Downloads folder.",
+        });
       }
     } catch {
-      toast({ title: "Failed to upload PDF. Please try again.", variant: "destructive" });
+      toast({
+        title: "Failed to upload PDF. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsExporting(false);
       setPendingPdf(null);
@@ -452,40 +540,56 @@ function ResumeContainer({ resume }: { resume: Resume }) {
   };
 
   const { title, ContactInfo, ResumeSections } = resume ?? {};
-  const summarySection = ResumeSections?.find((s) => s.sectionType === SectionType.SUMMARY);
-  const experienceSection = ResumeSections?.find((s) => s.sectionType === SectionType.EXPERIENCE);
-  const educationSection = ResumeSections?.find((s) => s.sectionType === SectionType.EDUCATION);
-  const certificationSection = ResumeSections?.find((s) => s.sectionType === SectionType.CERTIFICATION);
+  const summarySection = ResumeSections?.find(
+    (s) => s.sectionType === SectionType.SUMMARY,
+  );
+  const experienceSection = ResumeSections?.find(
+    (s) => s.sectionType === SectionType.EXPERIENCE,
+  );
+  const educationSection = ResumeSections?.find(
+    (s) => s.sectionType === SectionType.EDUCATION,
+  );
+  const certificationSection = ResumeSections?.find(
+    (s) => s.sectionType === SectionType.CERTIFICATION,
+  );
 
-  const openContactInfoDialog = () => resumeSectionRef.current?.openContactInfoDialog(ContactInfo!);
-  const openSummaryDialogForEdit = () => resumeSectionRef.current?.openSummaryDialog(summarySection!);
+  const openContactInfoDialog = () =>
+    resumeSectionRef.current?.openContactInfoDialog(ContactInfo!);
+  const openSummaryDialogForEdit = () =>
+    resumeSectionRef.current?.openSummaryDialog(summarySection!);
   const openExperienceDialogForEdit = (experienceId: string) => {
     const section: ResumeSection = {
       ...experienceSection!,
-      workExperiences: experienceSection?.workExperiences?.filter((exp) => exp.id === experienceId),
+      workExperiences: experienceSection?.workExperiences?.filter(
+        (exp) => exp.id === experienceId,
+      ),
     };
     resumeSectionRef.current?.openExperienceDialog(section);
   };
   const openEducationDialogForEdit = (educationId: string) => {
     const section: ResumeSection = {
       ...educationSection!,
-      educations: educationSection?.educations?.filter((edu) => edu.id === educationId),
+      educations: educationSection?.educations?.filter(
+        (edu) => edu.id === educationId,
+      ),
     };
     resumeSectionRef.current?.openEducationDialog(section);
   };
   const openCertificationDialogForEdit = (certificationId: string) => {
     const section: ResumeSection = {
       ...certificationSection!,
-      licenseOrCertifications: certificationSection?.licenseOrCertifications?.filter(
-        (cert) => cert.id === certificationId,
-      ),
+      licenseOrCertifications:
+        certificationSection?.licenseOrCertifications?.filter(
+          (cert) => cert.id === certificationId,
+        ),
     };
     resumeSectionRef.current?.openCertificationDialog(section);
   };
 
   const isEmptyResume =
     !ContactInfo && (!ResumeSections || ResumeSections.length === 0);
-  const showStructureWithAI = isEmptyResume && !!resume.File?.filePath && aiReady && !importMode;
+  const showStructureWithAI =
+    isEmptyResume && !!resume.File?.filePath && aiReady && !importMode;
 
   return (
     <>
@@ -494,7 +598,11 @@ function ResumeContainer({ resume }: { resume: Resume }) {
           <CardTitle>Resume</CardTitle>
           <CardDescription className="mt-0 lg:flex lg:justify-center">
             {resume.FileId && resume.File?.filePath
-              ? DownloadFileButton(resume.File?.filePath, title, resume.File?.fileName)
+              ? DownloadFileButton(
+                  resume.File?.filePath,
+                  title,
+                  resume.File?.fileName,
+                )
               : title}
           </CardDescription>
           <div className="flex items-center gap-2 flex-wrap lg:justify-end">
@@ -546,13 +654,16 @@ function ResumeContainer({ resume }: { resume: Resume }) {
               <div className="flex-1">
                 <p className="text-sm font-medium flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-blue-500" />
-                  We pre-filled this from your document. Review each item and accept the ones you want.
+                  We pre-filled this from your document. Review each item and
+                  accept the ones you want.
                   {importTruncated && " Only the first 5 pages were imported."}
                 </p>
                 {unrecognizedSections.length > 0 && (
                   <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" />
-                    Some sections couldn&apos;t be imported ({unrecognizedSections.join(", ")}) — the resume model doesn&apos;t support these yet.
+                    Some sections couldn&apos;t be imported (
+                    {unrecognizedSections.join(", ")}) — the resume model
+                    doesn&apos;t support these yet.
                   </p>
                 )}
               </div>
@@ -593,7 +704,7 @@ function ResumeContainer({ resume }: { resume: Resume }) {
               onClick={handleStructureWithAI}
             >
               {isStructuring ? (
-                <Loader className="h-4 w-4 spinner mr-2" />
+                <Loader className="h-4 w-4 animate-spin mr-2" />
               ) : (
                 <Sparkles className="h-4 w-4 mr-2" />
               )}
@@ -605,19 +716,34 @@ function ResumeContainer({ resume }: { resume: Resume }) {
 
       {/* SAVED SECTIONS */}
       {ContactInfo && (
-        <ContactInfoCard contactInfo={ContactInfo} openDialog={openContactInfoDialog} />
+        <ContactInfoCard
+          contactInfo={ContactInfo}
+          openDialog={openContactInfoDialog}
+        />
       )}
       {summarySection && (
-        <SummarySectionCard summarySection={summarySection} openDialogForEdit={openSummaryDialogForEdit} />
+        <SummarySectionCard
+          summarySection={summarySection}
+          openDialogForEdit={openSummaryDialogForEdit}
+        />
       )}
       {experienceSection && (
-        <ExperienceCard experienceSection={experienceSection} openDialogForEdit={openExperienceDialogForEdit} />
+        <ExperienceCard
+          experienceSection={experienceSection}
+          openDialogForEdit={openExperienceDialogForEdit}
+        />
       )}
       {educationSection && (
-        <EducationCard educationSection={educationSection} openDialogForEdit={openEducationDialogForEdit} />
+        <EducationCard
+          educationSection={educationSection}
+          openDialogForEdit={openEducationDialogForEdit}
+        />
       )}
       {certificationSection && (
-        <CertificationCard certificationSection={certificationSection} openDialogForEdit={openCertificationDialogForEdit} />
+        <CertificationCard
+          certificationSection={certificationSection}
+          openDialogForEdit={openCertificationDialogForEdit}
+        />
       )}
 
       {/* PDF ATTACHMENT CONFIRM */}
@@ -626,14 +752,23 @@ function ResumeContainer({ resume }: { resume: Resume }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Replace existing attachment?</AlertDialogTitle>
             <AlertDialogDescription>
-              This resume already has a file attached. Would you like to replace it with the exported PDF?
+              This resume already has a file attached. Would you like to replace
+              it with the exported PDF?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => { setShowAttachConfirm(false); setPendingPdf(null); }}>
+            <AlertDialogCancel
+              onClick={() => {
+                setShowAttachConfirm(false);
+                setPendingPdf(null);
+              }}
+            >
               Cancel
             </AlertDialogCancel>
-            <Button variant="outline" onClick={() => handleAttachChoice("download-only")}>
+            <Button
+              variant="outline"
+              onClick={() => handleAttachChoice("download-only")}
+            >
               Download only
             </Button>
             <AlertDialogAction onClick={() => handleAttachChoice("replace")}>
@@ -644,12 +779,16 @@ function ResumeContainer({ resume }: { resume: Resume }) {
       </AlertDialog>
 
       {/* DISCARD IMPORT CONFIRM */}
-      <AlertDialog open={showDiscardImportConfirm} onOpenChange={setShowDiscardImportConfirm}>
+      <AlertDialog
+        open={showDiscardImportConfirm}
+        onOpenChange={setShowDiscardImportConfirm}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Discard import?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will delete this resume and its attached file. Unsaved suggestions will be lost.
+              This will delete this resume and its attached file. Unsaved
+              suggestions will be lost.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

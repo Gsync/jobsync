@@ -154,7 +154,13 @@ function CreateResume({
         response.data?.id ?? response.data?.resumes?.[0]?.id;
 
       // Auto-fill with AI: call import route then navigate to editor
-      if (!resumeToEdit && autoFill && aiAvailable && data.file && newResumeId) {
+      if (
+        !resumeToEdit &&
+        autoFill &&
+        aiAvailable &&
+        data.file &&
+        newResumeId
+      ) {
         setIsImporting(true);
         try {
           const importRes = await fetch("/api/ai/resume/import", {
@@ -166,7 +172,10 @@ function CreateResume({
           if (importJson.success && importJson.data) {
             sessionStorage.setItem(
               `import:${newResumeId}`,
-              JSON.stringify({ data: importJson.data, truncated: importJson.truncated ?? false }),
+              JSON.stringify({
+                data: importJson.data,
+                truncated: importJson.truncated ?? false,
+              }),
             );
           }
         } catch {
@@ -226,7 +235,9 @@ function CreateResume({
                     </FormControl>
                     <FormMessage>
                       {errors.title && (
-                        <span className="text-red-500">{errors.title.message}</span>
+                        <span className="text-red-500">
+                          {errors.title.message}
+                        </span>
                       )}
                     </FormMessage>
                   </FormItem>
@@ -253,7 +264,9 @@ function CreateResume({
                     </FormControl>
                     <FormMessage>
                       {errors.file?.message && (
-                        <span className="text-red-500">{errors.file.message}</span>
+                        <span className="text-red-500">
+                          {errors.file.message}
+                        </span>
                       )}
                     </FormMessage>
                   </FormItem>
@@ -297,10 +310,13 @@ function CreateResume({
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={!isValid || isPending || isImporting}>
+                <Button
+                  type="submit"
+                  disabled={!isValid || isPending || isImporting}
+                >
                   {isImporting ? "Importing…" : "Save"}
                   {(isPending || isImporting) && (
-                    <Loader className="h-4 w-4 shrink-0 spinner" />
+                    <Loader className="h-4 w-4 shrink-0 animate-spin" />
                   )}
                 </Button>
               </DialogFooter>
