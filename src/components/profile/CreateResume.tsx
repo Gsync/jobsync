@@ -55,7 +55,6 @@ function CreateResume({
   const [autoFill, setAutoFill] = useState(true);
   const [aiAvailable, setAiAvailable] = useState(false);
   const [selectedModel, setSelectedModel] = useState<AiModel>(defaultModel);
-  const [isImporting, setIsImporting] = useState(false);
   const router = useRouter();
 
   const pageTitle = resumeToEdit ? "Edit Resume Title" : "Create Resume";
@@ -153,7 +152,9 @@ function CreateResume({
       const newResumeId: string | undefined =
         response.data?.id ?? response.data?.resumes?.[0]?.id;
 
-      // Auto-fill with AI: call import route then navigate to editor
+      // Auto-fill with AI: hand the chosen model to the editor and navigate
+      // immediately so the import streams in live there, rather than blocking
+      // this dialog until the stream completes.
       if (
         !resumeToEdit &&
         autoFill &&
@@ -161,28 +162,10 @@ function CreateResume({
         data.file &&
         newResumeId
       ) {
-        setIsImporting(true);
-        try {
-          const importRes = await fetch("/api/ai/resume/import", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ resumeId: newResumeId, selectedModel }),
-          });
-          const importJson = await importRes.json();
-          if (importJson.success && importJson.data) {
-            sessionStorage.setItem(
-              `import:${newResumeId}`,
-              JSON.stringify({
-                data: importJson.data,
-                truncated: importJson.truncated ?? false,
-              }),
-            );
-          }
-        } catch {
-          // Non-fatal: editor opens without pending cards
-        } finally {
-          setIsImporting(false);
-        }
+        sessionStorage.setItem(
+          `import-pending:${newResumeId}`,
+          JSON.stringify({ selectedModel }),
+        );
         reset();
         setResumeDialogOpen(false);
         router.push(`/dashboard/profile/resume/${newResumeId}`);
@@ -310,12 +293,9 @@ function CreateResume({
                 >
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={!isValid || isPending || isImporting}
-                >
-                  {isImporting ? "Importing…" : "Save"}
-                  {(isPending || isImporting) && (
+                <Button type="submit" disabled={!isValid || isPending}>
+                  Save
+                  {isPending && (
                     <Loader className="h-4 w-4 shrink-0 animate-spin" />
                   )}
                 </Button>

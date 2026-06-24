@@ -51,6 +51,8 @@ import {
 import { ResumeImportData } from "@/models/resumeImport.schema";
 import { AiModel, defaultModel } from "@/models/ai.model";
 import { getUserSettings } from "@/actions/userSettings.actions";
+import { streamResumeImport } from "@/utils/resumeImportStream.utils";
+import type { DeepPartial } from "ai";
 
 type PendingCard = {
   id: string;
@@ -74,8 +76,14 @@ function filterUnrecognizedSections(sections: string[]): string[] {
   });
 }
 
-function buildPendingCards(data: ResumeImportData): PendingCard[] {
+// Accepts partial data so cards can render progressively as the import stream
+// arrives. Entries are only shown once their key identifying field is present.
+function buildPendingCards(
+  data: DeepPartial<ResumeImportData>,
+): PendingCard[] {
   const cards: PendingCard[] = [];
+
+  if (!data) return cards;
 
   if (
     data.contactInfo &&
@@ -85,7 +93,7 @@ function buildPendingCards(data: ResumeImportData): PendingCard[] {
   ) {
     cards.push({
       id: "contactInfo",
-      card: { type: "contactInfo", data: data.contactInfo },
+      card: { type: "contactInfo", data: data.contactInfo as any },
     });
   }
 
@@ -96,24 +104,27 @@ function buildPendingCards(data: ResumeImportData): PendingCard[] {
     });
   }
 
-  data.experience.forEach((exp, i) => {
+  (data.experience ?? []).forEach((exp, i) => {
+    if (!exp || (!exp.company && !exp.jobTitle)) return;
     cards.push({
       id: `experience-${i}`,
-      card: { type: "experience", data: exp },
+      card: { type: "experience", data: exp as any },
     });
   });
 
-  data.education.forEach((edu, i) => {
+  (data.education ?? []).forEach((edu, i) => {
+    if (!edu || !edu.institution) return;
     cards.push({
       id: `education-${i}`,
-      card: { type: "education", data: edu },
+      card: { type: "education", data: edu as any },
     });
   });
 
-  data.certifications.forEach((cert, i) => {
+  (data.certifications ?? []).forEach((cert, i) => {
+    if (!cert || !cert.title) return;
     cards.push({
       id: `certification-${i}`,
-      card: { type: "certification", data: cert },
+      card: { type: "certification", data: cert as any },
     });
   });
 
@@ -224,10 +235,12 @@ function PendingCardRow({
   pending,
   onAccept,
   onDiscard,
+  locked,
 }: {
   pending: PendingCard;
   onAccept: (id: string) => void;
   onDiscard: (id: string) => void;
+  locked?: boolean;
 }) {
   const [isSaving, startSaving] = useTransition();
 
@@ -242,7 +255,7 @@ function PendingCardRow({
             size="sm"
             variant="outline"
             className="h-7 px-2 text-xs"
-            disabled={isSaving}
+            disabled={isSaving || locked}
             onClick={() =>
               startSaving(async () => {
                 await onAccept(pending.id);
@@ -260,7 +273,7 @@ function PendingCardRow({
             size="sm"
             variant="ghost"
             className="h-7 px-2 text-xs text-muted-foreground"
-            disabled={isSaving}
+            disabled={isSaving || locked}
             onClick={() => onDiscard(pending.id)}
           >
             <X className="h-3 w-3" />
@@ -295,33 +308,75 @@ function ResumeContainer({ resume }: { resume: Resume }) {
   // AI availability for "Structure with AI" button
   const [aiModel, setAiModel] = useState<AiModel>(defaultModel);
   const [aiReady, setAiReady] = useState(false);
-  const [isStructuring, startStructuring] = useTransition();
+  // Plain boolean (not useTransition): streaming fires rapid state updates that
+  // must not run as interruptible transition renders.
+  const [isStructuring, setIsStructuring] = useState(false);
 
-  // Read sessionStorage for pending import data on mount
+  // Runs the import stream, rendering cards progressively as they arrive.
+  const runImport = useCallback(
+    async (model: AiModel) => {
+      const resumeId = resume.id;
+      if (!resumeId || isStructuring) return;
+      setIsStructuring(true);
+      setImportMode(true);
+      try {
+        const { data, truncated } = await streamResumeImport({
+          resumeId,
+          selectedModel: model,
+          onPartial: (partial) => {
+            const cards = buildPendingCards(partial);
+            if (cards.length > 0) setPendingCards(cards);
+          },
+        });
+
+        const cards = buildPendingCards(data);
+        if (cards.length === 0) {
+          setImportMode(false);
+          toast({
+            title: "No sections found",
+            description:
+              "No structured data could be extracted from the document.",
+          });
+          return;
+        }
+        setPendingCards(cards);
+        setImportTruncated(truncated);
+        setUnrecognizedSections(
+          filterUnrecognizedSections(data.unrecognizedSections ?? []),
+        );
+      } catch (error) {
+        setImportMode(false);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description:
+            error instanceof Error
+              ? error.message
+              : "Failed to contact AI service.",
+        });
+      } finally {
+        setIsStructuring(false);
+      }
+    },
+    [resume.id, isStructuring],
+  );
+
+  // Auto-start the import stream when arriving from the create dialog
   useEffect(() => {
     if (!resume.id) return;
-    const key = `import:${resume.id}`;
+    const key = `import-pending:${resume.id}`;
     const stored = sessionStorage.getItem(key);
     if (!stored) return;
     sessionStorage.removeItem(key);
     try {
-      const { data, truncated } = JSON.parse(stored) as {
-        data: ResumeImportData;
-        truncated: boolean;
+      const { selectedModel } = JSON.parse(stored) as {
+        selectedModel: AiModel;
       };
-      const cards = buildPendingCards(data);
-      if (cards.length > 0) {
-        setPendingCards(cards);
-        setImportMode(true);
-        setImportTruncated(truncated ?? false);
-        setUnrecognizedSections(
-          filterUnrecognizedSections(data.unrecognizedSections ?? []),
-        );
-      }
+      runImport(selectedModel);
     } catch {
       // Malformed sessionStorage entry — ignore
     }
-  }, [resume.id]);
+  }, [resume.id, runImport]);
 
   // Tab-close guard while pending cards exist
   useEffect(() => {
@@ -387,48 +442,7 @@ function ResumeContainer({ resume }: { resume: Resume }) {
     }
   };
 
-  const handleStructureWithAI = () => {
-    if (!resume.id) return;
-    startStructuring(async () => {
-      try {
-        const res = await fetch("/api/ai/resume/import", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ resumeId: resume.id, selectedModel: aiModel }),
-        });
-        const json = await res.json();
-        if (!json.success) {
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: json.error,
-          });
-          return;
-        }
-        const cards = buildPendingCards(json.data as ResumeImportData);
-        if (cards.length === 0) {
-          toast({
-            title: "No sections found",
-            description:
-              "No structured data could be extracted from the document.",
-          });
-          return;
-        }
-        setPendingCards(cards);
-        setImportMode(true);
-        setImportTruncated(json.truncated ?? false);
-        setUnrecognizedSections(
-          (json.data as ResumeImportData).unrecognizedSections ?? [],
-        );
-      } catch {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to contact AI service.",
-        });
-      }
-    });
-  };
+  const handleStructureWithAI = () => runImport(aiModel);
 
   const triggerDownload = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
@@ -647,16 +661,27 @@ function ResumeContainer({ resume }: { resume: Resume }) {
       </Card>
 
       {/* IMPORT REVIEW BANNER */}
-      {importMode && pendingCards.length > 0 && (
+      {importMode && (pendingCards.length > 0 || isStructuring) && (
         <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
                 <p className="text-sm font-medium flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-blue-500" />
-                  We pre-filled this from your document. Review each item and
-                  accept the ones you want.
-                  {importTruncated && " Only the first 5 pages were imported."}
+                  {isStructuring ? (
+                    <>
+                      <Loader className="h-4 w-4 text-blue-500 animate-spin" />
+                      Structuring your document… you can review and accept items
+                      once it finishes.
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 text-blue-500" />
+                      We pre-filled this from your document. Review each item and
+                      accept the ones you want.
+                      {importTruncated &&
+                        " Only the first 5 pages were imported."}
+                    </>
+                  )}
                 </p>
                 {unrecognizedSections.length > 0 && (
                   <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
@@ -683,6 +708,7 @@ function ResumeContainer({ resume }: { resume: Resume }) {
                   pending={pending}
                   onAccept={handleAcceptCard}
                   onDiscard={handleDiscardCard}
+                  locked={isStructuring}
                 />
               ))}
             </div>

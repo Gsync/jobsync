@@ -207,4 +207,21 @@ describe("ResumeImportSchema", () => {
       ]);
     }
   });
+
+  it("normalizes { name } objects in unrecognizedSections to strings", () => {
+    const result = ResumeImportSchema.safeParse({
+      certifications: [{ title: "AWS Certified Developer" }],
+      unrecognizedSections: [{ name: "CORE SKILLS" }, { name: "LANGUAGES" }],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.unrecognizedSections).toEqual([
+        "CORE SKILLS",
+        "LANGUAGES",
+      ]);
+      // The object-shaped unrecognizedSections must not fail whole-object
+      // validation and drop certifications.
+      expect(result.data.certifications).toHaveLength(1);
+    }
+  });
 });

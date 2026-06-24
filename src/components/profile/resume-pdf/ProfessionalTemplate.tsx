@@ -34,7 +34,7 @@ function CertLikeSection({ section }: { section: ResumeSection }) {
       <SectionHeading title={section.sectionTitle} />
       {entries.map((cert, i) => (
         <View key={cert.id ?? i} style={{ marginBottom: 6 }} wrap={false}>
-          <Text style={s.entryTitle}>{cert.title}</Text>
+          <Text style={s.entryTitleBlock}>{cert.title}</Text>
           <Text style={s.entryMeta}>{cert.organization}</Text>
           {(cert.issueDate || cert.expirationDate) && (
             <Text style={s.entryMeta}>
@@ -179,21 +179,23 @@ export function ProfessionalResumeDocument({ resume, htmlNodes }: Props) {
 
         {/* Two-column: Education (left) + Cert-like sections (right) */}
         {(educationSection?.educations?.length || certLikeSections.some((sec) => sec.licenseOrCertifications?.length)) ? (
-          <View style={s.twoColRow} wrap>
+          <View style={s.twoColRow}>
             {/* Left: Education */}
             <View style={s.twoColLeft}>
               {educationSection?.educations && educationSection.educations.length > 0 && (
                 <View>
                   <SectionHeading title={educationSection.sectionTitle} />
                   {educationSection.educations.map((edu, i) => (
-                    <View key={edu.id ?? i} style={{ marginBottom: 8 }}>
-                      <Text style={s.entryTitle}>
-                        {[edu.degree, edu.fieldOfStudy].filter(Boolean).join(", ")}
-                      </Text>
+                    <View key={edu.id ?? i} style={{ marginBottom: 8 }} wrap={false}>
+                      <View style={s.entryHeaderRow}>
+                        <Text style={s.entryTitle}>
+                          {[edu.degree, edu.fieldOfStudy].filter(Boolean).join(", ")}
+                        </Text>
+                        <Text style={s.entryDate}>
+                          {yearRange(edu.startDate, edu.endDate)}
+                        </Text>
+                      </View>
                       <Text style={s.entryMeta}>{edu.institution}</Text>
-                      <Text style={s.entryMeta}>
-                        {yearRange(edu.startDate, edu.endDate)}
-                      </Text>
                     </View>
                   ))}
                 </View>

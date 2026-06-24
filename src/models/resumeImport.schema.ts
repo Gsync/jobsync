@@ -50,7 +50,18 @@ export const ResumeImportSchema = z.object({
   experience: z.array(ImportExperienceSchema).default([]),
   education: z.array(ImportEducationSchema).default([]),
   certifications: z.array(ImportCertificationSchema).default([]),
-  unrecognizedSections: z.array(z.string()).default([]),
+  // Models inconsistently return strings or { name } objects here — accept both
+  // and normalize to strings. .catch keeps this non-critical field from ever
+  // failing whole-object validation.
+  unrecognizedSections: z
+    .array(
+      z.union([
+        z.string(),
+        z.object({ name: z.string() }).transform((o) => o.name),
+      ]),
+    )
+    .catch([])
+    .default([]),
 });
 
 export type ResumeImportData = z.infer<typeof ResumeImportSchema>;

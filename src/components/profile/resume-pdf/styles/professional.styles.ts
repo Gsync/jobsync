@@ -98,6 +98,12 @@ export const professionalStyles = StyleSheet.create({
     color: NEAR_BLACK,
     flex: 1,
   },
+  // Use when entryTitle is NOT inside entryHeaderRow (no row sibling to flex against)
+  entryTitleBlock: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 10,
+    color: NEAR_BLACK,
+  },
   entryDate: {
     fontFamily: "Helvetica",
     fontSize: 9,

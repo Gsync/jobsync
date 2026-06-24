@@ -25,10 +25,16 @@ export const APP_CONSTANTS = {
   AI_OLLAMA_LIST_TIMEOUT_MS: 5_000,
   AI_OLLAMA_GENERATE_TIMEOUT_MS: 10_000,
 
-  // Ollama context window. Defaults to 2048, which a resume plus the system
-  // prompt and JSON output overflow — truncating generation mid-field (e.g.
-  // only the first few description bullets get imported).
+  // Ollama context window (covers prompt + generation combined). Defaults to
+  // 2048; even 4096 overflows for a full resume plus the system prompt and the
+  // verbatim JSON output — truncating the tail of generation (e.g. the last
+  // experience/certification entries get dropped).
   AI_OLLAMA_NUM_CTX: 8192,
+
+  // Resume import generation timeout. Generous because a full resume streams a
+  // few thousand tokens of verbatim JSON, which a local model can take minutes
+  // to produce; too low and the stream is cut mid-entry.
+  AI_RESUME_IMPORT_TIMEOUT_MS: 180_000,
 
   // Automation manual run rate limiting
   AUTOMATION_MAX_MANUAL_RUNS_PER_HOUR: 5,
