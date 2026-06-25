@@ -83,6 +83,21 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   const [result, setResult] = useState<ResumeReviewResult | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const scrollAnchorRef = useRef<HTMLDivElement>(null);
+  const userScrolledUpRef = useRef(false);
+
+  const handleSheetScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight > 80) {
+      userScrolledUpRef.current = true;
+    }
+  };
+
+  useEffect(() => {
+    if (isLoading && result && !userScrolledUpRef.current) {
+      scrollAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+  }, [result, isLoading]);
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
@@ -103,6 +118,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
 
     const controller = new AbortController();
     abortRef.current = controller;
+    userScrolledUpRef.current = false;
     setResult(undefined);
     setIsLoading(true);
 
@@ -159,7 +175,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
         </SheetTrigger>
       </div>
       <SheetPortal>
-        <SheetContent className="overflow-y-scroll">
+        <SheetContent className="overflow-y-scroll" onScroll={handleSheetScroll}>
           <SheetHeader>
             <SheetTitle className="flex flex-row items-center">
               AI Review ({selectedModel.provider})
@@ -226,6 +242,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
               isStreaming={isLoading}
             />
           )}
+          <div ref={scrollAnchorRef} />
         </SheetContent>
       </SheetPortal>
     </Sheet>
