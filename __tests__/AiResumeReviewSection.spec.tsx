@@ -9,17 +9,9 @@ import {
 import AiResumeReviewSection from "@/components/profile/AiResumeReviewSection";
 import { Resume, SectionType } from "@/models/profile.model";
 
-const mockSubmit = vi.fn();
-const mockStop = vi.fn();
-let mockUseObjectReturn = {
-  object: null as any,
-  submit: mockSubmit,
-  isLoading: false,
-  stop: mockStop,
-};
-
-vi.mock("@ai-sdk/react", () => ({
-  experimental_useObject: () => mockUseObjectReturn,
+const mockStreamResumeReview = vi.fn();
+vi.mock("@/utils/streamResumeReview.utils", () => ({
+  streamResumeReview: (...args: any[]) => mockStreamResumeReview(...args),
 }));
 
 vi.mock("@/actions/userSettings.actions", () => ({
@@ -56,7 +48,7 @@ vi.mock("@/hooks/useSlowResponseWarning", () => ({
 }));
 
 vi.mock("@/components/ui/sheet", () => ({
-  Sheet: ({ children, open, onOpenChange }: any) => (
+  Sheet: ({ children, open }: any) => (
     <div data-testid="sheet" data-open={open}>
       {children}
     </div>
@@ -67,7 +59,7 @@ vi.mock("@/components/ui/sheet", () => ({
   ),
   SheetHeader: ({ children }: any) => <div>{children}</div>,
   SheetTitle: ({ children }: any) => <div>{children}</div>,
-  SheetTrigger: ({ children, asChild }: any) => (
+  SheetTrigger: ({ children }: any) => (
     <div data-testid="sheet-trigger">{children}</div>
   ),
 }));
@@ -91,100 +83,55 @@ const makeResume = (sectionCount: number): Resume => ({
   })),
 });
 
-describe("AiResumeReviewSection – Review button state", () => {
+const getGenerateButton = () =>
+  screen.queryAllByRole("button", { name: /generate ai review/i })[0];
+
+describe("AiResumeReviewSection – Review trigger button state", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseObjectReturn = {
-      object: null,
-      submit: mockSubmit,
-      isLoading: false,
-      stop: mockStop,
-    };
+    mockStreamResumeReview.mockResolvedValue({
+      scores: { overall: 85, impact: 80, clarity: 82, atsCompatibility: 78 },
+      body: "## Summary\nGreat resume",
+    });
   });
 
-  it("is enabled when resume has fewer than 2 sections", () => {
+  it("is enabled regardless of section count", () => {
     render(<AiResumeReviewSection resume={makeResume(1)} />);
     const trigger = within(screen.getByTestId("sheet-trigger")).getByRole(
       "button",
     );
     expect(trigger).not.toBeDisabled();
-  });
-
-  it("is enabled when resume has no sections", () => {
-    render(<AiResumeReviewSection resume={makeResume(0)} />);
-    const trigger = within(screen.getByTestId("sheet-trigger")).getByRole(
-      "button",
-    );
-    expect(trigger).not.toBeDisabled();
-  });
-
-  it("is enabled when resume has 2 or more sections", () => {
-    render(<AiResumeReviewSection resume={makeResume(2)} />);
-    const trigger = within(screen.getByTestId("sheet-trigger")).getByRole(
-      "button",
-    );
-    expect(trigger).not.toBeDisabled();
-  });
-
-  it("is enabled when resume has 3 sections", () => {
-    render(<AiResumeReviewSection resume={makeResume(3)} />);
-    const trigger = within(screen.getByTestId("sheet-trigger")).getByRole(
-      "button",
-    );
-    expect(trigger).not.toBeDisabled();
-  });
-
-  it("is disabled while AI is loading", () => {
-    mockUseObjectReturn = { ...mockUseObjectReturn, isLoading: true };
-    render(<AiResumeReviewSection resume={makeResume(3)} />);
-    const trigger = within(screen.getByTestId("sheet-trigger")).getByRole(
-      "button",
-    );
-    expect(trigger).toBeDisabled();
   });
 });
 
 describe("AiResumeReviewSection – Generate AI Review button", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseObjectReturn = {
-      object: null,
-      submit: mockSubmit,
-      isLoading: false,
-      stop: mockStop,
-    };
-  });
-
-  it("shows toast error when resume has fewer than 2 sections and generate is called", () => {
-    render(<AiResumeReviewSection resume={makeResume(1)} />);
-
-    const generateButtons = screen.queryAllByRole("button", {
-      name: /generate ai review/i,
+    mockStreamResumeReview.mockResolvedValue({
+      scores: { overall: 85, impact: 80, clarity: 82, atsCompatibility: 78 },
+      body: "## Summary\nGreat resume",
     });
-    if (generateButtons.length > 0) {
-      fireEvent.click(generateButtons[0]);
-      expect(mockToast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variant: "destructive",
-          title: "Not enough content",
-        }),
-      );
-    }
   });
 
-  it("calls submit with resume and model when generate is clicked with valid resume", async () => {
+  it("shows toast error when resume has fewer than 2 sections", () => {
+    render(<AiResumeReviewSection resume={makeResume(1)} />);
+    fireEvent.click(getGenerateButton());
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variant: "destructive",
+        title: "Not enough content",
+      }),
+    );
+    expect(mockStreamResumeReview).not.toHaveBeenCalled();
+  });
+
+  it("calls streamResumeReview with the resume id when generate is clicked", () => {
     const resume = makeResume(3);
     render(<AiResumeReviewSection resume={resume} />);
-
-    const generateButtons = screen.queryAllByRole("button", {
-      name: /generate ai review/i,
-    });
-    if (generateButtons.length > 0) {
-      fireEvent.click(generateButtons[0]);
-      expect(mockSubmit).toHaveBeenCalledWith(
-        expect.objectContaining({ resume }),
-      );
-    }
+    fireEvent.click(getGenerateButton());
+    expect(mockStreamResumeReview).toHaveBeenCalledWith(
+      expect.objectContaining({ resumeId: resume.id }),
+    );
   });
 });
 
@@ -193,24 +140,21 @@ describe("AiResumeReviewSection – loading state", () => {
     vi.clearAllMocks();
   });
 
-  it("shows loading indicator while AI is streaming", () => {
-    mockUseObjectReturn = {
-      object: null,
-      submit: mockSubmit,
-      isLoading: true,
-      stop: mockStop,
-    };
+  it("shows loading indicator while the review is streaming", async () => {
+    // Pending stream keeps the component in the loading state.
+    mockStreamResumeReview.mockReturnValue(new Promise(() => {}));
     render(<AiResumeReviewSection resume={makeResume(3)} />);
-    expect(screen.getByTestId("loading")).toBeInTheDocument();
+    fireEvent.click(getGenerateButton());
+    await waitFor(() =>
+      expect(screen.getByTestId("loading")).toBeInTheDocument(),
+    );
   });
 
-  it("shows review content after streaming completes", () => {
-    mockUseObjectReturn = {
-      object: { summary: "Great resume", scores: { overall: 85 } },
-      submit: mockSubmit,
-      isLoading: false,
-      stop: mockStop,
-    };
+  it("shows review content when not loading", () => {
+    mockStreamResumeReview.mockResolvedValue({
+      scores: { overall: 85, impact: 80, clarity: 82, atsCompatibility: 78 },
+      body: "## Summary\nGreat resume",
+    });
     render(<AiResumeReviewSection resume={makeResume(3)} />);
     expect(screen.getByTestId("review-content")).toBeInTheDocument();
     expect(screen.queryByTestId("loading")).not.toBeInTheDocument();

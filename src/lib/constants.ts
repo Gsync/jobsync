@@ -36,6 +36,11 @@ export const APP_CONSTANTS = {
   // to produce; too low and the stream is cut mid-entry.
   AI_RESUME_IMPORT_TIMEOUT_MS: 180_000,
 
+  // Resume review generation timeout. The review is a full markdown analysis
+  // (scores line plus several sections), so a local model can take minutes;
+  // too low cuts the stream mid-review.
+  AI_RESUME_REVIEW_TIMEOUT_MS: 180_000,
+
   // Automation manual run rate limiting
   AUTOMATION_MAX_MANUAL_RUNS_PER_HOUR: 5,
   AUTOMATION_RATE_LIMIT_WINDOW_MS: 60 * 60 * 1000, // 1 hour

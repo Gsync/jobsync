@@ -1,142 +1,100 @@
 type AssertionResult = { pass: boolean; score: number; reason: string };
 
-// Models often wrap JSON in markdown code fences or add preamble text
-function extractJson(output: string): string {
-  const trimmed = output.trim();
-  const start = trimmed.search(/[{[]/);
-  const end = Math.max(trimmed.lastIndexOf('}'), trimmed.lastIndexOf(']'));
-  if (start === -1 || end === -1) return trimmed;
-  return trimmed.slice(start, end + 1);
+// Mirrors the client parsing in src/utils/streamResumeReview.utils.ts so the
+// eval validates exactly what a user would see rendered.
+
+// Mirrors src/utils/streamResumeReview.utils.ts: match \d+ (not {1,3}) so an
+// out-of-range score still parses instead of failing the whole line.
+const SCORES_RE =
+  /SCORES:\s*overall=(\d+)\s+impact=(\d+)\s+clarity=(\d+)\s+ats=(\d+)/i;
+
+type ParsedScores = {
+  overall: number;
+  impact: number;
+  clarity: number;
+  ats: number;
+};
+
+function stripThinking(text: string): string {
+  let out = text.replace(/<think>[\s\S]*?<\/think>/gi, '');
+  const openIdx = out.search(/<think>/i);
+  if (openIdx !== -1) out = out.slice(0, openIdx);
+  return out;
 }
 
-export function assertRequiredFields(output: string): AssertionResult {
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = JSON.parse(extractJson(output));
-  } catch {
-    return { pass: false, score: 0, reason: 'Output is not valid JSON' };
-  }
-
-  const required = ['achievements', 'keywords', 'actionVerbs', 'atsIssues', 'topImprovements', 'grammarAndSpelling', 'summary'];
-  for (const key of required) {
-    if (!(key in parsed)) {
-      return { pass: false, score: 0, reason: `Missing required field: ${key}` };
-    }
-  }
-  // Accept flat score keys as an alias — models occasionally omit the 'scores' wrapper
-  const hasScores = 'scores' in parsed || ('overall' in parsed && 'impact' in parsed);
-  if (!hasScores) {
-    return { pass: false, score: 0, reason: 'Missing required field: scores' };
-  }
-  // Accept 'sections' as an alias — models occasionally use it instead of 'sectionFeedback'
-  if (!('sectionFeedback' in parsed) && !('sections' in parsed)) {
-    return { pass: false, score: 0, reason: 'Missing required field: sectionFeedback' };
-  }
-  return { pass: true, score: 1, reason: 'All required top-level fields present' };
+function parseReview(output: string): { scores?: ParsedScores; body: string } {
+  const text = stripThinking(output);
+  const match = text.match(SCORES_RE);
+  const scores: ParsedScores | undefined = match
+    ? {
+        overall: Number(match[1]),
+        impact: Number(match[2]),
+        clarity: Number(match[3]),
+        ats: Number(match[4]),
+      }
+    : undefined;
+  const body = (
+    match
+      ? text.replace(match[0], '')
+      : text.replace(/^\s*SCORES:[^\n]*(\n|$)/i, '')
+  ).trim();
+  return { scores, body };
 }
 
-export function assertValidJson(output: string): AssertionResult {
-  try {
-    JSON.parse(extractJson(output));
-    return { pass: true, score: 1, reason: 'Output is valid JSON' };
-  } catch (e) {
-    return { pass: false, score: 0, reason: `Output is not valid JSON: ${e}` };
+export function assertScoresLine(output: string): AssertionResult {
+  const { scores } = parseReview(output);
+  if (!scores) {
+    return { pass: false, score: 0, reason: 'No valid SCORES: line found' };
   }
-}
-
-export function assertScoresInRange(output: string): AssertionResult {
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = JSON.parse(extractJson(output));
-  } catch {
-    return { pass: false, score: 0, reason: 'Output is not valid JSON' };
-  }
-
-  // Accept flat score keys as an alias — models occasionally omit the 'scores' wrapper
-  const scores = (parsed?.scores ?? parsed) as Record<string, unknown>;
-  const fields = ['overall', 'impact', 'clarity', 'atsCompatibility'] as const;
-  for (const field of fields) {
-    const val = scores?.[field];
-    if (typeof val !== 'number') {
-      return { pass: false, score: 0, reason: `scores.${field} is not a number (got ${typeof val})` };
+  for (const [key, val] of Object.entries(scores)) {
+    if (typeof val !== 'number' || Number.isNaN(val)) {
+      return { pass: false, score: 0, reason: `score ${key} is not a number` };
     }
     if (val < 0 || val > 100) {
-      return { pass: false, score: 0, reason: `scores.${field} out of range: ${val}` };
+      return { pass: false, score: 0, reason: `score ${key} out of range: ${val}` };
     }
   }
-  return { pass: true, score: 1, reason: 'All scores are numbers in range 0-100' };
+  return { pass: true, score: 1, reason: 'SCORES line present, all values 0-100' };
 }
 
-export function assertTopImprovementsCount(output: string): AssertionResult {
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = JSON.parse(extractJson(output));
-  } catch {
-    return { pass: false, score: 0, reason: 'Output is not valid JSON' };
+export function assertNotJson(output: string): AssertionResult {
+  const trimmed = stripThinking(output).trim();
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    return { pass: false, score: 0, reason: 'Output looks like raw JSON; expected markdown' };
   }
-
-  const items = parsed?.topImprovements;
-  if (!Array.isArray(items)) {
-    return { pass: false, score: 0, reason: 'topImprovements is not an array' };
+  if (/^```(json)?\s*[{[]/i.test(trimmed)) {
+    return { pass: false, score: 0, reason: 'Output is wrapped in a JSON code fence' };
   }
-  if (items.length < 3 || items.length > 5) {
-    return { pass: false, score: 0, reason: `topImprovements has ${items.length} items (expected 3-5)` };
-  }
-  return { pass: true, score: 1, reason: `topImprovements has ${items.length} items` };
+  return { pass: true, score: 1, reason: 'Output is markdown, not JSON' };
 }
 
-export function assertSummaryNonEmpty(output: string): AssertionResult {
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = JSON.parse(extractJson(output));
-  } catch {
-    return { pass: false, score: 0, reason: 'Output is not valid JSON' };
+export function assertMarkdownBodyNonEmpty(output: string): AssertionResult {
+  const { body } = parseReview(output);
+  if (body.length < 50) {
+    return { pass: false, score: 0, reason: `Markdown body too short (${body.length} chars)` };
   }
-
-  const summary = parsed?.summary;
-  if (typeof summary !== 'string' || summary.trim().length === 0) {
-    return { pass: false, score: 0, reason: 'summary is empty or not a string' };
-  }
-  return { pass: true, score: 1, reason: 'summary is a non-empty string' };
+  return { pass: true, score: 1, reason: 'Markdown review body present' };
 }
 
-export function assertSectionFeedbackStructure(output: string): AssertionResult {
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = JSON.parse(extractJson(output));
-  } catch {
-    return { pass: false, score: 0, reason: 'Output is not valid JSON' };
+export function assertRequiredSections(output: string): AssertionResult {
+  const { body } = parseReview(output);
+  // Core sections that always apply (ATS / Grammar are conditional, so not
+  // required here). Headings matched leniently against "## ..." lines.
+  const required: { label: string; re: RegExp }[] = [
+    { label: 'Summary', re: /^##\s+summary\b/im },
+    { label: 'Top Improvements', re: /^##\s+top\s+improvements?/im },
+    { label: 'Achievements', re: /^##\s+achievements?/im },
+    { label: 'Keywords', re: /^##\s+keywords?/im },
+    { label: 'Action Verbs', re: /^##\s+action\s+verbs?/im },
+    { label: 'Section Feedback', re: /^##\s+section\s+feedback/im },
+  ];
+  const missing = required.filter((s) => !s.re.test(body)).map((s) => s.label);
+  if (missing.length > 0) {
+    return {
+      pass: false,
+      score: 1 - missing.length / required.length,
+      reason: `Missing section headings: ${missing.join(', ')}`,
+    };
   }
-
-  // Accept 'sections' as an alias — models occasionally use it instead of 'sectionFeedback'
-  const sf = parsed?.sectionFeedback ?? parsed?.sections;
-  if (!sf || (typeof sf !== 'object')) {
-    return { pass: false, score: 0, reason: 'sectionFeedback is missing or not an object' };
-  }
-
-  // Normalize: Zod schema expects array [{section, status, feedback}];
-  // without schema enforcement models often return a dict {SectionName: {status, feedback}}
-  type SFItem = { section: string; status: unknown; feedback: unknown };
-  const items: SFItem[] = Array.isArray(sf)
-    ? (sf as Record<string, unknown>[]).map(item => ({ section: item.section as string, status: item.status, feedback: item.feedback }))
-    : Object.entries(sf as Record<string, Record<string, unknown>>).map(([k, v]) => ({ section: k, status: v.status, feedback: v.feedback }));
-
-  if (items.length === 0) {
-    return { pass: false, score: 0, reason: 'sectionFeedback is empty' };
-  }
-
-  const validStatuses = new Set(['good', 'needsWork', 'missing']);
-  for (let i = 0; i < items.length; i++) {
-    const { section, status, feedback } = items[i];
-    if (typeof section !== 'string' || section.trim().length === 0) {
-      return { pass: false, score: 0, reason: `sectionFeedback[${i}].section is empty or missing` };
-    }
-    if (!validStatuses.has(status as string)) {
-      return { pass: false, score: 0, reason: `sectionFeedback[${i}].status is invalid: "${status}"` };
-    }
-    if (typeof feedback !== 'string' || feedback.trim().length === 0) {
-      return { pass: false, score: 0, reason: `sectionFeedback[${i}].feedback is empty or missing` };
-    }
-  }
-  return { pass: true, score: 1, reason: `sectionFeedback has ${items.length} valid items` };
+  return { pass: true, score: 1, reason: 'All core ## sections present' };
 }

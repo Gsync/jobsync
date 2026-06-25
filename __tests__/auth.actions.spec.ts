@@ -427,7 +427,7 @@ describe("Auth Actions", () => {
 
       try {
         await authenticate("", mockFormData);
-        fail("Should have thrown");
+        expect.fail("Should have thrown");
       } catch (err) {
         expect((err as Error).message).toBe("Database error");
       }

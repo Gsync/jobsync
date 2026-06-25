@@ -2,18 +2,18 @@ import "server-only";
 
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
-import { streamText, Output } from "ai";
+import { streamText } from "ai";
 import { getModel } from "@/lib/ai/providers";
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
 import { TEMPERATURES } from "@/lib/ai/config";
 import {
-  ResumeReviewSchema,
   RESUME_REVIEW_SYSTEM_PROMPT,
   buildResumeReviewPrompt,
   AIUnavailableError,
   preprocessResume,
 } from "@/lib/ai";
-import { Resume } from "@/models/profile.model";
+import { APP_CONSTANTS } from "@/lib/constants";
+import { getResumeById } from "@/actions/profile.actions";
 import { AiModel } from "@/models/ai.model";
 
 /**
@@ -25,7 +25,7 @@ export const POST = async (req: NextRequest) => {
   const userId = session?.user?.id;
 
   if (!session || !userId) {
-    return NextResponse.json({ message: "Not Authenticated" }, { status: 401 });
+    return NextResponse.json({ error: "Not Authenticated" }, { status: 401 });
   }
 
   // Rate limiting
@@ -41,20 +41,27 @@ export const POST = async (req: NextRequest) => {
     );
   }
 
-  const { selectedModel, resume } = (await req.json()) as {
+  const { selectedModel, resumeId } = (await req.json()) as {
     selectedModel: AiModel;
-    resume: Resume;
+    resumeId: string;
   };
 
-  if (!resume || !selectedModel) {
+  if (!resumeId || !selectedModel) {
     return NextResponse.json(
-      { error: "Resume and model selection required" },
+      { error: "resumeId and model selection required" },
       { status: 400 },
     );
   }
 
+  // Load the resume server-side, scoped to the caller (ownership check) — never
+  // trust resume content sent by the client.
+  const resumeResult = await getResumeById(resumeId);
+  if (!resumeResult?.success || !resumeResult.data) {
+    return NextResponse.json({ error: "Resume not found" }, { status: 404 });
+  }
+
   try {
-    const preprocessResult = await preprocessResume(resume);
+    const preprocessResult = await preprocessResume(resumeResult.data);
     if (!preprocessResult.success) {
       return NextResponse.json(
         {
@@ -72,15 +79,33 @@ export const POST = async (req: NextRequest) => {
       userId,
     );
 
-    // Single comprehensive LLM call
+    const controller = new AbortController();
+    const timer = setTimeout(
+      () => controller.abort(),
+      APP_CONSTANTS.AI_RESUME_REVIEW_TIMEOUT_MS,
+    );
+
+    // Free-form markdown output (scores line + markdown body). Plain text means
+    // toTextStreamResponse() is correct here — no structured-output parsing, so
+    // none of the json/tool-call empty-textStream pitfalls apply.
     const result = streamText({
       model,
-      output: Output.object({
-        schema: ResumeReviewSchema,
-      }),
       system: RESUME_REVIEW_SYSTEM_PROMPT,
       prompt: buildResumeReviewPrompt(normalizedText),
       temperature: TEMPERATURES.FEEDBACK,
+      abortSignal: controller.signal,
+      providerOptions: {
+        ollama: { options: { num_ctx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX } },
+      },
+      onFinish: ({ finishReason, usage }) => {
+        clearTimeout(timer);
+        // "length" => hit num_ctx/output limit; "stop" => model completed.
+        console.info(`Resume review finished: reason=${finishReason}`, usage);
+      },
+      onError: ({ error }) => {
+        clearTimeout(timer);
+        console.error("Resume review stream error:", error);
+      },
     });
 
     return result.toTextStreamResponse();

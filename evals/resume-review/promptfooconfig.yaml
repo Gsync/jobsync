@@ -7,8 +7,6 @@ providers:
       apiKeyEnvar: DEEPSEEK_API_KEY
       temperature: 0
       max_tokens: 8192
-      response_format:
-        type: json_object
 
 prompts:
   - file://./prompt.ts
@@ -19,31 +17,23 @@ tests:
       resumeText: file://./fixtures/strong-senior.txt
     assert:
       - type: javascript
-        value: file://./assertions.ts:assertValidJson
+        value: file://./assertions.ts:assertNotJson
       - type: javascript
-        value: file://./assertions.ts:assertRequiredFields
+        value: file://./assertions.ts:assertScoresLine
       - type: javascript
-        value: file://./assertions.ts:assertScoresInRange
+        value: file://./assertions.ts:assertMarkdownBodyNonEmpty
       - type: javascript
-        value: file://./assertions.ts:assertTopImprovementsCount
-      - type: javascript
-        value: file://./assertions.ts:assertSummaryNonEmpty
-      - type: javascript
-        value: file://./assertions.ts:assertSectionFeedbackStructure
+        value: file://./assertions.ts:assertRequiredSections
 
   - description: Weak/sparse resume - structural validation
     vars:
       resumeText: file://./fixtures/weak-sparse.txt
     assert:
       - type: javascript
-        value: file://./assertions.ts:assertValidJson
+        value: file://./assertions.ts:assertNotJson
       - type: javascript
-        value: file://./assertions.ts:assertRequiredFields
+        value: file://./assertions.ts:assertScoresLine
       - type: javascript
-        value: file://./assertions.ts:assertScoresInRange
+        value: file://./assertions.ts:assertMarkdownBodyNonEmpty
       - type: javascript
-        value: file://./assertions.ts:assertTopImprovementsCount
-      - type: javascript
-        value: file://./assertions.ts:assertSummaryNonEmpty
-      - type: javascript
-        value: file://./assertions.ts:assertSectionFeedbackStructure
+        value: file://./assertions.ts:assertRequiredSections

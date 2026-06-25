@@ -1,6 +1,5 @@
 "use client";
 
-import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { Info, Sparkles, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -12,11 +11,15 @@ import {
   SheetTrigger,
 } from "../ui/sheet";
 import Loading from "../Loading";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "../ui/use-toast";
 import { Resume } from "@/models/profile.model";
 import { AiModel, AiProvider, defaultModel } from "@/models/ai.model";
 import { AiResumeReviewResponseContent } from "./AiResumeReviewResponseContent";
+import {
+  streamResumeReview,
+  type ResumeReviewResult,
+} from "@/utils/streamResumeReview.utils";
 import {
   Tooltip,
   TooltipContent,
@@ -24,7 +27,6 @@ import {
   TooltipTrigger,
 } from "../ui/tooltip";
 import { checkOllamaConnection } from "@/utils/ai.utils";
-import { ResumeReviewSchema } from "@/models/ai.schemas";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { useSlowResponseWarning } from "@/hooks/useSlowResponseWarning";
 import { SlowResponseWarning } from "../common/SlowResponseWarning";
@@ -78,20 +80,17 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
     fetchSettings();
   }, [aISectionOpen, checkConnectionStatus]);
 
-  // Standard single-agent mode
-  const { object, submit, isLoading, stop } = useObject({
-    api: "/api/ai/resume/review",
-    schema: ResumeReviewSchema,
-    onError: (err) => {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: err.message || "Failed to get AI review",
-      });
-    },
-  });
+  const [result, setResult] = useState<ResumeReviewResult | undefined>();
+  const [isLoading, setIsLoading] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const getResumeReview = () => {
+  const stop = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsLoading(false);
+  }, []);
+
+  const getResumeReview = async () => {
     if (!resume || (resume.ResumeSections?.length ?? 0) < 2) {
       toast({
         variant: "destructive",
@@ -102,7 +101,31 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
       return;
     }
 
-    submit({ selectedModel, resume });
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setResult(undefined);
+    setIsLoading(true);
+
+    try {
+      await streamResumeReview({
+        resumeId: resume.id!,
+        selectedModel,
+        signal: controller.signal,
+        onUpdate: setResult,
+      });
+    } catch (err) {
+      // Aborting (e.g. closing the sheet) is expected — don't toast.
+      if (controller.signal.aborted) return;
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description:
+          err instanceof Error ? err.message : "Failed to get AI review",
+      });
+    } finally {
+      if (abortRef.current === controller) abortRef.current = null;
+      setIsLoading(false);
+    }
   };
 
   const triggerSheetChange = (openState: boolean) => {
@@ -113,8 +136,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   };
 
   // Check if we have any content to show
-  const hasContent =
-    object && (object.scores?.overall !== undefined || object.summary);
+  const hasContent = !!(result && (result.scores || result.body));
 
   const showSlowWarning = useSlowResponseWarning(isLoading, !!hasContent);
 
@@ -199,7 +221,8 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
             </div>
           ) : (
             <AiResumeReviewResponseContent
-              content={object}
+              scores={result?.scores}
+              body={result?.body}
               isStreaming={isLoading}
             />
           )}

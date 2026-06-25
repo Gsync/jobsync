@@ -1,8 +1,6 @@
 export { getModel, type ProviderType } from "./providers";
 export {
-  ResumeReviewSchema,
   JobMatchSchema,
-  type ResumeReviewResponse,
   type JobMatchResponse,
 } from "@/models/ai.schemas";
 
