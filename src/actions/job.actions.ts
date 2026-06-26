@@ -303,6 +303,8 @@ export const createJobSource = async (
   }
 };
 
+import { createJobRecord } from "@/lib/jobs/createJobRecord";
+
 export const addJob = async (
   data: z.infer<typeof AddJobFormSchema>,
 ): Promise<any | undefined> => {
@@ -331,30 +333,23 @@ export const addJob = async (
       tags,
     } = data;
 
-    const tagIds = tags ?? [];
-
-    const job = await prisma.job.create({
-      data: {
-        jobTitleId: title,
-        companyId: company,
-        locationId: location,
-        statusId: status,
-        jobSourceId: source,
-        salaryRange: salaryRange,
-        createdAt: new Date(),
-        dueDate: dueDate,
-        appliedDate: dateApplied,
-        description: jobDescription,
-        jobType: type,
-        userId: user.id,
-        jobUrl,
-        applied,
-        resumeId: resume,
-        coverLetterId: coverLetter,
-        ...(tagIds.length > 0
-          ? { tags: { connect: tagIds.map((id) => ({ id })) } }
-          : {}),
-      },
+    const job = await createJobRecord({
+      jobTitleId: title,
+      companyId: company,
+      locationId: location,
+      statusId: status,
+      jobSourceId: source,
+      salaryRange,
+      dueDate,
+      appliedDate: dateApplied,
+      description: jobDescription,
+      jobType: type,
+      userId: user.id,
+      jobUrl,
+      applied,
+      resumeId: resume,
+      coverLetterId: coverLetter,
+      tagIds: tags ?? [],
     });
     revalidatePath("/dashboard");
     return { job, success: true };

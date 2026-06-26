@@ -51,6 +51,7 @@ export interface JobResponse {
   matchScore?: number | null;
   matchData?: string | null;
   tags?: Tag[];
+  createdVia?: string | null;
   _count?: { Notes?: number };
 }
 

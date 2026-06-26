@@ -14,7 +14,8 @@ vi.mock("@prisma/client", () => {
     tag: {
       findMany: vi.fn(),
       count: vi.fn(),
-      upsert: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
       delete: vi.fn(),
     },
     job: {
@@ -141,29 +142,32 @@ describe("Tag Actions", () => {
 
   // createTag
   describe("createTag", () => {
-    it("should upsert and return the tag on success", async () => {
+    it("should create and return the tag on success", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
-      (prisma.tag.upsert as any).mockResolvedValue(mockTag);
+      (prisma.tag.findUnique as any).mockResolvedValue(null);
+      (prisma.tag.create as any).mockResolvedValue(mockTag);
 
       const result = await createTag("React");
 
       expect(result).toEqual({ data: mockTag, success: true });
-      expect(prisma.tag.upsert).toHaveBeenCalledWith({
+      expect(prisma.tag.findUnique).toHaveBeenCalledWith({
         where: { value_createdBy: { value: "react", createdBy: mockUser.id } },
-        update: {},
-        create: { label: "React", value: "react", createdBy: mockUser.id },
+      });
+      expect(prisma.tag.create).toHaveBeenCalledWith({
+        data: { label: "React", value: "react", createdBy: mockUser.id },
       });
     });
 
     it("should trim label and lowercase the value", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
-      (prisma.tag.upsert as any).mockResolvedValue(mockTag);
+      (prisma.tag.findUnique as any).mockResolvedValue(null);
+      (prisma.tag.create as any).mockResolvedValue(mockTag);
 
       await createTag("  React  ");
 
-      expect(prisma.tag.upsert).toHaveBeenCalledWith(
+      expect(prisma.tag.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          create: expect.objectContaining({ label: "React", value: "react" }),
+          data: expect.objectContaining({ label: "React", value: "react" }),
         }),
       );
     });
@@ -177,7 +181,8 @@ describe("Tag Actions", () => {
         success: false,
         message: "Tag label cannot be empty.",
       });
-      expect(prisma.tag.upsert).not.toHaveBeenCalled();
+      expect(prisma.tag.findUnique).not.toHaveBeenCalled();
+      expect(prisma.tag.create).not.toHaveBeenCalled();
     });
 
     it("should return error for unauthenticated user", async () => {
@@ -186,12 +191,14 @@ describe("Tag Actions", () => {
       const result = await createTag("React");
 
       expect(result).toEqual({ success: false, message: "Not authenticated" });
-      expect(prisma.tag.upsert).not.toHaveBeenCalled();
+      expect(prisma.tag.findUnique).not.toHaveBeenCalled();
+      expect(prisma.tag.create).not.toHaveBeenCalled();
     });
 
     it("should handle database errors", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
-      (prisma.tag.upsert as any).mockRejectedValue(new Error("DB error"));
+      (prisma.tag.findUnique as any).mockResolvedValue(null);
+      (prisma.tag.create as any).mockRejectedValue(new Error("DB error"));
 
       const result = await createTag("React");
 

@@ -125,6 +125,13 @@ function JobDetails({ job }: { job: JobResponse }) {
               ))}
             </div>
           )}
+          {job.createdVia && (
+            <div className="my-1 ml-4">
+              <Badge variant="outline" className="text-xs text-muted-foreground">
+                via {job.createdVia}
+              </Badge>
+            </div>
+          )}
           {job.jobUrl && (
             <div className="my-3 ml-4">
               <span className="font-semibold mr-2">Job URL:</span>

@@ -8,6 +8,6 @@ export const config = {
   matcher: [
     "/dashboard",
     "/dashboard/:path*",
-    "/api/((?!auth).*)",
+    "/api/((?!auth|mcp).*)",
   ],
 };

@@ -3,6 +3,7 @@ import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
+import { resolveTag as resolveTagCore } from "@/lib/jobs/resolve";
 
 export const getAllTags = async (): Promise<any | undefined> => {
   try {
@@ -62,19 +63,11 @@ export const createTag = async (label: string): Promise<any | undefined> => {
       throw new Error("Not authenticated");
     }
 
-    const trimmed = label.trim();
-    if (!trimmed) {
+    if (!label.trim()) {
       throw new Error("Tag label cannot be empty.");
     }
 
-    const value = trimmed.toLowerCase();
-
-    const tag = await prisma.tag.upsert({
-      where: { value_createdBy: { value, createdBy: user.id } },
-      update: {},
-      create: { label: trimmed, value, createdBy: user.id },
-    });
-
+    const { created: _, ...tag } = await resolveTagCore(label, user.id);
     return { data: tag, success: true };
   } catch (error) {
     const msg = "Failed to create tag. ";

@@ -13,27 +13,28 @@ datasource db {
 }
 
 model User {
-  id           String         @id @default(uuid())
-  name         String
-  email        String         @unique
-  password     String
-  createdAt    DateTime       @default(now())
-  jobsApplied  Job[]
-  JobTitle     JobTitle[]
-  Location     Location[]
-  Company      Company[]
-  JobSource    JobSource[]
-  Contact      Contact[]
-  Profile      Profile[]
-  Activity     Activity[]
-  ActivityType ActivityType[]
-  Task         Task[]
-  Automation   Automation[]
-  Settings     UserSettings?
-  ApiKey       ApiKey[]
-  Note         Note[]
-  Tag          Tag[]
-  Question     Question[]
+  id             String           @id @default(uuid())
+  name           String
+  email          String           @unique
+  password       String
+  createdAt      DateTime         @default(now())
+  jobsApplied    Job[]
+  JobTitle       JobTitle[]
+  Location       Location[]
+  Company        Company[]
+  JobSource      JobSource[]
+  Contact        Contact[]
+  Profile        Profile[]
+  Activity       Activity[]
+  ActivityType   ActivityType[]
+  Task           Task[]
+  Automation     Automation[]
+  Settings       UserSettings?
+  ApiKey         ApiKey[]
+  Note           Note[]
+  Tag            Tag[]
+  Question       Question[]
+  McpAccessToken McpAccessToken[]
 }
 
 model ApiKey {
@@ -310,6 +311,9 @@ model Job {
   discoveryStatus String?
   discoveredAt    DateTime?
 
+  // MCP provenance: which agent/token created this job (null = UI or automation)
+  createdVia      String?
+
   @@index([userId, automationId])
   @@index([userId, discoveryStatus])
 }
@@ -463,4 +467,20 @@ model Question {
   updatedAt DateTime @updatedAt
 
   @@index([createdBy])
+}
+
+model McpAccessToken {
+  id          String    @id @default(uuid())
+  userId      String
+  User        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  tokenHash   String    @unique
+  tokenPrefix String
+  scopes      String    // JSON array string; v1 always ["jobs:write"]
+  expiresAt   DateTime
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, name])
+  @@index([userId])
 }
