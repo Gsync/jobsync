@@ -105,13 +105,13 @@ export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
     const activities = await prisma.activity.findMany({
       where: {
         userId: user.id,
-        endTime: {
+        startTime: {
           gte: sevenDaysAgo,
           lte: today,
         },
       },
       select: {
-        endTime: true,
+        startTime: true,
         duration: true,
         activityType: {
           select: {
@@ -120,12 +120,12 @@ export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
         },
       },
       orderBy: {
-        endTime: "asc",
+        startTime: "asc",
       },
     });
     const groupedData = activities.reduce((acc: any, activity: any) => {
       // Use local date for grouping to match user's perception
-      const activityDate = new Date(activity.endTime);
+      const activityDate = new Date(activity.startTime);
       const day = format(activityDate, "yyyy-MM-dd");
       const activityTypeLabel = activity.activityType?.label || "Unknown";
 
@@ -257,7 +257,7 @@ export const getTopActivityTypesByDuration = async (
     const activities = await prisma.activity.findMany({
       where: {
         userId: user.id,
-        endTime: {
+        startTime: {
           gte: startDate,
           lte: today,
         },

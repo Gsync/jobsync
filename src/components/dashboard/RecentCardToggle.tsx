@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { JobResponse } from "@/models/job.model";
@@ -25,6 +26,38 @@ function formatDuration(totalMinutes: number) {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   return totalMinutes === 0 ? "0min" : `${hours}h ${minutes}min`;
+}
+
+function groupJobsByDate(jobs: JobResponse[]) {
+  const groups = new Map<string, JobResponse[]>();
+  for (const job of jobs) {
+    const key = job.appliedDate
+      ? format(job.appliedDate, "EEE MMMM d, yyyy")
+      : "No date";
+    const existing = groups.get(key);
+    if (existing) {
+      existing.push(job);
+    } else {
+      groups.set(key, [job]);
+    }
+  }
+  return Array.from(groups.entries());
+}
+
+function groupActivitiesByDate(activities: RecentActivity[]) {
+  const groups = new Map<string, RecentActivity[]>();
+  for (const activity of activities) {
+    const key = activity.endTime
+      ? format(activity.endTime, "EEE MMMM d, yyyy")
+      : "In progress";
+    const existing = groups.get(key);
+    if (existing) {
+      existing.push(activity);
+    } else {
+      groups.set(key, [activity]);
+    }
+  }
+  return Array.from(groups.entries());
 }
 
 const tabs = ["Jobs", "Activities"] as const;
@@ -64,47 +97,69 @@ export default function RecentCardToggle({
       </CardHeader>
       <CardContent className="grid gap-6">
         {activeIndex === 0
-          ? jobs.map((job) => (
-              <div key={job.id} className="flex items-center gap-4">
-                <Avatar className="hidden h-8 w-8 sm:flex">
-                  <AvatarImage
-                    src={job.Company?.logoUrl || "/images/jobsync-logo.svg"}
-                    alt="Avatar"
-                  />
-                  <AvatarFallback>JS</AvatarFallback>
-                </Avatar>
-                <Link href={`/dashboard/myjobs/${job?.id}`}>
-                  <div className="grid gap-1">
-                    <p className="text-sm font-medium leading-none">
-                      {job.JobTitle?.label}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {job.Company?.label}
-                    </p>
+          ? groupJobsByDate(jobs.slice(0, 5)).map(([date, dateJobs]) => (
+              <div key={date} className="grid gap-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {date}
+                </p>
+                {dateJobs.map((job) => (
+                  <div key={job.id} className="flex items-center gap-4">
+                    <Avatar className="hidden h-8 w-8 sm:flex">
+                      <AvatarImage
+                        src={job.Company?.logoUrl || "/images/jobsync-logo.svg"}
+                        alt="Avatar"
+                      />
+                      <AvatarFallback>JS</AvatarFallback>
+                    </Avatar>
+                    <Link href={`/dashboard/myjobs/${job?.id}`} className="min-w-0">
+                      <div className="grid gap-1">
+                        <p className="text-sm font-medium leading-none truncate">
+                          {job.JobTitle?.label}
+                        </p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {job.Company?.label}
+                          {job.Location?.label ? ` · ${job.Location.label}` : ""}
+                        </p>
+                      </div>
+                    </Link>
+                    {job.Status?.label ? (
+                      <Badge
+                        className={cn(
+                          "ml-auto shrink-0 justify-center text-xs px-1.5 py-0 h-5",
+                          job.Status?.value === "applied" && "bg-cyan-500",
+                          job.Status?.value === "interview" && "bg-green-500",
+                        )}
+                      >
+                        {job.Status.label}
+                      </Badge>
+                    ) : null}
                   </div>
-                </Link>
-                <div className="ml-auto text-sm font-medium">
-                  {job?.appliedDate ? format(job.appliedDate, "PP") : "N/A"}
-                </div>
+                ))}
               </div>
             ))
-          : activities.map((activity) => (
-              <div key={activity.id} className="flex items-center gap-4">
-                <div className="grid gap-1 min-w-0 flex-1">
-                  <p className="text-sm font-medium leading-none truncate">
-                    {activity.activityName}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {activity.activityType?.label || "Unknown"}
-                  </p>
-                </div>
-                <div className="ml-auto text-right shrink-0">
-                  <p className="text-sm font-medium">
-                    {formatDuration(activity.duration ?? 0)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {activity.endTime ? format(activity.endTime, "PP") : ""}
-                  </p>
+          : groupActivitiesByDate(activities.slice(0, 5)).map(([date, dateActivities]) => (
+              <div key={date} className="grid gap-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {date}
+                </p>
+                <div className="grid gap-4 pl-3">
+                  {dateActivities.map((activity) => (
+                    <div key={activity.id} className="flex items-center gap-4">
+                      <div className="grid gap-1 min-w-0 flex-1">
+                        <p className="text-sm font-medium leading-none truncate">
+                          {activity.activityName}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {activity.activityType?.label || "Unknown"}
+                        </p>
+                      </div>
+                      <div className="ml-auto text-right shrink-0">
+                        <p className="text-sm font-medium">
+                          {formatDuration(activity.duration ?? 0)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

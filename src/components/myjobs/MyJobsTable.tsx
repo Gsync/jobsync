@@ -100,11 +100,11 @@ function MyJobsTable({
                     src={job.Company?.logoUrl || "/images/jobsync-logo.svg"}
                   />
                 </TableCell>
-                <TableCell className="hidden md:table-cell w-[120px]">
+                <TableCell className="hidden md:table-cell w-[120px] whitespace-nowrap">
                   {job.appliedDate ? format(job.appliedDate, "PP") : "N/A"}
                 </TableCell>
                 <TableCell
-                  className="font-medium cursor-pointer max-w-[120px] sm:max-w-none"
+                  className="font-medium cursor-pointer max-w-[120px] md:max-w-[220px]"
                 >
                   <div className="flex items-center gap-1.5">
                     <Link href={`/dashboard/myjobs/${job?.id}`} className="block truncate">
@@ -118,11 +118,11 @@ function MyJobsTable({
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="font-medium max-w-[100px] sm:max-w-none">
+                <TableCell className="font-medium max-w-[100px] md:max-w-[160px]">
                   <span className="block truncate">{job.Company?.label}</span>
                 </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  {job.Location?.label}
+                <TableCell className="hidden md:table-cell whitespace-nowrap max-w-[120px]">
+                  <span className="block truncate">{job.Location?.label}</span>
                 </TableCell>
                 <TableCell>
                   {new Date() > job.dueDate && job.Status?.value === "draft" ? (

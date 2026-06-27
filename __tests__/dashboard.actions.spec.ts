@@ -153,12 +153,12 @@ describe("Dashboard Actions", () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockActivities = [
         {
-          endTime: new Date("2024-01-01T10:00:00Z"),
+          startTime: new Date("2024-01-01T10:00:00Z"),
           duration: 60,
           activityType: { label: "Applying" },
         },
         {
-          endTime: new Date("2024-01-01T14:00:00Z"),
+          startTime: new Date("2024-01-01T14:00:00Z"),
           duration: 30,
           activityType: { label: "Interviewing" },
         },
@@ -208,7 +208,7 @@ describe("Dashboard Actions", () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockActivities = [
         {
-          endTime: new Date("2024-01-01T10:00:00Z"),
+          startTime: new Date("2024-01-01T10:00:00Z"),
           duration: 60,
           activityType: null,
         },
