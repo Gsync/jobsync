@@ -43,6 +43,11 @@ export const APP_CONSTANTS = {
   // too low cuts the stream mid-review.
   AI_RESUME_REVIEW_TIMEOUT_MS: 180_000,
 
+  // Job match generation timeout. Like the review, the match is a markdown
+  // analysis (scores line plus several sections) over a resume and a JD, so a
+  // local model can take minutes; too low cuts the stream mid-analysis.
+  AI_JOB_MATCH_TIMEOUT_MS: 180_000,
+
   // Automation manual run rate limiting
   AUTOMATION_MAX_MANUAL_RUNS_PER_HOUR: 5,
   AUTOMATION_RATE_LIMIT_WINDOW_MS: 60 * 60 * 1000, // 1 hour

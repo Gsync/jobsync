@@ -12,6 +12,7 @@ import {
 } from "../ui/sheet";
 import Loading from "../Loading";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSheetAutoScroll } from "@/hooks/useSheetAutoScroll";
 import { toast } from "../ui/use-toast";
 import { Resume } from "@/models/profile.model";
 import { AiModel, AiProvider, defaultModel } from "@/models/ai.model";
@@ -83,21 +84,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   const [result, setResult] = useState<ResumeReviewResult | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
-  const scrollAnchorRef = useRef<HTMLDivElement>(null);
-  const userScrolledUpRef = useRef(false);
-
-  const handleSheetScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const el = e.currentTarget;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight > 80) {
-      userScrolledUpRef.current = true;
-    }
-  };
-
-  useEffect(() => {
-    if (isLoading && result && !userScrolledUpRef.current) {
-      scrollAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-    }
-  }, [result, isLoading]);
+  const { scrollAnchorRef, handleSheetScroll, resetScroll } = useSheetAutoScroll(isLoading, result);
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
@@ -118,7 +105,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
 
     const controller = new AbortController();
     abortRef.current = controller;
-    userScrolledUpRef.current = false;
+    resetScroll();
     setResult(undefined);
     setIsLoading(true);
 

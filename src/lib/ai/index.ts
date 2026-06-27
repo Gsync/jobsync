@@ -1,8 +1,10 @@
 export { getModel, type ProviderType } from "./providers";
-export {
-  JobMatchSchema,
-  type JobMatchResponse,
+export type {
+  JobMatchScores,
+  JobMatchResult,
+  JobMatchData,
 } from "@/models/ai.schemas";
+export { parseJobMatch } from "./jobMatch/parse";
 
 // Prompts
 export {

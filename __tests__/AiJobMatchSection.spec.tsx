@@ -1,18 +1,11 @@
 import React from "react";
-import { render, waitFor } from "@testing-library/react";
+import { render, waitFor, act } from "@testing-library/react";
 import { AiJobMatchSection } from "@/components/profile/AiJobMatchSection";
+import type { JobMatchResult } from "@/utils/streamJobMatch.utils";
 
-const mockSubmit = vi.fn();
-const mockStop = vi.fn();
-let mockUseObjectReturn = {
-  object: null as any,
-  submit: mockSubmit,
-  isLoading: false,
-  stop: mockStop,
-};
-
-vi.mock("@ai-sdk/react", () => ({
-  experimental_useObject: () => mockUseObjectReturn,
+const mockStreamJobMatch = vi.fn();
+vi.mock("@/utils/streamJobMatch.utils", () => ({
+  streamJobMatch: (...args: any[]) => mockStreamJobMatch(...args),
 }));
 
 const mockSaveJobMatchResult = vi.fn();
@@ -52,9 +45,19 @@ vi.mock("@/components/Loading", () => ({
   default: () => <div data-testid="loading" />,
 }));
 
+// Capture the Sheet's onOpenChange so a test can simulate closing the sheet.
+const mockSheetProps: { onOpenChange?: (open: boolean) => void } = {};
+
+// Tracks whether the auto-select has fired, so it fires exactly once per test
+// (a real user selects a resume once, not on every re-render).
+const mockSelectFired = { done: false };
+
 // Mock Radix UI portals to render inline
 vi.mock("@/components/ui/sheet", () => ({
-  Sheet: ({ children, open }: any) => (open ? <div>{children}</div> : null),
+  Sheet: ({ children, open, onOpenChange }: any) => {
+    mockSheetProps.onOpenChange = onOpenChange;
+    return open ? <div>{children}</div> : null;
+  },
   SheetPortal: ({ children }: any) => <div>{children}</div>,
   SheetContent: ({ children }: any) => <div>{children}</div>,
   SheetHeader: ({ children }: any) => <div>{children}</div>,
@@ -68,8 +71,22 @@ vi.mock("@/components/ui/tooltip", () => ({
   TooltipTrigger: ({ children }: any) => <div>{children}</div>,
 }));
 
+// Auto-select the resume so the match request fires on mount.
 vi.mock("@/components/ui/select", () => ({
-  Select: ({ children }: any) => <div>{children}</div>,
+  Select: ({ children, onValueChange }: any) => {
+    React.useEffect(() => {
+      // Fire on a macrotask so the async resume-list fetch resolves first
+      // (mirrors a real user selecting after the list has loaded). Reschedule
+      // across re-renders but fire only once total.
+      if (mockSelectFired.done) return;
+      const t = setTimeout(() => {
+        mockSelectFired.done = true;
+        onValueChange?.("resume-1");
+      }, 0);
+      return () => clearTimeout(t);
+    }, [onValueChange]);
+    return <div>{children}</div>;
+  },
   SelectContent: ({ children }: any) => <div>{children}</div>,
   SelectGroup: ({ children }: any) => <div>{children}</div>,
   SelectItem: ({ children }: any) => <div>{children}</div>,
@@ -77,21 +94,9 @@ vi.mock("@/components/ui/select", () => ({
   SelectValue: () => null,
 }));
 
-const completedMatchObject = {
-  matchScore: 82,
-  recommendation: "good match" as const,
-  summary: "Strong frontend candidate",
-  requirements: { met: [], missing: [], partial: [] },
-  skills: { matched: [], missing: [], transferable: [], bonus: [] },
-  experience: {
-    levelMatch: "match",
-    yearsRequired: 3,
-    yearsApparent: 5,
-    relevance: "highly relevant",
-  },
-  keywords: { matched: [], missing: [], addToResume: [] },
-  dealBreakers: [],
-  tailoringTips: [],
+const completedMatch: JobMatchResult = {
+  scores: { matchScore: 82, recommendation: "good match" },
+  body: "## Summary\nStrong frontend candidate",
 };
 
 describe("AiJobMatchSection – auto-save", () => {
@@ -104,36 +109,14 @@ describe("AiJobMatchSection – auto-save", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseObjectReturn = {
-      object: null,
-      submit: mockSubmit,
-      isLoading: false,
-      stop: mockStop,
-    };
+    mockSelectFired.done = false;
   });
 
   it("saves match result when streaming completes with valid data", async () => {
+    mockStreamJobMatch.mockResolvedValue(completedMatch);
     mockSaveJobMatchResult.mockResolvedValue({ success: true });
 
-    // Start with loading state
-    mockUseObjectReturn = {
-      object: null,
-      submit: mockSubmit,
-      isLoading: true,
-      stop: mockStop,
-    };
-
-    const { rerender } = render(<AiJobMatchSection {...defaultProps} />);
-
-    // Transition to completed with result
-    mockUseObjectReturn = {
-      object: completedMatchObject,
-      submit: mockSubmit,
-      isLoading: false,
-      stop: mockStop,
-    };
-
-    rerender(<AiJobMatchSection {...defaultProps} />);
+    render(<AiJobMatchSection {...defaultProps} />);
 
     await waitFor(() => {
       expect(mockSaveJobMatchResult).toHaveBeenCalledTimes(1);
@@ -146,25 +129,10 @@ describe("AiJobMatchSection – auto-save", () => {
   });
 
   it("calls onMatchSaved callback after successful save", async () => {
+    mockStreamJobMatch.mockResolvedValue(completedMatch);
     mockSaveJobMatchResult.mockResolvedValue({ success: true });
 
-    mockUseObjectReturn = {
-      object: null,
-      submit: mockSubmit,
-      isLoading: true,
-      stop: mockStop,
-    };
-
-    const { rerender } = render(<AiJobMatchSection {...defaultProps} />);
-
-    mockUseObjectReturn = {
-      object: completedMatchObject,
-      submit: mockSubmit,
-      isLoading: false,
-      stop: mockStop,
-    };
-
-    rerender(<AiJobMatchSection {...defaultProps} />);
+    render(<AiJobMatchSection {...defaultProps} />);
 
     await waitFor(() => {
       expect(defaultProps.onMatchSaved).toHaveBeenCalledWith(
@@ -175,95 +143,68 @@ describe("AiJobMatchSection – auto-save", () => {
   });
 
   it("shows success toast after save", async () => {
+    mockStreamJobMatch.mockResolvedValue(completedMatch);
     mockSaveJobMatchResult.mockResolvedValue({ success: true });
 
-    mockUseObjectReturn = {
-      object: null,
-      submit: mockSubmit,
-      isLoading: true,
-      stop: mockStop,
-    };
-
-    const { rerender } = render(<AiJobMatchSection {...defaultProps} />);
-
-    mockUseObjectReturn = {
-      object: completedMatchObject,
-      submit: mockSubmit,
-      isLoading: false,
-      stop: mockStop,
-    };
-
-    rerender(<AiJobMatchSection {...defaultProps} />);
+    render(<AiJobMatchSection {...defaultProps} />);
 
     await waitFor(() => {
       expect(mockToast).toHaveBeenCalledWith({ title: "Match result saved" });
     });
   });
 
-  it("does not save when stream has no matchScore", async () => {
-    mockUseObjectReturn = {
-      object: null,
-      submit: mockSubmit,
-      isLoading: true,
-      stop: mockStop,
-    };
+  it("does not save when the user closes the sheet mid-stream", async () => {
+    // streamJobMatch salvages partial data and resolves on abort, so the
+    // component must skip saving a match the user cancelled.
+    let resolveStream!: (value: JobMatchResult) => void;
+    const streamCall = new Promise<JobMatchResult>((r) => {
+      resolveStream = r;
+    });
+    mockStreamJobMatch.mockReturnValue(streamCall);
+    mockSaveJobMatchResult.mockResolvedValue({ success: true });
 
-    const { rerender } = render(<AiJobMatchSection {...defaultProps} />);
+    render(<AiJobMatchSection {...defaultProps} />);
 
-    mockUseObjectReturn = {
-      object: { summary: "partial data" },
-      submit: mockSubmit,
-      isLoading: false,
-      stop: mockStop,
-    };
+    // Wait until the match request is in flight.
+    await waitFor(() => expect(mockStreamJobMatch).toHaveBeenCalledTimes(1));
 
-    rerender(<AiJobMatchSection {...defaultProps} />);
+    // User closes the sheet -> component aborts the in-flight controller.
+    await act(async () => {
+      mockSheetProps.onOpenChange?.(false);
+    });
 
-    // Give effect time to run
-    await new Promise((r) => setTimeout(r, 50));
+    // The stream then resolves with the salvaged partial result.
+    await act(async () => {
+      resolveStream({
+        scores: { matchScore: 82, recommendation: "good match" },
+        body: "partial",
+      });
+      await streamCall;
+    });
 
     expect(mockSaveJobMatchResult).not.toHaveBeenCalled();
     expect(defaultProps.onMatchSaved).not.toHaveBeenCalled();
   });
 
-  it("does not save when component mounts without prior loading", async () => {
-    mockUseObjectReturn = {
-      object: completedMatchObject,
-      submit: mockSubmit,
-      isLoading: false,
-      stop: mockStop,
-    };
+  it("does not save when stream returns no scores", async () => {
+    mockStreamJobMatch.mockResolvedValue({ body: "partial data" });
 
     render(<AiJobMatchSection {...defaultProps} />);
 
     await new Promise((r) => setTimeout(r, 50));
 
     expect(mockSaveJobMatchResult).not.toHaveBeenCalled();
+    expect(defaultProps.onMatchSaved).not.toHaveBeenCalled();
   });
 
   it("shows error toast when save fails", async () => {
+    mockStreamJobMatch.mockResolvedValue(completedMatch);
     mockSaveJobMatchResult.mockResolvedValue({
       success: false,
       message: "DB error",
     });
 
-    mockUseObjectReturn = {
-      object: null,
-      submit: mockSubmit,
-      isLoading: true,
-      stop: mockStop,
-    };
-
-    const { rerender } = render(<AiJobMatchSection {...defaultProps} />);
-
-    mockUseObjectReturn = {
-      object: completedMatchObject,
-      submit: mockSubmit,
-      isLoading: false,
-      stop: mockStop,
-    };
-
-    rerender(<AiJobMatchSection {...defaultProps} />);
+    render(<AiJobMatchSection {...defaultProps} />);
 
     await waitFor(() => {
       expect(mockToast).toHaveBeenCalledWith({
@@ -277,32 +218,18 @@ describe("AiJobMatchSection – auto-save", () => {
   });
 
   it("includes resume metadata in saved matchData", async () => {
+    mockStreamJobMatch.mockResolvedValue(completedMatch);
     mockSaveJobMatchResult.mockResolvedValue({ success: true });
 
-    mockUseObjectReturn = {
-      object: null,
-      submit: mockSubmit,
-      isLoading: true,
-      stop: mockStop,
-    };
-
-    const { rerender } = render(<AiJobMatchSection {...defaultProps} />);
-
-    mockUseObjectReturn = {
-      object: completedMatchObject,
-      submit: mockSubmit,
-      isLoading: false,
-      stop: mockStop,
-    };
-
-    rerender(<AiJobMatchSection {...defaultProps} />);
+    render(<AiJobMatchSection {...defaultProps} />);
 
     await waitFor(() => {
       const savedData = mockSaveJobMatchResult.mock.calls[0][2];
       const parsed = JSON.parse(savedData);
       expect(parsed).toHaveProperty("matchedAt");
       expect(parsed.matchScore).toBe(82);
-      expect(parsed.summary).toBe("Strong frontend candidate");
+      expect(parsed.resumeTitle).toBe("My Resume");
+      expect(parsed.body).toContain("Strong frontend candidate");
     });
   });
 });

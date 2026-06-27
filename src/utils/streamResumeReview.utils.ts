@@ -1,5 +1,6 @@
 import { ResumeScores } from "@/models/ai.schemas";
 import { AiModel } from "@/models/ai.model";
+import { stripThinking } from "@/lib/ai/stripThinking";
 
 export type ResumeReviewResult = {
   scores?: ResumeScores;
@@ -20,16 +21,6 @@ type StreamResumeReviewArgs = {
 // the whole line and dropping every score.
 const SCORES_RE =
   /SCORES:\s*overall=(\d+)\s+impact=(\d+)\s+clarity=(\d+)\s+ats=(\d+)/i;
-
-// Reasoning models (e.g. qwen3 family) emit <think>...</think> in the text
-// stream. Drop complete blocks, and drop an unterminated trailing block so a
-// half-finished thought never flashes into the rendered review.
-function stripThinking(text: string): string {
-  let out = text.replace(/<think>[\s\S]*?<\/think>/gi, "");
-  const openIdx = out.search(/<think>/i);
-  if (openIdx !== -1) out = out.slice(0, openIdx);
-  return out;
-}
 
 function parse(raw: string): ResumeReviewResult {
   const text = stripThinking(raw);

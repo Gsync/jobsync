@@ -39,7 +39,7 @@ import type {
   AutomationRun,
   DiscoveredJob,
 } from "@/models/automation.model";
-import type { JobMatchResponse } from "@/models/ai.schemas";
+import type { JobMatchData } from "@/models/ai.schemas";
 import { DiscoveredJobsList } from "@/components/automations/DiscoveredJobsList";
 import { DiscoveredJobDetail } from "@/components/automations/DiscoveredJobDetail";
 import { RunHistoryList } from "@/components/automations/RunHistoryList";
@@ -61,7 +61,7 @@ export default function AutomationDetailPage() {
   const [runNowLoading, setRunNowLoading] = useState(false);
   const [selectedJob, setSelectedJob] = useState<DiscoveredJob | null>(null);
   const [selectedJobMatchData, setSelectedJobMatchData] =
-    useState<JobMatchResponse | null>(null);
+    useState<JobMatchData | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [runKey, setRunKey] = useState(0);
 
@@ -175,7 +175,7 @@ export default function AutomationDetailPage() {
     if (result.success && result.data) {
       setSelectedJob(result.data);
       setSelectedJobMatchData(
-        result.data.parsedMatchData as JobMatchResponse | null,
+        result.data.parsedMatchData as JobMatchData | null,
       );
       setDetailOpen(true);
     } else {

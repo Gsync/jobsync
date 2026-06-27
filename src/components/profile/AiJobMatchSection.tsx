@@ -1,6 +1,5 @@
 "use client";
 
-import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { getResumeList } from "@/actions/profile.actions";
 import { saveJobMatchResult } from "@/actions/job.actions";
 import {
@@ -11,6 +10,7 @@ import {
   SheetTitle,
 } from "../ui/sheet";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSheetAutoScroll } from "@/hooks/useSheetAutoScroll";
 import { Resume } from "@/models/profile.model";
 import { toast } from "../ui/use-toast";
 import {
@@ -32,7 +32,10 @@ import {
 } from "../ui/tooltip";
 import { Info, CheckCircle, XCircle } from "lucide-react";
 import { checkOllamaConnection } from "@/utils/ai.utils";
-import { JobMatchSchema } from "@/models/ai.schemas";
+import {
+  streamJobMatch,
+  type JobMatchResult,
+} from "@/utils/streamJobMatch.utils";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { useSlowResponseWarning } from "@/hooks/useSlowResponseWarning";
 import { SlowResponseWarning } from "../common/SlowResponseWarning";
@@ -55,9 +58,11 @@ export const AiJobMatchSection = ({
   const [connectionError, setConnectionError] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<AiModel>(defaultModel);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+  const [result, setResult] = useState<JobMatchResult | undefined>();
+  const [isLoading, setIsLoading] = useState(false);
   const resumesRef = useRef<Resume[]>([]);
-  const wasLoadingRef = useRef(false);
-  const stoppedByUserRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const { scrollAnchorRef, handleSheetScroll, resetScroll } = useSheetAutoScroll(isLoading, result);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -79,55 +84,40 @@ export const AiJobMatchSection = ({
     fetchSettings();
   }, []);
 
-  // Standard single-agent mode
-  const { object, submit, isLoading, stop } = useObject({
-    api: "/api/ai/resume/match",
-    schema: JobMatchSchema,
-    onError: (err) => {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: err.message || "Failed to get job match analysis",
+  const saveMatch = useCallback(
+    (resumeId: string, matchResult: JobMatchResult) => {
+      const scores = matchResult.scores;
+      if (!scores) return;
+
+      const resumeTitle =
+        resumesRef.current.find((r) => r.id === resumeId)?.title ??
+        "Unknown Resume";
+      const matchData = JSON.stringify({
+        matchScore: scores.matchScore,
+        recommendation: scores.recommendation,
+        body: matchResult.body,
+        resumeId,
+        resumeTitle,
+        matchedAt: new Date().toISOString(),
+        provider: selectedModel.provider,
+        model: selectedModel.model,
+      });
+
+      saveJobMatchResult(jobId, scores.matchScore, matchData).then((res) => {
+        if (res?.success) {
+          onMatchSaved?.(scores.matchScore, matchData);
+          toast({ title: "Match result saved" });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Error!",
+            description: res?.message || "Failed to save match result",
+          });
+        }
       });
     },
-  });
-
-  useEffect(() => {
-    if (isLoading) {
-      wasLoadingRef.current = true;
-      return;
-    }
-    if (!wasLoadingRef.current || !object?.matchScore) return;
-    wasLoadingRef.current = false;
-    if (stoppedByUserRef.current) {
-      stoppedByUserRef.current = false;
-      return;
-    }
-
-    const resumeTitle =
-      resumesRef.current.find((r) => r.id === selectedResumeId)?.title ??
-      "Unknown Resume";
-    const matchData = JSON.stringify({
-      ...object,
-      resumeId: selectedResumeId,
-      resumeTitle,
-      matchedAt: new Date().toISOString(),
-    });
-    const score = object.matchScore;
-
-    saveJobMatchResult(jobId, score, matchData).then((result) => {
-      if (result?.success) {
-        onMatchSaved?.(score, matchData);
-        toast({ title: "Match result saved" });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: result?.message || "Failed to save match result",
-        });
-      }
-    });
-  }, [isLoading, object, jobId, selectedResumeId, onMatchSaved]);
+    [jobId, onMatchSaved, selectedModel.provider, selectedModel.model],
+  );
 
   const getResumes = async () => {
     try {
@@ -150,9 +140,45 @@ export const AiJobMatchSection = ({
     }
   };
 
-  const getJobMatch = (resumeId: string, jobId: string) => {
-    submit({ resumeId, jobId, selectedModel });
+  const getJobMatch = async (resumeId: string, jobId: string) => {
+    const controller = new AbortController();
+    abortRef.current = controller;
+    resetScroll();
+    setResult(undefined);
+    setIsLoading(true);
+
+    try {
+      const matchResult = await streamJobMatch({
+        resumeId,
+        jobId,
+        selectedModel,
+        signal: controller.signal,
+        onUpdate: setResult,
+      });
+      // streamJobMatch salvages partial data on abort and resolves, so guard
+      // against saving a match the user cancelled by closing the sheet.
+      if (controller.signal.aborted) return;
+      saveMatch(resumeId, matchResult);
+    } catch (err) {
+      // Aborting (e.g. closing the sheet) is expected — don't toast.
+      if (controller.signal.aborted) return;
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description:
+          err instanceof Error ? err.message : "Failed to get job match analysis",
+      });
+    } finally {
+      if (abortRef.current === controller) abortRef.current = null;
+      setIsLoading(false);
+    }
   };
+
+  const stop = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsLoading(false);
+  }, []);
 
   const checkConnectionStatus = useCallback(async () => {
     setOllamaConnected(null);
@@ -169,7 +195,6 @@ export const AiJobMatchSection = ({
   const onOpenChange = async (openState: boolean) => {
     triggerChange(openState);
     if (!openState && isLoading) {
-      stoppedByUserRef.current = true;
       stop();
     }
     if (openState && selectedModel.provider === "ollama") {
@@ -178,6 +203,7 @@ export const AiJobMatchSection = ({
       setOllamaConnected(null);
       setConnectionError("");
       setSelectedResumeId(undefined);
+      setResult(undefined);
     }
   };
 
@@ -197,15 +223,14 @@ export const AiJobMatchSection = ({
   }, [aISectionOpen, selectedModel.provider, checkConnectionStatus]);
 
   // Check if we have any content to show
-  const hasContent =
-    object && (object.matchScore !== undefined || object.summary);
+  const hasContent = !!(result && (result.scores || result.body));
 
-  const showSlowWarning = useSlowResponseWarning(isLoading, !!hasContent);
+  const showSlowWarning = useSlowResponseWarning(isLoading, hasContent);
 
   return (
     <Sheet open={aISectionOpen} onOpenChange={onOpenChange}>
       <SheetPortal>
-        <SheetContent className="overflow-y-scroll">
+        <SheetContent className="overflow-y-scroll" onScroll={handleSheetScroll}>
           <SheetHeader>
             <SheetTitle className="flex flex-row items-center">
               AI Job Match ({selectedModel.provider})
@@ -280,11 +305,13 @@ export const AiJobMatchSection = ({
               </div>
             ) : (
               <AiJobMatchResponseContent
-                content={object}
+                scores={result?.scores}
+                body={result?.body}
                 isStreaming={isLoading}
               />
             )}
           </div>
+          <div ref={scrollAnchorRef} />
         </SheetContent>
       </SheetPortal>
     </Sheet>

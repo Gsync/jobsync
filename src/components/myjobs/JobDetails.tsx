@@ -19,7 +19,7 @@ import { NotesSection } from "./NotesSection";
 import { useState, useMemo, useCallback } from "react";
 import { DownloadFileButton } from "../profile/DownloadFileButton";
 import { MatchDetails } from "../automations/MatchDetails";
-import type { JobMatchResponse } from "@/models/ai.schemas";
+import type { JobMatchData } from "@/models/ai.schemas";
 
 function JobDetails({ job }: { job: JobResponse }) {
   const [aiSectionOpen, setAiSectionOpen] = useState(false);
@@ -31,7 +31,7 @@ function JobDetails({ job }: { job: JobResponse }) {
   const parsedMatchData = useMemo(() => {
     if (!currentMatchData) return null;
     try {
-      return JSON.parse(currentMatchData) as JobMatchResponse;
+      return JSON.parse(currentMatchData) as JobMatchData;
     } catch {
       return null;
     }
@@ -147,7 +147,6 @@ function JobDetails({ job }: { job: JobResponse }) {
           <div className="my-4 ml-4">
             <TipTapContentViewer content={job?.description} />
           </div>
-          <NotesSection jobId={job.id} />
           {parsedMatchData && (
             <div className="mx-4 mb-4">
               <h4 className="font-medium mb-2 flex items-center gap-2">
@@ -160,6 +159,7 @@ function JobDetails({ job }: { job: JobResponse }) {
               <MatchDetails matchData={parsedMatchData} />
             </div>
           )}
+          <NotesSection jobId={job.id} />
           <CardFooter></CardFooter>
         </Card>
       )}

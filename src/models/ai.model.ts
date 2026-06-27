@@ -1,15 +1,10 @@
 // Re-export types from schemas
 export type {
-  JobMatchResponse,
-  RequirementMet,
-  RequirementMissing,
-  RequirementPartial,
-  SkillsAnalysis,
-  ExperienceAnalysis,
-  KeywordsAnalysis,
-  TailoringTip,
+  JobMatchRecommendation,
+  JobMatchScores,
+  JobMatchResult,
+  JobMatchData,
 } from "./ai.schemas";
-export { JobMatchSchema } from "./ai.schemas";
 
 // AI MODEL
 

@@ -1,4 +1,4 @@
-import { generateText, Output } from "ai";
+import { generateText } from "ai";
 import db from "@/lib/db";
 import type {
   Automation,
@@ -13,7 +13,7 @@ import { normalizeJobUrl } from "./utils";
 import { calculateNextRunAt } from "./schedule";
 import {
   getModel,
-  JobMatchSchema,
+  parseJobMatch,
   JOB_MATCH_SYSTEM_PROMPT,
   buildJobMatchPrompt,
 } from "@/lib/ai";
@@ -399,6 +399,8 @@ export async function runAutomation(
             resumeId: resume.id,
             resumeTitle: resume.title,
             matchedAt: new Date().toISOString(),
+            provider: aiSettings.provider,
+            model: modelName,
           }),
         });
 
@@ -526,23 +528,24 @@ ${job.description}
 
     const result = await generateText({
       model,
-      output: Output.object({
-        schema: JobMatchSchema,
-      }),
       system: JOB_MATCH_SYSTEM_PROMPT,
       prompt: buildJobMatchPrompt(resumeText, jobText),
       temperature: 0.3,
     });
 
-    const matchData = result.experimental_output;
-    if (!matchData) {
+    const { scores, body } = parseJobMatch(result.text);
+    if (!scores) {
       return { success: false, score: 0, error: "No match data returned" };
     }
 
     return {
       success: true,
-      score: matchData.matchScore,
-      data: matchData,
+      score: scores.matchScore,
+      data: {
+        matchScore: scores.matchScore,
+        recommendation: scores.recommendation,
+        body,
+      },
     };
   } catch (error) {
     const message =
