@@ -125,6 +125,11 @@ interface ResumeWithSections extends PrismaResume {
       expirationDate: Date | null;
       credentialUrl: string | null;
     }>;
+    skills: Array<{
+      category: string | null;
+      order: number;
+      Tag: { label: string };
+    }>;
   }>;
 }
 
@@ -171,6 +176,7 @@ export async function runAutomation(
               },
             },
             licenseOrCertifications: true,
+            skills: { include: { Tag: true } },
           },
         },
       },
@@ -626,6 +632,22 @@ async function convertResumeForMatch(
           "",
         );
       }
+    }
+
+    if (section.sectionType === "skills" && section.skills.length > 0) {
+      const sorted = [...section.skills].sort((a, b) => a.order - b.order);
+      const grouped = new Map<string, typeof sorted>();
+      for (const s of sorted) {
+        const key = s.category ?? "";
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key)!.push(s);
+      }
+      parts.push("## SKILLS");
+      for (const [cat, items] of grouped.entries()) {
+        const labels = items.map((s) => s.Tag.label).join(", ");
+        parts.push(cat ? `${cat}: ${labels}` : labels);
+      }
+      parts.push("");
     }
   }
 

@@ -37,11 +37,13 @@ function TagsTable({ tags, reloadTags }: TagsTableProps) {
   const onDeleteTag = (tag: Tag) => {
     const jobCount = tag._count?.jobs ?? 0;
     const questionCount = tag._count?.questions ?? 0;
+    const skillCount = tag._count?.skills ?? 0;
 
-    if (jobCount > 0 || questionCount > 0) {
+    if (jobCount > 0 || questionCount > 0 || skillCount > 0) {
       const links = [
         jobCount > 0 ? `${jobCount} job(s)` : "",
         questionCount > 0 ? `${questionCount} question(s)` : "",
+        skillCount > 0 ? `${skillCount} skill(s)` : "",
       ]
         .filter(Boolean)
         .join(" and ");

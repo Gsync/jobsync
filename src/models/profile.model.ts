@@ -1,4 +1,4 @@
-import { Company, JobLocation, JobTitle } from "./job.model";
+import { Company, JobLocation, JobTitle, Tag } from "./job.model";
 
 export interface Resume {
   id?: string;
@@ -46,6 +46,15 @@ export enum SectionType {
   COURSE = "course",
   PROJECT = "project",
   OTHER = "other",
+  SKILLS = "skills",
+}
+
+export interface Skill {
+  id?: string;
+  category?: string | null;
+  order: number;
+  tagId: string;
+  Tag: Tag;
 }
 
 export interface Summary {
@@ -81,6 +90,7 @@ export interface ResumeSection {
   workExperiences?: WorkExperience[];
   educations?: Education[];
   licenseOrCertifications?: LicenseOrCertification[];
+  skills?: Skill[];
 }
 
 export interface WorkExperience {

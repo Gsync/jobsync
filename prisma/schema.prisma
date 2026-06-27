@@ -117,6 +117,7 @@ model ResumeSection {
   educations              Education[]
   licenseOrCertifications LicenseOrCertification[]
   others                  OtherSection[]
+  skills                  Skill[]
   Resume                  Resume                   @relation(fields: [resumeId], references: [id])
 }
 
@@ -452,8 +453,23 @@ model Tag {
   user      User   @relation(fields: [createdBy], references: [id])
   jobs      Job[]
   questions Question[]
+  skills    Skill[]
 
   @@unique([value, createdBy])
+}
+
+model Skill {
+  id              String        @id @default(uuid())
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  category        String?
+  order           Int           @default(0)
+  tagId           String
+  Tag             Tag           @relation(fields: [tagId], references: [id])
+  resumeSectionId String
+  ResumeSection   ResumeSection @relation(fields: [resumeSectionId], references: [id])
+
+  @@index([resumeSectionId])
 }
 
 model Question {

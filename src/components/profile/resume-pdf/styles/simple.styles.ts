@@ -64,6 +64,20 @@ export const simpleStyles = StyleSheet.create({
     marginBottom: 3,
     marginTop: 4,
   },
+  skillRow: {
+    flexDirection: "row",
+    marginBottom: 3,
+  },
+  skillCat: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 10,
+    width: 110,
+    flexShrink: 0,
+  },
+  skillVals: {
+    flex: 1,
+    fontSize: 11,
+  },
 });
 
 export const simpleHtmlStyles: HtmlStyleSet = {

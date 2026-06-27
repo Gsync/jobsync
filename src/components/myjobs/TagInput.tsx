@@ -26,12 +26,20 @@ interface TagInputProps {
   availableTags: Tag[];
   selectedTagIds: string[];
   onChange: (ids: string[]) => void;
+  max?: number;
+  placeholder?: string;
+  noun?: string;
+  onTagCreated?: (tag: Tag) => void;
 }
 
 export function TagInput({
   availableTags,
   selectedTagIds,
   onChange,
+  max = APP_CONSTANTS.MAX_JOB_TAGS,
+  placeholder = "Search or add a skill...",
+  noun = "skills",
+  onTagCreated,
 }: TagInputProps) {
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -39,7 +47,7 @@ export function TagInput({
   const [isPending, startTransition] = useTransition();
 
   const selectedTags = localTags.filter((t) => selectedTagIds.includes(t.id));
-  const isMaxReached = selectedTagIds.length >= APP_CONSTANTS.MAX_JOB_TAGS;
+  const isMaxReached = selectedTagIds.length >= max;
 
   // Tags not yet selected, filtered by input
   const filteredOptions = localTags.filter(
@@ -54,7 +62,7 @@ export function TagInput({
   );
 
   const addTagById = (id: string) => {
-    if (selectedTagIds.length >= APP_CONSTANTS.MAX_JOB_TAGS) return;
+    if (selectedTagIds.length >= max) return;
     onChange([...selectedTagIds, id]);
   };
 
@@ -82,6 +90,7 @@ export function TagInput({
         prev.some((t) => t.id === newTag.id) ? prev : [...prev, newTag],
       );
       addTagById(newTag.id);
+      onTagCreated?.(newTag);
       setInputValue("");
       setOpen(false);
     });
@@ -108,9 +117,7 @@ export function TagInput({
             disabled={isMaxReached}
             type="button"
           >
-            {isMaxReached
-              ? `Max ${APP_CONSTANTS.MAX_JOB_TAGS} skills reached`
-              : "Search or add a skill..."}
+            {isMaxReached ? `Max ${max} ${noun} reached` : placeholder}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>

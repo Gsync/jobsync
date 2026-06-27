@@ -10,6 +10,7 @@ import SummarySectionCard from "./SummarySectionCard";
 import ExperienceCard from "./ExperienceCard";
 import EducationCard from "./EducationCard";
 import CertificationCard from "./CertificationCard";
+import SkillsSectionCard from "./SkillsSectionCard";
 import AiResumeReviewSection from "./AiResumeReviewSection";
 import { DownloadFileButton } from "./DownloadFileButton";
 import {
@@ -43,7 +44,7 @@ import {
   Loader,
   AlertTriangle,
 } from "lucide-react";
-import { deleteResumeById } from "@/actions/profile.actions";
+import { deleteResumeById, deleteSkillsSection } from "@/actions/profile.actions";
 import {
   resolveImportCard,
   ImportCardPayload,
@@ -485,7 +486,8 @@ function ResumeContainer({ resume }: { resume: Resume }) {
         s.summary?.content ||
         s.workExperiences?.length ||
         s.educations?.length ||
-        s.licenseOrCertifications?.length,
+        s.licenseOrCertifications?.length ||
+        s.skills?.length,
     );
     if (!hasName && !hasSections) {
       toast({
@@ -566,6 +568,9 @@ function ResumeContainer({ resume }: { resume: Resume }) {
   const certificationSection = ResumeSections?.find(
     (s) => s.sectionType === SectionType.CERTIFICATION,
   );
+  const skillsSection = ResumeSections?.find(
+    (s) => s.sectionType === SectionType.SKILLS,
+  );
 
   const openContactInfoDialog = () =>
     resumeSectionRef.current?.openContactInfoDialog(ContactInfo!);
@@ -589,6 +594,23 @@ function ResumeContainer({ resume }: { resume: Resume }) {
     };
     resumeSectionRef.current?.openEducationDialog(section);
   };
+  const openSkillsDialogForEdit = () => {
+    resumeSectionRef.current?.openSkillsDialog(skillsSection!);
+  };
+  const handleDeleteSkillsSection = async () => {
+    if (!skillsSection?.id) return;
+    const result = await deleteSkillsSection(skillsSection.id);
+    if (!result.success) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: result.message,
+      });
+    } else {
+      router.refresh();
+    }
+  };
+
   const openCertificationDialogForEdit = (certificationId: string) => {
     const section: ResumeSection = {
       ...certificationSection!,
@@ -751,6 +773,13 @@ function ResumeContainer({ resume }: { resume: Resume }) {
         <SummarySectionCard
           summarySection={summarySection}
           openDialogForEdit={openSummaryDialogForEdit}
+        />
+      )}
+      {skillsSection && (
+        <SkillsSectionCard
+          skillsSection={skillsSection}
+          openDialogForEdit={openSkillsDialogForEdit}
+          onDelete={handleDeleteSkillsSection}
         />
       )}
       {experienceSection && (

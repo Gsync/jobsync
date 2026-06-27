@@ -63,6 +63,9 @@ export function ProfessionalResumeDocument({ resume, htmlNodes }: Props) {
   const summarySection = ResumeSections?.find(
     (sec) => sec.sectionType === SectionType.SUMMARY,
   );
+  const skillsSection = ResumeSections?.find(
+    (sec) => sec.sectionType === SectionType.SKILLS,
+  );
   const experienceSection = ResumeSections?.find(
     (sec) => sec.sectionType === SectionType.EXPERIENCE,
   );
@@ -124,6 +127,43 @@ export function ProfessionalResumeDocument({ resume, htmlNodes }: Props) {
         {summarySection?.summary?.content && htmlNodes.summary.length > 0 && (
           <View style={{ marginBottom: 4 }}>{htmlNodes.summary}</View>
         )}
+
+        {/* Skills */}
+        {skillsSection?.skills && skillsSection.skills.length > 0 && (() => {
+          const sorted = [...skillsSection.skills].sort((a, b) => a.order - b.order);
+          const grouped = new Map<string, typeof sorted>();
+          for (const sk of sorted) {
+            const key = sk.category ?? "";
+            if (!grouped.has(key)) grouped.set(key, []);
+            grouped.get(key)!.push(sk);
+          }
+          const hasCategories = Array.from(grouped.keys()).some((k) => k !== "");
+          return (
+            <View>
+              <SectionHeading title={skillsSection.sectionTitle} />
+              {hasCategories ? (
+                <View style={s.twoColRow}>
+                  {Array.from(grouped.entries()).map(([cat, items]) => (
+                    <View key={cat || "__flat"} style={s.twoColLeft}>
+                      {cat ? (
+                        <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", marginBottom: 1 }}>
+                          {cat}
+                        </Text>
+                      ) : null}
+                      <Text style={{ fontSize: 10 }}>
+                        {items.map((sk) => sk.Tag?.label).filter(Boolean).join(" · ")}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text style={{ fontSize: 10 }}>
+                  {sorted.map((sk) => sk.Tag?.label).filter(Boolean).join(" · ")}
+                </Text>
+              )}
+            </View>
+          );
+        })()}
 
         {/* Experience */}
         {experienceSection?.workExperiences &&

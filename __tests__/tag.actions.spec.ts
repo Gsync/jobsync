@@ -24,6 +24,9 @@ vi.mock("@prisma/client", () => {
     question: {
       count: vi.fn(),
     },
+    skill: {
+      count: vi.fn(),
+    },
   };
   return { PrismaClient: vi.fn(function() { return mPrismaClient; }) };
 });
@@ -212,6 +215,7 @@ describe("Tag Actions", () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
       (prisma.job.count as any).mockResolvedValue(0);
       (prisma.question.count as any).mockResolvedValue(0);
+      (prisma.skill.count as any).mockResolvedValue(0);
       (prisma.tag.delete as any).mockResolvedValue(mockTag);
 
       const result = await deleteTagById("tag-1");
@@ -226,6 +230,7 @@ describe("Tag Actions", () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
       (prisma.job.count as any).mockResolvedValue(3);
       (prisma.question.count as any).mockResolvedValue(0);
+      (prisma.skill.count as any).mockResolvedValue(0);
 
       const result = await deleteTagById("tag-1");
 
@@ -241,6 +246,7 @@ describe("Tag Actions", () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
       (prisma.job.count as any).mockResolvedValue(0);
       (prisma.question.count as any).mockResolvedValue(5);
+      (prisma.skill.count as any).mockResolvedValue(0);
 
       const result = await deleteTagById("tag-1");
 
@@ -256,6 +262,7 @@ describe("Tag Actions", () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
       (prisma.job.count as any).mockResolvedValue(2);
       (prisma.question.count as any).mockResolvedValue(4);
+      (prisma.skill.count as any).mockResolvedValue(0);
 
       const result = await deleteTagById("tag-1");
 
@@ -263,6 +270,22 @@ describe("Tag Actions", () => {
         success: false,
         message:
           "Skill tag cannot be deleted because it is linked to 2 job(s) and 4 question(s).",
+      });
+      expect(prisma.tag.delete).not.toHaveBeenCalled();
+    });
+
+    it("should return error when tag is linked to skills only", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.count as any).mockResolvedValue(0);
+      (prisma.question.count as any).mockResolvedValue(0);
+      (prisma.skill.count as any).mockResolvedValue(2);
+
+      const result = await deleteTagById("tag-1");
+
+      expect(result).toEqual({
+        success: false,
+        message:
+          "Skill tag cannot be deleted because it is linked to 2 skill(s).",
       });
       expect(prisma.tag.delete).not.toHaveBeenCalled();
     });
@@ -282,6 +305,7 @@ describe("Tag Actions", () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
       (prisma.job.count as any).mockResolvedValue(0);
       (prisma.question.count as any).mockResolvedValue(0);
+      (prisma.skill.count as any).mockResolvedValue(0);
       (prisma.tag.delete as any).mockRejectedValue(new Error("DB error"));
 
       const result = await deleteTagById("tag-1");

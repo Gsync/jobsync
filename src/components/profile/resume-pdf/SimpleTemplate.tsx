@@ -27,6 +27,9 @@ type Props = {
 export function SimpleResumeDocument({ resume, htmlNodes }: Props) {
   const { ContactInfo, ResumeSections } = resume;
 
+  const skillsSection = ResumeSections?.find(
+    (s) => s.sectionType === SectionType.SKILLS,
+  );
   const experienceSection = ResumeSections?.find(
     (s) => s.sectionType === SectionType.EXPERIENCE,
   );
@@ -73,6 +76,39 @@ export function SimpleResumeDocument({ resume, htmlNodes }: Props) {
             {htmlNodes.summary}
           </View>
         )}
+
+        {/* Skills */}
+        {skillsSection?.skills && skillsSection.skills.length > 0 && (() => {
+          const sorted = [...skillsSection.skills].sort((a, b) => a.order - b.order);
+          const grouped = new Map<string, typeof sorted>();
+          for (const s of sorted) {
+            const key = s.category ?? "";
+            if (!grouped.has(key)) grouped.set(key, []);
+            grouped.get(key)!.push(s);
+          }
+          const hasCategories = Array.from(grouped.keys()).some((k) => k !== "");
+          return (
+            <View>
+              <SectionHeading title={skillsSection.sectionTitle} />
+              {hasCategories ? (
+                Array.from(grouped.entries()).map(([cat, items]) => (
+                  <View key={cat || "__flat"} style={simpleStyles.skillRow}>
+                    {cat ? (
+                      <Text style={simpleStyles.skillCat}>{cat.toUpperCase()}</Text>
+                    ) : null}
+                    <Text style={simpleStyles.skillVals}>
+                      {items.map((s) => s.Tag?.label).filter(Boolean).join(" · ")}
+                    </Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={simpleStyles.bodyText}>
+                  {sorted.map((s) => s.Tag?.label).filter(Boolean).join(" · ")}
+                </Text>
+              )}
+            </View>
+          );
+        })()}
 
         {/* Experience */}
         {experienceSection?.workExperiences &&

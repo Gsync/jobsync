@@ -25,6 +25,7 @@ export interface Tag {
   _count?: {
     jobs: number;
     questions: number;
+    skills: number;
   };
 }
 

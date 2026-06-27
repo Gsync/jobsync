@@ -177,9 +177,23 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
         .join("\n\n");
     };
 
+    const SECTION_ORDER: Record<string, number> = {
+      [SectionType.SUMMARY]: 0,
+      [SectionType.SKILLS]: 1,
+      [SectionType.EXPERIENCE]: 2,
+      [SectionType.EDUCATION]: 3,
+      [SectionType.CERTIFICATION]: 4,
+      [SectionType.LICENSE]: 5,
+    };
+
     const formatResumeSections = (sections?: ResumeSection[]) => {
       if (!sections || sections.length === 0) return "";
-      return sections
+      const sorted = [...sections].sort(
+        (a, b) =>
+          (SECTION_ORDER[a.sectionType] ?? 99) -
+          (SECTION_ORDER[b.sectionType] ?? 99),
+      );
+      return sorted
         .map((section) => {
           switch (section.sectionType) {
             case SectionType.SUMMARY: {
@@ -202,6 +216,24 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
               return content
                 ? `## ${section.sectionTitle.toUpperCase()}\n${content}`
                 : "";
+            }
+            case SectionType.SKILLS: {
+              const skills = section.skills;
+              if (!skills || skills.length === 0) return "";
+              const sorted = [...skills].sort((a, b) => a.order - b.order);
+              const grouped = new Map<string, typeof sorted>();
+              for (const s of sorted) {
+                const key = s.category ?? "";
+                if (!grouped.has(key)) grouped.set(key, []);
+                grouped.get(key)!.push(s);
+              }
+              const toTitleCase = (s: string) =>
+                s.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+              const lines = Array.from(grouped.entries()).map(([cat, items]) => {
+                const labels = items.map((s) => s.Tag?.label).filter(Boolean).join(", ");
+                return cat ? `${toTitleCase(cat)}: ${labels}` : labels;
+              });
+              return `## ${section.sectionTitle.toUpperCase()}\n${lines.join("\n")}`;
             }
             default:
               return "";
