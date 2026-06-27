@@ -165,6 +165,41 @@ describe("TagInput Component", () => {
     });
   });
 
+  it("renders chips for pre-selected tags that load after mount", async () => {
+    // Reproduces the import-edit bug: the picker mounts before its tag pool is
+    // fetched. Chips must appear once availableTags arrives via a prop update.
+    function LateLoadingTagInput() {
+      const [tags, setTags] = useState<Tag[]>([]);
+      React.useEffect(() => {
+        const t = setTimeout(() => setTags(MOCK_TAGS), 0);
+        return () => clearTimeout(t);
+      }, []);
+      return (
+        <TagInput
+          availableTags={tags}
+          selectedTagIds={["tag-1", "tag-3"]}
+          onChange={() => {}}
+        />
+      );
+    }
+
+    render(<LateLoadingTagInput />);
+
+    // Initially empty pool -> no chip
+    expect(
+      screen.queryByRole("button", { name: /remove react/i }),
+    ).not.toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /remove react/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /remove node.js/i }),
+      ).toBeInTheDocument();
+    });
+  });
+
   it("renders selected tag badges for pre-selected tags", () => {
     render(
       <ControlledTagInput

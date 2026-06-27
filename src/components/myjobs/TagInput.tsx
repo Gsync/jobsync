@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { X, ChevronsUpDown, CirclePlus, Loader } from "lucide-react";
 import {
   Popover,
@@ -45,6 +45,20 @@ export function TagInput({
   const [inputValue, setInputValue] = useState("");
   const [localTags, setLocalTags] = useState<Tag[]>(availableTags);
   const [isPending, startTransition] = useTransition();
+
+  // availableTags can load after mount (e.g. fetched once the dialog opens).
+  // Merge new tags into the local pool so chips and options reflect the prop,
+  // while preserving tags created locally during this session.
+  useEffect(() => {
+    setLocalTags((prev) => {
+      const ids = new Set(prev.map((t) => t.id));
+      const merged = [...prev];
+      for (const t of availableTags) {
+        if (!ids.has(t.id)) merged.push(t);
+      }
+      return merged;
+    });
+  }, [availableTags]);
 
   const selectedTags = localTags.filter((t) => selectedTagIds.includes(t.id));
   const isMaxReached = selectedTagIds.length >= max;

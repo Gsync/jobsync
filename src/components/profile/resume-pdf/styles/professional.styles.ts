@@ -44,7 +44,7 @@ export const professionalStyles = StyleSheet.create({
   contactLine: {
     fontFamily: "Courier",
     fontSize: 9,
-    color: GRAY,
+    color: NEAR_BLACK,
     marginBottom: 1,
   },
   thickRule: {

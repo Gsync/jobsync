@@ -44,9 +44,24 @@ export const ImportCertificationSchema = z.object({
   confidence,
 });
 
+// A group of related skills, optionally under a category heading.
+// Skill names are plain strings; they resolve to shared Tags on import.
+export const ImportSkillCategorySchema = z.object({
+  label: z.string().optional(),
+  skills: z.array(z.string()).catch([]).default([]),
+});
+
+export const ImportSkillsSchema = z.object({
+  categories: z.array(ImportSkillCategorySchema).catch([]).default([]),
+  confidence,
+});
+
 export const ResumeImportSchema = z.object({
   contactInfo: ImportContactInfoSchema.optional(),
   summary: z.string().catch(""),
+  // Skills before experience so it streams (and renders) early — long verbatim
+  // experience bullets can exhaust a model's output budget before the end.
+  skills: ImportSkillsSchema.optional(),
   experience: z.array(ImportExperienceSchema).default([]),
   education: z.array(ImportEducationSchema).default([]),
   certifications: z.array(ImportCertificationSchema).default([]),
@@ -69,3 +84,4 @@ export type ImportContactInfo = z.infer<typeof ImportContactInfoSchema>;
 export type ImportExperience = z.infer<typeof ImportExperienceSchema>;
 export type ImportEducation = z.infer<typeof ImportEducationSchema>;
 export type ImportCertification = z.infer<typeof ImportCertificationSchema>;
+export type ImportSkills = z.infer<typeof ImportSkillsSchema>;

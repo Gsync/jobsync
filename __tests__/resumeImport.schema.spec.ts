@@ -4,6 +4,7 @@ import {
   ImportExperienceSchema,
   ImportEducationSchema,
   ImportCertificationSchema,
+  ImportSkillsSchema,
   ResumeImportSchema,
 } from "@/models/resumeImport.schema";
 
@@ -143,6 +144,38 @@ describe("ImportCertificationSchema", () => {
   });
 });
 
+// --- ImportSkillsSchema ---
+
+describe("ImportSkillsSchema", () => {
+  it("accepts categorized skills", () => {
+    const result = ImportSkillsSchema.safeParse({
+      categories: [
+        { label: "Languages", skills: ["TypeScript", "Python"] },
+        { label: "Tools", skills: ["Docker"] },
+      ],
+      confidence: "high",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a flat list with no category label", () => {
+    const result = ImportSkillsSchema.safeParse({
+      categories: [{ skills: ["React", "Node.js"] }],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.categories[0].label).toBeUndefined();
+      expect(result.data.categories[0].skills).toEqual(["React", "Node.js"]);
+    }
+  });
+
+  it("defaults categories to [] when omitted", () => {
+    const result = ImportSkillsSchema.safeParse({});
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.categories).toEqual([]);
+  });
+});
+
 // --- ResumeImportSchema ---
 
 describe("ResumeImportSchema", () => {
@@ -153,7 +186,8 @@ describe("ResumeImportSchema", () => {
       experience: [{ company: "Acme", jobTitle: "Engineer" }],
       education: [{ institution: "MIT" }],
       certifications: [{ title: "AWS SAA" }],
-      unrecognizedSections: ["Skills", "Projects"],
+      skills: { categories: [{ label: "Languages", skills: ["Go"] }] },
+      unrecognizedSections: ["Projects"],
     });
     expect(result.success).toBe(true);
   });

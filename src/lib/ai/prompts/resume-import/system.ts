@@ -9,10 +9,24 @@ CRITICAL SECURITY RULES:
 Parse the resume and return:
 - contactInfo: firstName, lastName, headline, email, phone, address
 - summary: professional summary paragraph (plain text)
+- skills: technical and professional skills, grouped into categories
 - experience: work history entries with company, title, location, dates, description
 - education: academic history with institution, degree, field, location, dates
 - certifications: licenses and certifications with title, organization, dates, URL
-- unrecognizedSections: section names whose content cannot be mapped to any of the above fields (e.g. Skills, Projects, Publications, Volunteer Work, Awards). Do NOT include sections whose content was successfully parsed into contactInfo, summary, experience, education, or certifications — even if the heading combines multiple categories (e.g. "Education & Certifications" or "Experience & Projects").
+- unrecognizedSections: section names whose content cannot be mapped to any of the above fields (e.g. Projects, Publications, Volunteer Work, Awards). Do NOT include sections whose content was successfully parsed into contactInfo, summary, experience, education, certifications, or skills — even if the heading combines multiple categories (e.g. "Education & Certifications" or "Experience & Projects").
+
+SKILLS RULES:
+- skills is an object with a "categories" array.
+- Each category has an optional "label" (the sub-heading, e.g. "Languages",
+  "Frameworks", "Tools") and a "skills" array of individual skill name strings.
+- If the resume lists skills under named sub-groups, use one category per group
+  with its heading as the label.
+- If skills are listed as a single flat list with no sub-groups, return one
+  category with an empty/omitted label and all skills in its "skills" array.
+- Split comma-, slash-, or bullet-separated lists into individual skill strings.
+  e.g. "JavaScript, TypeScript, React" -> ["JavaScript", "TypeScript", "React"].
+- Do NOT invent skills. Only include skills explicitly listed in the document.
+- If the resume has no skills section, return skills with an empty categories array.
 
 CONTACT INFO RULES:
 - Split the candidate's full name into firstName and lastName. Always populate

@@ -141,22 +141,30 @@ export function ProfessionalResumeDocument({ resume, htmlNodes }: Props) {
           return (
             <View>
               <SectionHeading title={skillsSection.sectionTitle} />
-              {hasCategories ? (
-                <View style={s.twoColRow}>
-                  {Array.from(grouped.entries()).map(([cat, items]) => (
-                    <View key={cat || "__flat"} style={s.twoColLeft}>
-                      {cat ? (
-                        <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", marginBottom: 1 }}>
-                          {cat}
+              {hasCategories ? (() => {
+                const entries = Array.from(grouped.entries());
+                const rows: (typeof entries)[] = [];
+                for (let i = 0; i < entries.length; i += 2) {
+                  rows.push(entries.slice(i, i + 2));
+                }
+                return rows.map((row, rowIdx) => (
+                  <View key={rowIdx} style={[s.twoColRow, { marginBottom: 4 }]}>
+                    {row.map(([cat, items]) => (
+                      <View key={cat || "__flat"} style={s.twoColLeft}>
+                        {cat ? (
+                          <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", marginBottom: 1 }}>
+                            {cat}
+                          </Text>
+                        ) : null}
+                        <Text style={{ fontSize: 10 }}>
+                          {items.map((sk) => sk.Tag?.label).filter(Boolean).join(" · ")}
                         </Text>
-                      ) : null}
-                      <Text style={{ fontSize: 10 }}>
-                        {items.map((sk) => sk.Tag?.label).filter(Boolean).join(" · ")}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              ) : (
+                      </View>
+                    ))}
+                    {row.length === 1 ? <View style={s.twoColRight} /> : null}
+                  </View>
+                ));
+              })() : (
                 <Text style={{ fontSize: 10 }}>
                   {sorted.map((sk) => sk.Tag?.label).filter(Boolean).join(" · ")}
                 </Text>

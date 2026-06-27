@@ -121,6 +121,11 @@ export const POST = async (req: NextRequest) => {
       APP_CONSTANTS.AI_RESUME_IMPORT_TIMEOUT_MS,
     );
 
+    // Stop generation if the client disconnects (navigates away, closes tab,
+    // or aborts the fetch) — otherwise the model keeps running in the
+    // background until it finishes or hits the timeout.
+    req.signal.addEventListener("abort", () => controller.abort());
+
     const result = streamText({
       model,
       output: Output.object({ schema: ResumeImportSchema }),
@@ -161,6 +166,11 @@ export const POST = async (req: NextRequest) => {
         } finally {
           controller.close();
         }
+      },
+      cancel() {
+        // Reader released (client gone) — abort the in-flight generation.
+        clearTimeout(timer);
+        controller.abort();
       },
     });
 

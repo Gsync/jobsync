@@ -53,6 +53,7 @@ import { ResumeImportData } from "@/models/resumeImport.schema";
 import { AiModel, defaultModel } from "@/models/ai.model";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { streamResumeImport } from "@/utils/resumeImportStream.utils";
+import { extractSkillCategories } from "@/utils/skillImport.utils";
 import type { DeepPartial } from "ai";
 
 type PendingCard = {
@@ -68,6 +69,8 @@ const SUPPORTED_KEYWORDS = [
   "education",
   "certification",
   "certifications",
+  "skill",
+  "skills",
 ];
 
 function filterUnrecognizedSections(sections: string[]): string[] {
@@ -76,6 +79,7 @@ function filterUnrecognizedSections(sections: string[]): string[] {
     return !SUPPORTED_KEYWORDS.some((kw) => lower.includes(kw));
   });
 }
+
 
 // Accepts partial data so cards can render progressively as the import stream
 // arrives. Entries are only shown once their key identifying field is present.
@@ -98,10 +102,19 @@ function buildPendingCards(
     });
   }
 
-  if (data.summary?.trim()) {
+  if (typeof data.summary === "string" && data.summary.trim()) {
     cards.push({
       id: "summary",
       card: { type: "summary", data: data.summary },
+    });
+  }
+
+  // Skills sit before experience to match the resume's section order.
+  const skillCategories = extractSkillCategories(data.skills);
+  if (skillCategories.length > 0) {
+    cards.push({
+      id: "skills",
+      card: { type: "skills", data: { categories: skillCategories } as any },
     });
   }
 
@@ -139,12 +152,16 @@ function cardSectionLabel(type: ImportCardPayload["type"]): string {
     experience: "Experience",
     education: "Education",
     certification: "Certification",
+    skills: "Skills",
   };
   return map[type] ?? type;
 }
 
-function DetailRow({ label, value }: { label: string; value?: string | null }) {
-  if (!value) return null;
+function DetailRow({ label, value }: { label: string; value?: unknown }) {
+  // Streaming partials can momentarily emit a non-string (e.g. {}) for a field
+  // before it resolves — never hand a non-primitive to React.
+  if (typeof value !== "string" && typeof value !== "number") return null;
+  if (value === "") return null;
   return (
     <div className="flex gap-2 text-xs">
       <span className="text-muted-foreground w-20 shrink-0">{label}</span>
@@ -187,7 +204,7 @@ function PendingCardDetail({ card }: { card: ImportCardPayload }) {
         <DetailRow label="Company" value={d.company} />
         <DetailRow label="Location" value={d.location} />
         {dates && <DetailRow label="Dates" value={dates} />}
-        {d.description && (
+        {typeof d.description === "string" && d.description && (
           <p className="text-xs text-foreground mt-1 whitespace-pre-wrap pl-[5.5rem]">
             {d.description}
           </p>
@@ -206,7 +223,7 @@ function PendingCardDetail({ card }: { card: ImportCardPayload }) {
         <DetailRow label="Field" value={d.fieldOfStudy} />
         <DetailRow label="Location" value={d.location} />
         {dates && <DetailRow label="Dates" value={dates} />}
-        {d.description && (
+        {typeof d.description === "string" && d.description && (
           <p className="text-xs text-foreground mt-1 whitespace-pre-wrap pl-[5.5rem]">
             {d.description}
           </p>
@@ -224,6 +241,36 @@ function PendingCardDetail({ card }: { card: ImportCardPayload }) {
         <DetailRow label="Issued" value={d.issueDate} />
         <DetailRow label="Expires" value={d.expirationDate} />
         <DetailRow label="URL" value={d.credentialUrl} />
+      </div>
+    );
+  }
+
+  if (card.type === "skills") {
+    const categories = card.data.categories ?? [];
+    return (
+      <div className="space-y-2 mt-1">
+        {categories.map((cat, i) => {
+          const skills = (cat.skills ?? []).filter(
+            (s): s is string => typeof s === "string" && !!s.trim(),
+          );
+          if (skills.length === 0) return null;
+          return (
+            <div key={i} className="space-y-1">
+              {typeof cat.label === "string" && cat.label && (
+                <span className="text-xs font-medium text-muted-foreground">
+                  {cat.label}
+                </span>
+              )}
+              <div className="flex flex-wrap gap-1">
+                {skills.map((skill, j) => (
+                  <Badge key={j} variant="secondary" className="text-xs">
+                    {skill}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -312,6 +359,9 @@ function ResumeContainer({ resume }: { resume: Resume }) {
   // Plain boolean (not useTransition): streaming fires rapid state updates that
   // must not run as interruptible transition renders.
   const [isStructuring, setIsStructuring] = useState(false);
+  // Aborts the in-flight import fetch so the server stops the LLM generation
+  // when the user navigates away or the component unmounts.
+  const importAbortRef = useRef<AbortController | null>(null);
 
   // Runs the import stream, rendering cards progressively as they arrive.
   const runImport = useCallback(
@@ -320,10 +370,13 @@ function ResumeContainer({ resume }: { resume: Resume }) {
       if (!resumeId || isStructuring) return;
       setIsStructuring(true);
       setImportMode(true);
+      const abortController = new AbortController();
+      importAbortRef.current = abortController;
       try {
         const { data, truncated } = await streamResumeImport({
           resumeId,
           selectedModel: model,
+          signal: abortController.signal,
           onPartial: (partial) => {
             const cards = buildPendingCards(partial);
             if (cards.length > 0) setPendingCards(cards);
@@ -346,6 +399,8 @@ function ResumeContainer({ resume }: { resume: Resume }) {
           filterUnrecognizedSections(data.unrecognizedSections ?? []),
         );
       } catch (error) {
+        // Client-initiated abort (unmount/navigation) — not a user-facing error.
+        if (abortController.signal.aborted) return;
         setImportMode(false);
         toast({
           variant: "destructive",
@@ -356,11 +411,19 @@ function ResumeContainer({ resume }: { resume: Resume }) {
               : "Failed to contact AI service.",
         });
       } finally {
+        if (importAbortRef.current === abortController) {
+          importAbortRef.current = null;
+        }
         setIsStructuring(false);
       }
     },
     [resume.id, isStructuring],
   );
+
+  // Abort any in-flight import when the component unmounts.
+  useEffect(() => {
+    return () => importAbortRef.current?.abort();
+  }, []);
 
   // Auto-start the import stream when arriving from the create dialog
   useEffect(() => {
@@ -431,6 +494,7 @@ function ResumeContainer({ resume }: { resume: Resume }) {
 
   const handleDiscardImport = async () => {
     if (!resume.id) return;
+    importAbortRef.current?.abort();
     const result = await deleteResumeById(resume.id);
     if (result?.success) {
       router.push("/dashboard/profile");
