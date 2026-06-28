@@ -61,7 +61,7 @@ describe("runGreenhousePipeline", () => {
     expect(result.funnel.located).toBeNull();
   });
 
-  it("hard-gates off-location jobs when strictLocation is on (remote passes)", () => {
+  it("hard-gates off-location jobs when strictLocation is on", () => {
     const jobs = [
       job({ title: "Frontend Engineer", location: "Toronto, Canada" }),
       job({ title: "Frontend Engineer", location: "Berlin, Germany" }),
@@ -72,7 +72,7 @@ describe("runGreenhousePipeline", () => {
       { ...config, strictLocation: true },
       [],
     );
-    expect(result.funnel.located).toBe(2); // Canada + Remote, Berlin dropped
+    expect(result.funnel.located).toBe(1); // only Canada; Berlin + Remote dropped
   });
 
   it("sorts toAnalyze by score descending", () => {

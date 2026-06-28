@@ -1,5 +1,5 @@
 import React from "react";
-import { Document, Page, Text, View } from "@react-pdf/renderer";
+import { Document, Link, Page, Text, View } from "@react-pdf/renderer";
 import { format } from "date-fns";
 import { Resume, ResumeSection, SectionType } from "@/models/profile.model";
 import { professionalStyles as s } from "./styles/professional.styles";
@@ -83,11 +83,13 @@ export function ProfessionalResumeDocument({ resume, htmlNodes }: Props) {
     [SectionType.COURSE, SectionType.PROJECT, SectionType.OTHER].includes(sec.sectionType),
   ) ?? [];
 
-  const contactParts = [
-    ContactInfo?.address,
-    ContactInfo?.phone,
-    ContactInfo?.email,
-  ].filter(Boolean) as string[];
+  const hasContact = !!(
+    ContactInfo?.address ||
+    ContactInfo?.phone ||
+    ContactInfo?.email ||
+    ContactInfo?.url1 ||
+    ContactInfo?.url2
+  );
 
   return (
     <Document
@@ -108,13 +110,37 @@ export function ProfessionalResumeDocument({ resume, htmlNodes }: Props) {
                 <Text style={s.headline}>{ContactInfo.headline}</Text>
               ) : null}
             </View>
-            {contactParts.length > 0 && (
+            {hasContact && (
               <View style={s.headerRight}>
-                {contactParts.map((part, i) => (
-                  <Text key={i} style={s.contactLine}>
-                    {part}
+                {(ContactInfo.address || ContactInfo.phone) && (
+                  <Text style={s.contactLine}>
+                    {[ContactInfo.address, ContactInfo.phone].filter(Boolean).join(" · ")}
                   </Text>
-                ))}
+                )}
+                {ContactInfo.email && (
+                  <Text style={s.contactLine}>{ContactInfo.email}</Text>
+                )}
+                {(ContactInfo.url1 || ContactInfo.url2) && (
+                  <Text style={s.contactLine}>
+                    {ContactInfo.url1 && (
+                      <Link
+                        src={ContactInfo.url1}
+                        style={{ color: "#1a1a1a", textDecoration: "none" }}
+                      >
+                        {ContactInfo.url1.replace(/^https?:\/\/(www\.)?/, "")}
+                      </Link>
+                    )}
+                    {ContactInfo.url1 && ContactInfo.url2 ? " · " : ""}
+                    {ContactInfo.url2 && (
+                      <Link
+                        src={ContactInfo.url2}
+                        style={{ color: "#1a1a1a", textDecoration: "none" }}
+                      >
+                        {ContactInfo.url2.replace(/^https?:\/\/(www\.)?/, "")}
+                      </Link>
+                    )}
+                  </Text>
+                )}
               </View>
             )}
           </View>

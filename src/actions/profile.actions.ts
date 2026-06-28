@@ -147,6 +147,10 @@ export const addContactInfo = async (
               email: data.email!,
               phone: data.phone!,
               address: data.address,
+              url1: data.url1 || null,
+              url1Label: data.url1Label || null,
+              url2: data.url2 || null,
+              url2Label: data.url2Label || null,
             },
           },
         },
@@ -182,6 +186,10 @@ export const updateContactInfo = async (
         email: data.email!,
         phone: data.phone!,
         address: data.address,
+        url1: data.url1 || null,
+        url1Label: data.url1Label || null,
+        url2: data.url2 || null,
+        url2Label: data.url2Label || null,
       },
     });
     revalidatePath("/dashboard/profile/resume");

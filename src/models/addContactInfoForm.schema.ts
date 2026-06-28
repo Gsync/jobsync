@@ -35,4 +35,14 @@ export const AddContactInfoFormSchema = z.object({
     error: "Phone is required!",
   }),
   address: z.string().optional(),
+  url1: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^https?:\/\//i.test(v), "URL must start with http:// or https://"),
+  url1Label: z.string().optional(),
+  url2: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^https?:\/\//i.test(v), "URL must start with http:// or https://"),
+  url2Label: z.string().optional(),
 });

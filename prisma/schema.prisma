@@ -132,6 +132,10 @@ model ContactInfo {
   email     String
   phone     String
   address   String?
+  url1      String?
+  url1Label String?
+  url2      String?
+  url2Label String?
   resume    Resume   @relation(fields: [resumeId], references: [id])
 }
 

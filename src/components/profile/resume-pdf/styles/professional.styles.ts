@@ -8,7 +8,7 @@ const GRAY = "#555555";
 export const professionalStyles = StyleSheet.create({
   page: {
     fontFamily: "Helvetica",
-    fontSize: 10,
+    fontSize: 11,
     paddingTop: 36,
     paddingBottom: 40,
     paddingHorizontal: 44,
@@ -29,21 +29,21 @@ export const professionalStyles = StyleSheet.create({
     alignItems: "flex-end",
   },
   name: {
-    fontFamily: "Times-Bold",
+    fontFamily: "Helvetica-Bold",
     fontSize: 24,
     color: NEAR_BLACK,
     marginBottom: 16,
   },
   headline: {
     fontFamily: "Helvetica",
-    fontSize: 10,
+    fontSize: 12,
     color: ACCENT,
     textTransform: "uppercase",
     letterSpacing: 1.2,
   },
   contactLine: {
-    fontFamily: "Courier",
-    fontSize: 9,
+    fontFamily: "Helvetica",
+    fontSize: 10,
     color: NEAR_BLACK,
     marginBottom: 1,
   },
@@ -61,7 +61,7 @@ export const professionalStyles = StyleSheet.create({
   },
   sectionHeadingLabel: {
     fontFamily: "Helvetica-Bold",
-    fontSize: 9,
+    fontSize: 11,
     color: ACCENT,
     textTransform: "uppercase",
     letterSpacing: 1.4,
@@ -74,7 +74,7 @@ export const professionalStyles = StyleSheet.create({
   },
   // Body
   bodyText: {
-    fontSize: 10,
+    fontSize: 11,
     marginBottom: 2,
   },
   bold: { fontFamily: "Helvetica-Bold" },
@@ -82,7 +82,7 @@ export const professionalStyles = StyleSheet.create({
   boldItalic: { fontFamily: "Helvetica-BoldOblique" },
   h2text: {
     fontFamily: "Helvetica-Bold",
-    fontSize: 12,
+    fontSize: 13,
     marginBottom: 3,
     marginTop: 4,
   },
@@ -94,24 +94,24 @@ export const professionalStyles = StyleSheet.create({
   },
   entryTitle: {
     fontFamily: "Helvetica-Bold",
-    fontSize: 10,
+    fontSize: 11,
     color: NEAR_BLACK,
     flex: 1,
   },
   // Use when entryTitle is NOT inside entryHeaderRow (no row sibling to flex against)
   entryTitleBlock: {
     fontFamily: "Helvetica-Bold",
-    fontSize: 10,
+    fontSize: 11,
     color: NEAR_BLACK,
   },
   entryDate: {
     fontFamily: "Helvetica",
-    fontSize: 9,
+    fontSize: 10,
     color: GRAY,
     marginLeft: 8,
   },
   entryMeta: {
-    fontSize: 9,
+    fontSize: 10,
     color: GRAY,
     marginBottom: 3,
   },
@@ -122,12 +122,12 @@ export const professionalStyles = StyleSheet.create({
   },
   bullet: {
     width: 12,
-    fontSize: 10,
+    fontSize: 11,
     color: ACCENT,
   },
   listText: {
     flex: 1,
-    fontSize: 10,
+    fontSize: 11,
   },
   // Two-column section
   twoColRow: {

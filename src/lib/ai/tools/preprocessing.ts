@@ -104,6 +104,8 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
         contactInfo.email ? `Email: ${contactInfo.email}` : "",
         contactInfo.phone ? `Phone: ${contactInfo.phone}` : "",
         contactInfo.address ? `Address: ${contactInfo.address}` : "",
+        contactInfo.url1 ? `Link: ${contactInfo.url1}` : "",
+        contactInfo.url2 ? `Link: ${contactInfo.url2}` : "",
       ].filter(Boolean);
       return parts.join("\n");
     };

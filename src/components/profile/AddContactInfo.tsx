@@ -1,5 +1,5 @@
 "use client";
-import { Loader } from "lucide-react";
+import { Loader, X } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -21,7 +21,7 @@ import { AddContactInfoFormSchema } from "@/models/addContactInfoForm.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useEffect, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "../ui/use-toast";
 import { ContactInfo } from "@/models/profile.model";
 import { addContactInfo, updateContactInfo } from "@/actions/profile.actions";
@@ -40,6 +40,7 @@ function AddContactInfo({
   resumeId,
 }: AddContactInfoProps) {
   const [isPending, startTransition] = useTransition();
+  const [showLink2, setShowLink2] = useState(false);
 
   const pageTitle = contactInfoToEdit
     ? "Edit Contact Info"
@@ -55,6 +56,10 @@ function AddContactInfo({
       email: "",
       phone: "",
       address: "",
+      url1: "",
+      url1Label: "",
+      url2: "",
+      url2Label: "",
     },
   });
 
@@ -62,6 +67,7 @@ function AddContactInfo({
 
   useEffect(() => {
     if (contactInfoToEdit) {
+      setShowLink2(!!contactInfoToEdit.url2);
       reset(
         {
           id: contactInfoToEdit.id,
@@ -72,6 +78,10 @@ function AddContactInfo({
           email: contactInfoToEdit.email,
           phone: contactInfoToEdit.phone,
           address: contactInfoToEdit.address ?? "",
+          url1: contactInfoToEdit.url1 ?? "",
+          url1Label: contactInfoToEdit.url1Label ?? "",
+          url2: contactInfoToEdit.url2 ?? "",
+          url2Label: contactInfoToEdit.url2Label ?? "",
         },
         { keepDefaultValues: true }
       );
@@ -218,10 +228,109 @@ function AddContactInfo({
                 )}
               />
             </div>
+
+            {/* LINK 1 */}
+            <div className="md:col-span-2">
+              <p className="text-sm font-medium mb-2">
+                Link 1{" "}
+                <span className="text-muted-foreground font-normal">
+                  (optional — portfolio, LinkedIn, GitHub, etc.)
+                </span>
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                <FormField
+                  control={form.control}
+                  name="url1Label"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs text-muted-foreground">Label</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. LinkedIn" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="url1"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel className="text-xs text-muted-foreground">URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* LINK 2 */}
+            {showLink2 ? (
+              <div className="md:col-span-2">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium">Link 2</p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground"
+                    onClick={() => {
+                      form.setValue("url2", "", { shouldDirty: true });
+                      form.setValue("url2Label", "");
+                      setShowLink2(false);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <FormField
+                    control={form.control}
+                    name="url2Label"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs text-muted-foreground">Label</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. GitHub" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="url2"
+                    render={({ field }) => (
+                      <FormItem className="col-span-2">
+                        <FormLabel className="text-xs text-muted-foreground">URL</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="md:col-span-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground px-0 h-auto"
+                  onClick={() => setShowLink2(true)}
+                >
+                  + Add another link
+                </Button>
+              </div>
+            )}
+
             <div className="md:col-span-2 mt-4">
-              <DialogFooter
-              // className="md:col-span
-              >
+              <DialogFooter>
                 <div>
                   <Button
                     type="reset"

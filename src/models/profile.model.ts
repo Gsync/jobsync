@@ -35,6 +35,10 @@ export interface ContactInfo {
   email?: string;
   phone?: string;
   address?: string;
+  url1?: string;
+  url1Label?: string;
+  url2?: string;
+  url2Label?: string;
 }
 
 export enum SectionType {
