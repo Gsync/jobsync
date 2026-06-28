@@ -36,6 +36,10 @@ export function LogsTab({ automationId, runKey }: LogsTabProps) {
   const [filter, setFilter] = useState<LogLevel | "all">("all");
 
   useEffect(() => {
+    if (runKey > 0) {
+      setLogData({ logs: [], isRunning: true });
+    }
+
     const eventSource = new EventSource(
       `/api/automations/${automationId}/logs`,
     );
@@ -44,25 +48,19 @@ export function LogsTab({ automationId, runKey }: LogsTabProps) {
       try {
         const data: LogData = JSON.parse(event.data);
         setLogData(data);
+        // Close once the run is done so EventSource doesn't loop on reconnect
+        if (!data.isRunning && data.completedAt) {
+          eventSource.close();
+        }
       } catch (err) {
         console.error("Failed to parse log data:", err);
       }
     };
 
-    eventSource.onerror = () => {
-      eventSource.close();
-    };
-
     return () => {
       eventSource.close();
     };
-  }, [automationId]);
-
-  useEffect(() => {
-    if (runKey !== undefined) {
-      setLogData({ logs: [], isRunning: true });
-    }
-  }, [runKey]);
+  }, [automationId, runKey]);
 
   const handleClearLogs = async () => {
     try {

@@ -5,17 +5,22 @@ import type {
   AutomationRunStatus,
   ScrapedJobData,
   JobBoard,
+  FunnelStage,
 } from "@/models/automation.model";
 import type { ScraperError, JobDetails } from "./types";
 import { searchJSearchJobs } from "./jsearch";
+import { searchGreenhouseJobs } from "./greenhouse";
+import { runGreenhousePipeline } from "./greenhouse/pipeline";
 import { mapScrapedJobToJobRecord } from "./mapper";
 import { normalizeJobUrl } from "./utils";
 import { calculateNextRunAt } from "./schedule";
+import { APP_CONSTANTS } from "@/lib/constants";
 import {
   getModel,
   parseJobMatch,
   JOB_MATCH_SYSTEM_PROMPT,
   buildJobMatchPrompt,
+  removeHtmlTags,
 } from "@/lib/ai";
 import {
   AiProvider,
@@ -32,7 +37,7 @@ import {
 } from "@/models/userSettings.model";
 import { resolveApiKey } from "@/lib/api-key-resolver";
 
-const MAX_JOBS_PER_RUN = 10;
+const MAX_JOBS_PER_RUN = APP_CONSTANTS.MAX_JOBS_PER_RUN;
 
 function getDefaultModelForProvider(provider: AiProvider): string {
   switch (provider) {
@@ -206,6 +211,14 @@ export async function runAutomation(
       "success",
       `Resume loaded: ${resume.title}`,
     );
+
+    if (automation.jobBoard === "greenhouse") {
+      return await runGreenhouseRun(
+        automation,
+        run.id,
+        resume as ResumeWithSections,
+      );
+    }
 
     automationLogger.log(
       automation.id,
@@ -496,6 +509,374 @@ async function getExistingJobUrls(userId: string): Promise<Set<string>> {
   return urls;
 }
 
+interface GreenhouseRunConfig {
+  companies: { name: string; token: string }[];
+  targetTitles: string[];
+  keywords: string[];
+  locations: string[];
+  strictLocation: boolean;
+}
+
+function parseGreenhouseConfig(
+  sourceConfig?: string | null,
+): GreenhouseRunConfig | null {
+  if (!sourceConfig) return null;
+  try {
+    const parsed = JSON.parse(sourceConfig);
+    const gh = parsed?.greenhouse;
+    if (!gh || !Array.isArray(gh.companies)) return null;
+    return {
+      companies: gh.companies,
+      targetTitles: Array.isArray(gh.targetTitles) ? gh.targetTitles : [],
+      keywords: Array.isArray(gh.keywords) ? gh.keywords : [],
+      locations: Array.isArray(gh.locations) ? gh.locations : [],
+      strictLocation: !!gh.strictLocation,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function extractResumeSkills(resume: ResumeWithSections): string[] {
+  const labels: string[] = [];
+  for (const section of resume.ResumeSections) {
+    if (section.sectionType === "skills") {
+      for (const skill of section.skills) {
+        if (skill.Tag?.label) labels.push(skill.Tag.label);
+      }
+    }
+  }
+  return labels;
+}
+
+// Raw lexical score is ~0..PRERANK_MAX; scale into 0..99 so it fits the Int
+// matchScore column and stays below a perfect LLM score (100). Internal sort
+// only — never shown as a percentage.
+const PRERANK_MAX =
+  APP_CONSTANTS.GREENHOUSE_TITLE_WEIGHT +
+  APP_CONSTANTS.GREENHOUSE_SKILL_WEIGHT +
+  APP_CONSTANTS.GREENHOUSE_LOC_WEIGHT +
+  0.01;
+
+function scalePrerank(raw: number): number {
+  return Math.min(99, Math.max(0, Math.round((raw / PRERANK_MAX) * 99)));
+}
+
+async function persistDiscoveredJob(
+  automation: Automation,
+  job: JobDetails,
+  matchScore: number,
+  matchData: object,
+): Promise<void> {
+  const scrapedJob: ScrapedJobData = {
+    title: job.title,
+    company: job.company,
+    location: job.location,
+    description: job.description,
+    sourceUrl: normalizeJobUrl(job.url),
+    sourceBoard: automation.jobBoard,
+  };
+
+  const jobRecord = await mapScrapedJobToJobRecord({
+    scrapedJob,
+    userId: automation.userId,
+    automationId: automation.id,
+    matchScore,
+    matchData: JSON.stringify(matchData),
+  });
+
+  await db.job.create({ data: jobRecord });
+}
+
+async function runGreenhouseRun(
+  automation: Automation,
+  runId: string,
+  resume: ResumeWithSections,
+): Promise<RunnerResult> {
+  const config = parseGreenhouseConfig(automation.sourceConfig);
+
+  if (!config || config.companies.length === 0) {
+    automationLogger.log(
+      automation.id,
+      "error",
+      "[Greenhouse] No companies configured",
+    );
+    automationLogger.endRun(automation.id);
+    return await finalizeRun(runId, {
+      status: "failed",
+      errorMessage: "no_companies",
+      jobsSearched: 0,
+      jobsDeduplicated: 0,
+      jobsProcessed: 0,
+      jobsMatched: 0,
+      jobsSaved: 0,
+    });
+  }
+
+  try {
+    automationLogger.log(
+      automation.id,
+      "info",
+      `[Greenhouse] Fetching ${config.companies.length} companies...`,
+    );
+
+    const { jobs, errors } = await searchGreenhouseJobs(config.companies);
+
+    for (const err of errors) {
+      automationLogger.log(
+        automation.id,
+        "warning",
+        `[Greenhouse] Board '${err.token}' ${err.reason} — skipped`,
+      );
+    }
+
+    const jobsSearched = jobs.length;
+    automationLogger.log(
+      automation.id,
+      "success",
+      `[Greenhouse] Fetched ${jobsSearched} jobs across ${config.companies.length} boards`,
+      { jobsSearched },
+    );
+
+    // Dedup against existing jobs and within this batch.
+    const existingJobUrls = await getExistingJobUrls(automation.userId);
+    const seen = new Set<string>();
+    const dedupedJobs: JobDetails[] = [];
+    for (const job of jobs) {
+      const normalized = normalizeJobUrl(job.url);
+      if (existingJobUrls.has(normalized) || seen.has(normalized)) continue;
+      seen.add(normalized);
+      dedupedJobs.push(job);
+    }
+    const jobsDeduplicated = dedupedJobs.length;
+
+    automationLogger.log(
+      automation.id,
+      "info",
+      `[Greenhouse] ${jobsDeduplicated} new jobs after dedup`,
+      { jobsDeduplicated },
+    );
+
+    const resumeSkills = extractResumeSkills(resume);
+    const pipeline = runGreenhousePipeline(dedupedJobs, config, resumeSkills);
+
+    if (config.strictLocation && config.locations.length > 0) {
+      automationLogger.log(
+        automation.id,
+        "info",
+        `[Greenhouse] ${pipeline.funnel.located} jobs remaining after strict location filter`,
+      );
+    }
+
+    automationLogger.log(
+      automation.id,
+      "info",
+      `[Greenhouse] ${pipeline.funnel.relevant} jobs cleared the relevance floor`,
+    );
+
+    const buildFunnel = (analyzed: number, highlighted: number): string => {
+      const stages: FunnelStage[] = [
+        { key: "fetched", label: "Fetched", count: jobsSearched },
+        { key: "dedup", label: "New", count: jobsDeduplicated },
+      ];
+      if (pipeline.funnel.located !== null) {
+        stages.push({
+          key: "located",
+          label: "In location",
+          count: pipeline.funnel.located,
+        });
+      }
+      stages.push({
+        key: "floor",
+        label: "Relevant",
+        count: pipeline.funnel.relevant,
+      });
+      stages.push({ key: "analyzed", label: "Analyzed", count: analyzed });
+      stages.push({
+        key: "highlighted",
+        label: "Strong match",
+        count: highlighted,
+      });
+      return JSON.stringify(stages);
+    };
+
+    if (pipeline.funnel.relevant === 0) {
+      automationLogger.log(
+        automation.id,
+        "warning",
+        "[Greenhouse] No new relevant jobs found — run complete",
+      );
+      automationLogger.endRun(automation.id);
+      return await finalizeRun(runId, {
+        status: "completed",
+        funnelStats: buildFunnel(0, 0),
+        jobsSearched,
+        jobsDeduplicated,
+        jobsProcessed: 0,
+        jobsMatched: 0,
+        jobsSaved: 0,
+      });
+    }
+
+    const aiSettings = await getUserAiSettings(automation.userId);
+    const modelName =
+      aiSettings.model || getDefaultModelForProvider(aiSettings.provider);
+
+    let jobsSaved = 0;
+    let analyzed = 0;
+    let highlighted = 0;
+    let aiError: string | null = null;
+
+    // Save the un-analyzed tier (floor survivors beyond the top-K).
+    for (const scored of pipeline.toSaveUnanalyzed) {
+      try {
+        await persistDiscoveredJob(
+          automation,
+          scored.job,
+          scalePrerank(scored.score),
+          {
+            prerankScore: scored.score,
+            prerankComponents: scored.components,
+            analyzed: false,
+          },
+        );
+        jobsSaved++;
+      } catch (err) {
+        console.error("[Greenhouse] Failed to save listing:", err);
+      }
+    }
+
+    // LLM-analyze the top-K.
+    const totalToAnalyze = pipeline.toAnalyze.length;
+    automationLogger.log(
+      automation.id,
+      "info",
+      `[Greenhouse] Running LLM analysis on top ${totalToAnalyze}...`,
+    );
+
+    let analyzeIndex = 0;
+    for (const scored of pipeline.toAnalyze) {
+      analyzeIndex++;
+      const saveUnanalyzed = async () => {
+        try {
+          await persistDiscoveredJob(
+            automation,
+            scored.job,
+            scalePrerank(scored.score),
+            {
+              prerankScore: scored.score,
+              prerankComponents: scored.components,
+              analyzed: false,
+            },
+          );
+          jobsSaved++;
+        } catch (err) {
+          console.error("[Greenhouse] Failed to save listing:", err);
+        }
+      };
+
+      if (aiError) {
+        await saveUnanalyzed();
+        continue;
+      }
+
+      automationLogger.log(
+        automation.id,
+        "info",
+        `[Greenhouse] Analyzing ${analyzeIndex}/${totalToAnalyze}: ${scored.job.title} at ${scored.job.company}`,
+      );
+
+      const matchResult = await matchJobToResume(
+        scored.job,
+        resume,
+        automation.jobBoard,
+        aiSettings,
+        automation.userId,
+      );
+
+      if (!matchResult.success) {
+        if (matchResult.error === "ai_unavailable") {
+          aiError = `AI provider (${aiSettings.provider}) is not available.`;
+          automationLogger.log(automation.id, "error", aiError);
+        } else {
+          automationLogger.log(
+            automation.id,
+            "warning",
+            `[Greenhouse] LLM match failed: ${matchResult.error}`,
+          );
+        }
+        await saveUnanalyzed();
+        continue;
+      }
+
+      analyzed++;
+      const isStrong = matchResult.score >= automation.matchThreshold;
+      if (isStrong) highlighted++;
+
+      automationLogger.log(
+        automation.id,
+        isStrong ? "success" : "info",
+        `[Greenhouse] ${analyzeIndex}/${totalToAnalyze} scored ${matchResult.score}% — ${scored.job.title}`,
+        { score: matchResult.score, threshold: automation.matchThreshold },
+      );
+
+      try {
+        await persistDiscoveredJob(automation, scored.job, matchResult.score, {
+          ...matchResult.data,
+          resumeId: resume.id,
+          resumeTitle: resume.title,
+          matchedAt: new Date().toISOString(),
+          provider: aiSettings.provider,
+          model: modelName,
+          prerankScore: scored.score,
+          prerankComponents: scored.components,
+          analyzed: true,
+        });
+        jobsSaved++;
+      } catch (err) {
+        console.error("[Greenhouse] Failed to save analyzed job:", err);
+      }
+    }
+
+    automationLogger.log(
+      automation.id,
+      "success",
+      `[Greenhouse] LLM analysis complete (${analyzed}/${pipeline.toAnalyze.length} succeeded)`,
+    );
+
+    automationLogger.endRun(automation.id);
+
+    return await finalizeRun(runId, {
+      status: aiError ? "completed_with_errors" : "completed",
+      errorMessage: aiError || undefined,
+      funnelStats: buildFunnel(analyzed, highlighted),
+      jobsSearched,
+      jobsDeduplicated,
+      jobsProcessed: analyzed,
+      jobsMatched: highlighted,
+      jobsSaved,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    automationLogger.log(
+      automation.id,
+      "error",
+      `[Greenhouse] Run failed: ${message}`,
+    );
+    automationLogger.endRun(automation.id);
+    console.error("[Greenhouse] Run failed:", error);
+    return await finalizeRun(runId, {
+      status: "failed",
+      errorMessage: message,
+      jobsSearched: 0,
+      jobsDeduplicated: 0,
+      jobsProcessed: 0,
+      jobsMatched: 0,
+      jobsSaved: 0,
+    });
+  }
+}
+
 interface MatchResult {
   success: boolean;
   score: number;
@@ -519,7 +900,7 @@ Location: ${job.location}
 ${job.salary ? `Salary: ${job.salary}` : ""}
 
 Description:
-${job.description}
+${removeHtmlTags(job.description)}
 `.trim();
 
     const provider = aiSettings.provider;
@@ -672,6 +1053,7 @@ interface FinalizeData {
   status: AutomationRunStatus;
   errorMessage?: string;
   blockedReason?: string;
+  funnelStats?: string;
   jobsSearched: number;
   jobsDeduplicated: number;
   jobsProcessed: number;
@@ -689,6 +1071,7 @@ async function finalizeRun(
       status: data.status,
       errorMessage: data.errorMessage,
       blockedReason: data.blockedReason,
+      funnelStats: data.funnelStats,
       jobsSearched: data.jobsSearched,
       jobsDeduplicated: data.jobsDeduplicated,
       jobsProcessed: data.jobsProcessed,

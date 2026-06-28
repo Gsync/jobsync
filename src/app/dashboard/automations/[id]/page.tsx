@@ -108,6 +108,22 @@ export default function AutomationDetailPage() {
     loadData();
   }, [loadData]);
 
+  const refreshJobs = useCallback(async () => {
+    const jobsResult = await getDiscoveredJobs({ automationId });
+    if (jobsResult.success && jobsResult.data) {
+      setJobs(jobsResult.data);
+    }
+  }, [automationId]);
+
+  // While a manual run is in flight, jobs are persisted to the DB
+  // incrementally (un-analyzed tier first, then each LLM-analyzed job).
+  // Poll so they surface live instead of all at once when the run ends.
+  useEffect(() => {
+    if (!runNowLoading) return;
+    const interval = setInterval(refreshJobs, 3000);
+    return () => clearInterval(interval);
+  }, [runNowLoading, refreshJobs]);
+
   const handlePauseResume = async () => {
     if (!automation) return;
 

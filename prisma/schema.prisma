@@ -389,6 +389,7 @@ model Automation {
   jobBoard       String
   keywords       String
   location       String
+  sourceConfig   String? // JSON; per-source params (Greenhouse watchlist, titles)
   resumeId       String
   resume         Resume @relation(fields: [resumeId], references: [id])
   matchThreshold Int    @default(80)
@@ -423,6 +424,7 @@ model AutomationRun {
   status        String  @default("running")
   errorMessage  String?
   blockedReason String?
+  funnelStats   String? // JSON: ordered per-source funnel for the run summary
 
   startedAt   DateTime  @default(now())
   completedAt DateTime?

@@ -34,8 +34,33 @@ import {
 import { CreateAutomationSchema, type CreateAutomationInput } from "@/models/automation.schema";
 import { createAutomation, updateAutomation } from "@/actions/automation.actions";
 import { toast } from "@/components/ui/use-toast";
-import type { AutomationWithResume } from "@/models/automation.model";
+import type {
+  AutomationWithResume,
+  JobBoard,
+  GreenhouseSourceConfig,
+} from "@/models/automation.model";
+import { GreenhouseSearchStep } from "./GreenhouseSearchStep";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+
+const EMPTY_GREENHOUSE: GreenhouseSourceConfig = {
+  companies: [],
+  targetTitles: [],
+  keywords: [],
+  locations: [],
+  strictLocation: false,
+};
+
+function parseEditSourceConfig(
+  sc?: string | null,
+): CreateAutomationInput["sourceConfig"] | undefined {
+  if (!sc) return undefined;
+  try {
+    const parsed = JSON.parse(sc);
+    return parsed?.greenhouse ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 interface Resume {
   id: string;
@@ -79,9 +104,10 @@ export function AutomationWizard({
     mode: "onChange",
     defaultValues: {
       name: editAutomation?.name ?? "",
-      jobBoard: (editAutomation?.jobBoard as "jsearch") ?? "jsearch",
+      jobBoard: (editAutomation?.jobBoard as JobBoard) ?? "greenhouse",
       keywords: editAutomation?.keywords ?? "",
       location: editAutomation?.location ?? "",
+      sourceConfig: parseEditSourceConfig(editAutomation?.sourceConfig),
       resumeId: editAutomation?.resumeId ?? "",
       matchThreshold: editAutomation?.matchThreshold ?? 80,
       scheduleHour: editAutomation?.scheduleHour ?? 8,
@@ -92,9 +118,10 @@ export function AutomationWizard({
     if (open) {
       form.reset({
         name: editAutomation?.name ?? "",
-        jobBoard: (editAutomation?.jobBoard as "jsearch") ?? "jsearch",
+        jobBoard: (editAutomation?.jobBoard as JobBoard) ?? "greenhouse",
         keywords: editAutomation?.keywords ?? "",
         location: editAutomation?.location ?? "",
+        sourceConfig: parseEditSourceConfig(editAutomation?.sourceConfig),
         resumeId: editAutomation?.resumeId ?? "",
         matchThreshold: editAutomation?.matchThreshold ?? 80,
         scheduleHour: editAutomation?.scheduleHour ?? 8,
@@ -141,11 +168,18 @@ export function AutomationWizard({
     }
   };
 
+  const isGreenhouse = formValues.jobBoard === "greenhouse";
+  const greenhouseConfig =
+    formValues.sourceConfig?.greenhouse ?? EMPTY_GREENHOUSE;
+
   const canGoNext = () => {
     switch (step) {
       case 0:
         return (formValues.name?.trim().length ?? 0) > 0;
       case 1:
+        if (isGreenhouse) {
+          return (greenhouseConfig.companies?.length ?? 0) > 0;
+        }
         return (
           (formValues.keywords?.trim().length ?? 0) > 0 &&
           (formValues.location?.trim().length ?? 0) > 0
@@ -215,10 +249,15 @@ export function AutomationWizard({
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="jsearch">JSearch (Google Jobs)</SelectItem>
+                    <SelectItem value="greenhouse">
+                      Greenhouse (company boards)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <FormDescription>
-                  The job board to search (more coming soon)
+                  {formValues.jobBoard === "jsearch"
+                    ? "Keyword-based job search via Google Jobs API (RapidAPI key required)"
+                    : "Track specific companies' job boards"}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -228,38 +267,56 @@ export function AutomationWizard({
 
         {/* Step 1: Search */}
         <div className={step === 1 ? "space-y-4" : "hidden"}>
-          <FormField
-            control={form.control}
-            name="keywords"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Search Keywords</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., Full Stack Developer" {...field} />
-                </FormControl>
-                <FormDescription>
-                  Job titles, skills, or keywords to search for
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="location"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Location</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., Calgary, AB" {...field} />
-                </FormControl>
-                <FormDescription>
-                  City, state/province, or region to search in
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {isGreenhouse ? (
+            <GreenhouseSearchStep
+              value={greenhouseConfig}
+              onChange={(next) =>
+                form.setValue(
+                  "sourceConfig",
+                  { greenhouse: next },
+                  { shouldValidate: true },
+                )
+              }
+            />
+          ) : (
+            <>
+              <FormField
+                control={form.control}
+                name="keywords"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Search Keywords</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g., Full Stack Developer"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Job titles, skills, or keywords to search for
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Calgary, AB" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      City, state/province, or region to search in
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </>
+          )}
         </div>
 
         {/* Step 2: Resume */}
@@ -318,8 +375,9 @@ export function AutomationWizard({
                   />
                 </FormControl>
                 <FormDescription>
-                  Only save jobs that match your resume above this percentage.
-                  Higher = fewer but better matches.
+                  {isGreenhouse
+                    ? "Highlight listings whose AI match score exceeds this threshold. Relevant listings are saved regardless — this only flags strong matches."
+                    : "Only save jobs that match your resume above this percentage. Higher = fewer but better matches."}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -372,14 +430,47 @@ export function AutomationWizard({
               <span className="text-muted-foreground">Job Board</span>
               <span className="font-medium capitalize">{formValues.jobBoard || "-"}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Keywords</span>
-              <span className="font-medium">{formValues.keywords || "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Location</span>
-              <span className="font-medium">{formValues.location || "-"}</span>
-            </div>
+            {isGreenhouse ? (
+              <>
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Companies</span>
+                  <span className="font-medium text-right">
+                    {greenhouseConfig.companies?.length
+                      ? greenhouseConfig.companies.map((c) => c.name).join(", ")
+                      : "-"}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Target titles</span>
+                  <span className="font-medium text-right">
+                    {greenhouseConfig.targetTitles?.length
+                      ? greenhouseConfig.targetTitles.join(", ")
+                      : "Any"}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Locations</span>
+                  <span className="font-medium text-right">
+                    {greenhouseConfig.locations?.length
+                      ? `${greenhouseConfig.locations.join(", ")}${
+                          greenhouseConfig.strictLocation ? " (strict)" : ""
+                        }`
+                      : "Any location"}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Keywords</span>
+                  <span className="font-medium">{formValues.keywords || "-"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Location</span>
+                  <span className="font-medium">{formValues.location || "-"}</span>
+                </div>
+              </>
+            )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Resume</span>
               <span className="font-medium">{selectedResume?.title || "Not selected"}</span>

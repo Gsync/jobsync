@@ -32,10 +32,21 @@ import {
   Timer,
   History,
 } from "lucide-react";
-import type { AutomationRun } from "@/models/automation.model";
+import { Fragment } from "react";
+import type { AutomationRun, FunnelStage } from "@/models/automation.model";
 
 interface RunHistoryListProps {
   runs: AutomationRun[];
+}
+
+function parseFunnel(funnelStats: string | null): FunnelStage[] {
+  if (!funnelStats) return [];
+  try {
+    const parsed = JSON.parse(funnelStats);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
 const STATUS_CONFIG = {
@@ -94,9 +105,11 @@ export function RunHistoryList({ runs }: RunHistoryListProps) {
                     (new Date(run.completedAt).getTime() - new Date(run.startedAt).getTime()) / 1000
                   )
                 : null;
+              const funnel = parseFunnel(run.funnelStats);
 
               return (
-                <TableRow key={run.id}>
+                <Fragment key={run.id}>
+                <TableRow>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <StatusIcon className={`h-4 w-4 ${config.color}`} />
@@ -135,6 +148,26 @@ export function RunHistoryList({ runs }: RunHistoryListProps) {
                     )}
                   </TableCell>
                 </TableRow>
+                {funnel.length > 0 && (
+                  <TableRow className="hover:bg-transparent border-0">
+                    <TableCell colSpan={9} className="pt-0 pb-3">
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                        {funnel.map((stage, i) => (
+                          <Fragment key={stage.key}>
+                            {i > 0 && <span className="opacity-50">→</span>}
+                            <span>
+                              {stage.label}{" "}
+                              <span className="font-medium text-foreground">
+                                {stage.count}
+                              </span>
+                            </span>
+                          </Fragment>
+                        ))}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+                </Fragment>
               );
             })}
           </TableBody>

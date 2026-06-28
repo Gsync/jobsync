@@ -132,6 +132,22 @@ export function AutomationList({
           const isLoading = loadingAction === automation.id;
           const resumeMissing = !automation.resume;
 
+          const greenhouse =
+            automation.jobBoard === "greenhouse"
+              ? (() => {
+                  try {
+                    return JSON.parse(automation.sourceConfig ?? "{}")
+                      .greenhouse;
+                  } catch {
+                    return null;
+                  }
+                })()
+              : null;
+          const ghCompanies: { name: string; token: string }[] =
+            greenhouse?.companies ?? [];
+          const ghTitles: string[] = greenhouse?.targetTitles ?? [];
+          const ghLocations: string[] = greenhouse?.locations ?? [];
+
           return (
             <div
               key={automation.id}
@@ -162,22 +178,63 @@ export function AutomationList({
                   </div>
                 )}
 
-                <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
-                  <span>
-                    <span className="font-medium text-foreground">Keywords:</span>{" "}
-                    {automation.keywords}
-                  </span>
-                  <span>
-                    <span className="font-medium text-foreground">Location:</span>{" "}
-                    {automation.location}
-                  </span>
-                  {automation.resume && (
+                {greenhouse ? (
+                  <div className="space-y-1.5 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-1">
+                      {ghCompanies.slice(0, 3).map((c) => (
+                        <Badge key={c.token} variant="secondary">
+                          {c.name}
+                        </Badge>
+                      ))}
+                      {ghCompanies.length > 3 && (
+                        <Badge variant="secondary">
+                          +{ghCompanies.length - 3} more
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-x-6 gap-y-1">
+                      <span>
+                        <span className="font-medium text-foreground">
+                          Titles:
+                        </span>{" "}
+                        {ghTitles.length ? ghTitles.join(", ") : "Any"}
+                      </span>
+                      <span>
+                        <span className="font-medium text-foreground">
+                          Location:
+                        </span>{" "}
+                        {ghLocations.length
+                          ? ghLocations.join(", ")
+                          : "Any location"}
+                      </span>
+                      {automation.resume && (
+                        <span>
+                          <span className="font-medium text-foreground">
+                            Resume:
+                          </span>{" "}
+                          {automation.resume.title}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
                     <span>
-                      <span className="font-medium text-foreground">Resume:</span>{" "}
-                      {automation.resume.title}
+                      <span className="font-medium text-foreground">Keywords:</span>{" "}
+                      {automation.keywords}
                     </span>
-                  )}
-                </div>
+                    <span>
+                      <span className="font-medium text-foreground">Location:</span>{" "}
+                      {automation.location}
+                    </span>
+                    {automation.resume && (
+                      <span>
+                        <span className="font-medium text-foreground">Resume:</span>{" "}
+                        {automation.resume.title}
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">

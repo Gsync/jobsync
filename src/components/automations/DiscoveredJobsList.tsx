@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import {
   Card,
@@ -28,9 +28,25 @@ import {
   Building2,
   MapPin,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import type { DiscoveredJob } from "@/models/automation.model";
-import { acceptDiscoveredJob, dismissDiscoveredJob } from "@/actions/automation.actions";
+import {
+  acceptDiscoveredJob,
+  dismissDiscoveredJob,
+  analyzeDiscoveredJob,
+} from "@/actions/automation.actions";
+
+// A job is "un-analyzed" only when matchData explicitly marks it so (Greenhouse
+// floor survivors). JSearch and legacy jobs have no flag but carry a real AI
+// score, so they count as analyzed.
+function isAnalyzed(job: DiscoveredJob): boolean {
+  try {
+    return JSON.parse(job.matchData ?? "{}").analyzed !== false;
+  } catch {
+    return true;
+  }
+}
 
 interface DiscoveredJobsListProps {
   jobs: DiscoveredJob[];
@@ -45,9 +61,51 @@ export function DiscoveredJobsList({
 }: DiscoveredJobsListProps) {
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
-  const handleAccept = async (jobId: string) => {
+  // Analyzed-first, then by matchScore desc (un-analyzed sort by their lexical
+  // matchScore value). The analyzed flag lives in matchData JSON, so sort in JS.
+  const sortedJobs = useMemo(() => {
+    return [...jobs].sort((a, b) => {
+      const aa = isAnalyzed(a);
+      const ba = isAnalyzed(b);
+      if (aa !== ba) return aa ? -1 : 1;
+      return b.matchScore - a.matchScore;
+    });
+  }, [jobs]);
+
+  const handleAnalyze = async (jobId: string) => {
     setLoadingAction(jobId);
-    const result = await acceptDiscoveredJob(jobId);
+    const result = await analyzeDiscoveredJob(jobId);
+    setLoadingAction(null);
+
+    if (result.success) {
+      toast({ title: "Match analyzed", description: "AI match score is ready." });
+      onRefresh();
+    } else {
+      toast({
+        title: "Error",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAccept = async (job: DiscoveredJob) => {
+    setLoadingAction(job.id);
+    // Un-analyzed listings are analyzed first so they reach the jobs board with
+    // a real AI score, never the internal lexical number.
+    if (!isAnalyzed(job)) {
+      const analysis = await analyzeDiscoveredJob(job.id);
+      if (!analysis.success) {
+        setLoadingAction(null);
+        toast({
+          title: "Error",
+          description: analysis.message,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    const result = await acceptDiscoveredJob(job.id);
     setLoadingAction(null);
 
     if (result.success) {
@@ -121,8 +179,9 @@ export function DiscoveredJobsList({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {jobs.map((job) => {
+            {sortedJobs.map((job) => {
               const isLoading = loadingAction === job.id;
+              const analyzed = isAnalyzed(job);
 
               return (
                 <TableRow key={job.id}>
@@ -159,9 +218,27 @@ export function DiscoveredJobsList({
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge variant={getScoreBadgeVariant(job.matchScore)}>
-                      {job.matchScore}%
-                    </Badge>
+                    {analyzed ? (
+                      <Badge variant={getScoreBadgeVariant(job.matchScore)}>
+                        {job.matchScore}%
+                      </Badge>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAnalyze(job.id)}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Sparkles className="h-3.5 w-3.5 mr-1" />
+                            Analyze
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -185,7 +262,7 @@ export function DiscoveredJobsList({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleAccept(job.id)}
+                          onClick={() => handleAccept(job)}
                           disabled={isLoading}
                         >
                           {isLoading ? (

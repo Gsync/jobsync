@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import db from "@/lib/db";
 import { runAutomation, type RunnerResult } from "@/lib/scraper";
+import type { JobBoard } from "@/models/automation.model";
 import { APP_CONSTANTS } from "@/lib/constants";
 
 const recentRuns = new Map<string, number[]>();
@@ -70,9 +71,10 @@ export async function POST(
       id: automation.id,
       userId: automation.userId,
       name: automation.name,
-      jobBoard: automation.jobBoard as "jsearch",
+      jobBoard: automation.jobBoard as JobBoard,
       keywords: automation.keywords,
       location: automation.location,
+      sourceConfig: automation.sourceConfig,
       resumeId: automation.resumeId,
       matchThreshold: automation.matchThreshold,
       scheduleHour: automation.scheduleHour,

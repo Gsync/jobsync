@@ -2,6 +2,7 @@ import cron, { ScheduledTask } from "node-cron";
 import { SCHEDULER_CONSTANTS } from "@/lib/constants";
 import db from "@/lib/db";
 import { runAutomation } from "@/lib/scraper";
+import type { JobBoard } from "@/models/automation.model";
 
 let scheduledTask: ScheduledTask | null = null;
 
@@ -47,9 +48,10 @@ async function runDueAutomations() {
           id: automation.id,
           userId: automation.userId,
           name: automation.name,
-          jobBoard: automation.jobBoard as "jsearch",
+          jobBoard: automation.jobBoard as JobBoard,
           keywords: automation.keywords,
           location: automation.location,
+          sourceConfig: automation.sourceConfig,
           resumeId: automation.resumeId,
           matchThreshold: automation.matchThreshold,
           scheduleHour: automation.scheduleHour,
@@ -109,8 +111,32 @@ export function isSchedulerRunning(): boolean {
   return scheduledTask !== null;
 }
 
+// Marks any run stuck in "running" past the stale cutoff as failed. A hard kill
+// mid-run (deploy/OOM/crash) leaves the run row in "running" forever otherwise.
+export async function reapStaleRuns(): Promise<number> {
+  const cutoff = new Date(Date.now() - SCHEDULER_CONSTANTS.STALE_RUN_TIMEOUT_MS);
+  try {
+    const result = await db.automationRun.updateMany({
+      where: { status: "running", startedAt: { lt: cutoff } },
+      data: {
+        status: "failed",
+        errorMessage: "interrupted",
+        completedAt: new Date(),
+      },
+    });
+    if (result.count > 0) {
+      console.log(`[Scheduler] Reaped ${result.count} stale running run(s)`);
+    }
+    return result.count;
+  } catch (error) {
+    console.error("[Scheduler] Failed to reap stale runs:", error);
+    return 0;
+  }
+}
+
 // Starts or stops the scheduler based on whether active automations exist
 export async function syncSchedulerState() {
+  await reapStaleRuns();
   const activeCount = await db.automation.count({ where: { status: "active" } });
   if (activeCount > 0) {
     startScheduler();

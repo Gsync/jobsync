@@ -20,11 +20,17 @@ import {
   Check,
   X,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import type { DiscoveredJob } from "@/models/automation.model";
 import type { JobMatchData } from "@/models/ai.schemas";
-import { acceptDiscoveredJob, dismissDiscoveredJob } from "@/actions/automation.actions";
+import {
+  acceptDiscoveredJob,
+  dismissDiscoveredJob,
+  analyzeDiscoveredJob,
+} from "@/actions/automation.actions";
 import { MatchDetails } from "./MatchDetails";
+import { TipTapContentViewer } from "@/components/TipTapContentViewer";
 
 interface DiscoveredJobDetailProps {
   job: DiscoveredJob | null;
@@ -41,12 +47,46 @@ export function DiscoveredJobDetail({
   onOpenChange,
   onRefresh,
 }: DiscoveredJobDetailProps) {
-  const [loadingAction, setLoadingAction] = useState<"accept" | "dismiss" | null>(null);
+  const [loadingAction, setLoadingAction] = useState<
+    "accept" | "dismiss" | "analyze" | null
+  >(null);
 
   if (!job) return null;
 
+  const analyzed = matchData?.analyzed !== false;
+
+  const handleAnalyze = async () => {
+    setLoadingAction("analyze");
+    const result = await analyzeDiscoveredJob(job.id);
+    setLoadingAction(null);
+
+    if (result.success) {
+      toast({ title: "Match analyzed", description: "AI match score is ready." });
+      onOpenChange(false);
+      onRefresh();
+    } else {
+      toast({
+        title: "Error",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleAccept = async () => {
     setLoadingAction("accept");
+    if (!analyzed) {
+      const analysis = await analyzeDiscoveredJob(job.id);
+      if (!analysis.success) {
+        setLoadingAction(null);
+        toast({
+          title: "Error",
+          description: analysis.message,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     const result = await acceptDiscoveredJob(job.id);
     setLoadingAction(null);
 
@@ -113,9 +153,24 @@ export function DiscoveredJobDetail({
         <ScrollArea className="max-h-[60vh]">
           <div className="space-y-4 pr-4">
             <div className="flex items-center gap-4">
-              <Badge variant="default" className="text-lg px-3 py-1">
-                {job.matchScore}% Match
-              </Badge>
+              {analyzed ? (
+                <Badge variant="default" className="text-lg px-3 py-1">
+                  {job.matchScore}% Match
+                </Badge>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={handleAnalyze}
+                  disabled={loadingAction !== null}
+                >
+                  {loadingAction === "analyze" ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-2" />
+                  )}
+                  Analyze match
+                </Button>
+              )}
               <Badge variant="outline">{job.discoveryStatus}</Badge>
               {job.automation && (
                 <span className="text-sm text-muted-foreground">
@@ -126,9 +181,9 @@ export function DiscoveredJobDetail({
 
             <div>
               <h4 className="font-medium mb-2">Description</h4>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {job.description}
-              </p>
+              <div className="text-sm text-muted-foreground">
+                <TipTapContentViewer content={job.description ?? ""} />
+              </div>
             </div>
 
             <MatchDetails matchData={matchData} discoveredAt={job.discoveredAt} />

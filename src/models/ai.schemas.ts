@@ -35,6 +35,15 @@ export type JobMatchResult = {
   body: string;
 };
 
+// Lexical pre-rank breakdown persisted next to the LLM verdict (tuning signal).
+export type PrerankComponents = {
+  titleScore: number;
+  keywordScore: number;
+  locScore: number;
+  titleHits: string[]; // target-title tokens that matched
+  keywordHits: string[]; // distinct keyword/skill terms that matched
+};
+
 // Persisted shape stored in Job.matchData (JSON string).
 export type JobMatchData = JobMatchScores & {
   body: string;
@@ -43,4 +52,8 @@ export type JobMatchData = JobMatchScores & {
   matchedAt?: string;
   provider?: string;
   model?: string;
+  // Greenhouse-specific
+  prerankScore?: number; // raw lexical score (internal sort only; NOT shown as %)
+  analyzed?: boolean; // true once LLM match has run (auto top-K or on-demand)
+  prerankComponents?: PrerankComponents;
 };

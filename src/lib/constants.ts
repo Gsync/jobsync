@@ -52,6 +52,21 @@ export const APP_CONSTANTS = {
   AUTOMATION_MAX_MANUAL_RUNS_PER_HOUR: 5,
   AUTOMATION_RATE_LIMIT_WINDOW_MS: 60 * 60 * 1000, // 1 hour
 
+  // Per-run LLM match budget (top-K). Reused as the Greenhouse K.
+  MAX_JOBS_PER_RUN: 10,
+
+  // Greenhouse job source
+  GREENHOUSE_BASE_URL: "https://boards-api.greenhouse.io/v1/boards",
+  MAX_GREENHOUSE_COMPANIES: 25, // per automation
+  GREENHOUSE_LISTING_CAP: 50, // safety ceiling applied after the relevance floor
+  GREENHOUSE_FLOOR_MIN_TITLE_HITS: 1,
+  GREENHOUSE_FLOOR_MIN_KEYWORD_HITS: 2,
+  GREENHOUSE_TITLE_WEIGHT: 0.5,
+  GREENHOUSE_SKILL_WEIGHT: 0.35,
+  GREENHOUSE_LOC_WEIGHT: 0.15,
+  GREENHOUSE_FETCH_TIMEOUT_MS: 25_000, // per-board AbortController timeout
+  GREENHOUSE_FETCH_CONCURRENCY: 5,
+
   // MCP server settings
   MCP_DUPLICATE_WINDOW_DAYS: 30,
   MCP_TOKEN_EXPIRY_PRESETS: [30, 90, 365] as const,
@@ -81,6 +96,7 @@ export const APP_CONSTANTS = {
 export const SCHEDULER_CONSTANTS = {
   ENABLED: true,
   CRON_EXPRESSION: "0 * * * *", // Every hour at minute 0
+  STALE_RUN_TIMEOUT_MS: 15 * 60 * 1000, // 15 min; reaper cutoff for stuck runs
 } as const;
 
 export const JOB_SOURCES = [

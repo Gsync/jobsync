@@ -9,7 +9,24 @@ export type AutomationRunStatus =
   | "blocked"
   | "rate_limited";
 export type DiscoveryStatus = "new" | "accepted" | "dismissed";
-export type JobBoard = "jsearch";
+export type JobBoard = "jsearch" | "greenhouse";
+
+export interface GreenhouseCompany {
+  name: string;
+  token: string;
+}
+
+export interface GreenhouseSourceConfig {
+  companies: GreenhouseCompany[];
+  targetTitles?: string[];
+  keywords?: string[];
+  locations?: string[];
+  strictLocation?: boolean;
+}
+
+export interface SourceConfig {
+  greenhouse?: GreenhouseSourceConfig;
+}
 
 export interface Automation {
   id: string;
@@ -18,6 +35,7 @@ export interface Automation {
   jobBoard: JobBoard;
   keywords: string;
   location: string;
+  sourceConfig?: string | null;
   resumeId: string;
   matchThreshold: number;
   scheduleHour: number;
@@ -35,6 +53,12 @@ export interface AutomationWithResume extends Automation {
   };
 }
 
+export interface FunnelStage {
+  key: string;
+  label: string;
+  count: number;
+}
+
 export interface AutomationRun {
   id: string;
   automationId: string;
@@ -46,6 +70,7 @@ export interface AutomationRun {
   status: AutomationRunStatus;
   errorMessage: string | null;
   blockedReason: string | null;
+  funnelStats: string | null;
   startedAt: Date;
   completedAt: Date | null;
 }
