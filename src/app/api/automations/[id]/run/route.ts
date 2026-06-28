@@ -67,23 +67,26 @@ export async function POST(
       );
     }
 
-    const result: RunnerResult = await runAutomation({
-      id: automation.id,
-      userId: automation.userId,
-      name: automation.name,
-      jobBoard: automation.jobBoard as JobBoard,
-      keywords: automation.keywords,
-      location: automation.location,
-      sourceConfig: automation.sourceConfig,
-      resumeId: automation.resumeId,
-      matchThreshold: automation.matchThreshold,
-      scheduleHour: automation.scheduleHour,
-      nextRunAt: automation.nextRunAt,
-      lastRunAt: automation.lastRunAt,
-      status: automation.status as "active" | "paused",
-      createdAt: automation.createdAt,
-      updatedAt: automation.updatedAt,
-    });
+    const result: RunnerResult = await runAutomation(
+      {
+        id: automation.id,
+        userId: automation.userId,
+        name: automation.name,
+        jobBoard: automation.jobBoard as JobBoard,
+        keywords: automation.keywords,
+        location: automation.location,
+        sourceConfig: automation.sourceConfig,
+        resumeId: automation.resumeId,
+        matchThreshold: automation.matchThreshold,
+        scheduleHour: automation.scheduleHour,
+        nextRunAt: automation.nextRunAt,
+        lastRunAt: automation.lastRunAt,
+        status: automation.status as "active" | "paused",
+        createdAt: automation.createdAt,
+        updatedAt: automation.updatedAt,
+      },
+      req.signal,
+    );
 
     return NextResponse.json({
       success: true,

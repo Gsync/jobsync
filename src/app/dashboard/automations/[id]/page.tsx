@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -25,6 +25,7 @@ import {
   FileText,
   AlertTriangle,
   PlayCircle,
+  Square,
 } from "lucide-react";
 import {
   getAutomationById,
@@ -64,6 +65,7 @@ export default function AutomationDetailPage() {
     useState<JobMatchData | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [runKey, setRunKey] = useState(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -154,18 +156,26 @@ export default function AutomationDetailPage() {
   const handleRunNow = async () => {
     if (!automation) return;
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setRunNowLoading(true);
     setRunKey((prev) => prev + 1);
     try {
       const response = await fetch(`/api/automations/${automation.id}/run`, {
         method: "POST",
+        signal: controller.signal,
       });
 
       const data = await response.json();
 
       if (response.ok && data.success) {
+        const statusMsg =
+          data.run.status === "cancelled"
+            ? "Run cancelled"
+            : "Automation run complete";
         toast({
-          title: "Automation run started",
+          title: statusMsg,
           description: `Saved ${data.run.jobsSaved} new jobs`,
         });
         loadData();
@@ -177,13 +187,24 @@ export default function AutomationDetailPage() {
         });
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to run automation",
-        variant: "destructive",
-      });
+      if (error instanceof Error && error.name === "AbortError") {
+        toast({ title: "Run aborted" });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to run automation",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      abortControllerRef.current = null;
+      setRunNowLoading(false);
+      loadData();
     }
-    setRunNowLoading(false);
+  };
+
+  const handleAbortRun = () => {
+    abortControllerRef.current?.abort();
   };
 
   const handleViewJobDetails = async (job: DiscoveredJob) => {
@@ -248,20 +269,21 @@ export default function AutomationDetailPage() {
             )}
             {automation.status === "active" ? "Pause" : "Resume"}
           </Button>
-          <Button
-            variant="outline"
-            onClick={handleRunNow}
-            disabled={
-              runNowLoading || resumeMissing || automation.status === "paused"
-            }
-          >
-            {runNowLoading ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
+          {runNowLoading ? (
+            <Button variant="destructive" onClick={handleAbortRun}>
+              <Square className="h-4 w-4 mr-2" />
+              Abort Run
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={handleRunNow}
+              disabled={resumeMissing || automation.status === "paused"}
+            >
               <PlayCircle className="h-4 w-4 mr-2" />
-            )}
-            Run Now
-          </Button>
+              Run Now
+            </Button>
+          )}
         </div>
       </div>
 
@@ -358,6 +380,7 @@ export default function AutomationDetailPage() {
         <TabsContent value="jobs" className="mt-4">
           <DiscoveredJobsList
             jobs={jobs}
+            automationId={automationId}
             onRefresh={loadData}
             onViewDetails={handleViewJobDetails}
           />

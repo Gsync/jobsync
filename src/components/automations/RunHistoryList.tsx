@@ -31,6 +31,7 @@ import {
   Ban,
   Timer,
   History,
+  Square,
 } from "lucide-react";
 import { Fragment } from "react";
 import type { AutomationRun, FunnelStage } from "@/models/automation.model";
@@ -56,6 +57,7 @@ const STATUS_CONFIG = {
   completed_with_errors: { icon: AlertCircle, color: "text-amber-500", variant: "secondary" as const },
   blocked: { icon: Ban, color: "text-red-500", variant: "destructive" as const },
   rate_limited: { icon: Timer, color: "text-amber-500", variant: "secondary" as const },
+  cancelled: { icon: Square, color: "text-muted-foreground", variant: "secondary" as const },
 };
 
 export function RunHistoryList({ runs }: RunHistoryListProps) {

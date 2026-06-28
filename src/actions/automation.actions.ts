@@ -540,6 +540,38 @@ export async function dismissDiscoveredJob(id: string): Promise<{
   }
 }
 
+// Bulk-deletes discovered jobs for one automation. Always keeps accepted jobs
+// (they're tracked) and deletes dismissed ones; includeNew also clears the
+// unreviewed "new" pile.
+export async function clearDiscoveredJobs(options: {
+  automationId: string;
+  includeNew?: boolean;
+}): Promise<{ success: boolean; deleted?: number; message?: string }> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, message: "Not authenticated" };
+    }
+
+    const { automationId, includeNew = false } = options;
+    const statuses: DiscoveryStatus[] = includeNew
+      ? ["dismissed", "new"]
+      : ["dismissed"];
+
+    const result = await db.job.deleteMany({
+      where: {
+        userId: user.id,
+        automationId,
+        discoveryStatus: { in: statuses },
+      },
+    });
+
+    return { success: true, deleted: result.count };
+  } catch (error) {
+    return formatError(error, "Failed to clear discovered jobs");
+  }
+}
+
 export async function acceptDiscoveredJob(id: string): Promise<{
   success: boolean;
   data?: DiscoveredJob;

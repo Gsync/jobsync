@@ -1,7 +1,7 @@
 import { APP_CONSTANTS } from "@/lib/constants";
 import type { PrerankComponents } from "@/models/ai.schemas";
 import type { JobDetails } from "../types";
-import { scoreJob, passesFloor, locationMatches } from "./rank";
+import { scoreJob, passesFloor, locationMatches, buildIdf } from "./rank";
 
 export interface PipelineConfig {
   targetTitles: string[];
@@ -34,12 +34,16 @@ export function runGreenhousePipeline(
   fetchedJobs: JobDetails[],
   config: PipelineConfig,
   resumeSkills: string[],
-  options?: { k?: number; cap?: number },
+  options?: { k?: number; cap?: number; corpus?: JobDetails[] },
 ): PipelineResult {
   const k = options?.k ?? APP_CONSTANTS.MAX_JOBS_PER_RUN;
   const cap = options?.cap ?? APP_CONSTANTS.GREENHOUSE_LISTING_CAP;
 
   const deduped = fetchedJobs.length;
+
+  // Term-rarity weights are derived from the full fetched corpus (pre-dedup) so
+  // they stay stable on steady-state runs where few new jobs remain.
+  const idf = buildIdf(options?.corpus ?? fetchedJobs);
 
   const gateActive = config.strictLocation && config.locations.length > 0;
   const located = gateActive
@@ -57,6 +61,7 @@ export function runGreenhousePipeline(
       config.keywords,
       resumeSkills,
       config.locations,
+      idf,
     );
     return { job, score, components };
   });

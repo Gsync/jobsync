@@ -1,4 +1,9 @@
-import { scoreJob, passesFloor, locationMatches } from "@/lib/scraper/greenhouse/rank";
+import {
+  scoreJob,
+  passesFloor,
+  locationMatches,
+  buildIdf,
+} from "@/lib/scraper/greenhouse/rank";
 import type { JobDetails } from "@/lib/scraper/types";
 
 function job(overrides: Partial<JobDetails>): JobDetails {
@@ -13,8 +18,9 @@ function job(overrides: Partial<JobDetails>): JobDetails {
 }
 
 describe("locationMatches", () => {
-  it("always passes for remote regardless of preference", () => {
-    expect(locationMatches("Remote - Americas", ["Canada"])).toBe(true);
+  it("remote only matches when explicitly listed as a wanted location", () => {
+    expect(locationMatches("Remote - Americas", ["remote"])).toBe(true);
+    expect(locationMatches("Remote - Americas", ["Canada"])).toBe(false);
     expect(locationMatches("Fully remote", [])).toBe(true);
   });
 
@@ -82,7 +88,7 @@ describe("scoreJob", () => {
     expect(passesFloor(real.components)).toBe(true);
   });
 
-  it("location soft-weight raises a matching job above an otherwise-equal one", () => {
+  it("location does not affect the relevance score (gate-only signal)", () => {
     const inLoc = scoreJob(
       job({ title: "Frontend Engineer", location: "Toronto, Canada" }),
       ["Frontend Engineer"],
@@ -97,7 +103,10 @@ describe("scoreJob", () => {
       [],
       ["Canada"],
     );
-    expect(inLoc.score).toBeGreaterThan(outLoc.score);
+    expect(inLoc.score).toBe(outLoc.score);
+    // locScore is still recorded for the breakdown UI.
+    expect(inLoc.components.locScore).toBe(1);
+    expect(outLoc.components.locScore).toBe(0);
   });
 
   it("empty locations contributes 0 location weight", () => {
@@ -132,6 +141,48 @@ describe("scoreJob", () => {
       [],
     );
     expect(components.keywordHits.sort()).toEqual(["docker", "kubernetes"]);
+  });
+});
+
+describe("buildIdf (term rarity weighting)", () => {
+  it("scores a rare-term match above a generic-term match", () => {
+    const corpus = [
+      job({ title: "Software Engineer", description: "engineer" }),
+      job({ title: "Senior Engineer", description: "engineer" }),
+      job({ title: "Staff Engineer", description: "engineer" }),
+      job({ title: "Platform Engineer", description: "kubernetes" }),
+    ];
+    const idf = buildIdf(corpus);
+    expect(idf("engineer")).toBeLessThan(idf("kubernetes"));
+
+    const generic = scoreJob(
+      job({ description: "engineer" }),
+      [],
+      ["engineer", "kubernetes"],
+      [],
+      [],
+      idf,
+    );
+    const rare = scoreJob(
+      job({ description: "kubernetes" }),
+      [],
+      ["engineer", "kubernetes"],
+      [],
+      [],
+      idf,
+    );
+    expect(rare.score).toBeGreaterThan(generic.score);
+  });
+
+  it("default idf (no corpus) preserves count-based behavior", () => {
+    const { components } = scoreJob(
+      job({ title: "Frontend Engineer" }),
+      ["Frontend Engineer"],
+      [],
+      [],
+      [],
+    );
+    expect(components.titleScore).toBe(1); // min(1, 2 hits / 2)
   });
 });
 

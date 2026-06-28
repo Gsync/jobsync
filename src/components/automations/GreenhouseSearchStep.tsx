@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { X, Loader2, Plus, ChevronsUpDown, CirclePlus } from "lucide-react";
+import {
+  X,
+  Loader2,
+  Plus,
+  ChevronsUpDown,
+  CirclePlus,
+  TriangleAlert,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -280,6 +287,12 @@ export function GreenhouseSearchStep({
 
   const atLimit = companies.length >= APP_CONSTANTS.MAX_GREENHOUSE_COMPANIES;
 
+  // Without target titles or keywords there is no signal to rank jobs against,
+  // so the relevance floor drops everything and nothing is saved.
+  const noSignal =
+    (value.targetTitles?.length ?? 0) === 0 &&
+    (value.keywords?.length ?? 0) === 0;
+
   return (
     <div className="space-y-5">
       <div className="space-y-2">
@@ -435,11 +448,22 @@ export function GreenhouseSearchStep({
         }}
       />
 
+      {noSignal && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
+          <TriangleAlert className="h-4 w-4 mt-0.5 shrink-0" />
+          <span>
+            Add at least one target title or keyword. Without them there is
+            nothing to rank jobs against, so this automation will save no
+            listings.
+          </span>
+        </div>
+      )}
+
       <EntityStringChipInput
         label="Locations"
         placeholder="e.g., Canada, Remote"
         noun="location"
-        description="Optional. Always nudges ranking; gates results when the toggle below is on."
+        description="Optional. Used only to filter results when the toggle below is on (not part of ranking)."
         values={value.locations ?? []}
         onChange={(next) => onChange({ ...value, locations: next })}
         loadOptions={async () => {

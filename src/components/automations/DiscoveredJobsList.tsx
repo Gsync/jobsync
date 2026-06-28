@@ -21,6 +21,17 @@ import {
 } from "@/components/ui/table";
 import { toast } from "@/components/ui/use-toast";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { buttonVariants } from "@/components/ui/button";
+import {
   Check,
   X,
   ExternalLink,
@@ -29,12 +40,14 @@ import {
   MapPin,
   Loader2,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 import type { DiscoveredJob } from "@/models/automation.model";
 import {
   acceptDiscoveredJob,
   dismissDiscoveredJob,
   analyzeDiscoveredJob,
+  clearDiscoveredJobs,
 } from "@/actions/automation.actions";
 
 // A job is "un-analyzed" only when matchData explicitly marks it so (Greenhouse
@@ -48,18 +61,39 @@ function isAnalyzed(job: DiscoveredJob): boolean {
   }
 }
 
+// Lexical pre-rank as a percentage (weights sum to ~1, so raw × 100). Only
+// Greenhouse jobs carry it; null for JSearch/legacy jobs.
+function getPrerankPercent(job: DiscoveredJob): number | null {
+  try {
+    const raw = JSON.parse(job.matchData ?? "{}").prerankScore;
+    return typeof raw === "number" ? Math.round(raw * 100) : null;
+  } catch {
+    return null;
+  }
+}
+
 interface DiscoveredJobsListProps {
   jobs: DiscoveredJob[];
+  automationId: string;
   onRefresh: () => void;
   onViewDetails?: (job: DiscoveredJob) => void;
 }
 
 export function DiscoveredJobsList({
   jobs,
+  automationId,
   onRefresh,
   onViewDetails,
 }: DiscoveredJobsListProps) {
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [clearOpen, setClearOpen] = useState(false);
+  const [clearIncludeNew, setClearIncludeNew] = useState(false);
+  const [clearing, setClearing] = useState(false);
+
+  const dismissedCount = jobs.filter(
+    (j) => j.discoveryStatus === "dismissed",
+  ).length;
+  const newCount = jobs.filter((j) => j.discoveryStatus === "new").length;
 
   // Analyzed-first, then by matchScore desc (un-analyzed sort by their lexical
   // matchScore value). The analyzed flag lives in matchData JSON, so sort in JS.
@@ -137,6 +171,30 @@ export function DiscoveredJobsList({
     }
   };
 
+  const handleClear = async () => {
+    setClearing(true);
+    const result = await clearDiscoveredJobs({
+      automationId,
+      includeNew: clearIncludeNew,
+    });
+    setClearing(false);
+    setClearOpen(false);
+
+    if (result.success) {
+      toast({
+        title: "Discovered jobs cleared",
+        description: `Removed ${result.deleted ?? 0} job(s).`,
+      });
+      onRefresh();
+    } else {
+      toast({
+        title: "Error",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const getScoreBadgeVariant = (score: number) => {
     if (score >= 80) return "default";
     if (score >= 65) return "secondary";
@@ -160,10 +218,27 @@ export function DiscoveredJobsList({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Discovered Jobs</CardTitle>
-        <CardDescription>
-          Jobs found by your automations that match your criteria
-        </CardDescription>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1.5">
+            <CardTitle>Discovered Jobs</CardTitle>
+            <CardDescription>
+              Jobs found by your automations that match your criteria
+            </CardDescription>
+          </div>
+          {dismissedCount + newCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setClearIncludeNew(false);
+                setClearOpen(true);
+              }}
+            >
+              <Trash2 className="h-4 w-4 mr-1.5" />
+              Clear
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
@@ -172,6 +247,7 @@ export function DiscoveredJobsList({
               <TableHead>Job</TableHead>
               <TableHead>Company</TableHead>
               <TableHead>Location</TableHead>
+              <TableHead className="text-center">Pre-rank</TableHead>
               <TableHead className="text-center">Match</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Discovered</TableHead>
@@ -182,6 +258,7 @@ export function DiscoveredJobsList({
             {sortedJobs.map((job) => {
               const isLoading = loadingAction === job.id;
               const analyzed = isAnalyzed(job);
+              const prerankPercent = getPrerankPercent(job);
 
               return (
                 <TableRow key={job.id}>
@@ -216,6 +293,18 @@ export function DiscoveredJobsList({
                       <MapPin className="h-4 w-4 text-muted-foreground" />
                       {job.Location?.label || "N/A"}
                     </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {prerankPercent != null ? (
+                      <span
+                        className="font-mono text-sm text-muted-foreground"
+                        title="Internal lexical relevance score (not an AI match)"
+                      >
+                        {prerankPercent}%
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-center">
                     {analyzed ? (
@@ -292,6 +381,50 @@ export function DiscoveredJobsList({
           </TableBody>
         </Table>
       </CardContent>
+
+      <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear discovered jobs?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Accepted jobs are always kept. This permanently deletes{" "}
+              {dismissedCount} dismissed job(s)
+              {clearIncludeNew && newCount > 0
+                ? ` and ${newCount} unreviewed new job(s)`
+                : ""}
+              . This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {newCount > 0 && (
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={clearIncludeNew}
+                onChange={(e) => setClearIncludeNew(e.target.checked)}
+              />
+              Also delete {newCount} unreviewed new job(s)
+            </label>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={clearing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              disabled={clearing}
+              onClick={(e) => {
+                e.preventDefault();
+                handleClear();
+              }}
+            >
+              {clearing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

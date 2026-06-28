@@ -34,10 +34,37 @@ function termInText(text: string, term: string): boolean {
   return re.test(text);
 }
 
-// "Remote" always passes. Empty preference = no constraint (gate passes all).
+// Run-local inverse document frequency. A term in most board jobs scores ~0
+// (generic, e.g. "engineer"); a rare term scores ~1 (distinctive, e.g.
+// "kubernetes"). Normalized to 0..1 against the corpus size so it slots into
+// the existing hit-count denominators. Memoized per term; phrases and single
+// tokens both resolve via termInText, matching how scoreJob counts hits.
+export function buildIdf(corpus: JobDetails[]): (term: string) => number {
+  const haystacks = corpus.map(
+    (job) => `${job.title} ${job.description}`.toLowerCase(),
+  );
+  const n = haystacks.length;
+  const denom = Math.log(n + 1);
+  const cache = new Map<string, number>();
+
+  return (term: string): number => {
+    if (n === 0 || denom === 0) return 1; // no corpus -> neutral (count behavior)
+    const key = term.trim().toLowerCase();
+    if (!key) return 0;
+    const cached = cache.get(key);
+    if (cached !== undefined) return cached;
+    let df = 0;
+    for (const h of haystacks) if (termInText(h, key)) df++;
+    const idf = Math.log((n + 1) / (df + 1)) / denom; // 0..1
+    cache.set(key, idf);
+    return idf;
+  };
+}
+
+// Empty preference = no constraint (gate passes all). "Remote" is not special:
+// it only matches when the user explicitly lists it as a wanted location.
 export function locationMatches(jobLocation: string, wanted: string[]): boolean {
   const loc = (jobLocation || "").toLowerCase();
-  if (loc.includes("remote")) return true;
   if (!wanted || wanted.length === 0) return true;
   return wanted.some((w) => {
     const ww = w.trim().toLowerCase();
@@ -63,6 +90,7 @@ export function scoreJob(
   keywords: string[],
   resumeSkills: string[],
   locations: string[],
+  idf: (term: string) => number = () => 1,
 ): { score: number; components: PrerankComponents } {
   const targetTokens = new Set<string>();
   for (const title of targetTitles) {
@@ -81,8 +109,15 @@ export function scoreJob(
     termInText(haystack, term),
   );
 
-  const titleScore = Math.min(1, titleHits.length / 2);
-  const keywordScore = Math.min(1, keywordHits.length / 3);
+  // Each hit weighted by term rarity (idf); generic tokens contribute ~0.
+  const titleWeight = titleHits.reduce((sum, t) => sum + idf(t), 0);
+  const keywordWeight = keywordHits.reduce((sum, t) => sum + idf(t), 0);
+  const titleScore = Math.min(1, titleWeight / 2);
+  const keywordScore = Math.min(1, keywordWeight / 3);
+
+  // Location is not part of the relevance score (it says nothing about job fit);
+  // it only feeds the optional strict-location gate. Kept in components purely
+  // as an informational signal for the pre-rank breakdown UI.
   const locScore =
     locations.length === 0
       ? 0
@@ -93,7 +128,6 @@ export function scoreJob(
   const score =
     APP_CONSTANTS.GREENHOUSE_TITLE_WEIGHT * titleScore +
     APP_CONSTANTS.GREENHOUSE_SKILL_WEIGHT * keywordScore +
-    APP_CONSTANTS.GREENHOUSE_LOC_WEIGHT * locScore +
     recencyTiebreak(job.postedDate);
 
   return {

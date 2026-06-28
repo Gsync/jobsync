@@ -7,7 +7,8 @@ export type AutomationRunStatus =
   | "failed"
   | "completed_with_errors"
   | "blocked"
-  | "rate_limited";
+  | "rate_limited"
+  | "cancelled";
 export type DiscoveryStatus = "new" | "accepted" | "dismissed";
 export type JobBoard = "jsearch" | "greenhouse";
 

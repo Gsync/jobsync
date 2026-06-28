@@ -30,6 +30,7 @@ import {
   analyzeDiscoveredJob,
 } from "@/actions/automation.actions";
 import { MatchDetails } from "./MatchDetails";
+import { PrerankBreakdown } from "./PrerankBreakdown";
 import { TipTapContentViewer } from "@/components/TipTapContentViewer";
 
 interface DiscoveredJobDetailProps {
@@ -178,6 +179,13 @@ export function DiscoveredJobDetail({
                 </span>
               )}
             </div>
+
+            {matchData?.prerankScore != null && (
+              <PrerankBreakdown
+                prerankScore={matchData.prerankScore}
+                components={matchData.prerankComponents}
+              />
+            )}
 
             <div>
               <h4 className="font-medium mb-2">Description</h4>

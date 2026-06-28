@@ -140,6 +140,7 @@ interface ResumeWithSections extends PrismaResume {
 
 export async function runAutomation(
   automation: Automation,
+  signal?: AbortSignal,
 ): Promise<RunnerResult> {
   console.log(`[Automation ${automation.id}] Starting automation run`);
   automationLogger.startRun(automation.id);
@@ -217,6 +218,7 @@ export async function runAutomation(
         automation,
         run.id,
         resume as ResumeWithSections,
+        signal,
       );
     }
 
@@ -326,6 +328,11 @@ export async function runAutomation(
 
     // JSearch returns full job details, no separate extraction needed
     for (const job of jobsToProcess) {
+      if (signal?.aborted) {
+        automationLogger.log(automation.id, "warning", "Run aborted by user");
+        break;
+      }
+
       automationLogger.log(
         automation.id,
         "info",
@@ -437,11 +444,13 @@ export async function runAutomation(
       }
     }
 
-    const finalStatus: AutomationRunStatus = aiError
-      ? "failed"
-      : jobsProcessed < jobsToProcess.length
-        ? "completed_with_errors"
-        : "completed";
+    const finalStatus: AutomationRunStatus = signal?.aborted
+      ? "cancelled"
+      : aiError
+        ? "failed"
+        : jobsProcessed < jobsToProcess.length
+          ? "completed_with_errors"
+          : "completed";
 
     automationLogger.log(
       automation.id,
@@ -555,7 +564,6 @@ function extractResumeSkills(resume: ResumeWithSections): string[] {
 const PRERANK_MAX =
   APP_CONSTANTS.GREENHOUSE_TITLE_WEIGHT +
   APP_CONSTANTS.GREENHOUSE_SKILL_WEIGHT +
-  APP_CONSTANTS.GREENHOUSE_LOC_WEIGHT +
   0.01;
 
 function scalePrerank(raw: number): number {
@@ -592,6 +600,7 @@ async function runGreenhouseRun(
   automation: Automation,
   runId: string,
   resume: ResumeWithSections,
+  signal?: AbortSignal,
 ): Promise<RunnerResult> {
   const config = parseGreenhouseConfig(automation.sourceConfig);
 
@@ -657,8 +666,27 @@ async function runGreenhouseRun(
       { jobsDeduplicated },
     );
 
+    if (jobsDeduplicated === 0) {
+      automationLogger.log(
+        automation.id,
+        "info",
+        "[Greenhouse] All fetched jobs already saved — nothing new to process",
+      );
+      automationLogger.endRun(automation.id);
+      return await finalizeRun(runId, {
+        status: "completed",
+        jobsSearched,
+        jobsDeduplicated: 0,
+        jobsProcessed: 0,
+        jobsMatched: 0,
+        jobsSaved: 0,
+      });
+    }
+
     const resumeSkills = extractResumeSkills(resume);
-    const pipeline = runGreenhousePipeline(dedupedJobs, config, resumeSkills);
+    const pipeline = runGreenhousePipeline(dedupedJobs, config, resumeSkills, {
+      corpus: jobs,
+    });
 
     if (config.strictLocation && config.locations.length > 0) {
       automationLogger.log(
@@ -756,6 +784,11 @@ async function runGreenhouseRun(
 
     let analyzeIndex = 0;
     for (const scored of pipeline.toAnalyze) {
+      if (signal?.aborted) {
+        automationLogger.log(automation.id, "warning", "[Greenhouse] Run aborted by user");
+        break;
+      }
+
       analyzeIndex++;
       const saveUnanalyzed = async () => {
         try {
@@ -847,7 +880,7 @@ async function runGreenhouseRun(
     automationLogger.endRun(automation.id);
 
     return await finalizeRun(runId, {
-      status: aiError ? "completed_with_errors" : "completed",
+      status: signal?.aborted ? "cancelled" : aiError ? "completed_with_errors" : "completed",
       errorMessage: aiError || undefined,
       funnelStats: buildFunnel(analyzed, highlighted),
       jobsSearched,
