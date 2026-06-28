@@ -26,6 +26,7 @@ export const TipTapContentViewer = ({ content }: { content: string }) => {
     ],
     content: "",
     editable: false,
+    immediatelyRender: false,
   });
   useEffect(() => {
     editor?.commands.setContent(content);

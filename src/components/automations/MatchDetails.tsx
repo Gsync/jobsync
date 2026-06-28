@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import MarkdownIt from "markdown-it";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -56,7 +57,16 @@ export function MatchDetails({ matchData, discoveredAt }: MatchDetailsProps) {
         {matchData.resumeTitle && (
           <p>
             Matched with resume:{" "}
-            <span className="font-medium">{matchData.resumeTitle}</span>
+            {matchData.resumeId ? (
+              <Link
+                href={`/dashboard/profile/resume/${matchData.resumeId}`}
+                className="font-medium underline hover:text-foreground"
+              >
+                {matchData.resumeTitle}
+              </Link>
+            ) : (
+              <span className="font-medium">{matchData.resumeTitle}</span>
+            )}
           </p>
         )}
         {matchData.provider && (

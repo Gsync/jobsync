@@ -324,10 +324,13 @@ export default function AutomationDetailPage() {
                   Missing
                 </p>
               ) : (
-                <p className="font-medium flex items-center gap-1">
+                <Link
+                  href={`/dashboard/profile/resume/${automation.resume.id}`}
+                  className="font-medium flex items-center gap-1 hover:underline"
+                >
                   <FileText className="h-4 w-4" />
                   {automation.resume.title}
-                </p>
+                </Link>
               )}
             </div>
             <div>
