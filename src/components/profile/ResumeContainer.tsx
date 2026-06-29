@@ -362,15 +362,21 @@ function ResumeContainer({ resume }: { resume: Resume }) {
   // Aborts the in-flight import fetch so the server stops the LLM generation
   // when the user navigates away or the component unmounts.
   const importAbortRef = useRef<AbortController | null>(null);
+  // Holds the model for an auto-import triggered from the create dialog so it
+  // survives a Strict Mode remount after the sessionStorage key is consumed.
+  const pendingAutoImportRef = useRef<AiModel | null>(null);
 
   // Runs the import stream, rendering cards progressively as they arrive.
+  // The caller owns the AbortController so each invocation is independent —
+  // this keeps the callback stable and survives React Strict Mode's
+  // mount/unmount/remount of the auto-start effect (aborted run is discarded,
+  // the remounted run completes).
   const runImport = useCallback(
-    async (model: AiModel) => {
+    async (model: AiModel, abortController: AbortController) => {
       const resumeId = resume.id;
-      if (!resumeId || isStructuring) return;
+      if (!resumeId) return;
       setIsStructuring(true);
       setImportMode(true);
-      const abortController = new AbortController();
       importAbortRef.current = abortController;
       try {
         const { data, truncated } = await streamResumeImport({
@@ -378,11 +384,13 @@ function ResumeContainer({ resume }: { resume: Resume }) {
           selectedModel: model,
           signal: abortController.signal,
           onPartial: (partial) => {
+            if (abortController.signal.aborted) return;
             const cards = buildPendingCards(partial);
             if (cards.length > 0) setPendingCards(cards);
           },
         });
 
+        if (abortController.signal.aborted) return;
         const cards = buildPendingCards(data);
         if (cards.length === 0) {
           setImportMode(false);
@@ -414,10 +422,14 @@ function ResumeContainer({ resume }: { resume: Resume }) {
         if (importAbortRef.current === abortController) {
           importAbortRef.current = null;
         }
-        setIsStructuring(false);
+        // Don't reset on an aborted run: a concurrent (remounted) run may be
+        // live and still structuring.
+        if (!abortController.signal.aborted) {
+          setIsStructuring(false);
+        }
       }
     },
-    [resume.id, isStructuring],
+    [resume.id],
   );
 
   // Abort any in-flight import when the component unmounts.
@@ -425,21 +437,30 @@ function ResumeContainer({ resume }: { resume: Resume }) {
     return () => importAbortRef.current?.abort();
   }, []);
 
-  // Auto-start the import stream when arriving from the create dialog
+  // Auto-start the import stream when arriving from the create dialog.
+  // The pending model is captured into a ref (not re-read from sessionStorage)
+  // so the request survives Strict Mode's remount even though the storage key
+  // is consumed on first read. Each run owns its controller and aborts only
+  // that controller on cleanup — the canonical mount/abort pattern.
   useEffect(() => {
     if (!resume.id) return;
     const key = `import-pending:${resume.id}`;
     const stored = sessionStorage.getItem(key);
-    if (!stored) return;
-    sessionStorage.removeItem(key);
-    try {
-      const { selectedModel } = JSON.parse(stored) as {
-        selectedModel: AiModel;
-      };
-      runImport(selectedModel);
-    } catch {
-      // Malformed sessionStorage entry — ignore
+    if (stored) {
+      sessionStorage.removeItem(key);
+      try {
+        pendingAutoImportRef.current = (
+          JSON.parse(stored) as { selectedModel: AiModel }
+        ).selectedModel;
+      } catch {
+        // Malformed sessionStorage entry — ignore
+      }
     }
+    const model = pendingAutoImportRef.current;
+    if (!model) return;
+    const controller = new AbortController();
+    runImport(model, controller);
+    return () => controller.abort();
   }, [resume.id, runImport]);
 
   // Tab-close guard while pending cards exist
@@ -507,7 +528,7 @@ function ResumeContainer({ resume }: { resume: Resume }) {
     }
   };
 
-  const handleStructureWithAI = () => runImport(aiModel);
+  const handleStructureWithAI = () => runImport(aiModel, new AbortController());
 
   const triggerDownload = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
