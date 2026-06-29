@@ -765,3 +765,24 @@ export async function getAutomationRuns(
     return formatError(error, "Failed to get automation runs");
   }
 }
+
+export async function deleteAutomationRun(
+  runId: string,
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return { success: false, message: "Not authenticated" };
+
+    // Ownership check via automation -> userId
+    const run = await db.automationRun.findFirst({
+      where: { id: runId, automation: { userId: user.id } },
+    });
+
+    if (!run) return { success: false, message: "Run not found" };
+
+    await db.automationRun.delete({ where: { id: runId } });
+    return { success: true };
+  } catch (error) {
+    return formatError(error, "Failed to delete run");
+  }
+}

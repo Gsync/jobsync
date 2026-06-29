@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
 import {
@@ -50,7 +50,13 @@ import Loading from "@/components/Loading";
 export default function AutomationDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const automationId = params.id as string;
+  const activeTab = searchParams.get("tab") ?? "logs";
+
+  const handleTabChange = (tab: string) => {
+    router.replace(`?tab=${tab}`, { scroll: false });
+  };
 
   const [automation, setAutomation] = useState<AutomationWithResume | null>(
     null,
@@ -247,9 +253,13 @@ export default function AutomationDetailPage() {
         </Button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold">{automation.name}</h1>
-          <p className="text-muted-foreground">
-            {automation.keywords} in {automation.location}
-          </p>
+          {(automation.keywords || automation.location) && (
+            <p className="text-muted-foreground">
+              {[automation.keywords, automation.location]
+                .filter(Boolean)
+                .join(" in ")}
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="icon" onClick={loadData}>
@@ -364,7 +374,7 @@ export default function AutomationDetailPage() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="logs">
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="logs">Logs</TabsTrigger>
           <TabsTrigger value="jobs">
@@ -389,7 +399,7 @@ export default function AutomationDetailPage() {
           />
         </TabsContent>
         <TabsContent value="history" className="mt-4">
-          <RunHistoryList runs={runs} />
+          <RunHistoryList runs={runs} onDelete={loadData} />
         </TabsContent>
       </Tabs>
 
