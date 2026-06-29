@@ -57,6 +57,12 @@ export async function GET(
         controller.close();
       };
 
+      // Tell EventSource to wait a long time before auto-reconnecting. When a
+      // run finishes the server closes the stream; without this the browser
+      // reconnects every ~1s in a loop, because the completed log store lingers
+      // for the retention window and each reconnect closes again immediately.
+      controller.enqueue(encoder.encode("retry: 86400000\n\n"));
+
       // Send initial logs
       const store = automationLogger.getStore(automationId);
       if (store) {
@@ -88,9 +94,14 @@ export async function GET(
           });
           controller.enqueue(encoder.encode(`data: ${data}\n\n`));
 
-          // Stop streaming if run is completed
+          // Run finished: the final snapshot has now been sent. Stop polling but
+          // do NOT close the stream here — closing in the same tick as the final
+          // enqueue can truncate it before the client receives isRunning=false,
+          // leaving the badge stuck on "Running". The client closes the stream
+          // itself once it sees the completed snapshot; the 10-min timeout is the
+          // backstop. (Not closing also avoids the EventSource reconnect loop.)
           if (!currentStore.isRunning && currentStore.completedAt) {
-            cleanup();
+            clearInterval(interval);
           }
         }
       }, 1000);

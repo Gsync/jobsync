@@ -29,6 +29,7 @@ import {
 import { getResumeById } from "@/actions/profile.actions";
 import { getJobDetails } from "@/actions/job.actions";
 import { defaultUserSettings } from "@/models/userSettings.model";
+import { automationLogger } from "@/lib/automation-logger";
 
 
 function formatError(error: unknown, fallback: string): { success: false; message: string } {
@@ -640,6 +641,14 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
       return { success: false, message: "Discovered job not found" };
     }
 
+    if (job.automationId && automationLogger.isRunning(job.automationId)) {
+      return {
+        success: false,
+        message:
+          "A run is in progress for this automation. Please wait until it completes before analyzing jobs.",
+      };
+    }
+
     const resumeId = job.automation?.resumeId;
     if (!resumeId) {
       return { success: false, message: "Automation resume is missing" };
@@ -781,6 +790,13 @@ export async function deleteAutomationRun(
     if (!run) return { success: false, message: "Run not found" };
 
     await db.automationRun.delete({ where: { id: runId } });
+
+    // Clear this automation's in-memory logs alongside the run history, unless a
+    // run is currently in flight (whose live logs we must not wipe).
+    if (!automationLogger.isRunning(run.automationId)) {
+      automationLogger.clearLogs(run.automationId);
+    }
+
     return { success: true };
   } catch (error) {
     return formatError(error, "Failed to delete run");

@@ -14,6 +14,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { buttonVariants } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import {
   ArrowLeft,
@@ -25,7 +36,6 @@ import {
   FileText,
   AlertTriangle,
   PlayCircle,
-  Square,
 } from "lucide-react";
 import {
   getAutomationById,
@@ -44,7 +54,7 @@ import type { JobMatchData } from "@/models/ai.schemas";
 import { DiscoveredJobsList } from "@/components/automations/DiscoveredJobsList";
 import { DiscoveredJobDetail } from "@/components/automations/DiscoveredJobDetail";
 import { RunHistoryList } from "@/components/automations/RunHistoryList";
-import { LogsTab } from "@/components/automations/LogsTab";
+import { LogsTab, type LogData } from "@/components/automations/LogsTab";
 import Loading from "@/components/Loading";
 
 export default function AutomationDetailPage() {
@@ -66,15 +76,30 @@ export default function AutomationDetailPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [runNowLoading, setRunNowLoading] = useState(false);
+  const [aborting, setAborting] = useState(false);
+  const [abortConfirmOpen, setAbortConfirmOpen] = useState(false);
+  const [jobsBusy, setJobsBusy] = useState(false);
   const [selectedJob, setSelectedJob] = useState<DiscoveredJob | null>(null);
   const [selectedJobMatchData, setSelectedJobMatchData] =
     useState<JobMatchData | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [runKey, setRunKey] = useState(0);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  // The latest run id at the moment a manual run is started, so the watcher can
+  // tell the newly-created background run apart from the prior one.
+  const prevLatestRunIdRef = useRef<string | null>(null);
+  // Live run logs/status from the /logs SSE. Owned here (not in LogsTab) so the
+  // connection survives tab switches and the "Running" status stays visible in
+  // the header regardless of which tab is open.
+  const [logData, setLogData] = useState<LogData>({
+    logs: [],
+    isRunning: false,
+  });
+  // Tracks whether the freshly-requested run has actually gone live on this
+  // connection, so we don't latch onto the previous run's completed snapshot.
+  const seenRunningRef = useRef(false);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (showLoading = false) => {
+    if (showLoading) setLoading(true);
     try {
       const [automationResult, runsResult, jobsResult] = await Promise.all([
         getAutomationById(automationId),
@@ -109,12 +134,72 @@ export default function AutomationDetailPage() {
         variant: "destructive",
       });
     }
-    setLoading(false);
+    if (showLoading) setLoading(false);
   }, [automationId, router]);
 
   useEffect(() => {
-    loadData();
+    // Only the initial load shows the full-page spinner. Background refreshes
+    // (run watcher, pause/resume, deletes) must not unmount the page — doing so
+    // remounts LogsTab while runKey is still > 0, which re-initializes its badge
+    // to "Running" and then rejects the completed SSE snapshot.
+    loadData(true);
   }, [loadData]);
+
+  // Subscribe to the live log/status stream at the page level so it persists
+  // across tab switches. runKey bumps on Run Now to follow the new run.
+  useEffect(() => {
+    if (runKey > 0) {
+      setLogData({ logs: [], isRunning: true });
+      seenRunningRef.current = false;
+    }
+
+    const eventSource = new EventSource(
+      `/api/automations/${automationId}/logs`,
+    );
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data: LogData = JSON.parse(event.data);
+        if (data.isRunning) seenRunningRef.current = true;
+
+        // Right after requesting a new run, the server may still be serving the
+        // previous run's completed snapshot (or an empty store). Ignore those
+        // until the new run goes live so we don't show stale logs or close early.
+        if (runKey > 0 && !seenRunningRef.current && !data.isRunning) {
+          return;
+        }
+
+        setLogData(data);
+        // Close once the run is done so EventSource doesn't loop on reconnect.
+        // On a fresh run (runKey>0) only close after it has gone live, so a
+        // stale completed snapshot doesn't shut the stream before logs arrive.
+        if (
+          !data.isRunning &&
+          data.completedAt &&
+          (seenRunningRef.current || runKey === 0)
+        ) {
+          eventSource.close();
+        }
+      } catch (err) {
+        console.error("Failed to parse log data:", err);
+      }
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [automationId, runKey]);
+
+  const handleClearLogs = useCallback(async () => {
+    try {
+      await fetch(`/api/automations/${automationId}/logs/clear`, {
+        method: "POST",
+      });
+    } catch (err) {
+      console.error("Failed to clear server logs:", err);
+    }
+    setLogData({ logs: [], isRunning: false });
+  }, [automationId]);
 
   const refreshJobs = useCallback(async () => {
     const jobsResult = await getDiscoveredJobs({ automationId });
@@ -159,58 +244,92 @@ export default function AutomationDetailPage() {
     }
   };
 
+  // The run executes in the background on the server, so the /run request
+  // returns immediately. Watch the run record until it reaches a terminal
+  // status, then surface the outcome and refresh the tabs.
+  useEffect(() => {
+    if (!runNowLoading) return;
+    let stopped = false;
+
+    const poll = async () => {
+      const res = await getAutomationRuns(automationId);
+      if (stopped || !res.success || !res.data) return;
+      const latest = res.data[0];
+      // Wait for the new background run row to appear (different id from the run
+      // that was latest when we started), so we don't read the prior run's
+      // already-terminal status as this run's completion.
+      if (!latest || latest.id === prevLatestRunIdRef.current) return;
+      if (latest.status === "running" || latest.status === "cancelling") return;
+      stopped = true;
+      setRunNowLoading(false);
+      setAborting(false);
+      // Run is terminal; drop the live-follow signal so a later LogsTab remount
+      // (e.g. switching tabs) doesn't re-init its badge to "Running".
+      setRunKey(0);
+      toast({
+        title:
+          latest.status === "cancelled"
+            ? "Run cancelled"
+            : "Automation run complete",
+        description: `Saved ${latest.jobsSaved} new jobs`,
+      });
+      loadData();
+    };
+
+    const interval = setInterval(poll, 2000);
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+    };
+  }, [runNowLoading, automationId, loadData]);
+
   const handleRunNow = async () => {
     if (!automation) return;
 
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
+    prevLatestRunIdRef.current = runs[0]?.id ?? null;
     setRunNowLoading(true);
+    setAborting(false);
+    // Signal the Logs tab to reconnect and follow this new run. The server's
+    // startRun replaces the in-memory store, and LogsTab ignores the prior
+    // run's completed snapshot until this run goes live.
     setRunKey((prev) => prev + 1);
+
     try {
       const response = await fetch(`/api/automations/${automation.id}/run`, {
         method: "POST",
-        signal: controller.signal,
       });
-
       const data = await response.json();
 
-      if (response.ok && data.success) {
-        const statusMsg =
-          data.run.status === "cancelled"
-            ? "Run cancelled"
-            : "Automation run complete";
-        toast({
-          title: statusMsg,
-          description: `Saved ${data.run.jobsSaved} new jobs`,
-        });
-        loadData();
-      } else {
+      if (!response.ok || !data.success) {
+        setRunNowLoading(false);
         toast({
           title: "Error",
-          description: data.message || "Failed to run automation",
+          description: data.message || "Failed to start run",
           variant: "destructive",
         });
       }
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        toast({ title: "Run aborted" });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to run automation",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      abortControllerRef.current = null;
+      // On success the run is running in the background; the watcher effect
+      // above handles completion.
+    } catch {
       setRunNowLoading(false);
-      loadData();
+      toast({
+        title: "Error",
+        description: "Failed to start run",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleAbortRun = () => {
-    abortControllerRef.current?.abort();
+  const handleAbortRun = async () => {
+    if (!automation) return;
+    setAbortConfirmOpen(false);
+    setAborting(true);
+    // Flag the run in the DB; the background runner polls this flag, aborts the
+    // in-flight LLM call, and finalizes the run as cancelled. The watcher effect
+    // detects the terminal status.
+    await fetch(`/api/automations/${automation.id}/cancel`, {
+      method: "POST",
+    }).catch(() => {});
   };
 
   const handleViewJobDetails = async (job: DiscoveredJob) => {
@@ -262,7 +381,7 @@ export default function AutomationDetailPage() {
           )}
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={loadData}>
+          <Button variant="outline" size="icon" onClick={() => loadData(true)}>
             <RefreshCw className="h-4 w-4" />
           </Button>
           <Button
@@ -280,15 +399,26 @@ export default function AutomationDetailPage() {
             {automation.status === "active" ? "Pause" : "Resume"}
           </Button>
           {runNowLoading ? (
-            <Button variant="destructive" onClick={handleAbortRun}>
-              <Square className="h-4 w-4 mr-2" />
-              Abort Run
+            <Button
+              variant="destructive"
+              onClick={() => setAbortConfirmOpen(true)}
+              disabled={aborting}
+            >
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              {aborting ? "Aborting…" : "Abort Run"}
             </Button>
           ) : (
             <Button
               variant="outline"
               onClick={handleRunNow}
-              disabled={resumeMissing || automation.status === "paused"}
+              disabled={
+                resumeMissing || automation.status === "paused" || jobsBusy
+              }
+              title={
+                jobsBusy
+                  ? "Wait for the in-progress job analysis to finish"
+                  : undefined
+              }
             >
               <PlayCircle className="h-4 w-4 mr-2" />
               Run Now
@@ -302,14 +432,21 @@ export default function AutomationDetailPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">Status</p>
-              <Badge
-                variant={
-                  automation.status === "active" ? "default" : "secondary"
-                }
-                className="mt-1"
-              >
-                {automation.status}
-              </Badge>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <Badge
+                  variant={
+                    automation.status === "active" ? "default" : "secondary"
+                  }
+                >
+                  {automation.status}
+                </Badge>
+                {logData.isRunning && (
+                  <Badge variant="default" className="gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Running
+                  </Badge>
+                )}
+              </div>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Job Board</p>
@@ -388,7 +525,7 @@ export default function AutomationDetailPage() {
           <TabsTrigger value="history">Run History</TabsTrigger>
         </TabsList>
         <TabsContent value="logs" className="mt-4">
-          <LogsTab automationId={automationId} runKey={runKey} />
+          <LogsTab logData={logData} onClearLogs={handleClearLogs} />
         </TabsContent>
         <TabsContent value="jobs" className="mt-4">
           <DiscoveredJobsList
@@ -396,6 +533,8 @@ export default function AutomationDetailPage() {
             automationId={automationId}
             onRefresh={loadData}
             onViewDetails={handleViewJobDetails}
+            runInProgress={runNowLoading}
+            onBusyChange={setJobsBusy}
           />
         </TabsContent>
         <TabsContent value="history" className="mt-4">
@@ -410,6 +549,30 @@ export default function AutomationDetailPage() {
         onOpenChange={setDetailOpen}
         onRefresh={loadData}
       />
+
+      <AlertDialog open={abortConfirmOpen} onOpenChange={setAbortConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Abort this run?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The run will stop after the current step. Jobs already discovered
+              are kept; remaining jobs won&apos;t be processed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep running</AlertDialogCancel>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={(e) => {
+                e.preventDefault();
+                handleAbortRun();
+              }}
+            >
+              Abort run
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

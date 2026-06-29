@@ -3,6 +3,7 @@
 export type AutomationStatus = "active" | "paused";
 export type AutomationRunStatus =
   | "running"
+  | "cancelling"
   | "completed"
   | "failed"
   | "completed_with_errors"

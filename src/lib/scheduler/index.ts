@@ -42,6 +42,21 @@ async function runDueAutomations() {
         continue;
       }
 
+      // Skip if a run (manual or scheduled) is already in flight for this
+      // automation. Logger/cancel state is keyed by automationId, so overlapping
+      // runs would clobber each other.
+      const activeRun = await db.automationRun.findFirst({
+        where: {
+          automationId: automation.id,
+          status: { in: ["running", "cancelling"] },
+        },
+        select: { id: true },
+      });
+      if (activeRun) {
+        console.log(`[Scheduler] Skipping automation ${automation.id} - run already in progress`);
+        continue;
+      }
+
       try {
         console.log(`[Scheduler] Running automation: ${automation.name}`);
         const result = await runAutomation({

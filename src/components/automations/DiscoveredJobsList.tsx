@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { format } from "date-fns";
 import {
   Card,
@@ -77,6 +77,12 @@ interface DiscoveredJobsListProps {
   automationId: string;
   onRefresh: () => void;
   onViewDetails?: (job: DiscoveredJob) => void;
+  // True while an automation run is in flight. LLM-triggering actions (Analyze,
+  // Accept of un-analyzed jobs) are blocked to avoid concurrent model calls.
+  runInProgress?: boolean;
+  // Reports whether a per-job LLM action is in flight so the parent can block
+  // starting a new run while a single-job analysis is still processing.
+  onBusyChange?: (busy: boolean) => void;
 }
 
 export function DiscoveredJobsList({
@@ -84,11 +90,17 @@ export function DiscoveredJobsList({
   automationId,
   onRefresh,
   onViewDetails,
+  runInProgress = false,
+  onBusyChange,
 }: DiscoveredJobsListProps) {
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [clearOpen, setClearOpen] = useState(false);
   const [clearIncludeNew, setClearIncludeNew] = useState(false);
   const [clearing, setClearing] = useState(false);
+
+  useEffect(() => {
+    onBusyChange?.(loadingAction !== null);
+  }, [loadingAction, onBusyChange]);
 
   const dismissedCount = jobs.filter(
     (j) => j.discoveryStatus === "dismissed",
@@ -316,7 +328,12 @@ export function DiscoveredJobsList({
                         size="sm"
                         variant="outline"
                         onClick={() => handleAnalyze(job.id)}
-                        disabled={isLoading}
+                        disabled={isLoading || runInProgress}
+                        title={
+                          runInProgress
+                            ? "A run is in progress. Wait until it completes."
+                            : undefined
+                        }
                       >
                         {isLoading ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -352,7 +369,12 @@ export function DiscoveredJobsList({
                           size="sm"
                           variant="outline"
                           onClick={() => handleAccept(job)}
-                          disabled={isLoading}
+                          disabled={isLoading || (runInProgress && !analyzed)}
+                          title={
+                            runInProgress && !analyzed
+                              ? "A run is in progress. Wait until it completes."
+                              : undefined
+                          }
                         >
                           {isLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />

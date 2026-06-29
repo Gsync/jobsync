@@ -3,7 +3,7 @@ import "server-only";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import db from "@/lib/db";
-import { runAutomation, type RunnerResult } from "@/lib/scraper";
+import { runAutomation } from "@/lib/scraper";
 import type { JobBoard } from "@/models/automation.model";
 import { APP_CONSTANTS } from "@/lib/constants";
 
@@ -26,7 +26,7 @@ function checkRateLimit(userId: string): boolean {
 }
 
 export async function POST(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
@@ -67,41 +67,47 @@ export async function POST(
       );
     }
 
-    const result: RunnerResult = await runAutomation(
-      {
-        id: automation.id,
-        userId: automation.userId,
-        name: automation.name,
-        jobBoard: automation.jobBoard as JobBoard,
-        keywords: automation.keywords,
-        location: automation.location,
-        sourceConfig: automation.sourceConfig,
-        resumeId: automation.resumeId,
-        matchThreshold: automation.matchThreshold,
-        scheduleHour: automation.scheduleHour,
-        nextRunAt: automation.nextRunAt,
-        lastRunAt: automation.lastRunAt,
-        status: automation.status as "active" | "paused",
-        createdAt: automation.createdAt,
-        updatedAt: automation.updatedAt,
-      },
-      req.signal,
-    );
-
-    return NextResponse.json({
-      success: true,
-      run: {
-        id: result.runId,
-        status: result.status,
-        jobsSearched: result.jobsSearched,
-        jobsDeduplicated: result.jobsDeduplicated,
-        jobsProcessed: result.jobsProcessed,
-        jobsMatched: result.jobsMatched,
-        jobsSaved: result.jobsSaved,
-        errorMessage: result.errorMessage,
-        blockedReason: result.blockedReason,
-      },
+    // Single-flight per automation. The logger/cancel state is keyed by
+    // automationId, so two overlapping runs of the same automation would clobber
+    // each other's logs, complete prematurely, and cross-cancel.
+    const activeRun = await db.automationRun.findFirst({
+      where: { automationId, status: { in: ["running", "cancelling"] } },
+      select: { id: true },
     });
+
+    if (activeRun) {
+      return NextResponse.json(
+        { success: false, message: "A run is already in progress for this automation." },
+        { status: 409 }
+      );
+    }
+
+    // Fire-and-forget: run in the background and return immediately. Keeping the
+    // request alive for the whole run blocked the dev server from servicing the
+    // /cancel request concurrently (and req.signal disconnect was unreliable).
+    // Cancellation now flows purely through the DB flag, which the runner polls.
+    // The client watches progress/completion via the /logs SSE and run history.
+    void runAutomation({
+      id: automation.id,
+      userId: automation.userId,
+      name: automation.name,
+      jobBoard: automation.jobBoard as JobBoard,
+      keywords: automation.keywords,
+      location: automation.location,
+      sourceConfig: automation.sourceConfig,
+      resumeId: automation.resumeId,
+      matchThreshold: automation.matchThreshold,
+      scheduleHour: automation.scheduleHour,
+      nextRunAt: automation.nextRunAt,
+      lastRunAt: automation.lastRunAt,
+      status: automation.status as "active" | "paused",
+      createdAt: automation.createdAt,
+      updatedAt: automation.updatedAt,
+    }).catch((err) => {
+      console.error("Background automation run failed:", err);
+    });
+
+    return NextResponse.json({ success: true, started: true });
   } catch (error) {
     console.error("Manual run error:", error);
     const message = error instanceof Error ? error.message : "Run failed";

@@ -159,6 +159,43 @@ export async function runAutomation(
     `Created automation run with ID: ${run.id}`,
   );
 
+  // Abort the run from two sources: the request connection dropping, and a
+  // user cancel flag (polled). The cancel flag lives on automationLogger — the
+  // same shared singleton the SSE reads — so it is reliably visible here even
+  // though the cancel request arrives on a different route. Aborting the
+  // controller propagates into the in-flight LLM call (abortSignal).
+  const controller = new AbortController();
+  const onParentAbort = () => controller.abort();
+  if (signal) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener("abort", onParentAbort);
+  }
+  let dbCancelCheckInFlight = false;
+  const cancelPoll = setInterval(() => {
+    if (controller.signal.aborted) return;
+
+    // Fast path: in-memory flag (only works when /cancel shares this process).
+    if (automationLogger.isCancelRequested(automation.id)) {
+      controller.abort();
+      return;
+    }
+
+    // Reliable path: the /cancel route flips the run row to "cancelling". This
+    // survives module/process boundaries where the in-memory flag does not.
+    if (dbCancelCheckInFlight) return;
+    dbCancelCheckInFlight = true;
+    db.automationRun
+      .findUnique({ where: { id: run.id }, select: { status: true } })
+      .then((row) => {
+        if (row?.status === "cancelling") controller.abort();
+      })
+      .catch(() => {})
+      .finally(() => {
+        dbCancelCheckInFlight = false;
+      });
+  }, 500);
+  const effectiveSignal = controller.signal;
+
   try {
     automationLogger.log(automation.id, "info", "Fetching resume data...");
 
@@ -218,7 +255,7 @@ export async function runAutomation(
         automation,
         run.id,
         resume as ResumeWithSections,
-        signal,
+        effectiveSignal,
       );
     }
 
@@ -328,7 +365,7 @@ export async function runAutomation(
 
     // JSearch returns full job details, no separate extraction needed
     for (const job of jobsToProcess) {
-      if (signal?.aborted) {
+      if (effectiveSignal.aborted) {
         automationLogger.log(automation.id, "warning", "Run aborted by user");
         break;
       }
@@ -355,7 +392,14 @@ export async function runAutomation(
         automation.jobBoard as JobBoard,
         aiSettings,
         automation.userId,
+        effectiveSignal,
       );
+
+      // Abort may have fired mid-call; bail before saving this job.
+      if (effectiveSignal.aborted) {
+        automationLogger.log(automation.id, "warning", "Run aborted by user");
+        break;
+      }
 
       if (!matchResult.success) {
         if (matchResult.error === "ai_unavailable") {
@@ -444,7 +488,7 @@ export async function runAutomation(
       }
     }
 
-    const finalStatus: AutomationRunStatus = signal?.aborted
+    const finalStatus: AutomationRunStatus = effectiveSignal.aborted
       ? "cancelled"
       : aiError
         ? "failed"
@@ -482,6 +526,20 @@ export async function runAutomation(
       jobsSaved,
     });
   } catch (error) {
+    // An abort surfaces here as an AbortError; finalize as cancelled, not failed.
+    if (effectiveSignal.aborted || (error instanceof Error && error.name === "AbortError")) {
+      automationLogger.log(automation.id, "warning", "Run aborted by user");
+      automationLogger.endRun(automation.id);
+      return await finalizeRun(run.id, {
+        status: "cancelled",
+        jobsSearched: 0,
+        jobsDeduplicated: 0,
+        jobsProcessed: 0,
+        jobsMatched: 0,
+        jobsSaved: 0,
+      });
+    }
+
     const message = error instanceof Error ? error.message : "Unknown error";
     automationLogger.log(
       automation.id,
@@ -500,6 +558,9 @@ export async function runAutomation(
       jobsMatched: 0,
       jobsSaved: 0,
     });
+  } finally {
+    clearInterval(cancelPoll);
+    if (signal) signal.removeEventListener("abort", onParentAbort);
   }
 }
 
@@ -729,10 +790,20 @@ async function runGreenhouseRun(
     };
 
     if (pipeline.funnel.relevant === 0) {
+      let reason: string;
+      if (pipeline.funnel.located === 0) {
+        reason = `none of the ${jobsDeduplicated} new job(s) matched your location filter (${config.locations.join(", ")})`;
+      } else {
+        const checked = pipeline.funnel.located ?? jobsDeduplicated;
+        const criteria = config.targetTitles.length > 0
+          ? `target titles (${config.targetTitles.join(", ")})`
+          : "your search criteria";
+        reason = `${checked} new job(s) were ranked but none matched ${criteria} closely enough to clear the relevance threshold`;
+      }
       automationLogger.log(
         automation.id,
         "warning",
-        "[Greenhouse] No new relevant jobs found — run complete",
+        `[Greenhouse] No relevant jobs found — ${reason}. Run complete.`,
       );
       automationLogger.endRun(automation.id);
       return await finalizeRun(runId, {
@@ -756,7 +827,15 @@ async function runGreenhouseRun(
     let aiError: string | null = null;
 
     // Save the un-analyzed tier (floor survivors beyond the top-K).
+    if (signal?.aborted) {
+      automationLogger.log(
+        automation.id,
+        "warning",
+        "[Greenhouse] Run aborted by user",
+      );
+    }
     for (const scored of pipeline.toSaveUnanalyzed) {
+      if (signal?.aborted) break;
       try {
         await persistDiscoveredJob(
           automation,
@@ -825,7 +904,18 @@ async function runGreenhouseRun(
         automation.jobBoard,
         aiSettings,
         automation.userId,
+        signal,
       );
+
+      // Abort may have fired mid-call; bail before saving this job.
+      if (signal?.aborted) {
+        automationLogger.log(
+          automation.id,
+          "warning",
+          "[Greenhouse] Run aborted by user",
+        );
+        break;
+      }
 
       if (!matchResult.success) {
         if (matchResult.error === "ai_unavailable") {
@@ -890,6 +980,20 @@ async function runGreenhouseRun(
       jobsSaved,
     });
   } catch (error) {
+    // An abort surfaces here as an AbortError; finalize as cancelled, not failed.
+    if (signal?.aborted || (error instanceof Error && error.name === "AbortError")) {
+      automationLogger.log(automation.id, "warning", "[Greenhouse] Run aborted by user");
+      automationLogger.endRun(automation.id);
+      return await finalizeRun(runId, {
+        status: "cancelled",
+        jobsSearched: 0,
+        jobsDeduplicated: 0,
+        jobsProcessed: 0,
+        jobsMatched: 0,
+        jobsSaved: 0,
+      });
+    }
+
     const message = error instanceof Error ? error.message : "Unknown error";
     automationLogger.log(
       automation.id,
@@ -923,6 +1027,7 @@ async function matchJobToResume(
   sourceBoard: JobBoard,
   aiSettings: AiSettings,
   userId: string,
+  signal?: AbortSignal,
 ): Promise<MatchResult> {
   try {
     const resumeText = await convertResumeForMatch(resume);
@@ -945,6 +1050,7 @@ ${removeHtmlTags(job.description)}
       system: JOB_MATCH_SYSTEM_PROMPT,
       prompt: buildJobMatchPrompt(resumeText, jobText),
       temperature: 0.3,
+      abortSignal: signal,
     });
 
     const { scores, body } = parseJobMatch(result.text);
@@ -962,6 +1068,10 @@ ${removeHtmlTags(job.description)}
       },
     };
   } catch (error) {
+    if (signal?.aborted || (error instanceof Error && error.name === "AbortError")) {
+      return { success: false, score: 0, error: "aborted" };
+    }
+
     const message =
       error instanceof Error ? error.message : "AI matching failed";
     console.error("AI matching error:", message);

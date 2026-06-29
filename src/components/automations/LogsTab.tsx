@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,68 +10,25 @@ import {
   CheckCircle2,
   Info,
   AlertTriangle,
-  Loader2,
   Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import type { AutomationLog, LogLevel } from "@/lib/automation-logger";
 
-interface LogsTabProps {
-  automationId: string;
-  runKey?: number;
-}
-
-interface LogData {
+export interface LogData {
   logs: AutomationLog[];
   isRunning: boolean;
   startedAt?: string;
   completedAt?: string;
 }
 
-export function LogsTab({ automationId, runKey }: LogsTabProps) {
-  const [logData, setLogData] = useState<LogData>({
-    logs: [],
-    isRunning: false,
-  });
+interface LogsTabProps {
+  logData: LogData;
+  onClearLogs: () => void;
+}
+
+export function LogsTab({ logData, onClearLogs }: LogsTabProps) {
   const [filter, setFilter] = useState<LogLevel | "all">("all");
-
-  useEffect(() => {
-    if (runKey > 0) {
-      setLogData({ logs: [], isRunning: true });
-    }
-
-    const eventSource = new EventSource(
-      `/api/automations/${automationId}/logs`,
-    );
-
-    eventSource.onmessage = (event) => {
-      try {
-        const data: LogData = JSON.parse(event.data);
-        setLogData(data);
-        // Close once the run is done so EventSource doesn't loop on reconnect
-        if (!data.isRunning && data.completedAt) {
-          eventSource.close();
-        }
-      } catch (err) {
-        console.error("Failed to parse log data:", err);
-      }
-    };
-
-    return () => {
-      eventSource.close();
-    };
-  }, [automationId, runKey]);
-
-  const handleClearLogs = async () => {
-    try {
-      await fetch(`/api/automations/${automationId}/logs/clear`, {
-        method: "POST",
-      });
-    } catch (err) {
-      console.error("Failed to clear server logs:", err);
-    }
-    setLogData({ logs: [], isRunning: false });
-  };
 
   const filteredLogs =
     filter === "all"
@@ -121,15 +78,7 @@ export function LogsTab({ automationId, runKey }: LogsTabProps) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CardTitle>Automation Logs</CardTitle>
-            {logData.isRunning && (
-              <Badge variant="default" className="gap-1">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Running
-              </Badge>
-            )}
-          </div>
+          <CardTitle>Automation Logs</CardTitle>
           <div className="flex items-center gap-2">
             <div className="flex gap-1">
               <Button
@@ -171,7 +120,7 @@ export function LogsTab({ automationId, runKey }: LogsTabProps) {
             <Button
               size="sm"
               variant="outline"
-              onClick={handleClearLogs}
+              onClick={onClearLogs}
               disabled={logData.logs.length === 0}
             >
               <Trash2 className="h-4 w-4" />

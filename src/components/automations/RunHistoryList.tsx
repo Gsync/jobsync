@@ -35,6 +35,7 @@ import {
   Timer,
   History,
   Square,
+  Loader2,
   Trash2,
 } from "lucide-react";
 import type { AutomationRun, FunnelStage } from "@/models/automation.model";
@@ -59,6 +60,7 @@ function parseFunnel(funnelStats: string | null): FunnelStage[] {
 
 const STATUS_CONFIG = {
   running: { icon: Clock, color: "text-blue-500", variant: "secondary" as const },
+  cancelling: { icon: Loader2, color: "text-amber-500", variant: "secondary" as const },
   completed: { icon: CheckCircle2, color: "text-green-500", variant: "default" as const },
   failed: { icon: XCircle, color: "text-red-500", variant: "destructive" as const },
   completed_with_errors: { icon: AlertCircle, color: "text-amber-500", variant: "secondary" as const },
