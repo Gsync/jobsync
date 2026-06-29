@@ -58,67 +58,67 @@ export function DiscoveredJobDetail({
 
   const handleAnalyze = async () => {
     setLoadingAction("analyze");
-    const result = await analyzeDiscoveredJob(job.id);
-    setLoadingAction(null);
-
-    if (result.success) {
-      toast({ title: "Match analyzed", description: "AI match score is ready." });
-      onOpenChange(false);
-      onRefresh();
-    } else {
-      toast({
-        title: "Error",
-        description: result.message,
-        variant: "destructive",
-      });
+    try {
+      const result = await analyzeDiscoveredJob(job.id);
+      if (result.success) {
+        toast({ title: "Match analyzed", description: "AI match score is ready." });
+        onOpenChange(false);
+        onRefresh();
+      } else {
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to analyze job", variant: "destructive" });
+    } finally {
+      setLoadingAction(null);
     }
   };
 
   const handleAccept = async () => {
     setLoadingAction("accept");
-    if (!analyzed) {
-      const analysis = await analyzeDiscoveredJob(job.id);
-      if (!analysis.success) {
-        setLoadingAction(null);
+    try {
+      const result = await acceptDiscoveredJob(job.id);
+      if (result.success) {
+        toast({ title: "Job accepted", description: "The job has been added to your tracked jobs." });
+        onOpenChange(false);
+        onRefresh();
+      } else {
         toast({
           title: "Error",
-          description: analysis.message,
+          description: result.message,
           variant: "destructive",
         });
-        return;
       }
-    }
-    const result = await acceptDiscoveredJob(job.id);
-    setLoadingAction(null);
-
-    if (result.success) {
-      toast({ title: "Job accepted", description: "The job has been added to your tracked jobs." });
-      onOpenChange(false);
-      onRefresh();
-    } else {
-      toast({
-        title: "Error",
-        description: result.message,
-        variant: "destructive",
-      });
+    } catch {
+      toast({ title: "Error", description: "Failed to accept job", variant: "destructive" });
+    } finally {
+      setLoadingAction(null);
     }
   };
 
   const handleDismiss = async () => {
     setLoadingAction("dismiss");
-    const result = await dismissDiscoveredJob(job.id);
-    setLoadingAction(null);
-
-    if (result.success) {
-      toast({ title: "Job dismissed" });
-      onOpenChange(false);
-      onRefresh();
-    } else {
-      toast({
-        title: "Error",
-        description: result.message,
-        variant: "destructive",
-      });
+    try {
+      const result = await dismissDiscoveredJob(job.id);
+      if (result.success) {
+        toast({ title: "Job dismissed" });
+        onOpenChange(false);
+        onRefresh();
+      } else {
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to dismiss job", variant: "destructive" });
+    } finally {
+      setLoadingAction(null);
     }
   };
 

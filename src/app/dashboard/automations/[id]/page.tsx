@@ -73,6 +73,11 @@ export default function AutomationDetailPage() {
   );
   const [runs, setRuns] = useState<AutomationRun[]>([]);
   const [jobs, setJobs] = useState<DiscoveredJob[]>([]);
+  const [jobStatusCounts, setJobStatusCounts] = useState<{
+    new: number;
+    dismissed: number;
+    accepted: number;
+  }>({ new: 0, dismissed: 0, accepted: 0 });
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [runNowLoading, setRunNowLoading] = useState(false);
@@ -126,6 +131,9 @@ export default function AutomationDetailPage() {
 
       if (jobsResult.success && jobsResult.data) {
         setJobs(jobsResult.data);
+        if (jobsResult.statusCounts) {
+          setJobStatusCounts(jobsResult.statusCounts);
+        }
       }
     } catch (error) {
       toast({
@@ -190,6 +198,20 @@ export default function AutomationDetailPage() {
     };
   }, [automationId, runKey]);
 
+  // When a run is being followed only via the SSE (user navigated away and
+  // back, so runNowLoading is false and the run watcher isn't polling), the
+  // page won't otherwise refresh its tabs when the run ends. Detect the
+  // live->done transition off the stream and reload then.
+  const wasRunningRef = useRef(false);
+  useEffect(() => {
+    if (logData.isRunning) {
+      wasRunningRef.current = true;
+    } else if (wasRunningRef.current) {
+      wasRunningRef.current = false;
+      if (!runNowLoading) loadData();
+    }
+  }, [logData.isRunning, runNowLoading, loadData]);
+
   const handleClearLogs = useCallback(async () => {
     try {
       await fetch(`/api/automations/${automationId}/logs/clear`, {
@@ -198,13 +220,18 @@ export default function AutomationDetailPage() {
     } catch (err) {
       console.error("Failed to clear server logs:", err);
     }
-    setLogData({ logs: [], isRunning: false });
+    // Only empty the visible logs; keep isRunning/started/completed so the
+    // "Running" badge survives and the live SSE keeps feeding new logs in.
+    setLogData((prev) => ({ ...prev, logs: [] }));
   }, [automationId]);
 
   const refreshJobs = useCallback(async () => {
     const jobsResult = await getDiscoveredJobs({ automationId });
     if (jobsResult.success && jobsResult.data) {
       setJobs(jobsResult.data);
+      if (jobsResult.statusCounts) {
+        setJobStatusCounts(jobsResult.statusCounts);
+      }
     }
   }, [automationId]);
 
@@ -349,7 +376,7 @@ export default function AutomationDetailPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-6">
+      <div className="col-span-3 flex items-center justify-center min-h-[60vh]">
         <Loading />
       </div>
     );
@@ -361,6 +388,10 @@ export default function AutomationDetailPage() {
 
   const resumeMissing = !automation.resume;
   const newJobsCount = jobs.filter((j) => j.discoveryStatus === "new").length;
+  // The button must reflect the real run state, not just this page instance's
+  // runNowLoading: after navigating away and back, runNowLoading resets but the
+  // SSE reports the run is still live, so fall back to logData.isRunning.
+  const runActive = runNowLoading || logData.isRunning;
 
   return (
     <div className="col-span-3 py-6 space-y-6">
@@ -398,7 +429,7 @@ export default function AutomationDetailPage() {
             )}
             {automation.status === "active" ? "Pause" : "Resume"}
           </Button>
-          {runNowLoading ? (
+          {runActive ? (
             <Button
               variant="destructive"
               onClick={() => setAbortConfirmOpen(true)}
@@ -530,6 +561,8 @@ export default function AutomationDetailPage() {
         <TabsContent value="jobs" className="mt-4">
           <DiscoveredJobsList
             jobs={jobs}
+            dismissedCount={jobStatusCounts.dismissed}
+            newCount={jobStatusCounts.new}
             automationId={automationId}
             onRefresh={loadData}
             onViewDetails={handleViewJobDetails}

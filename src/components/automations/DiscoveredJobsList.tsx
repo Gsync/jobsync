@@ -74,11 +74,14 @@ function getPrerankPercent(job: DiscoveredJob): number | null {
 
 interface DiscoveredJobsListProps {
   jobs: DiscoveredJob[];
+  // Full per-status counts for the automation (not just the loaded page), so
+  // the clear dialog matches what clearDiscoveredJobs actually deletes.
+  dismissedCount: number;
+  newCount: number;
   automationId: string;
   onRefresh: () => void;
   onViewDetails?: (job: DiscoveredJob) => void;
-  // True while an automation run is in flight. LLM-triggering actions (Analyze,
-  // Accept of un-analyzed jobs) are blocked to avoid concurrent model calls.
+  // True while an automation run is in flight. The Analyze button is blocked to avoid concurrent LLM calls.
   runInProgress?: boolean;
   // Reports whether a per-job LLM action is in flight so the parent can block
   // starting a new run while a single-job analysis is still processing.
@@ -87,6 +90,8 @@ interface DiscoveredJobsListProps {
 
 export function DiscoveredJobsList({
   jobs,
+  dismissedCount,
+  newCount,
   automationId,
   onRefresh,
   onViewDetails,
@@ -102,11 +107,6 @@ export function DiscoveredJobsList({
     onBusyChange?.(loadingAction !== null);
   }, [loadingAction, onBusyChange]);
 
-  const dismissedCount = jobs.filter(
-    (j) => j.discoveryStatus === "dismissed",
-  ).length;
-  const newCount = jobs.filter((j) => j.discoveryStatus === "new").length;
-
   // Analyzed-first, then by matchScore desc (un-analyzed sort by their lexical
   // matchScore value). The analyzed flag lives in matchData JSON, so sort in JS.
   const sortedJobs = useMemo(() => {
@@ -120,66 +120,64 @@ export function DiscoveredJobsList({
 
   const handleAnalyze = async (jobId: string) => {
     setLoadingAction(jobId);
-    const result = await analyzeDiscoveredJob(jobId);
-    setLoadingAction(null);
-
-    if (result.success) {
-      toast({ title: "Match analyzed", description: "AI match score is ready." });
-      onRefresh();
-    } else {
-      toast({
-        title: "Error",
-        description: result.message,
-        variant: "destructive",
-      });
+    try {
+      const result = await analyzeDiscoveredJob(jobId);
+      if (result.success) {
+        toast({ title: "Match analyzed", description: "AI match score is ready." });
+        onRefresh();
+      } else {
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to analyze job", variant: "destructive" });
+    } finally {
+      setLoadingAction(null);
     }
   };
 
   const handleAccept = async (job: DiscoveredJob) => {
     setLoadingAction(job.id);
-    // Un-analyzed listings are analyzed first so they reach the jobs board with
-    // a real AI score, never the internal lexical number.
-    if (!isAnalyzed(job)) {
-      const analysis = await analyzeDiscoveredJob(job.id);
-      if (!analysis.success) {
-        setLoadingAction(null);
+    try {
+      const result = await acceptDiscoveredJob(job.id);
+      if (result.success) {
+        toast({ title: "Job accepted", description: "The job has been added to your tracked jobs." });
+        onRefresh();
+      } else {
         toast({
           title: "Error",
-          description: analysis.message,
+          description: result.message,
           variant: "destructive",
         });
-        return;
       }
-    }
-    const result = await acceptDiscoveredJob(job.id);
-    setLoadingAction(null);
-
-    if (result.success) {
-      toast({ title: "Job accepted", description: "The job has been added to your tracked jobs." });
-      onRefresh();
-    } else {
-      toast({
-        title: "Error",
-        description: result.message,
-        variant: "destructive",
-      });
+    } catch {
+      toast({ title: "Error", description: "Failed to accept job", variant: "destructive" });
+    } finally {
+      setLoadingAction(null);
     }
   };
 
   const handleDismiss = async (jobId: string) => {
     setLoadingAction(jobId);
-    const result = await dismissDiscoveredJob(jobId);
-    setLoadingAction(null);
-
-    if (result.success) {
-      toast({ title: "Job dismissed" });
-      onRefresh();
-    } else {
-      toast({
-        title: "Error",
-        description: result.message,
-        variant: "destructive",
-      });
+    try {
+      const result = await dismissDiscoveredJob(jobId);
+      if (result.success) {
+        toast({ title: "Job dismissed" });
+        onRefresh();
+      } else {
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to dismiss job", variant: "destructive" });
+    } finally {
+      setLoadingAction(null);
     }
   };
 
@@ -369,12 +367,7 @@ export function DiscoveredJobsList({
                           size="sm"
                           variant="outline"
                           onClick={() => handleAccept(job)}
-                          disabled={isLoading || (runInProgress && !analyzed)}
-                          title={
-                            runInProgress && !analyzed
-                              ? "A run is in progress. Wait until it completes."
-                              : undefined
-                          }
+                          disabled={isLoading}
                         >
                           {isLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -409,10 +402,10 @@ export function DiscoveredJobsList({
           <AlertDialogHeader>
             <AlertDialogTitle>Clear discovered jobs?</AlertDialogTitle>
             <AlertDialogDescription>
-              Accepted jobs are always kept. This permanently deletes{" "}
-              {dismissedCount} dismissed job(s)
+              Accepted jobs are always kept. This permanently deletes all
+              dismissed jobs
               {clearIncludeNew && newCount > 0
-                ? ` and ${newCount} unreviewed new job(s)`
+                ? " and all unreviewed new jobs"
                 : ""}
               . This action cannot be undone.
             </AlertDialogDescription>

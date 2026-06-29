@@ -384,6 +384,7 @@ export async function getDiscoveredJobs(options?: {
   success: boolean;
   data?: DiscoveredJob[];
   total?: number;
+  statusCounts?: { new: number; dismissed: number; accepted: number };
   message?: string;
 }> {
   try {
@@ -416,7 +417,11 @@ export async function getDiscoveredJobs(options?: {
       where.discoveryStatus = discoveryStatus;
     }
 
-    const [jobs, total] = await Promise.all([
+    // Status counts ignore the discoveryStatus filter so callers get the full
+    // per-status breakdown for the whole automation, not just the current page.
+    const { discoveryStatus: _omit, ...countWhere } = where;
+
+    const [jobs, total, grouped] = await Promise.all([
       db.job.findMany({
         where,
         skip,
@@ -432,12 +437,26 @@ export async function getDiscoveredJobs(options?: {
         },
       }),
       db.job.count({ where }),
+      db.job.groupBy({
+        by: ["discoveryStatus"],
+        where: countWhere,
+        _count: true,
+      }),
     ]);
+
+    const statusCounts = { new: 0, dismissed: 0, accepted: 0 };
+    for (const g of grouped) {
+      if (g.discoveryStatus && g.discoveryStatus in statusCounts) {
+        statusCounts[g.discoveryStatus as keyof typeof statusCounts] =
+          g._count;
+      }
+    }
 
     return {
       success: true,
       data: jobs as unknown as DiscoveredJob[],
       total,
+      statusCounts,
     };
   } catch (error) {
     return formatError(error, "Failed to get discovered jobs");

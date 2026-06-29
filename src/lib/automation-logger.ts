@@ -102,6 +102,14 @@ class AutomationLoggerService {
   }
 
   clearLogs(automationId: string): void {
+    const store = this.logStores.get(automationId);
+    // Don't drop the store mid-run: the runner keeps writing to it, and a
+    // deleted store means every later log is discarded ("No store found").
+    // Clearing during a run just empties the visible log buffer.
+    if (store?.isRunning) {
+      store.logs = [];
+      return;
+    }
     this.logStores.delete(automationId);
   }
 

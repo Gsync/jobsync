@@ -5,6 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   AlertCircle,
   CheckCircle2,
@@ -29,6 +40,7 @@ interface LogsTabProps {
 
 export function LogsTab({ logData, onClearLogs }: LogsTabProps) {
   const [filter, setFilter] = useState<LogLevel | "all">("all");
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
   const filteredLogs =
     filter === "all"
@@ -51,13 +63,13 @@ export function LogsTab({ logData, onClearLogs }: LogsTabProps) {
   const getLevelColor = (level: LogLevel) => {
     switch (level) {
       case "info":
-        return "text-blue-600";
+        return "text-blue-600 dark:text-blue-400";
       case "success":
-        return "text-green-600";
+        return "text-green-600 dark:text-green-400";
       case "warning":
-        return "text-amber-600";
+        return "text-amber-600 dark:text-amber-400";
       case "error":
-        return "text-red-600";
+        return "text-red-600 dark:text-red-400";
     }
   };
 
@@ -120,7 +132,7 @@ export function LogsTab({ logData, onClearLogs }: LogsTabProps) {
             <Button
               size="sm"
               variant="outline"
-              onClick={onClearLogs}
+              onClick={() => setClearConfirmOpen(true)}
               disabled={logData.logs.length === 0}
             >
               <Trash2 className="h-4 w-4" />
@@ -187,6 +199,31 @@ export function LogsTab({ logData, onClearLogs }: LogsTabProps) {
           )}
         </ScrollArea>
       </CardContent>
+
+      <AlertDialog open={clearConfirmOpen} onOpenChange={setClearConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear logs?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove all current logs. This action cannot
+              be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={(e) => {
+                e.preventDefault();
+                setClearConfirmOpen(false);
+                onClearLogs();
+              }}
+            >
+              Clear logs
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
