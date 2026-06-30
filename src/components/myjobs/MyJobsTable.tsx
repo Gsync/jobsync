@@ -37,6 +37,7 @@ import { JobResponse, JobStatus } from "@/models/job.model";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
+import { CircularScore } from "@/components/CircularScore";
 
 type MyJobsTableProps = {
   jobs: JobResponse[];
@@ -140,7 +141,11 @@ function MyJobsTable({
                   )}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {job.matchScore != null ? `${job.matchScore}%` : "-"}
+                  {job.matchScore != null ? (
+                    <CircularScore score={job.matchScore} size="sm" animate={false} />
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {job.JobSource?.label}

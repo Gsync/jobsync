@@ -20,6 +20,7 @@ import { useState, useMemo, useCallback } from "react";
 import { DownloadFileButton } from "../profile/DownloadFileButton";
 import { MatchDetails } from "../automations/MatchDetails";
 import type { JobMatchData } from "@/models/ai.schemas";
+import { CircularScore } from "@/components/CircularScore";
 
 function JobDetails({ job }: { job: JobResponse }) {
   const [aiSectionOpen, setAiSectionOpen] = useState(false);
@@ -88,7 +89,13 @@ function JobDetails({ job }: { job: JobResponse }) {
                 {job?.Location?.label} - {getJobType(job?.jobType)}
               </CardDescription>
             </div>
-            <div>
+            <div className="flex flex-col items-end gap-2">
+              {currentMatchScore != null && (
+                <div className="flex flex-col items-center gap-1">
+                  <CircularScore score={currentMatchScore} size="md" />
+                  <span className="text-xs text-muted-foreground">AI Match</span>
+                </div>
+              )}
               {job?.Resume && job?.Resume?.File && job.Resume?.File?.filePath
                 ? DownloadFileButton(
                     job?.Resume?.File?.filePath,
@@ -152,9 +159,6 @@ function JobDetails({ job }: { job: JobResponse }) {
               <h4 className="font-medium mb-2 flex items-center gap-2">
                 <Sparkles className="h-4 w-4" />
                 AI Match Analysis
-                {currentMatchScore && (
-                  <Badge variant="default">{currentMatchScore}% Match</Badge>
-                )}
               </h4>
               <MatchDetails matchData={parsedMatchData} />
             </div>
