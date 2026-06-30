@@ -31,7 +31,7 @@ export const simpleStyles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.8,
     marginBottom: 3,
-    marginTop: 12,
+    marginTop: 6,
   },
   divider: {
     borderBottomWidth: 0.5,

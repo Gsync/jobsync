@@ -38,9 +38,12 @@ function CertLikeSection({ section }: { section: ResumeSection }) {
           <Text style={s.entryMeta}>{cert.organization}</Text>
           {(cert.issueDate || cert.expirationDate) && (
             <Text style={s.entryMeta}>
-              {cert.issueDate ? `Issued: ${formatDate(cert.issueDate)}` : ""}
-              {cert.issueDate && cert.expirationDate ? " · " : ""}
-              {cert.expirationDate ? `Expires: ${formatDate(cert.expirationDate)}` : ""}
+              {[
+                cert.issueDate ? formatDate(cert.issueDate) : null,
+                cert.expirationDate ? formatDate(cert.expirationDate) : null,
+              ]
+                .filter(Boolean)
+                .join(" – ")}
             </Text>
           )}
           {cert.credentialUrl && (
@@ -205,17 +208,19 @@ export function ProfessionalResumeDocument({ resume, htmlNodes }: Props) {
             <View>
               <SectionHeading title={experienceSection.sectionTitle} />
               {experienceSection.workExperiences.map((exp, i) => (
-                <View key={exp.id ?? i} style={{ marginBottom: 8 }} wrap={false}>
-                  <View style={s.entryHeaderRow}>
-                    <Text style={s.entryTitle}>{exp.jobTitle.label}</Text>
-                    <Text style={s.entryDate}>
-                      {formatDate(exp.startDate)} – {formatDate(exp.endDate)}
+                <View key={exp.id ?? i} style={{ marginBottom: 8 }}>
+                  <View wrap={false}>
+                    <View style={s.entryHeaderRow}>
+                      <Text style={s.entryTitle}>{exp.jobTitle.label}</Text>
+                      <Text style={s.entryDate}>
+                        {formatDate(exp.startDate)} – {formatDate(exp.endDate)}
+                      </Text>
+                    </View>
+                    <Text style={s.entryMeta}>
+                      {exp.Company.label}
+                      {exp.location?.label ? ` · ${exp.location.label}` : ""}
                     </Text>
                   </View>
-                  <Text style={s.entryMeta}>
-                    {exp.Company.label}
-                    {exp.location?.label ? ` · ${exp.location.label}` : ""}
-                  </Text>
                   {htmlNodes.experiences[i]}
                 </View>
               ))}
@@ -229,17 +234,19 @@ export function ProfessionalResumeDocument({ resume, htmlNodes }: Props) {
               <View key={sec.id}>
                 <SectionHeading title={sec.sectionTitle} />
                 {sec.workExperiences.map((exp, i) => (
-                  <View key={exp.id ?? i} style={{ marginBottom: 8 }} wrap={false}>
-                    <View style={s.entryHeaderRow}>
-                      <Text style={s.entryTitle}>{exp.jobTitle.label}</Text>
-                      <Text style={s.entryDate}>
-                        {formatDate(exp.startDate)} – {formatDate(exp.endDate)}
+                  <View key={exp.id ?? i} style={{ marginBottom: 8 }}>
+                    <View wrap={false}>
+                      <View style={s.entryHeaderRow}>
+                        <Text style={s.entryTitle}>{exp.jobTitle.label}</Text>
+                        <Text style={s.entryDate}>
+                          {formatDate(exp.startDate)} – {formatDate(exp.endDate)}
+                        </Text>
+                      </View>
+                      <Text style={s.entryMeta}>
+                        {exp.Company.label}
+                        {exp.location?.label ? ` · ${exp.location.label}` : ""}
                       </Text>
                     </View>
-                    <Text style={s.entryMeta}>
-                      {exp.Company.label}
-                      {exp.location?.label ? ` · ${exp.location.label}` : ""}
-                    </Text>
                   </View>
                 ))}
               </View>
@@ -260,16 +267,18 @@ export function ProfessionalResumeDocument({ resume, htmlNodes }: Props) {
                 <View>
                   <SectionHeading title={educationSection.sectionTitle} />
                   {educationSection.educations.map((edu, i) => (
-                    <View key={edu.id ?? i} style={{ marginBottom: 8 }} wrap={false}>
-                      <View style={s.entryHeaderRow}>
-                        <Text style={s.entryTitle}>
-                          {[edu.degree, edu.fieldOfStudy].filter(Boolean).join(", ")}
-                        </Text>
-                        <Text style={s.entryDate}>
-                          {yearRange(edu.startDate, edu.endDate)}
-                        </Text>
+                    <View key={edu.id ?? i} style={{ marginBottom: 8 }}>
+                      <View wrap={false}>
+                        <View style={s.entryHeaderRow}>
+                          <Text style={s.entryTitle}>
+                            {[edu.degree, edu.fieldOfStudy].filter(Boolean).join(", ")}
+                          </Text>
+                          <Text style={s.entryDate}>
+                            {yearRange(edu.startDate, edu.endDate)}
+                          </Text>
+                        </View>
+                        <Text style={s.entryMeta}>{edu.institution}</Text>
                       </View>
-                      <Text style={s.entryMeta}>{edu.institution}</Text>
                     </View>
                   ))}
                 </View>

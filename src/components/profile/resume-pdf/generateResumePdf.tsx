@@ -52,7 +52,8 @@ export async function generateResumePdfBlob(
       ) ?? [],
   };
 
-  const { pdf } = await import("@react-pdf/renderer");
+  const { pdf, Font } = await import("@react-pdf/renderer");
+  Font.registerHyphenationCallback((word) => [word]);
 
   let document: React.ReactElement;
   if (layout === "professional") {

@@ -136,14 +136,16 @@ export function SimpleResumeDocument({ resume, htmlNodes }: Props) {
             <View>
               <SectionHeading title={experienceSection.sectionTitle} />
               {experienceSection.workExperiences.map((exp, i) => (
-                <View key={exp.id ?? i} style={{ marginBottom: 8 }} wrap={false}>
-                  <Text style={simpleStyles.entryTitle}>
-                    {exp.jobTitle.label} — {exp.Company.label}
-                  </Text>
-                  <Text style={simpleStyles.entryMeta}>
-                    {formatDate(exp.startDate)} – {formatDate(exp.endDate)} ·{" "}
-                    {exp.location.label}
-                  </Text>
+                <View key={exp.id ?? i} style={{ marginBottom: 8 }}>
+                  <View wrap={false}>
+                    <Text style={simpleStyles.entryTitle}>
+                      {exp.jobTitle.label} — {exp.Company.label}
+                    </Text>
+                    <Text style={simpleStyles.entryMeta}>
+                      {formatDate(exp.startDate)} – {formatDate(exp.endDate)} ·{" "}
+                      {exp.location.label}
+                    </Text>
+                  </View>
                   {htmlNodes.experiences[i]}
                 </View>
               ))}
@@ -156,16 +158,18 @@ export function SimpleResumeDocument({ resume, htmlNodes }: Props) {
             <View>
               <SectionHeading title={educationSection.sectionTitle} />
               {educationSection.educations.map((edu, i) => (
-                <View key={edu.id ?? i} style={{ marginBottom: 8 }} wrap={false}>
-                  <Text style={simpleStyles.entryTitle}>{edu.institution}</Text>
-                  <Text style={simpleStyles.entryMeta}>
-                    {[edu.degree, edu.fieldOfStudy].filter(Boolean).join(", ")}
-                  </Text>
-                  <Text style={simpleStyles.entryMeta}>
-                    {formatDate(edu.startDate)} –{" "}
-                    {edu.endDate ? formatDate(edu.endDate) : "Present"} ·{" "}
-                    {edu.location.label}
-                  </Text>
+                <View key={edu.id ?? i} style={{ marginBottom: 8 }}>
+                  <View wrap={false}>
+                    <Text style={simpleStyles.entryTitle}>{edu.institution}</Text>
+                    <Text style={simpleStyles.entryMeta}>
+                      {[edu.degree, edu.fieldOfStudy].filter(Boolean).join(", ")}
+                    </Text>
+                    <Text style={simpleStyles.entryMeta}>
+                      {formatDate(edu.startDate)} –{" "}
+                      {edu.endDate ? formatDate(edu.endDate) : "Present"} ·{" "}
+                      {edu.location.label}
+                    </Text>
+                  </View>
                   {htmlNodes.educations[i]}
                 </View>
               ))}
@@ -183,13 +187,12 @@ export function SimpleResumeDocument({ resume, htmlNodes }: Props) {
                   <Text style={simpleStyles.entryMeta}>{cert.organization}</Text>
                   {(cert.issueDate || cert.expirationDate) && (
                     <Text style={simpleStyles.entryMeta}>
-                      {cert.issueDate
-                        ? `Issued: ${formatDate(cert.issueDate)}`
-                        : ""}
-                      {cert.issueDate && cert.expirationDate ? " · " : ""}
-                      {cert.expirationDate
-                        ? `Expires: ${formatDate(cert.expirationDate)}`
-                        : ""}
+                      {[
+                        cert.issueDate ? formatDate(cert.issueDate) : null,
+                        cert.expirationDate ? formatDate(cert.expirationDate) : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" – ")}
                     </Text>
                   )}
                   {cert.credentialUrl && (

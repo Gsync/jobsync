@@ -16,13 +16,13 @@ function SummarySectionCard({
   const { sectionTitle, summary } = summarySection!;
   return (
     <>
+      <CardTitle className="pl-6 py-3">{sectionTitle}</CardTitle>
       <Card>
-        <CardHeader className="flex-row justify-between relative">
-          <CardTitle>{sectionTitle}</CardTitle>
+        <CardHeader className="p-2 pb-0 flex-row justify-end items-center">
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 gap-1 absolute top-0 right-1"
+            className="h-8 gap-1"
             onClick={openDialogForEdit}
           >
             <Edit className="h-3.5 w-3.5" />

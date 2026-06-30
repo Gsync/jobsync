@@ -45,9 +45,8 @@ function SkillsSectionCard({
     <>
       <CardTitle className="pl-6 py-3">{skillsSection.sectionTitle}</CardTitle>
       <Card>
-        <CardHeader className="p-2 pb-0 flex-row justify-between items-center relative">
-          <div />
-          <div className="flex gap-1 absolute top-0 right-1">
+        <CardHeader className="p-2 pb-0 flex-row justify-end items-center">
+          <div className="flex gap-1">
             <Button
               variant="ghost"
               size="sm"

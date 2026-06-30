@@ -756,7 +756,7 @@ export const updateCertification = async (
         title: data.title,
         organization: data.organization,
         issueDate: data.issueDate,
-        expirationDate: data.expirationDate,
+        expirationDate: data.noExpiration ? null : (data.expirationDate ?? null),
         credentialUrl: data.credentialUrl,
       },
     });
