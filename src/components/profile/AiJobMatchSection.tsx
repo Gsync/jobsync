@@ -4,8 +4,8 @@ import { getResumeList } from "@/actions/profile.actions";
 import { saveJobMatchResult } from "@/actions/job.actions";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
-  SheetHeader,
   SheetPortal,
   SheetTitle,
 } from "../ui/sheet";
@@ -24,13 +24,7 @@ import {
 import Loading from "../Loading";
 import { AiModel, defaultModel } from "@/models/ai.model";
 import { AiJobMatchResponseContent } from "./AiJobMatchResponseContent";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../ui/tooltip";
-import { Info, CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, Sparkles, X } from "lucide-react";
 import { checkOllamaConnection } from "@/utils/ai.utils";
 import {
   streamJobMatch,
@@ -39,6 +33,7 @@ import {
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { useSlowResponseWarning } from "@/hooks/useSlowResponseWarning";
 import { SlowResponseWarning } from "../common/SlowResponseWarning";
+import { Button } from "../ui/button";
 
 interface AiSectionProps {
   aISectionOpen: boolean;
@@ -222,96 +217,111 @@ export const AiJobMatchSection = ({
     }
   }, [aISectionOpen, selectedModel.provider, checkConnectionStatus]);
 
-  // Check if we have any content to show
   const hasContent = !!(result && (result.scores || result.body));
 
   const showSlowWarning = useSlowResponseWarning(isLoading, hasContent);
 
+  const statusIcon =
+    selectedModel.provider === "ollama" ? (
+      ollamaConnected === null ? (
+        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
+      ) : ollamaConnected === true ? (
+        <CheckCircle className="h-3.5 w-3.5 shrink-0 text-green-500" />
+      ) : (
+        <XCircle className="h-3.5 w-3.5 shrink-0 text-destructive" />
+      )
+    ) : (
+      <Sparkles className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+    );
+
+  const providerLabel =
+    selectedModel.provider.charAt(0).toUpperCase() +
+    selectedModel.provider.slice(1);
+
   return (
     <Sheet open={aISectionOpen} onOpenChange={onOpenChange}>
       <SheetPortal>
-        <SheetContent className="overflow-y-scroll" onScroll={handleSheetScroll}>
-          <SheetHeader>
-            <SheetTitle className="flex flex-row items-center">
-              AI Job Match ({selectedModel.provider})
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="h-4 w-4 text-muted-foreground mx-1" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{`Provider: ${selectedModel.provider}`}</p>
-                    <p>{`Model: ${selectedModel.model}`}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+        <SheetContent className="flex flex-col p-0 overflow-hidden [&>button:last-child]:hidden">
+          {/* Terminal-style tab bar — always visible */}
+          <div className="flex items-center gap-3 px-4 py-2.5 border-b bg-muted/20 shrink-0">
+            <SheetTitle className="text-[11px] font-bold tracking-[0.15em] uppercase text-foreground leading-none shrink-0 m-0">
+              AI JOB MATCH
             </SheetTitle>
-          </SheetHeader>
-
-          {selectedModel.provider === "ollama" && (
-            <>
-              {ollamaConnected === true && (
-                <div className="flex items-center gap-1 text-green-600 text-sm mt-4">
-                  <CheckCircle className="h-4 w-4 flex-shrink-0" />
-                  <span>Ollama is connected</span>
-                </div>
-              )}
-              {ollamaConnected === false && (
-                <div className="flex items-center gap-1 text-red-600 text-sm mt-4">
-                  <XCircle className="h-4 w-4 flex-shrink-0" />
-                  <span>{connectionError}</span>
-                </div>
-              )}
-            </>
-          )}
-
-          {!selectedResumeId && (
-            <div className="mt-4">
-              <Select
-                value={selectedResumeId}
-                onValueChange={onSelectResume}
-                disabled={
-                  isLoading ||
-                  isLoadingSettings ||
-                  (selectedModel.provider === "ollama" && ollamaConnected === false)
-                }
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select a resume" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {resumesRef.current.map((resume) => (
-                      <SelectItem
-                        key={resume.id}
-                        value={resume.id!}
-                        className="capitalize"
-                      >
-                        {resume.title}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+            <span className="text-muted-foreground/30 text-xs select-none">···</span>
+            <div className="flex items-center gap-1.5 min-w-0">
+              {statusIcon}
+              <span className="text-xs text-muted-foreground font-mono truncate">
+                {selectedModel.model
+                  ? `${providerLabel} / ${selectedModel.model}`
+                  : providerLabel}
+              </span>
             </div>
-          )}
-
-          <div className="mt-2">
-            {isLoading && !hasContent ? (
-              <div className="flex items-center flex-col mt-4">
-                <Loading />
-                <div className="mt-2">Analyzing job match...</div>
-                {showSlowWarning && <SlowResponseWarning />}
-              </div>
-            ) : (
-              <AiJobMatchResponseContent
-                scores={result?.scores}
-                body={result?.body}
-                isStreaming={isLoading}
-              />
-            )}
+            <SheetClose asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 ml-auto shrink-0 rounded-sm opacity-70 hover:opacity-100"
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </SheetClose>
           </div>
-          <div ref={scrollAnchorRef} />
+
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto px-6 pt-4 pb-6" onScroll={handleSheetScroll}>
+            {!isLoading && !selectedResumeId && (
+              <div className={`flex flex-col items-center justify-center gap-2${!hasContent ? " min-h-[calc(100dvh-9rem)]" : " py-2"}`}>
+                <Select
+                  value={selectedResumeId}
+                  onValueChange={onSelectResume}
+                  disabled={
+                    isLoadingSettings ||
+                    (selectedModel.provider === "ollama" && ollamaConnected === false)
+                  }
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select a resume" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {resumesRef.current.map((resume) => (
+                        <SelectItem
+                          key={resume.id}
+                          value={resume.id!}
+                          className="capitalize"
+                        >
+                          {resume.title}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+
+                {selectedModel.provider === "ollama" &&
+                  ollamaConnected === false &&
+                  connectionError && (
+                    <p className="text-xs text-destructive">{connectionError}</p>
+                  )}
+              </div>
+            )}
+
+            <div className="mt-2">
+              {isLoading && !hasContent ? (
+                <div className="flex items-center flex-col mt-4">
+                  <Loading />
+                  <div className="mt-2">Analyzing job match...</div>
+                  {showSlowWarning && <SlowResponseWarning />}
+                </div>
+              ) : (
+                <AiJobMatchResponseContent
+                  scores={result?.scores}
+                  body={result?.body}
+                  isStreaming={isLoading}
+                />
+              )}
+            </div>
+            <div ref={scrollAnchorRef} />
+          </div>
         </SheetContent>
       </SheetPortal>
     </Sheet>

@@ -1,11 +1,11 @@
 "use client";
 
-import { Info, Sparkles, CheckCircle, XCircle } from "lucide-react";
+import { Sparkles, CheckCircle, XCircle, Loader2, X } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
-  SheetHeader,
   SheetPortal,
   SheetTitle,
   SheetTrigger,
@@ -21,12 +21,6 @@ import {
   streamResumeReview,
   type ResumeReviewResult,
 } from "@/utils/streamResumeReview.utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../ui/tooltip";
 import { checkOllamaConnection } from "@/utils/ai.utils";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { useSlowResponseWarning } from "@/hooks/useSlowResponseWarning";
@@ -143,6 +137,24 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
 
   const showSlowWarning = useSlowResponseWarning(isLoading, !!hasContent);
 
+  // Status icon for the terminal header bar
+  const statusIcon =
+    selectedModel.provider === "ollama" ? (
+      ollamaConnected === null ? (
+        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
+      ) : ollamaConnected === true ? (
+        <CheckCircle className="h-3.5 w-3.5 shrink-0 text-green-500" />
+      ) : (
+        <XCircle className="h-3.5 w-3.5 shrink-0 text-destructive" />
+      )
+    ) : (
+      <Sparkles className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+    );
+
+  const providerLabel =
+    selectedModel.provider.charAt(0).toUpperCase() +
+    selectedModel.provider.slice(1);
+
   return (
     <Sheet open={aISectionOpen} onOpenChange={triggerSheetChange}>
       <div className="ml-2">
@@ -162,74 +174,73 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
         </SheetTrigger>
       </div>
       <SheetPortal>
-        <SheetContent className="overflow-y-scroll" onScroll={handleSheetScroll}>
-          <SheetHeader>
-            <SheetTitle className="flex flex-row items-center">
-              AI Review ({selectedModel.provider})
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="h-4 w-4 text-muted-foreground mx-1" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{`Provider: ${selectedModel.provider}`}</p>
-                    <p>{`Model: ${selectedModel.model}`}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+        <SheetContent className="flex flex-col p-0 overflow-hidden [&>button:last-child]:hidden">
+          {/* Terminal-style tab bar — always visible */}
+          <div className="flex items-center gap-3 px-4 py-2.5 border-b bg-muted/20 shrink-0">
+            <SheetTitle className="text-[11px] font-bold tracking-[0.15em] uppercase text-foreground leading-none shrink-0 m-0">
+              AI REVIEW
             </SheetTitle>
-          </SheetHeader>
-
-          {selectedModel.provider === "ollama" && (
-            <>
-              {ollamaConnected === true && (
-                <div className="flex items-center gap-1 text-green-600 text-sm mt-4">
-                  <CheckCircle className="h-4 w-4 flex-shrink-0" />
-                  <span>Ollama is connected</span>
-                </div>
-              )}
-              {ollamaConnected === false && (
-                <div className="flex items-center gap-1 text-red-600 text-sm mt-4">
-                  <XCircle className="h-4 w-4 flex-shrink-0" />
-                  <span>{connectionError}</span>
-                </div>
-              )}
-            </>
-          )}
-
-          <div className="mt-4">
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 gap-1 cursor-pointer"
-              onClick={getResumeReview}
-              disabled={
-                isLoading ||
-                (selectedModel.provider === "ollama" &&
-                  ollamaConnected === false)
-              }
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                Generate AI Review
+            <span className="text-muted-foreground/30 text-xs select-none">···</span>
+            <div className="flex items-center gap-1.5 min-w-0">
+              {statusIcon}
+              <span className="text-xs text-muted-foreground font-mono truncate">
+                {selectedModel.model
+                  ? `${providerLabel} / ${selectedModel.model}`
+                  : providerLabel}
               </span>
-            </Button>
+            </div>
+            <SheetClose asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 ml-auto shrink-0 rounded-sm opacity-70 hover:opacity-100"
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </SheetClose>
           </div>
 
-          {isLoading && !hasContent ? (
-            <div className="flex items-center flex-col mt-4">
-              <Loading />
-              <div className="mt-2">Analyzing resume...</div>
-              {showSlowWarning && <SlowResponseWarning />}
-            </div>
-          ) : (
-            <AiResumeReviewResponseContent
-              scores={result?.scores}
-              body={result?.body}
-              isStreaming={isLoading}
-            />
-          )}
-          <div ref={scrollAnchorRef} />
+          <div className="flex-1 overflow-y-auto px-6 pt-4 pb-6" onScroll={handleSheetScroll}>
+            {!isLoading && <div className={`flex justify-center items-center${!hasContent ? " min-h-[calc(100dvh-9rem)]" : " py-2"}`}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1 cursor-pointer"
+                onClick={getResumeReview}
+                disabled={
+                  isLoading ||
+                  (selectedModel.provider === "ollama" &&
+                    ollamaConnected === false)
+                }
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                  Generate AI Review
+                </span>
+              </Button>
+            </div>}
+
+            {selectedModel.provider === "ollama" &&
+              ollamaConnected === false &&
+              connectionError && (
+                <p className="text-xs text-destructive mt-2">{connectionError}</p>
+              )}
+
+            {isLoading && !hasContent ? (
+              <div className="flex items-center flex-col mt-4">
+                <Loading />
+                <div className="mt-2">Analyzing resume...</div>
+                {showSlowWarning && <SlowResponseWarning />}
+              </div>
+            ) : (
+              <AiResumeReviewResponseContent
+                scores={result?.scores}
+                body={result?.body}
+                isStreaming={isLoading}
+              />
+            )}
+            <div ref={scrollAnchorRef} />
+          </div>
         </SheetContent>
       </SheetPortal>
     </Sheet>
