@@ -113,7 +113,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
           </Button>
         </FormControl>
       </PopoverTrigger>
-      <PopoverContent className="md:w-[240px] lg:w-[280px] p-0">
+      <PopoverContent className="md:w-[240px] lg:w-[280px] p-0 max-h-[var(--radix-popover-content-available-height)] overflow-hidden">
         <Command
           filter={(value, search) =>
             value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
@@ -146,9 +146,9 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
               <p className="font-semibold text-primary">No source found!</p>
             )}
           </CommandEmpty>
-          <ScrollArea>
+          <ScrollArea className="max-h-[calc(var(--radix-popover-content-available-height)-2.75rem)]">
             <CommandGroup>
-              <CommandList className="capitalize">
+              <CommandList className="capitalize max-h-none overflow-visible">
                 {options.map((option) => (
                   <CommandItem
                     value={option.value}

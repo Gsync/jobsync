@@ -13,6 +13,7 @@ import {
 import Loading from "../Loading";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSheetAutoScroll } from "@/hooks/useSheetAutoScroll";
+import { useResizablePanel } from "@/hooks/useResizablePanel";
 import { toast } from "../ui/use-toast";
 import { Resume } from "@/models/profile.model";
 import { AiModel, AiProvider, defaultModel } from "@/models/ai.model";
@@ -79,6 +80,7 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const { scrollAnchorRef, handleSheetScroll, resetScroll } = useSheetAutoScroll(isLoading, result);
+  const { width, handleMouseDown } = useResizablePanel("ai-panel-width");
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
@@ -174,7 +176,17 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
         </SheetTrigger>
       </div>
       <SheetPortal>
-        <SheetContent className="flex flex-col p-0 overflow-hidden [&>button:last-child]:hidden">
+        <SheetContent
+          className="flex flex-col p-0 overflow-hidden [&>button:last-child]:hidden"
+          style={{ width: `${width}px`, maxWidth: "none" }}
+        >
+          {/* VS Code-style drag handle on left edge */}
+          <div
+            className="absolute left-0 top-0 h-full w-1 cursor-col-resize z-10 group"
+            onMouseDown={handleMouseDown}
+          >
+            <div className="h-full w-px bg-transparent group-hover:bg-primary/50 transition-colors" />
+          </div>
           {/* Terminal-style tab bar — always visible */}
           <div className="flex items-center gap-3 px-4 py-2.5 border-b bg-muted/20 shrink-0">
             <SheetTitle className="text-[11px] font-bold tracking-[0.15em] uppercase text-foreground leading-none shrink-0 m-0">

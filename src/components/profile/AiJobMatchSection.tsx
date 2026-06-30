@@ -11,6 +11,7 @@ import {
 } from "../ui/sheet";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSheetAutoScroll } from "@/hooks/useSheetAutoScroll";
+import { useResizablePanel } from "@/hooks/useResizablePanel";
 import { Resume } from "@/models/profile.model";
 import { toast } from "../ui/use-toast";
 import {
@@ -58,6 +59,7 @@ export const AiJobMatchSection = ({
   const resumesRef = useRef<Resume[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const { scrollAnchorRef, handleSheetScroll, resetScroll } = useSheetAutoScroll(isLoading, result);
+  const { width, handleMouseDown } = useResizablePanel("ai-panel-width");
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -241,7 +243,17 @@ export const AiJobMatchSection = ({
   return (
     <Sheet open={aISectionOpen} onOpenChange={onOpenChange}>
       <SheetPortal>
-        <SheetContent className="flex flex-col p-0 overflow-hidden [&>button:last-child]:hidden">
+        <SheetContent
+          className="flex flex-col p-0 overflow-hidden [&>button:last-child]:hidden"
+          style={{ width: `${width}px`, maxWidth: "none" }}
+        >
+          {/* VS Code-style drag handle on left edge */}
+          <div
+            className="absolute left-0 top-0 h-full w-1 cursor-col-resize z-10 group"
+            onMouseDown={handleMouseDown}
+          >
+            <div className="h-full w-px bg-transparent group-hover:bg-primary/50 transition-colors" />
+          </div>
           {/* Terminal-style tab bar — always visible */}
           <div className="flex items-center gap-3 px-4 py-2.5 border-b bg-muted/20 shrink-0">
             <SheetTitle className="text-[11px] font-bold tracking-[0.15em] uppercase text-foreground leading-none shrink-0 m-0">
@@ -270,7 +282,7 @@ export const AiJobMatchSection = ({
           {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto px-6 pt-4 pb-6" onScroll={handleSheetScroll}>
             {!isLoading && !selectedResumeId && (
-              <div className={`flex flex-col items-center justify-center gap-2${!hasContent ? " min-h-[calc(100dvh-9rem)]" : " py-2"}`}>
+              <div className={`flex flex-col items-center gap-2${!hasContent ? " pt-12" : " py-2"}`}>
                 <Select
                   value={selectedResumeId}
                   onValueChange={onSelectResume}
