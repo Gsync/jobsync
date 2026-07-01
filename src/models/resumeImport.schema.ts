@@ -18,8 +18,10 @@ export const ImportExperienceSchema = z.object({
   company: z.string(),
   jobTitle: z.string(),
   location: z.string().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(), // null / "Present" / "Current" = current job
+  // Required (with a "" fallback) rather than .optional() so the model's
+  // JSON-schema grammar can't omit the key outright — only leave it empty.
+  startDate: z.string().catch(""),
+  endDate: z.string().catch(""), // "" / "Present" / "Current" = current job
   description: z.string().catch(""),
   confidence,
 });
@@ -29,8 +31,8 @@ export const ImportEducationSchema = z.object({
   degree: z.string().optional(),
   fieldOfStudy: z.string().optional(),
   location: z.string().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
+  startDate: z.string().catch(""),
+  endDate: z.string().catch(""), // "" / "Present" / "Current" = still enrolled
   description: z.string().catch(""),
   confidence,
 });

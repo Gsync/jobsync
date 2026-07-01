@@ -40,7 +40,7 @@ export const APP_CONSTANTS = {
   // Resume import generation timeout. Generous because a full resume streams a
   // few thousand tokens of verbatim JSON, which a local model can take minutes
   // to produce; too low and the stream is cut mid-entry.
-  AI_RESUME_IMPORT_TIMEOUT_MS: 180_000,
+  AI_RESUME_IMPORT_TIMEOUT_MS: 240_000,
 
   // Resume review generation timeout. The review is a full markdown analysis
   // (scores line plus several sections), so a local model can take minutes;

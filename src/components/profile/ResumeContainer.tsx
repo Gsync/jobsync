@@ -195,9 +195,7 @@ function PendingCardDetail({ card }: { card: ImportCardPayload }) {
 
   if (card.type === "experience") {
     const d = card.data;
-    const dates = [d.startDate, d.endDate ? d.endDate : "Present"]
-      .filter(Boolean)
-      .join(" – ");
+    const dates = [d.startDate, d.endDate].filter(Boolean).join(" – ");
     return (
       <div className="space-y-1 mt-1">
         <DetailRow label="Title" value={d.jobTitle} />
