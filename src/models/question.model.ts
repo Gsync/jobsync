@@ -8,4 +8,5 @@ export interface Question {
   tags: Tag[];
   createdAt: Date;
   updatedAt: Date;
+  createdVia?: string | null;
 }

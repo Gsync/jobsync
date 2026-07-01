@@ -1,8 +1,14 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { resolveMcpToken } from "@/lib/mcp/auth";
-import { McpAddJobInputShape, McpAddJobSchema } from "@/models/mcp.schema";
+import {
+  McpAddJobInputShape,
+  McpAddJobSchema,
+  McpAddQuestionInputShape,
+  McpAddQuestionSchema,
+} from "@/models/mcp.schema";
 import { handleAddJob } from "@/lib/mcp/tools/addJob";
+import { handleAddQuestion } from "@/lib/mcp/tools/addQuestion";
 
 function isMcpEnabled(): boolean {
   const env = process.env.MCP_ENABLED;
@@ -25,13 +31,6 @@ async function handler(req: Request): Promise<Response> {
     });
   }
 
-  if (!auth.scopes.includes("jobs:write")) {
-    return new Response(JSON.stringify({ error: "Insufficient scope. Required: jobs:write" }), {
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
   const { userId, tokenName } = auth;
 
   const server = new McpServer({ name: "jobsync", version: "1.0.0" });
@@ -41,12 +40,32 @@ async function handler(req: Request): Promise<Response> {
     "Add a job application to JobSync. Resolves or creates company, job title, location, and source by name. Returns a transparency report of what was matched vs. created.",
     McpAddJobInputShape,
     async (rawInput) => {
+      if (!auth.scopes.includes("jobs:write")) {
+        return { content: [{ type: "text" as const, text: "Insufficient scope. Required: jobs:write" }] };
+      }
       const parsed = McpAddJobSchema.safeParse(rawInput);
       if (!parsed.success) {
         const issues = parsed.error.issues.map((i) => i.message).join("; ");
         return { content: [{ type: "text" as const, text: `Validation error: ${issues}` }] };
       }
       return handleAddJob(parsed.data, userId, tokenName);
+    },
+  );
+
+  server.tool(
+    "add_question",
+    "Add an entry to the Question Bank. Resolves or creates tags by name. Returns a transparency report of what was matched vs. created.",
+    McpAddQuestionInputShape,
+    async (rawInput) => {
+      if (!auth.scopes.includes("questions:write")) {
+        return { content: [{ type: "text" as const, text: "Insufficient scope. Required: questions:write" }] };
+      }
+      const parsed = McpAddQuestionSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => i.message).join("; ");
+        return { content: [{ type: "text" as const, text: `Validation error: ${issues}` }] };
+      }
+      return handleAddQuestion(parsed.data, userId, tokenName);
     },
   );
 

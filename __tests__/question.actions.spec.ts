@@ -248,13 +248,14 @@ describe("Question Actions", () => {
 
       const result = await createQuestion({
         question: "What is React?",
+        answer: "<p>A JS library</p>",
       });
 
       expect(result?.success).toBe(true);
       expect(prisma.question.create).toHaveBeenCalledWith({
         data: {
           question: "What is React?",
-          answer: null,
+          answer: "<p>A JS library</p>",
           createdBy: mockUser.id,
           tags: undefined,
         },
@@ -262,23 +263,34 @@ describe("Question Actions", () => {
       });
     });
 
-    it("should create a question with null answer", async () => {
+    it("should reject invalid data (null answer)", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
-      (prisma.question.create as any).mockResolvedValue(mockQuestion);
 
-      await createQuestion({ question: "What?", answer: null });
+      const result = await createQuestion({ question: "What?", answer: null } as any);
 
-      expect(prisma.question.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ answer: null }),
-        }),
-      );
+      expect(result?.success).toBe(false);
+      expect(prisma.question.create).not.toHaveBeenCalled();
     });
 
     it("should reject invalid data (question too short)", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
 
-      const result = await createQuestion({ question: "a" });
+      const result = await createQuestion({
+        question: "a",
+        answer: "<p>A JS library</p>",
+      });
+
+      expect(result?.success).toBe(false);
+      expect(prisma.question.create).not.toHaveBeenCalled();
+    });
+
+    it("should reject invalid data (answer too short)", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      const result = await createQuestion({
+        question: "What is React?",
+        answer: "short",
+      });
 
       expect(result?.success).toBe(false);
       expect(prisma.question.create).not.toHaveBeenCalled();
@@ -287,7 +299,10 @@ describe("Question Actions", () => {
     it("should return error for unauthenticated user", async () => {
       (getCurrentUser as any).mockResolvedValue(null);
 
-      const result = await createQuestion({ question: "What is React?" });
+      const result = await createQuestion({
+        question: "What is React?",
+        answer: "<p>A JS library</p>",
+      });
 
       expect(result).toEqual({
         success: false,
@@ -302,7 +317,10 @@ describe("Question Actions", () => {
         new Error("DB error"),
       );
 
-      const result = await createQuestion({ question: "What is React?" });
+      const result = await createQuestion({
+        question: "What is React?",
+        answer: "<p>A JS library</p>",
+      });
 
       expect(result).toEqual({ success: false, message: "DB error" });
     });
@@ -340,6 +358,7 @@ describe("Question Actions", () => {
       await updateQuestion({
         id: "q-1",
         question: "Updated?",
+        answer: "<p>Updated answer</p>",
         tagIds: [],
       });
 
@@ -355,7 +374,10 @@ describe("Question Actions", () => {
     it("should return error when id is missing", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
 
-      const result = await updateQuestion({ question: "No ID?" });
+      const result = await updateQuestion({
+        question: "No ID?",
+        answer: "<p>Updated answer</p>",
+      });
 
       expect(result?.success).toBe(false);
       expect(prisma.question.update).not.toHaveBeenCalled();
@@ -367,6 +389,7 @@ describe("Question Actions", () => {
       const result = await updateQuestion({
         id: "q-1",
         question: "Updated?",
+        answer: "<p>Updated answer</p>",
       });
 
       expect(result).toEqual({
@@ -385,6 +408,7 @@ describe("Question Actions", () => {
       const result = await updateQuestion({
         id: "q-1",
         question: "Updated?",
+        answer: "<p>Updated answer</p>",
       });
 
       expect(result).toEqual({ success: false, message: "DB error" });

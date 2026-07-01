@@ -158,7 +158,7 @@ export function QuestionForm({
                 name="answer"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Answer</FormLabel>
+                    <FormLabel>Answer *</FormLabel>
                     <FormControl>
                       <TiptapEditor field={field} />
                     </FormControl>

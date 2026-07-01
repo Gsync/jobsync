@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { APP_CONSTANTS } from "@/lib/constants";
 
 // Raw input shape for MCP tool registration (no transforms — SDK uses this for JSON schema)
 export const McpAddJobInputShape = {
@@ -26,3 +27,19 @@ export const McpAddJobSchema = z.object({
 });
 
 export type McpAddJobInput = z.infer<typeof McpAddJobSchema>;
+
+// Raw input shape for MCP tool registration (no transforms — SDK uses this for JSON schema)
+export const McpAddQuestionInputShape = {
+  question: z.string()
+    .min(APP_CONSTANTS.MIN_QUESTION_LENGTH, `question must be at least ${APP_CONSTANTS.MIN_QUESTION_LENGTH} characters`)
+    .max(APP_CONSTANTS.MAX_QUESTION_LENGTH, `question cannot exceed ${APP_CONSTANTS.MAX_QUESTION_LENGTH} characters`),
+  answer: z.string()
+    .min(APP_CONSTANTS.MIN_QUESTION_ANSWER_LENGTH, `answer must be at least ${APP_CONSTANTS.MIN_QUESTION_ANSWER_LENGTH} characters`)
+    .max(APP_CONSTANTS.MAX_QUESTION_ANSWER_LENGTH, `answer cannot exceed ${APP_CONSTANTS.MAX_QUESTION_ANSWER_LENGTH} characters`)
+    .describe("Markdown-formatted answer/notes (required). Plain text also works."),
+  tags: z.array(z.string()).optional()
+    .describe("Skill/topic tags (max 10 applied, extras dropped). Created if they don't exist."),
+};
+
+export const McpAddQuestionSchema = z.object(McpAddQuestionInputShape);
+export type McpAddQuestionInput = z.infer<typeof McpAddQuestionSchema>;

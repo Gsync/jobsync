@@ -109,6 +109,14 @@ export function QuestionCard({
           </div>
         )}
 
+        {question.createdVia && (
+          <div className="mt-2">
+            <Badge variant="outline" className="text-xs text-muted-foreground">
+              via {question.createdVia}
+            </Badge>
+          </div>
+        )}
+
         {isLongAnswer && (
           <button
             className="text-xs text-primary mt-2 hover:underline"

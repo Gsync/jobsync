@@ -479,14 +479,15 @@ model Skill {
 }
 
 model Question {
-  id        String   @id @default(uuid())
-  question  String
-  answer    String?
-  createdBy String
-  user      User     @relation(fields: [createdBy], references: [id])
-  tags      Tag[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(uuid())
+  question   String
+  answer     String?
+  createdBy  String
+  user       User     @relation(fields: [createdBy], references: [id])
+  tags       Tag[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdVia String? // MCP provenance: which agent/token created this, mirrors Job.createdVia
 
   @@index([createdBy])
 }
@@ -498,7 +499,7 @@ model McpAccessToken {
   name        String
   tokenHash   String    @unique
   tokenPrefix String
-  scopes      String    // JSON array string; v1 always ["jobs:write"]
+  scopes      String    // JSON array string; new tokens are always ["jobs:write","questions:write"]
   expiresAt   DateTime
   lastUsedAt  DateTime?
   createdAt   DateTime  @default(now())

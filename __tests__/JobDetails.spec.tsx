@@ -32,6 +32,12 @@ vi.mock("@/components/profile/DownloadFileButton", () => ({
   DownloadFileButton: () => null,
 }));
 
+vi.mock("@/components/CircularScore", () => ({
+  CircularScore: ({ score }: { score: number }) => (
+    <div data-testid="circular-score">{score}%</div>
+  ),
+}));
+
 const makeJob = (overrides: Partial<JobResponse> = {}): JobResponse => ({
   id: "job-1",
   userId: "user-1",
@@ -138,7 +144,7 @@ describe("JobDetails – match data display", () => {
     render(<JobDetails job={makeJob({ matchScore: 85, matchData })} />);
 
     expect(screen.getByText("AI Match Analysis")).toBeInTheDocument();
-    expect(screen.getByText("85% Match")).toBeInTheDocument();
+    expect(screen.getByText("85%")).toBeInTheDocument();
     expect(screen.getByTestId("match-details")).toBeInTheDocument();
   });
 
@@ -166,7 +172,7 @@ describe("JobDetails – match data display", () => {
     });
 
     expect(screen.getByText("AI Match Analysis")).toBeInTheDocument();
-    expect(screen.getByText("72% Match")).toBeInTheDocument();
+    expect(screen.getByText("72%")).toBeInTheDocument();
     expect(screen.getByTestId("match-details")).toBeInTheDocument();
   });
 
@@ -177,7 +183,7 @@ describe("JobDetails – match data display", () => {
     });
     render(<JobDetails job={makeJob({ matchScore: 60, matchData: oldMatchData })} />);
 
-    expect(screen.getByText("60% Match")).toBeInTheDocument();
+    expect(screen.getByText("60%")).toBeInTheDocument();
 
     const newMatchData = JSON.stringify({
       matchScore: 90,
@@ -188,7 +194,7 @@ describe("JobDetails – match data display", () => {
       capturedOnMatchSaved?.(90, newMatchData);
     });
 
-    expect(screen.queryByText("60% Match")).not.toBeInTheDocument();
-    expect(screen.getByText("90% Match")).toBeInTheDocument();
+    expect(screen.queryByText("60%")).not.toBeInTheDocument();
+    expect(screen.getByText("90%")).toBeInTheDocument();
   });
 });
