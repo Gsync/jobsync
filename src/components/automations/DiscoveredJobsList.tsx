@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { format } from "date-fns";
+import { APP_CONSTANTS } from "@/lib/constants";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -49,6 +49,7 @@ import {
   analyzeDiscoveredJob,
   clearDiscoveredJobs,
 } from "@/actions/automation.actions";
+import { RecordsCount } from "@/components/RecordsCount";
 
 // A job is "un-analyzed" only when matchData explicitly marks it so (Greenhouse
 // floor survivors). JSearch and legacy jobs have no flag but carry a real AI
@@ -74,6 +75,11 @@ function getPrerankPercent(job: DiscoveredJob): number | null {
 
 interface DiscoveredJobsListProps {
   jobs: DiscoveredJob[];
+  // Total jobs for this automation across all pages (not just the loaded
+  // ones), used to drive infinite scroll.
+  totalJobs: number;
+  loadingMore: boolean;
+  onLoadMore: () => void;
   // Full per-status counts for the automation (not just the loaded page), so
   // the clear dialog matches what clearDiscoveredJobs actually deletes.
   dismissedCount: number;
@@ -90,6 +96,9 @@ interface DiscoveredJobsListProps {
 
 export function DiscoveredJobsList({
   jobs,
+  totalJobs,
+  loadingMore,
+  onLoadMore,
   dismissedCount,
   newCount,
   automationId,
@@ -102,10 +111,29 @@ export function DiscoveredJobsList({
   const [clearOpen, setClearOpen] = useState(false);
   const [clearIncludeNew, setClearIncludeNew] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     onBusyChange?.(loadingAction !== null);
   }, [loadingAction, onBusyChange]);
+
+  // Infinite scroll: auto-load next page when sentinel is visible
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loadingMore && jobs.length < totalJobs) {
+          onLoadMore();
+        }
+      },
+      { threshold: APP_CONSTANTS.INTERSECTION_OBSERVER_THRESHOLD },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [jobs.length, totalJobs, loadingMore, onLoadMore]);
 
   // Analyzed-first, then by matchScore desc (un-analyzed sort by their lexical
   // matchScore value). The analyzed flag lives in matchData JSON, so sort in JS.
@@ -231,9 +259,9 @@ export function DiscoveredJobsList({
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1.5">
             <CardTitle>Discovered Jobs</CardTitle>
-            <CardDescription>
-              Jobs found by your automations that match your criteria
-            </CardDescription>
+            {totalJobs > 0 && (
+              <RecordsCount count={jobs.length} total={totalJobs} label="jobs" />
+            )}
           </div>
           {dismissedCount + newCount > 0 && (
             <Button
@@ -395,6 +423,20 @@ export function DiscoveredJobsList({
             })}
           </TableBody>
         </Table>
+        {jobs.length < totalJobs && (
+          <div
+            ref={sentinelRef}
+            data-testid="jobs-load-more-sentinel"
+            className="flex justify-center p-4"
+          >
+            {loadingMore && (
+              <Loader2
+                data-testid="jobs-load-more-spinner"
+                className="h-5 w-5 animate-spin text-blue-500"
+              />
+            )}
+          </div>
+        )}
       </CardContent>
 
       <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>

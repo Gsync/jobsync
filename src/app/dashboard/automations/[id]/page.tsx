@@ -56,6 +56,7 @@ import { DiscoveredJobDetail } from "@/components/automations/DiscoveredJobDetai
 import { RunHistoryList } from "@/components/automations/RunHistoryList";
 import { LogsTab, type LogData } from "@/components/automations/LogsTab";
 import Loading from "@/components/Loading";
+import { APP_CONSTANTS } from "@/lib/constants";
 
 export default function AutomationDetailPage() {
   const params = useParams();
@@ -72,7 +73,13 @@ export default function AutomationDetailPage() {
     null,
   );
   const [runs, setRuns] = useState<AutomationRun[]>([]);
+  const [runsPage, setRunsPage] = useState(1);
+  const [totalRuns, setTotalRuns] = useState(0);
+  const [runsLoadingMore, setRunsLoadingMore] = useState(false);
   const [jobs, setJobs] = useState<DiscoveredJob[]>([]);
+  const [jobsPage, setJobsPage] = useState(1);
+  const [totalJobs, setTotalJobs] = useState(0);
+  const [jobsLoadingMore, setJobsLoadingMore] = useState(false);
   const [jobStatusCounts, setJobStatusCounts] = useState<{
     new: number;
     dismissed: number;
@@ -108,8 +115,15 @@ export default function AutomationDetailPage() {
     try {
       const [automationResult, runsResult, jobsResult] = await Promise.all([
         getAutomationById(automationId),
-        getAutomationRuns(automationId),
-        getDiscoveredJobs({ automationId }),
+        getAutomationRuns(automationId, {
+          page: 1,
+          limit: APP_CONSTANTS.RECORDS_PER_PAGE,
+        }),
+        getDiscoveredJobs({
+          automationId,
+          page: 1,
+          limit: APP_CONSTANTS.RECORDS_PER_PAGE,
+        }),
       ]);
 
       if (automationResult.success && automationResult.data) {
@@ -127,10 +141,14 @@ export default function AutomationDetailPage() {
 
       if (runsResult.success && runsResult.data) {
         setRuns(runsResult.data);
+        setTotalRuns(runsResult.total ?? 0);
+        setRunsPage(1);
       }
 
       if (jobsResult.success && jobsResult.data) {
         setJobs(jobsResult.data);
+        setTotalJobs(jobsResult.total ?? 0);
+        setJobsPage(1);
         if (jobsResult.statusCounts) {
           setJobStatusCounts(jobsResult.statusCounts);
         }
@@ -226,14 +244,57 @@ export default function AutomationDetailPage() {
   }, [automationId]);
 
   const refreshJobs = useCallback(async () => {
-    const jobsResult = await getDiscoveredJobs({ automationId });
+    const jobsResult = await getDiscoveredJobs({
+      automationId,
+      page: 1,
+      limit: APP_CONSTANTS.RECORDS_PER_PAGE,
+    });
     if (jobsResult.success && jobsResult.data) {
       setJobs(jobsResult.data);
+      setTotalJobs(jobsResult.total ?? 0);
+      setJobsPage(1);
       if (jobsResult.statusCounts) {
         setJobStatusCounts(jobsResult.statusCounts);
       }
     }
   }, [automationId]);
+
+  const loadMoreJobs = useCallback(async () => {
+    setJobsLoadingMore(true);
+    try {
+      const nextPage = jobsPage + 1;
+      const jobsResult = await getDiscoveredJobs({
+        automationId,
+        page: nextPage,
+        limit: APP_CONSTANTS.RECORDS_PER_PAGE,
+      });
+      if (jobsResult.success && jobsResult.data) {
+        setJobs((prev) => [...prev, ...jobsResult.data!]);
+        setTotalJobs(jobsResult.total ?? 0);
+        setJobsPage(nextPage);
+      }
+    } finally {
+      setJobsLoadingMore(false);
+    }
+  }, [automationId, jobsPage]);
+
+  const loadMoreRuns = useCallback(async () => {
+    setRunsLoadingMore(true);
+    try {
+      const nextPage = runsPage + 1;
+      const runsResult = await getAutomationRuns(automationId, {
+        page: nextPage,
+        limit: APP_CONSTANTS.RECORDS_PER_PAGE,
+      });
+      if (runsResult.success && runsResult.data) {
+        setRuns((prev) => [...prev, ...runsResult.data!]);
+        setTotalRuns(runsResult.total ?? 0);
+        setRunsPage(nextPage);
+      }
+    } finally {
+      setRunsLoadingMore(false);
+    }
+  }, [automationId, runsPage]);
 
   // While a manual run is in flight, jobs are persisted to the DB
   // incrementally (un-analyzed tier first, then each LLM-analyzed job).
@@ -387,7 +448,7 @@ export default function AutomationDetailPage() {
   }
 
   const resumeMissing = !automation.resume;
-  const newJobsCount = jobs.filter((j) => j.discoveryStatus === "new").length;
+  const newJobsCount = jobStatusCounts.new;
   // The button must reflect the real run state, not just this page instance's
   // runNowLoading: after navigating away and back, runNowLoading resets but the
   // SSE reports the run is still live, so fall back to logData.isRunning.
@@ -530,7 +591,7 @@ export default function AutomationDetailPage() {
             <div>
               <p className="text-sm text-muted-foreground">Discovered Jobs</p>
               <p className="font-medium">
-                {jobs.length} total
+                {totalJobs} total
                 {newJobsCount > 0 && (
                   <Badge variant="secondary" className="ml-2">
                     {newJobsCount} new
@@ -561,6 +622,9 @@ export default function AutomationDetailPage() {
         <TabsContent value="jobs" className="mt-4">
           <DiscoveredJobsList
             jobs={jobs}
+            totalJobs={totalJobs}
+            loadingMore={jobsLoadingMore}
+            onLoadMore={loadMoreJobs}
             dismissedCount={jobStatusCounts.dismissed}
             newCount={jobStatusCounts.new}
             automationId={automationId}
@@ -571,7 +635,13 @@ export default function AutomationDetailPage() {
           />
         </TabsContent>
         <TabsContent value="history" className="mt-4">
-          <RunHistoryList runs={runs} onDelete={loadData} />
+          <RunHistoryList
+            runs={runs}
+            totalRuns={totalRuns}
+            loadingMore={runsLoadingMore}
+            onLoadMore={loadMoreRuns}
+            onDelete={loadData}
+          />
         </TabsContent>
       </Tabs>
 

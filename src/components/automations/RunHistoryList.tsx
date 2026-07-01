@@ -1,15 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { Fragment } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { APP_CONSTANTS } from "@/lib/constants";
+import { RecordsCount } from "@/components/RecordsCount";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,6 +41,11 @@ import { toast } from "@/components/ui/use-toast";
 
 interface RunHistoryListProps {
   runs: AutomationRun[];
+  // Total runs for this automation across all pages (not just the loaded
+  // ones), used to drive infinite scroll.
+  totalRuns: number;
+  loadingMore: boolean;
+  onLoadMore: () => void;
   onDelete?: () => void;
 }
 
@@ -59,18 +60,79 @@ function parseFunnel(funnelStats: string | null): FunnelStage[] {
 }
 
 const STATUS_CONFIG = {
-  running: { icon: Clock, color: "text-blue-500", variant: "secondary" as const },
-  cancelling: { icon: Loader2, color: "text-amber-500", variant: "secondary" as const },
-  completed: { icon: CheckCircle2, color: "text-green-500", variant: "default" as const },
-  failed: { icon: XCircle, color: "text-red-500", variant: "destructive" as const },
-  completed_with_errors: { icon: AlertCircle, color: "text-amber-500", variant: "secondary" as const },
-  blocked: { icon: Ban, color: "text-red-500", variant: "destructive" as const },
-  rate_limited: { icon: Timer, color: "text-amber-500", variant: "secondary" as const },
-  cancelled: { icon: Square, color: "text-muted-foreground", variant: "secondary" as const },
+  running: {
+    icon: Clock,
+    color: "text-blue-500",
+    variant: "secondary" as const,
+  },
+  cancelling: {
+    icon: Loader2,
+    color: "text-amber-500",
+    variant: "secondary" as const,
+  },
+  completed: {
+    icon: CheckCircle2,
+    color: "text-green-500",
+    variant: "default" as const,
+  },
+  failed: {
+    icon: XCircle,
+    color: "text-red-500",
+    variant: "destructive" as const,
+  },
+  completed_with_errors: {
+    icon: AlertCircle,
+    color: "text-amber-500",
+    variant: "secondary" as const,
+  },
+  blocked: {
+    icon: Ban,
+    color: "text-red-500",
+    variant: "destructive" as const,
+  },
+  rate_limited: {
+    icon: Timer,
+    color: "text-amber-500",
+    variant: "secondary" as const,
+  },
+  cancelled: {
+    icon: Square,
+    color: "text-muted-foreground",
+    variant: "secondary" as const,
+  },
 };
 
-export function RunHistoryList({ runs, onDelete }: RunHistoryListProps) {
+export function RunHistoryList({
+  runs,
+  totalRuns,
+  loadingMore,
+  onLoadMore,
+  onDelete,
+}: RunHistoryListProps) {
   const [deleteRunId, setDeleteRunId] = useState<string | null>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Infinite scroll: auto-load next page when sentinel is visible
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          !loadingMore &&
+          runs.length < totalRuns
+        ) {
+          onLoadMore();
+        }
+      },
+      { threshold: APP_CONSTANTS.INTERSECTION_OBSERVER_THRESHOLD },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [runs.length, totalRuns, loadingMore, onLoadMore]);
 
   const handleDelete = async () => {
     if (!deleteRunId) return;
@@ -80,7 +142,11 @@ export function RunHistoryList({ runs, onDelete }: RunHistoryListProps) {
       toast({ title: "Run deleted" });
       onDelete?.();
     } else {
-      toast({ title: "Error", description: result.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: result.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -103,9 +169,9 @@ export function RunHistoryList({ runs, onDelete }: RunHistoryListProps) {
       <Card>
         <CardHeader>
           <CardTitle>Run History</CardTitle>
-          <CardDescription>
-            Recent automation runs and their results
-          </CardDescription>
+          {totalRuns > 0 && (
+            <RecordsCount count={runs.length} total={totalRuns} label="runs" />
+          )}
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
@@ -125,11 +191,14 @@ export function RunHistoryList({ runs, onDelete }: RunHistoryListProps) {
             </TableHeader>
             <TableBody>
               {runs.map((run) => {
-                const config = STATUS_CONFIG[run.status] || STATUS_CONFIG.failed;
+                const config =
+                  STATUS_CONFIG[run.status] || STATUS_CONFIG.failed;
                 const StatusIcon = config.icon;
                 const duration = run.completedAt
                   ? Math.round(
-                      (new Date(run.completedAt).getTime() - new Date(run.startedAt).getTime()) / 1000
+                      (new Date(run.completedAt).getTime() -
+                        new Date(run.startedAt).getTime()) /
+                        1000,
                     )
                   : null;
                 const funnel = parseFunnel(run.funnelStats);
@@ -140,7 +209,9 @@ export function RunHistoryList({ runs, onDelete }: RunHistoryListProps) {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <StatusIcon className={`h-4 w-4 ${config.color}`} />
-                          <Badge variant={config.variant}>{run.status.replace("_", " ")}</Badge>
+                          <Badge variant={config.variant}>
+                            {run.status.replace("_", " ")}
+                          </Badge>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -149,10 +220,18 @@ export function RunHistoryList({ runs, onDelete }: RunHistoryListProps) {
                       <TableCell>
                         {duration !== null ? `${duration}s` : "-"}
                       </TableCell>
-                      <TableCell className="text-center">{run.jobsSearched}</TableCell>
-                      <TableCell className="text-center">{run.jobsDeduplicated}</TableCell>
-                      <TableCell className="text-center">{run.jobsProcessed}</TableCell>
-                      <TableCell className="text-center">{run.jobsMatched}</TableCell>
+                      <TableCell className="text-center">
+                        {run.jobsSearched}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {run.jobsDeduplicated}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {run.jobsProcessed}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {run.jobsMatched}
+                      </TableCell>
                       <TableCell className="text-center">
                         <span className="font-medium">{run.jobsSaved}</span>
                       </TableCell>
@@ -161,7 +240,10 @@ export function RunHistoryList({ runs, onDelete }: RunHistoryListProps) {
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger>
-                                <Badge variant="outline" className="max-w-[150px] truncate">
+                                <Badge
+                                  variant="outline"
+                                  className="max-w-[150px] truncate"
+                                >
                                   {run.blockedReason || run.errorMessage}
                                 </Badge>
                               </TooltipTrigger>
@@ -208,6 +290,20 @@ export function RunHistoryList({ runs, onDelete }: RunHistoryListProps) {
               })}
             </TableBody>
           </Table>
+          {runs.length < totalRuns && (
+            <div
+              ref={sentinelRef}
+              data-testid="runs-load-more-sentinel"
+              className="flex justify-center p-4"
+            >
+              {loadingMore && (
+                <Loader2
+                  data-testid="runs-load-more-spinner"
+                  className="h-5 w-5 animate-spin text-blue-500"
+                />
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
