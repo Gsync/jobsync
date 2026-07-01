@@ -2336,6 +2336,10 @@
     "token": "ibanfirst"
   },
   {
+    "name": "Instacart",
+    "token": "instacart"
+  },
+  {
     "name": "Job Board",
     "token": "corelight"
   },
@@ -2346,6 +2350,10 @@
   {
     "name": "Lantern",
     "token": "employerdirecthealthcare"
+  },
+  {
+    "name": "Mercury",
+    "token": "mercury"
   },
   {
     "name": "Meridial",
@@ -2360,8 +2368,24 @@
     "token": "dmarket"
   },
   {
+    "name": "Okta",
+    "token": "okta"
+  },
+  {
     "name": "Orion Global Solutions",
     "token": "12jlkfsk"
+  },
+  {
+    "name": "Pinterest",
+    "token": "pinterest"
+  },
+  {
+    "name": "Robinhood",
+    "token": "robinhood"
+  },
+  {
+    "name": "Stripe",
+    "token": "stripe"
   },
   {
     "name": "Tend",
@@ -2370,6 +2394,14 @@
   {
     "name": "The City of Fort Worth",
     "token": "cityoffortworth"
+  },
+  {
+    "name": "Vercel",
+    "token": "vercel"
+  },
+  {
+    "name": "Webflow",
+    "token": "webflow"
   },
   {
     "name": "Zipline",

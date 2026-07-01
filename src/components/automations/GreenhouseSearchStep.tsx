@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   X,
   Loader2,
@@ -8,6 +8,7 @@ import {
   ChevronsUpDown,
   CirclePlus,
   TriangleAlert,
+  ExternalLink,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +31,7 @@ import {
 import {
   searchGreenhouseCompanies,
   resolveGreenhouseBoard,
+  getGreenhouseCompanyCount,
 } from "@/actions/greenhouseCompany.actions";
 import { getAllJobTitles, createJobTitle } from "@/actions/jobtitle.actions";
 import { getAllTags, createTag } from "@/actions/tag.actions";
@@ -134,7 +136,7 @@ function EntityStringChipInput({
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <Popover open={open} onOpenChange={handleOpen}>
+      <Popover open={open} onOpenChange={handleOpen} modal>
         <PopoverTrigger asChild>
           <Button
             type="button"
@@ -234,6 +236,7 @@ export function GreenhouseSearchStep({
   const companies = value.companies ?? [];
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GreenhouseCompany[]>([]);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
   const [isSearching, startSearch] = useTransition();
 
@@ -241,16 +244,27 @@ export function GreenhouseSearchStep({
   const [isResolving, setIsResolving] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
 
-  const handleQueryChange = (val: string) => {
-    setQuery(val);
-    if (val.trim().length < 1) {
-      setResults([]);
-      return;
-    }
+  useEffect(() => {
+    getGreenhouseCompanyCount()
+      .then(setTotalCount)
+      .catch(() => {});
+  }, []);
+
+  const runSearch = (q: string) => {
     startSearch(async () => {
-      const found = await searchGreenhouseCompanies(val);
+      const found = await searchGreenhouseCompanies(q);
       setResults(found);
     });
+  };
+
+  const handleQueryChange = (val: string) => {
+    setQuery(val);
+    runSearch(val);
+  };
+
+  const handleOpen = (next: boolean) => {
+    setOpen(next);
+    if (next) runSearch(query);
   };
 
   const addCompany = (company: GreenhouseCompany) => {
@@ -296,14 +310,21 @@ export function GreenhouseSearchStep({
   return (
     <div className="space-y-5">
       <div className="space-y-2">
-        <Label>
-          Greenhouse Companies{" "}
-          <span className="text-muted-foreground">
-            ({companies.length}/{APP_CONSTANTS.MAX_GREENHOUSE_COMPANIES})
+        <Label className="flex items-center justify-between">
+          <span>
+            Greenhouse Companies{" "}
+            <span className="font-normal text-muted-foreground">
+              ({companies.length}/{APP_CONSTANTS.MAX_GREENHOUSE_COMPANIES})
+            </span>
           </span>
+          {totalCount !== null && (
+            <span className="text-xs font-normal text-muted-foreground">
+              {totalCount} available
+            </span>
+          )}
         </Label>
 
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={handleOpen} modal>
           <PopoverTrigger asChild>
             <Button
               type="button"
@@ -331,7 +352,7 @@ export function GreenhouseSearchStep({
           >
             <Command shouldFilter={false}>
               <CommandInput
-                placeholder="Type to search..."
+                placeholder="Search or browse companies..."
                 value={query}
                 onValueChange={handleQueryChange}
               />
@@ -342,10 +363,7 @@ export function GreenhouseSearchStep({
                     Searching...
                   </div>
                 )}
-                {!isSearching && !query.trim() && (
-                  <CommandEmpty>Type a company name to search.</CommandEmpty>
-                )}
-                {!isSearching && query.trim() && results.length === 0 && (
+                {!isSearching && results.length === 0 && (
                   <CommandEmpty>
                     No matches. Try &quot;Add by URL&quot; below.
                   </CommandEmpty>
@@ -361,6 +379,18 @@ export function GreenhouseSearchStep({
                       <span className="ml-2 text-xs text-muted-foreground">
                         {c.token}
                       </span>
+                      <a
+                        href={`${APP_CONSTANTS.GREENHOUSE_BOARD_URL}/${c.token}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Open ${c.name} job board`}
+                        title="Open job board"
+                        onClick={(e) => e.stopPropagation()}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        className="ml-auto text-muted-foreground hover:text-foreground"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
                     </CommandItem>
                   ))}
                 </CommandGroup>

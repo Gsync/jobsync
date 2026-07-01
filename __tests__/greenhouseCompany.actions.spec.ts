@@ -101,7 +101,8 @@ describe("searchGreenhouseCompanies", () => {
     expect(results.length).toBeLessThanOrEqual(20);
   });
 
-  it("returns empty for empty query", async () => {
-    expect(await searchGreenhouseCompanies("")).toEqual([]);
+  it("returns the full list for an empty query (browse mode)", async () => {
+    const results = await searchGreenhouseCompanies("");
+    expect(results.length).toBeGreaterThan(20);
   });
 });

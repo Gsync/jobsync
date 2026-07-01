@@ -19,7 +19,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ScrollArea } from "./ui/scroll-area";
 import { useState, useTransition } from "react";
 import { delay } from "@/utils/delay";
 import { createLocation } from "@/actions/job.actions";
@@ -90,7 +89,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
   };
 
   return (
-    <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+    <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen} modal>
       <PopoverTrigger asChild>
         <FormControl>
           <Button
@@ -113,7 +112,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
           </Button>
         </FormControl>
       </PopoverTrigger>
-      <PopoverContent className="md:w-[240px] lg:w-[280px] p-0 max-h-[var(--radix-popover-content-available-height)] overflow-hidden">
+      <PopoverContent className="md:w-[240px] lg:w-[280px] p-0">
         <Command
           filter={(value, search) =>
             value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
@@ -124,56 +123,52 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
             onValueChange={(val: string) => setNewOption(val)}
             placeholder={`${creatable ? "Create or " : ""}Search ${field.name}`}
           />
-          <CommandEmpty
-            onClick={() => {
-              onCreateOption(newOption);
-              setNewOption("");
-            }}
-            className={cn(
-              "flex cursor-pointer items-center justify-center gap-1 italic mt-2",
-              !newOption && "text-muted-foreground cursor-default"
-            )}
-          >
-            {creatable ? (
-              <>
-                <CirclePlus className="h-4 w-4" />
-                <p>Create: </p>
-                <p className="block max-w-48 truncate font-semibold text-primary">
-                  {newOption}
-                </p>
-              </>
-            ) : (
-              <p className="font-semibold text-primary">No source found!</p>
-            )}
-          </CommandEmpty>
-          <ScrollArea className="max-h-[calc(var(--radix-popover-content-available-height)-2.75rem)]">
+          <CommandList className="capitalize">
+            <CommandEmpty
+              onClick={() => {
+                onCreateOption(newOption);
+                setNewOption("");
+              }}
+              className={cn(
+                "flex cursor-pointer items-center justify-center gap-1 italic mt-2",
+                !newOption && "text-muted-foreground cursor-default"
+              )}
+            >
+              {creatable ? (
+                <>
+                  <CirclePlus className="h-4 w-4" />
+                  <p>Create: </p>
+                  <p className="block max-w-48 truncate font-semibold text-primary">
+                    {newOption}
+                  </p>
+                </>
+              ) : (
+                <p className="font-semibold text-primary">No source found!</p>
+              )}
+            </CommandEmpty>
             <CommandGroup>
-              <CommandList className="capitalize max-h-none overflow-visible">
-                {options.map((option) => (
-                  <CommandItem
-                    value={option.value}
-                    key={option.id}
-                    onSelect={() => {
-                      if (field.onChange) {
-                        field.onChange(option.id);
-                        setIsPopoverOpen(false);
-                      }
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        option.id === field.value
-                          ? "opacity-100"
-                          : "opacity-0"
-                      )}
-                    />
-                    {option.label}
-                  </CommandItem>
-                ))}
-              </CommandList>
+              {options.map((option) => (
+                <CommandItem
+                  value={option.value}
+                  key={option.id}
+                  onSelect={() => {
+                    if (field.onChange) {
+                      field.onChange(option.id);
+                      setIsPopoverOpen(false);
+                    }
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      option.id === field.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {option.label}
+                </CommandItem>
+              ))}
             </CommandGroup>
-          </ScrollArea>
+          </CommandList>
         </Command>
       </PopoverContent>
     </Popover>

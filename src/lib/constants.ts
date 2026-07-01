@@ -62,6 +62,7 @@ export const APP_CONSTANTS = {
 
   // Greenhouse job source
   GREENHOUSE_BASE_URL: "https://boards-api.greenhouse.io/v1/boards",
+  GREENHOUSE_BOARD_URL: "https://boards.greenhouse.io", // public job board (not API)
   MAX_GREENHOUSE_COMPANIES: 25, // per automation
   GREENHOUSE_LISTING_CAP: 50, // safety ceiling applied after the relevance floor
   GREENHOUSE_FLOOR_MIN_TITLE_HITS: 1,

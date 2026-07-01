@@ -93,17 +93,26 @@ export async function resolveGreenhouseBoard(
   }
 }
 
+// Total number of companies in the seeded directory (for a browse hint).
+export async function getGreenhouseCompanyCount(): Promise<number> {
+  const user = await getCurrentUser();
+  if (!user) return 0;
+  const companies = await loadCompanies();
+  return companies.length;
+}
+
 // Typeahead over the seeded companies.json (server-side filter, capped).
+// An empty query returns the full list (alphabetical) as a browsable default.
 export async function searchGreenhouseCompanies(
   query: string,
 ): Promise<GreenhouseCompany[]> {
   const user = await getCurrentUser();
   if (!user) return [];
 
-  const q = query.trim().toLowerCase();
-  if (q.length < 1) return [];
-
   const companies = await loadCompanies();
+  const q = query.trim().toLowerCase();
+  if (q.length < 1) return companies;
+
   return companies
     .filter(
       (c) =>
