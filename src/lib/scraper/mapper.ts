@@ -76,7 +76,7 @@ async function findOrCreateJobTitle(
       existing = await db.jobTitle.findFirst({
         where: {
           createdBy: userId,
-          OR: keywords.map((keyword) => ({
+          AND: keywords.map((keyword) => ({
             value: { contains: keyword },
           })),
         },
@@ -156,7 +156,7 @@ async function findOrCreateCompany(
       existing = await db.company.findFirst({
         where: {
           createdBy: userId,
-          OR: companyKeywords.map((keyword) => ({
+          AND: companyKeywords.map((keyword) => ({
             label: { contains: keyword },
           })),
         },
