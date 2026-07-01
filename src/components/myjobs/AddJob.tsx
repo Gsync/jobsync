@@ -50,6 +50,7 @@ import CreateResume from "../profile/CreateResume";
 import { getResumeList } from "@/actions/profile.actions";
 import { getCoverLetterList } from "@/actions/coverLetter.actions";
 import { TagInput } from "./TagInput";
+import { APP_CONSTANTS } from "@/lib/constants";
 
 type AddJobProps = {
   jobStatuses: JobStatus[];
@@ -107,7 +108,11 @@ export function AddJob({
 
   const loadResumes = useCallback(async () => {
     try {
-      const resumes = await getResumeList();
+      const resumes = await getResumeList(
+        1,
+        APP_CONSTANTS.RECORDS_PER_PAGE,
+        APP_CONSTANTS.MIN_RESUME_SECTIONS_FOR_SELECTION,
+      );
       setResumes(resumes.data);
     } catch (error) {
       console.error("Failed to load resumes:", error);

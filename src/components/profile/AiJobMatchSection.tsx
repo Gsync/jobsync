@@ -2,6 +2,7 @@
 
 import { getResumeList } from "@/actions/profile.actions";
 import { saveJobMatchResult } from "@/actions/job.actions";
+import { APP_CONSTANTS } from "@/lib/constants";
 import {
   Sheet,
   SheetClose,
@@ -118,7 +119,11 @@ export const AiJobMatchSection = ({
 
   const getResumes = async () => {
     try {
-      const { data, success, message } = await getResumeList();
+      const { data, success, message } = await getResumeList(
+        1,
+        APP_CONSTANTS.RECORDS_PER_PAGE,
+        APP_CONSTANTS.MIN_RESUME_SECTIONS_FOR_SELECTION,
+      );
       if (!data || data.length === 0) {
         return;
       }

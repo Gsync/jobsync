@@ -23,6 +23,7 @@ import { writeFile } from "fs/promises";
 export const getResumeList = async (
   page: number = 1,
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
+  minSections: number = 0,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -31,15 +32,17 @@ export const getResumeList = async (
     }
     const skip = (page - 1) * limit;
 
-    const [data, total] = await Promise.all([
+    // When filtering by section count, Prisma can't express ">= N related
+    // rows" in `where`, so fetch all of the user's resumes and filter in JS
+    // instead of applying skip/take.
+    const [rawData, total] = await Promise.all([
       prisma.resume.findMany({
         where: {
           profile: {
             userId: user.id,
           },
         },
-        skip,
-        take: limit,
+        ...(minSections > 0 ? {} : { skip, take: limit }),
         select: {
           id: true,
           profileId: true,
@@ -50,6 +53,7 @@ export const getResumeList = async (
           _count: {
             select: {
               Job: true,
+              ResumeSections: true,
             },
           },
         },
@@ -65,6 +69,12 @@ export const getResumeList = async (
         },
       }),
     ]);
+
+    const data =
+      minSections > 0
+        ? rawData.filter((r) => r._count.ResumeSections >= minSections)
+        : rawData;
+
     return { data, total, success: true };
   } catch (error) {
     const msg = "Failed to get resume list.";
