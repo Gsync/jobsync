@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "../ui/table";
 import {
-  MoreHorizontal,
+  MoreVertical,
   Pencil,
   Tags,
   Trash,
@@ -289,7 +289,7 @@ function TasksTable({
               variant="ghost"
               data-testid="task-actions-menu-btn"
             >
-              <MoreHorizontal className="h-4 w-4" />
+              <MoreVertical className="h-4 w-4" />
               <span className="sr-only">Toggle menu</span>
             </Button>
           </DropdownMenuTrigger>

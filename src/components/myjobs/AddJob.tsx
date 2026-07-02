@@ -62,6 +62,8 @@ type AddJobProps = {
   editJob?: JobResponse | null;
   resetEditJob: () => void;
   initialOpen?: boolean;
+  hideTrigger?: boolean;
+  redirectPath?: string;
 };
 
 export function AddJob({
@@ -74,6 +76,8 @@ export function AddJob({
   editJob,
   resetEditJob,
   initialOpen,
+  hideTrigger,
+  redirectPath,
 }: AddJobProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -190,7 +194,7 @@ export function AddJob({
           description: message,
         });
       }
-      redirect("/dashboard/myjobs");
+      redirect(redirectPath ?? "/dashboard/myjobs");
     });
     toast({
       variant: "success",
@@ -227,18 +231,20 @@ export function AddJob({
 
   return (
     <>
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-8 gap-1"
-        onClick={addJobForm}
-        data-testid="add-job-btn"
-      >
-        <PlusCircle className="h-3.5 w-3.5" />
-        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-          New Job
-        </span>
-      </Button>
+      {!hideTrigger && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 gap-1"
+          onClick={addJobForm}
+          data-testid="add-job-btn"
+        >
+          <PlusCircle className="h-3.5 w-3.5" />
+          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+            New Job
+          </span>
+        </Button>
+      )}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogOverlay>
           <DialogContent className="h-full xl:h-[85vh] lg:h-[95vh] lg:max-w-screen-lg lg:max-h-screen overflow-y-scroll">

@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "../ui/table";
 import { JobLocation } from "@/models/job.model";
-import { Briefcase, MoreHorizontal, Trash } from "lucide-react";
+import { Briefcase, MoreVertical, Trash } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog } from "@/models/alertDialog.model";
 import { toast } from "../ui/use-toast";
@@ -111,7 +111,7 @@ function JobLocationsTable({
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button aria-haspopup="true" size="icon" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
+                        <MoreVertical className="h-4 w-4" />
                         <span className="sr-only">Toggle menu</span>
                       </Button>
                     </DropdownMenuTrigger>

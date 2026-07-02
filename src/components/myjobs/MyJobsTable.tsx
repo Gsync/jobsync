@@ -9,7 +9,7 @@ import {
 } from "../ui/table";
 import {
   ListCollapse,
-  MoreHorizontal,
+  MoreVertical,
   Pencil,
   StickyNote,
   Tags,
@@ -159,7 +159,7 @@ function MyJobsTable({
                         variant="ghost"
                         data-testid="job-actions-menu-btn"
                       >
-                        <MoreHorizontal className="h-4 w-4" />
+                        <MoreVertical className="h-4 w-4" />
                         <span className="sr-only">Toggle menu</span>
                       </Button>
                     </DropdownMenuTrigger>

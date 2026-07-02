@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "../ui/table";
 import { Company } from "@/models/job.model";
-import { Briefcase, MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { Briefcase, MoreVertical, Pencil, Trash } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { deleteCompanyById } from "@/actions/company.actions";
@@ -130,7 +130,7 @@ function CompaniesTable({
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button aria-haspopup="true" size="icon" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
+                        <MoreVertical className="h-4 w-4" />
                         <span className="sr-only">Toggle menu</span>
                       </Button>
                     </DropdownMenuTrigger>

@@ -1,7 +1,7 @@
 "use client";
 import {
   FilePenLine,
-  MoreHorizontal,
+  MoreVertical,
   Paperclip,
   Pencil,
   Trash,
@@ -46,22 +46,20 @@ function DocumentTable({
   reloadDocuments,
 }: DocumentTableProps) {
   const [alertOpen, setAlertOpen] = useState(false);
-  const [documentToDelete, setDocumentToDelete] =
-    useState<ProfileDocument>();
+  const [documentToDelete, setDocumentToDelete] = useState<ProfileDocument>();
   const onDeleteDocument = useMemo(
     () => (doc: ProfileDocument) => {
       if (!doc.id) return;
       setAlertOpen(true);
       setDocumentToDelete(doc);
     },
-    []
+    [],
   );
 
   const deleteDocument = async (doc: ProfileDocument) => {
     if (!doc.id) return;
     if (doc.jobCount > 0) {
-      const label =
-        doc.type === "resume" ? "resume" : "cover letter";
+      const label = doc.type === "resume" ? "resume" : "cover letter";
       return toast({
         variant: "destructive",
         title: "Error!",
@@ -75,8 +73,7 @@ function DocumentTable({
         : await deleteCoverLetterById(doc.id);
 
     if (success) {
-      const label =
-        doc.type === "resume" ? "Resume" : "Cover letter";
+      const label = doc.type === "resume" ? "Resume" : "Cover letter";
       toast({
         variant: "success",
         description: `${label} has been deleted successfully`,
@@ -133,9 +130,7 @@ function DocumentTable({
                   )}
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    variant={isResume ? "default" : "secondary"}
-                  >
+                  <Badge variant={isResume ? "default" : "secondary"}>
                     {isResume ? "Resume" : "Cover Letter"}
                   </Badge>
                 </TableCell>
@@ -155,7 +150,7 @@ function DocumentTable({
                         variant="ghost"
                         data-testid="document-actions-menu-btn"
                       >
-                        <MoreHorizontal className="h-4 w-4" />
+                        <MoreVertical className="h-4 w-4" />
                         <span className="sr-only">Toggle menu</span>
                       </Button>
                     </DropdownMenuTrigger>
@@ -170,9 +165,7 @@ function DocumentTable({
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit Resume Title
                           </DropdownMenuItem>
-                          <Link
-                            href={`/dashboard/profile/resume/${doc.id}`}
-                          >
+                          <Link href={`/dashboard/profile/resume/${doc.id}`}>
                             <DropdownMenuItem className="cursor-pointer">
                               <FilePenLine className="mr-2 h-4 w-4" />
                               View/Edit Resume
@@ -205,9 +198,7 @@ function DocumentTable({
       </Table>
       <DeleteAlertDialog
         pageTitle={
-          documentToDelete?.type === "cover-letter"
-            ? "cover letter"
-            : "resume"
+          documentToDelete?.type === "cover-letter" ? "cover letter" : "resume"
         }
         open={alertOpen}
         onOpenChange={setAlertOpen}

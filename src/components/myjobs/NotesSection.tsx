@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { NoteResponse } from "@/models/note.model";
 import { getNotesByJobId, deleteNote } from "@/actions/note.actions";
 import { NoteCard } from "./NoteCard";
@@ -17,9 +17,10 @@ import { toast } from "../ui/use-toast";
 
 type NotesSectionProps = {
   jobId: string;
+  openTrigger?: number;
 };
 
-export function NotesSection({ jobId }: NotesSectionProps) {
+export function NotesSection({ jobId, openTrigger }: NotesSectionProps) {
   const [notes, setNotes] = useState<NoteResponse[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -70,6 +71,15 @@ export function NotesSection({ jobId }: NotesSectionProps) {
     setEditNote(null);
     setDialogOpen(true);
   };
+
+  const lastOpenTrigger = useRef(openTrigger);
+  useEffect(() => {
+    if (openTrigger === undefined || openTrigger === lastOpenTrigger.current) {
+      return;
+    }
+    lastOpenTrigger.current = openTrigger;
+    handleAddNote();
+  }, [openTrigger]);
 
   const handleSaved = () => {
     setEditNote(null);

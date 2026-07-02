@@ -36,7 +36,7 @@ import {
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import {
-  MoreHorizontal,
+  MoreVertical,
   FileDown,
   Sparkles,
   Check,
@@ -44,7 +44,10 @@ import {
   Loader,
   AlertTriangle,
 } from "lucide-react";
-import { deleteResumeById, deleteSkillsSection } from "@/actions/profile.actions";
+import {
+  deleteResumeById,
+  deleteSkillsSection,
+} from "@/actions/profile.actions";
 import {
   resolveImportCard,
   ImportCardPayload,
@@ -80,12 +83,9 @@ function filterUnrecognizedSections(sections: string[]): string[] {
   });
 }
 
-
 // Accepts partial data so cards can render progressively as the import stream
 // arrives. Entries are only shown once their key identifying field is present.
-function buildPendingCards(
-  data: DeepPartial<ResumeImportData>,
-): PendingCard[] {
+function buildPendingCards(data: DeepPartial<ResumeImportData>): PendingCard[] {
   const cards: PendingCard[] = [];
 
   if (!data) return cards;
@@ -730,7 +730,7 @@ function ResumeContainer({ resume }: { resume: Resume }) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm" variant="outline">
-                  <MoreHorizontal className="h-4 w-4" />
+                  <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -781,8 +781,8 @@ function ResumeContainer({ resume }: { resume: Resume }) {
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4 text-blue-500" />
-                      We pre-filled this from your document. Review each item and
-                      accept the ones you want.
+                      We pre-filled this from your document. Review each item
+                      and accept the ones you want.
                       {importTruncated &&
                         " Only the first 5 pages were imported."}
                     </>

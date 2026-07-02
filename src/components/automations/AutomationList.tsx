@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/components/ui/use-toast";
 import {
-  MoreHorizontal,
+  MoreVertical,
   Pause,
   Play,
   Pencil,
@@ -118,7 +118,8 @@ export function AutomationList({
           <Zap className="h-12 w-12 text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium">No automations yet</h3>
           <p className="text-muted-foreground text-center mt-2">
-            Create your first automation to start discovering jobs automatically.
+            Create your first automation to start discovering jobs
+            automatically.
           </p>
         </CardContent>
       </Card>
@@ -165,7 +166,9 @@ export function AutomationList({
                     {automation.jobBoard}
                   </Badge>
                   <Badge
-                    variant={automation.status === "active" ? "default" : "secondary"}
+                    variant={
+                      automation.status === "active" ? "default" : "secondary"
+                    }
                   >
                     {automation.status}
                   </Badge>
@@ -220,16 +223,22 @@ export function AutomationList({
                 ) : (
                   <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
                     <span>
-                      <span className="font-medium text-foreground">Keywords:</span>{" "}
+                      <span className="font-medium text-foreground">
+                        Keywords:
+                      </span>{" "}
                       {automation.keywords}
                     </span>
                     <span>
-                      <span className="font-medium text-foreground">Location:</span>{" "}
+                      <span className="font-medium text-foreground">
+                        Location:
+                      </span>{" "}
                       {automation.location}
                     </span>
                     {automation.resume && (
                       <span>
-                        <span className="font-medium text-foreground">Resume:</span>{" "}
+                        <span className="font-medium text-foreground">
+                          Resume:
+                        </span>{" "}
                         {automation.resume.title}
                       </span>
                     )}
@@ -240,7 +249,8 @@ export function AutomationList({
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
                     <span>
-                      {automation.scheduleHour.toString().padStart(2, "0")}:00 daily
+                      {automation.scheduleHour.toString().padStart(2, "0")}:00
+                      daily
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
@@ -249,12 +259,14 @@ export function AutomationList({
                   </div>
                   {automation.nextRunAt && automation.status === "active" && (
                     <span className="text-xs">
-                      Next: {format(new Date(automation.nextRunAt), "MMM d, h:mm a")}
+                      Next:{" "}
+                      {format(new Date(automation.nextRunAt), "MMM d, h:mm a")}
                     </span>
                   )}
                   {automation.lastRunAt && (
                     <span className="text-xs">
-                      Last: {format(new Date(automation.lastRunAt), "MMM d, h:mm a")}
+                      Last:{" "}
+                      {format(new Date(automation.lastRunAt), "MMM d, h:mm a")}
                     </span>
                   )}
                 </div>
@@ -263,12 +275,14 @@ export function AutomationList({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" disabled={isLoading}>
-                    <MoreHorizontal className="h-4 w-4" />
+                    <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   {automation.status === "active" ? (
-                    <DropdownMenuItem onClick={() => handlePause(automation.id)}>
+                    <DropdownMenuItem
+                      onClick={() => handlePause(automation.id)}
+                    >
                       <Pause className="h-4 w-4 mr-2" />
                       Pause
                     </DropdownMenuItem>
@@ -305,8 +319,9 @@ export function AutomationList({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Automation</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this automation? This action cannot be
-              undone. Discovered jobs will remain but lose their automation reference.
+              Are you sure you want to delete this automation? This action
+              cannot be undone. Discovered jobs will remain but lose their
+              automation reference.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

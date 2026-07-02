@@ -4,7 +4,9 @@ import { JobResponse, Tag } from "@/models/job.model";
 import { render, screen, act } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
-  useRouter: vi.fn(() => ({ back: vi.fn() })),
+  useRouter: vi.fn(() => ({ back: vi.fn(), push: vi.fn(), replace: vi.fn() })),
+  useSearchParams: vi.fn(() => new URLSearchParams()),
+  usePathname: vi.fn(() => "/dashboard/myjobs/job-1"),
 }));
 
 let capturedOnMatchSaved: ((score: number, data: string) => void) | undefined;
@@ -37,6 +39,15 @@ vi.mock("@/components/CircularScore", () => ({
     <div data-testid="circular-score">{score}%</div>
   ),
 }));
+
+const baseProps = {
+  jobStatuses: [],
+  companies: [],
+  titles: [],
+  locations: [],
+  sources: [],
+  tags: [],
+};
 
 const makeJob = (overrides: Partial<JobResponse> = {}): JobResponse => ({
   id: "job-1",
@@ -85,7 +96,7 @@ describe("JobDetails – skill badges", () => {
       },
       { id: "tag-3", label: "Node.js", value: "node.js", createdBy: "user-1" },
     ];
-    render(<JobDetails job={makeJob({ tags })} />);
+    render(<JobDetails {...baseProps} job={makeJob({ tags })} />);
 
     expect(screen.getByText("React")).toBeInTheDocument();
     expect(screen.getByText("TypeScript")).toBeInTheDocument();
@@ -93,7 +104,7 @@ describe("JobDetails – skill badges", () => {
   });
 
   it("renders no tag badges when the job has no tags", () => {
-    render(<JobDetails job={makeJob({ tags: [] })} />);
+    render(<JobDetails {...baseProps} job={makeJob({ tags: [] })} />);
 
     // Verify tag area is simply absent; badges for these labels shouldn't exist
     expect(screen.queryByText("React")).not.toBeInTheDocument();
@@ -103,7 +114,7 @@ describe("JobDetails – skill badges", () => {
   it("renders no tag badges when tags property is undefined", () => {
     const job = makeJob();
     delete job.tags;
-    render(<JobDetails job={job} />);
+    render(<JobDetails {...baseProps} job={job} />);
 
     // Should render without crashing and show no skill badges
     expect(screen.getByText("Frontend Developer")).toBeInTheDocument();
@@ -113,7 +124,7 @@ describe("JobDetails – skill badges", () => {
     const tags: Tag[] = [
       { id: "tag-1", label: "GraphQL", value: "graphql", createdBy: "user-1" },
     ];
-    render(<JobDetails job={makeJob({ tags })} />);
+    render(<JobDetails {...baseProps} job={makeJob({ tags })} />);
 
     expect(screen.getByText("GraphQL")).toBeInTheDocument();
   });
@@ -123,7 +134,7 @@ describe("JobDetails – skill badges", () => {
       { id: "tag-1", label: "React", value: "react", createdBy: "user-1" },
       { id: "tag-2", label: "Vue", value: "vue", createdBy: "user-1" },
     ];
-    render(<JobDetails job={makeJob({ tags })} />);
+    render(<JobDetails {...baseProps} job={makeJob({ tags })} />);
 
     // getAllByText returns an array; each label should appear exactly once in the badge area
     expect(screen.getAllByText("React")).toHaveLength(1);
@@ -141,7 +152,7 @@ describe("JobDetails – match data display", () => {
       matchScore: 85,
       summary: "Good match",
     });
-    render(<JobDetails job={makeJob({ matchScore: 85, matchData })} />);
+    render(<JobDetails {...baseProps} job={makeJob({ matchScore: 85, matchData })} />);
 
     expect(screen.getByText("AI Match Analysis")).toBeInTheDocument();
     expect(screen.getByText("85%")).toBeInTheDocument();
@@ -149,14 +160,14 @@ describe("JobDetails – match data display", () => {
   });
 
   it("does not show inline match section when job has no matchData", () => {
-    render(<JobDetails job={makeJob()} />);
+    render(<JobDetails {...baseProps} job={makeJob()} />);
 
     expect(screen.queryByText("AI Match Analysis")).not.toBeInTheDocument();
     expect(screen.queryByTestId("match-details")).not.toBeInTheDocument();
   });
 
   it("updates inline match display when onMatchSaved is called", () => {
-    render(<JobDetails job={makeJob()} />);
+    render(<JobDetails {...baseProps} job={makeJob()} />);
 
     // Initially no match section
     expect(screen.queryByText("AI Match Analysis")).not.toBeInTheDocument();
@@ -181,7 +192,7 @@ describe("JobDetails – match data display", () => {
       matchScore: 60,
       summary: "Old match",
     });
-    render(<JobDetails job={makeJob({ matchScore: 60, matchData: oldMatchData })} />);
+    render(<JobDetails {...baseProps} job={makeJob({ matchScore: 60, matchData: oldMatchData })} />);
 
     expect(screen.getByText("60%")).toBeInTheDocument();
 

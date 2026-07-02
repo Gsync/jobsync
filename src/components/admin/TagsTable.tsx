@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "../ui/table";
 import { Tag } from "@/models/job.model";
-import { MoreHorizontal, Trash } from "lucide-react";
+import { MoreVertical, Trash } from "lucide-react";
 import { useState } from "react";
 import { deleteTagById } from "@/actions/tag.actions";
 import { toast } from "../ui/use-toast";
@@ -110,7 +110,7 @@ function TagsTable({ tags, reloadTags }: TagsTableProps) {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button aria-haspopup="true" size="icon" variant="ghost">
-                      <MoreHorizontal className="h-4 w-4" />
+                      <MoreVertical className="h-4 w-4" />
                       <span className="sr-only">Toggle menu</span>
                     </Button>
                   </DropdownMenuTrigger>

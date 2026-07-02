@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { MoreHorizontal, Trash } from "lucide-react";
+import { MoreVertical, Trash } from "lucide-react";
 import { useState } from "react";
 import { deleteActivityTypeById } from "@/actions/activity.actions";
 import { toast } from "../ui/use-toast";
@@ -127,7 +127,7 @@ function ActivityTypesTable({
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button aria-haspopup="true" size="icon" variant="ghost">
-                      <MoreHorizontal className="h-4 w-4" />
+                      <MoreVertical className="h-4 w-4" />
                       <span className="sr-only">Toggle menu</span>
                     </Button>
                   </DropdownMenuTrigger>

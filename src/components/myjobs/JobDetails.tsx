@@ -2,7 +2,15 @@
 import { format } from "date-fns";
 import { Badge } from "../ui/badge";
 import { cn, formatUrl } from "@/lib/utils";
-import { JobResponse } from "@/models/job.model";
+import {
+  Company,
+  JobLocation,
+  JobResponse,
+  JobSource,
+  JobStatus,
+  JobTitle,
+  Tag,
+} from "@/models/job.model";
 import { TipTapContentViewer } from "../TipTapContentViewer";
 import {
   Card,
@@ -12,7 +20,15 @@ import {
   CardTitle,
 } from "../ui/card";
 import { Button } from "../ui/button";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  MoreVertical,
+  Pencil,
+  Sparkles,
+  StickyNote,
+  Tags,
+  Trash,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AiJobMatchSection } from "../profile/AiJobMatchSection";
 import { NotesSection } from "./NotesSection";
@@ -21,11 +37,52 @@ import { DownloadFileButton } from "../profile/DownloadFileButton";
 import { MatchDetails } from "../automations/MatchDetails";
 import type { JobMatchData } from "@/models/ai.schemas";
 import { CircularScore } from "@/components/CircularScore";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { DeleteAlertDialog } from "../DeleteAlertDialog";
+import { AddJob } from "./AddJob";
+import { deleteJobById, updateJobStatus } from "@/actions/job.actions";
+import { toast } from "../ui/use-toast";
 
-function JobDetails({ job }: { job: JobResponse }) {
+type JobDetailsProps = {
+  job: JobResponse;
+  jobStatuses: JobStatus[];
+  companies: Company[];
+  titles: JobTitle[];
+  locations: JobLocation[];
+  sources: JobSource[];
+  tags: Tag[];
+};
+
+function JobDetails({
+  job,
+  jobStatuses,
+  companies,
+  titles,
+  locations,
+  sources,
+  tags,
+}: JobDetailsProps) {
   const [aiSectionOpen, setAiSectionOpen] = useState(false);
   const [currentMatchScore, setCurrentMatchScore] = useState(job.matchScore);
   const [currentMatchData, setCurrentMatchData] = useState(job.matchData);
+  const [currentStatus, setCurrentStatus] = useState(job.Status);
+  const [editJobTarget, setEditJobTarget] = useState<JobResponse | null>(
+    null,
+  );
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [noteOpenTrigger, setNoteOpenTrigger] = useState(0);
   const router = useRouter();
   const goBack = () => router.back();
 
@@ -48,6 +105,51 @@ function JobDetails({ job }: { job: JobResponse }) {
   const getAiJobMatch = async () => {
     setAiSectionOpen(true);
   };
+
+  const onEditJob = () => {
+    setEditJobTarget({ ...job, Status: currentStatus });
+  };
+
+  const resetEditJob = () => setEditJobTarget(null);
+
+  const onAddNote = () => {
+    setNoteOpenTrigger((prev) => prev + 1);
+  };
+
+  const onChangeStatus = async (status: JobStatus) => {
+    const { success, message } = await updateJobStatus(job.id, status);
+    if (success) {
+      setCurrentStatus(status);
+      toast({
+        variant: "success",
+        description: `Job has been updated successfully`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description: message,
+      });
+    }
+  };
+
+  const onDeleteJob = async () => {
+    const { success, message } = await deleteJobById(job.id);
+    if (success) {
+      toast({
+        variant: "success",
+        description: `Job has been deleted successfully`,
+      });
+      router.push("/dashboard/myjobs");
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description: message,
+      });
+    }
+  };
+
   const getJobType = (code: string) => {
     switch (code) {
       case "FT":
@@ -66,18 +168,75 @@ function JobDetails({ job }: { job: JobResponse }) {
         <Button title="Go Back" size="sm" variant="outline" onClick={goBack}>
           <ArrowLeft />
         </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-8 gap-1 cursor-pointer"
-          onClick={getAiJobMatch}
-          // disabled={loading}
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Match with AI
-          </span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 gap-1 cursor-pointer"
+            onClick={getAiJobMatch}
+            // disabled={loading}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+              Match with AI
+            </span>
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                aria-haspopup="true"
+                size="icon"
+                variant="ghost"
+                data-testid="job-details-actions-menu-btn"
+              >
+                <MoreVertical className="h-4 w-4" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[200px]">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuGroup>
+                <DropdownMenuItem className="cursor-pointer" onClick={onEditJob}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit Job
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer" onClick={onAddNote}>
+                  <StickyNote className="mr-2 h-4 w-4" />
+                  Add a Note
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Tags className="mr-2 h-4 w-4" />
+                    Change status
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent className="p-0">
+                      {jobStatuses.map((status) => (
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          key={status.id}
+                          onSelect={() => onChangeStatus(status)}
+                          disabled={status.id === currentStatus.id}
+                        >
+                          <span>{status.label}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-red-600 cursor-pointer"
+                  onClick={() => setDeleteAlertOpen(true)}
+                >
+                  <Trash className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
       {job?.id && (
         <Card className="col-span-3">
@@ -106,17 +265,17 @@ function JobDetails({ job }: { job: JobResponse }) {
             </div>
           </CardHeader>
           <h3 className="ml-4">
-            {new Date() > job.dueDate && job.Status?.value === "draft" ? (
+            {new Date() > job.dueDate && currentStatus?.value === "draft" ? (
               <Badge className="bg-red-500">Expired</Badge>
             ) : (
               <Badge
                 className={cn(
                   "w-[70px] justify-center",
-                  job.Status?.value === "applied" && "bg-cyan-500",
-                  job.Status?.value === "interview" && "bg-green-500",
+                  currentStatus?.value === "applied" && "bg-cyan-500",
+                  currentStatus?.value === "interview" && "bg-green-500",
                 )}
               >
-                {job.Status?.label}
+                {currentStatus?.label}
               </Badge>
             )}
             <span className="ml-2">
@@ -163,7 +322,7 @@ function JobDetails({ job }: { job: JobResponse }) {
               <MatchDetails matchData={parsedMatchData} />
             </div>
           )}
-          <NotesSection jobId={job.id} />
+          <NotesSection jobId={job.id} openTrigger={noteOpenTrigger} />
           <CardFooter></CardFooter>
         </Card>
       )}
@@ -175,6 +334,24 @@ function JobDetails({ job }: { job: JobResponse }) {
           onMatchSaved={handleMatchSaved}
         />
       }
+      <AddJob
+        jobStatuses={jobStatuses}
+        companies={companies}
+        jobTitles={titles}
+        locations={locations}
+        jobSources={sources}
+        tags={tags}
+        editJob={editJobTarget}
+        resetEditJob={resetEditJob}
+        hideTrigger
+        redirectPath={`/dashboard/myjobs/${job.id}`}
+      />
+      <DeleteAlertDialog
+        pageTitle="job"
+        open={deleteAlertOpen}
+        onOpenChange={setDeleteAlertOpen}
+        onDelete={onDeleteJob}
+      />
     </>
   );
 }
