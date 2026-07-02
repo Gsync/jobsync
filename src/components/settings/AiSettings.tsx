@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AiModel,
   AiProvider,
@@ -23,7 +23,7 @@ import {
 import { Label } from "../ui/label";
 import { Button } from "../ui/button";
 import { toast } from "../ui/use-toast";
-import { XCircle, Loader2 } from "lucide-react";
+import { XCircle, Loader2, RefreshCw } from "lucide-react";
 import { checkOllamaConnection } from "@/utils/ai.utils";
 import { getUserSettings, updateAiSettings } from "@/actions/userSettings.actions";
 
@@ -84,81 +84,92 @@ function AiSettings() {
     }
   };
 
-  useEffect(() => {
-    if (!isInitialized) return;
-    const entry = PROVIDER_REGISTRY[selectedModel.provider];
-    if (!entry) return;
+  const fetchModelsForProvider = useCallback(
+    (provider: AiProvider) => {
+      const entry = PROVIDER_REGISTRY[provider];
+      if (!entry) return () => {};
 
-    if (!entry.modelsEndpoint) {
-      const fallbackModels = getFallbackModels(selectedModel.provider);
-      setFetchedModels(fallbackModels);
-      setSelectedModel((prev) =>
-        prev.model && !fallbackModels.includes(prev.model)
-          ? { ...prev, model: undefined }
-          : prev,
-      );
-      return;
-    }
+      if (!entry.modelsEndpoint) {
+        const fallbackModels = getFallbackModels(provider);
+        setFetchedModels(fallbackModels);
+        setSelectedModel((prev) =>
+          prev.model && !fallbackModels.includes(prev.model)
+            ? { ...prev, model: undefined }
+            : prev,
+        );
+        return () => {};
+      }
 
-    const fallback = getFallbackModels(selectedModel.provider);
-    let cancelled = false;
-    setIsLoadingModels(true);
-    setFetchError("");
-    setConnectionError("");
+      const fallback = getFallbackModels(provider);
+      let cancelled = false;
+      setIsLoadingModels(true);
+      setFetchError("");
+      setConnectionError("");
 
-    (async () => {
-      try {
-        if (entry.category === "local") {
-          const connResult = await checkOllamaConnection(selectedModel.provider as AiProvider);
-          if (!connResult.isConnected) {
+      (async () => {
+        try {
+          if (entry.category === "local") {
+            const connResult = await checkOllamaConnection(provider);
+            if (!connResult.isConnected) {
+              if (!cancelled) {
+                setFetchedModels(fallback);
+                setConnectionError(connResult.error || "Ollama is not reachable.");
+              }
+              return;
+            }
+          }
+          const response = await fetch(`/api/ai/${entry.modelsEndpoint}`);
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            const errorMsg = errorData?.error
+              || (entry.category === "local"
+                ? `Failed to fetch ${entry.displayName} models. Make sure ${entry.displayName} is running.`
+                : `Failed to fetch ${entry.displayName} models. Please check your API key in API Keys settings.`);
             if (!cancelled) {
+              setFetchError(errorMsg);
               setFetchedModels(fallback);
-              setConnectionError(connResult.error || "Ollama is not reachable.");
             }
             return;
           }
-        }
-        const response = await fetch(`/api/ai/${entry.modelsEndpoint}`);
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => null);
-          const errorMsg = errorData?.error
-            || (entry.category === "local"
-              ? `Failed to fetch ${entry.displayName} models. Make sure ${entry.displayName} is running.`
-              : `Failed to fetch ${entry.displayName} models. Please check your API key in API Keys settings.`);
+          const data = await response.json();
+          const models = entry.parseModelsResponse?.(data) ?? [];
+          const finalModels = models.length > 0 ? models : fallback;
           if (!cancelled) {
-            setFetchError(errorMsg);
-            setFetchedModels(fallback);
+            setFetchedModels(finalModels);
+            setSelectedModel((prev) =>
+              prev.model && !finalModels.includes(prev.model)
+                ? { ...prev, model: undefined }
+                : prev,
+            );
           }
-          return;
+        } catch (error) {
+          console.error(`Error fetching ${entry.displayName} models:`, error);
+          if (!cancelled) {
+            setFetchedModels(fallback);
+            setFetchError(
+              entry.category === "local"
+                ? `Failed to fetch ${entry.displayName} models. Make sure ${entry.displayName} is running.`
+                : `Failed to fetch ${entry.displayName} models. Please check your API key in API Keys settings.`,
+            );
+          }
+        } finally {
+          if (!cancelled) setIsLoadingModels(false);
         }
-        const data = await response.json();
-        const models = entry.parseModelsResponse?.(data) ?? [];
-        const finalModels = models.length > 0 ? models : fallback;
-        if (!cancelled) {
-          setFetchedModels(finalModels);
-          setSelectedModel((prev) =>
-            prev.model && !finalModels.includes(prev.model)
-              ? { ...prev, model: undefined }
-              : prev,
-          );
-        }
-      } catch (error) {
-        console.error(`Error fetching ${entry.displayName} models:`, error);
-        if (!cancelled) {
-          setFetchedModels(fallback);
-          setFetchError(
-            entry.category === "local"
-              ? `Failed to fetch ${entry.displayName} models. Make sure ${entry.displayName} is running.`
-              : `Failed to fetch ${entry.displayName} models. Please check your API key in API Keys settings.`,
-          );
-        }
-      } finally {
-        if (!cancelled) setIsLoadingModels(false);
-      }
-    })();
+      })();
 
-    return () => { cancelled = true; };
-  }, [selectedModel.provider, isInitialized]);
+      return () => { cancelled = true; };
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!isInitialized) return;
+    return fetchModelsForProvider(selectedModel.provider);
+  }, [selectedModel.provider, isInitialized, fetchModelsForProvider]);
+
+  const retryConnection = () => {
+    fetchModelsForProvider(selectedModel.provider);
+  };
 
   const saveModelSettings = async () => {
     if (!selectedModel.model) {
@@ -292,9 +303,21 @@ function AiSettings() {
             </div>
           )}
           {connectionError && (
-            <div className="flex items-center gap-1 text-red-600 text-sm mt-2">
-              <XCircle className="h-4 w-4 flex-shrink-0" />
-              <span>{connectionError}</span>
+            <div className="flex items-center gap-1 mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-6 flex-shrink-0 text-muted-foreground"
+                onClick={retryConnection}
+                disabled={isLoadingModels}
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isLoadingModels ? "animate-spin" : ""}`} />
+                Retry
+              </Button>
+              <div className="flex items-center gap-1 text-red-600 text-sm">
+                <XCircle className="h-4 w-4 flex-shrink-0" />
+                <span>{connectionError}</span>
+              </div>
             </div>
           )}
         </div>

@@ -286,6 +286,12 @@ export const AiJobMatchSection = ({
 
           {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto px-6 pt-4 pb-6" onScroll={handleSheetScroll}>
+            {selectedModel.provider === "ollama" &&
+              ollamaConnected === false &&
+              connectionError && (
+                <p className="text-xs text-red-600">{connectionError}</p>
+              )}
+
             {!isLoading && !selectedResumeId && (
               <div className={`flex flex-col items-center gap-2${!hasContent ? " pt-12" : " py-2"}`}>
                 <Select
@@ -313,12 +319,6 @@ export const AiJobMatchSection = ({
                     </SelectGroup>
                   </SelectContent>
                 </Select>
-
-                {selectedModel.provider === "ollama" &&
-                  ollamaConnected === false &&
-                  connectionError && (
-                    <p className="text-xs text-destructive">{connectionError}</p>
-                  )}
               </div>
             )}
 

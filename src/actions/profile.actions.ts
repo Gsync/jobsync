@@ -14,6 +14,10 @@ import {
 } from "@/models/skills.schema";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
+import {
+  buildInsufficientSectionsMessage,
+  hasMinResumeSections,
+} from "@/lib/resumeSections";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import path from "path";
@@ -146,10 +150,18 @@ export const setDefaultResume = async (
     // Verify ownership before pointing the user at this resume.
     const owned = await prisma.resume.findFirst({
       where: { id: resumeId, profile: { userId: user.id } },
-      select: { id: true },
+      select: { _count: { select: { ResumeSections: true } } },
     });
     if (!owned) {
       throw new Error("Resume not found");
+    }
+    if (!hasMinResumeSections(owned._count.ResumeSections)) {
+      return {
+        success: false,
+        message: buildInsufficientSectionsMessage(
+          "setting this resume as default",
+        ),
+      };
     }
 
     await prisma.user.update({

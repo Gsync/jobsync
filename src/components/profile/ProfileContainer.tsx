@@ -113,6 +113,7 @@ const ProfileContainer = () => {
       jobCount: r._count?.Job ?? 0,
       FileId: r.FileId,
       isDefault: r.id === defaultResumeId,
+      sectionCount: r._count?.ResumeSections ?? 0,
     }));
     const coverLetterDocs: ProfileDocument[] = coverLetters.map((cl) => ({
       id: cl.id!,

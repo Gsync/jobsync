@@ -12,6 +12,7 @@ export interface Resume {
   File?: File;
   _count?: {
     Job?: number;
+    ResumeSections?: number;
   };
 }
 
@@ -147,4 +148,5 @@ export interface ProfileDocument {
   FileId?: string;
   content?: string;
   isDefault?: boolean;
+  sectionCount?: number;
 }

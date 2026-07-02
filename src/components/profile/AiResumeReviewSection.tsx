@@ -26,6 +26,10 @@ import { checkOllamaConnection } from "@/utils/ai.utils";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { useSlowResponseWarning } from "@/hooks/useSlowResponseWarning";
 import { SlowResponseWarning } from "../common/SlowResponseWarning";
+import {
+  hasMinResumeSections,
+  warnInsufficientResumeSections,
+} from "@/utils/resumeSections.utils";
 
 interface AiSectionProps {
   resume: Resume;
@@ -79,7 +83,8 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   const [result, setResult] = useState<ResumeReviewResult | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
-  const { scrollAnchorRef, handleSheetScroll, resetScroll } = useSheetAutoScroll(isLoading, result);
+  const { scrollAnchorRef, handleSheetScroll, resetScroll } =
+    useSheetAutoScroll(isLoading, result);
   const { width, handleMouseDown } = useResizablePanel("ai-panel-width");
 
   const stop = useCallback(() => {
@@ -89,13 +94,11 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
   }, []);
 
   const getResumeReview = async () => {
-    if (!resume || (resume.ResumeSections?.length ?? 0) < 2) {
-      toast({
-        variant: "destructive",
-        title: "Not enough content",
-        description:
-          "Add at least 2 sections (e.g. Summary and Experience) before running a review.",
-      });
+    if (!resume || !hasMinResumeSections(resume.ResumeSections?.length)) {
+      warnInsufficientResumeSections(
+        "running a review",
+        "e.g. Summary and Experience",
+      );
       return;
     }
 
@@ -192,7 +195,9 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
             <SheetTitle className="text-[11px] font-bold tracking-[0.15em] uppercase text-foreground leading-none shrink-0 m-0">
               AI REVIEW
             </SheetTitle>
-            <span className="text-muted-foreground/30 text-xs select-none">···</span>
+            <span className="text-muted-foreground/30 text-xs select-none">
+              ···
+            </span>
             <div className="flex items-center gap-1.5 min-w-0">
               {statusIcon}
               <span className="text-xs text-muted-foreground font-mono truncate">
@@ -212,31 +217,38 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
             </SheetClose>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 pt-4 pb-6" onScroll={handleSheetScroll}>
-            {!isLoading && <div className={`flex justify-center items-center${!hasContent ? " min-h-[calc(100dvh-9rem)]" : " py-2"}`}>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 gap-1 cursor-pointer"
-                onClick={getResumeReview}
-                disabled={
-                  isLoading ||
-                  (selectedModel.provider === "ollama" &&
-                    ollamaConnected === false)
-                }
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Generate AI Review
-                </span>
-              </Button>
-            </div>}
-
+          <div
+            className="flex-1 overflow-y-auto px-6 pt-4 pb-6"
+            onScroll={handleSheetScroll}
+          >
             {selectedModel.provider === "ollama" &&
               ollamaConnected === false &&
               connectionError && (
-                <p className="text-xs text-destructive mt-2">{connectionError}</p>
+                <p className="text-xs text-red-600">{connectionError}</p>
               )}
+
+            {!isLoading && (
+              <div
+                className={`flex justify-center items-center${!hasContent ? " min-h-[calc(100dvh-9rem)]" : " py-2"}`}
+              >
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1 cursor-pointer"
+                  onClick={getResumeReview}
+                  disabled={
+                    isLoading ||
+                    (selectedModel.provider === "ollama" &&
+                      ollamaConnected === false)
+                  }
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                    Generate AI Review
+                  </span>
+                </Button>
+              </div>
+            )}
 
             {isLoading && !hasContent ? (
               <div className="flex items-center flex-col mt-4">

@@ -36,6 +36,7 @@ import {
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import {
+  ArrowLeft,
   MoreVertical,
   FileDown,
   Sparkles,
@@ -58,9 +59,14 @@ import {
 import { ResumeImportData } from "@/models/resumeImport.schema";
 import { AiModel, defaultModel } from "@/models/ai.model";
 import { getUserSettings } from "@/actions/userSettings.actions";
+import { checkOllamaConnection } from "@/utils/ai.utils";
 import { streamResumeImport } from "@/utils/resumeImportStream.utils";
 import { extractSkillCategories } from "@/utils/skillImport.utils";
 import type { DeepPartial } from "ai";
+import {
+  hasMinResumeSections,
+  warnInsufficientResumeSections,
+} from "@/utils/resumeSections.utils";
 
 type PendingCard = {
   id: string;
@@ -342,6 +348,7 @@ function ResumeContainer({
   defaultResumeId?: string | null;
 }) {
   const router = useRouter();
+  const goBack = () => router.back();
   const isDefault = !!resume?.id && resume.id === defaultResumeId;
   const [setDefaultConfirmOpen, setSetDefaultConfirmOpen] = useState(false);
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
@@ -365,6 +372,10 @@ function ResumeContainer({
   // AI availability for "Structure with AI" button
   const [aiModel, setAiModel] = useState<AiModel>(defaultModel);
   const [aiReady, setAiReady] = useState(false);
+  const [ollamaConnected, setOllamaConnected] = useState<boolean | null>(
+    null,
+  );
+  const [connectionError, setConnectionError] = useState<string>("");
   // Plain boolean (not useTransition): streaming fires rapid state updates that
   // must not run as interruptible transition renders.
   const [isStructuring, setIsStructuring] = useState(false);
@@ -494,6 +505,18 @@ function ResumeContainer({
           };
           setAiModel(model);
           setAiReady(true);
+          if (model.provider === "ollama") {
+            setOllamaConnected(null);
+            setConnectionError("");
+            checkOllamaConnection(model.provider).then((result) => {
+              setOllamaConnected(result.isConnected);
+              if (!result.isConnected) {
+                setConnectionError(
+                  result.error || "Ollama is not reachable.",
+                );
+              }
+            });
+          }
         }
       });
     }
@@ -741,6 +764,11 @@ function ResumeContainer({
 
   return (
     <>
+      <div className="flex justify-between">
+        <Button title="Go Back" size="sm" variant="outline" onClick={goBack}>
+          <ArrowLeft />
+        </Button>
+      </div>
       <Card>
         <CardHeader className="flex-col gap-2 sm:flex-row sm:justify-between sm:items-center lg:grid lg:grid-cols-3 lg:items-center">
           <div className="flex items-center gap-2">
@@ -798,7 +826,15 @@ function ResumeContainer({
                 {!isDefault && (
                   <DropdownMenuItem
                     className="cursor-pointer"
-                    onClick={() => setSetDefaultConfirmOpen(true)}
+                    onClick={() => {
+                      if (!hasMinResumeSections(ResumeSections?.length)) {
+                        warnInsufficientResumeSections(
+                          "setting this resume as default",
+                        );
+                        return;
+                      }
+                      setSetDefaultConfirmOpen(true);
+                    }}
                   >
                     <Star className="h-4 w-4 mr-2" />
                     Set as default
@@ -881,13 +917,25 @@ function ResumeContainer({
       {showStructureWithAI && (
         <Card className="border-dashed">
           <CardHeader className="flex-row items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              A file is attached. Structure it into sections using AI.
-            </p>
+            <div>
+              <p className="text-sm text-muted-foreground">
+                A file is attached. Structure it into sections using AI.
+              </p>
+              {aiModel.provider === "ollama" &&
+                ollamaConnected === false &&
+                connectionError && (
+                  <p className="text-xs text-red-600 mt-1">
+                    {connectionError}
+                  </p>
+                )}
+            </div>
             <Button
               size="sm"
               variant="outline"
-              disabled={isStructuring}
+              disabled={
+                isStructuring ||
+                (aiModel.provider === "ollama" && ollamaConnected === false)
+              }
               onClick={handleStructureWithAI}
             >
               {isStructuring ? (

@@ -32,6 +32,10 @@ import { deleteResumeById, setDefaultResume } from "@/actions/profile.actions";
 import { deleteCoverLetterById } from "@/actions/coverLetter.actions";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { Badge } from "../ui/badge";
+import {
+  hasMinResumeSections,
+  warnInsufficientResumeSections,
+} from "@/utils/resumeSections.utils";
 
 type DocumentTableProps = {
   documents: ProfileDocument[];
@@ -90,6 +94,10 @@ function DocumentTable({
 
   const onSetDefault = (doc: ProfileDocument) => {
     if (!doc.id) return;
+    if (!hasMinResumeSections(doc.sectionCount)) {
+      warnInsufficientResumeSections("setting this resume as default");
+      return;
+    }
     // Confirm whenever a different resume already holds the default. Decided by
     // defaultResumeId (not the loaded-docs lookup) so it fires even when the
     // current default lives on a not-yet-loaded page.
