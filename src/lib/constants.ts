@@ -60,6 +60,10 @@ export const APP_CONSTANTS = {
   // Per-run LLM match budget (top-K). Reused as the Greenhouse K.
   MAX_JOBS_PER_RUN: 10,
 
+  // Concurrent AI job-match calls per automation run (hosted providers only;
+  // Ollama runs sequentially since it serializes on the GPU).
+  AUTOMATION_MATCH_CONCURRENCY: 3,
+
   // Greenhouse job source
   GREENHOUSE_BASE_URL: "https://boards-api.greenhouse.io/v1/boards",
   GREENHOUSE_BOARD_URL: "https://boards.greenhouse.io", // public job board (not API)

@@ -12,6 +12,8 @@ export {
   JOB_MATCH_SYSTEM_PROMPT,
   buildResumeReviewPrompt,
   buildJobMatchPrompt,
+  AUTOMATION_JOB_MATCH_SYSTEM_PROMPT,
+  buildAutomationJobMatchPrompt,
 } from "./prompts";
 
 // Analysis tools

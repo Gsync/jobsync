@@ -1,4 +1,5 @@
 import { generateText } from "ai";
+import pLimit from "p-limit";
 import db from "@/lib/db";
 import type {
   Automation,
@@ -11,6 +12,7 @@ import type { ScraperError, JobDetails } from "./types";
 import { searchJSearchJobs } from "./jsearch";
 import { searchGreenhouseJobs } from "./greenhouse";
 import { runGreenhousePipeline } from "./greenhouse/pipeline";
+import type { ScoredJob } from "./greenhouse/pipeline";
 import { mapScrapedJobToJobRecord } from "./mapper";
 import { normalizeJobUrl } from "./utils";
 import { calculateNextRunAt } from "./schedule";
@@ -18,8 +20,8 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import {
   getModel,
   parseJobMatch,
-  JOB_MATCH_SYSTEM_PROMPT,
-  buildJobMatchPrompt,
+  AUTOMATION_JOB_MATCH_SYSTEM_PROMPT,
+  buildAutomationJobMatchPrompt,
   removeHtmlTags,
 } from "@/lib/ai";
 import {
@@ -38,6 +40,16 @@ import {
 import { resolveApiKey } from "@/lib/api-key-resolver";
 
 const MAX_JOBS_PER_RUN = APP_CONSTANTS.MAX_JOBS_PER_RUN;
+
+// Ollama serializes on the GPU, so it must process matches one at a time;
+// other providers can fan out concurrently.
+function getAutomationMatchLimit(provider: AiProvider) {
+  const concurrency =
+    provider === AiProvider.OLLAMA
+      ? 1
+      : APP_CONSTANTS.AUTOMATION_MATCH_CONCURRENCY;
+  return pLimit(concurrency);
+}
 
 function getDefaultModelForProvider(provider: AiProvider): string {
   switch (provider) {
@@ -362,13 +374,11 @@ export async function runAutomation(
     let aiError: string | null = null;
 
     const aiSettings = await getUserAiSettings(automation.userId);
+    const limit = getAutomationMatchLimit(aiSettings.provider);
 
-    // JSearch returns full job details, no separate extraction needed
-    for (const job of jobsToProcess) {
-      if (effectiveSignal.aborted) {
-        automationLogger.log(automation.id, "warning", "Run aborted by user");
-        break;
-      }
+    const processJob = async (job: JobDetails): Promise<void> => {
+      // Queued tasks bail immediately as slots free once aborted/errored.
+      if (effectiveSignal.aborted || aiError) return;
 
       automationLogger.log(
         automation.id,
@@ -396,23 +406,23 @@ export async function runAutomation(
       );
 
       // Abort may have fired mid-call; bail before saving this job.
-      if (effectiveSignal.aborted) {
-        automationLogger.log(automation.id, "warning", "Run aborted by user");
-        break;
-      }
+      if (effectiveSignal.aborted) return;
 
       if (!matchResult.success) {
         if (matchResult.error === "ai_unavailable") {
-          aiError = `AI provider (${aiSettings.provider}) is not available. Please check your settings.`;
-          automationLogger.log(automation.id, "error", aiError);
-          break;
+          // Only the first concurrent task to fail logs; siblings stay quiet.
+          if (!aiError) {
+            aiError = `AI provider (${aiSettings.provider}) is not available. Please check your settings.`;
+            automationLogger.log(automation.id, "error", aiError);
+          }
+        } else {
+          automationLogger.log(
+            automation.id,
+            "warning",
+            `AI matching failed: ${matchResult.error}`,
+          );
         }
-        automationLogger.log(
-          automation.id,
-          "warning",
-          `AI matching failed: ${matchResult.error}`,
-        );
-        continue;
+        return;
       }
 
       automationLogger.log(
@@ -428,7 +438,7 @@ export async function runAutomation(
           "info",
           `Job skipped - score below threshold`,
         );
-        continue;
+        return;
       }
 
       jobsMatched++;
@@ -486,23 +496,30 @@ export async function runAutomation(
         );
         console.error("Failed to save job:", err);
       }
+    };
+
+    // JSearch returns full job details, no separate extraction needed
+    await Promise.allSettled(
+      jobsToProcess.map((job) => limit(() => processJob(job))),
+    );
+
+    if (effectiveSignal.aborted) {
+      automationLogger.log(automation.id, "warning", "Run aborted by user");
     }
 
+    // Concurrent dispatch means in-flight jobs can still save after a sibling
+    // sets aiError, so "failed" would be misleading — treat it as partial.
     const finalStatus: AutomationRunStatus = effectiveSignal.aborted
       ? "cancelled"
       : aiError
-        ? "failed"
+        ? "completed_with_errors"
         : jobsProcessed < jobsToProcess.length
           ? "completed_with_errors"
           : "completed";
 
     automationLogger.log(
       automation.id,
-      finalStatus === "completed"
-        ? "success"
-        : finalStatus === "failed"
-          ? "error"
-          : "warning",
+      finalStatus === "completed" ? "success" : "warning",
       `Run finished with status: ${finalStatus}`,
       {
         status: finalStatus,
@@ -820,6 +837,7 @@ async function runGreenhouseRun(
     const aiSettings = await getUserAiSettings(automation.userId);
     const modelName =
       aiSettings.model || getDefaultModelForProvider(aiSettings.provider);
+    const limit = getAutomationMatchLimit(aiSettings.provider);
 
     let jobsSaved = 0;
     let analyzed = 0;
@@ -861,14 +879,11 @@ async function runGreenhouseRun(
       `[Greenhouse] Running LLM analysis on top ${totalToAnalyze}...`,
     );
 
-    let analyzeIndex = 0;
-    for (const scored of pipeline.toAnalyze) {
-      if (signal?.aborted) {
-        automationLogger.log(automation.id, "warning", "[Greenhouse] Run aborted by user");
-        break;
-      }
+    const analyzeJob = async (scored: ScoredJob): Promise<void> => {
+      // Queued tasks bail silently as slots free; the abort is logged once
+      // after all dispatched tasks settle.
+      if (signal?.aborted) return;
 
-      analyzeIndex++;
       const saveUnanalyzed = async () => {
         try {
           await persistDiscoveredJob(
@@ -889,13 +904,13 @@ async function runGreenhouseRun(
 
       if (aiError) {
         await saveUnanalyzed();
-        continue;
+        return;
       }
 
       automationLogger.log(
         automation.id,
         "info",
-        `[Greenhouse] Analyzing ${analyzeIndex}/${totalToAnalyze}: ${scored.job.title} at ${scored.job.company}`,
+        `[Greenhouse] Analyzing: ${scored.job.title} at ${scored.job.company}`,
       );
 
       const matchResult = await matchJobToResume(
@@ -907,20 +922,19 @@ async function runGreenhouseRun(
         signal,
       );
 
-      // Abort may have fired mid-call; bail before saving this job.
-      if (signal?.aborted) {
-        automationLogger.log(
-          automation.id,
-          "warning",
-          "[Greenhouse] Run aborted by user",
-        );
-        break;
-      }
+      // Abort may have fired mid-call; bail before saving this job. This
+      // check must come before the failure branch below, since an aborted
+      // match resolves as a non-ai_unavailable failure and would otherwise
+      // incorrectly saveUnanalyzed() a cancelled run's job.
+      if (signal?.aborted) return;
 
       if (!matchResult.success) {
         if (matchResult.error === "ai_unavailable") {
-          aiError = `AI provider (${aiSettings.provider}) is not available.`;
-          automationLogger.log(automation.id, "error", aiError);
+          // Only the first concurrent task to fail logs; siblings stay quiet.
+          if (!aiError) {
+            aiError = `AI provider (${aiSettings.provider}) is not available.`;
+            automationLogger.log(automation.id, "error", aiError);
+          }
         } else {
           automationLogger.log(
             automation.id,
@@ -929,7 +943,7 @@ async function runGreenhouseRun(
           );
         }
         await saveUnanalyzed();
-        continue;
+        return;
       }
 
       analyzed++;
@@ -939,7 +953,7 @@ async function runGreenhouseRun(
       automationLogger.log(
         automation.id,
         isStrong ? "success" : "info",
-        `[Greenhouse] ${analyzeIndex}/${totalToAnalyze} scored ${matchResult.score}% — ${scored.job.title}`,
+        `[Greenhouse] Analyzed ${analyzed}/${totalToAnalyze}: ${scored.job.title} — ${matchResult.score}%`,
         { score: matchResult.score, threshold: automation.matchThreshold },
       );
 
@@ -959,6 +973,18 @@ async function runGreenhouseRun(
       } catch (err) {
         console.error("[Greenhouse] Failed to save analyzed job:", err);
       }
+    };
+
+    await Promise.allSettled(
+      pipeline.toAnalyze.map((scored) => limit(() => analyzeJob(scored))),
+    );
+
+    if (signal?.aborted) {
+      automationLogger.log(
+        automation.id,
+        "warning",
+        "[Greenhouse] Run aborted by user",
+      );
     }
 
     automationLogger.log(
@@ -1047,8 +1073,8 @@ ${removeHtmlTags(job.description)}
 
     const result = await generateText({
       model,
-      system: JOB_MATCH_SYSTEM_PROMPT,
-      prompt: buildJobMatchPrompt(resumeText, jobText),
+      system: AUTOMATION_JOB_MATCH_SYSTEM_PROMPT,
+      prompt: buildAutomationJobMatchPrompt(resumeText, jobText),
       temperature: 0.3,
       abortSignal: signal,
     });

@@ -19,6 +19,12 @@ export {
   buildJobMatchPrompt,
 } from "./job-match";
 
+// Automation Job Match exports (lean variant for automation loops)
+export {
+  AUTOMATION_JOB_MATCH_SYSTEM_PROMPT,
+  buildAutomationJobMatchPrompt,
+} from "./automation-match";
+
 // Resume Import exports
 export {
   RESUME_IMPORT_SYSTEM_PROMPT,
