@@ -43,11 +43,14 @@ import {
   X,
   Loader,
   AlertTriangle,
+  Star,
 } from "lucide-react";
 import {
   deleteResumeById,
   deleteSkillsSection,
+  setDefaultResume,
 } from "@/actions/profile.actions";
+import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import {
   resolveImportCard,
   ImportCardPayload,
@@ -331,8 +334,16 @@ function PendingCardRow({
   );
 }
 
-function ResumeContainer({ resume }: { resume: Resume }) {
+function ResumeContainer({
+  resume,
+  defaultResumeId,
+}: {
+  resume: Resume;
+  defaultResumeId?: string | null;
+}) {
   const router = useRouter();
+  const isDefault = !!resume?.id && resume.id === defaultResumeId;
+  const [setDefaultConfirmOpen, setSetDefaultConfirmOpen] = useState(false);
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [pendingPdf, setPendingPdf] = useState<{
@@ -710,11 +721,36 @@ function ResumeContainer({ resume }: { resume: Resume }) {
   const showStructureWithAI =
     isEmptyResume && !!resume.File?.filePath && aiReady && !importMode;
 
+  const handleSetDefault = async () => {
+    if (!resume?.id) return;
+    const { success, message } = await setDefaultResume(resume.id);
+    if (success) {
+      toast({
+        variant: "success",
+        description: "This resume is now your default.",
+      });
+      router.refresh();
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description: message,
+      });
+    }
+  };
+
   return (
     <>
       <Card>
         <CardHeader className="flex-col gap-2 sm:flex-row sm:justify-between sm:items-center lg:grid lg:grid-cols-3 lg:items-center">
-          <CardTitle>Resume</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle>Resume</CardTitle>
+            {isDefault && (
+              <Badge className="border-transparent bg-green-600 text-white hover:bg-green-600/90">
+                Default
+              </Badge>
+            )}
+          </div>
           <CardDescription className="mt-0 lg:flex lg:justify-center">
             {resume.FileId && resume.File?.filePath
               ? DownloadFileButton(
@@ -759,11 +795,31 @@ function ResumeContainer({ resume }: { resume: Resume }) {
                     </DropdownMenuItem>
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
+                {!isDefault && (
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => setSetDefaultConfirmOpen(true)}
+                  >
+                    <Star className="h-4 w-4 mr-2" />
+                    Set as default
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </CardHeader>
       </Card>
+
+      <DeleteAlertDialog
+        pageTitle="resume"
+        open={setDefaultConfirmOpen}
+        onOpenChange={setSetDefaultConfirmOpen}
+        onDelete={handleSetDefault}
+        alertTitle="Change default resume?"
+        alertDescription="This will make this resume your default, replacing any current default."
+        actionLabel="Set as default"
+        actionVariant="default"
+      />
 
       {/* IMPORT REVIEW BANNER */}
       {importMode && (pendingCards.length > 0 || isStructuring) && (

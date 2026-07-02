@@ -4,6 +4,7 @@ import {
   MoreVertical,
   Paperclip,
   Pencil,
+  Star,
   Trash,
 } from "lucide-react";
 import {
@@ -27,7 +28,7 @@ import Link from "next/link";
 import { Button } from "../ui/button";
 import { useMemo, useState } from "react";
 import { toast } from "../ui/use-toast";
-import { deleteResumeById } from "@/actions/profile.actions";
+import { deleteResumeById, setDefaultResume } from "@/actions/profile.actions";
 import { deleteCoverLetterById } from "@/actions/coverLetter.actions";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { Badge } from "../ui/badge";
@@ -37,6 +38,7 @@ type DocumentTableProps = {
   editResume: (doc: ProfileDocument) => void;
   editCoverLetter: (doc: ProfileDocument) => void;
   reloadDocuments: () => void;
+  defaultResumeId?: string | null;
 };
 
 function DocumentTable({
@@ -44,9 +46,13 @@ function DocumentTable({
   editResume,
   editCoverLetter,
   reloadDocuments,
+  defaultResumeId,
 }: DocumentTableProps) {
   const [alertOpen, setAlertOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<ProfileDocument>();
+  const [setDefaultConfirmOpen, setSetDefaultConfirmOpen] = useState(false);
+  const [documentToSetDefault, setDocumentToSetDefault] =
+    useState<ProfileDocument>();
   const onDeleteDocument = useMemo(
     () => (doc: ProfileDocument) => {
       if (!doc.id) return;
@@ -55,6 +61,45 @@ function DocumentTable({
     },
     [],
   );
+
+  // Title of the current default, if it happens to be on a loaded page — used
+  // only to enrich the confirm copy. Presence of a default is decided by
+  // defaultResumeId, which is reliable regardless of pagination.
+  const currentDefault = useMemo(
+    () => documents.find((d) => d.type === "resume" && d.isDefault),
+    [documents],
+  );
+
+  const performSetDefault = async (doc: ProfileDocument) => {
+    if (!doc.id) return;
+    const { success, message } = await setDefaultResume(doc.id);
+    if (success) {
+      toast({
+        variant: "success",
+        description: `"${doc.title}" is now your default resume.`,
+      });
+      reloadDocuments();
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description: message,
+      });
+    }
+  };
+
+  const onSetDefault = (doc: ProfileDocument) => {
+    if (!doc.id) return;
+    // Confirm whenever a different resume already holds the default. Decided by
+    // defaultResumeId (not the loaded-docs lookup) so it fires even when the
+    // current default lives on a not-yet-loaded page.
+    if (defaultResumeId && defaultResumeId !== doc.id) {
+      setDocumentToSetDefault(doc);
+      setSetDefaultConfirmOpen(true);
+    } else {
+      performSetDefault(doc);
+    }
+  };
 
   const deleteDocument = async (doc: ProfileDocument) => {
     if (!doc.id) return;
@@ -119,6 +164,11 @@ function DocumentTable({
                       {doc.FileId ? (
                         <Paperclip className="h-3.5 w-3.5 ml-1" />
                       ) : null}
+                      {doc.isDefault ? (
+                        <Badge className="ml-2 border-transparent bg-green-600 text-white hover:bg-green-600/90">
+                          Default
+                        </Badge>
+                      ) : null}
                     </Link>
                   ) : (
                     <button
@@ -171,6 +221,15 @@ function DocumentTable({
                               View/Edit Resume
                             </DropdownMenuItem>
                           </Link>
+                          {!doc.isDefault && (
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={() => onSetDefault(doc)}
+                            >
+                              <Star className="mr-2 h-4 w-4" />
+                              Set as default
+                            </DropdownMenuItem>
+                          )}
                         </>
                       ) : (
                         <DropdownMenuItem
@@ -203,6 +262,25 @@ function DocumentTable({
         open={alertOpen}
         onOpenChange={setAlertOpen}
         onDelete={() => deleteDocument(documentToDelete!)}
+        alertDescription={
+          documentToDelete?.isDefault
+            ? "This is your default resume. Deleting it will leave you without a default until you set another. This action cannot be undone."
+            : undefined
+        }
+      />
+      <DeleteAlertDialog
+        pageTitle="resume"
+        open={setDefaultConfirmOpen}
+        onOpenChange={setSetDefaultConfirmOpen}
+        onDelete={() => performSetDefault(documentToSetDefault!)}
+        alertTitle="Change default resume?"
+        alertDescription={
+          currentDefault
+            ? `This will make "${documentToSetDefault?.title}" your default resume, replacing "${currentDefault.title}".`
+            : `This will make "${documentToSetDefault?.title}" your default resume, replacing your current default.`
+        }
+        actionLabel="Set as default"
+        actionVariant="default"
       />
     </>
   );

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import CreateResume from "./CreateResume";
 import CreateCoverLetter from "./CreateCoverLetter";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { getResumeList } from "@/actions/profile.actions";
+import { getResumeList, getDefaultResumeId } from "@/actions/profile.actions";
 import { getCoverLetterList } from "@/actions/coverLetter.actions";
 import {
   CoverLetter,
@@ -35,6 +35,7 @@ const ProfileContainer = () => {
     useState<CoverLetter | null>(null);
   const [totalResumes, setTotalResumes] = useState<number>(0);
   const [totalCoverLetters, setTotalCoverLetters] = useState<number>(0);
+  const [defaultResumeId, setDefaultResumeId] = useState<string | null>(null);
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState(false);
   const loadResumes = useCallback(
@@ -75,6 +76,10 @@ const ProfileContainer = () => {
     }
   }, []);
 
+  const loadDefaultResumeId = useCallback(async () => {
+    setDefaultResumeId(await getDefaultResumeId());
+  }, []);
+
   const loadDocuments = useCallback(
     async (page: number) => {
       setLoading(true);
@@ -85,12 +90,18 @@ const ProfileContainer = () => {
   );
 
   const reloadDocuments = useCallback(async () => {
-    await loadDocuments(1);
-  }, [loadDocuments]);
+    await Promise.all([loadDocuments(1), loadDefaultResumeId()]);
+  }, [loadDocuments, loadDefaultResumeId]);
 
   useEffect(() => {
     (async () => await loadDocuments(1))();
   }, [loadDocuments]);
+
+  // The default pointer doesn't change between pages, so fetch it once on
+  // mount (and again after a switch, via reloadDocuments) rather than per page.
+  useEffect(() => {
+    loadDefaultResumeId();
+  }, [loadDefaultResumeId]);
 
   const documents: ProfileDocument[] = useMemo(() => {
     const resumeDocs: ProfileDocument[] = resumes.map((r) => ({
@@ -101,6 +112,7 @@ const ProfileContainer = () => {
       updatedAt: r.updatedAt!,
       jobCount: r._count?.Job ?? 0,
       FileId: r.FileId,
+      isDefault: r.id === defaultResumeId,
     }));
     const coverLetterDocs: ProfileDocument[] = coverLetters.map((cl) => ({
       id: cl.id!,
@@ -111,11 +123,12 @@ const ProfileContainer = () => {
       jobCount: cl._count?.Job ?? 0,
       content: cl.content,
     }));
-    return [...resumeDocs, ...coverLetterDocs].sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
-  }, [resumes, coverLetters]);
+    return [...resumeDocs, ...coverLetterDocs].sort((a, b) => {
+      if (a.isDefault && !b.isDefault) return -1;
+      if (!a.isDefault && b.isDefault) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [resumes, coverLetters, defaultResumeId]);
 
   const totalDocuments = totalResumes + totalCoverLetters;
 
@@ -208,6 +221,7 @@ const ProfileContainer = () => {
               editResume={onEditResume}
               editCoverLetter={onEditCoverLetter}
               reloadDocuments={reloadDocuments}
+              defaultResumeId={defaultResumeId}
             />
           </>
         )}

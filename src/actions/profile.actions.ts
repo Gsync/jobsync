@@ -20,6 +20,21 @@ import path from "path";
 import fs from "fs";
 import { writeFile } from "fs/promises";
 
+const resumeListSelect = {
+  id: true,
+  profileId: true,
+  FileId: true,
+  createdAt: true,
+  updatedAt: true,
+  title: true,
+  _count: {
+    select: {
+      Job: true,
+      ResumeSections: true,
+    },
+  },
+} as const;
+
 export const getResumeList = async (
   page: number = 1,
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
@@ -30,45 +45,72 @@ export const getResumeList = async (
     if (!user) {
       throw new Error("Not authenticated");
     }
-    const skip = (page - 1) * limit;
+    const where = { profile: { userId: user.id } };
 
-    // When filtering by section count, Prisma can't express ">= N related
-    // rows" in `where`, so fetch all of the user's resumes and filter in JS
-    // instead of applying skip/take.
-    const [rawData, total] = await Promise.all([
-      prisma.resume.findMany({
-        where: {
-          profile: {
-            userId: user.id,
-          },
-        },
-        ...(minSections > 0 ? {} : { skip, take: limit }),
-        select: {
-          id: true,
-          profileId: true,
-          FileId: true,
-          createdAt: true,
-          updatedAt: true,
-          title: true,
-          _count: {
-            select: {
-              Job: true,
-              ResumeSections: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
+    const [userRow, total] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: user.id },
+        select: { defaultResumeId: true },
       }),
-      prisma.resume.count({
-        where: {
-          profile: {
-            userId: user.id,
-          },
-        },
-      }),
+      prisma.resume.count({ where }),
     ]);
+    const defaultResumeId = userRow?.defaultResumeId ?? null;
+
+    let rawData;
+    if (minSections > 0) {
+      // When filtering by section count, Prisma can't express ">= N
+      // related rows" in `where`, so fetch all of the user's resumes and
+      // filter in JS instead of applying skip/take.
+      rawData = await prisma.resume.findMany({
+        where,
+        select: resumeListSelect,
+        orderBy: { createdAt: "desc" },
+      });
+      if (defaultResumeId) {
+        const defaultIndex = rawData.findIndex(
+          (r) => r.id === defaultResumeId,
+        );
+        if (defaultIndex > 0) {
+          const [defaultResume] = rawData.splice(defaultIndex, 1);
+          rawData.unshift(defaultResume);
+        }
+      }
+    } else if (defaultResumeId) {
+      // Pin the default resume to the very first row so it always lands on
+      // page 1, then page through the remaining resumes excluding it.
+      const restWhere = { ...where, id: { not: defaultResumeId } };
+      if (page === 1) {
+        const [defaultResume, rest] = await Promise.all([
+          prisma.resume.findFirst({
+            where: { id: defaultResumeId, ...where },
+            select: resumeListSelect,
+          }),
+          prisma.resume.findMany({
+            where: restWhere,
+            select: resumeListSelect,
+            orderBy: { createdAt: "desc" },
+            take: limit - 1,
+          }),
+        ]);
+        rawData = defaultResume ? [defaultResume, ...rest] : rest;
+      } else {
+        rawData = await prisma.resume.findMany({
+          where: restWhere,
+          select: resumeListSelect,
+          orderBy: { createdAt: "desc" },
+          skip: (page - 1) * limit - 1,
+          take: limit,
+        });
+      }
+    } else {
+      rawData = await prisma.resume.findMany({
+        where,
+        select: resumeListSelect,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      });
+    }
 
     const data =
       minSections > 0
@@ -79,6 +121,50 @@ export const getResumeList = async (
   } catch (error) {
     const msg = "Failed to get resume list.";
     return handleError(error, msg);
+  }
+};
+
+export const getDefaultResumeId = async (): Promise<string | null> => {
+  const user = await getCurrentUser();
+  if (!user) return null;
+  const row = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { defaultResumeId: true },
+  });
+  return row?.defaultResumeId ?? null;
+};
+
+export const setDefaultResume = async (
+  resumeId: string,
+): Promise<{ success: boolean; message?: string }> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    // Verify ownership before pointing the user at this resume.
+    const owned = await prisma.resume.findFirst({
+      where: { id: resumeId, profile: { userId: user.id } },
+      select: { id: true },
+    });
+    if (!owned) {
+      throw new Error("Resume not found");
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { defaultResumeId: resumeId },
+    });
+
+    return { success: true };
+  } catch (error) {
+    return (
+      handleError(error, "Failed to set default resume.") ?? {
+        success: false,
+        message: "Failed to set default resume.",
+      }
+    );
   }
 };
 
@@ -235,38 +321,57 @@ export const createResumeProfile = async (
       uniqueTitle = `${base} (${counter++})`;
     }
 
+    // Count before creating so we can auto-default the user's first resume.
+    const resumeCount = await prisma.resume.count({
+      where: { profile: { userId: user.id } },
+    });
+
     const profile = await prisma.profile.findFirst({
       where: {
         userId: user.id,
       },
     });
 
-    const res =
-      profile && profile.id
-        ? await prisma.resume.create({
-            data: {
-              profileId: profile!.id,
-              title: uniqueTitle,
-              FileId: fileName
-                ? await createFileEntry(fileName, filePath)
-                : null,
-            },
-          })
-        : await prisma.profile.create({
-            data: {
-              userId: user.id,
-              resumes: {
-                create: [
-                  {
-                    title: uniqueTitle,
-                    FileId: fileName
-                      ? await createFileEntry(fileName, filePath)
-                      : null,
-                  },
-                ],
+    let res: any;
+    let createdResumeId: string;
+    if (profile && profile.id) {
+      res = await prisma.resume.create({
+        data: {
+          profileId: profile!.id,
+          title: uniqueTitle,
+          FileId: fileName ? await createFileEntry(fileName, filePath) : null,
+        },
+      });
+      createdResumeId = res.id;
+    } else {
+      // No profile yet: profile.create returns the profile, so pull the
+      // created resume's id from the nested include.
+      res = await prisma.profile.create({
+        data: {
+          userId: user.id,
+          resumes: {
+            create: [
+              {
+                title: uniqueTitle,
+                FileId: fileName
+                  ? await createFileEntry(fileName, filePath)
+                  : null,
               },
-            },
-          });
+            ],
+          },
+        },
+        include: { resumes: { select: { id: true } } },
+      });
+      createdResumeId = res.resumes[0].id;
+    }
+
+    // Auto-default only the user's very first resume (decision #4/#5).
+    if (resumeCount === 0) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { defaultResumeId: createdResumeId },
+      });
+    }
     // revalidatePath("/dashboard/myjobs", "page");
     return { success: true, data: res };
   } catch (error) {

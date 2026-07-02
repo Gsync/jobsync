@@ -21,6 +21,7 @@ vi.mock("@/actions/profile.actions", () => ({
       message: "",
     }),
   ),
+  getDefaultResumeId: vi.fn(() => Promise.resolve(null)),
 }));
 
 vi.mock("@/actions/coverLetter.actions", () => ({

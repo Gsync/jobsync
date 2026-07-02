@@ -146,4 +146,5 @@ export interface ProfileDocument {
   jobCount: number;
   FileId?: string;
   content?: string;
+  isDefault?: boolean;
 }

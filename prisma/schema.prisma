@@ -35,6 +35,8 @@ model User {
   Tag            Tag[]
   Question       Question[]
   McpAccessToken McpAccessToken[]
+  defaultResumeId String?
+  defaultResume   Resume?          @relation("UserDefaultResume", fields: [defaultResumeId], references: [id], onDelete: SetNull)
 }
 
 model ApiKey {
@@ -84,6 +86,7 @@ model Resume {
   FileId         String?         @unique
   Job            Job[]
   Automation     Automation[]
+  defaultForUser User[]          @relation("UserDefaultResume")
 }
 
 model CoverLetter {

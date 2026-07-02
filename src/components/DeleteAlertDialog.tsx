@@ -18,6 +18,8 @@ interface DeleteAlertDialogProps {
   alertTitle?: string;
   alertDescription?: string;
   deleteAction?: boolean;
+  actionLabel?: string;
+  actionVariant?: "destructive" | "default";
 }
 
 export function DeleteAlertDialog({
@@ -28,6 +30,8 @@ export function DeleteAlertDialog({
   alertTitle,
   alertDescription = "This action cannot be undone. This will permanently delete and remove data from server.",
   deleteAction = true,
+  actionLabel = "Delete",
+  actionVariant = "destructive",
 }: DeleteAlertDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -42,10 +46,10 @@ export function DeleteAlertDialog({
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           {deleteAction && (
             <AlertDialogAction
-              className={buttonVariants({ variant: "destructive" })}
+              className={buttonVariants({ variant: actionVariant })}
               onClick={onDelete}
             >
-              Delete
+              {actionLabel}
             </AlertDialogAction>
           )}
         </AlertDialogFooter>
