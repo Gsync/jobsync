@@ -41,12 +41,23 @@ async function handler(req: Request): Promise<Response> {
     McpAddJobInputShape,
     async (rawInput) => {
       if (!auth.scopes.includes("jobs:write")) {
-        return { content: [{ type: "text" as const, text: "Insufficient scope. Required: jobs:write" }] };
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "Insufficient scope. Required: jobs:write",
+            },
+          ],
+        };
       }
       const parsed = McpAddJobSchema.safeParse(rawInput);
       if (!parsed.success) {
         const issues = parsed.error.issues.map((i) => i.message).join("; ");
-        return { content: [{ type: "text" as const, text: `Validation error: ${issues}` }] };
+        return {
+          content: [
+            { type: "text" as const, text: `Validation error: ${issues}` },
+          ],
+        };
       }
       return handleAddJob(parsed.data, userId, tokenName);
     },
@@ -58,12 +69,23 @@ async function handler(req: Request): Promise<Response> {
     McpAddQuestionInputShape,
     async (rawInput) => {
       if (!auth.scopes.includes("questions:write")) {
-        return { content: [{ type: "text" as const, text: "Insufficient scope. Required: questions:write" }] };
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "Insufficient scope. Required: questions:write",
+            },
+          ],
+        };
       }
       const parsed = McpAddQuestionSchema.safeParse(rawInput);
       if (!parsed.success) {
         const issues = parsed.error.issues.map((i) => i.message).join("; ");
-        return { content: [{ type: "text" as const, text: `Validation error: ${issues}` }] };
+        return {
+          content: [
+            { type: "text" as const, text: `Validation error: ${issues}` },
+          ],
+        };
       }
       return handleAddQuestion(parsed.data, userId, tokenName);
     },
@@ -71,7 +93,7 @@ async function handler(req: Request): Promise<Response> {
 
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined, // stateless mode
-    enableJsonResponse: true,      // return plain JSON instead of SSE stream
+    enableJsonResponse: true, // return plain JSON instead of SSE stream
   });
 
   await server.connect(transport);

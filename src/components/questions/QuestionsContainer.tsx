@@ -51,11 +51,11 @@ function QuestionsContainer({
         pageNum,
         APP_CONSTANTS.RECORDS_PER_PAGE,
         filter,
-        search
+        search,
       );
       if (result?.success && result.data) {
         setQuestions((prev) =>
-          pageNum === 1 ? result.data : [...prev, ...result.data]
+          pageNum === 1 ? result.data : [...prev, ...result.data],
         );
         setTotalQuestions(result.total);
         setPage(pageNum);
@@ -68,7 +68,7 @@ function QuestionsContainer({
       }
       setLoading(false);
     },
-    []
+    [],
   );
 
   const reloadQuestions = useCallback(async () => {
@@ -136,9 +136,13 @@ function QuestionsContainer({
       <Card className="h-full">
         <CardHeader className="flex-row justify-between items-center">
           <div className="flex items-baseline gap-2">
-            <CardTitle>Question Bank</CardTitle>
+            <CardTitle>Questions</CardTitle>
             {!loading && totalQuestions > 0 && (
-              <RecordsCount count={questions.length} total={totalQuestions} label="questions" />
+              <RecordsCount
+                count={questions.length}
+                total={totalQuestions}
+                label="questions"
+              />
             )}
           </div>
           <div className="flex items-center">
@@ -184,11 +188,7 @@ function QuestionsContainer({
                 size="sm"
                 variant="outline"
                 onClick={() =>
-                  loadQuestions(
-                    page + 1,
-                    filterKey,
-                    searchTerm || undefined
-                  )
+                  loadQuestions(page + 1, filterKey, searchTerm || undefined)
                 }
                 disabled={loading}
               >

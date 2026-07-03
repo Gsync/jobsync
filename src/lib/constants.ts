@@ -165,7 +165,7 @@ export const SIDEBAR_LINKS = [
   {
     icon: BookOpen,
     route: "/dashboard/questions",
-    label: "Question Bank",
+    label: "Questions",
   },
   {
     icon: UserRound,
@@ -175,7 +175,7 @@ export const SIDEBAR_LINKS = [
   {
     icon: Sheet,
     route: "/dashboard/admin",
-    label: "Administration",
+    label: "Library",
   },
   {
     icon: Wrench,
