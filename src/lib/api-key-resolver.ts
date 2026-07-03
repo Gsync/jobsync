@@ -26,6 +26,7 @@ export async function resolveApiKey(
           })
           .catch(() => {});
 
+        if (apiKey.iv === "") return apiKey.encryptedKey;
         return decrypt(apiKey.encryptedKey, apiKey.iv);
       }
     } catch {

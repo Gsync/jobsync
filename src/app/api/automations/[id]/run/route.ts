@@ -3,7 +3,10 @@ import "server-only";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import db from "@/lib/db";
-import { runAutomation } from "@/lib/scraper";
+import { runAutomation, getUserAiSettings } from "@/lib/scraper";
+import { PROVIDER_VERIFIERS } from "@/lib/ai/provider-registry.server";
+import { getOllamaBaseUrl } from "@/actions/apiKey.actions";
+import { AiProvider } from "@/models/ai.model";
 import type { JobBoard } from "@/models/automation.model";
 import { APP_CONSTANTS } from "@/lib/constants";
 
@@ -37,13 +40,6 @@ export async function POST(
   }
 
   const { id: automationId } = await params;
-
-  if (!checkRateLimit(userId)) {
-    return NextResponse.json(
-      { message: `Rate limit exceeded. Maximum ${APP_CONSTANTS.AUTOMATION_MAX_MANUAL_RUNS_PER_HOUR} manual runs per hour.` },
-      { status: 429 }
-    );
-  }
 
   try {
     const automation = await db.automation.findFirst({
@@ -79,6 +75,33 @@ export async function POST(
       return NextResponse.json(
         { success: false, message: "A run is already in progress for this automation." },
         { status: 409 }
+      );
+    }
+
+    const aiSettings = await getUserAiSettings(userId);
+    if (aiSettings.provider === AiProvider.OLLAMA) {
+      const baseUrl = await getOllamaBaseUrl(userId);
+      const ollamaCheck = await PROVIDER_VERIFIERS.ollama(baseUrl);
+      if (!ollamaCheck.success) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              ollamaCheck.error ||
+              "Ollama is not available. Please make sure Ollama is running.",
+          },
+          { status: 503 }
+        );
+      }
+    }
+
+    // Rate-limited last, right before the run actually launches, so failed
+    // preflight checks above (missing resume, already running, Ollama down)
+    // don't burn the user's hourly manual-run quota.
+    if (!checkRateLimit(userId)) {
+      return NextResponse.json(
+        { message: `Rate limit exceeded. Maximum ${APP_CONSTANTS.AUTOMATION_MAX_MANUAL_RUNS_PER_HOUR} manual runs per hour.` },
+        { status: 429 }
       );
     }
 

@@ -15,4 +15,8 @@ export {
   type ScoredJob,
   type PipelineResult,
 } from "./greenhouse/pipeline";
-export { runAutomation, type RunnerResult } from "./runner";
+export {
+  runAutomation,
+  getUserAiSettings,
+  type RunnerResult,
+} from "./runner";

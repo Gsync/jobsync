@@ -38,6 +38,8 @@ import {
   type AiSettings,
 } from "@/models/userSettings.model";
 import { resolveApiKey } from "@/lib/api-key-resolver";
+import { PROVIDER_VERIFIERS } from "@/lib/ai/provider-registry.server";
+import { getOllamaBaseUrl } from "@/actions/apiKey.actions";
 
 const MAX_JOBS_PER_RUN = APP_CONSTANTS.MAX_JOBS_PER_RUN;
 
@@ -66,7 +68,7 @@ function getDefaultModelForProvider(provider: AiProvider): string {
   }
 }
 
-async function getUserAiSettings(userId: string): Promise<AiSettings> {
+export async function getUserAiSettings(userId: string): Promise<AiSettings> {
   const userSettings = await db.userSettings.findUnique({
     where: { userId },
   });
@@ -209,6 +211,32 @@ export async function runAutomation(
   const effectiveSignal = controller.signal;
 
   try {
+    // Checked here (not just in the manual /run route) so scheduled/cron
+    // runs also fail fast instead of silently completing with 0 matches.
+    const aiSettings = await getUserAiSettings(automation.userId);
+    if (aiSettings.provider === AiProvider.OLLAMA) {
+      const ollamaCheck = await PROVIDER_VERIFIERS.ollama(
+        await getOllamaBaseUrl(automation.userId),
+      );
+      if (!ollamaCheck.success) {
+        const message =
+          ollamaCheck.error ||
+          "Ollama is not available. Please make sure Ollama is running.";
+        automationLogger.log(automation.id, "error", message);
+        automationLogger.endRun(automation.id);
+
+        return await finalizeRun(run.id, {
+          status: "failed",
+          errorMessage: message,
+          jobsSearched: 0,
+          jobsDeduplicated: 0,
+          jobsProcessed: 0,
+          jobsMatched: 0,
+          jobsSaved: 0,
+        });
+      }
+    }
+
     automationLogger.log(automation.id, "info", "Fetching resume data...");
 
     const resume = await db.resume.findUnique({
@@ -373,7 +401,6 @@ export async function runAutomation(
     let jobsSaved = 0;
     let aiError: string | null = null;
 
-    const aiSettings = await getUserAiSettings(automation.userId);
     const limit = getAutomationMatchLimit(aiSettings.provider);
 
     const processJob = async (job: JobDetails): Promise<void> => {

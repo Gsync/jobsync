@@ -4,6 +4,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { createOllama } from "ollama-ai-provider-v2";
 import { createDeepSeek } from "@ai-sdk/deepseek";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { APP_CONSTANTS } from "@/lib/constants";
 
 export const PROVIDER_FACTORIES: Record<
   string,
@@ -69,13 +70,37 @@ export const PROVIDER_VERIFIERS: Record<
 
   ollama: async (key) => {
     const baseUrl = key.replace(/\/+$/, "");
-    const res = await fetch(`${baseUrl}/api/tags`);
-    if (!res.ok)
+    try {
+      const res = await fetch(`${baseUrl}/api/tags`, {
+        signal: AbortSignal.timeout(APP_CONSTANTS.AI_OLLAMA_LIST_TIMEOUT_MS),
+      });
+      if (!res.ok)
+        return {
+          success: false,
+          error: `Cannot connect to Ollama at ${baseUrl}`,
+        };
+      return { success: true };
+    } catch (error) {
+      if (error instanceof Error && error.name === "TimeoutError") {
+        return {
+          success: false,
+          error: `Ollama at ${baseUrl} did not respond in time. Please make sure Ollama is running.`,
+        };
+      }
+      if (
+        error instanceof TypeError &&
+        /failed to parse url/i.test(error.message)
+      ) {
+        return {
+          success: false,
+          error: `Invalid Ollama URL: ${baseUrl}`,
+        };
+      }
       return {
         success: false,
-        error: `Cannot connect to Ollama at ${baseUrl}`,
+        error: `Cannot connect to Ollama at ${baseUrl}. Please make sure Ollama is running.`,
       };
-    return { success: true };
+    }
   },
 
   gemini: async (key) => {

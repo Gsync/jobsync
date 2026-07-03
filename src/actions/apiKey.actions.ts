@@ -162,13 +162,17 @@ export async function getDefaultOllamaBaseUrl(): Promise<string> {
   return process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
 }
 
-export async function getOllamaBaseUrl(): Promise<string> {
+// userId is optional and only needed for callers with no request-scoped
+// session (e.g. the cron scheduler running a background automation) — it
+// bypasses getCurrentUser(), which requires an active session and always
+// resolves to null outside a request context.
+export async function getOllamaBaseUrl(userId?: string): Promise<string> {
   try {
-    const user = await getCurrentUser();
-    if (user) {
+    const resolvedUserId = userId ?? (await getCurrentUser())?.id;
+    if (resolvedUserId) {
       const apiKey = await db.apiKey.findUnique({
         where: {
-          userId_provider: { userId: user.id, provider: "ollama" },
+          userId_provider: { userId: resolvedUserId, provider: "ollama" },
         },
       });
       if (apiKey) {

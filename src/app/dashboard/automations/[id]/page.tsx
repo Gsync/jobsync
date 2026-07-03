@@ -390,6 +390,18 @@ export default function AutomationDetailPage() {
 
       if (!response.ok || !data.success) {
         setRunNowLoading(false);
+        // 409 means a run IS genuinely active elsewhere (another tab, the
+        // scheduler) — leave the optimistic running state alone so it keeps
+        // following that real run's live SSE snapshot instead of flipping
+        // the Abort Run button back to Run Now while a run is in progress.
+        if (response.status !== 409) {
+          // The run never went live, so the SSE stream will never report
+          // isRunning:false for this runKey (it only accepts that snapshot
+          // after first seeing a running one) — reset directly or the
+          // Abort Run button spins forever.
+          setRunKey(0);
+          setLogData((prev) => ({ ...prev, isRunning: false }));
+        }
         toast({
           title: "Error",
           description: data.message || "Failed to start run",
@@ -400,6 +412,8 @@ export default function AutomationDetailPage() {
       // above handles completion.
     } catch {
       setRunNowLoading(false);
+      setRunKey(0);
+      setLogData((prev) => ({ ...prev, isRunning: false }));
       toast({
         title: "Error",
         description: "Failed to start run",
