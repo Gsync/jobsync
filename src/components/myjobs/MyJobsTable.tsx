@@ -126,7 +126,14 @@ function MyJobsTable({
                   <span className="block truncate">{job.Location?.label}</span>
                 </TableCell>
                 <TableCell>
-                  {new Date() > job.dueDate && job.Status?.value === "draft" ? (
+                  {job.discoveryStatus === "dismissed" ? (
+                    <Badge
+                      variant="outline"
+                      className="w-[70px] justify-center text-muted-foreground"
+                    >
+                      Dismissed
+                    </Badge>
+                  ) : new Date() > job.dueDate && job.Status?.value === "draft" ? (
                     <Badge className="bg-red-500">Expired</Badge>
                   ) : (
                     <Badge

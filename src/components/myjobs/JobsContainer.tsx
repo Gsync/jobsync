@@ -92,7 +92,7 @@ function JobsContainer({
   const [jobs, setJobs] = useState<JobResponse[]>([]);
   const [page, setPage] = useState(1);
   const [totalJobs, setTotalJobs] = useState(0);
-  const [filterKey, setFilterKey] = useState<string>();
+  const [filterKey, setFilterKey] = useState<string>("none");
   const [searchTerm, setSearchTerm] = useState("");
   const [editJob, setEditJob] = useState(null);
   const [initialLoading, setInitialLoading] = useState(false);
@@ -164,7 +164,7 @@ function JobsContainer({
       const { success, data, total, message } = await getJobsList(
         page,
         jobsPerPage,
-        filter,
+        filter && filter !== "none" ? filter : undefined,
         search,
         companyFilter || undefined,
         appliedFilter || undefined,
@@ -198,8 +198,8 @@ function JobsContainer({
 
   const reloadJobs = useCallback(async () => {
     await loadJobs(1, undefined, searchTerm || undefined);
-    if (filterKey) {
-      setFilterKey(undefined);
+    if (filterKey !== "none") {
+      setFilterKey("none");
     }
   }, [loadJobs, filterKey, searchTerm]);
 
@@ -311,13 +311,8 @@ function JobsContainer({
   ]);
 
   const onFilterChange = (filterBy: string) => {
-    if (filterBy === "none") {
-      setFilterKey(undefined);
-      loadJobs(1, undefined, searchTerm || undefined);
-    } else {
-      setFilterKey(filterBy);
-      loadJobs(1, filterBy, searchTerm || undefined);
-    }
+    setFilterKey(filterBy);
+    loadJobs(1, filterBy, searchTerm || undefined);
   };
 
   const downloadJobsList = async () => {
@@ -429,6 +424,8 @@ function JobsContainer({
                   <SelectItem value="draft">Draft</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
                   <SelectItem value="PT">Part-time</SelectItem>
+                  <SelectItem value="accepted">Accepted (discovered)</SelectItem>
+                  <SelectItem value="dismissed">Dismissed (discovered)</SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>

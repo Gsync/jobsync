@@ -53,6 +53,7 @@ export interface JobResponse {
   matchData?: string | null;
   tags?: Tag[];
   createdVia?: string | null;
+  discoveryStatus?: string | null;
   _count?: { Notes?: number };
 }
 

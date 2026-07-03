@@ -60,17 +60,31 @@ export const getJobsList = async (
         ? {
             jobType: filter,
           }
-        : {
-            Status: {
-              value: filter,
-            },
-          }
+        : filter === "accepted" || filter === "dismissed"
+          ? {
+              discoveryStatus: filter,
+            }
+          : {
+              Status: {
+                value: filter,
+              },
+            }
       : {};
 
     const whereClause: any = {
       userId: user.id,
       ...filterBy,
     };
+
+    // Dismissed discovered jobs are kept only for dedup and shouldn't
+    // clutter the tracked jobs list unless explicitly filtered for.
+    if (filter !== "dismissed") {
+      whereClause.AND = [
+        {
+          OR: [{ discoveryStatus: null }, { discoveryStatus: { not: "dismissed" } }],
+        },
+      ];
+    }
 
     if (companyValue) {
       whereClause.Company = { value: companyValue };
@@ -128,6 +142,7 @@ export const getJobsList = async (
           Resume: true,
           CoverLetter: true,
           matchScore: true,
+          discoveryStatus: true,
           _count: { select: { Notes: true } },
         },
         orderBy: {
