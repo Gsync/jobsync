@@ -38,6 +38,8 @@ import {
   PlayCircle,
   Pencil,
   Trash2,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import {
   getAutomationById,
@@ -54,6 +56,7 @@ import type {
   AutomationRun,
   DiscoveredJob,
   DiscoveryStatus,
+  GreenhouseSourceConfig,
 } from "@/models/automation.model";
 import type { JobMatchData } from "@/models/ai.schemas";
 import { DiscoveredJobsList } from "@/components/automations/DiscoveredJobsList";
@@ -63,6 +66,17 @@ import { LogsTab, type LogData } from "@/components/automations/LogsTab";
 import { AutomationWizard } from "@/components/automations/AutomationWizard";
 import Loading from "@/components/Loading";
 import { APP_CONSTANTS } from "@/lib/constants";
+
+function parseGreenhouseConfig(
+  sourceConfig?: string | null,
+): GreenhouseSourceConfig | null {
+  if (!sourceConfig) return null;
+  try {
+    return JSON.parse(sourceConfig)?.greenhouse ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export default function AutomationDetailPage() {
   const params = useParams();
@@ -117,6 +131,7 @@ export default function AutomationDetailPage() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showSearchConfig, setShowSearchConfig] = useState(false);
   // The latest run id at the moment a manual run is started, so the watcher can
   // tell the newly-created background run apart from the prior one.
   const prevLatestRunIdRef = useRef<string | null>(null);
@@ -536,6 +551,10 @@ export default function AutomationDetailPage() {
 
   const resumeMissing = !automation.resume;
   const newJobsCount = jobStatusCounts.new;
+  const greenhouseConfig =
+    automation.jobBoard === "greenhouse"
+      ? parseGreenhouseConfig(automation.sourceConfig)
+      : null;
   // The button must reflect the real run state, not just this page instance's
   // runNowLoading: after navigating away and back, runNowLoading resets but the
   // SSE reports the run is still live, so fall back to logData.isRunning.
@@ -699,6 +718,85 @@ export default function AutomationDetailPage() {
               </p>
             </div>
           </div>
+
+          {greenhouseConfig && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-4 -ml-2 text-muted-foreground"
+                onClick={() => setShowSearchConfig((prev) => !prev)}
+              >
+                {showSearchConfig ? (
+                  <ChevronUp className="h-4 w-4 mr-1" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 mr-1" />
+                )}
+                {showSearchConfig ? "Show less" : "Show more"}
+              </Button>
+
+              {showSearchConfig && (
+                <div className="mt-4 pt-4 border-t grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Companies</p>
+                    <p className="font-medium">
+                      {greenhouseConfig.companies?.length
+                        ? greenhouseConfig.companies
+                            .map((c) => c.name)
+                            .join(", ")
+                        : "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Target titles
+                    </p>
+                    <p className="font-medium">
+                      {greenhouseConfig.targetTitles?.length
+                        ? greenhouseConfig.targetTitles.join(", ")
+                        : "Any"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Keywords</p>
+                    <p className="font-medium">
+                      {greenhouseConfig.keywords?.length
+                        ? greenhouseConfig.keywords.join(", ")
+                        : "None"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Locations</p>
+                    <p className="font-medium">
+                      {greenhouseConfig.locations?.length
+                        ? `${greenhouseConfig.locations.join(", ")}${
+                            greenhouseConfig.strictLocation ? " (strict)" : ""
+                          }`
+                        : "Any location"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Jobs analyzed per run
+                    </p>
+                    <p className="font-medium">
+                      {greenhouseConfig.topK ?? APP_CONSTANTS.MAX_JOBS_PER_RUN}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Extra listings
+                    </p>
+                    <p className="font-medium">
+                      {greenhouseConfig.saveUnanalyzed !== false
+                        ? "Saved"
+                        : "Not saved"}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 
