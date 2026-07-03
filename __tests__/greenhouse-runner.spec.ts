@@ -240,6 +240,71 @@ describe("runAutomation (greenhouse)", () => {
     expect(byKey.dedup).toBe(1);
   });
 
+  function automationWithGreenhouseConfig(
+    overrides: Record<string, unknown>,
+  ): Automation {
+    return {
+      ...automation,
+      sourceConfig: JSON.stringify({
+        greenhouse: {
+          companies: [{ name: "Acme", token: "acme" }],
+          targetTitles: ["Frontend Engineer"],
+          keywords: [],
+          locations: [],
+          strictLocation: false,
+          ...overrides,
+        },
+      }),
+    };
+  }
+
+  it("does not save floor survivors beyond top-K when saveUnanalyzed is false", async () => {
+    const auto = automationWithGreenhouseConfig({
+      topK: 2,
+      saveUnanalyzed: false,
+    });
+    (searchGreenhouseJobs as any).mockResolvedValue({
+      jobs: [
+        makeJob("Frontend Engineer", "React"),
+        makeJob("Frontend Engineer", "React"),
+        makeJob("Frontend Engineer", "React"),
+        makeJob("Frontend Engineer", "React"),
+      ],
+      errors: [],
+    });
+
+    const result = await runAutomation(auto);
+
+    expect(result.status).toBe("completed");
+    // Only the top-2 analyzed jobs saved; the other 2 floor survivors dropped.
+    expect((prisma.job.create as any).mock.calls).toHaveLength(2);
+    expect(result.jobsSaved).toBe(2);
+    expect((generateText as any).mock.calls.length).toBe(2);
+  });
+
+  it("custom topK controls how many jobs get LLM analysis vs saved unanalyzed", async () => {
+    const auto = automationWithGreenhouseConfig({ topK: 3 });
+    (searchGreenhouseJobs as any).mockResolvedValue({
+      jobs: [
+        makeJob("Frontend Engineer", "React"),
+        makeJob("Frontend Engineer", "React"),
+        makeJob("Frontend Engineer", "React"),
+        makeJob("Frontend Engineer", "React"),
+        makeJob("Frontend Engineer", "React"),
+      ],
+      errors: [],
+    });
+
+    const result = await runAutomation(auto);
+
+    expect(result.status).toBe("completed");
+    expect((generateText as any).mock.calls.length).toBe(3);
+    // All 5 saved: 3 analyzed + 2 unanalyzed floor survivors (saveUnanalyzed
+    // defaults to true).
+    expect((prisma.job.create as any).mock.calls).toHaveLength(5);
+    expect(result.jobsSaved).toBe(5);
+  });
+
   // Concurrency semantics (bounded p-limit dispatch, provider-gated).
   // Ollama forces concurrency 1 (see beforeEach's default userSettings mock
   // of null -> defaultUserSettings.ai, which is Ollama), so these tests

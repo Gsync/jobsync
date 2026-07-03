@@ -41,6 +41,7 @@ import type {
 } from "@/models/automation.model";
 import { GreenhouseSearchStep } from "./GreenhouseSearchStep";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { APP_CONSTANTS } from "@/lib/constants";
 
 const EMPTY_GREENHOUSE: GreenhouseSourceConfig = {
   companies: [],
@@ -48,6 +49,8 @@ const EMPTY_GREENHOUSE: GreenhouseSourceConfig = {
   keywords: [],
   locations: [],
   strictLocation: false,
+  topK: APP_CONSTANTS.MAX_JOBS_PER_RUN,
+  saveUnanalyzed: true,
 };
 
 function parseEditSourceConfig(
@@ -456,6 +459,22 @@ export function AutomationWizard({
                           greenhouseConfig.strictLocation ? " (strict)" : ""
                         }`
                       : "Any location"}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">
+                    Jobs analyzed per run
+                  </span>
+                  <span className="font-medium text-right">
+                    {greenhouseConfig.topK ?? APP_CONSTANTS.MAX_JOBS_PER_RUN}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">
+                    Save additional listings
+                  </span>
+                  <span className="font-medium text-right">
+                    {greenhouseConfig.saveUnanalyzed !== false ? "Yes" : "No"}
                   </span>
                 </div>
               </>

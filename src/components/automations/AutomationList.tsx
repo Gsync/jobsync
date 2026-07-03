@@ -40,6 +40,7 @@ import {
   pauseAutomation,
   resumeAutomation,
 } from "@/actions/automation.actions";
+import { APP_CONSTANTS } from "@/lib/constants";
 import Link from "next/link";
 
 interface AutomationListProps {
@@ -148,6 +149,11 @@ export function AutomationList({
             greenhouse?.companies ?? [];
           const ghTitles: string[] = greenhouse?.targetTitles ?? [];
           const ghLocations: string[] = greenhouse?.locations ?? [];
+          const ghKeywords: string[] = greenhouse?.keywords ?? [];
+          const ghTopK: number =
+            greenhouse?.topK ?? APP_CONSTANTS.MAX_JOBS_PER_RUN;
+          const ghSaveUnanalyzed: boolean =
+            greenhouse?.saveUnanalyzed !== false;
 
           return (
             <div
@@ -204,11 +210,29 @@ export function AutomationList({
                       </span>
                       <span>
                         <span className="font-medium text-foreground">
+                          Keywords:
+                        </span>{" "}
+                        {ghKeywords.length ? ghKeywords.join(", ") : "Any"}
+                      </span>
+                      <span>
+                        <span className="font-medium text-foreground">
                           Location:
                         </span>{" "}
                         {ghLocations.length
                           ? ghLocations.join(", ")
                           : "Any location"}
+                      </span>
+                      <span>
+                        <span className="font-medium text-foreground">
+                          Analyzed/run:
+                        </span>{" "}
+                        {ghTopK}
+                      </span>
+                      <span>
+                        <span className="font-medium text-foreground">
+                          Extra listings:
+                        </span>{" "}
+                        {ghSaveUnanalyzed ? "on" : "off"}
                       </span>
                       {automation.resume && (
                         <span>

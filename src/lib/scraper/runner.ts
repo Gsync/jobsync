@@ -637,6 +637,8 @@ interface GreenhouseRunConfig {
   keywords: string[];
   locations: string[];
   strictLocation: boolean;
+  topK: number;
+  saveUnanalyzed: boolean;
 }
 
 function parseGreenhouseConfig(
@@ -653,6 +655,11 @@ function parseGreenhouseConfig(
       keywords: Array.isArray(gh.keywords) ? gh.keywords : [],
       locations: Array.isArray(gh.locations) ? gh.locations : [],
       strictLocation: !!gh.strictLocation,
+      topK:
+        typeof gh.topK === "number" && gh.topK > 0
+          ? gh.topK
+          : APP_CONSTANTS.MAX_JOBS_PER_RUN,
+      saveUnanalyzed: gh.saveUnanalyzed !== false,
     };
   } catch {
     return null;
@@ -792,6 +799,7 @@ async function runGreenhouseRun(
     const resumeSkills = extractResumeSkills(resume);
     const pipeline = runGreenhousePipeline(dedupedJobs, config, resumeSkills, {
       corpus: jobs,
+      k: config.topK,
     });
 
     if (config.strictLocation && config.locations.length > 0) {
@@ -880,22 +888,24 @@ async function runGreenhouseRun(
         "[Greenhouse] Run aborted by user",
       );
     }
-    for (const scored of pipeline.toSaveUnanalyzed) {
-      if (signal?.aborted) break;
-      try {
-        await persistDiscoveredJob(
-          automation,
-          scored.job,
-          scalePrerank(scored.score),
-          {
-            prerankScore: scored.score,
-            prerankComponents: scored.components,
-            analyzed: false,
-          },
-        );
-        jobsSaved++;
-      } catch (err) {
-        console.error("[Greenhouse] Failed to save listing:", err);
+    if (config.saveUnanalyzed) {
+      for (const scored of pipeline.toSaveUnanalyzed) {
+        if (signal?.aborted) break;
+        try {
+          await persistDiscoveredJob(
+            automation,
+            scored.job,
+            scalePrerank(scored.score),
+            {
+              prerankScore: scored.score,
+              prerankComponents: scored.components,
+              analyzed: false,
+            },
+          );
+          jobsSaved++;
+        } catch (err) {
+          console.error("[Greenhouse] Failed to save listing:", err);
+        }
       }
     }
 
