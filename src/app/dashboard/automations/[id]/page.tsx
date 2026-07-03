@@ -40,6 +40,7 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
+  ExternalLink,
 } from "lucide-react";
 import {
   getAutomationById,
@@ -737,15 +738,33 @@ export default function AutomationDetailPage() {
 
               {showSearchConfig && (
                 <div className="mt-4 pt-4 border-t grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
+                  <div className="col-span-2 md:col-span-4">
                     <p className="text-sm text-muted-foreground">Companies</p>
-                    <p className="font-medium">
-                      {greenhouseConfig.companies?.length
-                        ? greenhouseConfig.companies
-                            .map((c) => c.name)
-                            .join(", ")
-                        : "-"}
-                    </p>
+                    {greenhouseConfig.companies?.length ? (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {greenhouseConfig.companies.map((c) => (
+                          <Badge
+                            key={c.token}
+                            variant="secondary"
+                            className="gap-1"
+                          >
+                            {c.name}
+                            <a
+                              href={`${APP_CONSTANTS.GREENHOUSE_BOARD_URL}/${c.token}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={`Open ${c.name} job board`}
+                              title="Open job board"
+                              className="text-muted-foreground hover:text-foreground"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="font-medium">-</p>
+                    )}
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">

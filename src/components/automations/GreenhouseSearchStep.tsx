@@ -9,6 +9,7 @@ import {
   CirclePlus,
   TriangleAlert,
   ExternalLink,
+  Check,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -272,9 +273,6 @@ export function GreenhouseSearchStep({
     if (companies.some((c) => c.token === company.token)) return;
     if (companies.length >= APP_CONSTANTS.MAX_GREENHOUSE_COMPANIES) return;
     onChange({ ...value, companies: [...companies, company] });
-    setQuery("");
-    setResults([]);
-    setOpen(false);
   };
 
   const removeCompany = (token: string) => {
@@ -282,6 +280,14 @@ export function GreenhouseSearchStep({
       ...value,
       companies: companies.filter((c) => c.token !== token),
     });
+  };
+
+  const toggleCompany = (company: GreenhouseCompany) => {
+    if (companies.some((c) => c.token === company.token)) {
+      removeCompany(company.token);
+    } else {
+      addCompany(company);
+    }
   };
 
   const resolveUrl = async () => {
@@ -370,30 +376,42 @@ export function GreenhouseSearchStep({
                   </CommandEmpty>
                 )}
                 <CommandGroup>
-                  {results.map((c) => (
-                    <CommandItem
-                      key={c.token}
-                      value={c.token}
-                      onSelect={() => addCompany(c)}
-                    >
-                      <span>{c.name}</span>
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        {c.token}
-                      </span>
-                      <a
-                        href={`${APP_CONSTANTS.GREENHOUSE_BOARD_URL}/${c.token}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Open ${c.name} job board`}
-                        title="Open job board"
-                        onClick={(e) => e.stopPropagation()}
-                        onPointerDown={(e) => e.stopPropagation()}
-                        className="ml-auto text-muted-foreground hover:text-foreground"
+                  {results.map((c) => {
+                    const selected = companies.some(
+                      (sel) => sel.token === c.token,
+                    );
+                    return (
+                      <CommandItem
+                        key={c.token}
+                        value={c.token}
+                        disabled={!selected && atLimit}
+                        onSelect={() => toggleCompany(c)}
                       >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                    </CommandItem>
-                  ))}
+                        <Check
+                          className={cn(
+                            "h-4 w-4 shrink-0",
+                            selected ? "opacity-100" : "opacity-0",
+                          )}
+                        />
+                        <span>{c.name}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          {c.token}
+                        </span>
+                        <a
+                          href={`${APP_CONSTANTS.GREENHOUSE_BOARD_URL}/${c.token}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`Open ${c.name} job board`}
+                          title="Open job board"
+                          onClick={(e) => e.stopPropagation()}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          className="ml-auto text-muted-foreground hover:text-foreground"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      </CommandItem>
+                    );
+                  })}
                 </CommandGroup>
               </CommandList>
             </Command>
