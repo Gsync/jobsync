@@ -6,13 +6,27 @@ import { screen, render, waitFor } from "@testing-library/react";
 import { getCurrentUser } from "@/utils/user.utils";
 import userEvent from "@testing-library/user-event";
 import { format } from "date-fns";
-import { addJob } from "@/actions/job.actions";
+import { addJob, updateJob } from "@/actions/job.actions";
+import { toast } from "@/components/ui/use-toast";
+import type { JobResponse } from "@/models/job.model";
 vi.mock("@/utils/user.utils", () => ({
   getCurrentUser: vi.fn(),
 }));
 
 vi.mock("@/actions/job.actions", () => ({
   addJob: vi.fn().mockResolvedValue({ success: true }),
+  updateJob: vi.fn().mockResolvedValue({ success: true }),
+}));
+
+vi.mock("@/actions/note.actions", () => ({
+  getNotesByJobId: vi.fn().mockResolvedValue({ success: true, data: [] }),
+  addNote: vi.fn(),
+  updateNote: vi.fn(),
+  deleteNote: vi.fn(),
+}));
+
+vi.mock("@/components/ui/use-toast", () => ({
+  toast: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -250,6 +264,171 @@ describe("AddJob Component", () => {
         applied: false,
         tags: [],
       });
+    });
+  });
+});
+
+describe("AddJob Component - Edit Mode", () => {
+  const mockJobStatuses = JOB_STATUSES;
+  const mockJobSources = JOB_SOURCES;
+  const mockResetEditJob = vi.fn();
+  window.HTMLElement.prototype.scrollIntoView = vi.fn();
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn();
+
+  const editJob = {
+    id: "job-edit-1",
+    userId: "user-id",
+    JobTitle: { id: "1xx", label: "Full Stack Developer", value: "full stack developer" },
+    Company: { id: "2zz", label: "Amazon", value: "amazon", logoUrl: "" },
+    Location: { id: "1yy", label: "Remote", value: "remote" },
+    JobSource: { id: "1359dac4-a397-4461-b747-382706dcbe79", label: "Indeed", value: "indeed" },
+    Status: { id: "5e7c6e8c-83e6-46e3-bf01-db8f0b503399", label: "Applied", value: "applied" },
+    jobType: "FT",
+    createdAt: new Date("2024-06-01"),
+    appliedDate: new Date("2024-06-05"),
+    dueDate: new Date("2024-06-20"),
+    salaryRange: "2",
+    description: "<p>Existing job description</p>",
+    jobUrl: "https://example.com/job",
+    applied: true,
+  } as unknown as JobResponse;
+
+  async function renderEditMode() {
+    const mockCompanies = (await getMockList(1, 10, "companies")).data;
+    const mockJobTitles = (await getMockList(1, 10, "jobTitles")).data;
+    const mockLocations = (await getMockList(1, 10, "locations")).data;
+    vi.clearAllMocks();
+    return render(
+      <AddJob
+        jobStatuses={mockJobStatuses}
+        companies={mockCompanies}
+        jobTitles={mockJobTitles}
+        locations={mockLocations}
+        jobSources={mockJobSources}
+        tags={[]}
+        editJob={editJob}
+        resetEditJob={mockResetEditJob}
+      />,
+    );
+  }
+
+  it("opens automatically with title 'Edit Job' and pre-fills the form from editJob", async () => {
+    await renderEditMode();
+
+    const dialogTitle = screen.getByTestId("add-job-dialog-title");
+    expect(dialogTitle).toHaveTextContent("Edit Job");
+
+    expect(screen.getByLabelText("Job Title")).toHaveTextContent(
+      "Full Stack Developer",
+    );
+    expect(screen.getByLabelText("Company")).toHaveTextContent("Amazon");
+    expect(screen.getByLabelText("Job Location")).toHaveTextContent("Remote");
+    expect(screen.getByLabelText("Job Source")).toHaveTextContent("Indeed");
+    expect(screen.getByLabelText("Status")).toHaveTextContent("Applied");
+    expect(screen.getByLabelText("Job URL")).toHaveValue(
+      "https://example.com/job",
+    );
+
+    const appliedSwitch = screen.getByRole("switch");
+    expect(appliedSwitch).toBeChecked();
+  });
+
+  it("calls updateJob (not addJob) with the job id when saving an edited job", async () => {
+    await renderEditMode();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("add-job-dialog-title")).toHaveTextContent(
+        "Edit Job",
+      );
+    });
+
+    const dialog = await screen.findByRole("dialog");
+    const saveBtn = screen.getByTestId("save-job-btn");
+    const user = userEvent.setup({ skipHover: true });
+    await user.click(saveBtn);
+
+    await waitFor(() => {
+      expect(updateJob).toHaveBeenCalledTimes(1);
+      expect(addJob).not.toHaveBeenCalled();
+      expect(dialog).not.toBeInTheDocument();
+      expect(updateJob).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "job-edit-1",
+          title: "1xx",
+          company: "2zz",
+          location: "1yy",
+          source: "1359dac4-a397-4461-b747-382706dcbe79",
+          status: "5e7c6e8c-83e6-46e3-bf01-db8f0b503399",
+        }),
+      );
+    });
+  });
+});
+
+describe("AddJob Component - Error Handling", () => {
+  const mockJobStatuses = JOB_STATUSES;
+  const mockJobSources = JOB_SOURCES;
+  const mockResetEditJob = vi.fn();
+  window.HTMLElement.prototype.scrollIntoView = vi.fn();
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn();
+
+  it("shows a destructive toast when addJob fails", async () => {
+    const mockCompanies = (await getMockList(1, 10, "companies")).data;
+    const mockJobTitles = (await getMockList(1, 10, "jobTitles")).data;
+    const mockLocations = (await getMockList(1, 10, "locations")).data;
+    vi.clearAllMocks();
+    (addJob as any).mockResolvedValueOnce({
+      success: false,
+      message: "Failed to save job",
+    });
+
+    render(
+      <AddJob
+        jobStatuses={mockJobStatuses}
+        companies={mockCompanies}
+        jobTitles={mockJobTitles}
+        locations={mockLocations}
+        jobSources={mockJobSources}
+        tags={[]}
+        editJob={null}
+        resetEditJob={mockResetEditJob}
+      />,
+    );
+    const user = userEvent.setup({ skipHover: true });
+    await user.click(screen.getByTestId("add-job-btn"));
+
+    const jobTitleInput = screen.getByRole("combobox", { name: /job title/i });
+    await user.click(jobTitleInput);
+    await user.click(screen.getByRole("option", { name: "Full Stack Developer" }));
+
+    const companyInput = screen.getByRole("combobox", { name: /company/i });
+    await user.click(companyInput);
+    await user.click(screen.getByRole("option", { name: "Amazon" }));
+
+    const locationInput = screen.getByRole("combobox", { name: /job location/i });
+    await user.click(locationInput);
+    await user.click(screen.getByRole("option", { name: "Remote" }));
+
+    const sourceInput = screen.getByRole("combobox", { name: /job source/i });
+    await user.click(sourceInput);
+    await user.click(screen.getByRole("option", { name: "Indeed" }));
+
+    const editableDiv = screen.getByLabelText("Job Description");
+    const pTag = editableDiv.querySelector("div > p");
+    if (pTag) {
+      pTag.textContent = "Some description";
+    }
+
+    await user.click(screen.getByTestId("save-job-btn"));
+
+    await waitFor(() => {
+      expect(toast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "destructive",
+          title: "Error!",
+          description: "Failed to save job",
+        }),
+      );
     });
   });
 });
