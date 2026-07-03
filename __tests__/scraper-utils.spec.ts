@@ -3,6 +3,8 @@ import {
   normalizeForSearch,
   extractKeywords,
   extractCityName,
+  jobDedupeKey,
+  dedupeJobs,
 } from "@/lib/scraper/utils";
 
 describe("normalizeJobUrl", () => {
@@ -64,6 +66,96 @@ describe("normalizeJobUrl", () => {
   it("handles URL with no query parameters", () => {
     const url = "https://example.com/job/123";
     expect(normalizeJobUrl(url)).toBe("https://example.com/job/123");
+  });
+
+  it("removes the greenhouse gh_src tracking param but keeps gh_jid", () => {
+    const url =
+      "https://boards.greenhouse.io/acme/jobs/123?gh_src=abc&gh_jid=123";
+    expect(normalizeJobUrl(url)).toBe(
+      "https://boards.greenhouse.io/acme/jobs/123?gh_jid=123"
+    );
+  });
+
+  it("strips a trailing slash from the path", () => {
+    expect(normalizeJobUrl("https://example.com/jobs/123/")).toBe(
+      "https://example.com/jobs/123"
+    );
+  });
+
+  it("sorts query params so order does not matter", () => {
+    expect(normalizeJobUrl("https://example.com/job?b=2&a=1")).toBe(
+      "https://example.com/job?a=1&b=2"
+    );
+  });
+});
+
+describe("jobDedupeKey", () => {
+  it("treats trailing slash, host case, and www as the same job", () => {
+    const a = jobDedupeKey({ url: "https://www.example.com/jobs/1/" });
+    const b = jobDedupeKey({ url: "https://Example.com/jobs/1" });
+    expect(a).toBe(b);
+  });
+
+  it("treats differing tracking params as the same job", () => {
+    const a = jobDedupeKey({ url: "https://ex.com/j/1?gh_src=x&gh_jid=1" });
+    const b = jobDedupeKey({ url: "https://ex.com/j/1?gh_src=y&gh_jid=1" });
+    expect(a).toBe(b);
+  });
+
+  it("falls back to a title/company/location key when url is missing", () => {
+    const a = jobDedupeKey({
+      title: "Software Engineer",
+      company: "Acme",
+      location: "Remote",
+    });
+    const b = jobDedupeKey({
+      title: "Software Engineer",
+      company: "Acme",
+      location: "Remote",
+    });
+    expect(a).toBe(b);
+    expect(a.startsWith("meta:")).toBe(true);
+  });
+
+  it("distinguishes different linkless jobs", () => {
+    const a = jobDedupeKey({ title: "Engineer", company: "Acme" });
+    const b = jobDedupeKey({ title: "Designer", company: "Acme" });
+    expect(a).not.toBe(b);
+  });
+});
+
+describe("dedupeJobs", () => {
+  it("removes duplicates within the batch", () => {
+    const jobs = [
+      { title: "A", company: "X", location: "R", url: "https://ex.com/1" },
+      { title: "A", company: "X", location: "R", url: "https://ex.com/1?ref=y" },
+    ];
+    expect(dedupeJobs(jobs, new Set())).toHaveLength(1);
+  });
+
+  it("removes jobs already saved (existing keys)", () => {
+    const jobs = [
+      { title: "A", company: "X", location: "R", url: "https://ex.com/1" },
+    ];
+    const existing = new Set([jobDedupeKey(jobs[0])]);
+    expect(dedupeJobs(jobs, existing)).toHaveLength(0);
+  });
+
+  it("dedups linkless jobs by metadata", () => {
+    const jobs = [
+      { title: "A", company: "X", location: "R", url: "" },
+      { title: "A", company: "X", location: "R", url: "" },
+      { title: "B", company: "X", location: "R", url: "" },
+    ];
+    expect(dedupeJobs(jobs, new Set())).toHaveLength(2);
+  });
+
+  it("keeps genuinely distinct jobs", () => {
+    const jobs = [
+      { title: "A", company: "X", location: "R", url: "https://ex.com/1" },
+      { title: "B", company: "Y", location: "R", url: "https://ex.com/2" },
+    ];
+    expect(dedupeJobs(jobs, new Set())).toHaveLength(2);
   });
 });
 

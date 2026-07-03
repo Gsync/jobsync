@@ -14,7 +14,7 @@ import { searchGreenhouseJobs } from "./greenhouse";
 import { runGreenhousePipeline } from "./greenhouse/pipeline";
 import type { ScoredJob } from "./greenhouse/pipeline";
 import { mapScrapedJobToJobRecord } from "./mapper";
-import { normalizeJobUrl } from "./utils";
+import { normalizeJobUrl, dedupeJobs, jobDedupeKey } from "./utils";
 import { calculateNextRunAt } from "./schedule";
 import { APP_CONSTANTS } from "@/lib/constants";
 import {
@@ -373,10 +373,8 @@ export async function runAutomation(
       "Checking for duplicate jobs...",
     );
 
-    const existingJobUrls = await getExistingJobUrls(automation.userId);
-    const newJobs = searchResult.data.filter(
-      (job) => !existingJobUrls.has(normalizeJobUrl(job.url)),
-    );
+    const existingKeys = await getExistingJobKeys(automation.userId);
+    const newJobs = dedupeJobs(searchResult.data, existingKeys);
     const jobsDeduplicated = newJobs.length;
 
     automationLogger.log(
@@ -608,19 +606,29 @@ export async function runAutomation(
   }
 }
 
-async function getExistingJobUrls(userId: string): Promise<Set<string>> {
+async function getExistingJobKeys(userId: string): Promise<Set<string>> {
   const existingJobs = await db.job.findMany({
     where: { userId },
-    select: { jobUrl: true },
+    select: {
+      jobUrl: true,
+      JobTitle: { select: { label: true } },
+      Company: { select: { label: true } },
+      Location: { select: { label: true } },
+    },
   });
 
-  const urls = new Set<string>();
+  const keys = new Set<string>();
   for (const job of existingJobs) {
-    if (job.jobUrl) {
-      urls.add(normalizeJobUrl(job.jobUrl));
-    }
+    keys.add(
+      jobDedupeKey({
+        url: job.jobUrl,
+        title: job.JobTitle?.label,
+        company: job.Company?.label,
+        location: job.Location?.label ?? undefined,
+      }),
+    );
   }
-  return urls;
+  return keys;
 }
 
 interface GreenhouseRunConfig {
@@ -753,15 +761,8 @@ async function runGreenhouseRun(
     );
 
     // Dedup against existing jobs and within this batch.
-    const existingJobUrls = await getExistingJobUrls(automation.userId);
-    const seen = new Set<string>();
-    const dedupedJobs: JobDetails[] = [];
-    for (const job of jobs) {
-      const normalized = normalizeJobUrl(job.url);
-      if (existingJobUrls.has(normalized) || seen.has(normalized)) continue;
-      seen.add(normalized);
-      dedupedJobs.push(job);
-    }
+    const existingKeys = await getExistingJobKeys(automation.userId);
+    const dedupedJobs = dedupeJobs(jobs, existingKeys);
     const jobsDeduplicated = dedupedJobs.length;
 
     automationLogger.log(

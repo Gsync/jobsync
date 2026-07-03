@@ -196,6 +196,50 @@ describe("runAutomation (greenhouse)", () => {
     expect((generateText as any).mock.calls.length).toBe(0);
   });
 
+  // Exercises getExistingJobKeys' wiring of real DB row shape (JobTitle/
+  // Company/Location relations) into jobDedupeKey, not just the pure
+  // dedupeJobs unit tested in scraper-utils.spec.ts.
+  it("dedupes against an existing DB job whose URL differs only by www/trailing-slash/tracking-param", async () => {
+    (prisma.job.findMany as any).mockResolvedValueOnce([
+      {
+        jobUrl: "https://www.job-boards.greenhouse.io/acme/jobs/1/?gh_src=abc",
+        JobTitle: { label: "Frontend Engineer" },
+        Company: { label: "Acme" },
+        Location: { label: "Remote" },
+      },
+    ]);
+
+    (searchGreenhouseJobs as any).mockResolvedValue({
+      jobs: [
+        {
+          ...makeJob("Frontend Engineer", "React"),
+          url: "https://job-boards.greenhouse.io/acme/jobs/1",
+        },
+        makeJob("Senior Frontend Engineer", "Vue"),
+      ],
+      errors: [],
+    });
+
+    const result = await runAutomation(automation);
+
+    expect(result.status).toBe("completed");
+    expect(result.jobsSearched).toBe(2);
+    // The first job matches the existing DB row's normalized key, so only
+    // the second (genuinely new) job is saved.
+    expect(result.jobsSaved).toBe(1);
+    expect((prisma.job.create as any).mock.calls).toHaveLength(1);
+
+    const updateArg = (prisma.automationRun.update as any).mock.calls.find(
+      (c: any[]) => c[0]?.where?.id === "run1",
+    );
+    const funnelStats = JSON.parse(updateArg[0].data.funnelStats);
+    const byKey = Object.fromEntries(
+      funnelStats.map((s: any) => [s.key, s.count]),
+    );
+    expect(byKey.fetched).toBe(2);
+    expect(byKey.dedup).toBe(1);
+  });
+
   // Concurrency semantics (bounded p-limit dispatch, provider-gated).
   // Ollama forces concurrency 1 (see beforeEach's default userSettings mock
   // of null -> defaultUserSettings.ai, which is Ollama), so these tests
