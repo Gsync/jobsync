@@ -31,8 +31,10 @@ import { getJobDetails } from "@/actions/job.actions";
 import { defaultUserSettings } from "@/models/userSettings.model";
 import { automationLogger } from "@/lib/automation-logger";
 
-
-function formatError(error: unknown, fallback: string): { success: false; message: string } {
+function formatError(
+  error: unknown,
+  fallback: string,
+): { success: false; message: string } {
   console.error(error, fallback);
   if (error instanceof Error) {
     return { success: false, message: error.message || fallback };
@@ -42,7 +44,7 @@ function formatError(error: unknown, fallback: string): { success: false; messag
 
 export async function getAutomationsList(
   page: number = 1,
-  limit: number = APP_CONSTANTS.RECORDS_PER_PAGE
+  limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
 ): Promise<{
   success: boolean;
   data?: AutomationWithResume[];
@@ -112,16 +114,16 @@ export async function getAutomationById(id: string): Promise<{
 
     return {
       success: true,
-      data: automation as unknown as AutomationWithResume & { runs: AutomationRun[] },
+      data: automation as unknown as AutomationWithResume & {
+        runs: AutomationRun[];
+      },
     };
   } catch (error) {
     return formatError(error, "Failed to get automation");
   }
 }
 
-export async function createAutomation(
-  input: CreateAutomationInput
-): Promise<{
+export async function createAutomation(input: CreateAutomationInput): Promise<{
   success: boolean;
   data?: AutomationWithResume;
   message?: string;
@@ -136,7 +138,10 @@ export async function createAutomation(
 
     const count = await db.automation.count({ where: { userId: user.id } });
     if (count >= APP_CONSTANTS.MAX_AUTOMATIONS_PER_USER) {
-      return { success: false, message: `Maximum of ${APP_CONSTANTS.MAX_AUTOMATIONS_PER_USER} automations allowed per user` };
+      return {
+        success: false,
+        message: `Maximum of ${APP_CONSTANTS.MAX_AUTOMATIONS_PER_USER} automations allowed per user`,
+      };
     }
 
     const resume = await db.resume.findFirst({
@@ -147,7 +152,10 @@ export async function createAutomation(
     });
 
     if (!resume) {
-      return { success: false, message: "Resume not found or doesn't belong to you" };
+      return {
+        success: false,
+        message: "Resume not found or doesn't belong to you",
+      };
     }
 
     const nextRunAt = calculateNextRunAt(validated.scheduleHour);
@@ -188,7 +196,7 @@ export async function createAutomation(
 
 export async function updateAutomation(
   id: string,
-  input: UpdateAutomationInput
+  input: UpdateAutomationInput,
 ): Promise<{
   success: boolean;
   data?: AutomationWithResume;
@@ -218,7 +226,10 @@ export async function updateAutomation(
         },
       });
       if (!resume) {
-        return { success: false, message: "Resume not found or doesn't belong to you" };
+        return {
+          success: false,
+          message: "Resume not found or doesn't belong to you",
+        };
       }
     }
 
@@ -375,7 +386,7 @@ export async function resumeAutomation(id: string): Promise<{
 
 export async function getDiscoveredJobs(options?: {
   automationId?: string;
-  discoveryStatus?: DiscoveryStatus;
+  discoveryStatus?: DiscoveryStatus | DiscoveryStatus[];
   page?: number;
   limit?: number;
   sortBy?: "matchScore" | "discoveredAt";
@@ -414,7 +425,9 @@ export async function getDiscoveredJobs(options?: {
     }
 
     if (discoveryStatus) {
-      where.discoveryStatus = discoveryStatus;
+      where.discoveryStatus = Array.isArray(discoveryStatus)
+        ? { in: discoveryStatus }
+        : discoveryStatus;
     }
 
     // Status counts ignore the discoveryStatus filter so callers get the full
@@ -447,8 +460,7 @@ export async function getDiscoveredJobs(options?: {
     const statusCounts = { new: 0, dismissed: 0, accepted: 0 };
     for (const g of grouped) {
       if (g.discoveryStatus && g.discoveryStatus in statusCounts) {
-        statusCounts[g.discoveryStatus as keyof typeof statusCounts] =
-          g._count;
+        statusCounts[g.discoveryStatus as keyof typeof statusCounts] = g._count;
       }
     }
 
@@ -750,7 +762,7 @@ export async function getAutomationRuns(
   options?: {
     page?: number;
     limit?: number;
-  }
+  },
 ): Promise<{
   success: boolean;
   data?: AutomationRun[];

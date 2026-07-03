@@ -2,13 +2,8 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { format } from "date-fns";
-import { APP_CONSTANTS } from "@/lib/constants";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { APP_CONSTANTS, DISCOVERY_STATUSES } from "@/lib/constants";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -32,17 +27,26 @@ import {
 } from "@/components/ui/alert-dialog";
 import { buttonVariants } from "@/components/ui/button";
 import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Check,
   X,
   ExternalLink,
   Briefcase,
   Building2,
   MapPin,
+  ListFilter,
   Loader2,
   Sparkles,
   Trash2,
 } from "lucide-react";
-import type { DiscoveredJob } from "@/models/automation.model";
+import type { DiscoveredJob, DiscoveryStatus } from "@/models/automation.model";
 import {
   acceptDiscoveredJob,
   dismissDiscoveredJob,
@@ -84,6 +88,9 @@ interface DiscoveredJobsListProps {
   // the clear dialog matches what clearDiscoveredJobs actually deletes.
   dismissedCount: number;
   newCount: number;
+  acceptedCount: number;
+  statusFilter: DiscoveryStatus[];
+  onStatusFilterChange: (filter: DiscoveryStatus[]) => void;
   automationId: string;
   onRefresh: () => void;
   onViewDetails?: (job: DiscoveredJob) => void;
@@ -101,6 +108,9 @@ export function DiscoveredJobsList({
   onLoadMore,
   dismissedCount,
   newCount,
+  acceptedCount,
+  statusFilter,
+  onStatusFilterChange,
   automationId,
   onRefresh,
   onViewDetails,
@@ -124,7 +134,11 @@ export function DiscoveredJobsList({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !loadingMore && jobs.length < totalJobs) {
+        if (
+          entries[0].isIntersecting &&
+          !loadingMore &&
+          jobs.length < totalJobs
+        ) {
           onLoadMore();
         }
       },
@@ -151,7 +165,10 @@ export function DiscoveredJobsList({
     try {
       const result = await analyzeDiscoveredJob(jobId);
       if (result.success) {
-        toast({ title: "Match analyzed", description: "AI match score is ready." });
+        toast({
+          title: "Match analyzed",
+          description: "AI match score is ready.",
+        });
         onRefresh();
       } else {
         toast({
@@ -161,7 +178,11 @@ export function DiscoveredJobsList({
         });
       }
     } catch {
-      toast({ title: "Error", description: "Failed to analyze job", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to analyze job",
+        variant: "destructive",
+      });
     } finally {
       setLoadingAction(null);
     }
@@ -172,7 +193,10 @@ export function DiscoveredJobsList({
     try {
       const result = await acceptDiscoveredJob(job.id);
       if (result.success) {
-        toast({ title: "Job accepted", description: "The job has been added to your tracked jobs." });
+        toast({
+          title: "Job accepted",
+          description: "The job has been added to your tracked jobs.",
+        });
         onRefresh();
       } else {
         toast({
@@ -182,7 +206,11 @@ export function DiscoveredJobsList({
         });
       }
     } catch {
-      toast({ title: "Error", description: "Failed to accept job", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to accept job",
+        variant: "destructive",
+      });
     } finally {
       setLoadingAction(null);
     }
@@ -203,7 +231,11 @@ export function DiscoveredJobsList({
         });
       }
     } catch {
-      toast({ title: "Error", description: "Failed to dismiss job", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to dismiss job",
+        variant: "destructive",
+      });
     } finally {
       setLoadingAction(null);
     }
@@ -239,7 +271,9 @@ export function DiscoveredJobsList({
     return "outline";
   };
 
-  if (jobs.length === 0) {
+  const hasAnyJobs = dismissedCount + newCount + acceptedCount > 0;
+
+  if (!hasAnyJobs) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
@@ -253,6 +287,14 @@ export function DiscoveredJobsList({
     );
   }
 
+  const toggleStatusFilter = (status: DiscoveryStatus, checked: boolean) => {
+    onStatusFilterChange(
+      checked
+        ? [...statusFilter, status]
+        : statusFilter.filter((s) => s !== status),
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -260,182 +302,224 @@ export function DiscoveredJobsList({
           <div className="space-y-1.5">
             <CardTitle>Discovered Jobs</CardTitle>
             {totalJobs > 0 && (
-              <RecordsCount count={jobs.length} total={totalJobs} label="jobs" />
-            )}
-          </div>
-          {dismissedCount + newCount > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setClearIncludeNew(false);
-                setClearOpen(true);
-              }}
-            >
-              <Trash2 className="h-4 w-4 mr-1.5" />
-              Clear
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Job</TableHead>
-              <TableHead>Company</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead className="text-center">Pre-rank</TableHead>
-              <TableHead className="text-center">Match</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Discovered</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedJobs.map((job) => {
-              const isLoading = loadingAction === job.id;
-              const analyzed = isAnalyzed(job);
-              const prerankPercent = getPrerankPercent(job);
-
-              return (
-                <TableRow key={job.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="font-medium hover:underline cursor-pointer"
-                        onClick={() => onViewDetails?.(job)}
-                      >
-                        {job.JobTitle.label}
-                      </span>
-                      {job.jobUrl && (
-                        <a
-                          href={job.jobUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-foreground"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                      {job.Company.label}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      {job.Location?.label || "N/A"}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {prerankPercent != null ? (
-                      <span
-                        className="font-mono text-sm text-muted-foreground"
-                        title="Internal lexical relevance score (not an AI match)"
-                      >
-                        {prerankPercent}%
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {analyzed ? (
-                      <Badge variant={getScoreBadgeVariant(job.matchScore)}>
-                        {job.matchScore}%
-                      </Badge>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleAnalyze(job.id)}
-                        disabled={isLoading || runInProgress}
-                        title={
-                          runInProgress
-                            ? "A run is in progress. Wait until it completes."
-                            : undefined
-                        }
-                      >
-                        {isLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Sparkles className="h-3.5 w-3.5 mr-1" />
-                            Analyze
-                          </>
-                        )}
-                      </Button>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        job.discoveryStatus === "accepted"
-                          ? "default"
-                          : job.discoveryStatus === "dismissed"
-                            ? "secondary"
-                            : "outline"
-                      }
-                    >
-                      {job.discoveryStatus}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(job.discoveredAt), "MMM d, yyyy")}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {job.discoveryStatus === "new" && (
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleAccept(job)}
-                          disabled={isLoading}
-                        >
-                          {isLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Check className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDismiss(job.id)}
-                          disabled={isLoading}
-                        >
-                          {isLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <X className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-        {jobs.length < totalJobs && (
-          <div
-            ref={sentinelRef}
-            data-testid="jobs-load-more-sentinel"
-            className="flex justify-center p-4"
-          >
-            {loadingMore && (
-              <Loader2
-                data-testid="jobs-load-more-spinner"
-                className="h-5 w-5 animate-spin text-blue-500"
+              <RecordsCount
+                count={jobs.length}
+                total={totalJobs}
+                label="jobs"
               />
             )}
           </div>
+          <div className="flex items-center gap-2">
+            {dismissedCount + newCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setClearIncludeNew(false);
+                  setClearOpen(true);
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-1.5" />
+                Clear
+              </Button>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <ListFilter className="h-4 w-4 mr-1.5" />
+                  Status
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Filter by status</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {DISCOVERY_STATUSES.map((status) => (
+                  <DropdownMenuCheckboxItem
+                    key={status.value}
+                    checked={statusFilter.includes(status.value)}
+                    onSelect={(e) => e.preventDefault()}
+                    onCheckedChange={(checked) =>
+                      toggleStatusFilter(status.value, checked)
+                    }
+                  >
+                    {status.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {jobs.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium">No jobs match this filter</h3>
+            <p className="text-muted-foreground mt-2">
+              Try selecting a different status above.
+            </p>
+          </div>
+        ) : (
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Job</TableHead>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead className="text-center">Pre-rank</TableHead>
+                  <TableHead className="text-center">Match</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Discovered</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedJobs.map((job) => {
+                  const isLoading = loadingAction === job.id;
+                  const analyzed = isAnalyzed(job);
+                  const prerankPercent = getPrerankPercent(job);
+
+                  return (
+                    <TableRow key={job.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="font-medium hover:underline cursor-pointer"
+                            onClick={() => onViewDetails?.(job)}
+                          >
+                            {job.JobTitle.label}
+                          </span>
+                          {job.jobUrl && (
+                            <a
+                              href={job.jobUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-muted-foreground hover:text-foreground"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          {job.Company.label}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          {job.Location?.label || "N/A"}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {prerankPercent != null ? (
+                          <span
+                            className="font-mono text-sm text-muted-foreground"
+                            title="Internal lexical relevance score (not an AI match)"
+                          >
+                            {prerankPercent}%
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {analyzed ? (
+                          <Badge variant={getScoreBadgeVariant(job.matchScore)}>
+                            {job.matchScore}%
+                          </Badge>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleAnalyze(job.id)}
+                            disabled={isLoading || runInProgress}
+                            title={
+                              runInProgress
+                                ? "A run is in progress. Wait until it completes."
+                                : undefined
+                            }
+                          >
+                            {isLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Sparkles className="h-3.5 w-3.5 mr-1" />
+                                Analyze
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            job.discoveryStatus === "accepted"
+                              ? "default"
+                              : job.discoveryStatus === "dismissed"
+                                ? "secondary"
+                                : "outline"
+                          }
+                        >
+                          {job.discoveryStatus}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {format(new Date(job.discoveredAt), "MMM d, yyyy")}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {job.discoveryStatus === "new" && (
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleAccept(job)}
+                              disabled={isLoading}
+                            >
+                              {isLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Check className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDismiss(job.id)}
+                              disabled={isLoading}
+                            >
+                              {isLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <X className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+            {jobs.length < totalJobs && (
+              <div
+                ref={sentinelRef}
+                data-testid="jobs-load-more-sentinel"
+                className="flex justify-center p-4"
+              >
+                {loadingMore && (
+                  <Loader2
+                    data-testid="jobs-load-more-spinner"
+                    className="h-5 w-5 animate-spin text-blue-500"
+                  />
+                )}
+              </div>
+            )}
+          </>
         )}
       </CardContent>
 

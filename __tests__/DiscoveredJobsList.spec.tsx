@@ -1,4 +1,5 @@
 import { render, screen, waitFor, act } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { DiscoveredJobsList } from "@/components/automations/DiscoveredJobsList";
 import type { DiscoveredJob } from "@/models/automation.model";
 
@@ -47,6 +48,7 @@ function renderList(
 ) {
   const onLoadMore = vi.fn();
   const onRefresh = vi.fn();
+  const onStatusFilterChange = vi.fn();
   const props: React.ComponentProps<typeof DiscoveredJobsList> = {
     jobs: [makeJob()],
     totalJobs: 1,
@@ -54,12 +56,15 @@ function renderList(
     onLoadMore,
     dismissedCount: 0,
     newCount: 1,
+    acceptedCount: 0,
+    statusFilter: ["new", "accepted"],
+    onStatusFilterChange,
     automationId: "automation-1",
     onRefresh,
     ...overrides,
   };
   const result = render(<DiscoveredJobsList {...props} />);
-  return { ...result, onLoadMore, onRefresh };
+  return { ...result, onLoadMore, onRefresh, onStatusFilterChange };
 }
 
 describe("DiscoveredJobsList", () => {
@@ -139,5 +144,78 @@ describe("DiscoveredJobsList", () => {
     });
 
     expect(onLoadMore).not.toHaveBeenCalled();
+  });
+
+  it("shows the true empty state (no header/filter) when there are no jobs at all", () => {
+    renderList({
+      jobs: [],
+      totalJobs: 0,
+      dismissedCount: 0,
+      newCount: 0,
+      acceptedCount: 0,
+    });
+
+    expect(screen.getByText("No discovered jobs")).toBeInTheDocument();
+    expect(screen.queryByText("Status")).not.toBeInTheDocument();
+  });
+
+  it("keeps the status filter visible when the current filter matches no jobs but some exist", () => {
+    renderList({
+      jobs: [],
+      totalJobs: 0,
+      dismissedCount: 3,
+      newCount: 0,
+      acceptedCount: 0,
+      statusFilter: ["new", "accepted"],
+    });
+
+    expect(screen.getByText("No jobs match this filter")).toBeInTheDocument();
+    expect(screen.getByText("Status")).toBeInTheDocument();
+  });
+
+  it("checks New and Accepted but not Dismissed by default", async () => {
+    renderList({ statusFilter: ["new", "accepted"] });
+
+    await userEvent.click(screen.getByRole("button", { name: "Status" }));
+
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: "New" }),
+    ).toHaveAttribute("aria-checked", "true");
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: "Accepted" }),
+    ).toHaveAttribute("aria-checked", "true");
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: "Dismissed" }),
+    ).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("adds Dismissed to the filter when checked", async () => {
+    const { onStatusFilterChange } = renderList({
+      statusFilter: ["new", "accepted"],
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "Status" }));
+    await userEvent.click(
+      screen.getByRole("menuitemcheckbox", { name: "Dismissed" }),
+    );
+
+    expect(onStatusFilterChange).toHaveBeenCalledWith([
+      "new",
+      "accepted",
+      "dismissed",
+    ]);
+  });
+
+  it("removes New from the filter when unchecked", async () => {
+    const { onStatusFilterChange } = renderList({
+      statusFilter: ["new", "accepted"],
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "Status" }));
+    await userEvent.click(
+      screen.getByRole("menuitemcheckbox", { name: "New" }),
+    );
+
+    expect(onStatusFilterChange).toHaveBeenCalledWith(["accepted"]);
   });
 });

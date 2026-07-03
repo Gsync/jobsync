@@ -130,6 +130,12 @@ export const JOB_STATUSES = [
   { label: "Archived", value: "archived" },
 ] as const;
 
+export const DISCOVERY_STATUSES = [
+  { label: "New", value: "new" },
+  { label: "Accepted", value: "accepted" },
+  { label: "Dismissed", value: "dismissed" },
+] as const;
+
 export const SIDEBAR_LINKS = [
   {
     icon: LayoutDashboard,

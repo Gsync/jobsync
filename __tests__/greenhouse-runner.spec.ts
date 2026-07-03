@@ -38,6 +38,12 @@ vi.mock("@/lib/api-key-resolver", () => ({
   resolveApiKey: vi.fn().mockResolvedValue(undefined),
 }));
 
+// Real verifier does a network fetch to Ollama; these tests aren't
+// exercising Ollama connectivity, so stub it to always succeed.
+vi.mock("@/lib/ai/provider-registry.server", () => ({
+  PROVIDER_VERIFIERS: { ollama: vi.fn().mockResolvedValue({ success: true }) },
+}));
+
 vi.mock("ai", () => ({ generateText: vi.fn() }));
 
 vi.mock("@/lib/ai", async (orig) => {
