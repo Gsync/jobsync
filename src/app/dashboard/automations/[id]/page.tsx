@@ -36,6 +36,8 @@ import {
   FileText,
   AlertTriangle,
   PlayCircle,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import {
   getAutomationById,
@@ -43,8 +45,10 @@ import {
   getAutomationRuns,
   pauseAutomation,
   resumeAutomation,
+  deleteAutomation,
   getDiscoveredJobById,
 } from "@/actions/automation.actions";
+import { getResumeList } from "@/actions/profile.actions";
 import type {
   AutomationWithResume,
   AutomationRun,
@@ -56,6 +60,7 @@ import { DiscoveredJobsList } from "@/components/automations/DiscoveredJobsList"
 import { DiscoveredJobDetail } from "@/components/automations/DiscoveredJobDetail";
 import { RunHistoryList } from "@/components/automations/RunHistoryList";
 import { LogsTab, type LogData } from "@/components/automations/LogsTab";
+import { AutomationWizard } from "@/components/automations/AutomationWizard";
 import Loading from "@/components/Loading";
 import { APP_CONSTANTS } from "@/lib/constants";
 
@@ -108,6 +113,10 @@ export default function AutomationDetailPage() {
     useState<JobMatchData | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [runKey, setRunKey] = useState(0);
+  const [resumes, setResumes] = useState<{ id: string; title: string }[]>([]);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   // The latest run id at the moment a manual run is started, so the watcher can
   // tell the newly-created background run apart from the prior one.
   const prevLatestRunIdRef = useRef<string | null>(null);
@@ -192,6 +201,21 @@ export default function AutomationDetailPage() {
     // to "Running" and then rejects the completed SSE snapshot.
     loadData(true);
   }, [loadData]);
+
+  useEffect(() => {
+    getResumeList(1, 100, APP_CONSTANTS.MIN_RESUME_SECTIONS_FOR_SELECTION).then(
+      (result) => {
+        if (result?.data) {
+          setResumes(
+            result.data.map((r: { id: string; title: string }) => ({
+              id: r.id,
+              title: r.title,
+            })),
+          );
+        }
+      },
+    );
+  }, []);
 
   // Subscribe to the live log/status stream at the page level so it persists
   // across tab switches. runKey bumps on Run Now to follow the new run.
@@ -464,6 +488,25 @@ export default function AutomationDetailPage() {
     }).catch(() => {});
   };
 
+  const handleDelete = async () => {
+    if (!automation) return;
+    setIsDeleting(true);
+    const result = await deleteAutomation(automation.id);
+    setIsDeleting(false);
+    setDeleteConfirmOpen(false);
+
+    if (result.success) {
+      toast({ title: "Automation deleted" });
+      router.push("/dashboard/automations");
+    } else {
+      toast({
+        title: "Error",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleViewJobDetails = async (job: DiscoveredJob) => {
     const result = await getDiscoveredJobById(job.id);
     if (result.success && result.data) {
@@ -519,6 +562,18 @@ export default function AutomationDetailPage() {
         <div className="flex gap-2">
           <Button variant="outline" size="icon" onClick={() => loadData(true)}>
             <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" onClick={() => setWizardOpen(true)}>
+            <Pencil className="h-4 w-4 mr-2" />
+            Edit
+          </Button>
+          <Button
+            variant="outline"
+            className="text-destructive hover:text-destructive"
+            onClick={() => setDeleteConfirmOpen(true)}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete
           </Button>
           <Button
             variant="outline"
@@ -723,6 +778,40 @@ export default function AutomationDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Automation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this automation? This action
+              cannot be undone. Discovered jobs will remain but lose their
+              automation reference.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AutomationWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        resumes={resumes}
+        onSuccess={() => loadData()}
+        editAutomation={automation}
+      />
     </div>
   );
 }
