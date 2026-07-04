@@ -97,10 +97,8 @@ export const POST = async (req: NextRequest) => {
       providerOptions: {
         ollama: { options: { num_ctx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX } },
       },
-      onFinish: ({ finishReason, usage }) => {
+      onFinish: () => {
         clearTimeout(timer);
-        // "length" => hit num_ctx/output limit; "stop" => model completed.
-        console.info(`Resume review finished: reason=${finishReason}`, usage);
       },
       onError: ({ error }) => {
         clearTimeout(timer);

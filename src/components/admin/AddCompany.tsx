@@ -125,9 +125,9 @@ function AddCompany({
         <DialogContent className="lg:max-h-screen overflow-y-scroll">
           <DialogHeader>
             <DialogTitle>{pageTitle}</DialogTitle>
-            <DialogDescription className="text-primary">
+            <DialogDescription className="text-orange-600 dark:text-orange-500">
               Caution: Editing name of the company will affect all the related
-              job records.
+              job records including your resume.
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>

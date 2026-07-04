@@ -10,6 +10,10 @@ function formatDate(date: Date | undefined | null): string {
   return format(new Date(date), "MMM yyyy");
 }
 
+function formatLocation(label: string | undefined): string {
+  return label && label !== "Not specified" ? label : "";
+}
+
 function yearRange(startDate: Date, endDate?: Date | null): string {
   const start = format(new Date(startDate), "yyyy");
   const end = endDate ? format(new Date(endDate), "yyyy") : "Present";
@@ -218,7 +222,8 @@ export function ProfessionalResumeDocument({ resume, htmlNodes }: Props) {
                     </View>
                     <Text style={s.entryMeta}>
                       {exp.Company.label}
-                      {exp.location?.label ? ` · ${exp.location.label}` : ""}
+                      {formatLocation(exp.location?.label) &&
+                        ` · ${formatLocation(exp.location?.label)}`}
                     </Text>
                   </View>
                   {htmlNodes.experiences[i]}
@@ -244,7 +249,8 @@ export function ProfessionalResumeDocument({ resume, htmlNodes }: Props) {
                       </View>
                       <Text style={s.entryMeta}>
                         {exp.Company.label}
-                        {exp.location?.label ? ` · ${exp.location.label}` : ""}
+                        {formatLocation(exp.location?.label) &&
+                        ` · ${formatLocation(exp.location?.label)}`}
                       </Text>
                     </View>
                   </View>

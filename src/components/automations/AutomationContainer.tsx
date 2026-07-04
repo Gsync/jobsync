@@ -72,25 +72,14 @@ export function AutomationContainer({ resumes }: AutomationContainerProps) {
             <Button variant="outline" size="icon" onClick={loadAutomations}>
               <RefreshCw className="h-4 w-4" />
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => setWizardOpen(true)}
-              disabled={resumes.length === 0}
-            >
+            <Button variant="outline" onClick={() => setWizardOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Create Automation
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          {resumes.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>You need to create a resume before setting up automations.</p>
-              <p className="text-sm mt-2">
-                Go to your Profile to create a resume first.
-              </p>
-            </div>
-          ) : loading ? (
+          {loading ? (
             <Loading />
           ) : (
             <AutomationList

@@ -10,6 +10,10 @@ function formatDate(date: Date | undefined | null): string {
   return format(new Date(date), "MMM yyyy");
 }
 
+function formatLocation(label: string | undefined): string {
+  return label && label !== "Not specified" ? label : "";
+}
+
 function SectionHeading({ title }: { title: string }) {
   return (
     <View>
@@ -142,8 +146,9 @@ export function SimpleResumeDocument({ resume, htmlNodes }: Props) {
                       {exp.jobTitle.label} — {exp.Company.label}
                     </Text>
                     <Text style={simpleStyles.entryMeta}>
-                      {formatDate(exp.startDate)} – {formatDate(exp.endDate)} ·{" "}
-                      {exp.location.label}
+                      {formatDate(exp.startDate)} – {formatDate(exp.endDate)}
+                      {formatLocation(exp.location.label) &&
+                        ` · ${formatLocation(exp.location.label)}`}
                     </Text>
                   </View>
                   {htmlNodes.experiences[i]}
@@ -166,8 +171,9 @@ export function SimpleResumeDocument({ resume, htmlNodes }: Props) {
                     </Text>
                     <Text style={simpleStyles.entryMeta}>
                       {formatDate(edu.startDate)} –{" "}
-                      {edu.endDate ? formatDate(edu.endDate) : "Present"} ·{" "}
-                      {edu.location.label}
+                      {edu.endDate ? formatDate(edu.endDate) : "Present"}
+                      {formatLocation(edu.location.label) &&
+                        ` · ${formatLocation(edu.location.label)}`}
                     </Text>
                   </View>
                   {htmlNodes.educations[i]}

@@ -29,6 +29,7 @@ import { AiModel, AiProvider, defaultModel } from "@/models/ai.model";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { checkOllamaConnection } from "@/utils/ai.utils";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type CreateResumeProps = {
   resumeDialogOpen: boolean;
@@ -276,7 +277,14 @@ function CreateResume({
                   </span>
                   {!aiAvailable && (
                     <span className="text-muted-foreground text-xs block mt-0.5">
-                      (AI unavailable — manual entry)
+                      AI unavailable —{" "}
+                      <Link
+                        href="/dashboard/settings"
+                        className="underline hover:text-foreground"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Configure AI under Settings
+                      </Link>
                     </span>
                   )}
                 </label>

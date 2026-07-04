@@ -1,15 +1,9 @@
 "use server";
 
-import fs from "fs/promises";
-import path from "path";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
+import companies from "@/lib/scraper/greenhouse/companies.json";
 import type { GreenhouseCompany } from "@/models/automation.model";
-
-const COMPANIES_PATH = path.join(
-  process.cwd(),
-  "src/lib/scraper/greenhouse/companies.json",
-);
 
 const TOKEN_REGEX = /^[a-z0-9][a-z0-9_-]{1,79}$/;
 
@@ -31,19 +25,6 @@ function extractToken(input: string): string | null {
   }
 
   return null;
-}
-
-let cachedCompanies: GreenhouseCompany[] | null = null;
-
-async function loadCompanies(): Promise<GreenhouseCompany[]> {
-  if (cachedCompanies) return cachedCompanies;
-  try {
-    const raw = await fs.readFile(COMPANIES_PATH, "utf-8");
-    cachedCompanies = JSON.parse(raw) as GreenhouseCompany[];
-  } catch {
-    cachedCompanies = [];
-  }
-  return cachedCompanies;
 }
 
 // Validate a token or board URL; returns the official company name.
@@ -97,7 +78,6 @@ export async function resolveGreenhouseBoard(
 export async function getGreenhouseCompanyCount(): Promise<number> {
   const user = await getCurrentUser();
   if (!user) return 0;
-  const companies = await loadCompanies();
   return companies.length;
 }
 
@@ -109,7 +89,6 @@ export async function searchGreenhouseCompanies(
   const user = await getCurrentUser();
   if (!user) return [];
 
-  const companies = await loadCompanies();
   const q = query.trim().toLowerCase();
   if (q.length < 1) return companies;
 
