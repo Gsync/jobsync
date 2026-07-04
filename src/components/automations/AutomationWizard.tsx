@@ -46,7 +46,7 @@ import type {
   GreenhouseSourceConfig,
 } from "@/models/automation.model";
 import { GreenhouseSearchStep } from "./GreenhouseSearchStep";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, AlertTriangle } from "lucide-react";
 import { APP_CONSTANTS } from "@/lib/constants";
 
 const EMPTY_GREENHOUSE: GreenhouseSourceConfig = {
@@ -277,6 +277,15 @@ export function AutomationWizard({
               </FormItem>
             )}
           />
+          {formValues.jobBoard === "jsearch" && (
+            <div className="flex items-center gap-2 text-amber-600 text-sm">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <span>
+                JSearch will be removed in the next release. More job board
+                options are coming soon.
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Step 1: Search */}
