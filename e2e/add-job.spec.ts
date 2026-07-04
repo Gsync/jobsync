@@ -22,7 +22,7 @@ async function createNewJob(
     skipUrl?: boolean;
     beforeSave?: (page: Page) => Promise<void>;
   },
-) {
+): Promise<string> {
   const suffix = jobText.replace(/\s+/g, "-");
   const companyText = `company ${suffix}`;
   const locationText = `location ${suffix}`;
@@ -98,45 +98,47 @@ async function createNewJob(
     await options.beforeSave(page);
   }
   await page.getByTestId("save-job-btn").click();
+
+  // Job Title/Company/Location text is stable across runs (reused via the
+  // combobox's "search or create" flow, backed by a unique DB constraint),
+  // so old duplicate rows from prior runs can share this same jobText.
+  // Grab the newly created job's id from its row link (jobs are sorted
+  // newest-first) so cleanup can target this exact job instead of matching
+  // by name.
+  const row = page.getByRole("row", { name: jobText }).first();
+  await expect(row).toBeVisible();
+  const href = await row.getByRole("link", { name: jobText }).getAttribute("href");
+  return href!.split("/").pop()!;
 }
 
-async function deleteJob(page: Page, jobText: string) {
+async function deleteJobById(page: Page, jobId: string) {
   // Wait for any pending navigations to complete before navigating
   await page.waitForLoadState("load");
   await page.goto("/dashboard/myjobs");
   await page.waitForLoadState("networkidle");
-  const rows = page.getByRole("row", { name: jobText });
-  // Loop to also clean up any duplicates left over from a previous failed run.
-  // waitFor (rather than a plain isVisible check) gives the table time to
-  // render after navigation instead of concluding "not found" instantly.
-  while (
-    await rows
-      .first()
-      .waitFor({ state: "visible", timeout: 3000 })
-      .then(() => true)
-      .catch(() => false)
-  ) {
-    await rows.first().getByTestId("job-actions-menu-btn").click();
-    await page.getByRole("menuitem", { name: "Delete" }).click();
-    await page.getByRole("button", { name: "Delete" }).click();
-    await expect(rows.first()).not.toBeVisible({ timeout: 10000 });
-  }
+  const row = page.getByRole("row").filter({
+    has: page.locator(`a[href="/dashboard/myjobs/${jobId}"]`),
+  });
+  await expect(row).toBeVisible({ timeout: 10000 });
+  await row.getByTestId("job-actions-menu-btn").click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
+  await page.getByRole("button", { name: "Delete" }).click();
+  await expect(row).not.toBeVisible({ timeout: 10000 });
 }
 
 test.describe("Add New Job", () => {
-  let jobTitleToCleanup: string | undefined;
+  let jobIdToCleanup: string | undefined;
 
   test.afterEach(async ({ page }) => {
-    if (jobTitleToCleanup) {
-      await deleteJob(page, jobTitleToCleanup);
-      jobTitleToCleanup = undefined;
+    if (jobIdToCleanup) {
+      await deleteJobById(page, jobIdToCleanup);
+      jobIdToCleanup = undefined;
     }
   });
 
   test("should allow me to add a new job", async ({ page }, testInfo) => {
     const jobText = `developer test title 1 ${testInfo.project.name}`;
-    jobTitleToCleanup = jobText;
-    await createNewJob(page, jobText);
+    jobIdToCleanup = await createNewJob(page, jobText);
     await expect(
       page.getByRole("row", { name: jobText }).first(),
     ).toBeVisible();
@@ -144,8 +146,7 @@ test.describe("Add New Job", () => {
 
   test("should edit the job created", async ({ page }, testInfo) => {
     const jobText = `developer test title 2 ${testInfo.project.name}`;
-    jobTitleToCleanup = jobText;
-    await createNewJob(page, jobText);
+    jobIdToCleanup = await createNewJob(page, jobText);
     const cell = page.getByText(jobText).first();
     await expect(cell).toBeVisible();
 
@@ -204,8 +205,7 @@ test.describe("Add New Job", () => {
 
   test("should save a job without a job url", async ({ page }, testInfo) => {
     const jobText = `developer test title no url ${testInfo.project.name}`;
-    jobTitleToCleanup = jobText;
-    await createNewJob(page, jobText, { skipUrl: true });
+    jobIdToCleanup = await createNewJob(page, jobText, { skipUrl: true });
     await expect(
       page.getByRole("row", { name: jobText }).first(),
     ).toBeVisible();
@@ -225,8 +225,7 @@ test.describe("Add New Job", () => {
     page,
   }, testInfo) => {
     const jobText = `developer test title applied ${testInfo.project.name}`;
-    jobTitleToCleanup = jobText;
-    await createNewJob(page, jobText, {
+    jobIdToCleanup = await createNewJob(page, jobText, {
       beforeSave: async (page) => {
         await page.getByRole("switch").click();
       },
@@ -254,8 +253,7 @@ test.describe("Add New Job", () => {
     page,
   }, testInfo) => {
     const jobText = `developer test title salary ${testInfo.project.name}`;
-    jobTitleToCleanup = jobText;
-    await createNewJob(page, jobText, {
+    jobIdToCleanup = await createNewJob(page, jobText, {
       beforeSave: async (page) => {
         await page.getByLabel("Select Salary Range").click();
         await page
@@ -282,9 +280,8 @@ test.describe("Add New Job", () => {
     page,
   }, testInfo) => {
     const jobText = `developer test title due date ${testInfo.project.name}`;
-    jobTitleToCleanup = jobText;
     const expectedDueDate = format(addDays(new Date(), 7), "PP");
-    await createNewJob(page, jobText, {
+    jobIdToCleanup = await createNewJob(page, jobText, {
       beforeSave: async (page) => {
         await page.getByLabel("Due Date").click();
         await page.getByText("Select Preset").click();
@@ -308,8 +305,7 @@ test.describe("Add New Job", () => {
     page,
   }, testInfo) => {
     const jobText = `developer test title note ${testInfo.project.name}`;
-    jobTitleToCleanup = jobText;
-    await createNewJob(page, jobText);
+    jobIdToCleanup = await createNewJob(page, jobText);
     await expect(
       page.getByRole("row", { name: jobText }).first(),
     ).toBeVisible();
