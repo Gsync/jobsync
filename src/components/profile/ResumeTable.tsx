@@ -32,6 +32,8 @@ import { deleteResumeById, setDefaultResume } from "@/actions/profile.actions";
 import { deleteCoverLetterById } from "@/actions/coverLetter.actions";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { Badge } from "../ui/badge";
+import { StatusBadge } from "../StatusBadge";
+import { DOCUMENT_TYPE_BADGE_COLORS } from "@/lib/badge-colors";
 import {
   hasMinResumeSections,
   warnInsufficientResumeSections,
@@ -188,9 +190,10 @@ function DocumentTable({
                   )}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={isResume ? "default" : "secondary"}>
-                    {isResume ? "Resume" : "Cover Letter"}
-                  </Badge>
+                  <StatusBadge
+                    label={isResume ? "Resume" : "Cover Letter"}
+                    color={DOCUMENT_TYPE_BADGE_COLORS[doc.type]}
+                  />
                 </TableCell>
                 <TableCell>
                   {doc.createdAt && format(doc.createdAt, "PP")}

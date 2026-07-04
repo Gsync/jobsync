@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatusBadge } from "@/components/StatusBadge";
+import { getJobStatusBadgeColor } from "@/lib/badge-colors";
 import { cn } from "@/lib/utils";
 import { JobResponse } from "@/models/job.model";
 import { format } from "date-fns";
@@ -123,15 +124,11 @@ export default function RecentCardToggle({
                       </div>
                     </Link>
                     {job.Status?.label ? (
-                      <Badge
-                        className={cn(
-                          "ml-auto shrink-0 justify-center text-xs px-1.5 py-0 h-5",
-                          job.Status?.value === "applied" && "bg-cyan-500",
-                          job.Status?.value === "interview" && "bg-green-500",
-                        )}
-                      >
-                        {job.Status.label}
-                      </Badge>
+                      <StatusBadge
+                        label={job.Status.label}
+                        color={getJobStatusBadgeColor(job.Status.value)}
+                        className="ml-auto shrink-0 justify-center text-xs px-1.5 py-0 h-5"
+                      />
                     ) : null}
                   </div>
                 ))}

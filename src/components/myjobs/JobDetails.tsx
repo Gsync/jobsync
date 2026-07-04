@@ -1,7 +1,9 @@
 "use client";
 import { format } from "date-fns";
 import { Badge } from "../ui/badge";
-import { cn, formatUrl } from "@/lib/utils";
+import { StatusBadge } from "../StatusBadge";
+import { getJobStatusBadgeColor } from "@/lib/badge-colors";
+import { formatUrl } from "@/lib/utils";
 import {
   Company,
   JobLocation,
@@ -266,17 +268,17 @@ function JobDetails({
           </CardHeader>
           <h3 className="ml-4">
             {new Date() > job.dueDate && currentStatus?.value === "draft" ? (
-              <Badge className="bg-red-500">Expired</Badge>
+              <StatusBadge
+                label="Expired"
+                color="amber"
+                className="w-[70px] justify-center"
+              />
             ) : (
-              <Badge
-                className={cn(
-                  "w-[70px] justify-center",
-                  currentStatus?.value === "applied" && "bg-cyan-500",
-                  currentStatus?.value === "interview" && "bg-green-500",
-                )}
-              >
-                {currentStatus?.label}
-              </Badge>
+              <StatusBadge
+                label={currentStatus?.label ?? ""}
+                color={getJobStatusBadgeColor(currentStatus?.value ?? "")}
+                className="w-[70px] justify-center"
+              />
             )}
             <span className="ml-2">
               {job?.appliedDate ? format(new Date(job?.appliedDate), "PP") : ""}

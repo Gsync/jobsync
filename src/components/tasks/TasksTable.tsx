@@ -20,7 +20,8 @@ import {
   Flame,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "../ui/badge";
+import { StatusBadge } from "../StatusBadge";
+import { TASK_STATUS_BADGE_COLORS } from "@/lib/badge-colors";
 import {
   format,
   isToday,
@@ -54,13 +55,6 @@ type TasksTableProps = {
   onChangeTaskStatus: (id: string, status: TaskStatus) => void;
   onStartActivity: (id: string) => void;
   groupBy?: "none" | "createdDate" | "dueDate" | "updatedDate" | "activityType";
-};
-
-const statusColors: Record<TaskStatus, string> = {
-  "in-progress": "bg-blue-500",
-  complete: "bg-green-500",
-  "needs-attention": "bg-orange-500",
-  cancelled: "bg-gray-500",
 };
 
 type PriorityLevel = "low" | "medium" | "high" | "critical";
@@ -250,14 +244,11 @@ function TasksTable({
         {task.activityType?.label || "—"}
       </TableCell>
       <TableCell className="hidden md:table-cell py-1 px-2">
-        <Badge
-          className={cn(
-            "min-w-[120px] whitespace-nowrap justify-center",
-            statusColors[task.status],
-          )}
-        >
-          {TASK_STATUSES[task.status]}
-        </Badge>
+        <StatusBadge
+          label={TASK_STATUSES[task.status]}
+          color={TASK_STATUS_BADGE_COLORS[task.status]}
+          className="w-[110px] whitespace-nowrap justify-center"
+        />
       </TableCell>
       <TableCell className="hidden md:table-cell py-1 px-2">
         {(() => {

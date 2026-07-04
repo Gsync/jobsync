@@ -15,8 +15,9 @@ import {
   Tags,
   Trash,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
+import { StatusBadge } from "../StatusBadge";
+import { getJobStatusBadgeColor } from "@/lib/badge-colors";
 import { format } from "date-fns";
 import {
   DropdownMenu,
@@ -134,17 +135,17 @@ function MyJobsTable({
                       Dismissed
                     </Badge>
                   ) : new Date() > job.dueDate && job.Status?.value === "draft" ? (
-                    <Badge className="bg-red-500">Expired</Badge>
+                    <StatusBadge
+                      label="Expired"
+                      color="amber"
+                      className="w-[70px] justify-center"
+                    />
                   ) : (
-                    <Badge
-                      className={cn(
-                        "w-[70px] justify-center",
-                        job.Status?.value === "applied" && "bg-cyan-500",
-                        job.Status?.value === "interview" && "bg-green-500"
-                      )}
-                    >
-                      {job.Status?.label}
-                    </Badge>
+                    <StatusBadge
+                      label={job.Status?.label ?? ""}
+                      color={getJobStatusBadgeColor(job.Status?.value ?? "")}
+                      className="w-[70px] justify-center"
+                    />
                   )}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">

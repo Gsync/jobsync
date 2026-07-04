@@ -31,8 +31,14 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { CreateAutomationSchema, type CreateAutomationInput } from "@/models/automation.schema";
-import { createAutomation, updateAutomation } from "@/actions/automation.actions";
+import {
+  CreateAutomationSchema,
+  type CreateAutomationInput,
+} from "@/models/automation.schema";
+import {
+  createAutomation,
+  updateAutomation,
+} from "@/actions/automation.actions";
 import { toast } from "@/components/ui/use-toast";
 import type {
   AutomationWithResume,
@@ -229,7 +235,10 @@ export function AutomationWizard({
               <FormItem>
                 <FormLabel>Automation Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Full Stack Jobs Calgary" {...field} />
+                  <Input
+                    placeholder="e.g., Full Stack Jobs Calgary"
+                    {...field}
+                  />
                 </FormControl>
                 <FormDescription>
                   A descriptive name to identify this automation
@@ -251,7 +260,9 @@ export function AutomationWizard({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="jsearch">JSearch (Google Jobs)</SelectItem>
+                    <SelectItem value="jsearch">
+                      JSearch (Google Jobs)
+                    </SelectItem>
                     <SelectItem value="greenhouse">
                       Greenhouse (company boards)
                     </SelectItem>
@@ -352,8 +363,9 @@ export function AutomationWizard({
             )}
           />
           {resumes.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No resumes found. Please create a resume in your profile first.
+            <p className="text-sm text-orange-600 dark:text-orange-500">
+              No resumes found. Please create a resume with enough content in
+              your profile first.
             </p>
           )}
         </div>
@@ -365,9 +377,7 @@ export function AutomationWizard({
             name="matchThreshold"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>
-                  Match Threshold: {field.value}%
-                </FormLabel>
+                <FormLabel>Match Threshold: {field.value}%</FormLabel>
                 <FormControl>
                   <Slider
                     min={0}
@@ -407,7 +417,10 @@ export function AutomationWizard({
                   </FormControl>
                   <SelectContent>
                     {HOURS.map((hour) => (
-                      <SelectItem key={hour.value} value={hour.value.toString()}>
+                      <SelectItem
+                        key={hour.value}
+                        value={hour.value.toString()}
+                      >
                         {hour.label}
                       </SelectItem>
                     ))}
@@ -431,7 +444,9 @@ export function AutomationWizard({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Job Board</span>
-              <span className="font-medium capitalize">{formValues.jobBoard || "-"}</span>
+              <span className="font-medium capitalize">
+                {formValues.jobBoard || "-"}
+              </span>
             </div>
             {isGreenhouse ? (
               <>
@@ -482,26 +497,35 @@ export function AutomationWizard({
               <>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Keywords</span>
-                  <span className="font-medium">{formValues.keywords || "-"}</span>
+                  <span className="font-medium">
+                    {formValues.keywords || "-"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Location</span>
-                  <span className="font-medium">{formValues.location || "-"}</span>
+                  <span className="font-medium">
+                    {formValues.location || "-"}
+                  </span>
                 </div>
               </>
             )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Resume</span>
-              <span className="font-medium">{selectedResume?.title || "Not selected"}</span>
+              <span className="font-medium">
+                {selectedResume?.title || "Not selected"}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Match Threshold</span>
-              <span className="font-medium">{formValues.matchThreshold ?? 80}%</span>
+              <span className="font-medium">
+                {formValues.matchThreshold ?? 80}%
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Schedule</span>
               <span className="font-medium">
-                Daily at {(formValues.scheduleHour ?? 8).toString().padStart(2, "0")}:00
+                Daily at{" "}
+                {(formValues.scheduleHour ?? 8).toString().padStart(2, "0")}:00
               </span>
             </div>
           </div>
@@ -534,16 +558,18 @@ export function AutomationWizard({
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
-            const firstError = Object.values(errors)[0];
-            if (firstError?.message) {
-              toast({
-                title: "Validation Error",
-                description: firstError.message as string,
-                variant: "destructive",
-              });
-            }
-          })}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit, (errors) => {
+              const firstError = Object.values(errors)[0];
+              if (firstError?.message) {
+                toast({
+                  title: "Validation Error",
+                  description: firstError.message as string,
+                  variant: "destructive",
+                });
+              }
+            })}
+          >
             <div className="py-4">{renderStepContent()}</div>
 
             <DialogFooter className="gap-2">
@@ -554,13 +580,19 @@ export function AutomationWizard({
                 </Button>
               )}
               {step < STEPS.length - 1 ? (
-                <Button type="button" onClick={nextStep} disabled={!canGoNext()}>
+                <Button
+                  type="button"
+                  onClick={nextStep}
+                  disabled={!canGoNext()}
+                >
                   Next
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               ) : (
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {isSubmitting && (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  )}
                   {editAutomation ? "Update" : "Create"} Automation
                 </Button>
               )}
