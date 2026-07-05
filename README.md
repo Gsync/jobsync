@@ -22,24 +22,20 @@ Job searching can be overwhelming, with numerous applications to track and deadl
 
 ![JobSync AI Demo](./screenshots/jobsync-ai-jobmatch.gif)
 
-### PDF Resume Export
-
-Export any resume as a professionally formatted PDF directly from the resume page. The generated PDF is automatically saved to your Downloads folder and attached to the resume for use with AI job matching and review features. If a PDF attachment already exists, you'll be prompted to replace it or keep the download only.
-
-### Resume Import
-
-Import an existing resume from a PDF or Word (.docx) file. AI extracts structured data — contact info, summary, work experience, education, and certifications — and presents each section as a review card. You can accept or skip individual sections before saving them to your resume.
-
 ## Key Features
 - **Application Tracker:** Keep a detailed record of all your job applications, including company details, job titles, application dates, and current status.
 
 - **Monitoring Dashboard:** Visualize your job search progress with an interactive dashboard that provides insights into your application activities, success rates, and upcoming tasks.
 
-- **Resume Management:** Store and manage your resumes, export them as professionally formatted PDFs, and use them with AI to get reviews and match with job descriptions. Import existing resumes from PDF or Word (.docx) files — AI extracts and structures your contact info, experience, education, and certifications so you can review and save each section individually.
+- **Resume Management:** Store and manage your resumes, export them as professionally formatted PDFs (Simple or Professional template), and use them with AI to get reviews and match with job descriptions. Import existing resumes from PDF or Word (.docx) files — AI extracts and structures your contact info, experience, education, and certifications so you can review and save each section individually.
+
+- **Automated Job Discovery:** Schedule and run automations that track companies directly via the Greenhouse job board API, then AI-match each listing against your resume and surface the best fits for review. More job board sources coming soon.
 
 - **Task & Activity Management:** Manage tasks, track activites linked with tasks included with time tracking. 
 
 - **AI Assistant:** Leverage the power of AI to improve your resumes and match with jobs. Get personalized job matching with scoring to identify the best opportunities tailored to your profile.
+
+- **AI Agent Integration (MCP):** Connect AI agents like Claude Desktop via a built-in MCP server to add job applications and Question Bank entries directly from your chat, with your approval.
 
 
 ## Free to Use and Self-Hosted
@@ -79,11 +75,29 @@ curl -fsSL https://raw.githubusercontent.com/Gsync/jobsync/main/deploy.sh | sudo
 
 >Note: If you are updating in a homelab environment, edit `NEXTAUTH_URL` in your `.env` file to use your server IP address instead of `localhost`. See `.env.example` for the expected format.
 
-## MCP Server (AI Agent Integration)
+## Features in Detail
 
-JobSync exposes an [MCP](https://modelcontextprotocol.io) server so AI agents (Claude Desktop, Hermes, OpenClaw, etc.) can add job applications and Question Bank entries directly, with your approval.
+### PDF Resume Export
 
-### Use Case
+Export any resume as a professionally formatted PDF directly from the resume page. Choose between two layouts — a clean **Simple** template and a more polished **Professional** template. If a PDF attachment already exists, you'll be prompted to replace it or keep the download only.
+
+### Resume Import
+
+Import an existing resume from a PDF or Word (.docx) file. AI extracts structured data — contact info, summary, skills, work experience, education, and certifications — and presents each section as a review card. You can accept or skip individual sections before saving them to your resume.
+
+### Automated Job Discovery
+
+Set up automations that search for new jobs on a schedule and AI-match them against your resume, so relevant openings come to you.
+
+- **Greenhouse** — track specific companies by name from a built-in directory (or by pasting a board URL). Each run pulls every published role from those companies' Greenhouse boards, ranks them against your target titles, skills, and resume with a fast local relevance score, and runs the AI match on only the top candidates to keep costs bounded. No API key required.
+
+More job board sources are on the way. Discovered jobs are surfaced for review — accept the ones you like to promote them into your job tracker, or dismiss the rest.
+
+### MCP Server (AI Agent Integration)
+
+JobSync exposes an MCP server so AI agents (Claude Desktop, Hermes, OpenClaw, etc.) can add job applications and Question Bank entries directly, with your approval.
+
+#### Use Case
 
 Browsing a job posting or reading an interview question elsewhere and don't want to break your flow to log it manually? Just ask your connected AI agent, for example:
 
@@ -92,13 +106,13 @@ Browsing a job posting or reading an interview question elsewhere and don't want
 
 The agent resolves or creates the company, title, location, and tags by name, and reports back what it matched versus created — so your data stays de-duplicated without you having to switch to the app.
 
-### 1. Generate a token
+#### 1. Generate a token
 
 1. Sign in to JobSync and go to **Settings > MCP Access**.
 2. Click **Generate**, give it a name (e.g. the client you'll connect, like "Claude Desktop"), and pick an expiry.
 3. Copy the token and config snippets shown — the full token is only displayed once.
 
-### 2. Add it to your MCP client
+#### 2. Add it to your MCP client
 
 <details>
 <summary><strong>Claude Desktop</strong></summary>
@@ -149,6 +163,7 @@ Clients that support `streamable-http` natively can connect directly without `mc
 
 > **Self-hosting on a home network?** If your JobSync URL is a plain `http://` LAN address (not `localhost` or HTTPS), add `--allow-http` to the `mcp-remote` args — it refuses non-HTTPS URLs by default. The Settings page adds this flag automatically when it detects a non-localhost HTTP URL.
 
+
 ## Contributing
 
 We welcome contributions! Please read our [Contributing Guidelines](./CONTRIBUTING.md) to get started. This project follows a [Code of Conduct](./CODE_OF_CONDUCT.md) — by participating, you agree to uphold its standards.
@@ -181,6 +196,7 @@ Works with [Ollama](https://ollama.com) to run AI models locally on your machine
 - AI settings will show a list of available models based on what you have downloaded in Ollama
 - **Recommended:** Increase the Ollama context length from the default 4k for better results
 - No API key required — runs entirely on your hardware
+- If you are running jobsync on a homelab server, you can expose ollama to network from Ollama settings on your local machine. Also make sure your ollama base url is pointed to your local system IP under API keys section of settings.
 
 </details>
 
