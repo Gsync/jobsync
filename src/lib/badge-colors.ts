@@ -1,6 +1,7 @@
 import { JOB_STATUSES } from "@/lib/constants";
 import { TaskStatus } from "@/models/task.model";
 import { ProfileDocumentType } from "@/models/profile.model";
+import { DiscoveryStatus } from "@/models/automation.model";
 
 // Central badge color palette. Add new semantic colors here only.
 export const BADGE_COLORS = {
@@ -32,6 +33,21 @@ export function getJobStatusBadgeColor(value: string): BadgeColor {
   return (
     JOB_STATUS_BADGE_COLORS[value as JobStatusValue] ?? "slate"
   );
+}
+
+export const DISCOVERY_STATUS_BADGE_COLORS: Record<
+  DiscoveryStatus,
+  BadgeColor
+> = {
+  new: "blue",
+  accepted: "emerald",
+  dismissed: "slate",
+};
+
+export function getDiscoveryStatusBadgeColor(
+  value: DiscoveryStatus,
+): BadgeColor {
+  return DISCOVERY_STATUS_BADGE_COLORS[value] ?? "slate";
 }
 
 export const TASK_STATUS_BADGE_COLORS: Record<TaskStatus, BadgeColor> = {

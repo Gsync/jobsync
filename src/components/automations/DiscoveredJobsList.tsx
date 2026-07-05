@@ -5,7 +5,9 @@ import { format } from "date-fns";
 import { APP_CONSTANTS, DISCOVERY_STATUSES } from "@/lib/constants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/StatusBadge";
+import { CircularScore } from "@/components/CircularScore";
+import { getDiscoveryStatusBadgeColor } from "@/lib/badge-colors";
 import {
   Table,
   TableBody,
@@ -265,12 +267,6 @@ export function DiscoveredJobsList({
     }
   };
 
-  const getScoreBadgeVariant = (score: number) => {
-    if (score >= 80) return "default";
-    if (score >= 65) return "secondary";
-    return "outline";
-  };
-
   const hasAnyJobs = dismissedCount + newCount + acceptedCount > 0;
 
   if (!hasAnyJobs) {
@@ -428,9 +424,12 @@ export function DiscoveredJobsList({
                       </TableCell>
                       <TableCell className="text-center">
                         {analyzed ? (
-                          <Badge variant={getScoreBadgeVariant(job.matchScore)}>
-                            {job.matchScore}%
-                          </Badge>
+                          <CircularScore
+                            score={job.matchScore}
+                            size="sm"
+                            animate={false}
+                            className="mx-auto"
+                          />
                         ) : (
                           <Button
                             size="sm"
@@ -455,17 +454,16 @@ export function DiscoveredJobsList({
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
-                            job.discoveryStatus === "accepted"
-                              ? "default"
-                              : job.discoveryStatus === "dismissed"
-                                ? "secondary"
-                                : "outline"
+                        <StatusBadge
+                          label={
+                            DISCOVERY_STATUSES.find(
+                              (s) => s.value === job.discoveryStatus,
+                            )?.label ?? job.discoveryStatus
                           }
-                        >
-                          {job.discoveryStatus}
-                        </Badge>
+                          color={getDiscoveryStatusBadgeColor(
+                            job.discoveryStatus,
+                          )}
+                        />
                       </TableCell>
                       <TableCell>
                         {format(new Date(job.discoveredAt), "MMM d, yyyy")}
