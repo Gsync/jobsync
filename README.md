@@ -73,6 +73,12 @@ From the project directory, run the deploy script to pull the latest changes and
 curl -fsSL https://raw.githubusercontent.com/Gsync/jobsync/main/deploy.sh | sudo bash -s
 ```
 
+On **Windows**, run the PowerShell equivalent from the project directory instead (`deploy.sh` needs WSL or Git Bash; `deploy.ps1` runs natively):
+
+```powershell
+.\deploy.ps1
+```
+
 >Note: If you are updating in a homelab environment, edit `NEXTAUTH_URL` in your `.env` file to use your server IP address instead of `localhost`. See `.env.example` for the expected format.
 
 ## Features in Detail

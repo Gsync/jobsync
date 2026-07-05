@@ -66,6 +66,24 @@ echo -e "${GREEN}[5/5]${NC} Pulling latest images and starting containers..."
 $COMPOSE_CMD pull
 $COMPOSE_CMD up -d --force-recreate
 
+# Poll the app until it actually responds, so the success message below only
+# prints once the app is reachable in a browser — not just "container started".
+# The probe runs *inside* the container (busybox wget is always in the image),
+# so the only host dependency is Docker itself — works on Windows, macOS,
+# Raspberry Pi, etc. without needing curl/wget on the host. The loop exits the
+# instant the app answers; the 5-minute deadline is only a ceiling for a boot
+# that never comes up.
+echo -e "${YELLOW}Waiting for app to become reachable...${NC}"
+DEADLINE=$((SECONDS + 300))
+until $COMPOSE_CMD exec -T app wget --spider -q http://127.0.0.1:3737 >/dev/null 2>&1; do
+    if [ "$SECONDS" -ge "$DEADLINE" ]; then
+        echo -e "${RED}App did not become reachable within 5 minutes.${NC}"
+        $COMPOSE_CMD logs --tail=40
+        exit 1
+    fi
+    sleep 2
+done
+
 echo ""
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Deployment completed successfully!${NC}"
