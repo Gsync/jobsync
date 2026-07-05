@@ -14,6 +14,7 @@ export interface JobDetails {
   url: string;
   postedDate?: string;
   salary?: string;
+  employmentType?: string;
 }
 
 export type ScraperError =

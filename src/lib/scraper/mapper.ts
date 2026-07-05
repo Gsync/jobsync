@@ -2,6 +2,25 @@ import type { ScrapedJobData, DiscoveryStatus } from "@/models/automation.model"
 import db from "@/lib/db";
 import { normalizeForSearch, extractKeywords, extractCityName } from "./utils";
 
+// Maps source employment-type strings (JSearch's "FULLTIME"/"CONTRACTOR",
+// Greenhouse's absence of the field, etc.) to JOB_TYPES enum keys. Defaults
+// to full-time when the source doesn't expose employment type at all.
+const JOB_TYPE_ALIASES: Record<string, string> = {
+  fulltime: "FT",
+  parttime: "PT",
+  contractor: "C",
+  contract: "C",
+  temporary: "C",
+  intern: "C",
+  internship: "C",
+};
+
+function normalizeJobType(employmentType?: string): string {
+  if (!employmentType) return "FT";
+  const key = employmentType.toLowerCase().replace(/[^a-z]/g, "");
+  return JOB_TYPE_ALIASES[key] ?? "FT";
+}
+
 interface MapperInput {
   scrapedJob: ScrapedJobData;
   userId: string;
@@ -45,7 +64,7 @@ export async function mapScrapedJobToJobRecord(
     automationId,
     jobUrl: scrapedJob.sourceUrl,
     description: scrapedJob.description,
-    jobType: "full-time",
+    jobType: normalizeJobType(scrapedJob.employmentType),
     createdAt: new Date(),
     applied: false,
     statusId,

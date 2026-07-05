@@ -190,6 +190,7 @@ export async function searchJSearchJobs(
       url: job.job_apply_link,
       postedDate: job.job_posted_at_datetime_utc,
       salary: formatSalary(job),
+      employmentType: job.job_employment_type,
     }));
 
     return { success: true, data: jobs };

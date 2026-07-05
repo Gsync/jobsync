@@ -100,9 +100,11 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
               !field.value && "text-muted-foreground"
             )}
           >
-            {field.value
-              ? options.find((option) => option.id === field.value)?.label
-              : `Select ${field.name}`}
+            <span className="min-w-0 truncate">
+              {field.value
+                ? options.find((option) => option.id === field.value)?.label
+                : `Select ${field.name}`}
+            </span>
 
             {isPending ? (
               <Loader className="h-4 w-4 shrink-0 spinner" />

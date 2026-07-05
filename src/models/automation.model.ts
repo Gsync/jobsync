@@ -110,4 +110,5 @@ export interface ScrapedJobData {
   description: string;
   sourceUrl: string;
   sourceBoard: JobBoard;
+  employmentType?: string;
 }

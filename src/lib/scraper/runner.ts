@@ -486,6 +486,7 @@ export async function runAutomation(
           description: job.description,
           sourceUrl: normalizeJobUrl(job.url),
           sourceBoard: automation.jobBoard as JobBoard,
+          employmentType: job.employmentType,
         };
 
         const jobRecord = await mapScrapedJobToJobRecord({
@@ -703,6 +704,7 @@ async function persistDiscoveredJob(
     description: job.description,
     sourceUrl: normalizeJobUrl(job.url),
     sourceBoard: automation.jobBoard,
+    employmentType: job.employmentType,
   };
 
   const jobRecord = await mapScrapedJobToJobRecord({
