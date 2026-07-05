@@ -45,10 +45,18 @@ import { format } from "date-fns";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
-  const copy = () => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast({
+        title: "Copy failed",
+        description: "Couldn't copy to clipboard. Please copy the text manually.",
+        variant: "destructive",
+      });
+    }
   };
   return (
     <Button variant="outline" size="sm" onClick={copy} className="shrink-0">
@@ -94,7 +102,18 @@ function TokenRevealDialog({
     2,
   );
 
-  const claudeSnippet = `npx mcp-remote ${mcpUrl} --header "Authorization: Bearer ${token}"`;
+  const isInsecureNonLocalhost = (() => {
+    try {
+      const { protocol, hostname } = new URL(mcpUrl);
+      return protocol === "http:" && hostname !== "localhost" && hostname !== "127.0.0.1";
+    } catch {
+      return false;
+    }
+  })();
+
+  const claudeSnippet = `npx mcp-remote ${mcpUrl} --header "Authorization: Bearer ${token}"${
+    isInsecureNonLocalhost ? " --allow-http" : ""
+  }`;
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>

@@ -134,7 +134,7 @@ function MyJobsTable({
                     >
                       Dismissed
                     </Badge>
-                  ) : new Date() > job.dueDate && job.Status?.value === "draft" ? (
+                  ) : job.dueDate && new Date() > job.dueDate && job.Status?.value === "draft" ? (
                     <StatusBadge
                       label="Expired"
                       color="amber"

@@ -267,7 +267,7 @@ function JobDetails({
             </div>
           </CardHeader>
           <h3 className="ml-4">
-            {new Date() > job.dueDate && currentStatus?.value === "draft" ? (
+            {job.dueDate && new Date() > job.dueDate && currentStatus?.value === "draft" ? (
               <StatusBadge
                 label="Expired"
                 color="amber"

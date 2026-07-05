@@ -79,6 +79,76 @@ curl -fsSL https://raw.githubusercontent.com/Gsync/jobsync/main/deploy.sh | sudo
 
 >Note: If you are updating in a homelab environment, edit `NEXTAUTH_URL` in your `.env` file to use your server IP address instead of `localhost`. See `.env.example` for the expected format.
 
+## MCP Server (AI Agent Integration)
+
+JobSync exposes an [MCP](https://modelcontextprotocol.io) server so AI agents (Claude Desktop, Hermes, OpenClaw, etc.) can add job applications and Question Bank entries directly, with your approval.
+
+### Use Case
+
+Browsing a job posting or reading an interview question elsewhere and don't want to break your flow to log it manually? Just ask your connected AI agent, for example:
+
+- *"Add this job to JobSync (copy/paste the complete job details or try providing a link): Senior Backend Engineer at Acme Corp, JobType, location, Job description... "*
+- *"I just got asked this in an interview — add it to my Question Bank: 'How would you design a rate limiter?' with my answer: ..."*
+
+The agent resolves or creates the company, title, location, and tags by name, and reports back what it matched versus created — so your data stays de-duplicated without you having to switch to the app.
+
+### 1. Generate a token
+
+1. Sign in to JobSync and go to **Settings > MCP Access**.
+2. Click **Generate**, give it a name (e.g. the client you'll connect, like "Claude Desktop"), and pick an expiry.
+3. Copy the token and config snippets shown — the full token is only displayed once.
+
+### 2. Add it to your MCP client
+
+<details>
+<summary><strong>Claude Desktop</strong></summary>
+
+1. Open Claude Desktop → **Settings > Developer > Edit Config**. This opens `claude_desktop_config.json` in your default editor.
+2. Paste the "Claude Desktop (via mcp-remote)" snippet from the reveal dialog into `mcpServers`, e.g.:
+
+```json
+{
+  "mcpServers": {
+    "jobsync": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "http://<your-jobsync-url>/api/mcp",
+        "--header",
+        "Authorization: Bearer <your-token>"
+      ]
+    }
+  }
+}
+```
+
+3. Save and fully restart Claude Desktop (quit, not just close the window).
+
+> **Note:** Claude Desktop only supports local (stdio) MCP servers directly, so `mcp-remote` is required as a bridge to JobSync's remote endpoint.
+
+</details>
+
+<details>
+<summary><strong>Other clients (OpenClaw, Hermes, etc.)</strong></summary>
+
+Clients that support `streamable-http` natively can connect directly without `mcp-remote`:
+
+```json
+{
+  "mcpServers": {
+    "jobsync": {
+      "type": "streamable-http",
+      "url": "http://<your-jobsync-url>/api/mcp",
+      "headers": { "Authorization": "Bearer <your-token>" }
+    }
+  }
+}
+```
+
+</details>
+
+> **Self-hosting on a home network?** If your JobSync URL is a plain `http://` LAN address (not `localhost` or HTTPS), add `--allow-http` to the `mcp-remote` args — it refuses non-HTTPS URLs by default. The Settings page adds this flag automatically when it detects a non-localhost HTTP URL.
+
 ## Contributing
 
 We welcome contributions! Please read our [Contributing Guidelines](./CONTRIBUTING.md) to get started. This project follows a [Code of Conduct](./CODE_OF_CONDUCT.md) — by participating, you agree to uphold its standards.

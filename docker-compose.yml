@@ -6,6 +6,7 @@ services:
       - "3737:3737"
     environment:
       - NODE_ENV=production
+      - MCP_ENABLED=${MCP_ENABLED:-true}
       - DATABASE_URL=file:/data/dev.db
       - AUTH_SECRET=${AUTH_SECRET:-your-auth-secret}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-you-encryption-key-here}

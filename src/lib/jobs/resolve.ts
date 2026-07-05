@@ -122,10 +122,15 @@ export async function resolveTags(
 // Bucket B — resolve-ONLY, never create
 
 export function resolveJobType(input?: string): string {
-  if (!input) return "Full-time";
-  const valid = Object.values(JOB_TYPES) as string[];
-  const match = valid.find((v) => v.toLowerCase() === input.toLowerCase());
-  if (match) return match;
+  const entries = Object.entries(JOB_TYPES) as [string, string][];
+  if (!input) return entries[0][0];
+  const match = entries.find(
+    ([key, value]) =>
+      key.toLowerCase() === input.toLowerCase() ||
+      value.toLowerCase() === input.toLowerCase(),
+  );
+  if (match) return match[0];
+  const valid = entries.map(([, value]) => value);
   throw new Error(`Invalid jobType "${input}". Valid values: ${valid.join(", ")}`);
 }
 
