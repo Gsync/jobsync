@@ -1,5 +1,83 @@
 # Changelog
 
+## [1.1.13](https://github.com/Gsync/jobsync/compare/v1.1.12...v1.1.13) (2026-07-06)
+
+
+### Features
+
+*  Add Windows PowerShell deployment script and enhance deploy.sh with app reachability check
+*  Enhance DiscoveredJobsList with StatusBadge and CircularScore components for improved UI
+*  Address github dependabot security alerts
+*  Implement reusable StatusBadge component and centralize badge colors for improved UI consistency
+*  Refactor Greenhouse company loading and improve resume templates with location formatting
+*  Rename labels for clarity in admin, questions, automations
+*  Enhance Greenhouse integration with company toggle functionality and improved UI
+*  Add Greenhouse configuration display with toggle functionality
+*  Add tests for MyJobsTable component including job rendering and actions
+*  Enhance job filtering and display by adding discovery status handling
+*  Add automation deletion and editing functionality with confirmation dialogs
+*  Implement status filtering for discovered jobs and add related tests
+*  Add topK and saveUnanalyzed configuration for Greenhouse automation
+*  Implement job deduplication logic and URL normalization in scraper utilities
+*  Enhance Ollama integration with user-specific settings and error handling
+*  Implement resume section validation and messaging for default resume actions
+*  Add default resume functionality
+*  Actions menu to job details page
+*  Improve automation run performance and enhance concurrency handling in automation runs
+*  Enhance Greenhouse search functionality and add more companies
+*  Implement infinite scroll for jobs and runs in automation detail page
+*  Add Queston mcp tool
+*  add resizable panel functionality and improve UI components
+*  improve job details UI
+*  improve ai review sheets UI
+*  implement automation run cancellation and logging improvements
+*  Add delete functionality for automation runs & better UX
+*  Add support for additional contact info fields including URLs and labels
+*  Add links to resumes in AutomationDetailPage and MatchDetails components
+*  Enhance job scoring and automation management with new features and improvements
+*  Add greenhouse job boards automation support
+*  update activity handling to use startTime instead of endTime and enhance job display in MyJobsTable
+*  add skills to resume import
+*  add skills section to resume with CRUD operations
+*  add MCP support - Add job tool call
+*  implement scroll handling in AiResumeReviewSection for improved user experience
+*  enhance resume import functionality with improved context handling and validation
+*  implement syncSchedulerState function to manage scheduler based on active automations refactor: rename prompt function for clarity in resume review prompt generation refactor: replace hardcoded MAX_AUTOMATIONS_PER_USER with APP_CONSTANTS in automation actions refactor: optimize connection status check in AiResumeReviewSection component
+*  add support for multiple resume layouts with simple and professional templates
+*  implement resume import functionality with text extraction and structured data parsing
+
+### Bug Fixes
+
+*  Unresolved jobType from job discovery automation
+*  MCP issues related to homelab & missing details
+*  Automation job title mismatch issue & tests
+*  Filter out resume with 2 sections or less
+*  Resume import issues
+*  update expiration date handling and improve layout in resume components
+*  import functionality issue with abort controller and auto-import model handling
+*  automation page issues
+* Fix import resume issues
+
+### Other Changes
+
+* Update readme
+* Add alert for JSearch deprecation in AutomationWizard component
+* Refactor job creation logic to return job ID and improve deletion process
+*  Enhance job creation e2e tests with additional scenarios and cleanup logic
+*  Add unit test coverage for MCP tools and resume import feature
+*  update job match analysis to use new scoring and parsing structure
+* Refactor resume review feature to support markdown output and streaming
+*  improve code readability by formatting and restructuring conditional statements in CreateResume and ResumeContainer components
+*  update task display text from "My Tasks" to "Tasks" for consistency
+*  replace hardcoded values with APP_CONSTANTS for improved maintainability and consistency
+*  enhance type safety in resume-related components and update TypeScript configuration
+*  update error logging for Ollama connection checks and tags fetching
+*  resume import functionality to use new prompt structure and text generation method
+*  add unit tests for resume import and text extraction functionalities
+*  remove RecordsPerPageSelector from various components and use APP_CONSTANTS.RECORDS_PER_PAGE directly
+* update readme
+
+
 ## [1.1.12](https://github.com/Gsync/jobsync/compare/v1.1.11...v1.1.12) (2026-06-05)
 
 
