@@ -529,6 +529,7 @@ export const generateMockJobsAction = async (): Promise<any> => {
     const statusMap = new Map(statuses.map((s) => [s.value, s.id]));
     const totalJobs = getRandomInt(30, 40);
     const now = new Date();
+    const mockWorkplaceTypes = ["REMOTE", "HYBRID", "ONSITE", null];
 
     const jobsData = Array.from({ length: totalJobs }, () => {
       const company = companies[getRandomInt(0, companies.length - 1)];
@@ -555,6 +556,8 @@ export const generateMockJobsAction = async (): Promise<any> => {
         SALARY_RANGES[getRandomInt(0, SALARY_RANGES.length - 1)].id;
       const dueDate = subDays(now, daysAgo - getRandomInt(7, 21));
       const jobType = mockJobTypes[getRandomInt(0, mockJobTypes.length - 1)];
+      const workplaceType =
+        mockWorkplaceTypes[getRandomInt(0, mockWorkplaceTypes.length - 1)];
 
       // ~80% of jobs link to a resume
       const resume =
@@ -573,6 +576,7 @@ export const generateMockJobsAction = async (): Promise<any> => {
         appliedDate,
         description: `${description} ${MOCK_DATA_IDENTIFIER}`,
         jobType,
+        workplaceType,
         salaryRange,
         dueDate,
         jobSourceId: jobSource.id,

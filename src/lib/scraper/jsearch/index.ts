@@ -191,6 +191,7 @@ export async function searchJSearchJobs(
       postedDate: job.job_posted_at_datetime_utc,
       salary: formatSalary(job),
       employmentType: job.job_employment_type,
+      isRemote: job.job_is_remote,
     }));
 
     return { success: true, data: jobs };

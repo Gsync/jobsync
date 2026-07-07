@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { APP_CONSTANTS, DISCOVERY_STATUSES } from "@/lib/constants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { CircularScore } from "@/components/CircularScore";
 import { getDiscoveryStatusBadgeColor } from "@/lib/badge-colors";
@@ -49,6 +50,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { DiscoveredJob, DiscoveryStatus } from "@/models/automation.model";
+import { getWorkplaceTypeLabel } from "@/models/job.model";
 import {
   acceptDiscoveredJob,
   dismissDiscoveredJob,
@@ -408,6 +410,11 @@ export function DiscoveredJobsList({
                         <div className="flex items-center gap-2">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
                           {job.Location?.label || "N/A"}
+                          {job.workplaceType && (
+                            <Badge variant="outline" className="text-xs">
+                              {getWorkplaceTypeLabel(job.workplaceType, job.workplaceType)}
+                            </Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-center">

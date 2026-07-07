@@ -1,4 +1,4 @@
-import { mapScrapedJobToJobRecord } from "@/lib/scraper/mapper";
+import { mapScrapedJobToJobRecord, normalizeWorkplaceType } from "@/lib/scraper/mapper";
 import db from "@/lib/db";
 import type { ScrapedJobData } from "@/models/automation.model";
 
@@ -57,6 +57,20 @@ beforeEach(() => {
     id: "source-1",
   } as never);
   mockedDb.jobStatus.findFirst.mockResolvedValue({ id: "status-1" } as never);
+});
+
+describe("normalizeWorkplaceType", () => {
+  it("maps true to REMOTE", () => {
+    expect(normalizeWorkplaceType(true)).toBe("REMOTE");
+  });
+
+  it("maps false to null", () => {
+    expect(normalizeWorkplaceType(false)).toBeNull();
+  });
+
+  it("maps undefined to null", () => {
+    expect(normalizeWorkplaceType(undefined)).toBeNull();
+  });
 });
 
 describe("mapScrapedJobToJobRecord - job title matching", () => {

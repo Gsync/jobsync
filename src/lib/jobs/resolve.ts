@@ -1,5 +1,5 @@
 import prisma from "@/lib/db";
-import { JOB_TYPES } from "@/models/job.model";
+import { JOB_TYPES, WORKPLACE_TYPES } from "@/models/job.model";
 
 export interface ResolvedEntity {
   id: string;
@@ -132,6 +132,19 @@ export function resolveJobType(input?: string): string {
   if (match) return match[0];
   const valid = entries.map(([, value]) => value);
   throw new Error(`Invalid jobType "${input}". Valid values: ${valid.join(", ")}`);
+}
+
+export function resolveWorkplaceType(input?: string): string | null {
+  if (!input) return null;
+  const entries = Object.entries(WORKPLACE_TYPES) as [string, string][];
+  const match = entries.find(
+    ([key, value]) =>
+      key.toLowerCase() === input.toLowerCase() ||
+      value.toLowerCase() === input.toLowerCase(),
+  );
+  if (match) return match[0];
+  const valid = entries.map(([, value]) => value);
+  throw new Error(`Invalid workplaceType "${input}". Valid values: ${valid.join(", ")}`);
 }
 
 export async function resolveJobStatus(value?: string): Promise<string> {

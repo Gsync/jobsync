@@ -4,6 +4,7 @@ import { PassThrough } from "node:stream";
 import { getJobsIterator } from "@/actions/job.actions";
 import { format } from "date-fns";
 import { auth } from "@/auth";
+import { getWorkplaceTypeLabel } from "@/models/job.model";
 
 const FIELDS: string[] = [
   "index",
@@ -13,6 +14,7 @@ const FIELDS: string[] = [
   "Company",
   "JobTitle",
   "jobType",
+  "workplaceType",
   "Location",
   "JobSource",
   "Status",
@@ -51,6 +53,7 @@ const transformJobData = (
     Company: extractLabel(job.Company),
     JobTitle: extractLabel(job.JobTitle),
     jobType: mapJobType(job.jobType),
+    workplaceType: getWorkplaceTypeLabel(job.workplaceType),
     Location: extractLabel(job.Location),
     JobSource: extractLabel(job.JobSource),
     Status: extractLabel(job.Status),

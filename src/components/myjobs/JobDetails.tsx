@@ -12,6 +12,7 @@ import {
   JobStatus,
   JobTitle,
   Tag,
+  getWorkplaceTypeLabel,
 } from "@/models/job.model";
 import { TipTapContentViewer } from "../TipTapContentViewer";
 import {
@@ -164,6 +165,7 @@ function JobDetails({
         return "Unknown";
     }
   };
+
   return (
     <>
       <div className="flex justify-between">
@@ -248,6 +250,7 @@ function JobDetails({
               <CardTitle>{job?.JobTitle?.label}</CardTitle>
               <CardDescription>
                 {job?.Location?.label} - {getJobType(job?.jobType)}
+                {job?.workplaceType && ` · ${getWorkplaceTypeLabel(job.workplaceType)}`}
               </CardDescription>
             </div>
             <div className="flex flex-col items-end gap-2">

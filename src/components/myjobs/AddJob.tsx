@@ -23,6 +23,7 @@ import {
   JobStatus,
   JobTitle,
   Tag,
+  WORKPLACE_TYPES,
 } from "@/models/job.model";
 import { addDays } from "date-fns";
 import { z } from "zod";
@@ -96,14 +97,17 @@ export function AddJob({
       router.replace(newPath);
     }
   }, [dialogOpen, router, searchParams]);
+  const newJobDefaultValues = {
+    type: Object.keys(JOB_TYPES)[0],
+    workplaceType: "ONSITE",
+    dueDate: addDays(new Date(), 3),
+    status: jobStatuses[0]?.id,
+    salaryRange: "1",
+  };
+
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
     resolver: zodResolver(AddJobFormSchema) as any,
-    defaultValues: {
-      type: Object.keys(JOB_TYPES)[0],
-      dueDate: addDays(new Date(), 3),
-      status: jobStatuses[0]?.id,
-      salaryRange: "1",
-    },
+    defaultValues: newJobDefaultValues,
   });
 
   const { setValue, reset, watch, resetField } = form;
@@ -134,28 +138,26 @@ export function AddJob({
 
   useEffect(() => {
     if (editJob) {
-      reset(
-        {
-          id: editJob.id,
-          userId: editJob.userId,
-          title: editJob.JobTitle.id,
-          company: editJob.Company.id,
-          location: editJob.Location.id,
-          type: editJob.jobType,
-          source: editJob.JobSource.id,
-          status: editJob.Status.id,
-          dueDate: editJob.dueDate,
-          salaryRange: editJob.salaryRange,
-          jobDescription: editJob.description,
-          applied: editJob.applied,
-          jobUrl: editJob.jobUrl ?? undefined,
-          dateApplied: editJob.appliedDate ?? undefined,
-          resume: editJob.Resume?.id ?? undefined,
-          coverLetter: editJob.CoverLetter?.id ?? undefined,
-          tags: editJob.tags?.map((t) => t.id) ?? [],
-        },
-        { keepDefaultValues: true },
-      );
+      reset({
+        id: editJob.id,
+        userId: editJob.userId,
+        title: editJob.JobTitle.id,
+        company: editJob.Company.id,
+        location: editJob.Location.id,
+        type: editJob.jobType,
+        workplaceType: editJob.workplaceType ?? undefined,
+        source: editJob.JobSource.id,
+        status: editJob.Status.id,
+        dueDate: editJob.dueDate,
+        salaryRange: editJob.salaryRange,
+        jobDescription: editJob.description,
+        applied: editJob.applied,
+        jobUrl: editJob.jobUrl ?? undefined,
+        dateApplied: editJob.appliedDate ?? undefined,
+        resume: editJob.Resume?.id ?? undefined,
+        coverLetter: editJob.CoverLetter?.id ?? undefined,
+        tags: editJob.tags?.map((t) => t.id) ?? [],
+      });
       // Merge any tags from editJob into the local pool so they're selectable
       if (editJob.tags && editJob.tags.length > 0) {
         setAvailableTags((prev) => {
@@ -207,7 +209,7 @@ export function AddJob({
   const pageTitle = editJob ? "Edit Job" : "Add Job";
 
   const addJobForm = () => {
-    reset();
+    reset(newJobDefaultValues);
     resetEditJob();
     setDialogOpen(true);
   };
@@ -258,26 +260,6 @@ export function AddJob({
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4"
               >
-                {/* Job URL */}
-                <div className="md:col-span-2">
-                  <FormField
-                    control={form.control}
-                    name="jobUrl"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Job URL</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Copy and paste job link here"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
                 {/* Job Title */}
                 <div>
                   <FormField
@@ -291,6 +273,26 @@ export function AddJob({
                             options={jobTitles}
                             field={field}
                             creatable
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Job URL */}
+                <div>
+                  <FormField
+                    control={form.control}
+                    name="jobUrl"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Job URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Copy and paste job link here"
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -365,6 +367,41 @@ export function AddJob({
                               </FormLabel>
                             </FormItem>
                           ))}
+                        </RadioGroup>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                {/* Workplace Type */}
+                <div>
+                  <FormField
+                    control={form.control}
+                    name="workplaceType"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel className="mb-2">Workplace Type</FormLabel>
+                        <RadioGroup
+                          name="workplaceType"
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex space-y-1"
+                        >
+                          {Object.entries(WORKPLACE_TYPES).map(
+                            ([key, value]) => (
+                              <FormItem
+                                key={key}
+                                className="flex items-center space-x-3 space-y-0"
+                              >
+                                <FormControl>
+                                  <RadioGroupItem value={key} />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  {value}
+                                </FormLabel>
+                              </FormItem>
+                            ),
+                          )}
                         </RadioGroup>
                         <FormMessage />
                       </FormItem>

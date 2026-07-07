@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import type { DiscoveredJob } from "@/models/automation.model";
 import type { JobMatchData } from "@/models/ai.schemas";
+import { getWorkplaceTypeLabel } from "@/models/job.model";
 import {
   acceptDiscoveredJob,
   dismissDiscoveredJob,
@@ -148,6 +149,11 @@ export function DiscoveredJobDetail({
               <MapPin className="h-4 w-4" />
               {job.Location?.label || "N/A"}
             </span>
+            {job.workplaceType && (
+              <Badge variant="outline">
+                {getWorkplaceTypeLabel(job.workplaceType, job.workplaceType)}
+              </Badge>
+            )}
           </DialogDescription>
         </DialogHeader>
 

@@ -9,6 +9,7 @@ export const McpAddJobInputShape = {
   location: z.string().optional().describe("City, province/state, country, or 'Remote'"),
   source: z.string().optional().describe("Job board or site the listing came from, e.g. 'LinkedIn', 'Indeed', 'company website'"),
   jobType: z.string().optional().describe("Employment type: 'Full-time', 'Part-time', or 'Contract'"),
+  workplaceType: z.string().optional().describe("Work arrangement: 'Remote', 'Hybrid', or 'Onsite'"),
   status: z.string().optional().describe("Application status: draft, applied, interview, offer, rejected, expired, or archived. Defaults to 'draft'"),
   dueDate: z.string().datetime({ offset: true }).optional().describe("Application deadline as an ISO-8601 datetime string"),
   applied: z.boolean().optional().describe("Set true if you have already submitted the application"),

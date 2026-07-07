@@ -254,6 +254,7 @@ describe("AddJob Component", () => {
         company: "2zz",
         location: "1yy",
         type: "FT",
+        workplaceType: "ONSITE",
         source: "1359dac4-a397-4461-b747-382706dcbe79",
         status: "d7ba200a-6dc1-4ea8-acff-29ebb0d4676a",
         dueDate: expect.any(Date),
@@ -331,6 +332,26 @@ describe("AddJob Component - Edit Mode", () => {
 
     const appliedSwitch = screen.getByRole("switch");
     expect(appliedSwitch).toBeChecked();
+  });
+
+  it("leaves workplace type unselected when editing a job with no workplaceType", async () => {
+    await renderEditMode();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("add-job-dialog-title")).toHaveTextContent(
+        "Edit Job",
+      );
+    });
+
+    const workplaceRadios = screen
+      .getAllByRole("radio")
+      .filter((radio) =>
+        ["REMOTE", "HYBRID", "ONSITE"].includes(
+          radio.getAttribute("value") || "",
+        ),
+      );
+    expect(workplaceRadios).toHaveLength(3);
+    workplaceRadios.forEach((radio) => expect(radio).not.toBeChecked());
   });
 
   it("calls updateJob (not addJob) with the job id when saving an edited job", async () => {

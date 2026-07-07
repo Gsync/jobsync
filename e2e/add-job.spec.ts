@@ -276,6 +276,28 @@ test.describe("Add New Job", () => {
     );
   });
 
+  test("should persist selected workplace type after saving", async ({
+    page,
+  }, testInfo) => {
+    const jobText = `developer test title workplace ${testInfo.project.name}`;
+    jobIdToCleanup = await createNewJob(page, jobText, {
+      beforeSave: async (page) => {
+        await page.getByRole("radio", { name: "Remote" }).click();
+      },
+    });
+    await expect(
+      page.getByRole("row", { name: jobText }).first(),
+    ).toBeVisible();
+
+    await page
+      .getByRole("row", { name: jobText })
+      .getByTestId("job-actions-menu-btn")
+      .first()
+      .click();
+    await page.getByRole("menuitem", { name: "Edit Job" }).click();
+    await expect(page.getByRole("radio", { name: "Remote" })).toBeChecked();
+  });
+
   test("should persist selected due date after saving", async ({
     page,
   }, testInfo) => {

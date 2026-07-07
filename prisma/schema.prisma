@@ -288,6 +288,7 @@ model Job {
   jobUrl      String?
   description String
   jobType     String
+  workplaceType String?
   createdAt   DateTime
   applied     Boolean     @default(false)
   appliedDate DateTime?

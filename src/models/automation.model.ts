@@ -90,6 +90,7 @@ export interface DiscoveredJob {
   jobUrl: string | null;
   description: string;
   jobType: string;
+  workplaceType?: string | null;
   createdAt: Date;
   jobTitleId: string;
   companyId: string;
@@ -111,4 +112,5 @@ export interface ScrapedJobData {
   sourceUrl: string;
   sourceBoard: JobBoard;
   employmentType?: string;
+  isRemote?: boolean;
 }

@@ -15,6 +15,7 @@ export interface JobForm {
   jobDescription: string;
   jobUrl?: string;
   applied: boolean;
+  workplaceType?: string | null;
 }
 
 export interface Tag {
@@ -38,6 +39,7 @@ export interface JobResponse {
   Location: JobLocation;
   JobSource: JobSource;
   jobType: string;
+  workplaceType?: string | null;
   createdAt: Date;
   appliedDate: Date;
   dueDate: Date;
@@ -117,4 +119,18 @@ export enum JOB_TYPES {
   FT = "Full-time",
   PT = "Part-time",
   C = "Contract",
+}
+
+export enum WORKPLACE_TYPES {
+  REMOTE = "Remote",
+  HYBRID = "Hybrid",
+  ONSITE = "Onsite",
+}
+
+export function getWorkplaceTypeLabel(
+  code?: string | null,
+  fallback: string = "Not specified",
+): string {
+  if (!code) return fallback;
+  return (WORKPLACE_TYPES as Record<string, string>)[code] ?? fallback;
 }

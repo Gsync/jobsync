@@ -26,6 +26,7 @@ export const AddJobFormSchema = z.object({
       message: "Location name must be at least 2 characters.",
     }),
   type: z.string().min(1),
+  workplaceType: z.string().optional(),
   source: z
     .string({
       error: "Source is required.",

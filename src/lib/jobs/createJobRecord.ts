@@ -11,6 +11,7 @@ export async function createJobRecord(fields: {
   appliedDate?: Date | null;
   description: string;
   jobType: string;
+  workplaceType?: string | null;
   userId: string;
   jobUrl?: string | null;
   applied?: boolean;
