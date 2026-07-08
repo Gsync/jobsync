@@ -249,7 +249,8 @@ function JobDetails({
               {job?.Company?.label}
               <CardTitle>{job?.JobTitle?.label}</CardTitle>
               <CardDescription>
-                {job?.Location?.label} - {getJobType(job?.jobType)}
+                {job?.Location?.label && `${job.Location.label} - `}
+                {getJobType(job?.jobType)}
                 {job?.workplaceType && ` · ${getWorkplaceTypeLabel(job.workplaceType)}`}
               </CardDescription>
             </div>

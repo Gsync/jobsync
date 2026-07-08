@@ -1,3 +1,4 @@
+import MarkdownIt from "markdown-it";
 import prisma from "@/lib/db";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { normalizeJobUrl } from "@/lib/scraper/utils";
@@ -13,6 +14,10 @@ import {
   resolveTags,
   type ResolvedEntity,
 } from "./resolve";
+
+// html:false escapes any raw HTML in the input; TipTapContentViewer further
+// strips unrecognized tags, so the stored/rendered description is safe.
+const md = new MarkdownIt({ html: false, linkify: false, breaks: true });
 
 export interface CreateJobFromNamesInput {
   company: string;
@@ -124,7 +129,10 @@ export async function createJobFromNames(
     salaryRange: salaryRange ?? null,
     dueDate,
     appliedDate: resolvedAppliedDate,
-    description: jobDescription,
+    // Markdown-rendered here, unlike UI-created jobs which store raw
+    // Tiptap HTML directly — both are valid HTML for TipTapContentViewer,
+    // but don't assume Tiptap-specific structure when reading this field.
+    description: md.render(jobDescription),
     jobType: jobTypeValue,
     workplaceType: workplaceTypeValue,
     userId,

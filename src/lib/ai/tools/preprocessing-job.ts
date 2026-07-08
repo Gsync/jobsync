@@ -45,7 +45,7 @@ export const convertJobToText = (job: JobResponse): Promise<string> => {
       description,
       JobTitle: { label: jobTitle },
       Company: { label: companyName },
-      Location: { label: location },
+      Location,
       workplaceType,
     } = job;
 
@@ -53,12 +53,12 @@ export const convertJobToText = (job: JobResponse): Promise<string> => {
       workplaceType && workplaceType in WORKPLACE_TYPES
         ? `Workplace Type: ${WORKPLACE_TYPES[workplaceType as keyof typeof WORKPLACE_TYPES]}\n`
         : "";
+    const locationLine = Location ? `Location: ${Location.label}\n` : "";
 
     const jobText = `
 Job Title: ${jobTitle}
 Company: ${companyName}
-Location: ${location}
-${workplaceTypeLine}Description: ${removeHtmlTags(description)}
+${locationLine}${workplaceTypeLine}Description: ${removeHtmlTags(description)}
     `;
 
     return resolve(jobText);

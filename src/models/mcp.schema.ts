@@ -5,9 +5,10 @@ import { APP_CONSTANTS } from "@/lib/constants";
 export const McpAddJobInputShape = {
   company: z.string().min(1, "company is required"),
   jobTitle: z.string().min(1, "jobTitle is required"),
-  jobDescription: z.string().min(10, "jobDescription must be at least 10 characters"),
-  location: z.string().optional().describe("City, province/state, country, or 'Remote'"),
-  source: z.string().optional().describe("Job board or site the listing came from, e.g. 'LinkedIn', 'Indeed', 'company website'"),
+  jobDescription: z.string().min(10, "jobDescription must be at least 10 characters")
+    .describe("The complete job posting text, copied in full — do not summarize, shorten, or paraphrase it. Markdown-formatted is supported; plain text also works."),
+  location: z.string().optional().describe("City, province/state, country, or 'Remote' — e.g. 'Calgary, AB'. Do not include a street address."),
+  source: z.string().optional().describe("Job board or site the listing came from, e.g. 'LinkedIn', 'Indeed', 'company website'. If not stated explicitly, infer it from the job posting's URL/domain when possible instead of leaving it blank."),
   jobType: z.string().optional().describe("Employment type: 'Full-time', 'Part-time', or 'Contract'"),
   workplaceType: z.string().optional().describe("Work arrangement: 'Remote', 'Hybrid', or 'Onsite'"),
   status: z.string().optional().describe("Application status: draft, applied, interview, offer, rejected, expired, or archived. Defaults to 'draft'"),

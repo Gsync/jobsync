@@ -36,8 +36,8 @@ export interface JobResponse {
   JobTitle: JobTitle;
   Company: Company;
   Status: JobStatus;
-  Location: JobLocation;
-  JobSource: JobSource;
+  Location: JobLocation | null;
+  JobSource: JobSource | null;
   jobType: string;
   workplaceType?: string | null;
   createdAt: Date;

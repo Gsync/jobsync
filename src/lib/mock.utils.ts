@@ -125,6 +125,7 @@ export function getMockList(
         value = job.JobTitle.value;
         createdBy = job.Company.createdBy;
       } else if (type === "locations") {
+        if (!job.Location) return;
         key = job.Location.id;
         label = job.Location.label;
         value = job.Location.value;
