@@ -338,7 +338,7 @@ function TasksTable({
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>
-      <TableCell className="py-1 px-1">
+      <TableCell className="hidden sm:table-cell py-1 px-1">
         {!task.activity && (
           <Button
             title="Start Activity"
@@ -376,7 +376,7 @@ function TasksTable({
         <TableHead className="h-9 px-1">
           <span className="sr-only">Actions</span>
         </TableHead>
-        <TableHead className="h-9 px-1">
+        <TableHead className="hidden sm:table-cell h-9 px-1">
           <span className="sr-only">Start Activity</span>
         </TableHead>
       </TableRow>

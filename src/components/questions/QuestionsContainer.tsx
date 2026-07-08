@@ -4,12 +4,12 @@ import {
   Card,
   CardContent,
   CardFooter,
-  CardHeader,
   CardTitle,
 } from "../ui/card";
 import { Button } from "../ui/button";
-import { PlusCircle, Search } from "lucide-react";
-import { Input } from "../ui/input";
+import { PlusCircle } from "lucide-react";
+import { SearchInput } from "../SearchInput";
+import { ResponsiveCardHeader } from "../ResponsiveCardHeader";
 import {
   deleteQuestion,
   getQuestionById,
@@ -134,7 +134,7 @@ function QuestionsContainer({
   return (
     <>
       <Card className="h-full">
-        <CardHeader className="flex-row justify-between items-center">
+        <ResponsiveCardHeader>
           <div className="flex items-baseline gap-2">
             <CardTitle>Questions</CardTitle>
             {!loading && totalQuestions > 0 && (
@@ -145,32 +145,25 @@ function QuestionsContainer({
               />
             )}
           </div>
-          <div className="flex items-center">
-            <div className="ml-auto flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search questions..."
-                  className="pl-8 h-8 w-[150px] lg:w-[200px]"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 gap-1"
-                onClick={addQuestionForm}
-              >
-                <PlusCircle className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  New Question
-                </span>
-              </Button>
-            </div>
+          <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+            <SearchInput
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder="Search questions..."
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1"
+              onClick={addQuestionForm}
+            >
+              <PlusCircle className="h-3.5 w-3.5" />
+              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                New Question
+              </span>
+            </Button>
           </div>
-        </CardHeader>
+        </ResponsiveCardHeader>
         <CardContent>
           {loading && <Loading />}
           {!loading && (

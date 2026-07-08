@@ -1,6 +1,7 @@
 "use client";
 import { Resume, ResumeSection, SectionType } from "@/models/profile.model";
 import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { ResponsiveCardHeader } from "../ResponsiveCardHeader";
 import AddResumeSection, { AddResumeSectionRef } from "./AddResumeSection";
 import ContactInfoCard from "./ContactInfoCard";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
@@ -916,7 +917,7 @@ function ResumeContainer({
       {/* STRUCTURE WITH AI BUTTON (empty imported resume, AI available) */}
       {showStructureWithAI && (
         <Card className="border-dashed">
-          <CardHeader className="flex-row items-center justify-between">
+          <ResponsiveCardHeader>
             <div>
               <p className="text-sm text-muted-foreground">
                 A file is attached. Structure it into sections using AI.
@@ -945,7 +946,7 @@ function ResumeContainer({
               )}
               {isStructuring ? "Structuring…" : "Structure with AI"}
             </Button>
-          </CardHeader>
+          </ResponsiveCardHeader>
         </Card>
       )}
 

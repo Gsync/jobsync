@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardTitle } from "../ui/card";
+import { ResponsiveCardHeader } from "../ResponsiveCardHeader";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { JobSource } from "@/models/job.model";
 import JobSourcesTable from "./JobSourcesTable";
@@ -44,18 +45,16 @@ function JobSourcesContainer() {
     <>
       <div className="col-span-3">
         <Card x-chunk="dashboard-06-chunk-0">
-          <CardHeader className="flex-row justify-between items-center">
+          <ResponsiveCardHeader>
             <div className="flex items-baseline gap-2">
               <CardTitle>Job Sources</CardTitle>
               {!loading && totalJobSources > 0 && (
                 <RecordsCount count={sources.length} total={totalJobSources} label="job sources" />
               )}
             </div>
-            <div className="flex items-center">
-              <div className="ml-auto flex items-center gap-2">
-              </div>
+            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
             </div>
-          </CardHeader>
+          </ResponsiveCardHeader>
           <CardContent>
             {loading && <Loading />}
             {sources.length > 0 && (

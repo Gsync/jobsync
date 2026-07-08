@@ -2,7 +2,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import CreateResume from "./CreateResume";
 import CreateCoverLetter from "./CreateCoverLetter";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardTitle } from "../ui/card";
+import { ResponsiveCardHeader } from "../ResponsiveCardHeader";
 import { getResumeList, getDefaultResumeId } from "@/actions/profile.actions";
 import { getCoverLetterList } from "@/actions/coverLetter.actions";
 import {
@@ -165,14 +166,14 @@ const ProfileContainer = () => {
 
   return (
     <Card>
-      <CardHeader className="flex-row justify-between items-center">
+      <ResponsiveCardHeader>
         <div className="flex items-baseline gap-2">
           <CardTitle>Profile</CardTitle>
           {!loading && totalDocuments > 0 && (
             <RecordsCount count={documents.length} total={totalDocuments} label="documents" />
           )}
         </div>
-        <div className="flex items-center">
+        <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" variant="outline" className="h-8 gap-1">
@@ -212,7 +213,7 @@ const ProfileContainer = () => {
             reloadDocuments={reloadDocuments}
           />
         </div>
-      </CardHeader>
+      </ResponsiveCardHeader>
       <CardContent>
         {loading && <Loading />}
         {documents.length > 0 && (

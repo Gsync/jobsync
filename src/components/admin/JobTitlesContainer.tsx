@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardTitle } from "../ui/card";
+import { ResponsiveCardHeader } from "../ResponsiveCardHeader";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { JobTitle } from "@prisma/client";
 import JobTitlesTable from "./JobTitlesTable";
@@ -44,19 +45,17 @@ function JobTitlesContainer() {
     <>
       <div className="col-span-3">
         <Card x-chunk="dashboard-06-chunk-0">
-          <CardHeader className="flex-row justify-between items-center">
+          <ResponsiveCardHeader>
             <div className="flex items-baseline gap-2">
               <CardTitle>Job Titles</CardTitle>
               {!loading && totalJobTitles > 0 && (
                 <RecordsCount count={titles.length} total={totalJobTitles} label="job titles" />
               )}
             </div>
-            <div className="flex items-center">
-              <div className="ml-auto flex items-center gap-2">
-                {/* <AddCompany reloadCompanies={reloadJobTitles} /> */}
-              </div>
+            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+              {/* <AddCompany reloadCompanies={reloadJobTitles} /> */}
             </div>
-          </CardHeader>
+          </ResponsiveCardHeader>
           <CardContent>
             {loading && <Loading />}
             {titles.length > 0 && (

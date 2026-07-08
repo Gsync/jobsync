@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getFromLocalStorage, saveToLocalStorage } from "@/utils/localstorage.utils";
+import { APP_CONSTANTS } from "@/lib/constants";
 
-const DEFAULT_WIDTH = 450;
-const MIN_WIDTH = 320;
-const MAX_WIDTH_RATIO = 0.9;
+const {
+  RESIZABLE_PANEL_DEFAULT_WIDTH: DEFAULT_WIDTH,
+  RESIZABLE_PANEL_MIN_WIDTH: MIN_WIDTH,
+  RESIZABLE_PANEL_MAX_WIDTH_RATIO: MAX_WIDTH_RATIO,
+} = APP_CONSTANTS;
 
 export function useResizablePanel(storageKey: string) {
   const [width, setWidth] = useState<number>(() =>

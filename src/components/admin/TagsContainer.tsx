@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardTitle } from "../ui/card";
+import { ResponsiveCardHeader } from "../ResponsiveCardHeader";
 import { Tag } from "@/models/job.model";
 import { getTagList } from "@/actions/tag.actions";
 import { APP_CONSTANTS } from "@/lib/constants";
@@ -44,19 +45,17 @@ function TagsContainer() {
     <>
       <div className="col-span-3">
         <Card>
-          <CardHeader className="flex-row justify-between items-center">
+          <ResponsiveCardHeader>
             <div className="flex items-baseline gap-2">
               <CardTitle>Skills/Tags</CardTitle>
               {!loading && totalTags > 0 && (
                 <RecordsCount count={tags.length} total={totalTags} label="skills" />
               )}
             </div>
-            <div className="flex items-center">
-              <div className="ml-auto flex items-center gap-2">
-                <AddTag reloadTags={reloadTags} />
-              </div>
+            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+              <AddTag reloadTags={reloadTags} />
             </div>
-          </CardHeader>
+          </ResponsiveCardHeader>
           <CardContent>
             {loading && <Loading />}
             {tags.length > 0 && (

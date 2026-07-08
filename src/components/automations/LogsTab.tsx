@@ -89,10 +89,10 @@ export function LogsTab({ logData, onClearLogs }: LogsTabProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>Automation Logs</CardTitle>
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap gap-1">
               <Button
                 size="sm"
                 variant={filter === "all" ? "default" : "outline"}

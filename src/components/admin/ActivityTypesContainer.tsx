@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardTitle } from "../ui/card";
+import { ResponsiveCardHeader } from "../ResponsiveCardHeader";
 import { getActivityTypeList } from "@/actions/activity.actions";
 import { APP_CONSTANTS } from "@/lib/constants";
 import Loading from "../Loading";
@@ -43,19 +44,17 @@ function ActivityTypesContainer() {
     <>
       <div className="col-span-3">
         <Card>
-          <CardHeader className="flex-row justify-between items-center">
+          <ResponsiveCardHeader>
             <div className="flex items-baseline gap-2">
               <CardTitle>Activity Types / Projects</CardTitle>
               {!loading && totalActivityTypes > 0 && (
                 <RecordsCount count={activityTypes.length} total={totalActivityTypes} label="activity types" />
               )}
             </div>
-            <div className="flex items-center">
-              <div className="ml-auto flex items-center gap-2">
-                <AddActivityType reloadActivityTypes={reloadActivityTypes} />
-              </div>
+            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+              <AddActivityType reloadActivityTypes={reloadActivityTypes} />
             </div>
-          </CardHeader>
+          </ResponsiveCardHeader>
           <CardContent>
             {loading && <Loading />}
             {activityTypes.length > 0 && (

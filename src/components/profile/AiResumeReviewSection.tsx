@@ -14,6 +14,7 @@ import Loading from "../Loading";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSheetAutoScroll } from "@/hooks/useSheetAutoScroll";
 import { useResizablePanel } from "@/hooks/useResizablePanel";
+import { APP_CONSTANTS } from "@/lib/constants";
 import { toast } from "../ui/use-toast";
 import { Resume } from "@/models/profile.model";
 import { AiModel, AiProvider, defaultModel } from "@/models/ai.model";
@@ -181,7 +182,10 @@ const AiResumeReviewSection = ({ resume }: AiSectionProps) => {
       <SheetPortal>
         <SheetContent
           className="flex flex-col p-0 overflow-hidden [&>button:last-child]:hidden"
-          style={{ width: `${width}px`, maxWidth: "none" }}
+          style={{
+            width: `${width}px`,
+            maxWidth: `${APP_CONSTANTS.RESIZABLE_PANEL_MAX_WIDTH_RATIO * 100}vw`,
+          }}
         >
           {/* VS Code-style drag handle on left edge */}
           <div

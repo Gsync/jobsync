@@ -8,8 +8,8 @@ import {
   CardTitle,
 } from "../ui/card";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { File, ListFilter, Loader, Search, X } from "lucide-react";
+import { SearchInput } from "../SearchInput";
+import { File, ListFilter, Loader, X } from "lucide-react";
 import {
   deleteJobById,
   getJobDetails,
@@ -399,16 +399,11 @@ function JobsContainer({
                 <X className="h-3.5 w-3.5" />
               </button>
             )}
-            <div className="relative flex-1 min-w-[140px] sm:flex-none">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search jobs..."
-                className="pl-8 h-8 w-full sm:w-[150px] lg:w-[200px]"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+            <SearchInput
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder="Search jobs..."
+            />
             <Select value={filterKey} onValueChange={onFilterChange}>
               <SelectTrigger className="w-[120px] h-8">
                 <ListFilter className="h-3.5 w-3.5" />

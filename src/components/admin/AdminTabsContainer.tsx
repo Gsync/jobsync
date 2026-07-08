@@ -32,7 +32,7 @@ function AdminTabsContainer() {
       defaultValue={queryParams.get("tab") || "companies"}
       onValueChange={(e) => onTabChange(e)}
     >
-      <TabsList>
+      <TabsList className="w-full justify-start overflow-x-auto">
         <TabsTrigger value="companies">Companies</TabsTrigger>
         <TabsTrigger value="job-titles">Job Titles</TabsTrigger>
         <TabsTrigger value="locations">Locations</TabsTrigger>

@@ -101,7 +101,7 @@ export default async function Dashboard() {
       </div>
       <div className="w-full col-span-3">
         <Tabs defaultValue={activityCalendarDataKeys.at(-1)}>
-          <TabsList>
+          <TabsList className="w-full justify-start overflow-x-auto">
             {activityCalendarDataKeys.map((year) => (
               <TabsTrigger key={year} value={year}>
                 {year}

@@ -2,7 +2,8 @@
 import { useCallback, useEffect, useState } from "react";
 import AddCompany from "./AddCompany";
 import CompaniesTable from "./CompaniesTable";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardTitle } from "../ui/card";
+import { ResponsiveCardHeader } from "../ResponsiveCardHeader";
 import { Company } from "@/models/job.model";
 import { getCompanyById, getCompanyList } from "@/actions/company.actions";
 import { APP_CONSTANTS } from "@/lib/constants";
@@ -57,25 +58,23 @@ function CompaniesContainer() {
     <>
       <div className="col-span-3">
         <Card x-chunk="dashboard-06-chunk-0">
-          <CardHeader className="flex-row justify-between items-center">
+          <ResponsiveCardHeader>
             <div className="flex items-baseline gap-2">
               <CardTitle>Companies</CardTitle>
               {!loading && totalCompanies > 0 && (
                 <RecordsCount count={companies.length} total={totalCompanies} label="companies" />
               )}
             </div>
-            <div className="flex items-center">
-              <div className="ml-auto flex items-center gap-2">
-                <AddCompany
-                  editCompany={editCompany}
-                  reloadCompanies={reloadCompanies}
-                  resetEditCompany={resetEditCompany}
-                  dialogOpen={dialogOpen}
-                  setDialogOpen={setDialogOpen}
-                />
-              </div>
+            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+              <AddCompany
+                editCompany={editCompany}
+                reloadCompanies={reloadCompanies}
+                resetEditCompany={resetEditCompany}
+                dialogOpen={dialogOpen}
+                setDialogOpen={setDialogOpen}
+              />
             </div>
-          </CardHeader>
+          </ResponsiveCardHeader>
           <CardContent>
             {loading && <Loading />}
             {companies.length > 0 && (

@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { ResponsiveCardHeader } from "@/components/ResponsiveCardHeader";
 import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
@@ -66,9 +67,9 @@ export function AutomationContainer({ resumes }: AutomationContainerProps) {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <ResponsiveCardHeader>
           <CardTitle>Automations</CardTitle>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="icon" onClick={loadAutomations}>
               <RefreshCw className="h-4 w-4" />
             </Button>
@@ -77,7 +78,7 @@ export function AutomationContainer({ resumes }: AutomationContainerProps) {
               Create Automation
             </Button>
           </div>
-        </CardHeader>
+        </ResponsiveCardHeader>
         <CardContent>
           {loading ? (
             <Loading />

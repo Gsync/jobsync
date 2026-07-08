@@ -250,7 +250,10 @@ export const AiJobMatchSection = ({
       <SheetPortal>
         <SheetContent
           className="flex flex-col p-0 overflow-hidden [&>button:last-child]:hidden"
-          style={{ width: `${width}px`, maxWidth: "none" }}
+          style={{
+            width: `${width}px`,
+            maxWidth: `${APP_CONSTANTS.RESIZABLE_PANEL_MAX_WIDTH_RATIO * 100}vw`,
+          }}
         >
           {/* VS Code-style drag handle on left edge */}
           <div
