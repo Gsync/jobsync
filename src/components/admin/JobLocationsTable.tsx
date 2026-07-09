@@ -39,12 +39,14 @@ function JobLocationsTable({
     deleteAction: false,
   });
   const onDeleteJobLocation = (location: JobLocation) => {
-    if (location._count?.jobsApplied! > 0) {
+    const totalJobs = location._count?.jobsTotal ?? 0;
+    if (totalJobs > 0) {
       setAlert({
         openState: true,
-        title: "Applied jobs exist!",
-        description:
-          "Associated jobs applied must be 0 to be able to delete this job location",
+        title: "Associated jobs exist!",
+        description: `This location has ${totalJobs} associated job${
+          totalJobs === 1 ? "" : "s"
+        } (applied or not). Remove or reassign them before deleting this location.`,
         deleteAction: false,
       });
     } else {
@@ -80,6 +82,7 @@ function JobLocationsTable({
           <TableRow>
             <TableHead>Location</TableHead>
             <TableHead className="hidden sm:table-cell">Value</TableHead>
+            <TableHead>Total Jobs</TableHead>
             <TableHead>Jobs Applied</TableHead>
             <TableHead>Actions</TableHead>
             <TableHead>
@@ -94,6 +97,18 @@ function JobLocationsTable({
                 <TableCell className="font-medium">{location.label}</TableCell>
                 <TableCell className="font-medium hidden sm:table-cell">
                   {location.value}
+                </TableCell>
+                <TableCell className="font-medium">
+                  {location._count?.jobsTotal ? (
+                    <Link
+                      href={`/dashboard/myjobs?location=${encodeURIComponent(location.value)}`}
+                      className="text-primary underline-offset-4 hover:underline"
+                    >
+                      {location._count.jobsTotal}
+                    </Link>
+                  ) : (
+                    (location._count?.jobsTotal ?? 0)
+                  )}
                 </TableCell>
                 <TableCell className="font-medium">
                   {location._count?.jobsApplied ? (

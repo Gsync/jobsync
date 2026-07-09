@@ -37,12 +37,14 @@ function JobTitlesTable({ jobTitles, reloadJobTitles }: JobTitlesTableProps) {
   });
 
   const onDeleteJobTitle = (title: JobTitle) => {
-    if (title._count?.jobs! > 0) {
+    const totalJobs = title._count?.jobsTotal ?? 0;
+    if (totalJobs > 0) {
       setAlert({
         openState: true,
-        title: "Applied jobs exist!",
-        description:
-          "Associated jobs applied must be 0 to be able to delete this job title",
+        title: "Associated jobs exist!",
+        description: `This job title has ${totalJobs} associated job${
+          totalJobs === 1 ? "" : "s"
+        } (applied or not). Remove or reassign them before deleting this job title.`,
         deleteAction: false,
       });
     } else {
@@ -79,6 +81,7 @@ function JobTitlesTable({ jobTitles, reloadJobTitles }: JobTitlesTableProps) {
           <TableRow>
             <TableHead>Job Title</TableHead>
             <TableHead className="hidden sm:table-cell">Value</TableHead>
+            <TableHead>Total Jobs</TableHead>
             <TableHead>Jobs Applied</TableHead>
             <TableHead>Actions</TableHead>
             <TableHead>
@@ -93,6 +96,18 @@ function JobTitlesTable({ jobTitles, reloadJobTitles }: JobTitlesTableProps) {
                 <TableCell className="font-medium">{title.label}</TableCell>
                 <TableCell className="font-medium hidden sm:table-cell">
                   {title.value}
+                </TableCell>
+                <TableCell className="font-medium">
+                  {title._count?.jobsTotal ? (
+                    <Link
+                      href={`/dashboard/myjobs?title=${encodeURIComponent(title.value)}`}
+                      className="text-primary underline-offset-4 hover:underline"
+                    >
+                      {title._count.jobsTotal}
+                    </Link>
+                  ) : (
+                    (title._count?.jobsTotal ?? 0)
+                  )}
                 </TableCell>
                 <TableCell className="font-medium">
                   {title._count?.jobs ? (

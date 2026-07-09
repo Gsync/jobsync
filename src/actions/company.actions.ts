@@ -20,7 +20,7 @@ export const getCompanyList = async (
     }
     const skip = (page - 1) * limit;
 
-    const [data, total, rejectedCounts] = await Promise.all([
+    const [data, total, rejectedCounts, totalCounts] = await Promise.all([
       prisma.company.findMany({
         where: {
           createdBy: user.id,
@@ -67,10 +67,25 @@ export const getCompanyList = async (
             _count: { id: true },
           })
         : Promise.resolve([]),
+      countBy
+        ? prisma.job.groupBy({
+            by: ["companyId"],
+            where: {
+              userId: user.id,
+            },
+            _count: { id: true },
+          })
+        : Promise.resolve([]),
     ]);
 
     const rejectedMap = new Map(
       (rejectedCounts as { companyId: string; _count: { id: number } }[]).map(
+        (r) => [r.companyId, r._count.id],
+      ),
+    );
+
+    const totalMap = new Map(
+      (totalCounts as { companyId: string; _count: { id: number } }[]).map(
         (r) => [r.companyId, r._count.id],
       ),
     );
@@ -81,6 +96,7 @@ export const getCompanyList = async (
           _count: {
             ...(company._count ?? {}),
             jobsRejected: rejectedMap.get(company.id) ?? 0,
+            jobsTotal: totalMap.get(company.id) ?? 0,
           },
         }))
       : data;
@@ -281,6 +297,7 @@ export const deleteCompanyById = async (
     const jobs = await prisma.job.count({
       where: {
         companyId,
+        userId: user.id,
       },
     });
 

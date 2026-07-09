@@ -41,12 +41,14 @@ function CompaniesTable({
   });
 
   const onDeleteCompany = (company: Company) => {
-    if (company._count?.jobsApplied! > 0) {
+    const totalJobs = company._count?.jobsTotal ?? 0;
+    if (totalJobs > 0) {
       setAlert({
         openState: true,
-        title: "Applied jobs exist!",
-        description:
-          "Associated jobs applied must be 0 to be able to delete this company",
+        title: "Associated jobs exist!",
+        description: `This company has ${totalJobs} associated job${
+          totalJobs === 1 ? "" : "s"
+        } (applied or not). Remove or reassign them before deleting this company.`,
         deleteAction: false,
       });
     } else {
@@ -87,6 +89,7 @@ function CompaniesTable({
             </TableHead>
             <TableHead>Company Name</TableHead>
             <TableHead className="hidden sm:table-cell">Value</TableHead>
+            <TableHead>Total Jobs</TableHead>
             <TableHead>Jobs Applied</TableHead>
             <TableHead>Rejected</TableHead>
             <TableHead>Actions</TableHead>
@@ -110,6 +113,18 @@ function CompaniesTable({
                 <TableCell className="font-medium">{company.label}</TableCell>
                 <TableCell className="font-medium hidden sm:table-cell">
                   {company.value}
+                </TableCell>
+                <TableCell className="font-medium">
+                  {company._count?.jobsTotal ? (
+                    <Link
+                      href={`/dashboard/myjobs?company=${encodeURIComponent(company.value)}`}
+                      className="text-primary underline-offset-4 hover:underline"
+                    >
+                      {company._count.jobsTotal}
+                    </Link>
+                  ) : (
+                    (company._count?.jobsTotal ?? 0)
+                  )}
                 </TableCell>
                 <TableCell className="font-medium">
                   {company._count?.jobsApplied ? (

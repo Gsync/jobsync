@@ -17,7 +17,7 @@ export const getJobSourceList = async (
     }
     const skip = (page - 1) * limit;
 
-    const [data, total] = await Promise.all([
+    const [data, total, totalCounts] = await Promise.all([
       prisma.jobSource.findMany({
         where: {
           createdBy: user.id,
@@ -53,8 +53,34 @@ export const getJobSourceList = async (
           createdBy: user.id,
         },
       }),
+      countBy
+        ? prisma.job.groupBy({
+            by: ["jobSourceId"],
+            where: {
+              userId: user.id,
+            },
+            _count: { id: true },
+          })
+        : Promise.resolve([]),
     ]);
-    return { data, total };
+
+    const totalMap = new Map(
+      (totalCounts as { jobSourceId: string; _count: { id: number } }[]).map(
+        (r) => [r.jobSourceId, r._count.id],
+      ),
+    );
+
+    const dataWithTotal = countBy
+      ? (data as any[]).map((source) => ({
+          ...source,
+          _count: {
+            ...(source._count ?? {}),
+            jobsTotal: totalMap.get(source.id) ?? 0,
+          },
+        }))
+      : data;
+
+    return { data: dataWithTotal, total };
   } catch (error) {
     const msg = "Failed to fetch job source list. ";
     return handleError(error, msg);
@@ -74,6 +100,7 @@ export const deleteJobSourceById = async (
     const jobs = await prisma.job.count({
       where: {
         jobSourceId,
+        userId: user.id,
       },
     });
 

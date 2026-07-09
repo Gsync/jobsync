@@ -35,7 +35,7 @@ export const getJobTitleList = async (
     }
     const skip = (page - 1) * limit;
 
-    const [data, total] = await Promise.all([
+    const [data, total, totalCounts] = await Promise.all([
       prisma.jobTitle.findMany({
         where: {
           createdBy: user.id,
@@ -71,8 +71,34 @@ export const getJobTitleList = async (
           createdBy: user.id,
         },
       }),
+      countBy
+        ? prisma.job.groupBy({
+            by: ["jobTitleId"],
+            where: {
+              userId: user.id,
+            },
+            _count: { id: true },
+          })
+        : Promise.resolve([]),
     ]);
-    return { data, total };
+
+    const totalMap = new Map(
+      (totalCounts as { jobTitleId: string; _count: { id: number } }[]).map(
+        (r) => [r.jobTitleId, r._count.id],
+      ),
+    );
+
+    const dataWithTotal = countBy
+      ? (data as any[]).map((title) => ({
+          ...title,
+          _count: {
+            ...(title._count ?? {}),
+            jobsTotal: totalMap.get(title.id) ?? 0,
+          },
+        }))
+      : data;
+
+    return { data: dataWithTotal, total };
   } catch (error) {
     const msg = "Failed to fetch job title list. ";
     return handleError(error, msg);
@@ -127,6 +153,7 @@ export const deleteJobTitleById = async (
     const jobs = await prisma.job.count({
       where: {
         jobTitleId,
+        userId: user.id,
       },
     });
 

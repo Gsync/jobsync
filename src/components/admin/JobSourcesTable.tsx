@@ -40,12 +40,14 @@ function JobSourcesTable({
   });
 
   const onDeleteJobSource = (source: JobSource) => {
-    if (source._count?.jobsApplied! > 0) {
+    const totalJobs = source._count?.jobsTotal ?? 0;
+    if (totalJobs > 0) {
       setAlert({
         openState: true,
-        title: "Applied jobs exist!",
-        description:
-          "Associated jobs applied must be 0 to be able to delete this job source",
+        title: "Associated jobs exist!",
+        description: `This source has ${totalJobs} associated job${
+          totalJobs === 1 ? "" : "s"
+        } (applied or not). Remove or reassign them before deleting this source.`,
         deleteAction: false,
       });
     } else {
@@ -83,6 +85,7 @@ function JobSourcesTable({
           <TableRow>
             <TableHead>Source</TableHead>
             <TableHead className="hidden sm:table-cell">Value</TableHead>
+            <TableHead>Total Jobs</TableHead>
             <TableHead>Jobs Applied</TableHead>
             <TableHead>Actions</TableHead>
             <TableHead>
@@ -97,6 +100,18 @@ function JobSourcesTable({
                 <TableCell className="font-medium">{source.label}</TableCell>
                 <TableCell className="font-medium hidden sm:table-cell">
                   {source.value}
+                </TableCell>
+                <TableCell className="font-medium">
+                  {source._count?.jobsTotal ? (
+                    <Link
+                      href={`/dashboard/myjobs?source=${encodeURIComponent(source.value)}`}
+                      className="text-primary underline-offset-4 hover:underline"
+                    >
+                      {source._count.jobsTotal}
+                    </Link>
+                  ) : (
+                    (source._count?.jobsTotal ?? 0)
+                  )}
                 </TableCell>
                 <TableCell className="font-medium">
                   {source._count?.jobsApplied ? (

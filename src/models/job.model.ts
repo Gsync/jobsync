@@ -66,6 +66,7 @@ export interface JobTitle {
   createdBy: string;
   _count?: {
     jobs: number;
+    jobsTotal?: number;
   };
 }
 
@@ -78,6 +79,7 @@ export interface Company {
   _count?: {
     jobsApplied: number;
     jobsRejected?: number;
+    jobsTotal?: number;
   };
 }
 
@@ -94,6 +96,7 @@ export interface JobSource {
   createdBy: string;
   _count?: {
     jobsApplied: number;
+    jobsTotal?: number;
   };
 }
 
@@ -106,6 +109,7 @@ export interface JobLocation {
   createdBy: string;
   _count?: {
     jobsApplied: number;
+    jobsTotal?: number;
   };
 }
 
