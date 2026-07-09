@@ -237,23 +237,12 @@ export function RunHistoryList({
                       </TableCell>
                       <TableCell>
                         {(run.errorMessage || run.blockedReason) && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <Badge
-                                  variant="outline"
-                                  className="max-w-[150px] truncate"
-                                >
-                                  {run.blockedReason || run.errorMessage}
-                                </Badge>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="max-w-xs">
-                                  {run.blockedReason || run.errorMessage}
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                          <Badge
+                            variant="outline"
+                            className="max-w-md whitespace-normal"
+                          >
+                            {run.blockedReason || run.errorMessage}
+                          </Badge>
                         )}
                       </TableCell>
                       <TableCell>

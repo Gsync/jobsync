@@ -52,6 +52,8 @@ cd jobsync
 docker compose up
 ```
 
+> **Note:** If app is unreachable after container starts, wait for a few minutes before accessing the app in browser.
+
 Open [http://localhost:3737](http://localhost:3737) and create your account. That's it!
 
 API keys for AI providers can be configured in **Settings** after signing in.

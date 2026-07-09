@@ -270,7 +270,7 @@ function JobDetails({
                 : null}
             </div>
           </CardHeader>
-          <h3 className="ml-4">
+          <h3 className="ml-4 flex flex-wrap items-center gap-2">
             {job.dueDate && new Date() > job.dueDate && currentStatus?.value === "draft" ? (
               <StatusBadge
                 label="Expired"
@@ -284,9 +284,15 @@ function JobDetails({
                 className="w-[70px] justify-center"
               />
             )}
-            <span className="ml-2">
-              {job?.appliedDate ? format(new Date(job?.appliedDate), "PP") : ""}
-            </span>
+            {job?.appliedDate && (
+              <span>{format(new Date(job.appliedDate), "PP")}</span>
+            )}
+            {job.createdVia && (
+              <Badge className="gap-1 bg-violet-500 dark:bg-violet-400">
+                <Sparkles className="h-3.5 w-3.5" />
+                via {job.createdVia}
+              </Badge>
+            )}
           </h3>
           {job.tags && job.tags.length > 0 && (
             <div className="my-3 ml-4 flex flex-wrap gap-1">
@@ -295,13 +301,6 @@ function JobDetails({
                   {tag.label}
                 </Badge>
               ))}
-            </div>
-          )}
-          {job.createdVia && (
-            <div className="my-1 ml-4">
-              <Badge variant="outline" className="text-xs text-muted-foreground">
-                via {job.createdVia}
-              </Badge>
             </div>
           )}
           {job.jobUrl && (
