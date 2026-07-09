@@ -1,4 +1,4 @@
-description: Resume review prompt regression tests
+description: Automation (lean) job match prompt regression tests
 
 providers:
   - id: openai:chat:deepseek-v4-flash
@@ -7,15 +7,16 @@ providers:
       apiKeyEnvar: DEEPSEEK_API_KEY
       showThinking: false
       temperature: 0
-      max_tokens: 8192
+      max_tokens: 4096
 
 prompts:
-  - file://./prompt.ts
+  - file://./automation-prompt.ts
 
 tests:
-  - description: Strong senior engineer resume - structural + score validation
+  - description: Backend resume vs matching backend JD - strong fit, lean output
     vars:
-      resumeText: file://./fixtures/strong-senior.txt
+      resumeText: file://./fixtures/backend-resume.txt
+      jobDescription: file://./fixtures/backend-job.txt
     assert:
       - type: javascript
         value: file://./assertions.ts:assertNotJson
@@ -26,13 +27,16 @@ tests:
       - type: javascript
         value: file://./assertions.ts:assertMarkdownBodyNonEmpty
       - type: javascript
-        value: file://./assertions.ts:assertRequiredSections
+        value: file://./assertions.ts:assertAutomationSummaryOnly
       - type: javascript
-        value: file://./assertions.ts:assertStrongScoresHigh
+        value: file://./assertions.ts:assertRecommendationConsistent
+      - type: javascript
+        value: file://./assertions.ts:assertStrongMatchHigh
 
-  - description: Weak/sparse resume - structural + score + content validation
+  - description: Marketing resume vs backend JD - weak fit, lean output
     vars:
-      resumeText: file://./fixtures/weak-sparse.txt
+      resumeText: file://./fixtures/marketing-resume.txt
+      jobDescription: file://./fixtures/backend-job.txt
     assert:
       - type: javascript
         value: file://./assertions.ts:assertNotJson
@@ -43,11 +47,8 @@ tests:
       - type: javascript
         value: file://./assertions.ts:assertMarkdownBodyNonEmpty
       - type: javascript
-        value: file://./assertions.ts:assertRequiredSections
+        value: file://./assertions.ts:assertAutomationSummaryOnly
       - type: javascript
-        value: file://./assertions.ts:assertWeakScoresLow
-      # Review must reference the fixture's weak phrasing, not paraphrase it away.
-      - type: icontains-any
-        value:
-          - "Responsible for"
-          - "Helped with"
+        value: file://./assertions.ts:assertRecommendationConsistent
+      - type: javascript
+        value: file://./assertions.ts:assertWeakMatchLow

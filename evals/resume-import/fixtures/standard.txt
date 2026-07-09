@@ -1,0 +1,27 @@
+Priya Raman
+priya.raman@email.com | (555) 771-3390 | Austin, TX | linkedin.com/in/priyaraman
+
+SUMMARY
+Full-stack engineer with 7 years building web applications. Specializes in React, Node.js, and cloud infrastructure. Passionate about developer experience and mentoring junior engineers.
+
+EXPERIENCE
+
+Senior Software Engineer — Brightloop, Austin, TX (Feb 2021 – Present)
+• Led rebuild of the billing platform in TypeScript, cutting checkout errors by 45%
+• Mentored 4 engineers and ran the frontend guild
+• Migrated CI to GitHub Actions, reducing build times from 22 to 7 minutes
+
+Software Engineer — Nimbus Data, Denver, CO (Jun 2017 – Jan 2021)
+• Built REST APIs in Node.js serving 300K daily users
+• Introduced end-to-end tests, raising coverage from 30% to 82%
+
+SKILLS
+Languages: JavaScript, TypeScript, Python
+Frameworks: React, Node.js, Express, Next.js
+Tools: Docker, AWS, PostgreSQL, Redis
+
+EDUCATION
+B.S. Computer Science — University of Texas at Austin (2013 – 2017)
+
+CERTIFICATIONS
+AWS Certified Developer – Associate (2022)

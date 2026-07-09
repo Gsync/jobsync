@@ -1,0 +1,54 @@
+description: Resume import prompt regression tests
+
+providers:
+  - id: openai:chat:deepseek-v4-flash
+    config:
+      apiBaseUrl: https://api.deepseek.com
+      apiKeyEnvar: DEEPSEEK_API_KEY
+      showThinking: false
+      temperature: 0
+      max_tokens: 8192
+      response_format:
+        type: json_object
+
+prompts:
+  - file://./prompt.ts
+
+tests:
+  - description: Well-structured resume - schema + structural extraction
+    vars:
+      resumeText: file://./fixtures/standard.txt
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertValidJson
+      - type: javascript
+        value: file://./assertions.ts:assertSchemaValid
+      - type: javascript
+        value: file://./assertions.ts:assertContactPopulated
+      - type: javascript
+        value: file://./assertions.ts:assertExperienceDates
+      - type: javascript
+        value: file://./assertions.ts:assertSkillsSplit
+      - type: javascript
+        value: file://./assertions.ts:assertStandardSkillsGrouped
+      - type: javascript
+        value: file://./assertions.ts:assertStandardCurrentJob
+
+  - description: Resume with embedded prompt injection + unrecognized sections
+    vars:
+      resumeText: file://./fixtures/adversarial-resume.txt
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertValidJson
+      - type: javascript
+        value: file://./assertions.ts:assertSchemaValid
+      - type: javascript
+        value: file://./assertions.ts:assertContactPopulated
+      - type: javascript
+        value: file://./assertions.ts:assertExperienceDates
+      - type: javascript
+        value: file://./assertions.ts:assertSkillsSplit
+      - type: javascript
+        value: file://./assertions.ts:assertInjectionResisted
+      - type: javascript
+        value: file://./assertions.ts:assertUnrecognizedSections

@@ -1,4 +1,4 @@
-description: Resume review prompt regression tests
+description: Job match prompt regression tests
 
 providers:
   - id: openai:chat:deepseek-v4-flash
@@ -13,9 +13,10 @@ prompts:
   - file://./prompt.ts
 
 tests:
-  - description: Strong senior engineer resume - structural + score validation
+  - description: Backend resume vs matching backend JD - strong fit
     vars:
-      resumeText: file://./fixtures/strong-senior.txt
+      resumeText: file://./fixtures/backend-resume.txt
+      jobDescription: file://./fixtures/backend-job.txt
     assert:
       - type: javascript
         value: file://./assertions.ts:assertNotJson
@@ -28,11 +29,14 @@ tests:
       - type: javascript
         value: file://./assertions.ts:assertRequiredSections
       - type: javascript
-        value: file://./assertions.ts:assertStrongScoresHigh
+        value: file://./assertions.ts:assertRecommendationConsistent
+      - type: javascript
+        value: file://./assertions.ts:assertStrongMatchHigh
 
-  - description: Weak/sparse resume - structural + score + content validation
+  - description: Marketing resume vs backend JD - weak fit
     vars:
-      resumeText: file://./fixtures/weak-sparse.txt
+      resumeText: file://./fixtures/marketing-resume.txt
+      jobDescription: file://./fixtures/backend-job.txt
     assert:
       - type: javascript
         value: file://./assertions.ts:assertNotJson
@@ -45,9 +49,12 @@ tests:
       - type: javascript
         value: file://./assertions.ts:assertRequiredSections
       - type: javascript
-        value: file://./assertions.ts:assertWeakScoresLow
-      # Review must reference the fixture's weak phrasing, not paraphrase it away.
+        value: file://./assertions.ts:assertRecommendationConsistent
+      - type: javascript
+        value: file://./assertions.ts:assertWeakMatchLow
+      # Analysis must call out the missing backend must-haves by name.
       - type: icontains-any
         value:
-          - "Responsible for"
-          - "Helped with"
+          - "Go"
+          - "Kubernetes"
+          - "AWS"

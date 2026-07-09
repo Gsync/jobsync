@@ -1,0 +1,32 @@
+Jordan Ellis
+jordan.ellis@email.com | (555) 204-8812 | Vancouver, BC | linkedin.com/in/jordanellis | github.com/jordanellis
+
+SUMMARY
+Senior software engineer with 9 years of experience building distributed systems and developer tooling at scale. Led platform migrations serving 40M+ users, reduced infrastructure costs by 35%, and managed cross-functional teams of 8-12 engineers. Deep expertise in Go, Kubernetes, and cloud-native architectures.
+
+EXPERIENCE
+
+Staff Software Engineer — Meridian Technologies, Vancouver, BC (Jan 2021 – Present)
+- Architected and led migration of monolithic Rails application to microservices on Kubernetes, reducing p99 latency from 820ms to 140ms and cutting AWS spend by $1.2M annually
+- Built distributed job queue processing 4.5M tasks/day with 99.97% reliability
+- Designed observability platform (Prometheus, Grafana, OpenTelemetry) adopted by 14 teams
+- Mentored 6 junior and mid-level engineers; 4 promoted within 18 months
+
+Senior Software Engineer — Stackline Inc., Toronto, ON (Mar 2018 – Dec 2020)
+- Rebuilt search indexing pipeline in Go, improving throughput from 12K to 95K documents/second (7x improvement)
+- Implemented rate-limiting and circuit-breaker layer that absorbed 3 DDoS events with zero downtime
+- Reduced CI/CD pipeline duration from 38 minutes to 9 minutes
+
+Software Engineer — Luminary Digital, Ottawa, ON (Jun 2015 – Feb 2018)
+- Developed RESTful and gRPC APIs consumed by 200K daily active users; maintained 99.95% uptime SLA
+- Migrated 18TB PostgreSQL database to partitioned schema; reduced query times by 62%
+
+SKILLS
+Go, Python, TypeScript, SQL | Kubernetes, Docker, Helm, Terraform | AWS (EKS, RDS, S3, Lambda), GCP | PostgreSQL, Redis, Kafka, Elasticsearch | Prometheus, Grafana, OpenTelemetry | gRPC, REST, GraphQL | GitHub Actions, ArgoCD
+
+EDUCATION
+Bachelor of Science, Computer Science — University of Waterloo, 2015
+
+CERTIFICATIONS
+AWS Certified Solutions Architect – Professional (2023)
+Certified Kubernetes Administrator (CKA) (2022)

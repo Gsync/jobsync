@@ -1,0 +1,26 @@
+Senior Backend Engineer — Distributed Systems
+Northwind Cloud | Remote (North America)
+
+ABOUT THE ROLE
+We're hiring a Senior Backend Engineer to own the reliability and scale of our cloud-native platform serving tens of millions of users. You'll design distributed services, drive our Kubernetes migration, and set the bar for observability and operational excellence.
+
+REQUIREMENTS (must-have)
+- 7+ years of backend software engineering experience
+- Strong proficiency in Go for production services
+- Hands-on experience running services on Kubernetes in production
+- Deep experience with AWS (EKS, RDS, S3, Lambda)
+- Experience designing distributed systems: queues, caching, rate limiting, circuit breakers
+- Strong SQL and relational database skills (PostgreSQL preferred)
+- Experience with observability tooling (Prometheus, Grafana, OpenTelemetry)
+
+NICE TO HAVE
+- Experience mentoring engineers and leading technical projects
+- gRPC and event streaming (Kafka)
+- Infrastructure-as-code (Terraform, Helm)
+- CI/CD pipeline optimization
+
+WHAT YOU'LL DO
+- Architect and scale distributed backend services
+- Lead our migration to Kubernetes and improve deployment reliability
+- Build observability and incident-response tooling
+- Mentor engineers and raise the engineering bar
