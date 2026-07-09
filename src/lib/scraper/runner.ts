@@ -10,7 +10,8 @@ import type {
 } from "@/models/automation.model";
 import type { ScraperError, JobDetails } from "./types";
 import { searchJSearchJobs } from "./jsearch";
-import { searchGreenhouseJobs } from "./greenhouse";
+import { ATS_PROVIDERS } from "./ats/registry";
+import type { AtsProvider } from "./ats/types";
 import { runGreenhousePipeline } from "./greenhouse/pipeline";
 import type { ScoredJob } from "./greenhouse/pipeline";
 import { mapScrapedJobToJobRecord } from "./mapper";
@@ -290,9 +291,11 @@ export async function runAutomation(
       `Resume loaded: ${resume.title}`,
     );
 
-    if (automation.jobBoard === "greenhouse") {
-      return await runGreenhouseRun(
+    const atsProvider = ATS_PROVIDERS[automation.jobBoard];
+    if (atsProvider) {
+      return await runAtsRun(
         automation,
+        atsProvider,
         run.id,
         resume as ResumeWithSections,
         effectiveSignal,
@@ -633,8 +636,8 @@ async function getExistingJobKeys(userId: string): Promise<Set<string>> {
   return keys;
 }
 
-interface GreenhouseRunConfig {
-  companies: { name: string; token: string }[];
+interface AtsRunConfig {
+  companies: { name: string; token: string; host?: "default" | "eu" }[];
   targetTitles: string[];
   keywords: string[];
   locations: string[];
@@ -643,25 +646,26 @@ interface GreenhouseRunConfig {
   saveUnanalyzed: boolean;
 }
 
-function parseGreenhouseConfig(
-  sourceConfig?: string | null,
-): GreenhouseRunConfig | null {
+function parseAtsConfig(
+  sourceConfig: string | null | undefined,
+  jobBoard: JobBoard,
+): AtsRunConfig | null {
   if (!sourceConfig) return null;
   try {
     const parsed = JSON.parse(sourceConfig);
-    const gh = parsed?.greenhouse;
-    if (!gh || !Array.isArray(gh.companies)) return null;
+    const cfg = parsed?.[jobBoard];
+    if (!cfg || !Array.isArray(cfg.companies)) return null;
     return {
-      companies: gh.companies,
-      targetTitles: Array.isArray(gh.targetTitles) ? gh.targetTitles : [],
-      keywords: Array.isArray(gh.keywords) ? gh.keywords : [],
-      locations: Array.isArray(gh.locations) ? gh.locations : [],
-      strictLocation: !!gh.strictLocation,
+      companies: cfg.companies,
+      targetTitles: Array.isArray(cfg.targetTitles) ? cfg.targetTitles : [],
+      keywords: Array.isArray(cfg.keywords) ? cfg.keywords : [],
+      locations: Array.isArray(cfg.locations) ? cfg.locations : [],
+      strictLocation: !!cfg.strictLocation,
       topK:
-        typeof gh.topK === "number" && gh.topK > 0
-          ? gh.topK
+        typeof cfg.topK === "number" && cfg.topK > 0
+          ? cfg.topK
           : APP_CONSTANTS.MAX_JOBS_PER_RUN,
-      saveUnanalyzed: gh.saveUnanalyzed !== false,
+      saveUnanalyzed: cfg.saveUnanalyzed !== false,
     };
   } catch {
     return null;
@@ -707,6 +711,7 @@ async function persistDiscoveredJob(
     sourceBoard: automation.jobBoard,
     employmentType: job.employmentType,
     isRemote: job.isRemote,
+    workplaceType: job.workplaceType,
   };
 
   const jobRecord = await mapScrapedJobToJobRecord({
@@ -720,19 +725,21 @@ async function persistDiscoveredJob(
   await db.job.create({ data: jobRecord });
 }
 
-async function runGreenhouseRun(
+async function runAtsRun(
   automation: Automation,
+  provider: AtsProvider,
   runId: string,
   resume: ResumeWithSections,
   signal?: AbortSignal,
 ): Promise<RunnerResult> {
-  const config = parseGreenhouseConfig(automation.sourceConfig);
+  const label = `[${provider.label}]`;
+  const config = parseAtsConfig(automation.sourceConfig, automation.jobBoard);
 
   if (!config || config.companies.length === 0) {
     automationLogger.log(
       automation.id,
       "error",
-      "[Greenhouse] No companies configured",
+      `${label} No companies configured`,
     );
     automationLogger.endRun(automation.id);
     return await finalizeRun(runId, {
@@ -750,16 +757,16 @@ async function runGreenhouseRun(
     automationLogger.log(
       automation.id,
       "info",
-      `[Greenhouse] Fetching ${config.companies.length} companies...`,
+      `${label} Fetching ${config.companies.length} companies...`,
     );
 
-    const { jobs, errors } = await searchGreenhouseJobs(config.companies);
+    const { jobs, errors } = await provider.search(config.companies);
 
     for (const err of errors) {
       automationLogger.log(
         automation.id,
         "warning",
-        `[Greenhouse] Board '${err.token}' ${err.reason} — skipped`,
+        `${label} Board '${err.token}' ${err.reason} — skipped`,
       );
     }
 
@@ -767,7 +774,7 @@ async function runGreenhouseRun(
     automationLogger.log(
       automation.id,
       "success",
-      `[Greenhouse] Fetched ${jobsSearched} jobs across ${config.companies.length} boards`,
+      `${label} Fetched ${jobsSearched} jobs across ${config.companies.length} boards`,
       { jobsSearched },
     );
 
@@ -779,7 +786,7 @@ async function runGreenhouseRun(
     automationLogger.log(
       automation.id,
       "info",
-      `[Greenhouse] ${jobsDeduplicated} new jobs after dedup`,
+      `${label} ${jobsDeduplicated} new jobs after dedup`,
       { jobsDeduplicated },
     );
 
@@ -787,7 +794,7 @@ async function runGreenhouseRun(
       automationLogger.log(
         automation.id,
         "info",
-        "[Greenhouse] All fetched jobs already saved — nothing new to process",
+        `${label} All fetched jobs already saved — nothing new to process`,
       );
       automationLogger.endRun(automation.id);
       return await finalizeRun(runId, {
@@ -810,14 +817,14 @@ async function runGreenhouseRun(
       automationLogger.log(
         automation.id,
         "info",
-        `[Greenhouse] ${pipeline.funnel.located} jobs remaining after strict location filter`,
+        `${label} ${pipeline.funnel.located} jobs remaining after strict location filter`,
       );
     }
 
     automationLogger.log(
       automation.id,
       "info",
-      `[Greenhouse] ${pipeline.funnel.relevant} jobs cleared the relevance floor`,
+      `${label} ${pipeline.funnel.relevant} jobs cleared the relevance floor`,
     );
 
     const buildFunnel = (analyzed: number, highlighted: number): string => {
@@ -860,7 +867,7 @@ async function runGreenhouseRun(
       automationLogger.log(
         automation.id,
         "warning",
-        `[Greenhouse] No relevant jobs found — ${reason}. Run complete.`,
+        `${label} No relevant jobs found — ${reason}. Run complete.`,
       );
       automationLogger.endRun(automation.id);
       return await finalizeRun(runId, {
@@ -889,7 +896,7 @@ async function runGreenhouseRun(
       automationLogger.log(
         automation.id,
         "warning",
-        "[Greenhouse] Run aborted by user",
+        `${label} Run aborted by user`,
       );
     }
     if (config.saveUnanalyzed) {
@@ -908,7 +915,7 @@ async function runGreenhouseRun(
           );
           jobsSaved++;
         } catch (err) {
-          console.error("[Greenhouse] Failed to save listing:", err);
+          console.error(`${label} Failed to save listing:`, err);
         }
       }
     }
@@ -918,7 +925,7 @@ async function runGreenhouseRun(
     automationLogger.log(
       automation.id,
       "info",
-      `[Greenhouse] Running LLM analysis on top ${totalToAnalyze}...`,
+      `${label} Running LLM analysis on top ${totalToAnalyze}...`,
     );
 
     const analyzeJob = async (scored: ScoredJob): Promise<void> => {
@@ -940,7 +947,7 @@ async function runGreenhouseRun(
           );
           jobsSaved++;
         } catch (err) {
-          console.error("[Greenhouse] Failed to save listing:", err);
+          console.error(`${label} Failed to save listing:`, err);
         }
       };
 
@@ -952,7 +959,7 @@ async function runGreenhouseRun(
       automationLogger.log(
         automation.id,
         "info",
-        `[Greenhouse] Analyzing: ${scored.job.title} at ${scored.job.company}`,
+        `${label} Analyzing: ${scored.job.title} at ${scored.job.company}`,
       );
 
       const matchResult = await matchJobToResume(
@@ -981,7 +988,7 @@ async function runGreenhouseRun(
           automationLogger.log(
             automation.id,
             "warning",
-            `[Greenhouse] LLM match failed: ${matchResult.error}`,
+            `${label} LLM match failed: ${matchResult.error}`,
           );
         }
         await saveUnanalyzed();
@@ -995,7 +1002,7 @@ async function runGreenhouseRun(
       automationLogger.log(
         automation.id,
         isStrong ? "success" : "info",
-        `[Greenhouse] Analyzed ${analyzed}/${totalToAnalyze}: ${scored.job.title} — ${matchResult.score}%`,
+        `${label} Analyzed ${analyzed}/${totalToAnalyze}: ${scored.job.title} — ${matchResult.score}%`,
         { score: matchResult.score, threshold: automation.matchThreshold },
       );
 
@@ -1013,7 +1020,7 @@ async function runGreenhouseRun(
         });
         jobsSaved++;
       } catch (err) {
-        console.error("[Greenhouse] Failed to save analyzed job:", err);
+        console.error(`${label} Failed to save analyzed job:`, err);
       }
     };
 
@@ -1025,14 +1032,14 @@ async function runGreenhouseRun(
       automationLogger.log(
         automation.id,
         "warning",
-        "[Greenhouse] Run aborted by user",
+        `${label} Run aborted by user`,
       );
     }
 
     automationLogger.log(
       automation.id,
       "success",
-      `[Greenhouse] LLM analysis complete (${analyzed}/${pipeline.toAnalyze.length} succeeded)`,
+      `${label} LLM analysis complete (${analyzed}/${pipeline.toAnalyze.length} succeeded)`,
     );
 
     automationLogger.endRun(automation.id);
@@ -1050,7 +1057,7 @@ async function runGreenhouseRun(
   } catch (error) {
     // An abort surfaces here as an AbortError; finalize as cancelled, not failed.
     if (signal?.aborted || (error instanceof Error && error.name === "AbortError")) {
-      automationLogger.log(automation.id, "warning", "[Greenhouse] Run aborted by user");
+      automationLogger.log(automation.id, "warning", `${label} Run aborted by user`);
       automationLogger.endRun(automation.id);
       return await finalizeRun(runId, {
         status: "cancelled",
@@ -1066,10 +1073,10 @@ async function runGreenhouseRun(
     automationLogger.log(
       automation.id,
       "error",
-      `[Greenhouse] Run failed: ${message}`,
+      `${label} Run failed: ${message}`,
     );
     automationLogger.endRun(automation.id);
-    console.error("[Greenhouse] Run failed:", error);
+    console.error(`${label} Run failed:`, error);
     return await finalizeRun(runId, {
       status: "failed",
       errorMessage: message,

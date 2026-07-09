@@ -15,6 +15,7 @@ import type {
   DiscoveredJob,
   DiscoveryStatus,
 } from "@/models/automation.model";
+import { isAtsBoard } from "@/models/automation.model";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { syncSchedulerState } from "@/lib/scheduler";
 import { generateText } from "ai";
@@ -240,7 +241,7 @@ export async function updateAutomation(
     if (validated.sourceConfig !== undefined) {
       updateData.sourceConfig = JSON.stringify(validated.sourceConfig);
     }
-    if (validated.jobBoard === "greenhouse") {
+    if (validated.jobBoard && isAtsBoard(validated.jobBoard)) {
       updateData.keywords = validated.keywords ?? "";
       updateData.location = validated.location ?? "";
     }

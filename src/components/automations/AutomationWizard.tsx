@@ -40,16 +40,15 @@ import {
   updateAutomation,
 } from "@/actions/automation.actions";
 import { toast } from "@/components/ui/use-toast";
-import type {
-  AutomationWithResume,
-  JobBoard,
-  GreenhouseSourceConfig,
-} from "@/models/automation.model";
-import { GreenhouseSearchStep } from "./GreenhouseSearchStep";
+import type { AutomationWithResume, JobBoard } from "@/models/automation.model";
+import { isAtsBoard } from "@/models/automation.model";
+import { AtsSearchStep, type AtsConfigValue } from "./AtsSearchStep";
 import { ChevronLeft, ChevronRight, Loader2, AlertTriangle } from "lucide-react";
 import { APP_CONSTANTS } from "@/lib/constants";
 
-const EMPTY_GREENHOUSE: GreenhouseSourceConfig = {
+type AtsKey = "greenhouse" | "lever";
+
+const EMPTY_ATS: AtsConfigValue = {
   companies: [],
   targetTitles: [],
   keywords: [],
@@ -65,7 +64,7 @@ function parseEditSourceConfig(
   if (!sc) return undefined;
   try {
     const parsed = JSON.parse(sc);
-    return parsed?.greenhouse ? parsed : undefined;
+    return parsed?.greenhouse || parsed?.lever ? parsed : undefined;
   } catch {
     return undefined;
   }
@@ -177,17 +176,20 @@ export function AutomationWizard({
     }
   };
 
-  const isGreenhouse = formValues.jobBoard === "greenhouse";
-  const greenhouseConfig =
-    formValues.sourceConfig?.greenhouse ?? EMPTY_GREENHOUSE;
+  const isAts = isAtsBoard(formValues.jobBoard);
+  const atsKey: AtsKey | null = isAts
+    ? (formValues.jobBoard as AtsKey)
+    : null;
+  const atsConfig: AtsConfigValue =
+    (atsKey ? formValues.sourceConfig?.[atsKey] : undefined) ?? EMPTY_ATS;
 
   const canGoNext = () => {
     switch (step) {
       case 0:
         return (formValues.name?.trim().length ?? 0) > 0;
       case 1:
-        if (isGreenhouse) {
-          return (greenhouseConfig.companies?.length ?? 0) > 0;
+        if (isAts) {
+          return (atsConfig.companies?.length ?? 0) > 0;
         }
         return (
           (formValues.keywords?.trim().length ?? 0) > 0 &&
@@ -266,6 +268,9 @@ export function AutomationWizard({
                     <SelectItem value="greenhouse">
                       Greenhouse (company boards)
                     </SelectItem>
+                    <SelectItem value="lever">
+                      Lever (company boards)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <FormDescription>
@@ -290,13 +295,14 @@ export function AutomationWizard({
 
         {/* Step 1: Search */}
         <div className={step === 1 ? "space-y-4" : "hidden"}>
-          {isGreenhouse ? (
-            <GreenhouseSearchStep
-              value={greenhouseConfig}
+          {isAts && atsKey ? (
+            <AtsSearchStep
+              provider={formValues.jobBoard}
+              value={atsConfig}
               onChange={(next) =>
                 form.setValue(
                   "sourceConfig",
-                  { greenhouse: next },
+                  { [atsKey]: next } as CreateAutomationInput["sourceConfig"],
                   { shouldValidate: true },
                 )
               }
@@ -397,7 +403,7 @@ export function AutomationWizard({
                   />
                 </FormControl>
                 <FormDescription>
-                  {isGreenhouse
+                  {isAts
                     ? "Highlight listings whose AI match score exceeds this threshold. Relevant listings are saved regardless — this only flags strong matches."
                     : "Only save jobs that match your resume above this percentage. Higher = fewer but better matches."}
                 </FormDescription>
@@ -457,30 +463,30 @@ export function AutomationWizard({
                 {formValues.jobBoard || "-"}
               </span>
             </div>
-            {isGreenhouse ? (
+            {isAts ? (
               <>
                 <div className="flex justify-between gap-4">
                   <span className="text-muted-foreground">Companies</span>
                   <span className="font-medium text-right">
-                    {greenhouseConfig.companies?.length
-                      ? greenhouseConfig.companies.map((c) => c.name).join(", ")
+                    {atsConfig.companies?.length
+                      ? atsConfig.companies.map((c) => c.name).join(", ")
                       : "-"}
                   </span>
                 </div>
                 <div className="flex justify-between gap-4">
                   <span className="text-muted-foreground">Target titles</span>
                   <span className="font-medium text-right">
-                    {greenhouseConfig.targetTitles?.length
-                      ? greenhouseConfig.targetTitles.join(", ")
+                    {atsConfig.targetTitles?.length
+                      ? atsConfig.targetTitles.join(", ")
                       : "Any"}
                   </span>
                 </div>
                 <div className="flex justify-between gap-4">
                   <span className="text-muted-foreground">Locations</span>
                   <span className="font-medium text-right">
-                    {greenhouseConfig.locations?.length
-                      ? `${greenhouseConfig.locations.join(", ")}${
-                          greenhouseConfig.strictLocation ? " (strict)" : ""
+                    {atsConfig.locations?.length
+                      ? `${atsConfig.locations.join(", ")}${
+                          atsConfig.strictLocation ? " (strict)" : ""
                         }`
                       : "Any location"}
                   </span>
@@ -490,7 +496,7 @@ export function AutomationWizard({
                     Jobs analyzed per run
                   </span>
                   <span className="font-medium text-right">
-                    {greenhouseConfig.topK ?? APP_CONSTANTS.MAX_JOBS_PER_RUN}
+                    {atsConfig.topK ?? APP_CONSTANTS.MAX_JOBS_PER_RUN}
                   </span>
                 </div>
                 <div className="flex justify-between gap-4">
@@ -498,7 +504,7 @@ export function AutomationWizard({
                     Save additional listings
                   </span>
                   <span className="font-medium text-right">
-                    {greenhouseConfig.saveUnanalyzed !== false ? "Yes" : "No"}
+                    {atsConfig.saveUnanalyzed !== false ? "Yes" : "No"}
                   </span>
                 </div>
               </>

@@ -11,7 +11,7 @@ export type AutomationRunStatus =
   | "rate_limited"
   | "cancelled";
 export type DiscoveryStatus = "new" | "accepted" | "dismissed";
-export type JobBoard = "jsearch" | "greenhouse";
+export type JobBoard = "jsearch" | "greenhouse" | "lever";
 
 export interface GreenhouseCompany {
   name: string;
@@ -28,8 +28,31 @@ export interface GreenhouseSourceConfig {
   saveUnanalyzed?: boolean;
 }
 
+export type LeverHost = "default" | "eu";
+
+export interface LeverCompany {
+  name: string;
+  token: string;
+  host?: LeverHost; // absent/"default" = the common case
+}
+
+// Field-identical to Greenhouse except `companies` carries the extra `host`.
+export interface LeverSourceConfig
+  extends Omit<GreenhouseSourceConfig, "companies"> {
+  companies: LeverCompany[];
+}
+
 export interface SourceConfig {
   greenhouse?: GreenhouseSourceConfig;
+  lever?: LeverSourceConfig;
+}
+
+// Plain, dependency-free ATS-board check. Do NOT import this from
+// ats/registry.ts (that pulls the network-calling search fns into client
+// bundles). Both the client-imported schema and the runner import it here.
+export const ATS_BOARDS: JobBoard[] = ["greenhouse", "lever"];
+export function isAtsBoard(board: JobBoard): boolean {
+  return ATS_BOARDS.includes(board);
 }
 
 export interface Automation {
@@ -113,4 +136,5 @@ export interface ScrapedJobData {
   sourceBoard: JobBoard;
   employmentType?: string;
   isRemote?: boolean;
+  workplaceType?: string;
 }

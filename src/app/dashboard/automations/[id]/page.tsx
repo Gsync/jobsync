@@ -57,8 +57,11 @@ import type {
   AutomationRun,
   DiscoveredJob,
   DiscoveryStatus,
-  GreenhouseSourceConfig,
+  JobBoard,
+  LeverSourceConfig,
 } from "@/models/automation.model";
+import { isAtsBoard } from "@/models/automation.model";
+import { companyBoardUrl } from "@/lib/atsBoardUrl";
 import type { JobMatchData } from "@/models/ai.schemas";
 import { DiscoveredJobsList } from "@/components/automations/DiscoveredJobsList";
 import { DiscoveredJobDetail } from "@/components/automations/DiscoveredJobDetail";
@@ -68,12 +71,16 @@ import { AutomationWizard } from "@/components/automations/AutomationWizard";
 import Loading from "@/components/Loading";
 import { APP_CONSTANTS } from "@/lib/constants";
 
-function parseGreenhouseConfig(
-  sourceConfig?: string | null,
-): GreenhouseSourceConfig | null {
+// Pure JSON parse (no runner dependency — this is a client component, and
+// runner.ts pulls the network-calling scraper into the client bundle). The raw
+// parse may be missing any field, so it's a Partial of the config shape.
+function parseAtsConfig(
+  sourceConfig: string | null | undefined,
+  jobBoard: JobBoard,
+): Partial<LeverSourceConfig> | null {
   if (!sourceConfig) return null;
   try {
-    return JSON.parse(sourceConfig)?.greenhouse ?? null;
+    return JSON.parse(sourceConfig)?.[jobBoard] ?? null;
   } catch {
     return null;
   }
@@ -552,10 +559,9 @@ export default function AutomationDetailPage() {
 
   const resumeMissing = !automation.resume;
   const newJobsCount = jobStatusCounts.new;
-  const greenhouseConfig =
-    automation.jobBoard === "greenhouse"
-      ? parseGreenhouseConfig(automation.sourceConfig)
-      : null;
+  const greenhouseConfig = isAtsBoard(automation.jobBoard)
+    ? parseAtsConfig(automation.sourceConfig, automation.jobBoard)
+    : null;
   // The button must reflect the real run state, not just this page instance's
   // runNowLoading: after navigating away and back, runNowLoading resets but the
   // SSE reports the run is still live, so fall back to logData.isRunning.
@@ -752,7 +758,7 @@ export default function AutomationDetailPage() {
                           >
                             {c.name}
                             <a
-                              href={`${APP_CONSTANTS.GREENHOUSE_BOARD_URL}/${c.token}`}
+                              href={companyBoardUrl(automation.jobBoard, c)}
                               target="_blank"
                               rel="noopener noreferrer"
                               aria-label={`Open ${c.name} job board`}

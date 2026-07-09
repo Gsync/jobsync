@@ -1,3 +1,23 @@
+import type { ScraperError } from "./types";
+
+// Allowlist for ATS board tokens (shared by Greenhouse + Lever). Rejects
+// path/query injection before the token is interpolated into a fetch URL.
+export const ATS_TOKEN_REGEX = /^[a-z0-9][a-z0-9_-]{1,79}$/;
+
+// Human-readable reason for a per-board fetch failure. Shared by both ATS
+// providers so the runner logs a consistent label.
+export function errorReason(error: ScraperError): string {
+  switch (error.type) {
+    case "blocked":
+      return error.reason;
+    case "rate_limited":
+      return "rate limited";
+    case "network":
+    case "parse":
+      return error.message;
+  }
+}
+
 const TRACKING_PARAMS = [
   "utm_source",
   "utm_medium",

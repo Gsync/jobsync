@@ -1,6 +1,7 @@
 import pLimit from "p-limit";
 import { APP_CONSTANTS } from "@/lib/constants";
-import type { JobDetails, ScraperError, ScraperResult } from "../types";
+import type { JobDetails, ScraperResult } from "../types";
+import { errorReason } from "../utils";
 
 interface GreenhouseJob {
   title?: string;
@@ -78,18 +79,6 @@ function mapGreenhouseJob(job: GreenhouseJob): JobDetails {
     url: job.absolute_url,
     postedDate: job.first_published || job.updated_at,
   };
-}
-
-function errorReason(error: ScraperError): string {
-  switch (error.type) {
-    case "blocked":
-      return error.reason;
-    case "rate_limited":
-      return "rate limited";
-    case "network":
-    case "parse":
-      return error.message;
-  }
 }
 
 // Fetch all published jobs for one board with full content.

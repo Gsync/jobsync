@@ -1,7 +1,11 @@
 import { z } from "zod";
 import { APP_CONSTANTS } from "@/lib/constants";
+import { isAtsBoard } from "./automation.model";
+// Deep-import (NOT the barrel) — utils.ts is pure; the barrel pulls scraper
+// network code into the client bundle via this file's client consumers.
+import { ATS_TOKEN_REGEX } from "@/lib/scraper/utils";
 
-export const JobBoardSchema = z.enum(["jsearch", "greenhouse"]);
+export const JobBoardSchema = z.enum(["jsearch", "greenhouse", "lever"]);
 
 export const AutomationStatusSchema = z.enum(["active", "paused"]);
 
@@ -33,8 +37,23 @@ export const GreenhouseSourceConfigSchema = z.object({
   saveUnanalyzed: z.boolean().optional(),
 });
 
+// Override `token` with the allowlist regex so a directly-POSTed Lever config
+// can't smuggle a malformed token past the save boundary.
+export const LeverCompanySchema = GreenhouseCompanySchema.extend({
+  token: z.string().regex(ATS_TOKEN_REGEX),
+  host: z.enum(["default", "eu"]).optional(),
+});
+
+// Same fields/MAX/cap as Greenhouse, `companies` swapped to LeverCompanySchema.
+export const LeverSourceConfigSchema = GreenhouseSourceConfigSchema.extend({
+  companies: z
+    .array(LeverCompanySchema)
+    .max(APP_CONSTANTS.MAX_GREENHOUSE_COMPANIES),
+});
+
 export const SourceConfigSchema = z.object({
   greenhouse: GreenhouseSourceConfigSchema.optional(),
+  lever: LeverSourceConfigSchema.optional(),
 });
 
 export const CreateAutomationSchema = z
@@ -66,12 +85,13 @@ export const CreateAutomationSchema = z
       }
     }
 
-    if (data.jobBoard === "greenhouse") {
-      const companies = data.sourceConfig?.greenhouse?.companies ?? [];
+    if (isAtsBoard(data.jobBoard)) {
+      const atsKey = data.jobBoard as "greenhouse" | "lever";
+      const companies = data.sourceConfig?.[atsKey]?.companies ?? [];
       if (companies.length < 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ["sourceConfig", "greenhouse", "companies"],
+          path: ["sourceConfig", atsKey, "companies"],
           message: "Select at least one company",
         });
       }
@@ -90,12 +110,13 @@ export const UpdateAutomationSchema = z
     scheduleHour: z.number().min(0).max(23).optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.jobBoard === "greenhouse") {
-      const companies = data.sourceConfig?.greenhouse?.companies ?? [];
+    if (data.jobBoard && isAtsBoard(data.jobBoard)) {
+      const atsKey = data.jobBoard as "greenhouse" | "lever";
+      const companies = data.sourceConfig?.[atsKey]?.companies ?? [];
       if (companies.length < 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ["sourceConfig", "greenhouse", "companies"],
+          path: ["sourceConfig", atsKey, "companies"],
           message: "Select at least one company",
         });
       }

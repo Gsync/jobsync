@@ -70,7 +70,8 @@ export async function mapScrapedJobToJobRecord(
     jobUrl: scrapedJob.sourceUrl,
     description: scrapedJob.description,
     jobType: normalizeJobType(scrapedJob.employmentType),
-    workplaceType: normalizeWorkplaceType(scrapedJob.isRemote),
+    workplaceType:
+      scrapedJob.workplaceType ?? normalizeWorkplaceType(scrapedJob.isRemote),
     createdAt: new Date(),
     applied: false,
     statusId,

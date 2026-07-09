@@ -16,6 +16,7 @@ export interface JobDetails {
   salary?: string;
   employmentType?: string;
   isRemote?: boolean;
+  workplaceType?: string;
 }
 
 export type ScraperError =

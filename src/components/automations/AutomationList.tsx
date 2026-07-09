@@ -35,6 +35,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { AutomationWithResume } from "@/models/automation.model";
+import { isAtsBoard } from "@/models/automation.model";
 import {
   deleteAutomation,
   pauseAutomation,
@@ -134,26 +135,24 @@ export function AutomationList({
           const isLoading = loadingAction === automation.id;
           const resumeMissing = !automation.resume;
 
-          const greenhouse =
-            automation.jobBoard === "greenhouse"
-              ? (() => {
-                  try {
-                    return JSON.parse(automation.sourceConfig ?? "{}")
-                      .greenhouse;
-                  } catch {
-                    return null;
-                  }
-                })()
-              : null;
+          const ats = isAtsBoard(automation.jobBoard)
+            ? (() => {
+                try {
+                  return JSON.parse(automation.sourceConfig ?? "{}")[
+                    automation.jobBoard
+                  ];
+                } catch {
+                  return null;
+                }
+              })()
+            : null;
           const ghCompanies: { name: string; token: string }[] =
-            greenhouse?.companies ?? [];
-          const ghTitles: string[] = greenhouse?.targetTitles ?? [];
-          const ghLocations: string[] = greenhouse?.locations ?? [];
-          const ghKeywords: string[] = greenhouse?.keywords ?? [];
-          const ghTopK: number =
-            greenhouse?.topK ?? APP_CONSTANTS.MAX_JOBS_PER_RUN;
-          const ghSaveUnanalyzed: boolean =
-            greenhouse?.saveUnanalyzed !== false;
+            ats?.companies ?? [];
+          const ghTitles: string[] = ats?.targetTitles ?? [];
+          const ghLocations: string[] = ats?.locations ?? [];
+          const ghKeywords: string[] = ats?.keywords ?? [];
+          const ghTopK: number = ats?.topK ?? APP_CONSTANTS.MAX_JOBS_PER_RUN;
+          const ghSaveUnanalyzed: boolean = ats?.saveUnanalyzed !== false;
 
           return (
             <div
@@ -187,7 +186,7 @@ export function AutomationList({
                   </div>
                 )}
 
-                {greenhouse ? (
+                {ats ? (
                   <div className="space-y-1.5 text-sm text-muted-foreground">
                     <div className="flex flex-wrap items-center gap-1">
                       {ghCompanies.slice(0, 3).map((c) => (

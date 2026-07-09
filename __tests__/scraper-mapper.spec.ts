@@ -73,6 +73,42 @@ describe("normalizeWorkplaceType", () => {
   });
 });
 
+describe("mapScrapedJobToJobRecord - workplaceType precedence", () => {
+  beforeEach(() => {
+    mockedDb.jobTitle.findFirst.mockResolvedValue({ id: "title-1" } as never);
+  });
+
+  it("prefers an explicit workplaceType (Lever) over the isRemote boolean", async () => {
+    const result = await mapScrapedJobToJobRecord({
+      ...baseInput,
+      scrapedJob: { ...scrapedJob, isRemote: false, workplaceType: "HYBRID" },
+    });
+    expect(result.workplaceType).toBe("HYBRID");
+  });
+
+  it("passes ONSITE through", async () => {
+    const result = await mapScrapedJobToJobRecord({
+      ...baseInput,
+      scrapedJob: { ...scrapedJob, workplaceType: "ONSITE" },
+    });
+    expect(result.workplaceType).toBe("ONSITE");
+  });
+
+  it("falls back to the isRemote boolean when workplaceType is absent (JSearch)", async () => {
+    const remote = await mapScrapedJobToJobRecord({
+      ...baseInput,
+      scrapedJob: { ...scrapedJob, isRemote: true },
+    });
+    expect(remote.workplaceType).toBe("REMOTE");
+
+    const onsite = await mapScrapedJobToJobRecord({
+      ...baseInput,
+      scrapedJob: { ...scrapedJob, isRemote: false },
+    });
+    expect(onsite.workplaceType).toBeNull();
+  });
+});
+
 describe("mapScrapedJobToJobRecord - job title matching", () => {
   it("does not reuse a title that only shares one unrelated keyword", async () => {
     mockedDb.jobTitle.findFirst.mockResolvedValue(null);

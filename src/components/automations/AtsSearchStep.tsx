@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, type UIEvent } from "react";
 import {
   X,
   Loader2,
@@ -31,10 +31,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  searchGreenhouseCompanies,
-  resolveGreenhouseBoard,
-  getGreenhouseCompanyCount,
-} from "@/actions/greenhouseCompany.actions";
+  searchAtsCompanies,
+  resolveAtsBoard,
+  getAtsCompanyCount,
+} from "@/actions/atsCompany.actions";
 import { getAllJobTitles, createJobTitle } from "@/actions/jobtitle.actions";
 import { getAllTags, createTag } from "@/actions/tag.actions";
 import { getAllJobLocations } from "@/actions/jobLocation.actions";
@@ -43,19 +43,43 @@ import { toast } from "@/components/ui/use-toast";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type {
-  GreenhouseCompany,
-  GreenhouseSourceConfig,
+  JobBoard,
+  LeverCompany,
+  LeverSourceConfig,
 } from "@/models/automation.model";
+import { companyBoardUrl } from "@/lib/atsBoardUrl";
 
-interface GreenhouseSearchStepProps {
-  value: GreenhouseSourceConfig;
-  onChange: (next: GreenhouseSourceConfig) => void;
+// The step is provider-agnostic; it edits the canonical Lever config shape — a
+// superset of Greenhouse's, where the extra per-company `host` is unused and
+// UI-invisible for Greenhouse.
+export type AtsConfigValue = LeverSourceConfig;
+
+interface AtsSearchStepProps {
+  provider: JobBoard;
+  value: AtsConfigValue;
+  onChange: (next: AtsConfigValue) => void;
 }
+
+const PROVIDER_META: Record<
+  string,
+  { label: string; urlHint: string; searchExample: string }
+> = {
+  greenhouse: {
+    label: "Greenhouse",
+    urlHint: "Or paste a boards.greenhouse.io link",
+    searchExample: "Anthropic",
+  },
+  lever: {
+    label: "Lever",
+    urlHint: "Or paste a jobs.lever.co link or token",
+    searchExample: "Netflix",
+  },
+};
 
 type EntityOption = { id: string; label: string; value: string };
 
 // Generic chip input that searches existing DB entities and can create new ones.
-// `values` is a string[] of labels (not IDs) stored in GreenhouseSourceConfig.
+// `values` is a string[] of labels (not IDs) stored in the source config.
 function EntityStringChipInput({
   label,
   description,
@@ -99,9 +123,7 @@ function EntityStringChipInput({
   const inputLower = input.trim().toLowerCase();
 
   const filtered = options.filter(
-    (o) =>
-      !values.includes(o.label) &&
-      o.label.toLowerCase().includes(inputLower),
+    (o) => !values.includes(o.label) && o.label.toLowerCase().includes(inputLower),
   );
 
   const exactMatch = options.some((o) => o.value === inputLower);
@@ -231,13 +253,12 @@ function EntityStringChipInput({
   );
 }
 
-export function GreenhouseSearchStep({
-  value,
-  onChange,
-}: GreenhouseSearchStepProps) {
+export function AtsSearchStep({ provider, value, onChange }: AtsSearchStepProps) {
+  const meta = PROVIDER_META[provider] ?? PROVIDER_META.greenhouse;
   const companies = value.companies ?? [];
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<GreenhouseCompany[]>([]);
+  const [results, setResults] = useState<LeverCompany[]>([]);
+  const [hasMore, setHasMore] = useState(false);
   const [totalCount, setTotalCount] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
   const [isSearching, startSearch] = useTransition();
@@ -247,29 +268,49 @@ export function GreenhouseSearchStep({
   const [urlError, setUrlError] = useState<string | null>(null);
 
   useEffect(() => {
-    getGreenhouseCompanyCount()
+    getAtsCompanyCount(provider)
       .then(setTotalCount)
       .catch(() => {});
-  }, []);
+  }, [provider]);
 
-  const runSearch = (q: string) => {
+  // offset 0 replaces the list (new query / reopen); a positive offset appends
+  // the next page (infinite scroll), deduping by token in case of a rapid
+  // double-fire before the pending flag flips.
+  const runSearch = (q: string, offset = 0) => {
     startSearch(async () => {
-      const found = await searchGreenhouseCompanies(q);
-      setResults(found);
+      const { companies: found, hasMore: more } = await searchAtsCompanies(
+        provider,
+        q,
+        offset,
+      );
+      setResults((prev) => {
+        if (offset === 0) return found;
+        const seen = new Set(prev.map((c) => c.token));
+        return [...prev, ...found.filter((c) => !seen.has(c.token))];
+      });
+      setHasMore(more);
     });
   };
 
   const handleQueryChange = (val: string) => {
     setQuery(val);
-    runSearch(val);
+    runSearch(val, 0);
   };
 
   const handleOpen = (next: boolean) => {
     setOpen(next);
-    if (next) runSearch(query);
+    if (next) runSearch(query, 0);
   };
 
-  const addCompany = (company: GreenhouseCompany) => {
+  const handleListScroll = (e: UIEvent<HTMLDivElement>) => {
+    if (!hasMore || isSearching) return;
+    const el = e.currentTarget;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 48) {
+      runSearch(query, results.length);
+    }
+  };
+
+  const addCompany = (company: LeverCompany) => {
     if (companies.some((c) => c.token === company.token)) return;
     if (companies.length >= APP_CONSTANTS.MAX_GREENHOUSE_COMPANIES) return;
     onChange({ ...value, companies: [...companies, company] });
@@ -282,7 +323,7 @@ export function GreenhouseSearchStep({
     });
   };
 
-  const toggleCompany = (company: GreenhouseCompany) => {
+  const toggleCompany = (company: LeverCompany) => {
     if (companies.some((c) => c.token === company.token)) {
       removeCompany(company.token);
     } else {
@@ -294,9 +335,13 @@ export function GreenhouseSearchStep({
     setUrlError(null);
     setIsResolving(true);
     try {
-      const result = await resolveGreenhouseBoard(urlInput);
+      const result = await resolveAtsBoard(provider, urlInput);
       if (result.success) {
-        addCompany({ name: result.name, token: result.token });
+        addCompany({
+          name: result.name,
+          token: result.token,
+          ...(result.host ? { host: result.host } : {}),
+        });
         setUrlInput("");
       } else {
         setUrlError(result.message);
@@ -319,12 +364,12 @@ export function GreenhouseSearchStep({
       <div className="space-y-2">
         <Label className="flex items-center justify-between">
           <span>
-            Greenhouse Companies{" "}
+            {meta.label} Companies{" "}
             <span className="font-normal text-muted-foreground">
               ({companies.length}/{APP_CONSTANTS.MAX_GREENHOUSE_COMPANIES})
             </span>
           </span>
-          {totalCount !== null && (
+          {totalCount !== null && totalCount > 0 && (
             <span className="text-xs font-normal text-muted-foreground">
               {totalCount} available
             </span>
@@ -344,7 +389,7 @@ export function GreenhouseSearchStep({
             >
               {atLimit
                 ? `Max ${APP_CONSTANTS.MAX_GREENHOUSE_COMPANIES} companies reached`
-                : "Search companies (e.g., Anthropic)"}
+                : `Search companies (e.g., ${meta.searchExample})`}
               {isSearching ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
@@ -363,8 +408,8 @@ export function GreenhouseSearchStep({
                 value={query}
                 onValueChange={handleQueryChange}
               />
-              <CommandList>
-                {isSearching && (
+              <CommandList onScroll={handleListScroll}>
+                {isSearching && results.length === 0 && (
                   <div className="flex items-center gap-2 p-3 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Searching...
@@ -398,7 +443,7 @@ export function GreenhouseSearchStep({
                           {c.token}
                         </span>
                         <a
-                          href={`${APP_CONSTANTS.GREENHOUSE_BOARD_URL}/${c.token}`}
+                          href={companyBoardUrl(provider, c)}
                           target="_blank"
                           rel="noopener noreferrer"
                           aria-label={`Open ${c.name} job board`}
@@ -413,6 +458,12 @@ export function GreenhouseSearchStep({
                     );
                   })}
                 </CommandGroup>
+                {isSearching && results.length > 0 && (
+                  <div className="flex items-center justify-center gap-2 p-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading more...
+                  </div>
+                )}
               </CommandList>
             </Command>
           </PopoverContent>
@@ -433,7 +484,7 @@ export function GreenhouseSearchStep({
 
         <div className="flex gap-2">
           <Input
-            placeholder="Or paste a boards.greenhouse.io link"
+            placeholder={meta.urlHint}
             value={urlInput}
             disabled={atLimit}
             onChange={(e) => setUrlInput(e.target.value)}
@@ -459,7 +510,8 @@ export function GreenhouseSearchStep({
         </div>
         {urlError && <p className="text-sm text-destructive">{urlError}</p>}
         <p className="text-sm text-muted-foreground">
-          Select Greenhouse companies to monitor their job boards for new openings.
+          Select {meta.label} companies to monitor their job boards for new
+          openings.
         </p>
       </div>
 
@@ -544,8 +596,7 @@ export function GreenhouseSearchStep({
 
       <div className="space-y-2">
         <Label>
-          Jobs analyzed per run:{" "}
-          {value.topK ?? APP_CONSTANTS.MAX_JOBS_PER_RUN}
+          Jobs analyzed per run: {value.topK ?? APP_CONSTANTS.MAX_JOBS_PER_RUN}
         </Label>
         <Slider
           min={1}
@@ -564,10 +615,9 @@ export function GreenhouseSearchStep({
         <div className="space-y-1">
           <Label>Save additional relevant listings</Label>
           <p className="text-sm text-muted-foreground">
-            When on, listings that are relevant but didn&apos;t make the
-            top-K are also saved, lexically-ranked but not yet AI-scored.
-            They can be analyzed on-demand later from the discovered jobs
-            list.
+            When on, listings that are relevant but didn&apos;t make the top-K
+            are also saved, lexically-ranked but not yet AI-scored. They can be
+            analyzed on-demand later from the discovered jobs list.
           </p>
         </div>
         <Switch
