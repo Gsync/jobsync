@@ -15,8 +15,8 @@ describe("companyBoardUrl", () => {
     );
   });
 
-  it("uses the US Lever host when host is explicitly us", () => {
-    expect(companyBoardUrl("lever", { token: "acme", host: "us" })).toBe(
+  it("uses the US Lever host when host is explicitly default", () => {
+    expect(companyBoardUrl("lever", { token: "acme", host: "default" })).toBe(
       `${APP_CONSTANTS.LEVER_JOB_URL}/acme`,
     );
   });

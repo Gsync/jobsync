@@ -96,6 +96,8 @@ export const APP_CONSTANTS = {
   MCP_RATE_LIMIT_WINDOW_MS: 60 * 60 * 1000,
   MCP_DEFAULT_JOB_TYPE: "Full-time",
   MCP_DEFAULT_STATUS: "draft",
+  MCP_MATCH_MIN_DESCRIPTION_LENGTH: 200,
+  MCP_MATCH_PROVIDER_MARKER: "mcp",
 
   // File uploads
   UPLOADS_DIR: process.env.NODE_ENV !== "production" ? "data" : "/data",

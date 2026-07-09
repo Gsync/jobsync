@@ -6,9 +6,12 @@ import {
   McpAddJobSchema,
   McpAddQuestionInputShape,
   McpAddQuestionSchema,
+  McpSaveMatchResultInputShape,
+  McpSaveMatchResultSchema,
 } from "@/models/mcp.schema";
 import { handleAddJob } from "@/lib/mcp/tools/addJob";
 import { handleAddQuestion } from "@/lib/mcp/tools/addQuestion";
+import { handleSaveMatchResult } from "@/lib/mcp/tools/saveMatchResult";
 
 function isMcpEnabled(): boolean {
   const env = process.env.MCP_ENABLED;
@@ -88,6 +91,34 @@ async function handler(req: Request): Promise<Response> {
         };
       }
       return handleAddQuestion(parsed.data, userId, tokenName);
+    },
+  );
+
+  server.tool(
+    "save_match_result",
+    "Persist a job-fit match analysis (produced by you, the agent) against a job previously created with add_job. Call this after add_job hands you a match directive.",
+    McpSaveMatchResultInputShape,
+    async (rawInput) => {
+      if (!auth.scopes.includes("jobs:write")) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "Insufficient scope. Required: jobs:write",
+            },
+          ],
+        };
+      }
+      const parsed = McpSaveMatchResultSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => i.message).join("; ");
+        return {
+          content: [
+            { type: "text" as const, text: `Validation error: ${issues}` },
+          ],
+        };
+      }
+      return handleSaveMatchResult(parsed.data, userId, tokenName);
     },
   );
 

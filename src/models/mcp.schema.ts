@@ -45,3 +45,23 @@ export const McpAddQuestionInputShape = {
 
 export const McpAddQuestionSchema = z.object(McpAddQuestionInputShape);
 export type McpAddQuestionInput = z.infer<typeof McpAddQuestionSchema>;
+
+// Raw input shape for MCP tool registration (no transforms needed)
+export const McpSaveMatchResultInputShape = {
+  jobId: z.string().min(1).describe("The id of the job returned by add_job."),
+  resumeId: z
+    .string()
+    .min(1)
+    .optional()
+    .describe(
+      "The id of the resume this match was scored against, exactly as given " +
+        "in the add_job directive. Omit only if the directive had none.",
+    ),
+  matchText: z.string().min(20).describe(
+    "Your full match analysis: a leading 'SCORES: match=<0-100> " +
+      "recommendation=<strong|good|partial|weak>' line, then a markdown body.",
+  ),
+};
+
+export const McpSaveMatchResultSchema = z.object(McpSaveMatchResultInputShape);
+export type McpSaveMatchResultInput = z.infer<typeof McpSaveMatchResultSchema>;

@@ -14,6 +14,7 @@ import {
 } from "@/models/skills.schema";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
+import { resumeDetailInclude } from "@/lib/jobs/resumeDetailInclude";
 import {
   buildInsufficientSectionsMessage,
   hasMinResumeSections,
@@ -198,29 +199,7 @@ export const getResumeById = async (
         id: resumeId,
         profile: { userId: user.id },
       },
-      include: {
-        ContactInfo: true,
-        File: true,
-        ResumeSections: {
-          include: {
-            summary: true,
-            workExperiences: {
-              include: {
-                jobTitle: true,
-                Company: true,
-                location: true,
-              },
-            },
-            educations: {
-              include: {
-                location: true,
-              },
-            },
-            licenseOrCertifications: true,
-            skills: { include: { Tag: true } },
-          },
-        },
-      },
+      include: resumeDetailInclude,
     });
     return { data: resume, success: true };
   } catch (error) {
