@@ -1,4 +1,8 @@
+// Uses the base Playwright `test` (not ./fixtures): these tests exercise auth
+// from a logged-out state, so they must NOT use the auto-login `page` fixture.
+// They create no records, so there is nothing to clean up.
 import { test, expect } from "@playwright/test";
+import { login } from "./fixtures";
 
 test("Signin page has title", async ({ page }) => {
   await page.goto("/");
@@ -14,11 +18,7 @@ test("Signin page has title", async ({ page }) => {
 
 test("Signin and out from app", async ({ page, baseURL }) => {
   await page.goto("/");
-  await page.getByPlaceholder("id@example.com").click();
-  await page.getByPlaceholder("id@example.com").fill("admin@example.com");
-  await page.getByRole("textbox", { name: "Password" }).click();
-  await page.getByRole("textbox", { name: "Password" }).fill("password123");
-  await page.getByRole("button", { name: "Login" }).click();
+  await login(page);
 
   await expect(page).toHaveURL(baseURL + "/dashboard");
 
