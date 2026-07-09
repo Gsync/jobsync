@@ -129,9 +129,9 @@ test.describe("Tasks Management", () => {
 
     await deleteTask(page, deleteTaskTitle);
 
-    await expect(page.getByRole("status").first()).toContainText(
-      /Task has been deleted/,
-    );
+    await expect(
+      page.getByRole("row", { name: new RegExp(deleteTaskTitle, "i") }),
+    ).not.toBeVisible();
   });
 
   test("should change task status via dropdown", async ({ page, cleanup }) => {
@@ -147,16 +147,22 @@ test.describe("Tasks Management", () => {
       .getByTestId("task-actions-menu-btn")
       .first()
       .click({ force: true });
-    await page
-      .getByRole("menuitem", { name: "Change Status" })
-      .click({ force: true });
-    await page
-      .getByRole("menuitem", { name: "Needs Attention" })
-      .click({ force: true });
+    // Radix submenus open on hover; clicking the subtrigger can toggle it
+    // shut mid-open, so hover to open then wait for the item.
+    await page.getByRole("menuitem", { name: "Change Status" }).hover();
+    const needsAttentionItem = page.getByRole("menuitem", {
+      name: "Needs Attention",
+    });
+    await expect(needsAttentionItem).toBeVisible();
+    await needsAttentionItem.click();
 
-    await expect(page.getByRole("status").first()).toContainText(
-      /Task status updated/,
-    );
+    // Assert on the persistent status badge rather than the toast, which
+    // auto-dismisses after 5s and can vanish before the poll under load.
+    await expect(
+      page
+        .getByRole("row", { name: new RegExp(statusTaskTitle, "i") })
+        .getByText("Needs Attention"),
+    ).toBeVisible();
   });
 
   test("should filter tasks by status", async ({ page }) => {
@@ -205,9 +211,11 @@ test.describe("Tasks Management", () => {
     });
     await completeBtn.click({ force: true });
 
-    await expect(page.getByRole("status").first()).toContainText(
-      /Task status updated/,
-    );
+    // The button's label flips on success; assert that instead of the toast,
+    // which auto-dismisses after 5s and can vanish before the poll under load.
+    await expect(
+      taskRow.getByRole("button", { name: "Mark as in progress" }),
+    ).toBeVisible();
   });
 
   test.describe.serial("Task Activity Integration", () => {
@@ -255,9 +263,6 @@ test.describe("Tasks Management", () => {
         .getByTestId("task-start-activity-btn")
         .click({ force: true });
 
-      await expect(page.getByRole("status").first()).toContainText(
-        /Activity started from task/,
-      );
       await expect(page).toHaveURL(/\/dashboard\/activities/);
 
       // Stop the running activity (the linked activity row is removed by the
@@ -288,9 +293,6 @@ test.describe("Tasks Management", () => {
       await taskRow
         .getByTestId("task-start-activity-btn")
         .click({ force: true });
-      await expect(page.getByRole("status").first()).toContainText(
-        /Activity started from task/,
-      );
       await expect(page).toHaveURL(/\/dashboard\/activities/);
 
       // Stop the activity so we can test the linked state
@@ -341,9 +343,11 @@ test.describe("Tasks Management", () => {
       await taskRow
         .getByRole("button", { name: "Mark as complete" })
         .click({ force: true });
-      await expect(page.getByRole("status").first()).toContainText(
-        /Task status updated/,
-      );
+      // Button label flips on success; assert that rather than the transient
+      // toast so the following steps run against a committed status.
+      await expect(
+        taskRow.getByRole("button", { name: "Mark as in progress" }),
+      ).toBeVisible();
 
       // Add Complete status to filter to see completed tasks
       await page

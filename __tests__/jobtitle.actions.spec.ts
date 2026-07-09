@@ -22,6 +22,7 @@ vi.mock("@prisma/client", () => {
     },
     job: {
       count: vi.fn(),
+      groupBy: vi.fn(),
     },
   };
   return { PrismaClient: vi.fn(function() { return mPrismaClient; }) };
@@ -112,10 +113,15 @@ describe("Job Title Actions", () => {
       ];
       (prisma.jobTitle.findMany as any).mockResolvedValue(mockData);
       (prisma.jobTitle.count as any).mockResolvedValue(1);
+      (prisma.job.groupBy as any).mockResolvedValue([]);
 
       const result = await getJobTitleList(1, 10, "applied");
 
-      expect(result).toEqual({ data: mockData, total: 1 });
+      const expectedData = mockData.map((t) => ({
+        ...t,
+        _count: { jobsTotal: 0 },
+      }));
+      expect(result).toEqual({ data: expectedData, total: 1 });
       expect(prisma.jobTitle.findMany).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
         skip: 0,

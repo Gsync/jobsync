@@ -115,7 +115,7 @@ describe("Company Actions", () => {
 
       const expectedData = mockData.map((c) => ({
         ...c,
-        _count: { jobsRejected: 0 },
+        _count: { jobsRejected: 0, jobsTotal: 0 },
       }));
       expect(result).toEqual({ data: expectedData, total: mockTotal });
       expect(prisma.company.findMany).toHaveBeenCalledWith({

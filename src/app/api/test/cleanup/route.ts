@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
     companies = [],
     locations = [],
     activityTypes = [],
+    tags = [],
   }: {
     jobIds?: string[];
     resumes?: string[];
@@ -34,6 +35,7 @@ export async function POST(req: NextRequest) {
     companies?: string[];
     locations?: string[];
     activityTypes?: string[];
+    tags?: string[];
   } = await req.json();
 
   // Delete jobs, resumes and tasks first (they/their sections reference the
@@ -70,8 +72,29 @@ export async function POST(req: NextRequest) {
   await deleteLibraryByName("company", companies, userId);
   await deleteLibraryByName("location", locations, userId);
   await deleteLibraryByName("activityType", activityTypes, userId);
+  await deleteTagsByName(tags, userId);
 
   return NextResponse.json({ success: true });
+}
+
+// Tags are shared across jobs/questions/skills (not a single ref model like
+// the Library types above), so they get their own reference count + delete.
+async function deleteTagsByName(names: string[], userId: string) {
+  for (const name of names) {
+    const value = name.trim().toLowerCase();
+    if (!value) continue;
+    const tag = await prisma.tag.findFirst({
+      where: { value, createdBy: userId },
+      select: {
+        id: true,
+        _count: { select: { jobs: true, questions: true, skills: true } },
+      },
+    });
+    if (!tag) continue;
+    const { jobs, questions, skills } = tag._count;
+    if (jobs + questions + skills > 0) continue;
+    await prisma.tag.delete({ where: { id: tag.id } });
+  }
 }
 
 type RefModel = "jobTitle" | "company" | "location" | "activityType";

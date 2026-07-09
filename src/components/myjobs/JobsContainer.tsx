@@ -405,7 +405,10 @@ function JobsContainer({
               placeholder="Search jobs..."
             />
             <Select value={filterKey} onValueChange={onFilterChange}>
-              <SelectTrigger className="w-[120px] h-8">
+              <SelectTrigger
+                className="w-[120px] h-8"
+                data-testid="job-filter-select"
+              >
                 <ListFilter className="h-3.5 w-3.5" />
                 <SelectValue placeholder="Filter" />
               </SelectTrigger>

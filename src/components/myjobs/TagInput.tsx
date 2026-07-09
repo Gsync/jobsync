@@ -123,6 +123,7 @@ export function TagInput({
           <Button
             variant="outline"
             role="combobox"
+            aria-label={placeholder}
             aria-expanded={open}
             className={cn(
               "w-full justify-between font-normal",

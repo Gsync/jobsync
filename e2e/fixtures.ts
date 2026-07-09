@@ -52,11 +52,13 @@ export async function createNewJob(
   options?: {
     skipUrl?: boolean;
     beforeSave?: (page: Page) => Promise<void>;
+    company?: string;
+    location?: string;
   },
 ): Promise<string> {
   const suffix = jobText.replace(/\s+/g, "-");
-  const companyText = `company ${suffix}`;
-  const locationText = `location ${suffix}`;
+  const companyText = options?.company ?? `company ${suffix}`;
+  const locationText = options?.location ?? `location ${suffix}`;
 
   await page.getByRole("button", { name: "New Job" }).click();
   await expect(page).toHaveURL(/\/dashboard\/myjobs/);
@@ -120,6 +122,7 @@ export type CleanupRegistry = {
   company: (name: string) => void;
   location: (name: string) => void;
   activityType: (name: string) => void;
+  tag: (name: string) => void;
 };
 
 type Fixtures = {
@@ -142,6 +145,7 @@ export const test = base.extend<Fixtures>({
     const companies: string[] = [];
     const locations: string[] = [];
     const activityTypes: string[] = [];
+    const tags: string[] = [];
     await use({
       job: (id) => jobIds.push(id),
       resume: (title) => resumes.push(title),
@@ -150,6 +154,7 @@ export const test = base.extend<Fixtures>({
       company: (name) => companies.push(name),
       location: (name) => locations.push(name),
       activityType: (name) => activityTypes.push(name),
+      tag: (name) => tags.push(name),
     });
     // page.request carries the session cookie; page is still alive here
     // because cleanup tears down before the page fixture.
@@ -162,6 +167,7 @@ export const test = base.extend<Fixtures>({
         companies,
         locations,
         activityTypes,
+        tags,
       },
     });
     if (!res.ok()) {

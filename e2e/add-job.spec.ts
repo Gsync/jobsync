@@ -38,9 +38,9 @@ test.describe("Add New Job", () => {
       .locator("div")
       .fill("test description edited");
     await page.getByTestId("save-job-btn").click();
-    await expect(page.getByRole("status").first()).toContainText(
-      /Job has been updated/,
-    );
+    // Dialog closes only on a successful save; assert that instead of the
+    // toast, which auto-dismisses and can vanish before the poll under load.
+    await expect(page.getByTestId("add-job-dialog-title")).not.toBeVisible();
   });
 
   test("should delete a job", async ({ page, cleanup }) => {
@@ -58,9 +58,6 @@ test.describe("Add New Job", () => {
     await page.getByRole("menuitem", { name: "Delete" }).click();
     await page.getByRole("button", { name: "Delete" }).click();
 
-    await expect(page.getByRole("status").first()).toContainText(
-      /Job has been deleted/,
-    );
     await expect(page.getByRole("row", { name: jobText })).not.toBeVisible();
   });
 
@@ -201,9 +198,161 @@ test.describe("Add New Job", () => {
       .fill("test note content");
     await noteContainer.getByRole("button", { name: "Save" }).click();
 
-    await expect(page.getByRole("status").first()).toContainText(
-      /Note added successfully/,
-    );
     await expect(page.getByText("test note content")).toBeVisible();
+  });
+
+  test("should show validation errors when required fields are missing", async ({
+    page,
+  }) => {
+    // No cleanup needed: submission fails validation, so nothing is created.
+    await page.getByRole("button", { name: "New Job" }).click();
+    await expect(page.getByTestId("add-job-dialog-title")).toBeVisible();
+
+    await page.getByTestId("save-job-btn").click();
+
+    await expect(page.getByText("Job title is required.")).toBeVisible();
+    await expect(page.getByText("Company name is required.")).toBeVisible();
+    await expect(page.getByText("Location is required.")).toBeVisible();
+    await expect(page.getByText("Source is required.")).toBeVisible();
+    await expect(
+      page.getByText("Job description is required."),
+    ).toBeVisible();
+  });
+
+  test("should change job status from the jobs table actions menu", async ({
+    page,
+    cleanup,
+  }) => {
+    const jobText = uniqueName("developer test title status menu");
+    await createNewJob(page, jobText, cleanup);
+    await expect(page.getByRole("row", { name: jobText }).first()).toBeVisible();
+
+    await page
+      .getByRole("row", { name: jobText })
+      .getByTestId("job-actions-menu-btn")
+      .first()
+      .click();
+    // Radix submenus open on hover; clicking the subtrigger can toggle it
+    // shut mid-open, so hover to open then wait for the item.
+    await page.getByRole("menuitem", { name: "Change status" }).hover();
+    const interviewItem = page.getByRole("menuitem", { name: "Interview" });
+    await expect(interviewItem).toBeVisible();
+    await interviewItem.click();
+
+    // Assert on the persistent status cell rather than the toast, which
+    // auto-dismisses after 5s and can vanish before the poll under load.
+    await expect(
+      page.getByRole("row", { name: jobText }).getByText("Interview"),
+    ).toBeVisible();
+  });
+
+  test("should reuse an existing company when creating a second job", async ({
+    page,
+    cleanup,
+  }) => {
+    const firstJobText = uniqueName("developer test title reuse first");
+    const secondJobText = uniqueName("developer test title reuse second");
+    const sharedCompany = `company ${firstJobText.replace(/\s+/g, "-")}`;
+
+    await createNewJob(page, firstJobText, cleanup);
+    await expect(
+      page.getByRole("row", { name: firstJobText }).first(),
+    ).toBeVisible();
+
+    await createNewJob(page, secondJobText, cleanup, {
+      company: sharedCompany,
+    });
+    await expect(
+      page.getByRole("row", { name: secondJobText }).first(),
+    ).toBeVisible();
+
+    await expect(
+      page.getByRole("row", { name: firstJobText }).getByText(sharedCompany),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("row", { name: secondJobText }).getByText(sharedCompany),
+    ).toBeVisible();
+  });
+
+  test("should find a job via the jobs search box", async ({
+    page,
+    cleanup,
+  }) => {
+    const jobText = uniqueName("developer test title searchable");
+    await createNewJob(page, jobText, cleanup);
+    await expect(page.getByRole("row", { name: jobText }).first()).toBeVisible();
+
+    const searchInput = page.getByPlaceholder("Search jobs...");
+    await searchInput.fill(jobText);
+    await expect(page.getByRole("row", { name: jobText }).first()).toBeVisible();
+
+    await searchInput.fill(uniqueName("no such job matches this"));
+    await expect(page.getByRole("row", { name: jobText })).not.toBeVisible();
+  });
+
+  test("should filter the jobs list by status", async ({ page, cleanup }) => {
+    const jobText = uniqueName("developer test title filter");
+    await createNewJob(page, jobText, cleanup);
+    await expect(page.getByRole("row", { name: jobText }).first()).toBeVisible();
+
+    await page.getByTestId("job-filter-select").click();
+    await page.getByRole("option", { name: "Rejected", exact: true }).click();
+    await expect(page.getByRole("row", { name: jobText })).not.toBeVisible();
+
+    await page.getByTestId("job-filter-select").click();
+    await page.getByRole("option", { name: "Draft", exact: true }).click();
+    await expect(page.getByRole("row", { name: jobText }).first()).toBeVisible();
+  });
+
+  test("should navigate to job details from the actions menu", async ({
+    page,
+    cleanup,
+  }) => {
+    const jobText = uniqueName("developer test title view details");
+    const jobId = await createNewJob(page, jobText, cleanup);
+    await expect(page.getByRole("row", { name: jobText }).first()).toBeVisible();
+
+    await page
+      .getByRole("row", { name: jobText })
+      .getByTestId("job-actions-menu-btn")
+      .first()
+      .click();
+    await page.getByRole("menuitem", { name: "View Details" }).click();
+
+    await expect(page).toHaveURL(new RegExp(`/dashboard/myjobs/${jobId}$`));
+    await expect(page.getByText(jobText).first()).toBeVisible();
+  });
+
+  test("should add and persist a skill tag on a job", async ({
+    page,
+    cleanup,
+  }) => {
+    const jobText = uniqueName("developer test title tag");
+    const tagText = uniqueName("skill tag");
+    cleanup.tag(tagText);
+
+    await createNewJob(page, jobText, cleanup, {
+      beforeSave: async (page) => {
+        await page
+          .getByRole("combobox", { name: "Search or add a skill..." })
+          .click();
+        await page.getByPlaceholder("Type a skill...").fill(tagText);
+        await page.getByText(`Create "${tagText}"`).click();
+        // Wait for the create server action to resolve and the field to
+        // update (the badge only renders once the tag id lands in form
+        // state) before letting createNewJob click Save.
+        await expect(page.getByText(tagText, { exact: true })).toBeVisible();
+      },
+    });
+    await expect(page.getByRole("row", { name: jobText }).first()).toBeVisible();
+
+    await page
+      .getByRole("row", { name: jobText })
+      .getByTestId("job-actions-menu-btn")
+      .first()
+      .click();
+    await page.getByRole("menuitem", { name: "Edit Job" }).click();
+    await expect(page.getByTestId("add-job-dialog-title")).toBeVisible();
+    await expect(page.getByText(tagText, { exact: true })).toBeVisible();
   });
 });
