@@ -15,7 +15,7 @@ export default async function AutomationsPage() {
     })) || [];
 
   return (
-    <div className="col-span-3 py-6">
+    <div className="col-span-3">
       <AutomationContainer resumes={resumes} />
     </div>
   );
