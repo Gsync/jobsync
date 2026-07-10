@@ -3,7 +3,11 @@ import "server-only";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import db from "@/lib/db";
-import { runAutomation, getUserAiSettings } from "@/lib/scraper";
+import {
+  runAutomation,
+  getUserAiSettings,
+  AutomationAlreadyRunningError,
+} from "@/lib/scraper";
 import { PROVIDER_VERIFIERS } from "@/lib/ai/provider-registry.server";
 import { getOllamaBaseUrl } from "@/actions/apiKey.actions";
 import { AiProvider } from "@/models/ai.model";
@@ -127,6 +131,10 @@ export async function POST(
       createdAt: automation.createdAt,
       updatedAt: automation.updatedAt,
     }).catch((err) => {
+      if (err instanceof AutomationAlreadyRunningError) {
+        console.log(`Skipping manual run for ${automation.id} - run already in progress`);
+        return;
+      }
       console.error("Background automation run failed:", err);
     });
 

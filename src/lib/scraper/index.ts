@@ -23,5 +23,6 @@ export {
 export {
   runAutomation,
   getUserAiSettings,
+  AutomationAlreadyRunningError,
   type RunnerResult,
 } from "./runner";

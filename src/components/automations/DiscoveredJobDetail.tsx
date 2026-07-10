@@ -16,7 +16,6 @@ import { toast } from "@/components/ui/use-toast";
 import {
   Building2,
   MapPin,
-  ExternalLink,
   Check,
   X,
   Loader2,
@@ -25,6 +24,7 @@ import {
 import type { DiscoveredJob } from "@/models/automation.model";
 import type { JobMatchData } from "@/models/ai.schemas";
 import { getWorkplaceTypeLabel } from "@/models/job.model";
+import { formatUrl } from "@/lib/utils";
 import {
   acceptDiscoveredJob,
   dismissDiscoveredJob,
@@ -130,19 +130,7 @@ export function DiscoveredJobDetail({
         <DialogHeader>
           <div className="flex items-start justify-between gap-4 pr-8">
             <div className="min-w-0 space-y-1.5">
-              <DialogTitle className="flex items-center gap-2">
-                {job.JobTitle.label}
-                {job.jobUrl && (
-                  <a
-                    href={job.jobUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0 text-muted-foreground hover:text-foreground"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                )}
-              </DialogTitle>
+              <DialogTitle>{job.JobTitle.label}</DialogTitle>
               <DialogDescription className="flex flex-wrap items-start gap-x-4 gap-y-1">
                 <span className="flex items-start gap-1">
                   <Building2 className="h-4 w-4 shrink-0 mt-0.5" />
@@ -186,6 +174,19 @@ export function DiscoveredJobDetail({
 
         <ScrollArea className="max-h-[60vh]">
           <div className="space-y-4 pr-4">
+            {job.jobUrl && (
+              <div>
+                <span className="font-semibold mr-2">Job URL:</span>
+                <a
+                  href={formatUrl(job.jobUrl)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {job.jobUrl}
+                </a>
+              </div>
+            )}
+
             <div className="flex items-center gap-4">
               <Badge variant="outline">{job.discoveryStatus}</Badge>
               {job.automation && (

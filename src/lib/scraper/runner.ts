@@ -153,20 +153,47 @@ interface ResumeWithSections extends PrismaResume {
   }>;
 }
 
+// Thrown by runAutomation's atomic claim when another run is already active
+// for this automation. Callers (scheduler, manual-run route) already do their
+// own pre-check for a fast/clean skip, but that check-then-act isn't atomic on
+// its own — two near-simultaneous callers can both pass it before either has
+// written a "running" row. This error signals the loser of that race so it
+// can skip instead of starting a duplicate run.
+export class AutomationAlreadyRunningError extends Error {
+  constructor(automationId: string) {
+    super(`Automation ${automationId} already has an active run`);
+    this.name = "AutomationAlreadyRunningError";
+  }
+}
+
 export async function runAutomation(
   automation: Automation,
   signal?: AbortSignal,
 ): Promise<RunnerResult> {
+  // Atomic claim: a partial unique index (AutomationRun_automationId_active_key,
+  // see migrations/20260710000001_automation_run_single_active) allows at most
+  // one running/cancelling row per automation. A prior SELECT-then-INSERT
+  // $transaction assumed SQLite serializes concurrent write transactions,
+  // but deferred transactions don't take a write lock until the first write,
+  // so two racing callers could both pass the SELECT before either INSERTed —
+  // relying on the DB constraint instead closes that race for good.
+  let run;
+  try {
+    run = await db.automationRun.create({
+      data: {
+        automationId: automation.id,
+        status: "running",
+      },
+    });
+  } catch (error: any) {
+    if (error?.code === "P2002") {
+      throw new AutomationAlreadyRunningError(automation.id);
+    }
+    throw error;
+  }
+
   console.log(`[Automation ${automation.id}] Starting automation run`);
   automationLogger.startRun(automation.id);
-
-  const run = await db.automationRun.create({
-    data: {
-      automationId: automation.id,
-      status: "running",
-    },
-  });
-
   console.log(`[Automation ${automation.id}] Created run with ID: ${run.id}`);
   automationLogger.log(
     automation.id,
@@ -517,7 +544,16 @@ export async function runAutomation(
           `Job saved successfully (${jobsSaved} total)`,
           { jobsSaved },
         );
-      } catch (err) {
+      } catch (err: any) {
+        if (err?.code === "P2002") {
+          // Another concurrent run already saved this URL first.
+          automationLogger.log(
+            automation.id,
+            "info",
+            "Job skipped - already saved by a concurrent run",
+          );
+          return;
+        }
         const errorMsg = err instanceof Error ? err.message : "Unknown error";
         automationLogger.log(
           automation.id,
@@ -696,12 +732,17 @@ function scalePrerank(raw: number): number {
   return Math.min(99, Math.max(0, Math.round((raw / PRERANK_MAX) * 99)));
 }
 
+// Returns false (instead of throwing) when a concurrent run already saved
+// this exact URL first — the Job_userId_jobUrl_automation_key partial unique
+// index (migrations/20260710000002_job_automation_url_unique) is the
+// backstop for that race, since app-level dedup only sees a point-in-time
+// snapshot of existing URLs.
 async function persistDiscoveredJob(
   automation: Automation,
   job: JobDetails,
   matchScore: number,
   matchData: object,
-): Promise<void> {
+): Promise<boolean> {
   const scrapedJob: ScrapedJobData = {
     title: job.title,
     company: job.company,
@@ -722,7 +763,13 @@ async function persistDiscoveredJob(
     matchData: JSON.stringify(matchData),
   });
 
-  await db.job.create({ data: jobRecord });
+  try {
+    await db.job.create({ data: jobRecord });
+    return true;
+  } catch (err: any) {
+    if (err?.code === "P2002") return false;
+    throw err;
+  }
 }
 
 async function runAtsRun(
@@ -903,7 +950,7 @@ async function runAtsRun(
       for (const scored of pipeline.toSaveUnanalyzed) {
         if (signal?.aborted) break;
         try {
-          await persistDiscoveredJob(
+          const saved = await persistDiscoveredJob(
             automation,
             scored.job,
             scalePrerank(scored.score),
@@ -913,7 +960,7 @@ async function runAtsRun(
               analyzed: false,
             },
           );
-          jobsSaved++;
+          if (saved) jobsSaved++;
         } catch (err) {
           console.error(`${label} Failed to save listing:`, err);
         }
@@ -935,7 +982,7 @@ async function runAtsRun(
 
       const saveUnanalyzed = async () => {
         try {
-          await persistDiscoveredJob(
+          const saved = await persistDiscoveredJob(
             automation,
             scored.job,
             scalePrerank(scored.score),
@@ -945,7 +992,7 @@ async function runAtsRun(
               analyzed: false,
             },
           );
-          jobsSaved++;
+          if (saved) jobsSaved++;
         } catch (err) {
           console.error(`${label} Failed to save listing:`, err);
         }
@@ -1007,18 +1054,23 @@ async function runAtsRun(
       );
 
       try {
-        await persistDiscoveredJob(automation, scored.job, matchResult.score, {
-          ...matchResult.data,
-          resumeId: resume.id,
-          resumeTitle: resume.title,
-          matchedAt: new Date().toISOString(),
-          provider: aiSettings.provider,
-          model: modelName,
-          prerankScore: scored.score,
-          prerankComponents: scored.components,
-          analyzed: true,
-        });
-        jobsSaved++;
+        const saved = await persistDiscoveredJob(
+          automation,
+          scored.job,
+          matchResult.score,
+          {
+            ...matchResult.data,
+            resumeId: resume.id,
+            resumeTitle: resume.title,
+            matchedAt: new Date().toISOString(),
+            provider: aiSettings.provider,
+            model: modelName,
+            prerankScore: scored.score,
+            prerankComponents: scored.components,
+            analyzed: true,
+          },
+        );
+        if (saved) jobsSaved++;
       } catch (err) {
         console.error(`${label} Failed to save analyzed job:`, err);
       }

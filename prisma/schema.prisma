@@ -325,6 +325,9 @@ model Job {
 
   @@index([userId, automationId])
   @@index([userId, discoveryStatus])
+  // Also has a hand-written partial unique index (not expressible here):
+  // UNIQUE(userId, jobUrl) WHERE automationId IS NOT NULL
+  // See migrations/20260710000002_job_automation_url_unique
 }
 
 model ActivityType {
@@ -439,6 +442,9 @@ model AutomationRun {
 
   @@index([automationId])
   @@index([startedAt])
+  // Also has a hand-written partial unique index (not expressible here):
+  // UNIQUE(automationId) WHERE status IN ('running', 'cancelling')
+  // See migrations/20260710000001_automation_run_single_active
 }
 
 model Note {

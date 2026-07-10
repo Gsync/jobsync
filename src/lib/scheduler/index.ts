@@ -1,7 +1,7 @@
 import cron, { ScheduledTask } from "node-cron";
 import { SCHEDULER_CONSTANTS } from "@/lib/constants";
 import db from "@/lib/db";
-import { runAutomation } from "@/lib/scraper";
+import { runAutomation, AutomationAlreadyRunningError } from "@/lib/scraper";
 import type { JobBoard } from "@/models/automation.model";
 
 let scheduledTask: ScheduledTask | null = null;
@@ -78,6 +78,10 @@ async function runDueAutomations() {
         });
         console.log(`[Scheduler] Automation ${automation.name} completed: ${result.status}, saved ${result.jobsSaved} jobs`);
       } catch (error) {
+        if (error instanceof AutomationAlreadyRunningError) {
+          console.log(`[Scheduler] Skipping automation ${automation.id} - run already in progress`);
+          continue;
+        }
         const message = error instanceof Error ? error.message : "Unknown error";
         console.error(`[Scheduler] Automation ${automation.name} failed:`, message);
       }
