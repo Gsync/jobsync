@@ -45,6 +45,7 @@ import TasksTable from "./TasksTable";
 import { TaskForm } from "./TaskForm";
 import { ActivityType } from "@/models/activity.model";
 import { useActivity } from "@/context/ActivityContext";
+import { useActivitySwitchConfirm } from "@/hooks/useActivitySwitchConfirm";
 
 type TasksContainerProps = {
   activityTypes: ActivityType[];
@@ -63,6 +64,7 @@ function TasksContainer({
 }: TasksContainerProps) {
   const router = useRouter();
   const { refreshCurrentActivity } = useActivity();
+  const { requestStart, confirmDialog } = useActivitySwitchConfirm();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [page, setPage] = useState(1);
   const [totalTasks, setTotalTasks] = useState(0);
@@ -185,22 +187,24 @@ function TasksContainer({
     }
   };
 
-  const onStartActivity = async (taskId: string) => {
-    const { success, message } = await startActivityFromTask(taskId);
-    if (success) {
-      await refreshCurrentActivity();
-      toast({
-        variant: "success",
-        description: "Activity started from task",
-      });
-      router.push("/dashboard/activities");
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: message,
-      });
-    }
+  const onStartActivity = (taskId: string) => {
+    requestStart(async () => {
+      const { success, message } = await startActivityFromTask(taskId);
+      if (success) {
+        await refreshCurrentActivity();
+        toast({
+          variant: "success",
+          description: "Activity started from task",
+        });
+        router.push("/dashboard/activities");
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error!",
+          description: message,
+        });
+      }
+    });
   };
 
   const resetEditTask = () => {
@@ -414,6 +418,7 @@ function TasksContainer({
         dialogOpen={dialogOpen}
         setDialogOpen={setDialogOpen}
       />
+      {confirmDialog}
     </>
   );
 }

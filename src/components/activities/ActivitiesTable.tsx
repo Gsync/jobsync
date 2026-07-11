@@ -28,14 +28,12 @@ interface ActivitiesTableProps {
   activities: Activity[];
   reloadActivities: () => void;
   onStartActivity: (activityId: string) => void;
-  activityExist: boolean;
 }
 
 function ActivitiesTable({
   activities,
   reloadActivities,
   onStartActivity,
-  activityExist,
 }: ActivitiesTableProps) {
   const [alertOpen, setAlertOpen] = useState(false);
   const [activityIdToDelete, setActivityIdToDelete] = useState<string>();
@@ -128,7 +126,6 @@ function ActivitiesTable({
                         <DropdownMenuItem
                           className="cursor-pointer text-green-600"
                           onClick={() => onStartActivity(activity.id!)}
-                          disabled={activityExist}
                         >
                           <CirclePlay className="mr-2 h-4 w-4" />
                           Start Activity
@@ -143,20 +140,18 @@ function ActivitiesTable({
                       </DropdownMenuGroup>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  {!activityExist && (
-                    <Button
-                      title="Start Activity"
-                      aria-haspopup="true"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => onStartActivity(activity.id!)}
-                      className="opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300"
-                    >
-                      <span>
-                        <CirclePlay className="text-green-600" />
-                      </span>
-                    </Button>
-                  )}
+                  <Button
+                    title="Start Activity"
+                    aria-haspopup="true"
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => onStartActivity(activity.id!)}
+                    className="opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300"
+                  >
+                    <span>
+                      <CirclePlay className="text-green-600" />
+                    </span>
+                  </Button>
                 </TableCell>
               </TableRow>
             );

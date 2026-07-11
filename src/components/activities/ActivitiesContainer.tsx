@@ -21,6 +21,7 @@ import Loading from "../Loading";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { RecordsCount } from "../RecordsCount";
 import { useActivity } from "@/context/ActivityContext";
+import { useActivitySwitchConfirm } from "@/hooks/useActivitySwitchConfirm";
 
 function ActivitiesContainer() {
   const [activityFormOpen, setActivityFormOpen] = useState<boolean>(false);
@@ -34,6 +35,7 @@ function ActivitiesContainer() {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const { currentActivity, startActivity } = useActivity();
+  const { requestStart, confirmDialog } = useActivitySwitchConfirm();
   const prevActivityRef = useRef<Activity | undefined>(undefined);
 
   const closeActivityForm = () => setActivityFormOpen(false);
@@ -77,11 +79,13 @@ function ActivitiesContainer() {
     await loadActivities(1, APP_CONSTANTS.RECORDS_PER_PAGE, searchTerm || undefined);
   }, [loadActivities, searchTerm]);
 
-  const handleStartActivity = async (activityId: string) => {
-    const success = await startActivity(activityId);
-    if (success) {
-      reloadActivities();
-    }
+  const handleStartActivity = (activityId: string) => {
+    requestStart(async () => {
+      const success = await startActivity(activityId);
+      if (success) {
+        reloadActivities();
+      }
+    });
   };
 
   useEffect(() => {
@@ -192,7 +196,6 @@ function ActivitiesContainer() {
               activities={activitiesList}
               reloadActivities={reloadActivities}
               onStartActivity={handleStartActivity}
-              activityExist={Boolean(currentActivity)}
             />
           </>
         )}
@@ -204,6 +207,7 @@ function ActivitiesContainer() {
           </div>
         )}
       </CardContent>
+      {confirmDialog}
     </Card>
   );
 }

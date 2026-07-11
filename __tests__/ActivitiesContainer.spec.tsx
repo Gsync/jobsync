@@ -503,4 +503,131 @@ describe("ActivitiesContainer Search Functionality", () => {
       });
     });
   });
+
+  describe("Start Activity Confirmation", () => {
+    it("starts the activity directly when nothing is currently in progress", async () => {
+      (getActivitiesList as any).mockResolvedValue({
+        success: true,
+        data: mockActivities,
+        total: 3,
+      });
+      (startActivityById as any).mockResolvedValue({
+        success: true,
+        newActivity: {
+          id: "new-1",
+          activityName: "TypeScript Learning",
+          startTime: new Date(),
+          endTime: null,
+        },
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText("TypeScript Learning")).toBeInTheDocument();
+      });
+
+      await act(async () => {
+        await user.click(screen.getAllByTitle("Start Activity")[0]);
+      });
+
+      await waitFor(() => {
+        expect(startActivityById).toHaveBeenCalledWith("1");
+      });
+      expect(stopActivityById).not.toHaveBeenCalled();
+      expect(
+        screen.queryByText(/is currently in progress/i)
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows a confirm dialog naming the running activity instead of starting immediately", async () => {
+      (getActivitiesList as any).mockResolvedValue({
+        success: true,
+        data: mockActivities,
+        total: 3,
+      });
+      (getCurrentActivity as any).mockResolvedValue({
+        success: true,
+        activity: {
+          id: "current-1",
+          activityName: "Ongoing Task",
+          startTime: new Date(),
+          endTime: null,
+          description: null,
+          activityType: { id: "1", label: "Learning", value: "learning" },
+        },
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText("TypeScript Learning")).toBeInTheDocument();
+      });
+
+      await act(async () => {
+        await user.click(screen.getAllByTitle("Start Activity")[0]);
+      });
+
+      expect(startActivityById).not.toHaveBeenCalled();
+      expect(
+        await screen.findByText(/"Ongoing Task" is currently in progress/i)
+      ).toBeInTheDocument();
+    });
+
+    it("stops the running activity then starts the new one on confirm", async () => {
+      (getActivitiesList as any).mockResolvedValue({
+        success: true,
+        data: mockActivities,
+        total: 3,
+      });
+      (getCurrentActivity as any).mockResolvedValue({
+        success: true,
+        activity: {
+          id: "current-1",
+          activityName: "Ongoing Task",
+          startTime: new Date(),
+          endTime: null,
+          description: null,
+          activityType: { id: "1", label: "Learning", value: "learning" },
+        },
+      });
+      (stopActivityById as any).mockResolvedValue({ success: true });
+      (startActivityById as any).mockResolvedValue({
+        success: true,
+        newActivity: {
+          id: "new-1",
+          activityName: "TypeScript Learning",
+          startTime: new Date(),
+          endTime: null,
+        },
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText("TypeScript Learning")).toBeInTheDocument();
+      });
+
+      await act(async () => {
+        await user.click(screen.getAllByTitle("Start Activity")[0]);
+      });
+
+      const confirmButton = await screen.findByRole("button", {
+        name: "Stop & Start",
+      });
+
+      await act(async () => {
+        await user.click(confirmButton);
+      });
+
+      await waitFor(() => {
+        expect(stopActivityById).toHaveBeenCalledWith(
+          "current-1",
+          expect.any(Date),
+          expect.any(Number)
+        );
+        expect(startActivityById).toHaveBeenCalledWith("1");
+      });
+    });
+  });
 });

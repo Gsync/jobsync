@@ -2,11 +2,15 @@
 
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getJobStatusBadgeColor } from "@/lib/badge-colors";
 import { cn } from "@/lib/utils";
+import { useActivity } from "@/context/ActivityContext";
+import { useActivitySwitchConfirm } from "@/hooks/useActivitySwitchConfirm";
 import { JobResponse } from "@/models/job.model";
+import { CirclePlay } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
 
@@ -68,6 +72,8 @@ export default function RecentCardToggle({
   activities,
 }: RecentCardToggleProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const { startActivity } = useActivity();
+  const { requestStart, confirmDialog } = useActivitySwitchConfirm();
 
   return (
     <Card className="mb-2">
@@ -139,9 +145,23 @@ export default function RecentCardToggle({
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {date}
                 </p>
-                <div className="grid gap-4 pl-3">
+                <div className="grid gap-4">
                   {dateActivities.map((activity) => (
-                    <div key={activity.id} className="flex items-center gap-4">
+                    <div
+                      key={activity.id}
+                      className="group relative flex items-center gap-1"
+                    >
+                      <Button
+                        title="Start Activity"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => requestStart(() => startActivity(activity.id))}
+                        className="h-5 w-5 shrink-0 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300"
+                      >
+                        <span>
+                          <CirclePlay className="text-green-600 h-3.5 w-3.5" />
+                        </span>
+                      </Button>
                       <div className="grid gap-1 min-w-0 flex-1">
                         <p className="text-sm font-medium leading-none truncate">
                           {activity.activityName}
@@ -161,6 +181,7 @@ export default function RecentCardToggle({
               </div>
             ))}
       </CardContent>
+      {confirmDialog}
     </Card>
   );
 }
