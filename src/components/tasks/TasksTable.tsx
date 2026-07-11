@@ -321,7 +321,6 @@ function TasksTable({
               <DropdownMenuItem
                 className="cursor-pointer text-green-600"
                 onClick={() => onStartActivity(task.id)}
-                disabled={!!task.activity}
               >
                 <CirclePlay className="mr-2 h-4 w-4" />
                 Start Activity
@@ -339,21 +338,19 @@ function TasksTable({
         </DropdownMenu>
       </TableCell>
       <TableCell className="hidden sm:table-cell py-1 px-1">
-        {!task.activity && (
-          <Button
-            title="Start Activity"
-            aria-haspopup="true"
-            size="icon"
-            variant="ghost"
-            onClick={() => onStartActivity(task.id)}
-            data-testid="task-start-activity-btn"
-            className="opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300"
-          >
-            <span>
-              <CirclePlay className="text-green-600" />
-            </span>
-          </Button>
-        )}
+        <Button
+          title="Start Activity"
+          aria-haspopup="true"
+          size="icon"
+          variant="ghost"
+          onClick={() => onStartActivity(task.id)}
+          data-testid="task-start-activity-btn"
+          className="opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300"
+        >
+          <span>
+            <CirclePlay className="text-green-600" />
+          </span>
+        </Button>
       </TableCell>
     </TableRow>
   );

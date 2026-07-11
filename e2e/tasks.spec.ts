@@ -270,7 +270,7 @@ test.describe("Tasks Management", () => {
       await page.getByRole("button", { name: "Stop" }).click({ force: true });
     });
 
-    test("should not allow starting activity when task already has linked activity", async ({
+    test("should restart activity when task already has a linked activity", async ({
       page,
       cleanup,
     }) => {
@@ -295,7 +295,7 @@ test.describe("Tasks Management", () => {
         .click({ force: true });
       await expect(page).toHaveURL(/\/dashboard\/activities/);
 
-      // Stop the activity so we can test the linked state
+      // Stop the activity so we can test restarting from the task
       await page.getByRole("button", { name: "Stop" }).click({ force: true });
 
       // Go back to tasks
@@ -304,21 +304,20 @@ test.describe("Tasks Management", () => {
         .getByRole("row", { name: new RegExp(linkedActivityTaskTitle, "i") })
         .first();
 
-      // Start activity button should not be visible (task has linked activity)
+      // Start activity button is still available even with a linked activity
       await taskRowAfter.hover();
       await expect(
         taskRowAfter.getByTestId("task-start-activity-btn"),
-      ).not.toBeVisible();
+      ).toBeVisible();
 
-      // Menu item should be disabled
+      // Clicking it restarts the activity (redirects to activities page)
       await taskRowAfter
-        .getByTestId("task-actions-menu-btn")
+        .getByTestId("task-start-activity-btn")
         .click({ force: true });
-      const startActivityMenuItem = page.getByRole("menuitem", {
-        name: "Start Activity",
-      });
-      await expect(startActivityMenuItem).toBeDisabled();
-      await page.keyboard.press("Escape");
+      await expect(page).toHaveURL(/\/dashboard\/activities/);
+
+      // Stop the restarted activity to leave a clean state
+      await page.getByRole("button", { name: "Stop" }).click({ force: true });
     });
 
     test("should not allow starting activity on completed task", async ({

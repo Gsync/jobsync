@@ -361,7 +361,7 @@ model Activity {
   activityType   ActivityType @relation(fields: [activityTypeId], references: [id])
   activityTypeId String
 
-  taskId String? @unique
+  taskId String?
   task   Task?   @relation(fields: [taskId], references: [id])
 }
 
@@ -380,7 +380,7 @@ model Task {
   activityTypeId String?
   activityType   ActivityType? @relation(fields: [activityTypeId], references: [id])
 
-  activity Activity?
+  activities Activity[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

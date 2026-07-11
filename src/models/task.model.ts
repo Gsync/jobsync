@@ -20,7 +20,7 @@ export interface Task {
   dueDate?: Date | null;
   activityTypeId?: string | null;
   activityType?: ActivityType | null;
-  activity?: { id: string } | null;
+  activities?: { id: string }[];
   createdAt: Date;
   updatedAt: Date;
 }

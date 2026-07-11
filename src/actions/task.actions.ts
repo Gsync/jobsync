@@ -48,7 +48,7 @@ export const getTasksList = async (
         where: whereClause,
         include: {
           activityType: true,
-          activity: {
+          activities: {
             select: { id: true },
           },
         },
@@ -89,7 +89,7 @@ export const getTaskById = async (
       },
       include: {
         activityType: true,
-        activity: {
+        activities: {
           select: { id: true },
         },
       },
@@ -233,7 +233,9 @@ export const deleteTaskById = async (
         userId: user.id,
       },
       include: {
-        activity: true,
+        activities: {
+          select: { id: true },
+        },
       },
     });
 
@@ -241,7 +243,7 @@ export const deleteTaskById = async (
       return { success: false, message: "Task not found" };
     }
 
-    if (task.activity) {
+    if (task.activities.length > 0) {
       return {
         success: false,
         message:
@@ -278,19 +280,16 @@ export const startActivityFromTask = async (
         id: taskId,
         userId: user.id,
       },
-      include: {
-        activity: true,
-      },
     });
 
     if (!task) {
       return { success: false, message: "Task not found" };
     }
 
-    if (task.activity) {
+    if (task.status === "complete" || task.status === "cancelled") {
       return {
         success: false,
-        message: "Task already has a linked activity.",
+        message: "Cannot start an activity from a completed or cancelled task.",
       };
     }
 
@@ -298,13 +297,6 @@ export const startActivityFromTask = async (
       return {
         success: false,
         message: "Task must have an activity type to start an activity.",
-      };
-    }
-
-    if (task.status === "complete" || task.status === "cancelled") {
-      return {
-        success: false,
-        message: "Cannot start an activity from a completed or cancelled task.",
       };
     }
 
@@ -323,6 +315,8 @@ export const startActivityFromTask = async (
       };
     }
 
+    // A task can have many activities over time; each start links a new one
+    // to the task so per-task time can be tracked.
     const activity = await prisma.activity.create({
       data: {
         activityName: task.title,

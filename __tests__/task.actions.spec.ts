@@ -58,7 +58,7 @@ describe("taskActions", () => {
       label: "Development",
       value: "development",
     },
-    activity: null,
+    activities: [],
   };
 
   beforeEach(() => {
@@ -84,7 +84,7 @@ describe("taskActions", () => {
         where: { userId: mockUser.id },
         include: {
           activityType: true,
-          activity: {
+          activities: {
             select: { id: true },
           },
         },
@@ -115,7 +115,7 @@ describe("taskActions", () => {
         where: { userId: mockUser.id },
         include: {
           activityType: true,
-          activity: {
+          activities: {
             select: { id: true },
           },
         },
@@ -146,7 +146,7 @@ describe("taskActions", () => {
         },
         include: {
           activityType: true,
-          activity: {
+          activities: {
             select: { id: true },
           },
         },
@@ -180,7 +180,7 @@ describe("taskActions", () => {
         },
         include: {
           activityType: true,
-          activity: {
+          activities: {
             select: { id: true },
           },
         },
@@ -234,7 +234,7 @@ describe("taskActions", () => {
         },
         include: {
           activityType: true,
-          activity: {
+          activities: {
             select: { id: true },
           },
         },
@@ -527,7 +527,7 @@ describe("taskActions", () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
       const taskWithActivity = {
         ...mockTask,
-        activity: { id: "activity-id" },
+        activities: [{ id: "activity-id" }],
       };
       (prisma.task.findFirst as any).mockResolvedValue(taskWithActivity);
 
@@ -622,19 +622,30 @@ describe("taskActions", () => {
       });
     });
 
-    it("should return error when task already has linked activity", async () => {
+    it("should link a new activity even when the task already has activities", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
-      const taskWithActivity = {
-        ...mockTask,
-        activity: { id: "activity-id" },
-      };
-      (prisma.task.findFirst as any).mockResolvedValue(taskWithActivity);
+      (prisma.task.findFirst as any).mockResolvedValue(mockTask);
+      (prisma.activity.findFirst as any).mockResolvedValue(null);
+      (prisma.activity.create as any).mockResolvedValue(mockActivity);
 
       const result = await startActivityFromTask("task-id");
 
       expect(result).toEqual({
-        success: false,
-        message: "Task already has a linked activity.",
+        success: true,
+        data: mockActivity,
+      });
+      expect(prisma.activity.create).toHaveBeenCalledWith({
+        data: {
+          activityName: mockTask.title,
+          activityTypeId: mockTask.activityTypeId,
+          userId: mockUser.id,
+          startTime: expect.any(Date),
+          endTime: null,
+          taskId: mockTask.id,
+        },
+        include: {
+          activityType: true,
+        },
       });
     });
 

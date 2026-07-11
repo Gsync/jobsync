@@ -367,8 +367,8 @@ export const deleteActivityTypeById = async (
     }
 
     const [activities, tasks] = await Promise.all([
-      prisma.activity.count({ where: { activityTypeId } }),
-      prisma.task.count({ where: { activityTypeId } }),
+      prisma.activity.count({ where: { activityTypeId, userId: user.id } }),
+      prisma.task.count({ where: { activityTypeId, userId: user.id } }),
     ]);
 
     if (activities > 0 || tasks > 0) {

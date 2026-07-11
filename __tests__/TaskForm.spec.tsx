@@ -251,7 +251,7 @@ describe("TaskForm Component", () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-      activity: null,
+      activities: [],
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -381,7 +381,7 @@ describe("TaskForm Component", () => {
         dueDate: null,
         activityTypeId: null,
         activityType: null,
-        activity: null,
+        activities: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
