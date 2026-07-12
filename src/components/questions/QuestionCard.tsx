@@ -49,6 +49,7 @@ export function QuestionCard({
       <div
         className="border rounded-lg p-4 hover:bg-accent/50 transition-colors cursor-pointer"
         onClick={() => setExpanded(!expanded)}
+        data-testid="question-card"
       >
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-medium flex-1">{question.question}</h3>
@@ -59,6 +60,7 @@ export function QuestionCard({
                 size="sm"
                 className="h-8 w-8 p-0"
                 onClick={(e) => e.stopPropagation()}
+                data-testid="question-actions-menu-btn"
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>

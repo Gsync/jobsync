@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
     jobIds = [],
     resumes = [],
     tasks = [],
+    questions = [],
     titles = [],
     companies = [],
     locations = [],
@@ -32,6 +33,7 @@ export async function POST(req: NextRequest) {
     jobIds?: string[];
     resumes?: string[];
     tasks?: string[];
+    questions?: string[];
     titles?: string[];
     companies?: string[];
     locations?: string[];
@@ -66,6 +68,14 @@ export async function POST(req: NextRequest) {
       await prisma.activity.deleteMany({ where: { taskId: id, userId } });
       await prisma.task.deleteMany({ where: { id, userId } });
     }
+  }
+
+  // Delete questions before tags below — deleteTagsByName only removes a tag
+  // once its question/job/skill reference count is zero.
+  if (questions.length > 0) {
+    await prisma.question.deleteMany({
+      where: { question: { in: questions }, createdBy: userId },
+    });
   }
 
   // Sources are never created by the tests (they select the seeded "Indeed"),

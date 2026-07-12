@@ -118,6 +118,7 @@ export type CleanupRegistry = {
   job: (id: string) => void;
   resume: (title: string) => void;
   task: (title: string) => void;
+  question: (text: string) => void;
   title: (name: string) => void;
   company: (name: string) => void;
   location: (name: string) => void;
@@ -142,6 +143,7 @@ export const test = base.extend<Fixtures>({
     const jobIds: string[] = [];
     const resumes: string[] = [];
     const tasks: string[] = [];
+    const questions: string[] = [];
     const titles: string[] = [];
     const companies: string[] = [];
     const locations: string[] = [];
@@ -152,6 +154,7 @@ export const test = base.extend<Fixtures>({
       job: (id) => jobIds.push(id),
       resume: (title) => resumes.push(title),
       task: (title) => tasks.push(title),
+      question: (text) => questions.push(text),
       title: (name) => titles.push(name),
       company: (name) => companies.push(name),
       location: (name) => locations.push(name),
@@ -166,6 +169,7 @@ export const test = base.extend<Fixtures>({
         jobIds,
         resumes,
         tasks,
+        questions,
         titles,
         companies,
         locations,

@@ -11,7 +11,7 @@ import { createQuestion, updateQuestion } from "@/actions/question.actions";
 import { Loader } from "lucide-react";
 import { Button } from "../ui/button";
 import { useForm } from "react-hook-form";
-import { useEffect, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { AddQuestionFormSchema } from "@/models/addQuestionForm.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Question } from "@/models/question.model";
@@ -48,6 +48,8 @@ export function QuestionForm({
   setDialogOpen,
 }: QuestionFormProps) {
   const [isPending, startTransition] = useTransition();
+  const [localAvailableTags, setLocalAvailableTags] =
+    useState<Tag[]>(availableTags);
   const form = useForm<z.infer<typeof AddQuestionFormSchema>>({
     resolver: zodResolver(AddQuestionFormSchema),
     defaultValues: {
@@ -67,6 +69,18 @@ export function QuestionForm({
         answer: editQuestion.answer || "",
         tagIds: editQuestion.tags?.map((t) => t.id) || [],
       });
+      // Merge the question's own tags into the local pool so they're
+      // selectable/visible even if they aren't in the availableTags prop yet
+      // (e.g. just created in the Add dialog earlier in this page session).
+      if (editQuestion.tags && editQuestion.tags.length > 0) {
+        setLocalAvailableTags((prev) => {
+          const existing = new Set(prev.map((t) => t.id));
+          const incoming = editQuestion.tags!.filter(
+            (t) => !existing.has(t.id),
+          );
+          return incoming.length > 0 ? [...prev, ...incoming] : prev;
+        });
+      }
     } else {
       reset({
         question: "",
@@ -114,7 +128,9 @@ export function QuestionForm({
       <DialogOverlay>
         <DialogContent className="sm:max-w-[725px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{pageTitle}</DialogTitle>
+            <DialogTitle data-testid="question-form-dialog-title">
+              {pageTitle}
+            </DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form
@@ -143,7 +159,7 @@ export function QuestionForm({
                     <FormLabel>Skill Tags</FormLabel>
                     <FormControl>
                       <TagInput
-                        availableTags={availableTags}
+                        availableTags={localAvailableTags}
                         selectedTagIds={field.value || []}
                         onChange={field.onChange}
                       />
