@@ -35,27 +35,42 @@ export function CircularScore({ score, size = "md", animate = true, className }:
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>(0);
   const startedRef = useRef(false);
+  const animatedRef = useRef(animate ? 0 : score);
 
   useEffect(() => {
     if (!animate) return;
     const el = containerRef.current;
     if (!el) return;
 
+    const runAnimation = (from: number) => {
+      let startTime = 0;
+      const duration = 900;
+
+      const tick = (ts: number) => {
+        if (!startTime) startTime = ts;
+        const progress = Math.min((ts - startTime) / duration, 1);
+        const value = from + (score - from) * easeOutCubic(progress);
+        animatedRef.current = value;
+        setAnimated(value);
+        if (progress < 1) rafRef.current = requestAnimationFrame(tick);
+      };
+
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    // Score changed after the initial reveal — re-animate from where we
+    // are now instead of waiting on a fresh intersection.
+    if (startedRef.current) {
+      runAnimation(animatedRef.current);
+      return () => cancelAnimationFrame(rafRef.current);
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !startedRef.current) {
           startedRef.current = true;
-          let startTime = 0;
-          const duration = 900;
-
-          const tick = (ts: number) => {
-            if (!startTime) startTime = ts;
-            const progress = Math.min((ts - startTime) / duration, 1);
-            setAnimated(easeOutCubic(progress) * score);
-            if (progress < 1) rafRef.current = requestAnimationFrame(tick);
-          };
-
-          rafRef.current = requestAnimationFrame(tick);
+          runAnimation(0);
         }
       },
       { threshold: 0.3 },
