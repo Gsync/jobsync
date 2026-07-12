@@ -31,7 +31,10 @@ export default function NumberCardToggle({ data }: NumberCardToggleProps) {
           <CardTitle className="text-sm font-medium text-green-600">
             Jobs
           </CardTitle>
-          <div className="flex rounded-md border text-xs">
+          <div
+            className="flex rounded-md border text-xs"
+            data-testid="number-card-toggle-group"
+          >
             {data.map((item, index) => (
               <button
                 key={item.label}

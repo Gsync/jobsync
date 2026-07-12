@@ -86,7 +86,10 @@ export default function WeeklyBarChartToggle({
               </span>
             )}
           </div>
-          <div className="flex rounded-md border text-xs">
+          <div
+            className="flex rounded-md border text-xs"
+            data-testid="weekly-chart-toggle-group"
+          >
             {charts.map((chart, index) => (
               <button
                 key={chart.label}

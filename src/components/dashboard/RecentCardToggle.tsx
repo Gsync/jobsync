@@ -82,7 +82,10 @@ export default function RecentCardToggle({
           <CardTitle className="text-green-600">
             Recent {tabs[activeIndex]}
           </CardTitle>
-          <div className="flex rounded-md border text-xs">
+          <div
+            className="flex rounded-md border text-xs"
+            data-testid="recent-card-toggle-group"
+          >
             {tabs.map((tab, index) => (
               <button
                 key={tab}

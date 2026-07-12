@@ -23,7 +23,10 @@ export default function TopActivitiesCard({ data }: TopActivitiesCardProps) {
           <CardTitle className="text-sm font-medium text-green-600">
             Activities
           </CardTitle>
-          <div className="flex rounded-md border text-xs">
+          <div
+            className="flex rounded-md border text-xs"
+            data-testid="top-activities-toggle-group"
+          >
             {data.map((item, index) => (
               <button
                 key={item.label}
