@@ -208,6 +208,28 @@ export const getResumeById = async (
   }
 };
 
+export const saveResumeReviewResult = async (
+  resumeId: string,
+  reviewData: string,
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    await prisma.resume.update({
+      where: { id: resumeId, profile: { userId: user.id } },
+      data: { reviewData },
+    });
+
+    return { success: true };
+  } catch (error) {
+    const msg = "Failed to save review result.";
+    return handleError(error, msg);
+  }
+};
+
 export const addContactInfo = async (
   data: z.infer<typeof AddContactInfoFormSchema>,
 ): Promise<any | undefined> => {

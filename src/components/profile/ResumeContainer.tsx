@@ -4,7 +4,14 @@ import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { ResponsiveCardHeader } from "../ResponsiveCardHeader";
 import AddResumeSection, { AddResumeSectionRef } from "./AddResumeSection";
 import ContactInfoCard from "./ContactInfoCard";
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "../ui/use-toast";
 import SummarySectionCard from "./SummarySectionCard";
@@ -13,7 +20,9 @@ import EducationCard from "./EducationCard";
 import CertificationCard from "./CertificationCard";
 import SkillsSectionCard from "./SkillsSectionCard";
 import AiResumeReviewSection from "./AiResumeReviewSection";
+import { ReviewDetails } from "./ReviewDetails";
 import { DownloadFileButton } from "./DownloadFileButton";
+import type { ResumeReviewData } from "@/models/ai.schemas";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -352,6 +361,20 @@ function ResumeContainer({
   const goBack = () => router.back();
   const isDefault = !!resume?.id && resume.id === defaultResumeId;
   const [setDefaultConfirmOpen, setSetDefaultConfirmOpen] = useState(false);
+  const [currentReviewData, setCurrentReviewData] = useState(
+    resume.reviewData,
+  );
+  const parsedReviewData = useMemo(() => {
+    if (!currentReviewData) return null;
+    try {
+      return JSON.parse(currentReviewData) as ResumeReviewData;
+    } catch {
+      return null;
+    }
+  }, [currentReviewData]);
+  const handleReviewSaved = useCallback((reviewData: string) => {
+    setCurrentReviewData(reviewData);
+  }, []);
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [pendingPdf, setPendingPdf] = useState<{
@@ -791,7 +814,10 @@ function ResumeContainer({
           </CardDescription>
           <div className="flex items-center gap-2 flex-wrap lg:justify-end">
             <AddResumeSection resume={resume} ref={resumeSectionRef} />
-            <AiResumeReviewSection resume={resume} />
+            <AiResumeReviewSection
+              resume={resume}
+              onReviewSaved={handleReviewSaved}
+            />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm" variant="outline">
@@ -857,6 +883,18 @@ function ResumeContainer({
         actionLabel="Set as default"
         actionVariant="default"
       />
+
+      {parsedReviewData && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Sparkles className="h-4 w-4" />
+              AI Review
+            </CardTitle>
+            <ReviewDetails reviewData={parsedReviewData} />
+          </CardHeader>
+        </Card>
+      )}
 
       {/* IMPORT REVIEW BANNER */}
       {importMode && (pendingCards.length > 0 || isStructuring) && (

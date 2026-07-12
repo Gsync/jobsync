@@ -295,8 +295,14 @@ test.describe("Tasks Management", () => {
         .click({ force: true });
       await expect(page).toHaveURL(/\/dashboard\/activities/);
 
-      // Stop the activity so we can test restarting from the task
+      // Stop the activity so we can test restarting from the task. Wait for
+      // the global activity banner to actually clear before proceeding —
+      // under parallel test load the stop server action can lag behind the
+      // click, and starting again while it's still in flight makes the app
+      // (correctly) show the activity-switch confirm dialog instead of
+      // restarting directly.
       await page.getByRole("button", { name: "Stop" }).click({ force: true });
+      await expect(page.getByRole("button", { name: "Stop" })).not.toBeVisible();
 
       // Go back to tasks
       await navigateToTasks(page);

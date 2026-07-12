@@ -13,6 +13,14 @@ export const ResumeScoresSchema = z.object({
 
 export type ResumeScores = z.infer<typeof ResumeScoresSchema>;
 
+// Persisted shape stored in Resume.reviewData (JSON string).
+export type ResumeReviewData = ResumeScores & {
+  body: string;
+  reviewedAt?: string;
+  provider?: string;
+  model?: string;
+};
+
 // JOB MATCH TYPES
 // The match analysis is free-form markdown; only the score + recommendation are
 // machine-readable (they drive the radial chart, jobs-table sorting, and the

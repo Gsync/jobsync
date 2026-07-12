@@ -10,6 +10,7 @@ export interface Resume {
   ResumeSections?: ResumeSection[];
   FileId?: string;
   File?: File;
+  reviewData?: string | null;
   _count?: {
     Job?: number;
     ResumeSections?: number;

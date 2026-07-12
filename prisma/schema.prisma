@@ -87,6 +87,7 @@ model Resume {
   Job            Job[]
   Automation     Automation[]
   defaultForUser User[]          @relation("UserDefaultResume")
+  reviewData     String?
 }
 
 model CoverLetter {
