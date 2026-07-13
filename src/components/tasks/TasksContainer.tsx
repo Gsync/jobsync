@@ -1,6 +1,5 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -62,7 +61,6 @@ function TasksContainer({
   onFilterChange,
   onTasksChanged,
 }: TasksContainerProps) {
-  const router = useRouter();
   const { refreshCurrentActivity } = useActivity();
   const { requestStart, confirmDialog } = useActivitySwitchConfirm();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -196,7 +194,6 @@ function TasksContainer({
           variant: "success",
           description: "Activity started from task",
         });
-        router.push("/dashboard/activities");
       } else {
         toast({
           variant: "destructive",
