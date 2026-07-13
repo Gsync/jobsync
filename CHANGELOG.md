@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.1.14](https://github.com/Gsync/jobsync/compare/v1.1.13...v1.1.14) (2026-07-13)
+
+
+### Features
+
+*  add Dashboard e2e tests; add testids to toggle groups
+*  update Node.js version to 20.20.2 in Dockerfile
+*  add Question Bank e2e tests; fix stale tag chip on edit
+*  persist resume review results and show saved review on resume page
+*  Improve JobDetails layout
+*  confirm dialog to switch activities instead of error toast
+*  allow restarting an activity from a task; scope activity-type link check
+*  add partial unique indexes to prevent duplicate automation runs and discovered jobs
+*  add MCP add_job e2e tests and update README with access note
+*  enhance DiscoveredJobDetail component with CircularScore and improved layout
+*  add MCP save_match_result tool and job-match directive for add_job
+*  Enhance job-related tests and components to include total job counts and improve validation handling
+*  Enhance job-related actions and tables to include total job counts
+*  Add Lever ATS provider behind shared ats/ registry
+*  Update job model and related components to handle optional Location and JobSource fields, fix add job mcp tool issue
+
+### Bug Fixes
+
+*  give profile e2e assertions headroom under parallel load
+
+### Other Changes
+
+* Update readme
+*  improve activities table layout, stay on tasks after activity start
+* Add job match and resume import evaluation prompts and assertions
+* Refactor e2e tests, address flakiness
+* Refactor code structure for improved readability and maintainability
+*  extract shared ResponsiveCardHeader and SearchInput components
+
+
 ## [1.1.13](https://github.com/Gsync/jobsync/compare/v1.1.12...v1.1.13) (2026-07-06)
 
 
