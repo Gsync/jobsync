@@ -29,13 +29,13 @@ Job searching can be overwhelming, with numerous applications to track and deadl
 
 - **Resume Management:** Store and manage your resumes, export them as professionally formatted PDFs (Simple or Professional template), and use them with AI to get reviews and match with job descriptions. Import existing resumes from PDF or Word (.docx) files — AI extracts and structures your contact info, experience, education, and certifications so you can review and save each section individually.
 
-- **Automated Job Discovery:** Schedule and run automations that track companies directly via the Greenhouse job board API, then AI-match each listing against your resume and surface the best fits for review. More job board sources coming soon.
+- **Automated Job Discovery:** Schedule and run automations that track companies directly via the Greenhouse and Lever job board APIs, then AI-match each listing against your resume and surface the best fits for review. More job board sources coming soon.
 
 - **Task & Activity Management:** Manage tasks, track activites linked with tasks included with time tracking. 
 
 - **AI Assistant:** Leverage the power of AI to improve your resumes and match with jobs. Get personalized job matching with scoring to identify the best opportunities tailored to your profile.
 
-- **AI Agent Integration (MCP):** Connect AI agents like Claude Desktop via a built-in MCP server to add job applications and Question Bank entries directly from your chat, with your approval.
+- **AI Agent Integration (MCP):** Connect AI agents like Claude Desktop via a built-in MCP server to add job applications and Question Bank entries directly from your chat, with your approval. When a job description is substantial enough, the agent can also analyze it against your default resume and save a job match score right from the chat.
 
 
 ## Free to Use and Self-Hosted
@@ -99,6 +99,8 @@ Set up automations that search for new jobs on a schedule and AI-match them agai
 
 - **Greenhouse** — track specific companies by name from a built-in directory (or by pasting a board URL). Each run pulls every published role from those companies' Greenhouse boards, ranks them against your target titles, skills, and resume with a fast local relevance score, and runs the AI match on only the top candidates to keep costs bounded. No API key required.
 
+- **Lever** — same company-tracking workflow as Greenhouse, backed by a built-in directory of 1,160+ companies (or paste a board URL). Automatically resolves the right regional API (`lever.co` or `eu.lever.co`) per company and carries full remote/hybrid/onsite signal from the listing. No API key required.
+
 More job board sources are on the way. Discovered jobs are surfaced for review — accept the ones you like to promote them into your job tracker, or dismiss the rest.
 
 ### MCP Server (AI Agent Integration)
@@ -113,6 +115,8 @@ Browsing a job posting or reading an interview question elsewhere and don't want
 - *"I just got asked this in an interview — add it to my Question Bank: 'How would you design a rate limiter?' with my answer: ..."*
 
 The agent resolves or creates the company, title, location, and tags by name, and reports back what it matched versus created — so your data stays de-duplicated without you having to switch to the app.
+
+When you add a job with a substantial description and you've set a **default resume** (Profile), the agent also analyzes the fit against that resume and saves a job match score — no round trip to the app needed. The result shows up on the job just like an in-app AI match, scores, recommendation, and write-up included.
 
 #### 1. Generate a token
 
