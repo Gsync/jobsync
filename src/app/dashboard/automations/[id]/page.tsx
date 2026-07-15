@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import {
   getAutomationById,
+  getAutomationsList,
   getDiscoveredJobs,
   getAutomationRuns,
   pauseAutomation,
@@ -136,6 +137,9 @@ export default function AutomationDetailPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [runKey, setRunKey] = useState(0);
   const [resumes, setResumes] = useState<{ id: string; title: string }[]>([]);
+  const [allAutomations, setAllAutomations] = useState<AutomationWithResume[]>(
+    [],
+  );
   const [wizardOpen, setWizardOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -238,6 +242,9 @@ export default function AutomationDetailPage() {
         }
       },
     );
+    getAutomationsList().then((result) => {
+      if (result?.data) setAllAutomations(result.data);
+    });
   }, []);
 
   // Subscribe to the live log/status stream at the page level so it persists
@@ -934,6 +941,7 @@ export default function AutomationDetailPage() {
         open={wizardOpen}
         onOpenChange={setWizardOpen}
         resumes={resumes}
+        automations={allAutomations}
         onSuccess={() => loadData()}
         editAutomation={automation}
       />

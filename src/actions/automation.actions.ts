@@ -145,6 +145,19 @@ export async function createAutomation(input: CreateAutomationInput): Promise<{
       };
     }
 
+    const scheduleClash = await db.automation.findFirst({
+      where: { userId: user.id, scheduleHour: validated.scheduleHour },
+      select: { id: true },
+    });
+    if (scheduleClash) {
+      return {
+        success: false,
+        message: `Another automation already runs at ${validated.scheduleHour
+          .toString()
+          .padStart(2, "0")}:00. Please choose a different time.`,
+      };
+    }
+
     const resume = await db.resume.findFirst({
       where: {
         id: validated.resumeId,
@@ -247,6 +260,22 @@ export async function updateAutomation(
     }
 
     if (validated.scheduleHour !== undefined) {
+      const scheduleClash = await db.automation.findFirst({
+        where: {
+          userId: user.id,
+          scheduleHour: validated.scheduleHour,
+          id: { not: id },
+        },
+        select: { id: true },
+      });
+      if (scheduleClash) {
+        return {
+          success: false,
+          message: `Another automation already runs at ${validated.scheduleHour
+            .toString()
+            .padStart(2, "0")}:00. Please choose a different time.`,
+        };
+      }
       updateData.nextRunAt = calculateNextRunAt(validated.scheduleHour);
     }
 

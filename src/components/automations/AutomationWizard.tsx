@@ -79,6 +79,7 @@ interface AutomationWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   resumes: Resume[];
+  automations: AutomationWithResume[];
   onSuccess: () => void;
   editAutomation?: AutomationWithResume | null;
 }
@@ -101,6 +102,7 @@ export function AutomationWizard({
   open,
   onOpenChange,
   resumes,
+  automations,
   onSuccess,
   editAutomation,
 }: AutomationWizardProps) {
@@ -205,7 +207,25 @@ export function AutomationWizard({
     }
   };
 
+  // Hours already claimed by the user's other automations. Only one automation
+  // may run per hourly slot, so the schedule step rejects a taken hour.
+  const takenHours = new Set(
+    automations
+      .filter((a) => a.id !== editAutomation?.id)
+      .map((a) => a.scheduleHour),
+  );
+
   const nextStep = () => {
+    if (step === 4 && takenHours.has(formValues.scheduleHour)) {
+      form.setError("scheduleHour", {
+        message: `Another automation already runs at ${(
+          formValues.scheduleHour ?? 8
+        )
+          .toString()
+          .padStart(2, "0")}:00. Please choose a different time.`,
+      });
+      return;
+    }
     if (step < STEPS.length - 1) {
       setStep(step + 1);
     }
@@ -422,7 +442,10 @@ export function AutomationWizard({
               <FormItem>
                 <FormLabel>Daily Run Time</FormLabel>
                 <Select
-                  onValueChange={(val) => field.onChange(parseInt(val))}
+                  onValueChange={(val) => {
+                    field.onChange(parseInt(val));
+                    form.clearErrors("scheduleHour");
+                  }}
                   value={field.value.toString()}
                 >
                   <FormControl>
@@ -437,6 +460,11 @@ export function AutomationWizard({
                         value={hour.value.toString()}
                       >
                         {hour.label}
+                        {takenHours.has(hour.value) && (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            In use
+                          </span>
+                        )}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -58,14 +58,27 @@ async function createResumeForMatching(
   });
 }
 
+// Opens the Schedule step's time picker and selects the given hour. Matches the
+// option by an anchored label so it works whether or not the hour carries the
+// "In use" suffix.
+async function selectScheduleHour(page: Page, dialog: Locator, hour: number) {
+  const label = `${String(hour).padStart(2, "0")}:00`;
+  await dialog.getByRole("combobox").click();
+  await page.getByRole("option", { name: new RegExp(`^${label}`) }).click();
+}
+
 // Walks the 6-step wizard for a Greenhouse automation. Company selection uses
 // the seeded companies.json typeahead (a local filter, no network), picking the
-// first browse result so it stays robust to seed changes.
+// first browse result so it stays robust to seed changes. The schedule hour
+// defaults to the worker's parallelIndex: every spec shares the admin user and
+// only one automation may run per hour, so a worker-unique hour keeps parallel
+// specs from colliding on that rule.
 async function createGreenhouseAutomation(
   page: Page,
   name: string,
   resumeTitle: string,
   cleanup: CleanupRegistry,
+  hour: number = test.info().parallelIndex,
 ) {
   await page.goto("/dashboard/automations");
   await page.getByRole("button", { name: "Create Automation" }).click();
@@ -91,8 +104,11 @@ async function createGreenhouseAutomation(
   await page.getByRole("option", { name: resumeTitle }).click();
   await dialog.getByRole("button", { name: "Next" }).click();
 
-  // Step 4: Matching (default threshold) and Step 5: Schedule (default hour)
+  // Step 4: Matching (default threshold)
   await dialog.getByRole("button", { name: "Next" }).click();
+
+  // Step 5: Schedule — worker-unique hour (see fn doc)
+  await selectScheduleHour(page, dialog, hour);
   await dialog.getByRole("button", { name: "Next" }).click();
 
   // Step 6: Review -> submit
@@ -270,5 +286,72 @@ test.describe("Automations", () => {
       await dialog.getByRole("button", { name: "Next" }).click();
     }
     await submitWizard(page, dialog, /Update Automation/, editedName);
+  });
+
+  test("should mark in-use hours, block a duplicate schedule, and allow a free hour", async ({
+    page,
+    cleanup,
+  }) => {
+    const resumeTitle = uniqueName("Automation Resume");
+    const nameA = uniqueName("Schedule A");
+    const nameB = uniqueName("Schedule B");
+    // parallelIndex is 0..3 locally / 0 in CI. Base and +12 stay disjoint from
+    // every other worker's base hour, so nothing else claims these two hours.
+    const idx = test.info().parallelIndex;
+    const hourA = idx;
+    const hourB = idx + 12;
+    const labelA = `${String(hourA).padStart(2, "0")}:00`;
+
+    await createResumeForMatching(page, resumeTitle, cleanup);
+    await createGreenhouseAutomation(page, nameA, resumeTitle, cleanup, hourA);
+
+    // Open a second Create wizard and walk to the Schedule step.
+    cleanup.automation(nameB);
+    await page.getByRole("button", { name: "Create Automation" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog
+      .getByPlaceholder("e.g., Full Stack Jobs Calgary")
+      .fill(nameB);
+    await dialog.getByRole("button", { name: "Next" }).click();
+
+    await dialog.getByRole("button", { name: /Search companies/ }).click();
+    await expect(page.getByRole("option").first()).toBeVisible();
+    await page.getByRole("option").first().click();
+    await page.keyboard.press("Escape");
+    await dialog.getByRole("button", { name: "Next" }).click();
+
+    await dialog.getByRole("combobox").click();
+    await page.getByRole("option", { name: resumeTitle }).click();
+    await dialog.getByRole("button", { name: "Next" }).click();
+
+    // Matching -> Schedule
+    await dialog.getByRole("button", { name: "Next" }).click();
+
+    // hourA (taken by automation A) is flagged "In use" in the picker.
+    await dialog.getByRole("combobox").click();
+    await expect(
+      page
+        .getByRole("option")
+        .filter({ hasText: labelA })
+        .filter({ hasText: "In use" }),
+    ).toBeVisible();
+
+    // Picking the taken hour and clicking Next surfaces the clash error and
+    // keeps the wizard on the Schedule step.
+    await page.getByRole("option").filter({ hasText: labelA }).click();
+    await dialog.getByRole("button", { name: "Next" }).click();
+    await expect(
+      dialog.getByText(/Another automation already runs at/),
+    ).toBeVisible();
+    await expect(dialog.getByText("Step 5 of 6")).toBeVisible();
+
+    // Switching to a free hour clears the error and lets the wizard proceed.
+    await selectScheduleHour(page, dialog, hourB);
+    await expect(
+      dialog.getByText(/Another automation already runs at/),
+    ).not.toBeVisible();
+    await dialog.getByRole("button", { name: "Next" }).click();
+    await expect(dialog.getByText("Step 6 of 6")).toBeVisible();
+    await submitWizard(page, dialog, /Create Automation/, nameB);
   });
 });

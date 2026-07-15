@@ -96,6 +96,7 @@ export function AutomationContainer({ resumes }: AutomationContainerProps) {
         open={wizardOpen}
         onOpenChange={handleWizardClose}
         resumes={resumes}
+        automations={automations}
         onSuccess={handleSuccess}
         editAutomation={editAutomation}
       />
