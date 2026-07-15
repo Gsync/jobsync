@@ -27,8 +27,10 @@ export async function POST(req: NextRequest) {
     companies = [],
     locations = [],
     activityTypes = [],
+    activities = [],
     tags = [],
     mcpTokens = [],
+    automations = [],
   }: {
     jobIds?: string[];
     resumes?: string[];
@@ -38,9 +40,20 @@ export async function POST(req: NextRequest) {
     companies?: string[];
     locations?: string[];
     activityTypes?: string[];
+    activities?: string[];
     tags?: string[];
     mcpTokens?: string[];
+    automations?: string[];
   } = await req.json();
+
+  // Delete automations before resumes: Automation.resumeId is a required FK, so
+  // a resume can't be removed while an automation references it. Deleting the
+  // automation cascades its runs and nulls discovered jobs' automationId.
+  if (automations.length > 0) {
+    await prisma.automation.deleteMany({
+      where: { name: { in: automations }, userId },
+    });
+  }
 
   // Delete jobs, resumes and tasks first (they/their sections reference the
   // Library items), so those items become unused and eligible for deletion.
@@ -68,6 +81,17 @@ export async function POST(req: NextRequest) {
       await prisma.activity.deleteMany({ where: { taskId: id, userId } });
       await prisma.task.deleteMany({ where: { id, userId } });
     }
+  }
+
+  // Delete standalone activities (created directly on the activities page, not
+  // through a task) by name before the Library teardown, so their activityType
+  // reference count drops to zero and the type becomes eligible for deletion.
+  // Starting an activity spawns a second running row with the same
+  // activityName, so matching on name removes both.
+  if (activities.length > 0) {
+    await prisma.activity.deleteMany({
+      where: { activityName: { in: activities }, userId },
+    });
   }
 
   // Delete questions before tags below — deleteTagsByName only removes a tag

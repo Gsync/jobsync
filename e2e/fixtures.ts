@@ -123,8 +123,10 @@ export type CleanupRegistry = {
   company: (name: string) => void;
   location: (name: string) => void;
   activityType: (name: string) => void;
+  activity: (name: string) => void;
   tag: (name: string) => void;
   mcpToken: (name: string) => void;
+  automation: (name: string) => void;
 };
 
 type Fixtures = {
@@ -148,8 +150,10 @@ export const test = base.extend<Fixtures>({
     const companies: string[] = [];
     const locations: string[] = [];
     const activityTypes: string[] = [];
+    const activities: string[] = [];
     const tags: string[] = [];
     const mcpTokens: string[] = [];
+    const automations: string[] = [];
     await use({
       job: (id) => jobIds.push(id),
       resume: (title) => resumes.push(title),
@@ -159,8 +163,10 @@ export const test = base.extend<Fixtures>({
       company: (name) => companies.push(name),
       location: (name) => locations.push(name),
       activityType: (name) => activityTypes.push(name),
+      activity: (name) => activities.push(name),
       tag: (name) => tags.push(name),
       mcpToken: (name) => mcpTokens.push(name),
+      automation: (name) => automations.push(name),
     });
     // page.request carries the session cookie; page is still alive here
     // because cleanup tears down before the page fixture.
@@ -174,8 +180,10 @@ export const test = base.extend<Fixtures>({
         companies,
         locations,
         activityTypes,
+        activities,
         tags,
         mcpTokens,
+        automations,
       },
     });
     if (!res.ok()) {
