@@ -1,12 +1,10 @@
-import { ResumeScores } from "@/models/ai.schemas";
 import { AiModel } from "@/models/ai.model";
-import { stripThinking } from "@/lib/ai/stripThinking";
+import {
+  parseResumeReview,
+  type ResumeReviewResult,
+} from "@/lib/ai/resumeReview/parse";
 
-export type ResumeReviewResult = {
-  scores?: ResumeScores;
-  // Markdown review body (scores line and any <think> blocks stripped out).
-  body: string;
-};
+export type { ResumeReviewResult } from "@/lib/ai/resumeReview/parse";
 
 type StreamResumeReviewArgs = {
   resumeId: string;
@@ -15,37 +13,6 @@ type StreamResumeReviewArgs = {
   onUpdate?: (result: ResumeReviewResult) => void;
   signal?: AbortSignal;
 };
-
-// Match greedily on digits (not {1,3}) so an out-of-range value like 1000
-// still parses — clamp() below brings it back into 0-100 rather than failing
-// the whole line and dropping every score.
-const SCORES_RE =
-  /SCORES:\s*overall=(\d+)\s+impact=(\d+)\s+clarity=(\d+)\s+ats=(\d+)/i;
-
-function parse(raw: string): ResumeReviewResult {
-  const text = stripThinking(raw);
-  const match = text.match(SCORES_RE);
-
-  let scores: ResumeScores | undefined;
-  if (match) {
-    const clamp = (n: number) => Math.max(0, Math.min(100, n));
-    scores = {
-      overall: clamp(Number(match[1])),
-      impact: clamp(Number(match[2])),
-      clarity: clamp(Number(match[3])),
-      atsCompatibility: clamp(Number(match[4])),
-    };
-  }
-
-  // Remove the scores line from the body. Before it has fully streamed, also
-  // hide a leading partial "SCORES:" line so it doesn't flash in the markdown.
-  let body = match
-    ? text.replace(match[0], "")
-    : text.replace(/^\s*SCORES:[^\n]*(\n|$)/i, "");
-  body = body.replace(/^\s+/, "");
-
-  return { scores, body };
-}
 
 // Consumes the plain-text stream from /api/ai/resume/review and returns the
 // parsed scores + markdown body. Salvages whatever arrived if the stream ends
@@ -84,14 +51,14 @@ export async function streamResumeReview({
       const { done, value } = await reader.read();
       if (done) break;
       raw += decoder.decode(value, { stream: true });
-      onUpdate?.(parse(raw));
+      onUpdate?.(parseResumeReview(raw));
     }
   } catch (err) {
     // Abnormal end (abort / incomplete chunked encoding): keep what we have.
     if (!raw) throw err;
   }
 
-  const final = parse(raw);
+  const final = parseResumeReview(raw);
   if (!final.body && !final.scores) {
     throw new Error(
       "The AI service returned no data. Please ensure it is running and try again.",

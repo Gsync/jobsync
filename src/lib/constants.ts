@@ -98,6 +98,7 @@ export const APP_CONSTANTS = {
   MCP_DEFAULT_STATUS: "draft",
   MCP_MATCH_MIN_DESCRIPTION_LENGTH: 200,
   MCP_MATCH_PROVIDER_MARKER: "mcp",
+  MCP_REVIEW_MIN_RESUME_LENGTH: 400,
 
   // File uploads
   UPLOADS_DIR: process.env.NODE_ENV !== "production" ? "data" : "/data",

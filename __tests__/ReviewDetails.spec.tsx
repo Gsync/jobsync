@@ -33,8 +33,22 @@ describe("ReviewDetails", () => {
     expect(
       screen.getByText("Impact 80 · Clarity 82 · ATS 78"),
     ).toBeInTheDocument();
-    const expected = `Reviewed on ${format(new Date(reviewData.reviewedAt!), "MMM d, yyyy 'at' h:mm a")} using openai / gpt-4o`;
-    expect(screen.getByText(/Reviewed on/)).toHaveTextContent(expected);
+    const date = format(
+      new Date(reviewData.reviewedAt!),
+      "MMM d, yyyy 'at' h:mm a",
+    );
+    expect(screen.getByText(`Reviewed on ${date}`)).toBeInTheDocument();
+    expect(screen.getByText("using openai / gpt-4o")).toBeInTheDocument();
+  });
+
+  it("shows a 'via <agent>' badge for an MCP-sourced review instead of the provider text", () => {
+    render(
+      <ReviewDetails
+        reviewData={{ ...reviewData, provider: "mcp", model: "my-agent-token" }}
+      />,
+    );
+    expect(screen.getByText(/via my-agent-token/)).toBeInTheDocument();
+    expect(screen.queryByText(/using/)).not.toBeInTheDocument();
   });
 
   it("hides the full markdown body by default", () => {

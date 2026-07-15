@@ -65,3 +65,31 @@ export const McpSaveMatchResultInputShape = {
 
 export const McpSaveMatchResultSchema = z.object(McpSaveMatchResultInputShape);
 export type McpSaveMatchResultInput = z.infer<typeof McpSaveMatchResultSchema>;
+
+// No arguments — always reviews the caller's default resume.
+export const McpReviewResumeInputShape = {};
+
+export const McpReviewResumeSchema = z.object(McpReviewResumeInputShape);
+export type McpReviewResumeInput = z.infer<typeof McpReviewResumeSchema>;
+
+// Raw input shape for MCP tool registration (no transforms needed)
+export const McpSaveResumeReviewInputShape = {
+  resumeId: z
+    .string()
+    .min(1)
+    .describe(
+      "The id of the resume this review was produced for, exactly as given " +
+        "in the review_resume directive.",
+    ),
+  reviewText: z.string().min(20).describe(
+    "Your full resume review: a leading 'SCORES: overall=<0-100> " +
+      "impact=<0-100> clarity=<0-100> ats=<0-100>' line, then a markdown body.",
+  ),
+};
+
+export const McpSaveResumeReviewSchema = z.object(
+  McpSaveResumeReviewInputShape,
+);
+export type McpSaveResumeReviewInput = z.infer<
+  typeof McpSaveResumeReviewSchema
+>;

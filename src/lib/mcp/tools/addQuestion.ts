@@ -3,13 +3,6 @@ import { McpAddQuestionSchema } from "@/models/mcp.schema";
 import { createQuestionFromNames } from "@/lib/questions/createQuestionFromNames";
 import { checkMcpRateLimit } from "@/lib/mcp/rate-limit";
 
-export const addQuestionToolDefinition = {
-  name: "add_question",
-  description:
-    "Add an entry to the Question Bank. Resolves or creates tags by name. Returns a transparency report of what was matched vs. created.",
-  inputSchema: McpAddQuestionSchema,
-} as const;
-
 export async function handleAddQuestion(
   input: z.infer<typeof McpAddQuestionSchema>,
   userId: string,

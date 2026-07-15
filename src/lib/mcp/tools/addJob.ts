@@ -6,13 +6,6 @@ import { checkMcpRateLimit } from "@/lib/mcp/rate-limit";
 import { getDefaultResumeForUser } from "@/lib/jobs/getDefaultResumeForUser";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 
-export const addJobToolDefinition = {
-  name: "add_job",
-  description:
-    "Add a job application to JobSync. Resolves or creates company, job title, location, and source by name. Returns a transparency report of what was matched vs. created.",
-  inputSchema: McpAddJobSchema,
-} as const;
-
 function buildMatchDirective(
   jobId: string,
   resumeId: string,

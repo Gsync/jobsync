@@ -510,7 +510,7 @@ model McpAccessToken {
   name        String
   tokenHash   String    @unique
   tokenPrefix String
-  scopes      String    // JSON array string; new tokens are always ["jobs:write","questions:write"]
+  scopes      String    // JSON array string; new tokens are always ["jobs:write","questions:write","resume:write"]
   expiresAt   DateTime
   lastUsedAt  DateTime?
   createdAt   DateTime  @default(now())
