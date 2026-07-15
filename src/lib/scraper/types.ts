@@ -1,11 +1,3 @@
-export interface JobSearchResult {
-  title: string;
-  company: string;
-  location: string;
-  url: string;
-  snippet?: string;
-}
-
 export interface JobDetails {
   title: string;
   company: string;
@@ -28,14 +20,3 @@ export type ScraperError =
 export type ScraperResult<T> =
   | { success: true; data: T }
   | { success: false; error: ScraperError };
-
-export interface ScraperService {
-  readonly boardId: string;
-  readonly boardName: string;
-  search(
-    keywords: string,
-    location: string,
-  ): Promise<ScraperResult<JobSearchResult[]>>;
-  extract(url: string): Promise<ScraperResult<JobDetails>>;
-  close(): Promise<void>;
-}

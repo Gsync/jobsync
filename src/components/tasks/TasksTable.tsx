@@ -380,6 +380,33 @@ function TasksTable({
     </TableHeader>
   );
 
+  const renderGroupedTables = (entries: [string, Task[]][]) => (
+    <>
+      {entries.map(([label, groupTasks]) => (
+        <div key={label} className="mb-6">
+          <h3 className="text-sm font-semibold mb-2 px-2 py-1">
+            {label} ({groupTasks.length})
+          </h3>
+          <Table>
+            {renderTableHeader()}
+            <TableBody>{groupTasks.map(renderTaskRow)}</TableBody>
+          </Table>
+        </div>
+      ))}
+      <DeleteAlertDialog
+        pageTitle="task"
+        open={alertOpen}
+        onOpenChange={setAlertOpen}
+        onDelete={() => deleteTask(taskIdToDelete)}
+      />
+    </>
+  );
+
+  const formatDateLabel = (dateStr: string) => {
+    const date = parse(dateStr, "yyyy-MM-dd", new Date());
+    return isToday(date) ? "Today" : format(date, "MMM d, yyyy");
+  };
+
   if (tasks.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -399,134 +426,28 @@ function TasksTable({
       "No Due Date",
     ];
 
-    return (
-      <>
-        {groupOrder.map((group) => {
-          const groupTasks = groupedTasks[group];
-          if (groupTasks.length === 0) return null;
-
-          return (
-            <div key={group} className="mb-6">
-              <h3
-                className={cn(
-                  "text-sm font-semibold mb-2 px-2 py-1",
-                  group === "Overdue",
-                  group === "Today",
-                  group === "Tomorrow",
-                )}
-              >
-                {group} ({groupTasks.length})
-              </h3>
-              <Table>
-                {renderTableHeader()}
-                <TableBody>{groupTasks.map(renderTaskRow)}</TableBody>
-              </Table>
-            </div>
-          );
-        })}
-        <DeleteAlertDialog
-          pageTitle="task"
-          open={alertOpen}
-          onOpenChange={setAlertOpen}
-          onDelete={() => deleteTask(taskIdToDelete)}
-        />
-      </>
+    return renderGroupedTables(
+      groupOrder
+        .filter((group) => groupedTasks[group].length > 0)
+        .map((group) => [group, groupedTasks[group]]),
     );
   }
 
   if (groupBy === "activityType") {
-    const groupedTasks = groupTasksByActivityType(tasks);
-
-    return (
-      <>
-        {Object.entries(groupedTasks).map(([activityType, groupTasks]) => (
-          <div key={activityType} className="mb-6">
-            <h3 className="text-sm font-semibold mb-2 px-2 py-1">
-              {activityType} ({groupTasks.length})
-            </h3>
-            <Table>
-              {renderTableHeader()}
-              <TableBody>{groupTasks.map(renderTaskRow)}</TableBody>
-            </Table>
-          </div>
-        ))}
-        <DeleteAlertDialog
-          pageTitle="task"
-          open={alertOpen}
-          onOpenChange={setAlertOpen}
-          onDelete={() => deleteTask(taskIdToDelete)}
-        />
-      </>
-    );
+    return renderGroupedTables(Object.entries(groupTasksByActivityType(tasks)));
   }
 
-  if (groupBy === "createdDate") {
-    const groupedTasks = groupTasksByCreatedDate(tasks);
-    const sortedDates = Object.keys(groupedTasks).sort().reverse();
+  if (groupBy === "createdDate" || groupBy === "updatedDate") {
+    const groupedTasks =
+      groupBy === "createdDate"
+        ? groupTasksByCreatedDate(tasks)
+        : groupTasksByUpdatedDate(tasks);
 
-    return (
-      <>
-        {sortedDates.map((dateStr) => {
-          const groupTasks = groupedTasks[dateStr];
-          const date = parse(dateStr, "yyyy-MM-dd", new Date());
-          const displayDate = isToday(date)
-            ? "Today"
-            : format(date, "MMM d, yyyy");
-
-          return (
-            <div key={dateStr} className="mb-6">
-              <h3 className="text-sm font-semibold mb-2 px-2 py-1">
-                {displayDate} ({groupTasks.length})
-              </h3>
-              <Table>
-                {renderTableHeader()}
-                <TableBody>{groupTasks.map(renderTaskRow)}</TableBody>
-              </Table>
-            </div>
-          );
-        })}
-        <DeleteAlertDialog
-          pageTitle="task"
-          open={alertOpen}
-          onOpenChange={setAlertOpen}
-          onDelete={() => deleteTask(taskIdToDelete)}
-        />
-      </>
-    );
-  }
-
-  if (groupBy === "updatedDate") {
-    const groupedTasks = groupTasksByUpdatedDate(tasks);
-    const sortedDates = Object.keys(groupedTasks).sort().reverse();
-
-    return (
-      <>
-        {sortedDates.map((dateStr) => {
-          const groupTasks = groupedTasks[dateStr];
-          const date = parse(dateStr, "yyyy-MM-dd", new Date());
-          const displayDate = isToday(date)
-            ? "Today"
-            : format(date, "MMM d, yyyy");
-
-          return (
-            <div key={dateStr} className="mb-6">
-              <h3 className="text-sm font-semibold mb-2 px-2 py-1">
-                {displayDate} ({groupTasks.length})
-              </h3>
-              <Table>
-                {renderTableHeader()}
-                <TableBody>{groupTasks.map(renderTaskRow)}</TableBody>
-              </Table>
-            </div>
-          );
-        })}
-        <DeleteAlertDialog
-          pageTitle="task"
-          open={alertOpen}
-          onOpenChange={setAlertOpen}
-          onDelete={() => deleteTask(taskIdToDelete)}
-        />
-      </>
+    return renderGroupedTables(
+      Object.keys(groupedTasks)
+        .sort()
+        .reverse()
+        .map((dateStr) => [formatDateLabel(dateStr), groupedTasks[dateStr]]),
     );
   }
 

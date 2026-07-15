@@ -5,6 +5,30 @@ import { getCurrentUser } from "@/utils/user.utils";
 import { Prisma } from "@prisma/client";
 import { format, parseISO, subDays } from "date-fns";
 
+// Local-time day range: start at 00:00 daysBack days ago, end today 23:59:59.999
+const getLocalDayRange = (daysBack: number): { start: Date; end: Date } => {
+  const now = new Date();
+  const end = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    23,
+    59,
+    59,
+    999,
+  );
+  const start = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - daysBack,
+    0,
+    0,
+    0,
+    0,
+  );
+  return { start, end };
+};
+
 export const getJobsAppliedForPeriod = async (
   daysAgo: number,
 ): Promise<any | undefined> => {
@@ -82,26 +106,8 @@ export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
     if (!user) {
       throw new Error("Not authenticated");
     }
-    const now = new Date();
     // Use local time for date range to match grouping and getLast7Days
-    const today = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      23,
-      59,
-      59,
-      999,
-    );
-    const sevenDaysAgo = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() - 6,
-      0,
-      0,
-      0,
-      0,
-    );
+    const { start: sevenDaysAgo, end: today } = getLocalDayRange(6);
     const activities = await prisma.activity.findMany({
       where: {
         userId: user.id,
@@ -159,26 +165,8 @@ export const getJobsActivityForPeriod = async (): Promise<any | undefined> => {
     if (!user) {
       throw new Error("Not authenticated");
     }
-    const now = new Date();
     // Use local time for date range to match grouping and getLast7Days
-    const today = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      23,
-      59,
-      59,
-      999,
-    );
-    const sevenDaysAgo = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() - 6,
-      0,
-      0,
-      0,
-      0,
-    );
+    const { start: sevenDaysAgo, end: today } = getLocalDayRange(6);
     const jobData = await prisma.job.groupBy({
       by: "appliedDate",
       _count: {
@@ -234,25 +222,7 @@ export const getTopActivityTypesByDuration = async (
   }
 
   try {
-    const now = new Date();
-    const today = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      23,
-      59,
-      59,
-      999,
-    );
-    const startDate = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() - daysAgo + 1,
-      0,
-      0,
-      0,
-      0,
-    );
+    const { start: startDate, end: today } = getLocalDayRange(daysAgo - 1);
 
     const activities = await prisma.activity.findMany({
       where: {
@@ -330,26 +300,8 @@ export const getActivityCalendarData = async (): Promise<any | undefined> => {
     if (!user) {
       throw new Error("Not authenticated");
     }
-    const now = new Date();
     // Use local time for date range to match grouping
-    const today = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      23,
-      59,
-      59,
-      999,
-    );
-    const daysAgo = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() - 365,
-      0,
-      0,
-      0,
-      0,
-    );
+    const { start: daysAgo, end: today } = getLocalDayRange(365);
     const jobData = await prisma.job.groupBy({
       by: "appliedDate",
       _count: {

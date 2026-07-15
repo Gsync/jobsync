@@ -2,13 +2,12 @@ import { useForm } from "react-hook-form";
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
+import { FormDialogFooter } from "../FormDialogFooter";
 import { AddSummarySectionFormSchema } from "@/models/addSummaryForm.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "../ui/button";
 import {
   Form,
   FormControl,
@@ -18,7 +17,6 @@ import {
   FormMessage,
 } from "../ui/form";
 import { Input } from "../ui/input";
-import { Loader } from "lucide-react";
 import { useEffect, useTransition } from "react";
 import { toast } from "../ui/use-toast";
 import { z } from "zod";
@@ -141,26 +139,11 @@ function AddResumeSummary({
                 )}
               />
             </div>
-            <div className="md:col-span-2 mt-4">
-              <DialogFooter
-              // className="md:col-span
-              >
-                <div>
-                  <Button
-                    type="reset"
-                    variant="outline"
-                    className="mt-2 md:mt-0 w-full"
-                    onClick={closeDialog}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-                <Button type="submit" disabled={!formState.isDirty}>
-                  Save
-                  {isPending && <Loader className="h-4 w-4 shrink-0 spinner" />}
-                </Button>
-              </DialogFooter>
-            </div>
+            <FormDialogFooter
+              onCancel={closeDialog}
+              isPending={isPending}
+              saveDisabled={!formState.isDirty}
+            />
           </form>
         </Form>
       </DialogContent>

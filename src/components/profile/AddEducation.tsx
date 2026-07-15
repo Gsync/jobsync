@@ -7,10 +7,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
+import { FormDialogFooter } from "../FormDialogFooter";
 import {
   Form,
   FormControl,
@@ -23,10 +23,8 @@ import { Input } from "../ui/input";
 import { DatePicker } from "../DatePicker";
 import { Switch } from "../ui/switch";
 import TiptapEditor from "../TiptapEditor";
-import { Button } from "../ui/button";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "../ui/use-toast";
-import { Loader } from "lucide-react";
 import { Combobox } from "../ComboBox";
 import { JobLocation } from "@/models/job.model";
 import { addEducation, updateEducation } from "@/actions/profile.actions";
@@ -326,24 +324,11 @@ function AddEducation({
                 )}
               />
             </div>
-            <div className="md:col-span-2 mt-4">
-              <DialogFooter>
-                <div>
-                  <Button
-                    type="reset"
-                    variant="outline"
-                    className="mt-2 md:mt-0 w-full"
-                    onClick={closeDialog}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-                <Button type="submit" disabled={!formState.isDirty}>
-                  Save
-                  {isPending && <Loader className="h-4 w-4 shrink-0 spinner" />}
-                </Button>
-              </DialogFooter>
-            </div>
+            <FormDialogFooter
+              onCancel={closeDialog}
+              isPending={isPending}
+              saveDisabled={!formState.isDirty}
+            />
           </form>
         </Form>
       </DialogContent>

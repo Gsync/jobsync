@@ -25,6 +25,15 @@ import path from "path";
 import fs from "fs";
 import { writeFile } from "fs/promises";
 
+// Canonical IDOR guard for actions that only need to confirm resume ownership
+const assertResumeOwnership = async (resumeId: string, userId: string) => {
+  const owned = await prisma.resume.findUnique({
+    where: { id: resumeId, profile: { userId } },
+    select: { id: true },
+  });
+  if (!owned) throw new Error("Resume not found or access denied");
+};
+
 const resumeListSelect = {
   id: true,
   profileId: true,
@@ -553,11 +562,7 @@ export const addResumeSummary = async (
       throw new Error("Not authenticated");
     }
 
-    const owned = await prisma.resume.findUnique({
-      where: { id: data.resumeId!, profile: { userId: user.id } },
-      select: { id: true },
-    });
-    if (!owned) throw new Error("Resume not found or access denied");
+    await assertResumeOwnership(data.resumeId!, user.id);
 
     const res = await prisma.resumeSection.create({
       data: {
@@ -637,11 +642,7 @@ export const addExperience = async (
       throw new Error("Not authenticated");
     }
 
-    const owned = await prisma.resume.findUnique({
-      where: { id: data.resumeId!, profile: { userId: user.id } },
-      select: { id: true },
-    });
-    if (!owned) throw new Error("Resume not found or access denied");
+    await assertResumeOwnership(data.resumeId!, user.id);
 
     if (!data.sectionId && !data.sectionTitle) {
       throw new Error("SectionTitle is required.");
@@ -732,11 +733,7 @@ export const addEducation = async (
       throw new Error("Not authenticated");
     }
 
-    const owned = await prisma.resume.findUnique({
-      where: { id: data.resumeId!, profile: { userId: user.id } },
-      select: { id: true },
-    });
-    if (!owned) throw new Error("Resume not found or access denied");
+    await assertResumeOwnership(data.resumeId!, user.id);
 
     const section = !data.sectionId
       ? await prisma.resumeSection.create({
@@ -825,11 +822,7 @@ export const addCertification = async (
       throw new Error("Not authenticated");
     }
 
-    const owned = await prisma.resume.findUnique({
-      where: { id: data.resumeId!, profile: { userId: user.id } },
-      select: { id: true },
-    });
-    if (!owned) throw new Error("Resume not found or access denied");
+    await assertResumeOwnership(data.resumeId!, user.id);
 
     const section = !data.sectionId
       ? await prisma.resumeSection.create({
@@ -903,11 +896,7 @@ export const addSkillsSection = async (
     const user = await getCurrentUser();
     if (!user) throw new Error("Not authenticated");
 
-    const owned = await prisma.resume.findUnique({
-      where: { id: data.resumeId, profile: { userId: user.id } },
-      select: { id: true },
-    });
-    if (!owned) throw new Error("Resume not found or access denied");
+    await assertResumeOwnership(data.resumeId, user.id);
 
     const section = await prisma.resumeSection.create({
       data: {
