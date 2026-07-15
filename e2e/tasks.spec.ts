@@ -240,7 +240,7 @@ test.describe("Tasks Management", () => {
       }
     });
 
-    test("should start activity from task and redirect to activities", async ({
+    test("should start activity from task and stay on tasks", async ({
       page,
       cleanup,
     }) => {
@@ -263,7 +263,10 @@ test.describe("Tasks Management", () => {
         .getByTestId("task-start-activity-btn")
         .click({ force: true });
 
-      await expect(page).toHaveURL(/\/dashboard\/activities/);
+      await expect(page).toHaveURL(/\/dashboard\/tasks/);
+      await expect(
+        page.getByRole("button", { name: "Stop" }),
+      ).toBeVisible({ timeout: 10000 });
 
       // Stop the running activity (the linked activity row is removed by the
       // cleanup fixture along with the task).
@@ -293,7 +296,9 @@ test.describe("Tasks Management", () => {
       await taskRow
         .getByTestId("task-start-activity-btn")
         .click({ force: true });
-      await expect(page).toHaveURL(/\/dashboard\/activities/);
+      await expect(
+        page.getByRole("button", { name: "Stop" }),
+      ).toBeVisible({ timeout: 10000 });
 
       // Stop the activity so we can test restarting from the task. Wait for
       // the global activity banner to actually clear before proceeding —
@@ -316,11 +321,13 @@ test.describe("Tasks Management", () => {
         taskRowAfter.getByTestId("task-start-activity-btn"),
       ).toBeVisible();
 
-      // Clicking it restarts the activity (redirects to activities page)
+      // Clicking it restarts the activity (stays on tasks page)
       await taskRowAfter
         .getByTestId("task-start-activity-btn")
         .click({ force: true });
-      await expect(page).toHaveURL(/\/dashboard\/activities/);
+      await expect(
+        page.getByRole("button", { name: "Stop" }),
+      ).toBeVisible({ timeout: 10000 });
 
       // Stop the restarted activity to leave a clean state
       await page.getByRole("button", { name: "Stop" }).click({ force: true });

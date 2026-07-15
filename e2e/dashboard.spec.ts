@@ -180,7 +180,9 @@ test.describe("Dashboard page", () => {
     } catch {
       // No conflicting activity, continue.
     }
-    await expect(page).toHaveURL(/\/dashboard\/activities/);
+    await expect(
+      page.getByRole("button", { name: "Stop" }),
+    ).toBeVisible({ timeout: 10000 });
 
     await page.getByRole("button", { name: "Stop" }).click({ force: true });
     await expect(page.getByRole("button", { name: "Stop" })).not.toBeVisible({
