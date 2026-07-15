@@ -186,3 +186,44 @@ export async function getOllamaBaseUrl(userId?: string): Promise<string> {
   }
   return process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
 }
+
+async function resolveApiKeyRecord(
+  userId: string,
+  provider: string,
+): Promise<{ value: string; encrypted: boolean } | null> {
+  const apiKey = await db.apiKey.findUnique({
+    where: {
+      userId_provider: { userId, provider },
+    },
+  });
+  if (!apiKey) return null;
+  if (apiKey.iv === "") return { value: apiKey.encryptedKey, encrypted: false };
+  const { decrypt } = await import("@/lib/encryption");
+  return { value: decrypt(apiKey.encryptedKey, apiKey.iv), encrypted: true };
+}
+
+export async function getOpenaiCompatibleBaseUrl(userId?: string): Promise<string> {
+  try {
+    const resolvedUserId = userId ?? (await getCurrentUser())?.id;
+    if (resolvedUserId) {
+      const record = await resolveApiKeyRecord(resolvedUserId, "openai-compatible");
+      if (record) return record.value;
+    }
+  } catch {
+    // Fall through to defaults
+  }
+  return process.env.OPENAI_COMPAT_BASE_URL || "http://127.0.0.1:8000";
+}
+
+export async function getOpenaiCompatibleApiKey(userId?: string): Promise<string | null> {
+  try {
+    const resolvedUserId = userId ?? (await getCurrentUser())?.id;
+    if (resolvedUserId) {
+      const record = await resolveApiKeyRecord(resolvedUserId, "openai-compatible-key");
+      if (record) return record.value;
+    }
+  } catch {
+    // Fall through to defaults
+  }
+  return process.env.OPENAI_COMPAT_API_KEY || null;
+}
