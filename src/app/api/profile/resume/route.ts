@@ -11,6 +11,7 @@ import fs from "fs";
 import { getTimestampedFileName } from "@/lib/utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { PDF_MAGIC, ZIP_MAGIC } from "@/lib/ai/import/extract-text";
+import { getOwnedResumeFile } from "@/lib/resumes/ownedResumeFile";
 
 const ALLOWED_MIME = new Set<string>(APP_CONSTANTS.RESUME_ALLOWED_MIME_TYPES);
 
@@ -118,22 +119,27 @@ export const GET = async (req: NextRequest) => {
     }
 
     const { searchParams } = new URL(req.url);
-    const filePath = searchParams.get("filePath");
+    const resumeId = searchParams.get("resumeId");
 
-    if (!filePath) {
+    if (!resumeId) {
       return NextResponse.json(
-        { error: "File path is required" },
+        { error: "Resume ID is required" },
         { status: 400 }
       );
     }
 
-    const fullFilePath = path.join(filePath);
+    const ownedFile = await getOwnedResumeFile(userId!, resumeId);
+    if (!ownedFile) {
+      return NextResponse.json({ error: "File not found" }, { status: 404 });
+    }
+
+    const fullFilePath = ownedFile.filePath;
     if (!fs.existsSync(fullFilePath)) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
     const fileType = path.extname(fullFilePath).toLowerCase();
-    const fileName = path.basename(fullFilePath);
+    const fileName = ownedFile.fileName;
 
     let contentType;
 

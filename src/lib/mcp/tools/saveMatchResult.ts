@@ -6,34 +6,65 @@ import { checkMcpRateLimit } from "@/lib/mcp/rate-limit";
 import { parseJobMatch } from "@/lib/ai/jobMatch/parse";
 import type { JobMatchData } from "@/models/ai.schemas";
 
+type SaveMatchResponse = {
+  content: Array<{ type: "text"; text: string }>;
+  structuredContent: {
+    saved: boolean;
+    jobId: string;
+    score: number | null;
+    recommendation: string | null;
+    errorCode: string | null;
+  };
+};
+
+function matchResponse(
+  jobId: string,
+  text: string,
+  options: {
+    saved?: boolean;
+    score?: number;
+    recommendation?: string;
+    errorCode?: string;
+  } = {},
+): SaveMatchResponse {
+  return {
+    content: [{ type: "text", text }],
+    structuredContent: {
+      saved: options.saved ?? false,
+      jobId,
+      score: options.score ?? null,
+      recommendation: options.recommendation ?? null,
+      errorCode: options.errorCode ?? null,
+    },
+  };
+}
+
 export async function handleSaveMatchResult(
   input: z.infer<typeof McpSaveMatchResultSchema>,
   userId: string,
   tokenName: string,
-): Promise<{ content: Array<{ type: "text"; text: string }> }> {
+): Promise<SaveMatchResponse> {
   // Shares add_job's bucket by design. At the exact window boundary a match can
   // be computed but rejected here; accepted — the user can retry or match
   // in-app, and nothing is left in a corrupt state.
   const rateCheck = checkMcpRateLimit(userId);
   if (!rateCheck.allowed) {
     const resetSec = Math.ceil(rateCheck.resetIn / 1000);
-    return {
-      content: [{ type: "text", text: `Rate limit exceeded. Try again in ${resetSec}s.` }],
-    };
+    return matchResponse(
+      input.jobId,
+      `Rate limit exceeded. Try again in ${resetSec}s.`,
+      { errorCode: "rate_limited" },
+    );
   }
 
   const parsed = parseJobMatch(input.matchText);
   if (!parsed.scores) {
-    return {
-      content: [
-        {
-          type: "text",
-          text:
-            "Could not parse a SCORES line. Include a leading 'SCORES: " +
-            "match=<0-100> recommendation=<strong|good|partial|weak>' line.",
-        },
-      ],
-    };
+    return matchResponse(
+      input.jobId,
+      "Could not parse a SCORES line. Include a leading 'SCORES: " +
+        "match=<0-100> recommendation=<strong|good|partial|weak>' line.",
+      { errorCode: "invalid_match_format" },
+    );
   }
 
   // Provenance needs only id + title, so avoid the full resume graph that
@@ -83,26 +114,26 @@ export async function handleSaveMatchResult(
     });
   } catch (error: any) {
     if (error?.code === "P2025") {
-      return {
-        content: [
-          {
-            type: "text",
-            text: "Job not found, not owned by this token's user, or not eligible for a match via MCP.",
-          },
-        ],
-      };
+      return matchResponse(
+        input.jobId,
+        "Job not found, not owned by this token's user, or not eligible for a match via MCP.",
+        { errorCode: "not_found_or_forbidden" },
+      );
     }
-    return {
-      content: [{ type: "text", text: `Error: ${error?.message ?? "Unknown error"}` }],
-    };
+    return matchResponse(
+      input.jobId,
+      `Error: ${error?.message ?? "Unknown error"}`,
+      { errorCode: "internal_error" },
+    );
   }
 
-  return {
-    content: [
-      {
-        type: "text",
-        text: `Match saved for job ${input.jobId}: ${parsed.scores.recommendation} (score ${parsed.scores.matchScore}).`,
-      },
-    ],
-  };
+  return matchResponse(
+    input.jobId,
+    `Match saved for job ${input.jobId}: ${parsed.scores.recommendation} (score ${parsed.scores.matchScore}).`,
+    {
+      saved: true,
+      score: parsed.scores.matchScore,
+      recommendation: parsed.scores.recommendation,
+    },
+  );
 }

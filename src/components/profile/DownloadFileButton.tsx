@@ -1,13 +1,13 @@
 import { Paperclip } from "lucide-react";
 
 export function DownloadFileButton(
-  filePath: any,
+  resumeId: string,
   fileTitle: string,
   fileName: string
 ) {
   const handleDownload = async () => {
     const response = await fetch(
-      `/api/profile/resume?filePath=${encodeURIComponent(filePath)}`,
+      `/api/profile/resume?resumeId=${encodeURIComponent(resumeId)}`,
       {
         method: "GET",
         headers: {
@@ -21,7 +21,7 @@ export function DownloadFileButton(
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = filePath.split("/").pop(); // Get the file name
+      link.download = fileName;
       link.target = "_blank";
       link.click();
       window.URL.revokeObjectURL(url); // Clean up

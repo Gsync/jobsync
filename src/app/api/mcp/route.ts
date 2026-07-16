@@ -18,6 +18,7 @@ import { handleAddQuestion } from "@/lib/mcp/tools/addQuestion";
 import { handleSaveMatchResult } from "@/lib/mcp/tools/saveMatchResult";
 import { handleReviewResume } from "@/lib/mcp/tools/reviewResume";
 import { handleSaveResumeReview } from "@/lib/mcp/tools/saveResumeReview";
+import { hasMcpScope, MCP_SCOPE } from "@/lib/mcp/scopes";
 
 function isMcpEnabled(): boolean {
   const env = process.env.MCP_ENABLED;
@@ -49,12 +50,12 @@ async function handler(req: Request): Promise<Response> {
     "Add a job application to JobSync. Resolves or creates company, job title, location, and source by name. Returns a transparency report of what was matched vs. created.",
     McpAddJobInputShape,
     async (rawInput) => {
-      if (!auth.scopes.includes("jobs:write")) {
+      if (!hasMcpScope(auth.scopes, MCP_SCOPE.JOBS_CREATE)) {
         return {
           content: [
             {
               type: "text" as const,
-              text: "Insufficient scope. Required: jobs:write",
+              text: "Insufficient scope. Required: jobs:create",
             },
           ],
         };
@@ -77,7 +78,7 @@ async function handler(req: Request): Promise<Response> {
     "Add an entry to the Question Bank. Resolves or creates tags by name. Returns a transparency report of what was matched vs. created.",
     McpAddQuestionInputShape,
     async (rawInput) => {
-      if (!auth.scopes.includes("questions:write")) {
+      if (!hasMcpScope(auth.scopes, MCP_SCOPE.QUESTIONS_WRITE)) {
         return {
           content: [
             {
@@ -105,12 +106,12 @@ async function handler(req: Request): Promise<Response> {
     "Persist a job-fit match analysis (produced by you, the agent) against a job previously created with add_job. Call this after add_job hands you a match directive.",
     McpSaveMatchResultInputShape,
     async (rawInput) => {
-      if (!auth.scopes.includes("jobs:write")) {
+      if (!hasMcpScope(auth.scopes, MCP_SCOPE.MATCHES_WRITE)) {
         return {
           content: [
             {
               type: "text" as const,
-              text: "Insufficient scope. Required: jobs:write",
+              text: "Insufficient scope. Required: matches:write",
             },
           ],
         };
@@ -128,16 +129,21 @@ async function handler(req: Request): Promise<Response> {
     },
   );
 
-  // No scope gate, intentionally — unlike the tools above, review_resume and
-  // save_resume_review have no `resume:write` check. Tokens created before
-  // this feature shipped don't have that scope and must keep working (see
-  // docs/plans/feature-mcp-resume-review.md, "Locked decisions"). Do not add
-  // one without also backfilling existing tokens.
   server.tool(
     "review_resume",
     "Fetch the user's default resume so you can review it. Returns the normalized resume text plus a directive — produce the review yourself, then call save_resume_review with the result.",
     McpReviewResumeInputShape,
     async () => {
+      if (!hasMcpScope(auth.scopes, MCP_SCOPE.RESUMES_READ)) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "Insufficient scope. Required: resumes:read",
+            },
+          ],
+        };
+      }
       return handleReviewResume(userId);
     },
   );
@@ -147,6 +153,16 @@ async function handler(req: Request): Promise<Response> {
     "Persist a resume review (produced by you, the agent) against the resume previously handed to you by review_resume. Call this after review_resume hands you a review directive.",
     McpSaveResumeReviewInputShape,
     async (rawInput) => {
+      if (!hasMcpScope(auth.scopes, MCP_SCOPE.RESUME_REVIEWS_WRITE)) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "Insufficient scope. Required: resume-reviews:write",
+            },
+          ],
+        };
+      }
       const parsed = McpSaveResumeReviewSchema.safeParse(rawInput);
       if (!parsed.success) {
         const issues = parsed.error.issues.map((i) => i.message).join("; ");
