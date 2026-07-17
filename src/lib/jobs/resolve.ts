@@ -1,5 +1,6 @@
 import prisma from "@/lib/db";
 import { JOB_TYPES, WORKPLACE_TYPES } from "@/models/job.model";
+import { canonicalizeEntityValue } from "./canonicalize";
 
 export interface ResolvedEntity {
   id: string;
@@ -15,68 +16,82 @@ export interface ResolvedTag extends ResolvedEntity {
 
 // Bucket A — resolve-or-create by exact-normalized value
 
-export async function resolveCompany(
-  label: string,
-  userId: string,
-): Promise<ResolvedEntity> {
-  const trimmed = label.trim();
-  const value = trimmed.toLowerCase();
-  const existing = await prisma.company.findUnique({
-    where: { value_createdBy: { value, createdBy: userId } },
-  });
-  if (existing) return { id: existing.id, label: existing.label, created: false };
-  const created = await prisma.company.create({
-    data: { label: trimmed, value, createdBy: userId },
-  });
-  return { id: created.id, label: created.label, created: true };
+interface EntityRow {
+  id: string;
+  label: string;
 }
 
-export async function resolveJobTitle(
-  label: string,
-  userId: string,
-): Promise<ResolvedEntity> {
-  const trimmed = label.trim();
-  const value = trimmed.toLowerCase();
-  const existing = await prisma.jobTitle.findUnique({
-    where: { value_createdBy: { value, createdBy: userId } },
-  });
-  if (existing) return { id: existing.id, label: existing.label, created: false };
-  const created = await prisma.jobTitle.create({
-    data: { label: trimmed, value, createdBy: userId },
-  });
-  return { id: created.id, label: created.label, created: true };
+interface EntityDelegate {
+  findUnique(args: {
+    where: { value_createdBy: { value: string; createdBy: string } };
+  }): Promise<EntityRow | null>;
+  create(args: {
+    data: { label: string; value: string; createdBy: string };
+  }): Promise<EntityRow>;
 }
 
-export async function resolveLocation(
+// findUnique-then-create is a check-then-act race under the
+// value_createdBy unique constraint: if two concurrent calls resolve the
+// same value, the loser's create throws P2002. Re-fetch and return the
+// winner's row instead of propagating, so a benign race never surfaces as
+// an error to the caller (e.g. runner.ts's job-save catch, which can't
+// distinguish this from an unrelated Job.jobUrl race).
+async function resolveEntity(
+  delegate: EntityDelegate,
   label: string,
   userId: string,
+  opts: { stripLegalSuffix?: boolean } = {},
 ): Promise<ResolvedEntity> {
   const trimmed = label.trim();
-  const value = trimmed.toLowerCase();
-  const existing = await prisma.location.findUnique({
+  const value = canonicalizeEntityValue(trimmed, opts);
+  if (!value) throw new Error("A non-empty label is required");
+  const existing = await delegate.findUnique({
     where: { value_createdBy: { value, createdBy: userId } },
   });
   if (existing) return { id: existing.id, label: existing.label, created: false };
-  const record = await prisma.location.create({
-    data: { label: trimmed, value, createdBy: userId },
-  });
-  return { id: record.id, label: record.label, created: true };
+
+  try {
+    const created = await delegate.create({
+      data: { label: trimmed, value, createdBy: userId },
+    });
+    return { id: created.id, label: created.label, created: true };
+  } catch (err: any) {
+    if (err?.code === "P2002") {
+      const winner = await delegate.findUnique({
+        where: { value_createdBy: { value, createdBy: userId } },
+      });
+      if (winner) return { id: winner.id, label: winner.label, created: false };
+    }
+    throw err;
+  }
 }
 
-export async function resolveJobSource(
+export function resolveCompany(
   label: string,
   userId: string,
 ): Promise<ResolvedEntity> {
-  const trimmed = label.trim();
-  const value = trimmed.toLowerCase();
-  const existing = await prisma.jobSource.findUnique({
-    where: { value_createdBy: { value, createdBy: userId } },
-  });
-  if (existing) return { id: existing.id, label: existing.label, created: false };
-  const record = await prisma.jobSource.create({
-    data: { label: trimmed, value, createdBy: userId },
-  });
-  return { id: record.id, label: record.label, created: true };
+  return resolveEntity(prisma.company, label, userId, { stripLegalSuffix: true });
+}
+
+export function resolveJobTitle(
+  label: string,
+  userId: string,
+): Promise<ResolvedEntity> {
+  return resolveEntity(prisma.jobTitle, label, userId);
+}
+
+export function resolveLocation(
+  label: string,
+  userId: string,
+): Promise<ResolvedEntity> {
+  return resolveEntity(prisma.location, label, userId);
+}
+
+export function resolveJobSource(
+  label: string,
+  userId: string,
+): Promise<ResolvedEntity> {
+  return resolveEntity(prisma.jobSource, label, userId);
 }
 
 export async function resolveTag(
@@ -84,15 +99,27 @@ export async function resolveTag(
   userId: string,
 ): Promise<ResolvedTag> {
   const trimmed = label.trim();
-  const value = trimmed.toLowerCase();
+  const value = canonicalizeEntityValue(trimmed);
   const existing = await prisma.tag.findUnique({
     where: { value_createdBy: { value, createdBy: userId } },
   });
   if (existing) return { id: existing.id, label: existing.label, value: existing.value, createdBy: existing.createdBy, created: false };
-  const tag = await prisma.tag.create({
-    data: { label: trimmed, value, createdBy: userId },
-  });
-  return { id: tag.id, label: tag.label, value: tag.value, createdBy: tag.createdBy, created: true };
+  try {
+    const tag = await prisma.tag.create({
+      data: { label: trimmed, value, createdBy: userId },
+    });
+    return { id: tag.id, label: tag.label, value: tag.value, createdBy: tag.createdBy, created: true };
+  } catch (err: any) {
+    if (err?.code === "P2002") {
+      const winner = await prisma.tag.findUnique({
+        where: { value_createdBy: { value, createdBy: userId } },
+      });
+      if (winner) {
+        return { id: winner.id, label: winner.label, value: winner.value, createdBy: winner.createdBy, created: false };
+      }
+    }
+    throw err;
+  }
 }
 
 export async function resolveTags(
@@ -105,7 +132,7 @@ export async function resolveTags(
   for (const l of labels) {
     const trimmed = l.trim();
     if (!trimmed) continue;
-    const key = trimmed.toLowerCase();
+    const key = canonicalizeEntityValue(trimmed);
     if (!seen.has(key)) {
       seen.add(key);
       unique.push(trimmed);

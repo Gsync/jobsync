@@ -2,6 +2,7 @@ import MarkdownIt from "markdown-it";
 import prisma from "@/lib/db";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { normalizeJobUrl } from "@/lib/scraper/utils";
+import { findExistingJobByUrl } from "@/lib/jobs/jobDedupe";
 import { createJobRecord } from "@/lib/jobs/createJobRecord";
 import {
   resolveCompany,
@@ -158,16 +159,13 @@ async function detectDuplicate(
   jobTitleId: string,
   jobUrl?: string,
 ): Promise<{ id: string; title: string; company: string } | null> {
-  // Tier 1 — URL match (no time window)
+  // Tier 1 — URL match (no time window). Uses the same canonical key as
+  // automation dedup (jobDedupeKey folds host case, leading "www.", param
+  // order, and tracking params), so URL variants of the same posting are
+  // caught — not just exact-string matches.
   if (jobUrl) {
-    const normalized = normalizeJobUrl(jobUrl);
-    const byUrl = await prisma.job.findFirst({
-      where: { userId, jobUrl: normalized },
-      select: { id: true, JobTitle: { select: { label: true } }, Company: { select: { label: true } } },
-    });
-    if (byUrl) {
-      return { id: byUrl.id, title: byUrl.JobTitle.label, company: byUrl.Company.label };
-    }
+    const byUrl = await findExistingJobByUrl(userId, jobUrl);
+    if (byUrl) return byUrl;
   }
 
   // Tier 2 — company + title within window

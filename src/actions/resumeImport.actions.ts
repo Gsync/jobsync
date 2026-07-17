@@ -4,9 +4,12 @@ import prisma from "@/lib/db";
 import { getCurrentUser } from "@/utils/user.utils";
 import { handleError } from "@/lib/utils";
 import { SectionType } from "@/models/profile.model";
-import { createJobTitle } from "@/actions/jobtitle.actions";
-import { createLocation } from "@/actions/job.actions";
-import { resolveTag } from "@/lib/jobs/resolve";
+import {
+  resolveCompany,
+  resolveJobTitle,
+  resolveLocation,
+  resolveTag,
+} from "@/lib/jobs/resolve";
 import { APP_CONSTANTS } from "@/lib/constants";
 import {
   ImportContactInfo,
@@ -77,15 +80,22 @@ function wrapAsHtml(text: string | undefined): string {
     .join("");
 }
 
-// Upsert a company scoped to the current user
-async function upsertCompany(label: string, userId: string) {
-  const value = label.trim().toLowerCase();
-  const existing = await prisma.company.findFirst({
-    where: { value, createdBy: userId },
+// Find-or-create a ResumeSection by type — shared by experience, education,
+// and certification, which (unlike summary) don't need to branch on whether
+// a nested child record already exists.
+async function getOrCreateResumeSection(
+  resumeId: string,
+  sectionType: SectionType,
+  sectionTitle: string,
+): Promise<{ id: string }> {
+  const existing = await prisma.resumeSection.findFirst({
+    where: { resumeId, sectionType },
+    select: { id: true },
   });
   if (existing) return existing;
-  return prisma.company.create({
-    data: { label: label.trim(), value, createdBy: userId },
+  return prisma.resumeSection.create({
+    data: { resumeId, sectionTitle, sectionType },
+    select: { id: true },
   });
 }
 
@@ -167,40 +177,21 @@ export async function resolveImportCard(
       case "experience": {
         const d = card.data;
 
-        const [company, jobTitleResult, locationResult] = await Promise.all([
-          upsertCompany(d.company, user.id),
-          createJobTitle(d.jobTitle),
-          d.location ? createLocation(d.location) : Promise.resolve(null),
-        ]);
-
-        if (!company?.id) throw new Error("Failed to resolve company");
-        if (!jobTitleResult?.id) throw new Error("Failed to resolve job title");
-
         // Location is required by schema — use a placeholder if none provided
-        let locationId: string;
-        if (locationResult && "data" in locationResult && locationResult.data?.id) {
-          locationId = locationResult.data.id;
-        } else if (locationResult && "id" in locationResult && locationResult.id) {
-          locationId = (locationResult as any).id;
-        } else {
-          const fallback = await createLocation(d.location || "Not specified");
-          locationId = (fallback as any)?.data?.id ?? (fallback as any)?.id;
-          if (!locationId) throw new Error("Failed to resolve location");
-        }
+        const [company, jobTitle, location] = await Promise.all([
+          resolveCompany(d.company, user.id),
+          resolveJobTitle(d.jobTitle, user.id),
+          resolveLocation(d.location?.trim() || "Not specified", user.id),
+        ]);
 
         const startDate = parseImportDate(d.startDate) ?? new Date(2000, 0, 1);
         const endDate = parseImportDate(d.endDate);
 
-        // Find or create the experience section
-        let section = await prisma.resumeSection.findFirst({
-          where: { resumeId, sectionType: SectionType.EXPERIENCE },
-          select: { id: true },
-        });
-        if (!section) {
-          section = await prisma.resumeSection.create({
-            data: { resumeId, sectionTitle: "Experience", sectionType: SectionType.EXPERIENCE },
-          });
-        }
+        const section = await getOrCreateResumeSection(
+          resumeId,
+          SectionType.EXPERIENCE,
+          "Experience",
+        );
 
         await prisma.resumeSection.update({
           where: { id: section.id, Resume: { profile: { userId: user.id } } },
@@ -208,8 +199,8 @@ export async function resolveImportCard(
             workExperiences: {
               create: {
                 companyId: company.id,
-                jobTitleId: jobTitleResult.id,
-                locationId,
+                jobTitleId: jobTitle.id,
+                locationId: location.id,
                 startDate,
                 endDate: endDate ?? undefined,
                 description: wrapAsHtml(d.description),
@@ -223,30 +214,16 @@ export async function resolveImportCard(
       case "education": {
         const d = card.data;
 
-        let locationId: string | undefined;
-        if (d.location) {
-          const locResult = await createLocation(d.location);
-          locationId =
-            (locResult as any)?.data?.id ?? (locResult as any)?.id;
-        }
-        if (!locationId) {
-          const fallback = await createLocation("Not specified");
-          locationId = (fallback as any)?.data?.id ?? (fallback as any)?.id;
-        }
-        if (!locationId) throw new Error("Failed to resolve location");
+        const location = await resolveLocation(d.location?.trim() || "Not specified", user.id);
 
         const startDate = parseImportDate(d.startDate) ?? new Date(2000, 0, 1);
         const endDate = parseImportDate(d.endDate);
 
-        let section = await prisma.resumeSection.findFirst({
-          where: { resumeId, sectionType: SectionType.EDUCATION },
-          select: { id: true },
-        });
-        if (!section) {
-          section = await prisma.resumeSection.create({
-            data: { resumeId, sectionTitle: "Education", sectionType: SectionType.EDUCATION },
-          });
-        }
+        const section = await getOrCreateResumeSection(
+          resumeId,
+          SectionType.EDUCATION,
+          "Education",
+        );
 
         await prisma.resumeSection.update({
           where: { id: section.id, Resume: { profile: { userId: user.id } } },
@@ -256,7 +233,7 @@ export async function resolveImportCard(
                 institution: d.institution,
                 degree: d.degree ?? "",
                 fieldOfStudy: d.fieldOfStudy ?? "",
-                locationId,
+                locationId: location.id,
                 startDate,
                 endDate: endDate ?? undefined,
                 description: wrapAsHtml(d.description),
@@ -270,19 +247,11 @@ export async function resolveImportCard(
       case "certification": {
         const d = card.data;
 
-        let section = await prisma.resumeSection.findFirst({
-          where: { resumeId, sectionType: SectionType.CERTIFICATION },
-          select: { id: true },
-        });
-        if (!section) {
-          section = await prisma.resumeSection.create({
-            data: {
-              resumeId,
-              sectionTitle: "Certifications",
-              sectionType: SectionType.CERTIFICATION,
-            },
-          });
-        }
+        const section = await getOrCreateResumeSection(
+          resumeId,
+          SectionType.CERTIFICATION,
+          "Certifications",
+        );
 
         await prisma.resumeSection.update({
           where: { id: section.id, Resume: { profile: { userId: user.id } } },

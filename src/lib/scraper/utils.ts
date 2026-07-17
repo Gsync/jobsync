@@ -1,4 +1,5 @@
 import type { ScraperError } from "./types";
+import { canonicalizeEntityValue } from "@/lib/jobs/canonicalize";
 
 // Allowlist for ATS board tokens (shared by Greenhouse + Lever). Rejects
 // path/query injection before the token is interpolated into a fetch URL.
@@ -78,20 +79,28 @@ interface DedupableJob {
 // One key per job, shared by both the incoming batch and existing DB records so
 // they compare identically. Falls back to a title/company/location signature
 // when a job has no usable URL (otherwise linkless jobs re-add every run).
+// Uses the same canonicalization as entity resolution (resolve.ts) — in
+// particular the company legal-suffix stripping — so two postings that
+// resolve to the same Company/JobTitle/Location record also dedupe as the
+// same job.
 export function jobDedupeKey(job: DedupableJob): string {
   const url = job.url?.trim();
   if (url) return `url:${urlDedupeKey(url)}`;
-  const meta = [job.title, job.company, job.location]
-    .map((part) => normalizeForSearch(part ?? ""))
-    .join("|");
+  const meta = [
+    canonicalizeEntityValue(job.title ?? ""),
+    canonicalizeEntityValue(job.company ?? "", { stripLegalSuffix: true }),
+    canonicalizeEntityValue(job.location ?? ""),
+  ].join("|");
   return `meta:${meta}`;
 }
 
 // Removes jobs already saved (existingKeys) and collapses duplicates within the
 // batch itself. Both source paths (JSearch, Greenhouse) run through here.
+// Accepts any key lookup with `.has` so callers can pass a Set or the
+// getExistingJobDedupeMap Map directly.
 export function dedupeJobs<T extends DedupableJob>(
   jobs: T[],
-  existingKeys: Set<string>,
+  existingKeys: { has(key: string): boolean },
 ): T[] {
   const seen = new Set<string>();
   const result: T[] = [];
@@ -102,44 +111,4 @@ export function dedupeJobs<T extends DedupableJob>(
     result.push(job);
   }
   return result;
-}
-
-export function normalizeForSearch(str: string): string {
-  return str
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "");
-}
-
-const STOP_WORDS = [
-  "senior",
-  "jr",
-  "junior",
-  "sr",
-  "inc",
-  "llc",
-  "ltd",
-  "corp",
-  "corporation",
-  "the",
-  "a",
-  "an",
-  "co",
-  "company",
-];
-
-export function extractKeywords(str: string): string[] {
-  return str
-    .toLowerCase()
-    .split(/[\s\-_,\.]+/)
-    .filter((word) => word.length > 2 && !STOP_WORDS.includes(word));
-}
-
-export function extractCityName(location: string): string | null {
-  const parts = location.split(",");
-  if (parts.length > 0) {
-    return parts[0].trim().toLowerCase();
-  }
-  return null;
 }

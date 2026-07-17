@@ -16,7 +16,7 @@ const prisma = new PrismaClient();
 
 vi.mock("@prisma/client", () => {
   const mPrismaClient = {
-    job: { findFirst: vi.fn() },
+    job: { findFirst: vi.fn(), findMany: vi.fn() },
   };
   return { PrismaClient: vi.fn(function () { return mPrismaClient; }) };
 });
@@ -56,6 +56,7 @@ describe("createJobFromNames", () => {
     (resolveJobStatus as any).mockResolvedValue("status-1");
     (resolveTags as any).mockResolvedValue({ resolved: [], dropped: [] });
     (prisma.job.findFirst as any).mockResolvedValue(null);
+    (prisma.job.findMany as any).mockResolvedValue([]);
     (createJobRecord as any).mockResolvedValue({ id: "job-1" });
   });
 
@@ -115,12 +116,15 @@ describe("createJobFromNames", () => {
     expect(createJobRecord).toHaveBeenCalled();
   });
 
-  it("detects a duplicate by jobUrl and skips creation", async () => {
-    (prisma.job.findFirst as any).mockResolvedValueOnce({
-      id: "existing-job",
-      JobTitle: { label: "Engineer" },
-      Company: { label: "Acme" },
-    });
+  it("detects a duplicate by jobUrl (aggressive key catches www/case/tracking variants)", async () => {
+    (prisma.job.findMany as any).mockResolvedValueOnce([
+      {
+        id: "existing-job",
+        jobUrl: "https://www.Example.com/job/1?utm_source=x",
+        JobTitle: { label: "Engineer" },
+        Company: { label: "Acme" },
+      },
+    ]);
 
     const result = await createJobFromNames(
       { ...baseInput, jobUrl: "https://example.com/job/1" },

@@ -218,6 +218,34 @@ describe("Job Title Actions", () => {
 
       expect(result).toEqual({ success: false, message: "Upsert failed" });
     });
+    it("should canonicalize the value (not just lowercase) for matching", async () => {
+      // Regression guard: value computation was switched from
+      // label.trim().toLowerCase() to canonicalizeEntityValue(), which also
+      // folds diacritics and comma separators. A plain-ASCII label wouldn't
+      // catch a revert to the old behavior.
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.jobTitle.upsert as any).mockImplementation(({ create }: any) =>
+        Promise.resolve(create),
+      );
+
+      const result = await createJobTitle("Ingénieur Logiciel");
+
+      expect(prisma.jobTitle.upsert).toHaveBeenCalledWith({
+        where: {
+          value_createdBy: {
+            value: "ingenieur logiciel",
+            createdBy: mockUser.id,
+          },
+        },
+        update: { label: "Ingénieur Logiciel" },
+        create: {
+          label: "Ingénieur Logiciel",
+          value: "ingenieur logiciel",
+          createdBy: mockUser.id,
+        },
+      });
+      expect(result.value).toBe("ingenieur logiciel");
+    });
   });
 
   describe("deleteJobTitleById", () => {

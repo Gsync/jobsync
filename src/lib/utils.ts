@@ -36,6 +36,10 @@ export function formatUrl(url: string) {
   return url;
 }
 
+export function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 export function handleError(error: unknown, msg = "Server Error.") {
   console.error(error, msg);
   if (error instanceof Error) {

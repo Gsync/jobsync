@@ -1,25 +1,15 @@
 import { mapScrapedJobToJobRecord, normalizeWorkplaceType } from "@/lib/scraper/mapper";
 import db from "@/lib/db";
+import {
+  resolveCompany,
+  resolveJobTitle,
+  resolveLocation,
+  resolveJobSource,
+} from "@/lib/jobs/resolve";
 import type { ScrapedJobData } from "@/models/automation.model";
 
 vi.mock("@/lib/db", () => {
   const mockPrisma = {
-    jobTitle: {
-      findFirst: vi.fn(),
-      create: vi.fn(),
-    },
-    location: {
-      findFirst: vi.fn(),
-      create: vi.fn(),
-    },
-    company: {
-      findFirst: vi.fn(),
-      create: vi.fn(),
-    },
-    jobSource: {
-      findFirst: vi.fn(),
-      create: vi.fn(),
-    },
     jobStatus: {
       findFirst: vi.fn(),
       create: vi.fn(),
@@ -27,6 +17,16 @@ vi.mock("@/lib/db", () => {
   };
   return { default: mockPrisma };
 });
+
+// The mapper now delegates entity resolution to the shared resolve-or-create
+// helpers (same ones the add_job path uses); mock them so this spec asserts
+// mapping/precedence, not resolution internals (covered by resolve/canonicalize).
+vi.mock("@/lib/jobs/resolve", () => ({
+  resolveCompany: vi.fn(),
+  resolveJobTitle: vi.fn(),
+  resolveLocation: vi.fn(),
+  resolveJobSource: vi.fn(),
+}));
 
 const mockedDb = vi.mocked(db, true);
 
@@ -49,13 +49,10 @@ const baseInput = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockedDb.location.findFirst.mockResolvedValue(null);
-  mockedDb.location.create.mockResolvedValue({ id: "location-1" } as never);
-  mockedDb.company.findFirst.mockResolvedValue(null);
-  mockedDb.company.create.mockResolvedValue({ id: "company-1" } as never);
-  mockedDb.jobSource.findFirst.mockResolvedValue({
-    id: "source-1",
-  } as never);
+  (resolveJobTitle as any).mockResolvedValue({ id: "title-1", label: "", created: true });
+  (resolveLocation as any).mockResolvedValue({ id: "location-1", label: "", created: true });
+  (resolveCompany as any).mockResolvedValue({ id: "company-1", label: "", created: true });
+  (resolveJobSource as any).mockResolvedValue({ id: "source-1", label: "", created: true });
   mockedDb.jobStatus.findFirst.mockResolvedValue({ id: "status-1" } as never);
 });
 
@@ -74,10 +71,6 @@ describe("normalizeWorkplaceType", () => {
 });
 
 describe("mapScrapedJobToJobRecord - workplaceType precedence", () => {
-  beforeEach(() => {
-    mockedDb.jobTitle.findFirst.mockResolvedValue({ id: "title-1" } as never);
-  });
-
   it("prefers an explicit workplaceType (Lever) over the isRemote boolean", async () => {
     const result = await mapScrapedJobToJobRecord({
       ...baseInput,
@@ -109,75 +102,37 @@ describe("mapScrapedJobToJobRecord - workplaceType precedence", () => {
   });
 });
 
-describe("mapScrapedJobToJobRecord - job title matching", () => {
-  it("does not reuse a title that only shares one unrelated keyword", async () => {
-    mockedDb.jobTitle.findFirst.mockResolvedValue(null);
-    mockedDb.jobTitle.create.mockResolvedValue({
-      id: "new-title-id",
-    } as never);
-
+describe("mapScrapedJobToJobRecord - entity delegation", () => {
+  it("maps resolver ids onto the job record", async () => {
     const result = await mapScrapedJobToJobRecord(baseInput);
 
-    expect(result.jobTitleId).toBe("new-title-id");
-    expect(mockedDb.jobTitle.findFirst).toHaveBeenLastCalledWith({
-      where: {
-        createdBy: "user-1",
-        AND: [
-          { value: { contains: "open" } },
-          { value: { contains: "source" } },
-          { value: { contains: "developer" } },
-        ],
-      },
-    });
-    expect(mockedDb.jobTitle.create).toHaveBeenCalledWith({
-      data: {
-        label: "Open Source Developer",
-        value: "open-source-developer",
-        createdBy: "user-1",
-      },
-    });
+    expect(result.jobTitleId).toBe("title-1");
+    expect(result.locationId).toBe("location-1");
+    expect(result.companyId).toBe("company-1");
+    expect(result.jobSourceId).toBe("source-1");
+    expect(result.statusId).toBe("status-1");
   });
 
-  it("reuses an existing title when all keywords match", async () => {
-    mockedDb.jobTitle.findFirst
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ id: "existing-title-id" } as never);
+  it("resolves title/company by their raw labels for the user", async () => {
+    await mapScrapedJobToJobRecord(baseInput);
 
-    const result = await mapScrapedJobToJobRecord(baseInput);
-
-    expect(result.jobTitleId).toBe("existing-title-id");
-    expect(mockedDb.jobTitle.create).not.toHaveBeenCalled();
+    expect(resolveJobTitle).toHaveBeenCalledWith("Open Source Developer", "user-1");
+    expect(resolveCompany).toHaveBeenCalledWith("Figma", "user-1");
   });
 
-  it("reuses an exact normalized title match without fuzzy matching", async () => {
-    mockedDb.jobTitle.findFirst.mockResolvedValueOnce({
-      id: "exact-match-id",
-    } as never);
+  it("title-cases the source board into the JobSource label", async () => {
+    await mapScrapedJobToJobRecord(baseInput);
 
-    const result = await mapScrapedJobToJobRecord(baseInput);
-
-    expect(result.jobTitleId).toBe("exact-match-id");
-    expect(mockedDb.jobTitle.findFirst).toHaveBeenCalledTimes(1);
-    expect(mockedDb.jobTitle.create).not.toHaveBeenCalled();
+    expect(resolveJobSource).toHaveBeenCalledWith("Greenhouse", "user-1");
   });
-});
 
-describe("mapScrapedJobToJobRecord - company matching", () => {
-  it("does not reuse a company that only shares one unrelated keyword", async () => {
-    mockedDb.jobTitle.findFirst.mockResolvedValue({ id: "title-1" } as never);
-    mockedDb.company.findFirst.mockResolvedValue(null);
-    mockedDb.company.create.mockResolvedValue({
-      id: "new-company-id",
-    } as never);
-
-    const result = await mapScrapedJobToJobRecord(baseInput);
-
-    expect(result.companyId).toBe("new-company-id");
-    expect(mockedDb.company.findFirst).toHaveBeenLastCalledWith({
-      where: {
-        createdBy: "user-1",
-        AND: [{ label: { contains: "figma" } }],
-      },
+  it("skips location resolution and stores null when location is empty", async () => {
+    const result = await mapScrapedJobToJobRecord({
+      ...baseInput,
+      scrapedJob: { ...scrapedJob, location: "" },
     });
+
+    expect(resolveLocation).not.toHaveBeenCalled();
+    expect(result.locationId).toBeNull();
   });
 });

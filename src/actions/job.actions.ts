@@ -1,6 +1,7 @@
 "use server";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
+import { canonicalizeEntityValue } from "@/lib/jobs/canonicalize";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
 import { JOB_TYPES, JobStatus } from "@/models/job.model";
 import { getCurrentUser } from "@/utils/user.utils";
@@ -262,7 +263,7 @@ export const createLocation = async (
       throw new Error("Not authenticated");
     }
 
-    const value = label.trim().toLowerCase();
+    const value = canonicalizeEntityValue(label.trim());
 
     if (!value) {
       throw new Error("Please provide location name");
@@ -296,7 +297,7 @@ export const createJobSource = async (
       throw new Error("Not authenticated");
     }
 
-    const value = label.trim().toLowerCase();
+    const value = canonicalizeEntityValue(label.trim());
 
     if (!value) {
       throw new Error("Please provide job source name");

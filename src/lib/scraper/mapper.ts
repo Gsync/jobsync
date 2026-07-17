@@ -1,6 +1,12 @@
 import type { ScrapedJobData, DiscoveryStatus } from "@/models/automation.model";
 import db from "@/lib/db";
-import { normalizeForSearch, extractKeywords, extractCityName } from "./utils";
+import { capitalize } from "@/lib/utils";
+import {
+  resolveCompany,
+  resolveJobTitle,
+  resolveLocation,
+  resolveJobSource,
+} from "@/lib/jobs/resolve";
 
 // Maps source employment-type strings (JSearch's "FULLTIME"/"CONTRACTOR",
 // Greenhouse's absence of the field, etc.) to JOB_TYPES enum keys. Defaults
@@ -58,10 +64,19 @@ export async function mapScrapedJobToJobRecord(
 ): Promise<MapperOutput> {
   const { scrapedJob, userId, automationId, matchScore, matchData } = input;
 
-  const jobTitleId = await findOrCreateJobTitle(scrapedJob.title, userId);
-  const locationId = await findOrCreateLocation(scrapedJob.location, userId);
-  const companyId = await findOrCreateCompany(scrapedJob.company, userId);
-  const jobSourceId = await getOrCreateJobSource(scrapedJob.sourceBoard, userId);
+  // Shares the same resolve-or-create helpers (and canonical match key) as the
+  // add_job path, so a company/title discovered here resolves to the same
+  // record a manual add would. Source board is title-cased for a readable
+  // JobSource label ("greenhouse" -> "Greenhouse"); the canonical value is
+  // case-insensitive so it still matches.
+  const [title, location, company, source] = await Promise.all([
+    resolveJobTitle(scrapedJob.title, userId),
+    scrapedJob.location
+      ? resolveLocation(scrapedJob.location, userId)
+      : Promise.resolve(null),
+    resolveCompany(scrapedJob.company, userId),
+    resolveJobSource(capitalize(scrapedJob.sourceBoard), userId),
+  ]);
   const statusId = await getDefaultJobStatus();
 
   return {
@@ -75,156 +90,15 @@ export async function mapScrapedJobToJobRecord(
     createdAt: new Date(),
     applied: false,
     statusId,
-    jobTitleId,
-    companyId,
-    jobSourceId,
-    locationId,
+    jobTitleId: title.id,
+    companyId: company.id,
+    jobSourceId: source.id,
+    locationId: location?.id ?? null,
     matchScore,
     matchData,
     discoveryStatus: "new",
     discoveredAt: new Date(),
   };
-}
-
-async function findOrCreateJobTitle(
-  title: string,
-  userId: string
-): Promise<string> {
-  const normalized = normalizeForSearch(title);
-
-  let existing = await db.jobTitle.findFirst({
-    where: { value: normalized, createdBy: userId },
-  });
-
-  if (!existing) {
-    const keywords = extractKeywords(title);
-    if (keywords.length > 0) {
-      existing = await db.jobTitle.findFirst({
-        where: {
-          createdBy: userId,
-          AND: keywords.map((keyword) => ({
-            value: { contains: keyword },
-          })),
-        },
-      });
-    }
-  }
-
-  if (existing) {
-    return existing.id;
-  }
-
-  const newTitle = await db.jobTitle.create({
-    data: {
-      label: title,
-      value: normalized,
-      createdBy: userId,
-    },
-  });
-  return newTitle.id;
-}
-
-async function findOrCreateLocation(
-  location: string,
-  userId: string
-): Promise<string | null> {
-  if (!location) return null;
-
-  const normalized = normalizeForSearch(location);
-  const cityName = extractCityName(location);
-
-  let existing = await db.location.findFirst({
-    where: {
-      value: normalized,
-      createdBy: userId,
-    },
-  });
-
-  if (!existing && cityName) {
-    existing = await db.location.findFirst({
-      where: {
-        createdBy: userId,
-        OR: [
-          { value: { contains: cityName } },
-          { label: { contains: cityName } },
-        ],
-      },
-    });
-  }
-
-  if (existing) {
-    return existing.id;
-  }
-
-  const newLocation = await db.location.create({
-    data: {
-      label: location,
-      value: normalized,
-      createdBy: userId,
-    },
-  });
-  return newLocation.id;
-}
-
-async function findOrCreateCompany(
-  company: string,
-  userId: string
-): Promise<string> {
-  const normalized = normalizeForSearch(company);
-
-  let existing = await db.company.findFirst({
-    where: { value: normalized, createdBy: userId },
-  });
-
-  if (!existing) {
-    const companyKeywords = extractKeywords(company);
-    if (companyKeywords.length > 0) {
-      existing = await db.company.findFirst({
-        where: {
-          createdBy: userId,
-          AND: companyKeywords.map((keyword) => ({
-            label: { contains: keyword },
-          })),
-        },
-      });
-    }
-  }
-
-  if (existing) {
-    return existing.id;
-  }
-
-  const newCompany = await db.company.create({
-    data: {
-      label: company,
-      value: normalized,
-      createdBy: userId,
-    },
-  });
-  return newCompany.id;
-}
-
-async function getOrCreateJobSource(
-  sourceBoard: string,
-  userId: string
-): Promise<string> {
-  const normalized = sourceBoard.toLowerCase();
-
-  let jobSource = await db.jobSource.findFirst({
-    where: { value: normalized, createdBy: userId },
-  });
-
-  if (!jobSource) {
-    jobSource = await db.jobSource.create({
-      data: {
-        label: sourceBoard.charAt(0).toUpperCase() + sourceBoard.slice(1),
-        value: normalized,
-        createdBy: userId,
-      },
-    });
-  }
-
-  return jobSource.id;
 }
 
 async function getDefaultJobStatus(): Promise<string> {

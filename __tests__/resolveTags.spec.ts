@@ -85,4 +85,42 @@ describe("resolveTags", () => {
     expect(result.dropped).toEqual([]);
     expect(prisma.tag.findUnique).not.toHaveBeenCalled();
   });
+
+  it("dedupes diacritic variants, matching entity resolution's canonicalization", async () => {
+    const result = await resolveTags(["São Paulo", "Sao Paulo"], userId, 10);
+
+    expect(prisma.tag.findUnique).toHaveBeenCalledTimes(1);
+    expect(result.resolved).toHaveLength(1);
+  });
+
+  it("recovers from a concurrent-create race instead of throwing", async () => {
+    (prisma.tag.findUnique as any)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: "winner-tag",
+        label: "React",
+        value: "react",
+        createdBy: userId,
+      });
+    const p2002 = Object.assign(new Error("Unique constraint failed"), {
+      code: "P2002",
+    });
+    (prisma.tag.create as any).mockRejectedValue(p2002);
+
+    const result = await resolveTags(["React"], userId, 10);
+
+    expect(result.resolved[0]).toEqual({
+      id: "winner-tag",
+      label: "React",
+      value: "react",
+      createdBy: userId,
+      created: false,
+    });
+  });
+
+  it("rethrows non-P2002 errors from create", async () => {
+    (prisma.tag.create as any).mockRejectedValue(new Error("connection lost"));
+
+    await expect(resolveTags(["React"], userId, 10)).rejects.toThrow("connection lost");
+  });
 });

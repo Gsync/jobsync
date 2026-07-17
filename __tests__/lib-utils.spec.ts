@@ -5,7 +5,34 @@ import {
   calculatePercentageDifference,
   getLast7Days,
   getTimestampedFileName,
+  capitalize,
 } from "@/lib/utils";
+
+describe("capitalize", () => {
+  it("uppercases the first character", () => {
+    expect(capitalize("greenhouse")).toBe("Greenhouse");
+  });
+
+  it("leaves an already-capitalized string unchanged", () => {
+    expect(capitalize("Lever")).toBe("Lever");
+  });
+
+  it("only capitalizes the first word, not each word", () => {
+    expect(capitalize("job board api")).toBe("Job board api");
+  });
+
+  it("handles a single character", () => {
+    expect(capitalize("x")).toBe("X");
+  });
+
+  it("returns an empty string unchanged", () => {
+    expect(capitalize("")).toBe("");
+  });
+
+  it("leaves a non-letter first character unchanged", () => {
+    expect(capitalize("1source")).toBe("1source");
+  });
+});
 
 describe("formatUrl", () => {
   it("prepends https:// to bare domain", () => {

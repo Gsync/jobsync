@@ -203,7 +203,7 @@ describe("Company Actions", () => {
 
   describe("addCompany", () => {
     const validData = {
-      company: "New Company",
+      company: "New Employer",
       logoUrl: "http://example.com/logo.png",
     };
 
@@ -212,8 +212,8 @@ describe("Company Actions", () => {
       (prisma.company.findFirst as any).mockResolvedValue(null);
       const mockCompany = {
         id: "company-id",
-        label: "New Company",
-        value: "new company",
+        label: "New Employer",
+        value: "new employer",
         logoUrl: "http://example.com/logo.png",
         createdBy: mockUser.id,
       };
@@ -225,13 +225,13 @@ describe("Company Actions", () => {
 
       expect(result).toEqual({ success: true, data: mockCompany });
       expect(prisma.company.findFirst).toHaveBeenCalledWith({
-        where: { value: "new company", createdBy: mockUser.id },
+        where: { value: "new employer", createdBy: mockUser.id },
       });
       expect(prisma.company.create).toHaveBeenCalledWith({
         data: {
           createdBy: mockUser.id,
-          value: "new company",
-          label: "New Company",
+          value: "new employer",
+          label: "New Employer",
           logoUrl: "http://example.com/logo.png",
         },
       });
@@ -253,7 +253,7 @@ describe("Company Actions", () => {
       const mockExistingCompany = {
         id: "existing-company-id",
         ...validData,
-        value: "new company",
+        value: "new employer",
         createdBy: mockUser.id,
       };
       (prisma.company.findFirst as any).mockResolvedValue(mockExistingCompany);
@@ -265,7 +265,7 @@ describe("Company Actions", () => {
         message: "Company already exists!",
       });
       expect(prisma.company.findFirst).toHaveBeenCalledWith({
-        where: { value: "new company", createdBy: mockUser.id },
+        where: { value: "new employer", createdBy: mockUser.id },
       });
       expect(prisma.company.create).not.toHaveBeenCalled();
     });
@@ -280,7 +280,7 @@ describe("Company Actions", () => {
 
       expect(result).toEqual({ success: false, message: "Unexpected error" });
       expect(prisma.company.findFirst).toHaveBeenCalledWith({
-        where: { value: "new company", createdBy: mockUser.id },
+        where: { value: "new employer", createdBy: mockUser.id },
       });
       expect(prisma.company.create).not.toHaveBeenCalled();
     });
@@ -289,7 +289,7 @@ describe("Company Actions", () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const invalidData = {
-        company: "New Company",
+        company: "New Employer",
         logoUrl: "javascript:alert('xss')",
       };
 
@@ -308,7 +308,7 @@ describe("Company Actions", () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const invalidData = {
-        company: "New Company",
+        company: "New Employer",
         logoUrl: "data:image/png;base64,iVBORw0KGgo=",
       };
 
@@ -327,8 +327,8 @@ describe("Company Actions", () => {
       (prisma.company.findFirst as any).mockResolvedValue(null);
       const mockCompany = {
         id: "company-id",
-        label: "New Company",
-        value: "new company",
+        label: "New Employer",
+        value: "new employer",
         logoUrl: "",
         createdBy: mockUser.id,
       };
@@ -336,7 +336,7 @@ describe("Company Actions", () => {
       (revalidatePath as any).mockResolvedValue(undefined);
 
       const result = await addCompany({
-        company: "New Company",
+        company: "New Employer",
         logoUrl: "",
       });
 
@@ -349,8 +349,8 @@ describe("Company Actions", () => {
       (prisma.company.findFirst as any).mockResolvedValue(null);
       const mockCompany = {
         id: "company-id",
-        label: "New Company",
-        value: "new company",
+        label: "New Employer",
+        value: "new employer",
         logoUrl: "https://example.com/logo.png",
         createdBy: mockUser.id,
       };
@@ -358,19 +358,47 @@ describe("Company Actions", () => {
       (revalidatePath as any).mockResolvedValue(undefined);
 
       const result = await addCompany({
-        company: "New Company",
+        company: "New Employer",
         logoUrl: "https://example.com/logo.png",
       });
 
       expect(result).toEqual({ success: true, data: mockCompany });
       expect(prisma.company.create).toHaveBeenCalled();
     });
+
+    it("strips a legal suffix so 'Acme Inc.' matches an existing 'Acme'", async () => {
+      // Regression guard: value computation now passes
+      // { stripLegalSuffix: true }, so a legal-suffix variant of an existing
+      // company is treated as a duplicate instead of creating a second row.
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const mockExistingCompany = {
+        id: "existing-company-id",
+        label: "Acme",
+        value: "acme",
+        createdBy: mockUser.id,
+      };
+      (prisma.company.findFirst as any).mockResolvedValue(mockExistingCompany);
+
+      const result = await addCompany({
+        company: "Acme Inc.",
+        logoUrl: "",
+      });
+
+      expect(prisma.company.findFirst).toHaveBeenCalledWith({
+        where: { value: "acme", createdBy: mockUser.id },
+      });
+      expect(result).toEqual({
+        success: false,
+        message: "Company already exists!",
+      });
+      expect(prisma.company.create).not.toHaveBeenCalled();
+    });
   });
 
   describe("updateCompany", () => {
     const validData = {
       id: "company-id",
-      company: "Updated Company",
+      company: "Updated Employer",
       logoUrl: "http://example.com/logo.png",
       createdBy: "user-id",
     };
@@ -382,7 +410,7 @@ describe("Company Actions", () => {
 
       const mockUpdatedCompany = {
         id: "company-id",
-        value: "updated company",
+        value: "updated employer",
       };
 
       (prisma.company.update as any).mockResolvedValue(mockUpdatedCompany);
@@ -392,17 +420,42 @@ describe("Company Actions", () => {
       expect(result).toEqual({ success: true, data: mockUpdatedCompany });
 
       expect(prisma.company.findFirst).toHaveBeenCalledWith({
-        where: { value: "updated company", createdBy: mockUser.id },
+        where: { value: "updated employer", createdBy: mockUser.id },
       });
 
       expect(prisma.company.update).toHaveBeenCalledWith({
         where: { id: "company-id", createdBy: "user-id" },
         data: {
-          value: "updated company",
-          label: "Updated Company",
+          value: "updated employer",
+          label: "Updated Employer",
           logoUrl: "http://example.com/logo.png",
         },
       });
+    });
+
+    it("strips a legal suffix so 'Acme Inc.' matches an existing 'Acme'", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const mockExistingCompany = {
+        id: "other-company-id",
+        label: "Acme",
+        value: "acme",
+        createdBy: mockUser.id,
+      };
+      (prisma.company.findFirst as any).mockResolvedValue(mockExistingCompany);
+
+      const result = await updateCompany({
+        ...validData,
+        company: "Acme Inc.",
+      });
+
+      expect(prisma.company.findFirst).toHaveBeenCalledWith({
+        where: { value: "acme", createdBy: mockUser.id },
+      });
+      expect(result).toEqual({
+        success: false,
+        message: "Company already exists!",
+      });
+      expect(prisma.company.update).not.toHaveBeenCalled();
     });
 
     it("should return error if user is not authenticated", async () => {
@@ -493,7 +546,7 @@ describe("Company Actions", () => {
 
       const mockUpdatedCompany = {
         id: "company-id",
-        value: "updated company",
+        value: "updated employer",
       };
 
       (prisma.company.update as any).mockResolvedValue(mockUpdatedCompany);

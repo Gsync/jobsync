@@ -1,7 +1,5 @@
 import { resolveImportCard } from "@/actions/resumeImport.actions";
 import { getCurrentUser } from "@/utils/user.utils";
-import { createJobTitle } from "@/actions/jobtitle.actions";
-import { createLocation } from "@/actions/job.actions";
 import { PrismaClient } from "@prisma/client";
 import { APP_CONSTANTS } from "@/lib/constants";
 
@@ -12,7 +10,9 @@ vi.mock("@prisma/client", () => {
     resume: { findUnique: vi.fn(), update: vi.fn() },
     resumeSection: { create: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
     summary: { update: vi.fn() },
-    company: { findFirst: vi.fn(), create: vi.fn() },
+    company: { findUnique: vi.fn(), create: vi.fn() },
+    jobTitle: { findUnique: vi.fn(), create: vi.fn() },
+    location: { findUnique: vi.fn(), create: vi.fn() },
     skill: { createMany: vi.fn() },
     tag: { findUnique: vi.fn(), create: vi.fn() },
   };
@@ -24,8 +24,6 @@ vi.mock("@prisma/client", () => {
 });
 
 vi.mock("@/utils/user.utils", () => ({ getCurrentUser: vi.fn() }));
-vi.mock("@/actions/jobtitle.actions", () => ({ createJobTitle: vi.fn() }));
-vi.mock("@/actions/job.actions", () => ({ createLocation: vi.fn() }));
 
 describe("resolveImportCard — skills", () => {
   const mockUser = { id: "user-1" };
@@ -340,12 +338,14 @@ describe("resolveImportCard — experience", () => {
     vi.resetAllMocks();
     (getCurrentUser as any).mockResolvedValue(mockUser);
     (prisma.resume.findUnique as any).mockResolvedValue({ id: "resume-1" });
-    (prisma.company.findFirst as any).mockResolvedValue(null);
+    (prisma.company.findUnique as any).mockResolvedValue(null);
     (prisma.company.create as any).mockImplementation(({ data }: any) =>
       Promise.resolve({ id: "company-1", ...data }),
     );
-    (createJobTitle as any).mockResolvedValue({ id: "title-1" });
-    (createLocation as any).mockResolvedValue({ data: { id: "location-1" }, success: true });
+    (prisma.jobTitle.findUnique as any).mockResolvedValue(null);
+    (prisma.jobTitle.create as any).mockResolvedValue({ id: "title-1", label: "Engineer" });
+    (prisma.location.findUnique as any).mockResolvedValue(null);
+    (prisma.location.create as any).mockResolvedValue({ id: "location-1", label: "Remote" });
     (prisma.resumeSection.findFirst as any).mockResolvedValue(null);
     (prisma.resumeSection.create as any).mockResolvedValue({ id: "section-1" });
     (prisma.resumeSection.update as any).mockResolvedValue({});
@@ -377,6 +377,29 @@ describe("resolveImportCard — experience", () => {
     );
   });
 
+  it("matches an existing company by its canonical (legal-suffix-stripped) value", async () => {
+    // Regression guard for the resume-import consolidation: company
+    // resolution now goes through resolveCompany, the same shared resolver
+    // add_job/automation use, so "Acme Inc." matches an existing "Acme"
+    // instead of creating a duplicate Company row.
+    (prisma.company.findUnique as any).mockResolvedValue({
+      id: "existing-company",
+      label: "Acme",
+    });
+
+    await resolveImportCard("resume-1", {
+      type: "experience",
+      data: { company: "Acme Inc.", jobTitle: "Engineer" },
+    } as any);
+
+    expect(prisma.company.findUnique).toHaveBeenCalledWith({
+      where: { value_createdBy: { value: "acme", createdBy: mockUser.id } },
+    });
+    expect(prisma.company.create).not.toHaveBeenCalled();
+    const call = (prisma.resumeSection.update as any).mock.calls[0][0];
+    expect(call.data.workExperiences.create.companyId).toBe("existing-company");
+  });
+
   it("reuses an existing EXPERIENCE section instead of creating a new one", async () => {
     (prisma.resumeSection.findFirst as any).mockResolvedValue({ id: "existing-section" });
 
@@ -392,9 +415,9 @@ describe("resolveImportCard — experience", () => {
   });
 
   it("falls back to a placeholder location when none is provided", async () => {
-    (createLocation as any).mockResolvedValue({
-      data: { id: "fallback-location" },
-      success: true,
+    (prisma.location.create as any).mockResolvedValue({
+      id: "fallback-location",
+      label: "Not specified",
     });
 
     await resolveImportCard("resume-1", {
@@ -402,7 +425,30 @@ describe("resolveImportCard — experience", () => {
       data: { company: "Acme", jobTitle: "Engineer" },
     } as any);
 
-    expect(createLocation).toHaveBeenLastCalledWith("Not specified");
+    expect(prisma.location.findUnique).toHaveBeenLastCalledWith({
+      where: { value_createdBy: { value: "not specified", createdBy: mockUser.id } },
+    });
+    const call = (prisma.resumeSection.update as any).mock.calls[0][0];
+    expect(call.data.workExperiences.create.locationId).toBe("fallback-location");
+  });
+
+  it("falls back to the placeholder location when the location is whitespace-only", async () => {
+    // Regression guard: a whitespace-only location is truthy, so the old
+    // `d.location || "Not specified"` fallback never fired and resolveEntity
+    // (having no empty-value guard) would silently create a blank Location.
+    (prisma.location.create as any).mockResolvedValue({
+      id: "fallback-location",
+      label: "Not specified",
+    });
+
+    await resolveImportCard("resume-1", {
+      type: "experience",
+      data: { company: "Acme", jobTitle: "Engineer", location: "   " },
+    } as any);
+
+    expect(prisma.location.findUnique).toHaveBeenLastCalledWith({
+      where: { value_createdBy: { value: "not specified", createdBy: mockUser.id } },
+    });
     const call = (prisma.resumeSection.update as any).mock.calls[0][0];
     expect(call.data.workExperiences.create.locationId).toBe("fallback-location");
   });
@@ -426,7 +472,7 @@ describe("resolveImportCard — experience", () => {
     } as any);
 
     expect(result.success).toBe(false);
-    expect(createJobTitle).not.toHaveBeenCalled();
+    expect(prisma.jobTitle.findUnique).not.toHaveBeenCalled();
   });
 });
 
@@ -437,7 +483,8 @@ describe("resolveImportCard — education", () => {
     vi.resetAllMocks();
     (getCurrentUser as any).mockResolvedValue(mockUser);
     (prisma.resume.findUnique as any).mockResolvedValue({ id: "resume-1" });
-    (createLocation as any).mockResolvedValue({ data: { id: "location-1" }, success: true });
+    (prisma.location.findUnique as any).mockResolvedValue(null);
+    (prisma.location.create as any).mockResolvedValue({ id: "location-1", label: "Somewhere" });
     (prisma.resumeSection.findFirst as any).mockResolvedValue(null);
     (prisma.resumeSection.create as any).mockResolvedValue({ id: "section-1" });
     (prisma.resumeSection.update as any).mockResolvedValue({});
@@ -472,10 +519,10 @@ describe("resolveImportCard — education", () => {
     );
   });
 
-  it("falls back to a placeholder location when none is provided or resolvable", async () => {
-    (createLocation as any).mockResolvedValue({
-      data: { id: "fallback-location" },
-      success: true,
+  it("falls back to a placeholder location when none is provided", async () => {
+    (prisma.location.create as any).mockResolvedValue({
+      id: "fallback-location",
+      label: "Not specified",
     });
 
     await resolveImportCard("resume-1", {
@@ -483,7 +530,27 @@ describe("resolveImportCard — education", () => {
       data: { institution: "State University" },
     } as any);
 
-    expect(createLocation).toHaveBeenLastCalledWith("Not specified");
+    expect(prisma.location.findUnique).toHaveBeenLastCalledWith({
+      where: { value_createdBy: { value: "not specified", createdBy: mockUser.id } },
+    });
+    const call = (prisma.resumeSection.update as any).mock.calls[0][0];
+    expect(call.data.educations.create.locationId).toBe("fallback-location");
+  });
+
+  it("falls back to the placeholder location when the location is whitespace-only", async () => {
+    (prisma.location.create as any).mockResolvedValue({
+      id: "fallback-location",
+      label: "Not specified",
+    });
+
+    await resolveImportCard("resume-1", {
+      type: "education",
+      data: { institution: "State University", location: "   " },
+    } as any);
+
+    expect(prisma.location.findUnique).toHaveBeenLastCalledWith({
+      where: { value_createdBy: { value: "not specified", createdBy: mockUser.id } },
+    });
     const call = (prisma.resumeSection.update as any).mock.calls[0][0];
     expect(call.data.educations.create.locationId).toBe("fallback-location");
   });

@@ -1,6 +1,7 @@
 "use server";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
+import { canonicalizeEntityValue } from "@/lib/jobs/canonicalize";
 import { AddCompanyFormSchema } from "@/models/addCompanyForm.schema";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
@@ -161,7 +162,7 @@ export const addCompany = async (
       );
     }
 
-    const value = company.trim().toLowerCase();
+    const value = canonicalizeEntityValue(company.trim(), { stripLegalSuffix: true });
 
     const companyExists = await prisma.company.findFirst({
       where: {
@@ -213,7 +214,7 @@ export const updateCompany = async (
       );
     }
 
-    const value = company.trim().toLowerCase();
+    const value = canonicalizeEntityValue(company.trim(), { stripLegalSuffix: true });
 
     const companyExists = await prisma.company.findFirst({
       where: {

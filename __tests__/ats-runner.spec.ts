@@ -13,10 +13,10 @@ vi.mock("@prisma/client", () => {
     resume: { findUnique: vi.fn() },
     userSettings: { findUnique: vi.fn() },
     job: { findMany: vi.fn(), create: vi.fn() },
-    jobTitle: { findFirst: vi.fn(), create: vi.fn() },
-    location: { findFirst: vi.fn(), create: vi.fn() },
-    company: { findFirst: vi.fn(), create: vi.fn() },
-    jobSource: { findFirst: vi.fn(), create: vi.fn() },
+    jobTitle: { findUnique: vi.fn(), create: vi.fn() },
+    location: { findUnique: vi.fn(), create: vi.fn() },
+    company: { findUnique: vi.fn(), create: vi.fn() },
+    jobSource: { findUnique: vi.fn(), create: vi.fn() },
     jobStatus: { findFirst: vi.fn(), create: vi.fn() },
   };
   return {
@@ -117,10 +117,10 @@ describe("runAutomation (lever)", () => {
     });
     (prisma.job.findMany as any).mockResolvedValue([]);
     (prisma.job.create as any).mockResolvedValue({});
-    (prisma.jobTitle.findFirst as any).mockResolvedValue({ id: "jt" });
-    (prisma.location.findFirst as any).mockResolvedValue({ id: "loc" });
-    (prisma.company.findFirst as any).mockResolvedValue({ id: "co" });
-    (prisma.jobSource.findFirst as any).mockResolvedValue({ id: "src" });
+    (prisma.jobTitle.findUnique as any).mockResolvedValue({ id: "jt" });
+    (prisma.location.findUnique as any).mockResolvedValue({ id: "loc" });
+    (prisma.company.findUnique as any).mockResolvedValue({ id: "co" });
+    (prisma.jobSource.findUnique as any).mockResolvedValue({ id: "src" });
     (prisma.jobStatus.findFirst as any).mockResolvedValue({ id: "st" });
 
     (generateText as any).mockResolvedValue({

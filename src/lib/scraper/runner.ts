@@ -15,7 +15,8 @@ import type { AtsProvider } from "./ats/types";
 import { runGreenhousePipeline } from "./greenhouse/pipeline";
 import type { ScoredJob } from "./greenhouse/pipeline";
 import { mapScrapedJobToJobRecord } from "./mapper";
-import { normalizeJobUrl, dedupeJobs, jobDedupeKey } from "./utils";
+import { normalizeJobUrl, dedupeJobs } from "./utils";
+import { getExistingJobDedupeMap } from "@/lib/jobs/jobDedupe";
 import { calculateNextRunAt } from "./schedule";
 import { APP_CONSTANTS } from "@/lib/constants";
 import {
@@ -403,7 +404,7 @@ export async function runAutomation(
       "Checking for duplicate jobs...",
     );
 
-    const existingKeys = await getExistingJobKeys(automation.userId);
+    const existingKeys = await getExistingJobDedupeMap(automation.userId);
     const newJobs = dedupeJobs(searchResult.data, existingKeys);
     const jobsDeduplicated = newJobs.length;
 
@@ -647,31 +648,6 @@ export async function runAutomation(
   }
 }
 
-async function getExistingJobKeys(userId: string): Promise<Set<string>> {
-  const existingJobs = await db.job.findMany({
-    where: { userId },
-    select: {
-      jobUrl: true,
-      JobTitle: { select: { label: true } },
-      Company: { select: { label: true } },
-      Location: { select: { label: true } },
-    },
-  });
-
-  const keys = new Set<string>();
-  for (const job of existingJobs) {
-    keys.add(
-      jobDedupeKey({
-        url: job.jobUrl,
-        title: job.JobTitle?.label,
-        company: job.Company?.label,
-        location: job.Location?.label ?? undefined,
-      }),
-    );
-  }
-  return keys;
-}
-
 interface AtsRunConfig {
   companies: { name: string; token: string; host?: "default" | "eu" }[];
   targetTitles: string[];
@@ -826,7 +802,7 @@ async function runAtsRun(
     );
 
     // Dedup against existing jobs and within this batch.
-    const existingKeys = await getExistingJobKeys(automation.userId);
+    const existingKeys = await getExistingJobDedupeMap(automation.userId);
     const dedupedJobs = dedupeJobs(jobs, existingKeys);
     const jobsDeduplicated = dedupedJobs.length;
 

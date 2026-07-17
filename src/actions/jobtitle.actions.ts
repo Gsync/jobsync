@@ -3,6 +3,7 @@ import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
+import { canonicalizeEntityValue } from "@/lib/jobs/canonicalize";
 
 export const getAllJobTitles = async (): Promise<any | undefined> => {
   try {
@@ -115,7 +116,7 @@ export const createJobTitle = async (
       throw new Error("Not authenticated");
     }
 
-    const value = label.trim().toLowerCase();
+    const value = canonicalizeEntityValue(label.trim());
 
     const upsertedTitle = await prisma.jobTitle.upsert({
       where: { value_createdBy: { value, createdBy: user.id } },

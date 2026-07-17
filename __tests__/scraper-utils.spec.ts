@@ -1,8 +1,5 @@
 import {
   normalizeJobUrl,
-  normalizeForSearch,
-  extractKeywords,
-  extractCityName,
   jobDedupeKey,
   dedupeJobs,
 } from "@/lib/scraper/utils";
@@ -122,6 +119,18 @@ describe("jobDedupeKey", () => {
     const b = jobDedupeKey({ title: "Designer", company: "Acme" });
     expect(a).not.toBe(b);
   });
+
+  it("folds a company legal suffix, matching resolveCompany's canonical value", () => {
+    const a = jobDedupeKey({ title: "Engineer", company: "Acme Inc." });
+    const b = jobDedupeKey({ title: "Engineer", company: "Acme" });
+    expect(a).toBe(b);
+  });
+
+  it("folds diacritics in the meta key, matching entity resolution", () => {
+    const a = jobDedupeKey({ title: "Engineer", company: "Acme", location: "São Paulo" });
+    const b = jobDedupeKey({ title: "Engineer", company: "Acme", location: "Sao Paulo" });
+    expect(a).toBe(b);
+  });
 });
 
 describe("dedupeJobs", () => {
@@ -156,158 +165,5 @@ describe("dedupeJobs", () => {
       { title: "B", company: "Y", location: "R", url: "https://ex.com/2" },
     ];
     expect(dedupeJobs(jobs, new Set())).toHaveLength(2);
-  });
-});
-
-describe("normalizeForSearch", () => {
-  it("converts to lowercase", () => {
-    expect(normalizeForSearch("Software Engineer")).toBe("software-engineer");
-  });
-
-  it("trims whitespace", () => {
-    expect(normalizeForSearch("  hello  ")).toBe("hello");
-  });
-
-  it("replaces spaces with dashes", () => {
-    expect(normalizeForSearch("full stack developer")).toBe(
-      "full-stack-developer"
-    );
-  });
-
-  it("removes special characters", () => {
-    expect(normalizeForSearch("C++ Developer (Senior)")).toBe(
-      "c-developer-senior"
-    );
-  });
-
-  it("collapses multiple spaces into single dash", () => {
-    expect(normalizeForSearch("word1   word2")).toBe("word1-word2");
-  });
-
-  it("handles empty string", () => {
-    expect(normalizeForSearch("")).toBe("");
-  });
-
-  it("preserves numbers", () => {
-    expect(normalizeForSearch("Level 3 Support")).toBe("level-3-support");
-  });
-
-  it("removes punctuation", () => {
-    expect(normalizeForSearch("Sr. Engineer, Backend")).toBe(
-      "sr-engineer-backend"
-    );
-  });
-});
-
-describe("extractKeywords", () => {
-  it("extracts words longer than 2 characters", () => {
-    const result = extractKeywords("Software Developer");
-    expect(result).toEqual(["software", "developer"]);
-  });
-
-  it("filters out words with 2 or fewer characters", () => {
-    const result = extractKeywords("I am a dev");
-    expect(result).toEqual(["dev"]);
-  });
-
-  it("filters out stop words", () => {
-    const result = extractKeywords("Senior Software Engineer at the Company");
-    expect(result).toEqual(["software", "engineer"]);
-  });
-
-  it("splits on spaces", () => {
-    expect(extractKeywords("react node python")).toEqual([
-      "react",
-      "node",
-      "python",
-    ]);
-  });
-
-  it("splits on dashes", () => {
-    expect(extractKeywords("full-stack-developer")).toEqual([
-      "full",
-      "stack",
-      "developer",
-    ]);
-  });
-
-  it("splits on underscores", () => {
-    expect(extractKeywords("data_science_role")).toEqual([
-      "data",
-      "science",
-      "role",
-    ]);
-  });
-
-  it("splits on commas", () => {
-    expect(extractKeywords("react,node,python")).toEqual([
-      "react",
-      "node",
-      "python",
-    ]);
-  });
-
-  it("splits on dots", () => {
-    expect(extractKeywords("google.amazon.meta")).toEqual([
-      "google",
-      "amazon",
-      "meta",
-    ]);
-  });
-
-  it("converts to lowercase", () => {
-    expect(extractKeywords("React Node")).toEqual(["react", "node"]);
-  });
-
-  it("filters all stop words", () => {
-    const stopWords = [
-      "senior",
-      "jr",
-      "junior",
-      "sr",
-      "inc",
-      "llc",
-      "ltd",
-      "corp",
-      "corporation",
-      "the",
-      "a",
-      "an",
-      "co",
-      "company",
-    ];
-    stopWords.forEach((word) => {
-      expect(extractKeywords(word)).toEqual([]);
-    });
-  });
-
-  it("returns empty array for empty string", () => {
-    expect(extractKeywords("")).toEqual([]);
-  });
-});
-
-describe("extractCityName", () => {
-  it("extracts city from city, state format", () => {
-    expect(extractCityName("Calgary, AB")).toBe("calgary");
-  });
-
-  it("extracts city from city, state, country format", () => {
-    expect(extractCityName("New York, NY, USA")).toBe("new york");
-  });
-
-  it("returns lowercase city name", () => {
-    expect(extractCityName("TORONTO, ON")).toBe("toronto");
-  });
-
-  it("trims whitespace from city name", () => {
-    expect(extractCityName("  Vancouver , BC")).toBe("vancouver");
-  });
-
-  it("returns the full string (lowercase) when no comma", () => {
-    expect(extractCityName("Remote")).toBe("remote");
-  });
-
-  it("handles empty string", () => {
-    expect(extractCityName("")).toBe("");
   });
 });

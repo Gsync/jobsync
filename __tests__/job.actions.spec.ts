@@ -1,6 +1,7 @@
 import {
   addJob,
   createLocation,
+  createJobSource,
   deleteJobById,
   getJobDetails,
   getJobsList,
@@ -26,6 +27,8 @@ vi.mock("@prisma/client", () => {
     },
     jobSource: {
       findMany: vi.fn(),
+      findFirst: vi.fn(),
+      create: vi.fn(),
     },
     job: {
       findMany: vi.fn(),
@@ -794,6 +797,85 @@ describe("jobActions", () => {
       );
 
       await expect(createLocation("location-name")).resolves.toStrictEqual({
+        success: false,
+        message: "Unexpected error",
+      });
+    });
+    it("should canonicalize the value (not just lowercase) for matching", async () => {
+      // Regression guard: value computation was switched from
+      // label.trim().toLowerCase() to canonicalizeEntityValue(), which also
+      // folds diacritics and comma separators. A plain-ASCII label wouldn't
+      // catch a revert to the old behavior.
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.location.findFirst as any).mockResolvedValue(null);
+      (prisma.location.create as any).mockImplementation(({ data }: any) =>
+        Promise.resolve(data),
+      );
+
+      const result = await createLocation("São Paulo, Brazil");
+
+      expect(prisma.location.findFirst).toHaveBeenCalledWith({
+        where: { value: "sao paulo brazil", createdBy: mockUser.id },
+      });
+      expect(result.data.value).toBe("sao paulo brazil");
+    });
+  });
+  describe("createJobSource", () => {
+    it("should throw error when user is not authenticated", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      await expect(createJobSource("source-name")).resolves.toStrictEqual({
+        success: false,
+        message: "Not authenticated",
+      });
+    });
+    it("should throw error when job source name is not provided or empty", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      await expect(createJobSource(" ")).resolves.toStrictEqual({
+        success: false,
+        message: "Please provide job source name",
+      });
+    });
+    it("should create with valid input", async () => {
+      const label = "New Source";
+      const mockJobSource = {
+        label: "New Source",
+        value: "new source",
+        createdBy: mockUser.id,
+      };
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.jobSource.findFirst as any).mockResolvedValue(null);
+      (prisma.jobSource.create as any).mockResolvedValue(mockJobSource);
+
+      const result = await createJobSource(label);
+
+      expect(prisma.jobSource.create).toHaveBeenCalledTimes(1);
+      expect(prisma.jobSource.create).toHaveBeenCalledWith({
+        data: mockJobSource,
+      });
+      expect(result).toStrictEqual({
+        data: mockJobSource,
+        success: true,
+      });
+    });
+    it("should reuse an existing job source instead of creating a duplicate", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const existing = { label: "Indeed", value: "indeed", createdBy: mockUser.id };
+      (prisma.jobSource.findFirst as any).mockResolvedValue(existing);
+
+      const result = await createJobSource("Indeed");
+
+      expect(prisma.jobSource.create).not.toHaveBeenCalled();
+      expect(result).toStrictEqual({ data: existing, success: true });
+    });
+    it("should handle unexpected errors", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.jobSource.findFirst as any).mockResolvedValue(null);
+      (prisma.jobSource.create as any).mockRejectedValue(
+        new Error("Unexpected error"),
+      );
+
+      await expect(createJobSource("source-name")).resolves.toStrictEqual({
         success: false,
         message: "Unexpected error",
       });
