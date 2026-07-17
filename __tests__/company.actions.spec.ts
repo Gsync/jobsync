@@ -155,6 +155,99 @@ describe("Company Actions", () => {
       expect(prisma.company.findMany).not.toHaveBeenCalled();
       expect(prisma.company.count).not.toHaveBeenCalled();
     });
+
+    it("should filter companies by label when search is provided", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const mockData = [
+        {
+          id: "company-id",
+          label: "Amazon",
+          value: "amazon",
+          logoUrl: "logo.png",
+        },
+      ];
+      const mockTotal = 1;
+
+      (prisma.company.findMany as any).mockResolvedValue(mockData);
+      (prisma.company.count as any).mockResolvedValue(mockTotal);
+
+      const result = await getCompanyList(1, 10, undefined, "Ama");
+
+      expect(result).toEqual({ data: mockData, total: mockTotal });
+      expect(prisma.company.findMany).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id, label: { contains: "Ama" } },
+        skip: 0,
+        take: 10,
+        orderBy: { jobsApplied: { _count: "desc" } },
+      });
+      expect(prisma.company.count).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id, label: { contains: "Ama" } },
+      });
+    });
+
+    it("should combine search filter with countBy select/counts", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const mockData = [
+        {
+          id: "company-id",
+          label: "Amazon",
+          value: "amazon",
+          logoUrl: "logo.png",
+        },
+      ];
+      const mockTotal = 1;
+
+      (prisma.company.findMany as any).mockResolvedValue(mockData);
+      (prisma.company.count as any).mockResolvedValue(mockTotal);
+      (prisma.job.groupBy as any).mockResolvedValue([]);
+
+      const result = await getCompanyList(1, 10, "applied", "Ama");
+
+      const expectedData = mockData.map((c) => ({
+        ...c,
+        _count: { jobsRejected: 0, jobsTotal: 0 },
+      }));
+      expect(result).toEqual({ data: expectedData, total: mockTotal });
+      expect(prisma.company.findMany).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id, label: { contains: "Ama" } },
+        skip: 0,
+        take: 10,
+        select: {
+          id: true,
+          label: true,
+          value: true,
+          logoUrl: true,
+          _count: {
+            select: {
+              jobsApplied: {
+                where: {
+                  applied: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { jobsApplied: { _count: "desc" } },
+      });
+      expect(prisma.company.count).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id, label: { contains: "Ama" } },
+      });
+    });
+
+    it("should not apply a label filter when search is empty", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findMany as any).mockResolvedValue([]);
+      (prisma.company.count as any).mockResolvedValue(0);
+
+      await getCompanyList(1, 10, undefined, "");
+
+      expect(prisma.company.findMany).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id },
+        skip: 0,
+        take: 10,
+        orderBy: { jobsApplied: { _count: "desc" } },
+      });
+    });
   });
 
   describe("getAllCompanies", () => {

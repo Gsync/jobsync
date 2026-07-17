@@ -172,6 +172,43 @@ describe("Job Title Actions", () => {
 
       expect(result).toEqual({ success: false, message: "Database error" });
     });
+
+    it("should filter job titles by label when search is provided", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const mockData = [
+        { id: "title-1", label: "Developer", value: "developer" },
+      ];
+      (prisma.jobTitle.findMany as any).mockResolvedValue(mockData);
+      (prisma.jobTitle.count as any).mockResolvedValue(1);
+
+      const result = await getJobTitleList(1, 10, undefined, "Dev");
+
+      expect(result).toEqual({ data: mockData, total: 1 });
+      expect(prisma.jobTitle.findMany).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id, label: { contains: "Dev" } },
+        skip: 0,
+        take: 10,
+        orderBy: { jobs: { _count: "desc" } },
+      });
+      expect(prisma.jobTitle.count).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id, label: { contains: "Dev" } },
+      });
+    });
+
+    it("should not apply a label filter when search is empty", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.jobTitle.findMany as any).mockResolvedValue([]);
+      (prisma.jobTitle.count as any).mockResolvedValue(0);
+
+      await getJobTitleList(1, 10, undefined, "");
+
+      expect(prisma.jobTitle.findMany).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id },
+        skip: 0,
+        take: 10,
+        orderBy: { jobs: { _count: "desc" } },
+      });
+    });
   });
 
   describe("createJobTitle", () => {

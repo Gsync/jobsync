@@ -12,6 +12,7 @@ export const getCompanyList = async (
   page: number = 1,
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
   countBy?: string,
+  search?: string,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -21,11 +22,17 @@ export const getCompanyList = async (
     }
     const skip = (page - 1) * limit;
 
+    const whereClause: any = {
+      createdBy: user.id,
+    };
+
+    if (search) {
+      whereClause.label = { contains: search };
+    }
+
     const [data, total, rejectedCounts, totalCounts] = await Promise.all([
       prisma.company.findMany({
-        where: {
-          createdBy: user.id,
-        },
+        where: whereClause,
         skip,
         take: limit,
         ...(countBy
@@ -54,9 +61,7 @@ export const getCompanyList = async (
         },
       }),
       prisma.company.count({
-        where: {
-          createdBy: user.id,
-        },
+        where: whereClause,
       }),
       countBy
         ? prisma.job.groupBy({

@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AddCompany from "./AddCompany";
 import CompaniesTable from "./CompaniesTable";
 import { Card, CardContent, CardTitle } from "../ui/card";
@@ -10,6 +10,7 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import Loading from "../Loading";
 import { Button } from "../ui/button";
 import { RecordsCount } from "../RecordsCount";
+import { SearchInput } from "../SearchInput";
 
 function CompaniesContainer() {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -18,13 +19,16 @@ function CompaniesContainer() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editCompany, setEditCompany] = useState(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const hasSearched = useRef(false);
   const loadCompanies = useCallback(
-    async (page: number) => {
+    async (page: number, search?: string) => {
       setLoading(true);
       const { data, total } = await getCompanyList(
         page,
         APP_CONSTANTS.RECORDS_PER_PAGE,
-        "applied"
+        "applied",
+        search
       );
       if (data) {
         setCompanies((prev) => (page === 1 ? data : [...prev, ...data]));
@@ -37,8 +41,8 @@ function CompaniesContainer() {
   );
 
   const reloadCompanies = useCallback(async () => {
-    await loadCompanies(1);
-  }, [loadCompanies]);
+    await loadCompanies(1, searchTerm || undefined);
+  }, [loadCompanies, searchTerm]);
 
   const resetEditCompany = () => {
     setEditCompany(null);
@@ -47,6 +51,19 @@ function CompaniesContainer() {
   useEffect(() => {
     (async () => await loadCompanies(1))();
   }, [loadCompanies]);
+
+  useEffect(() => {
+    if (searchTerm !== "") {
+      hasSearched.current = true;
+    }
+    if (searchTerm === "" && !hasSearched.current) return;
+
+    const timer = setTimeout(() => {
+      loadCompanies(1, searchTerm || undefined);
+    }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
 
   const onEditCompany = async (companyId: string) => {
     const company = await getCompanyById(companyId);
@@ -66,6 +83,11 @@ function CompaniesContainer() {
               )}
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+              <SearchInput
+                value={searchTerm}
+                onChange={setSearchTerm}
+                placeholder="Search companies..."
+              />
               <AddCompany
                 editCompany={editCompany}
                 reloadCompanies={reloadCompanies}
@@ -91,7 +113,7 @@ function CompaniesContainer() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => loadCompanies(page + 1)}
+                  onClick={() => loadCompanies(page + 1, searchTerm || undefined)}
                   disabled={loading}
                   className="btn btn-primary"
                 >

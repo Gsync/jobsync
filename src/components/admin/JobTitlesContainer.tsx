@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardTitle } from "../ui/card";
 import { ResponsiveCardHeader } from "../ResponsiveCardHeader";
 import { APP_CONSTANTS } from "@/lib/constants";
@@ -9,19 +9,23 @@ import { getJobTitleList } from "@/actions/jobtitle.actions";
 import Loading from "../Loading";
 import { Button } from "../ui/button";
 import { RecordsCount } from "../RecordsCount";
+import { SearchInput } from "../SearchInput";
 
 function JobTitlesContainer() {
   const [titles, setTitles] = useState<JobTitle[]>([]);
   const [totalJobTitles, setTotalJobTitles] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const hasSearched = useRef(false);
   const loadJobTitles = useCallback(
-    async (page: number) => {
+    async (page: number, search?: string) => {
       setLoading(true);
       const { data, total } = await getJobTitleList(
         page,
         APP_CONSTANTS.RECORDS_PER_PAGE,
-        "applied"
+        "applied",
+        search
       );
       if (data) {
         setTitles((prev) => (page === 1 ? data : [...prev, ...data]));
@@ -34,12 +38,25 @@ function JobTitlesContainer() {
   );
 
   const reloadJobTitles = useCallback(async () => {
-    await loadJobTitles(1);
-  }, [loadJobTitles]);
+    await loadJobTitles(1, searchTerm || undefined);
+  }, [loadJobTitles, searchTerm]);
 
   useEffect(() => {
     (async () => await loadJobTitles(1))();
   }, [loadJobTitles]);
+
+  useEffect(() => {
+    if (searchTerm !== "") {
+      hasSearched.current = true;
+    }
+    if (searchTerm === "" && !hasSearched.current) return;
+
+    const timer = setTimeout(() => {
+      loadJobTitles(1, searchTerm || undefined);
+    }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
 
   return (
     <>
@@ -53,6 +70,11 @@ function JobTitlesContainer() {
               )}
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+              <SearchInput
+                value={searchTerm}
+                onChange={setSearchTerm}
+                placeholder="Search job titles..."
+              />
               {/* <AddCompany reloadCompanies={reloadJobTitles} /> */}
             </div>
           </ResponsiveCardHeader>
@@ -71,7 +93,7 @@ function JobTitlesContainer() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => loadJobTitles(page + 1)}
+                  onClick={() => loadJobTitles(page + 1, searchTerm || undefined)}
                   disabled={loading}
                   className="btn btn-primary"
                 >

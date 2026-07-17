@@ -25,6 +25,7 @@ export const getAllTags = async (): Promise<any | undefined> => {
 export const getTagList = async (
   page: number = 1,
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
+  search?: string,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -33,9 +34,14 @@ export const getTagList = async (
     }
     const skip = (page - 1) * limit;
 
+    const whereClause: any = { createdBy: user.id };
+    if (search) {
+      whereClause.label = { contains: search };
+    }
+
     const [data, total] = await Promise.all([
       prisma.tag.findMany({
-        where: { createdBy: user.id },
+        where: whereClause,
         skip,
         take: limit,
         select: {
@@ -46,7 +52,7 @@ export const getTagList = async (
         },
         orderBy: { jobs: { _count: "desc" } },
       }),
-      prisma.tag.count({ where: { createdBy: user.id } }),
+      prisma.tag.count({ where: whereClause }),
     ]);
 
     return { data, total };

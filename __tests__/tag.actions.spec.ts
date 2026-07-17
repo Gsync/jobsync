@@ -141,6 +141,39 @@ describe("Tag Actions", () => {
 
       expect(result).toEqual({ success: false, message: "DB error" });
     });
+
+    it("should filter tags by label when search is provided", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const mockData = [{ ...mockTag, _count: { jobs: 3, questions: 2 } }];
+      (prisma.tag.findMany as any).mockResolvedValue(mockData);
+      (prisma.tag.count as any).mockResolvedValue(1);
+
+      const result = await getTagList(1, 10, "Rea");
+
+      expect(result).toEqual({ data: mockData, total: 1 });
+      expect(prisma.tag.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { createdBy: mockUser.id, label: { contains: "Rea" } },
+        }),
+      );
+      expect(prisma.tag.count).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id, label: { contains: "Rea" } },
+      });
+    });
+
+    it("should not apply a label filter when search is empty", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.tag.findMany as any).mockResolvedValue([]);
+      (prisma.tag.count as any).mockResolvedValue(0);
+
+      await getTagList(1, 10, "");
+
+      expect(prisma.tag.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { createdBy: mockUser.id },
+        }),
+      );
+    });
   });
 
   // createTag
