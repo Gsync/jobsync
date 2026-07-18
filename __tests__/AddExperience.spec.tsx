@@ -459,7 +459,10 @@ describe("AddExperience Component", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("combobox-title")).toBeInTheDocument();
+      const jobTitleSelect = screen.getByTestId(
+        "combobox-title"
+      ) as HTMLSelectElement;
+      expect(jobTitleSelect.options.length).toBeGreaterThan(1);
     });
 
     const jobTitleSelect = screen.getByTestId(
@@ -651,7 +654,10 @@ describe("AddExperience Component", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("combobox-title")).toBeInTheDocument();
+      const jobTitleSelect = screen.getByTestId(
+        "combobox-title"
+      ) as HTMLSelectElement;
+      expect(jobTitleSelect.options.length).toBeGreaterThan(1);
     });
 
     const jobTitleSelect = screen.getByTestId(

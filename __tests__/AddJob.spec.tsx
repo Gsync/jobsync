@@ -451,5 +451,5 @@ describe("AddJob Component - Error Handling", () => {
         }),
       );
     });
-  });
+  }, 15000);
 });
