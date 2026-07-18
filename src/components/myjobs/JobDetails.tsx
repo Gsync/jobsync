@@ -31,6 +31,7 @@ import {
   StickyNote,
   Tags,
   Trash,
+  Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AiJobMatchSection } from "../profile/AiJobMatchSection";
@@ -255,6 +256,28 @@ function JobDetails({
               </CardDescription>
             </div>
             <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2"
+                  onClick={onEditJob}
+                  data-testid="job-details-edit-btn"
+                >
+                  <Pencil className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Edit</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 text-destructive hover:text-destructive"
+                  onClick={() => setDeleteAlertOpen(true)}
+                  data-testid="job-details-delete-btn"
+                >
+                  <Trash2 className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Delete</span>
+                </Button>
+              </div>
               {currentMatchScore != null && (
                 <div className="flex flex-col items-center gap-1">
                   <CircularScore score={currentMatchScore} size="md" />
