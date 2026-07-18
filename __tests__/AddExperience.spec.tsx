@@ -752,9 +752,10 @@ describe("AddExperience Component", () => {
     const saveButton = screen.getByRole("button", { name: /save/i });
     await user.click(saveButton);
 
-    const saveBtn = screen.getByRole("button", { name: /save/i });
-    const loader = saveBtn.querySelector(".spinner");
-    expect(loader).toBeInTheDocument();
+    await waitFor(() => {
+      const saveBtn = screen.getByRole("button", { name: /save/i });
+      expect(saveBtn.querySelector(".spinner")).toBeInTheDocument();
+    });
 
     await waitFor(() => {
       expect(addExperience).toHaveBeenCalledTimes(1);
