@@ -140,6 +140,7 @@ export const JOB_SOURCES = [
 ] as const;
 
 export const JOB_STATUSES = [
+  { label: "New", value: "new" },
   { label: "Draft", value: "draft" },
   { label: "Applied", value: "applied" },
   { label: "Interview", value: "interview" },
