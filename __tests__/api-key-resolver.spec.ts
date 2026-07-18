@@ -1,7 +1,7 @@
 // Unit tests for resolveApiKey: db (per-user) -> env var -> provider default.
 
 const mockFindUnique = vi.fn();
-const mockUpdate = vi.fn(() => ({ catch: () => {} }));
+const mockUpdate = vi.fn((..._args: unknown[]) => ({ catch: () => {} }));
 
 vi.mock("@/lib/db", () => ({
   default: {
