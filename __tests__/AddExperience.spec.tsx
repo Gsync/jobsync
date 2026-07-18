@@ -3,7 +3,7 @@ import { addExperience, updateExperience } from "@/actions/profile.actions";
 import { getAllCompanies } from "@/actions/company.actions";
 import { getAllJobTitles } from "@/actions/jobtitle.actions";
 import { getAllJobLocations } from "@/actions/jobLocation.actions";
-import { screen, render, waitFor, fireEvent } from "@testing-library/react";
+import { screen, render, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ResumeSection } from "@/models/profile.model";
 import { toast } from "@/components/ui/use-toast";
@@ -732,7 +732,10 @@ describe("AddExperience Component", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("combobox-title")).toBeInTheDocument();
+      const jobTitleSelect = screen.getByTestId(
+        "combobox-title"
+      ) as HTMLSelectElement;
+      expect(jobTitleSelect.options.length).toBeGreaterThan(1);
     });
 
     const jobTitleSelect = screen.getByTestId("combobox-title");
@@ -741,12 +744,15 @@ describe("AddExperience Component", () => {
     const startDateInput = screen.getByTestId("datepicker-startDate");
     const jobDescriptionEditor = screen.getByTestId("tiptap-editor");
 
-    fireEvent.change(jobTitleSelect, { target: { value: "title-1" } });
-    fireEvent.change(companySelect, { target: { value: "company-1" } });
-    fireEvent.change(locationSelect, { target: { value: "location-1" } });
-    fireEvent.change(startDateInput, { target: { value: "2023-01-01" } });
-    fireEvent.change(jobDescriptionEditor, {
-      target: { value: "Developed amazing features" },
+    await user.selectOptions(jobTitleSelect, "title-1");
+    await user.selectOptions(companySelect, "company-1");
+    await user.selectOptions(locationSelect, "location-1");
+    await user.type(startDateInput, "2023-01-01");
+    await user.type(jobDescriptionEditor, "Developed amazing features");
+
+    await waitFor(() => {
+      const saveButton = screen.getByRole("button", { name: /save/i });
+      expect(saveButton).not.toBeDisabled();
     });
 
     const saveButton = screen.getByRole("button", { name: /save/i });
