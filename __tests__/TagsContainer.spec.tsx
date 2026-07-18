@@ -9,6 +9,16 @@ vi.mock("@/actions/tag.actions", () => ({
   createTag: vi.fn(),
 }));
 
+let intersectionCallback: IntersectionObserverCallback | undefined;
+global.IntersectionObserver = class IntersectionObserver {
+  constructor(callback: IntersectionObserverCallback) {
+    intersectionCallback = callback;
+  }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as any;
+
 describe("TagsContainer Search Functionality", () => {
   const mockTags = [
     {
@@ -32,6 +42,7 @@ describe("TagsContainer Search Functionality", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers({ shouldAdvanceTime: true });
+    intersectionCallback = undefined;
   });
 
   afterEach(() => {
@@ -164,16 +175,73 @@ describe("TagsContainer Search Functionality", () => {
         expect(getTagList).toHaveBeenCalledWith(1, 25, "React");
       });
 
-      const loadMoreButton = await screen.findByRole("button", {
-        name: /load more/i,
-      });
       await act(async () => {
-        await user.click(loadMoreButton);
+        intersectionCallback!(
+          [{ isIntersecting: true }] as IntersectionObserverEntry[],
+          {} as IntersectionObserver,
+        );
       });
 
       await waitFor(() => {
         expect(getTagList).toHaveBeenCalledWith(2, 25, "React");
       });
+    });
+  });
+
+  describe("Infinite Scroll", () => {
+    it("should load and append more skills when sentinel becomes visible", async () => {
+      (getTagList as any)
+        .mockResolvedValueOnce({ data: mockTags, total: 4 })
+        .mockResolvedValueOnce({
+          data: [
+            {
+              id: "3",
+              label: "TypeScript",
+              value: "typescript",
+              createdBy: "user-1",
+              _count: { jobs: 0, questions: 0, skills: 0 },
+            },
+          ],
+          total: 4,
+        });
+
+      render(<TagsContainer />);
+
+      await waitFor(() => {
+        expect(screen.getByText("React")).toBeInTheDocument();
+      });
+
+      await act(async () => {
+        intersectionCallback!(
+          [{ isIntersecting: true }] as IntersectionObserverEntry[],
+          {} as IntersectionObserver,
+        );
+      });
+
+      await waitFor(() => {
+        expect(getTagList).toHaveBeenCalledWith(2, 25, undefined);
+        expect(screen.getByText("TypeScript")).toBeInTheDocument();
+        expect(screen.getByText("React")).toBeInTheDocument();
+      });
+    });
+
+    it("should not fetch more skills once all are loaded", async () => {
+      (getTagList as any).mockResolvedValue({ data: mockTags, total: 2 });
+
+      render(<TagsContainer />);
+
+      await waitFor(() => {
+        expect(screen.getByText("React")).toBeInTheDocument();
+      });
+
+      await act(async () => {
+        intersectionCallback?.(
+          [{ isIntersecting: true }] as IntersectionObserverEntry[],
+          {} as IntersectionObserver,
+        );
+      });
+
+      expect(getTagList).toHaveBeenCalledTimes(1);
     });
   });
 });

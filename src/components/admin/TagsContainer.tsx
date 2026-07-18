@@ -6,35 +6,44 @@ import { Tag } from "@/models/job.model";
 import { getTagList } from "@/actions/tag.actions";
 import { APP_CONSTANTS } from "@/lib/constants";
 import Loading from "../Loading";
-import { Button } from "../ui/button";
+import { Loader } from "lucide-react";
 import { RecordsCount } from "../RecordsCount";
 import TagsTable from "./TagsTable";
 import AddTag from "./AddTag";
 import { SearchInput } from "../SearchInput";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 
 function TagsContainer() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [totalTags, setTotalTags] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [initialLoading, setInitialLoading] = useState<boolean>(false);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState("");
   const hasSearched = useRef(false);
+  const requestIdRef = useRef(0);
   const loadTags = useCallback(
     async (page: number, search?: string) => {
-      setLoading(true);
+      const requestId = ++requestIdRef.current;
+      if (page === 1) setInitialLoading(true);
+      else setLoadingMore(true);
       try {
         const { data, total } = await getTagList(
           page,
           APP_CONSTANTS.RECORDS_PER_PAGE,
           search,
         );
+        if (requestId !== requestIdRef.current) return;
         if (data) {
           setTags((prev) => (page === 1 ? data : [...prev, ...data]));
           setTotalTags(total);
           setPage(page);
         }
       } finally {
-        setLoading(false);
+        if (requestId === requestIdRef.current) {
+          setInitialLoading(false);
+          setLoadingMore(false);
+        }
       }
     },
     [],
@@ -61,6 +70,16 @@ function TagsContainer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm]);
 
+  const hasMoreTags = tags.length < totalTags;
+  const sentinelRef = useInfiniteScroll(
+    hasMoreTags,
+    initialLoading || loadingMore,
+    useCallback(
+      () => loadTags(page + 1, searchTerm || undefined),
+      [loadTags, page, searchTerm],
+    ),
+  );
+
   return (
     <>
       <div className="col-span-3">
@@ -68,7 +87,7 @@ function TagsContainer() {
           <ResponsiveCardHeader>
             <div className="flex items-baseline gap-2">
               <CardTitle>Skills/Tags</CardTitle>
-              {!loading && totalTags > 0 && (
+              {!initialLoading && totalTags > 0 && (
                 <RecordsCount count={tags.length} total={totalTags} label="skills" />
               )}
             </div>
@@ -82,23 +101,17 @@ function TagsContainer() {
             </div>
           </ResponsiveCardHeader>
           <CardContent>
-            {loading && <Loading />}
+            {initialLoading && <Loading />}
             {tags.length > 0 && (
               <>
                 <TagsTable tags={tags} reloadTags={reloadTags} />
               </>
             )}
-            {tags.length < totalTags && (
-              <div className="flex justify-center p-4">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => loadTags(page + 1, searchTerm || undefined)}
-                  disabled={loading}
-                  className="btn btn-primary"
-                >
-                  {loading ? "Loading..." : "Load More"}
-                </Button>
+            {hasMoreTags && (
+              <div ref={sentinelRef} className="flex justify-center p-4">
+                {loadingMore && (
+                  <Loader className="h-5 w-5 animate-spin text-blue-500" />
+                )}
               </div>
             )}
           </CardContent>

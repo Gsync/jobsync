@@ -8,6 +8,16 @@ vi.mock("@/actions/jobtitle.actions", () => ({
   deleteJobTitleById: vi.fn(),
 }));
 
+let intersectionCallback: IntersectionObserverCallback | undefined;
+global.IntersectionObserver = class IntersectionObserver {
+  constructor(callback: IntersectionObserverCallback) {
+    intersectionCallback = callback;
+  }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as any;
+
 describe("JobTitlesContainer Search Functionality", () => {
   const mockTitles = [
     { id: "1", label: "Software Engineer", value: "software engineer", createdBy: "user-1" },
@@ -19,6 +29,7 @@ describe("JobTitlesContainer Search Functionality", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers({ shouldAdvanceTime: true });
+    intersectionCallback = undefined;
   });
 
   afterEach(() => {
@@ -178,11 +189,11 @@ describe("JobTitlesContainer Search Functionality", () => {
         );
       });
 
-      const loadMoreButton = await screen.findByRole("button", {
-        name: /load more/i,
-      });
       await act(async () => {
-        await user.click(loadMoreButton);
+        intersectionCallback!(
+          [{ isIntersecting: true }] as IntersectionObserverEntry[],
+          {} as IntersectionObserver,
+        );
       });
 
       await waitFor(() => {
@@ -193,6 +204,65 @@ describe("JobTitlesContainer Search Functionality", () => {
           "Engineer",
         );
       });
+    });
+  });
+
+  describe("Infinite Scroll", () => {
+    it("should load and append more job titles when sentinel becomes visible", async () => {
+      (getJobTitleList as any)
+        .mockResolvedValueOnce({ data: mockTitles, total: 4 })
+        .mockResolvedValueOnce({
+          data: [
+            {
+              id: "3",
+              label: "Designer",
+              value: "designer",
+              createdBy: "user-1",
+            },
+          ],
+          total: 4,
+        });
+
+      render(<JobTitlesContainer />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Software Engineer")).toBeInTheDocument();
+      });
+
+      await act(async () => {
+        intersectionCallback!(
+          [{ isIntersecting: true }] as IntersectionObserverEntry[],
+          {} as IntersectionObserver,
+        );
+      });
+
+      await waitFor(() => {
+        expect(getJobTitleList).toHaveBeenCalledWith(2, 25, "applied", undefined);
+        expect(screen.getByText("Designer")).toBeInTheDocument();
+        expect(screen.getByText("Software Engineer")).toBeInTheDocument();
+      });
+    });
+
+    it("should not fetch more job titles once all are loaded", async () => {
+      (getJobTitleList as any).mockResolvedValue({
+        data: mockTitles,
+        total: 2,
+      });
+
+      render(<JobTitlesContainer />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Software Engineer")).toBeInTheDocument();
+      });
+
+      await act(async () => {
+        intersectionCallback?.(
+          [{ isIntersecting: true }] as IntersectionObserverEntry[],
+          {} as IntersectionObserver,
+        );
+      });
+
+      expect(getJobTitleList).toHaveBeenCalledTimes(1);
     });
   });
 });

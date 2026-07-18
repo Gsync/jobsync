@@ -11,6 +11,16 @@ vi.mock("@/actions/company.actions", () => ({
   updateCompany: vi.fn(),
 }));
 
+let intersectionCallback: IntersectionObserverCallback | undefined;
+global.IntersectionObserver = class IntersectionObserver {
+  constructor(callback: IntersectionObserverCallback) {
+    intersectionCallback = callback;
+  }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as any;
+
 describe("CompaniesContainer Search Functionality", () => {
   const mockCompanies = [
     { id: "1", label: "Amazon", value: "amazon", createdBy: "user-1" },
@@ -22,6 +32,7 @@ describe("CompaniesContainer Search Functionality", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers({ shouldAdvanceTime: true });
+    intersectionCallback = undefined;
   });
 
   afterEach(() => {
@@ -239,16 +250,68 @@ describe("CompaniesContainer Search Functionality", () => {
         expect(getCompanyList).toHaveBeenCalledWith(1, 25, "applied", "Amazon");
       });
 
-      const loadMoreButton = await screen.findByRole("button", {
-        name: /load more/i,
-      });
       await act(async () => {
-        await user.click(loadMoreButton);
+        intersectionCallback!(
+          [{ isIntersecting: true }] as IntersectionObserverEntry[],
+          {} as IntersectionObserver,
+        );
       });
 
       await waitFor(() => {
         expect(getCompanyList).toHaveBeenCalledWith(2, 25, "applied", "Amazon");
       });
+    });
+  });
+
+  describe("Infinite Scroll", () => {
+    it("should load and append more companies when sentinel becomes visible", async () => {
+      (getCompanyList as any)
+        .mockResolvedValueOnce({ data: mockCompanies, total: 4 })
+        .mockResolvedValueOnce({
+          data: [{ id: "3", label: "Meta", value: "meta", createdBy: "user-1" }],
+          total: 4,
+        });
+
+      render(<CompaniesContainer />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Amazon")).toBeInTheDocument();
+      });
+
+      await act(async () => {
+        intersectionCallback!(
+          [{ isIntersecting: true }] as IntersectionObserverEntry[],
+          {} as IntersectionObserver,
+        );
+      });
+
+      await waitFor(() => {
+        expect(getCompanyList).toHaveBeenCalledWith(2, 25, "applied", undefined);
+        expect(screen.getByText("Meta")).toBeInTheDocument();
+        expect(screen.getByText("Amazon")).toBeInTheDocument();
+      });
+    });
+
+    it("should not fetch more companies once all are loaded", async () => {
+      (getCompanyList as any).mockResolvedValue({
+        data: mockCompanies,
+        total: 2,
+      });
+
+      render(<CompaniesContainer />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Amazon")).toBeInTheDocument();
+      });
+
+      await act(async () => {
+        intersectionCallback?.(
+          [{ isIntersecting: true }] as IntersectionObserverEntry[],
+          {} as IntersectionObserver,
+        );
+      });
+
+      expect(getCompanyList).toHaveBeenCalledTimes(1);
     });
   });
 });
