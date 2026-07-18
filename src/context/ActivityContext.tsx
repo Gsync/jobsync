@@ -10,6 +10,7 @@ import {
 } from "react";
 import { differenceInMilliseconds, differenceInMinutes } from "date-fns";
 import {
+  deleteActivityById,
   getCurrentActivity,
   startActivityById,
   stopActivityById,
@@ -94,6 +95,31 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
         differenceInMinutes(now, currentActivity.startTime),
         maxDurationMinutes
       );
+
+      if (duration < APP_CONSTANTS.ACTIVITY_MIN_DURATION_MINUTES) {
+        const { success, message } = await deleteActivityById(
+          currentActivity.id!
+        );
+
+        if (!isMountedRef.current) return success;
+
+        if (success) {
+          stopTimer();
+          setCurrentActivity(undefined);
+          toast({
+            variant: "destructive",
+            description: `Activity not saved because duration was less than ${APP_CONSTANTS.ACTIVITY_MIN_DURATION_MINUTES} minutes`,
+          });
+          return true;
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Error!",
+            description: message,
+          });
+          return false;
+        }
+      }
 
       const { success, message } = await stopActivityById(
         currentActivity.id!,
