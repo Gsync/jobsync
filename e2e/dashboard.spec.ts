@@ -156,10 +156,13 @@ test.describe("Dashboard page", () => {
     ).toBeVisible();
   });
 
-  test("should show a completed activity in the dashboard's recent activities list", async ({
+  test("should discard a very short activity and not show it in the dashboard's recent activities list", async ({
     page,
     cleanup,
   }) => {
+    // Activities below ACTIVITY_MIN_DURATION_MINUTES are discarded on stop
+    // (src/context/ActivityContext.tsx), so a start immediately followed by
+    // a stop is deleted server-side rather than saved.
     const taskTitle = uniqueName("E2E Dashboard Activity Task");
     const activityType = uniqueName("E2E Dashboard Activity Type");
     await navigateToTasks(page);
@@ -194,6 +197,6 @@ test.describe("Dashboard page", () => {
       .getByTestId("recent-card-toggle-group")
       .getByRole("button", { name: "Activities" })
       .click();
-    await expect(page.getByText(taskTitle, { exact: true })).toBeVisible();
+    await expect(page.getByText(taskTitle, { exact: true })).not.toBeVisible();
   });
 });
