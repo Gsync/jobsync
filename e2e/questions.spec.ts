@@ -83,9 +83,8 @@ test.describe("Question Bank", () => {
     ).toBeVisible({ timeout: 10000 });
 
     await questionCard(page, editQuestionText)
-      .getByTestId("question-actions-menu-btn")
+      .getByTestId("question-edit-btn")
       .click();
-    await page.getByRole("menuitem", { name: "Edit" }).click();
     await expect(page.getByTestId("question-form-dialog-title")).toBeVisible();
     await expect(
       page.getByPlaceholder("Enter interview question"),
@@ -118,10 +117,12 @@ test.describe("Question Bank", () => {
     ).toBeVisible({ timeout: 10000 });
 
     await questionCard(page, deleteQuestionText)
-      .getByTestId("question-actions-menu-btn")
+      .getByTestId("question-delete-btn")
       .click();
-    await page.getByRole("menuitem", { name: "Delete" }).click();
-    await page.getByRole("button", { name: "Delete" }).click();
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Delete" })
+      .click();
 
     await expect(
       page.getByRole("heading", { name: deleteQuestionText }),
@@ -147,8 +148,7 @@ test.describe("Question Bank", () => {
     await expect(card).toBeVisible({ timeout: 10000 });
     await expect(card.getByText(tagText, { exact: true })).toBeVisible();
 
-    await card.getByTestId("question-actions-menu-btn").click();
-    await page.getByRole("menuitem", { name: "Edit" }).click();
+    await card.getByTestId("question-edit-btn").click();
     await expect(page.getByTestId("question-form-dialog-title")).toBeVisible();
     // Scope to the dialog: the sidebar's tag filter button also renders the
     // same tag label now that the question has been saved with it.

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 type TagWithCount = {
   id: string;
@@ -24,11 +25,14 @@ function QuestionsSidebar({
   onFilterChange,
 }: QuestionsSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const sortedTags = [...tags].sort(
+    (a, b) => b.questionCount - a.questionCount,
+  );
 
   return (
     <div
       className={cn(
-        "relative border-r py-4 hidden md:flex flex-col h-full transition-all duration-200",
+        "relative border-r py-4 hidden md:flex flex-col h-full transition-all duration-200 -ml-3",
         collapsed ? "w-0 overflow-visible" : "w-48",
       )}
     >
@@ -46,47 +50,40 @@ function QuestionsSidebar({
 
       {!collapsed && (
         <>
-          <h3 className="font-semibold mb-4 text-sm px-1">Skill Tags</h3>
-          <ul className="space-y-1">
-            <li>
-              <button
-                onClick={() => onFilterChange(undefined)}
+          <h3 className="font-semibold mb-4 text-sm">Skill Tags</h3>
+          <div className="flex flex-wrap gap-1.5">
+            <button onClick={() => onFilterChange(undefined)}>
+              <Badge
+                variant={!selectedFilter ? "default" : "secondary"}
                 className={cn(
-                  "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
-                  "hover:bg-accent hover:text-accent-foreground",
+                  "cursor-pointer font-normal",
                   !selectedFilter &&
-                    "bg-accent text-accent-foreground font-medium",
+                    "bg-blue-400 hover:bg-blue-400 text-white border-transparent",
                 )}
               >
-                <span className="flex justify-between items-center">
-                  <span>All</span>
-                  <span className="text-muted-foreground text-xs">
-                    {totalQuestions}
-                  </span>
-                </span>
-              </button>
-            </li>
-            {tags.map((tag) => (
-              <li key={tag.id}>
-                <button
-                  onClick={() => onFilterChange(tag.id)}
+                {totalQuestions} All
+              </Badge>
+            </button>
+            {sortedTags.map((tag) => (
+              <button
+                key={tag.id}
+                onClick={() => onFilterChange(tag.id)}
+                className="max-w-full"
+                title={`${tag.questionCount} ${tag.label}`}
+              >
+                <Badge
+                  variant={selectedFilter === tag.id ? "default" : "secondary"}
                   className={cn(
-                    "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
-                    "hover:bg-accent hover:text-accent-foreground",
+                    "cursor-pointer font-normal max-w-full whitespace-nowrap overflow-hidden text-ellipsis block",
                     selectedFilter === tag.id &&
-                      "bg-accent text-accent-foreground font-medium",
+                      "bg-blue-400 hover:bg-blue-400 text-white border-transparent",
                   )}
                 >
-                  <span className="flex justify-between items-center">
-                    <span className="truncate">{tag.label}</span>
-                    <span className="text-muted-foreground text-xs">
-                      {tag.questionCount}
-                    </span>
-                  </span>
-                </button>
-              </li>
+                  {tag.questionCount} {tag.label}
+                </Badge>
+              </button>
             ))}
-          </ul>
+          </div>
         </>
       )}
     </div>
