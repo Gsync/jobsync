@@ -13,7 +13,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../ui/collapsible";
-import { toast } from "../ui/use-toast";
+import { toastActionResult } from "@/lib/toast";
 
 type NotesSectionProps = {
   jobId: string;
@@ -52,19 +52,10 @@ export function NotesSection({ jobId, openTrigger }: NotesSectionProps) {
 
   const handleDelete = async () => {
     const result = await deleteNote(noteIdToDelete);
-    if (result.success) {
-      toast({
-        variant: "success",
-        description: "Note deleted successfully",
-      });
-      loadNotes();
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: result.message,
-      });
-    }
+    toastActionResult(result, {
+      success: "Note deleted successfully",
+      onSuccess: () => loadNotes(),
+    });
   };
 
   const handleAddNote = () => {

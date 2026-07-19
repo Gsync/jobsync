@@ -23,7 +23,7 @@ import {
   FormMessage,
 } from "../ui/form";
 import { Input } from "../ui/input";
-import { toast } from "../ui/use-toast";
+import { toastActionResult } from "@/lib/toast";
 import { addCompany, updateCompany } from "@/actions/company.actions";
 import { Company } from "@/models/job.model";
 
@@ -87,23 +87,14 @@ function AddCompany({
       const res = editCompany
         ? await updateCompany(data)
         : await addCompany(data);
-      if (!res?.success) {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: res?.message,
-        });
-      } else {
-        reset();
-        setDialogOpen(false);
-        reloadCompanies();
-        toast({
-          variant: "success",
-          description: `Company has been ${
-            editCompany ? "updated" : "created"
-          } successfully`,
-        });
-      }
+      toastActionResult(res, {
+        success: `Company has been ${editCompany ? "updated" : "created"} successfully`,
+        onSuccess: () => {
+          reset();
+          setDialogOpen(false);
+          reloadCompanies();
+        },
+      });
     });
   };
 

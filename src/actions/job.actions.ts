@@ -372,7 +372,7 @@ export const addJob = async (
       tagIds: tags ?? [],
     });
     revalidatePath("/dashboard");
-    return { job, success: true };
+    return { success: true, data: job };
   } catch (error) {
     const msg = "Failed to create job. ";
     return handleError(error, msg);
@@ -440,7 +440,7 @@ export const updateJob = async (
       },
     });
     revalidatePath("/dashboard");
-    return { job, success: true };
+    return { success: true, data: job };
   } catch (error) {
     const msg = "Failed to update job. ";
     return handleError(error, msg);

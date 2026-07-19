@@ -888,7 +888,7 @@ describe("jobActions", () => {
 
       const result = await addJob(jobData);
 
-      expect(result).toStrictEqual({ job: jobData, success: true });
+      expect(result).toStrictEqual({ data: jobData, success: true });
       expect(prisma.job.create).toHaveBeenCalledTimes(1);
       expect(prisma.job.create).toHaveBeenCalledWith({
         data: {
@@ -938,7 +938,7 @@ describe("jobActions", () => {
           resumeId: jobData.resume,
         },
       });
-      expect(result).toEqual({ job: jobData, success: true });
+      expect(result).toEqual({ data: jobData, success: true });
     });
     it("should handle unexpected errors", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
@@ -968,7 +968,7 @@ describe("jobActions", () => {
 
       const result = await updateJob(jobData);
 
-      expect(result).toStrictEqual({ job: jobData, success: true });
+      expect(result).toStrictEqual({ data: jobData, success: true });
       expect(prisma.job.update).toHaveBeenCalledTimes(1);
     });
     it("should handle unexpected errors", async () => {

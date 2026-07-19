@@ -446,7 +446,7 @@ describe("AddJob Component - Error Handling", () => {
       expect(toast).toHaveBeenCalledWith(
         expect.objectContaining({
           variant: "destructive",
-          title: "Error!",
+          title: "Error",
           description: "Failed to save job",
         }),
       );

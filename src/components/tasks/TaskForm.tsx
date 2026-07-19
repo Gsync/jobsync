@@ -17,7 +17,7 @@ import { AddTaskFormSchema } from "@/models/addTaskForm.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Task, TASK_STATUSES, TaskStatus } from "@/models/task.model";
 import { z } from "zod";
-import { toast } from "../ui/use-toast";
+import { toastActionResult } from "@/lib/toast";
 import {
   Form,
   FormControl,
@@ -104,26 +104,16 @@ export function TaskForm({
 
   function onSubmit(data: z.infer<typeof AddTaskFormSchema>) {
     startTransition(async () => {
-      const { success, message } = editTask
-        ? await updateTask(data)
-        : await createTask(data);
-
-      if (success) {
-        toast({
-          variant: "success",
-          description: `Task has been ${editTask ? "updated" : "created"} successfully`,
-        });
-        reset();
-        setDialogOpen(false);
-        resetEditTask();
-        onTaskSaved();
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: message,
-        });
-      }
+      const result = editTask ? await updateTask(data) : await createTask(data);
+      toastActionResult(result, {
+        success: `Task has been ${editTask ? "updated" : "created"} successfully`,
+        onSuccess: () => {
+          reset();
+          setDialogOpen(false);
+          resetEditTask();
+          onTaskSaved();
+        },
+      });
     });
   }
 

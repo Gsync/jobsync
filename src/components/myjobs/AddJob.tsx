@@ -27,7 +27,7 @@ import {
 } from "@/models/job.model";
 import { addDays } from "date-fns";
 import { z } from "zod";
-import { toast } from "../ui/use-toast";
+import { toastActionResult } from "@/lib/toast";
 import {
   Form,
   FormControl,
@@ -184,25 +184,15 @@ export function AddJob({
 
   function onSubmit(data: z.infer<typeof AddJobFormSchema>) {
     startTransition(async () => {
-      const { success, message } = editJob
-        ? await updateJob(data)
-        : await addJob(data);
-      reset();
-      setDialogOpen(false);
-      if (!success) {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: message,
-        });
-      }
-      redirect(redirectPath ?? "/dashboard/myjobs");
-    });
-    toast({
-      variant: "success",
-      description: `Job has been ${
-        editJob ? "updated" : "created"
-      } successfully`,
+      const result = editJob ? await updateJob(data) : await addJob(data);
+      toastActionResult(result, {
+        success: `Job has been ${editJob ? "updated" : "created"} successfully`,
+        onSuccess: () => {
+          reset();
+          setDialogOpen(false);
+          redirect(redirectPath ?? "/dashboard/myjobs");
+        },
+      });
     });
   }
 

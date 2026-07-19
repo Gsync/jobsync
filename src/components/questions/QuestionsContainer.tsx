@@ -15,7 +15,7 @@ import {
   getQuestionById,
   getQuestionsList,
 } from "@/actions/question.actions";
-import { toast } from "../ui/use-toast";
+import { toastActionResult, toastError } from "@/lib/toast";
 import { Question } from "@/models/question.model";
 import { Tag } from "@/models/job.model";
 import { RecordsCount } from "../RecordsCount";
@@ -60,11 +60,7 @@ function QuestionsContainer({
         setTotalQuestions(result.total);
         setPage(pageNum);
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: result?.message || "Failed to load questions.",
-        });
+        toastError(result?.message || "Failed to load questions.");
       }
       setLoading(false);
     },
@@ -77,30 +73,17 @@ function QuestionsContainer({
   }, [loadQuestions, filterKey, searchTerm, onQuestionsChanged]);
 
   const onDeleteQuestion = async (questionId: string) => {
-    const { success, message } = await deleteQuestion(questionId);
-    if (success) {
-      toast({
-        variant: "success",
-        description: "Question has been deleted successfully",
-      });
-      reloadQuestions();
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: message,
-      });
-    }
+    const result = await deleteQuestion(questionId);
+    toastActionResult(result, {
+      success: "Question has been deleted successfully",
+      onSuccess: () => reloadQuestions(),
+    });
   };
 
   const onEditQuestion = async (question: Question) => {
     const { data, success, message } = await getQuestionById(question.id);
     if (!success) {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: message,
-      });
+      toastError(message);
       return;
     }
     setEditQuestion(data);
