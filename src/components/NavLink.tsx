@@ -16,28 +16,50 @@ interface NavLinkProps {
   >;
   route: string;
   pathname: string;
+  expanded: boolean;
 }
 
-function NavLink({ label, Icon, route, pathname }: NavLinkProps) {
+function NavLink({ label, Icon, route, pathname, expanded }: NavLinkProps) {
+  // "/dashboard" is a prefix of every other route, so it only matches exactly.
   const isActive =
-    route === pathname || pathname.startsWith(`${route}/dashboard`);
+    pathname === route ||
+    (route !== "/dashboard" && pathname.startsWith(`${route}/`));
+
+  const link = (
+    <Link
+      href={route}
+      aria-current={isActive ? "page" : undefined}
+      className={cn(
+        "navlink w-full hover:text-foreground",
+        expanded ? "h-10 justify-start gap-3 px-4" : "h-12 justify-center",
+        isActive ? "text-foreground" : "text-muted-foreground",
+        isActive && expanded && "rounded-md bg-accent"
+      )}
+    >
+      {isActive && (
+        <span
+          aria-hidden
+          className="absolute left-0 top-0 h-full w-0.5 bg-foreground"
+        />
+      )}
+      <Icon className="h-6 w-6 shrink-0" strokeWidth={1.5} />
+      {/* Collapsed uses sr-only, not opacity: an in-flow hidden span still
+          takes flex space and pushes the icon off-center in the rail. */}
+      {expanded ? (
+        <span className="truncate text-sm">{label}</span>
+      ) : (
+        <span className="sr-only">{label}</span>
+      )}
+    </Link>
+  );
+
+  if (expanded) {
+    return link;
+  }
+
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <Link
-          href={route}
-          className={cn("navlink", {
-            "border-b-2 border-black dark:border-white": isActive,
-          })}
-        >
-          <Icon
-            className={cn("h-5 w-5", {
-              "text-black dark:text-white": isActive,
-            })}
-          />
-          <span className="sr-only">{label}</span>
-        </Link>
-      </TooltipTrigger>
+      <TooltipTrigger asChild>{link}</TooltipTrigger>
       <TooltipContent side="right">{label}</TooltipContent>
     </Tooltip>
   );

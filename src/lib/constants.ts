@@ -28,6 +28,13 @@ export const APP_CONSTANTS = {
   AI_SLOW_RESPONSE_THRESHOLD_MS: 15_000, // 15 seconds
   INTERSECTION_OBSERVER_THRESHOLD: 0.1,
   TOAST_LIMIT: 1,
+  SIDEBAR_STORAGE_KEY: "sidebar-expanded",
+  SIDEBAR_DOM_ID: "app-sidebar",
+  // Paired so the rail width and its matching content offset can't drift.
+  SIDEBAR_WIDTH: {
+    expanded: { rail: "w-56", contentOffset: "sm:pl-56" },
+    collapsed: { rail: "w-14", contentOffset: "sm:pl-14" },
+  },
 
   // Ollama API timeouts
   AI_OLLAMA_LIST_TIMEOUT_MS: 5_000,
