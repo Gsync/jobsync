@@ -21,13 +21,13 @@ function Sidebar() {
           "fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-background transition-[width] duration-200 ease-in-out sm:flex",
           expanded
             ? APP_CONSTANTS.SIDEBAR_WIDTH.expanded.rail
-            : APP_CONSTANTS.SIDEBAR_WIDTH.collapsed.rail
+            : APP_CONSTANTS.SIDEBAR_WIDTH.collapsed.rail,
         )}
       >
         <div
           className={cn(
-            "flex h-14 shrink-0 items-center gap-2",
-            expanded ? "px-4" : "justify-center"
+            "flex h-14 shrink-0 items-center gap-2 sm:mt-2",
+            expanded ? "px-4" : "justify-center",
           )}
         >
           <Link
@@ -43,7 +43,7 @@ function Sidebar() {
         <nav
           className={cn(
             "flex flex-1 flex-col overflow-y-auto py-2",
-            expanded ? "gap-0.5" : "gap-2"
+            expanded ? "gap-0.5" : "gap-2",
           )}
         >
           {SIDEBAR_LINKS.map((item) => {
@@ -67,7 +67,7 @@ function Sidebar() {
         <div
           className={cn(
             "flex flex-col py-2",
-            expanded ? "gap-0.5 border-t" : "gap-2"
+            expanded ? "gap-0.5 border-t" : "gap-2",
           )}
         >
           <NavLink

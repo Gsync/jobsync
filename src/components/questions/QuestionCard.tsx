@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Question } from "@/models/question.model";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { QuestionTagBadge } from "@/components/questions/QuestionTagBadge";
 import { Pencil, Trash2 } from "lucide-react";
 import {
   AlertDialog,
@@ -92,9 +93,7 @@ export function QuestionCard({
         {question.tags && question.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-3">
             {question.tags.map((tag) => (
-              <Badge key={tag.id} variant="secondary" className="text-xs">
-                {tag.label}
-              </Badge>
+              <QuestionTagBadge key={tag.id}>{tag.label}</QuestionTagBadge>
             ))}
           </div>
         )}

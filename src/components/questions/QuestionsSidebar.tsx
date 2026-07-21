@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
+import { QuestionTagBadge } from "@/components/questions/QuestionTagBadge";
 
 type TagWithCount = {
   id: string;
@@ -53,16 +53,12 @@ function QuestionsSidebar({
           <h3 className="font-semibold mb-4 text-sm">Skill Tags</h3>
           <div className="flex flex-wrap gap-1.5">
             <button onClick={() => onFilterChange(undefined)}>
-              <Badge
+              <QuestionTagBadge
                 variant={!selectedFilter ? "default" : "secondary"}
-                className={cn(
-                  "cursor-pointer font-normal",
-                  !selectedFilter &&
-                    "bg-blue-400 hover:bg-blue-400 text-white border-transparent",
-                )}
+                className="cursor-pointer"
               >
                 {totalQuestions} All
-              </Badge>
+              </QuestionTagBadge>
             </button>
             {sortedTags.map((tag) => (
               <button
@@ -71,16 +67,12 @@ function QuestionsSidebar({
                 className="max-w-full"
                 title={`${tag.questionCount} ${tag.label}`}
               >
-                <Badge
+                <QuestionTagBadge
                   variant={selectedFilter === tag.id ? "default" : "secondary"}
-                  className={cn(
-                    "cursor-pointer font-normal max-w-full whitespace-nowrap overflow-hidden text-ellipsis block",
-                    selectedFilter === tag.id &&
-                      "bg-blue-400 hover:bg-blue-400 text-white border-transparent",
-                  )}
+                  className="cursor-pointer max-w-full whitespace-nowrap overflow-hidden text-ellipsis"
                 >
                   {tag.questionCount} {tag.label}
-                </Badge>
+                </QuestionTagBadge>
               </button>
             ))}
           </div>

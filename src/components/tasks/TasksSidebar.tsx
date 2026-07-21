@@ -28,7 +28,7 @@ function TasksSidebar({
   return (
     <div
       className={cn(
-        "relative border-r py-4 hidden md:flex flex-col h-full transition-all duration-200",
+        "relative border-r py-4 hidden md:flex flex-col h-full transition-all duration-200 -ml-3",
         collapsed ? "w-0 overflow-visible" : "w-48",
       )}
     >
