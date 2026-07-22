@@ -7,6 +7,7 @@ import {
   deleteTaskById,
   updateTaskStatus,
   startActivityFromTask,
+  createTask,
 } from "@/actions/task.actions";
 import { Task } from "@/models/task.model";
 import { useRouter } from "next/navigation";
@@ -48,10 +49,13 @@ vi.mock("@/actions/task.actions", () => ({
   deleteTaskById: vi.fn(),
   updateTaskStatus: vi.fn(),
   startActivityFromTask: vi.fn(),
+  createTask: vi.fn(),
+  updateTask: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(),
+  useSearchParams: vi.fn(() => new URLSearchParams()),
 }));
 
 vi.mock("@/context/ActivityContext", () => ({
@@ -554,6 +558,127 @@ describe("TasksContainer Component", () => {
         expect(mockStopActivity).toHaveBeenCalledTimes(1);
         expect(startActivityFromTask).toHaveBeenCalledWith("task-1");
       });
+    });
+  });
+
+  describe("Save & Start from the Add Task dialog", () => {
+    beforeEach(() => {
+      (getTasksList as any).mockResolvedValue({
+        success: true,
+        data: mockTasks,
+        total: 2,
+      });
+    });
+
+    const openAddTaskDialogAndFillForm = async () => {
+      const addButton = screen.getByTestId("add-task-btn");
+      await user.click(addButton);
+
+      await screen.findByTestId("task-form-dialog-title");
+
+      const titleInput = screen.getByLabelText(/Title/i);
+      await user.type(titleInput, "Brand New Task");
+
+      const activityTypeCombobox = screen.getByLabelText(/Activity Type/i);
+      await user.click(activityTypeCombobox);
+      const developmentOption = screen.getByRole("option", {
+        name: "Development",
+      });
+      await user.click(developmentOption);
+    };
+
+    it("creates the task and starts its activity when nothing is in progress", async () => {
+      (createTask as any).mockResolvedValue({
+        success: true,
+        data: { id: "new-task-id" },
+      });
+      (startActivityFromTask as any).mockResolvedValue({ success: true });
+
+      render(<TasksContainer activityTypes={mockActivityTypes} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Task 1")).toBeInTheDocument();
+      });
+
+      await openAddTaskDialogAndFillForm();
+
+      const saveAndStartBtn = screen.getByTestId("save-and-start-task-btn");
+      await user.click(saveAndStartBtn);
+
+      await waitFor(() => {
+        expect(createTask).toHaveBeenCalledTimes(1);
+        expect(startActivityFromTask).toHaveBeenCalledWith("new-task-id");
+        expect(mockRefreshCurrentActivity).toHaveBeenCalled();
+      });
+      expect(
+        screen.queryByTestId("task-form-dialog-title")
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows the confirm dialog instead of starting immediately when an activity is already running", async () => {
+      const mockStopActivity = vi.fn();
+      (useActivity as any).mockReturnValue({
+        refreshCurrentActivity: mockRefreshCurrentActivity,
+        currentActivity: { id: "current-1", activityName: "Ongoing Task" },
+        stopActivity: mockStopActivity,
+      });
+      (createTask as any).mockResolvedValue({
+        success: true,
+        data: { id: "new-task-id" },
+      });
+
+      render(<TasksContainer activityTypes={mockActivityTypes} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Task 1")).toBeInTheDocument();
+      });
+
+      await openAddTaskDialogAndFillForm();
+
+      const saveAndStartBtn = screen.getByTestId("save-and-start-task-btn");
+      await user.click(saveAndStartBtn);
+
+      await waitFor(() => {
+        expect(createTask).toHaveBeenCalledTimes(1);
+      });
+      expect(startActivityFromTask).not.toHaveBeenCalled();
+      expect(
+        await screen.findByText(/"Ongoing Task" is currently in progress/i)
+      ).toBeInTheDocument();
+
+      (startActivityFromTask as any).mockResolvedValue({ success: true });
+      const confirmButton = screen.getByRole("button", {
+        name: "Stop & Start",
+      });
+      await user.click(confirmButton);
+
+      await waitFor(() => {
+        expect(mockStopActivity).toHaveBeenCalledTimes(1);
+        expect(startActivityFromTask).toHaveBeenCalledWith("new-task-id");
+      });
+    });
+
+    it("does not start an activity when task creation fails", async () => {
+      (createTask as any).mockResolvedValue({
+        success: false,
+        message: "Failed to create task",
+      });
+
+      render(<TasksContainer activityTypes={mockActivityTypes} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Task 1")).toBeInTheDocument();
+      });
+
+      await openAddTaskDialogAndFillForm();
+
+      const saveAndStartBtn = screen.getByTestId("save-and-start-task-btn");
+      await user.click(saveAndStartBtn);
+
+      await waitFor(() => {
+        expect(createTask).toHaveBeenCalledTimes(1);
+      });
+      expect(startActivityFromTask).not.toHaveBeenCalled();
     });
   });
 

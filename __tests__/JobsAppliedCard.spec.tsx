@@ -24,12 +24,12 @@ describe("JobsAppliedCard", () => {
     expect(mockPush).toHaveBeenCalledWith("/dashboard/myjobs?add-job=true");
   });
 
-  it("should navigate to tasks page when New Task button is clicked", async () => {
+  it("should navigate to tasks page with add-task=true when New Task button is clicked", async () => {
     const user = userEvent.setup();
     render(<JobsAppliedCard />);
 
     await user.click(screen.getByRole("button", { name: /new task/i }));
 
-    expect(mockPush).toHaveBeenCalledWith("/dashboard/tasks");
+    expect(mockPush).toHaveBeenCalledWith("/dashboard/tasks?add-task=true");
   });
 });

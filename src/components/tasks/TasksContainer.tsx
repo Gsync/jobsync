@@ -429,6 +429,7 @@ function TasksContainer({
         onTaskSaved={reloadTasks}
         dialogOpen={dialogOpen}
         setDialogOpen={setDialogOpen}
+        onSaveAndStart={onStartActivity}
       />
       {confirmDialog}
     </>
