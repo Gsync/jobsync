@@ -113,6 +113,9 @@ export const APP_CONSTANTS = {
   DESCRIPTION_FULL_MIN_WORDS: 150,
   MCP_MATCH_PROVIDER_MARKER: "mcp",
   MCP_REVIEW_MIN_RESUME_LENGTH: 400,
+  // Batch items are processed sequentially and each consumes one unit of the
+  // shared MCP rate-limit budget, so this caps a single call at a sixth of it.
+  MCP_BATCH_MAX_ITEMS: 10,
 
   // File uploads
   UPLOADS_DIR: process.env.NODE_ENV !== "production" ? "data" : "/data",

@@ -194,3 +194,43 @@ export const McpUpdateJobSchema = z.object({
 });
 
 export type McpUpdateJobInput = z.infer<typeof McpUpdateJobSchema>;
+
+// Batch wrappers — the per-item shapes are reused verbatim so the batch and
+// single-item tools can never drift apart.
+export const McpAddJobsBatchInputShape = {
+  jobs: z
+    .array(z.object(McpAddJobInputShape))
+    .min(1)
+    .max(APP_CONSTANTS.MCP_BATCH_MAX_ITEMS)
+    .describe(
+      `Up to ${APP_CONSTANTS.MCP_BATCH_MAX_ITEMS} jobs, each with the same ` +
+        `fields as add_job. Processed in order; each item consumes one unit ` +
+        `of the MCP rate-limit budget.`,
+    ),
+};
+
+export const McpAddJobsBatchSchema = z.object({
+  jobs: z.array(McpAddJobSchema).min(1).max(APP_CONSTANTS.MCP_BATCH_MAX_ITEMS),
+});
+export type McpAddJobsBatchInput = z.infer<typeof McpAddJobsBatchSchema>;
+
+export const McpSaveMatchResultsBatchInputShape = {
+  results: z
+    .array(z.object(McpSaveMatchResultInputShape))
+    .min(1)
+    .max(APP_CONSTANTS.MCP_BATCH_MAX_ITEMS)
+    .describe(
+      `Up to ${APP_CONSTANTS.MCP_BATCH_MAX_ITEMS} match analyses, each with ` +
+        `the same fields as save_match_result.`,
+    ),
+};
+
+export const McpSaveMatchResultsBatchSchema = z.object({
+  results: z
+    .array(McpSaveMatchResultSchema)
+    .min(1)
+    .max(APP_CONSTANTS.MCP_BATCH_MAX_ITEMS),
+});
+export type McpSaveMatchResultsBatchInput = z.infer<
+  typeof McpSaveMatchResultsBatchSchema
+>;

@@ -16,6 +16,10 @@ import {
   McpFindJobSchema,
   McpUpdateJobInputShape,
   McpUpdateJobSchema,
+  McpAddJobsBatchInputShape,
+  McpAddJobsBatchSchema,
+  McpSaveMatchResultsBatchInputShape,
+  McpSaveMatchResultsBatchSchema,
 } from "@/models/mcp.schema";
 import { handleAddJob } from "@/lib/mcp/tools/addJob";
 import { handleAddQuestion } from "@/lib/mcp/tools/addQuestion";
@@ -24,6 +28,8 @@ import { handleReviewResume } from "@/lib/mcp/tools/reviewResume";
 import { handleSaveResumeReview } from "@/lib/mcp/tools/saveResumeReview";
 import { handleFindJob } from "@/lib/mcp/tools/findJob";
 import { handleUpdateJob } from "@/lib/mcp/tools/updateJob";
+import { handleAddJobsBatch } from "@/lib/mcp/tools/addJobsBatch";
+import { handleSaveMatchResultsBatch } from "@/lib/mcp/tools/saveMatchResultsBatch";
 
 function isMcpEnabled(): boolean {
   const env = process.env.MCP_ENABLED;
@@ -177,6 +183,52 @@ async function handler(req: Request): Promise<Response> {
         };
       }
       return handleSaveMatchResult(parsed.data, userId, tokenName);
+    },
+  );
+
+  server.tool(
+    "add_jobs_batch",
+    "Add several jobs in one call. Same per-item behaviour as add_job (including upsert and the match directive); returns one labelled result per item. Use this for scheduled runs instead of N sequential add_job calls.",
+    McpAddJobsBatchInputShape,
+    async (rawInput) => {
+      if (!auth.scopes.includes("jobs:write")) {
+        return {
+          content: [
+            { type: "text" as const, text: "Insufficient scope. Required: jobs:write" },
+          ],
+        };
+      }
+      const parsed = McpAddJobsBatchSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => i.message).join("; ");
+        return {
+          content: [{ type: "text" as const, text: `Validation error: ${issues}` }],
+        };
+      }
+      return handleAddJobsBatch(parsed.data, userId, tokenName);
+    },
+  );
+
+  server.tool(
+    "save_match_results_batch",
+    "Persist several job-fit match analyses in one call. Same per-item behaviour as save_match_result; returns one labelled result per item.",
+    McpSaveMatchResultsBatchInputShape,
+    async (rawInput) => {
+      if (!auth.scopes.includes("jobs:write")) {
+        return {
+          content: [
+            { type: "text" as const, text: "Insufficient scope. Required: jobs:write" },
+          ],
+        };
+      }
+      const parsed = McpSaveMatchResultsBatchSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => i.message).join("; ");
+        return {
+          content: [{ type: "text" as const, text: `Validation error: ${issues}` }],
+        };
+      }
+      return handleSaveMatchResultsBatch(parsed.data, userId, tokenName);
     },
   );
 
