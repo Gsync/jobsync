@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { DescriptionCompleteness } from "@/models/job.model";
 
 // RESUME REVIEW SCORES SCHEMA
 // The review body is free-form markdown; only the four scores are structured
@@ -64,4 +65,6 @@ export type JobMatchData = JobMatchScores & {
   prerankScore?: number; // raw lexical score (internal sort only; NOT shown as %)
   analyzed?: boolean; // true once LLM match has run (auto top-K or on-demand)
   prerankComponents?: PrerankComponents;
+  // Set by the MCP path: how complete the job description was when scored.
+  descriptionCompleteness?: DescriptionCompleteness;
 };

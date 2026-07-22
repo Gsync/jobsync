@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 vi.mock("@prisma/client", () => {
   const mPrismaClient = {
-    job: { update: vi.fn() },
+    job: { update: vi.fn(), findFirst: vi.fn() },
     user: { findUnique: vi.fn() },
     resume: { findFirst: vi.fn() },
   };
@@ -31,6 +31,9 @@ describe("handleSaveMatchResult", () => {
       title: "My Resume",
     });
     (prisma.job.update as any).mockResolvedValue({ id: "job-1" });
+    (prisma.job.findFirst as any).mockResolvedValue({
+      descriptionCompleteness: "full",
+    });
   });
 
   it("parses a valid matchText and persists clamped score + shaped matchData", async () => {
@@ -213,5 +216,48 @@ describe("handleSaveMatchResult", () => {
     );
 
     expect(result.content[0].text).toContain("Error: connection reset");
+  });
+
+  it("stamps the job's descriptionCompleteness onto matchData", async () => {
+    (prisma.job.findFirst as any).mockResolvedValue({
+      descriptionCompleteness: "partial",
+    });
+
+    await handleSaveMatchResult(
+      { jobId: "job-1", matchText: validMatchText },
+      "user-1",
+      "my-token",
+    );
+
+    const data = (prisma.job.update as any).mock.calls[0][0].data;
+    expect(JSON.parse(data.matchData).descriptionCompleteness).toBe("partial");
+  });
+
+  it("scopes the completeness lookup to the caller's MCP-created jobs", async () => {
+    await handleSaveMatchResult(
+      { jobId: "job-1", matchText: validMatchText },
+      "user-1",
+      "my-token",
+    );
+
+    expect(prisma.job.findFirst).toHaveBeenCalledWith({
+      where: { id: "job-1", userId: "user-1", createdVia: { not: null } },
+      select: { descriptionCompleteness: true },
+    });
+  });
+
+  it("omits descriptionCompleteness when the job has none recorded", async () => {
+    (prisma.job.findFirst as any).mockResolvedValue({
+      descriptionCompleteness: null,
+    });
+
+    await handleSaveMatchResult(
+      { jobId: "job-1", matchText: validMatchText },
+      "user-1",
+      "my-token",
+    );
+
+    const data = (prisma.job.update as any).mock.calls[0][0].data;
+    expect(JSON.parse(data.matchData).descriptionCompleteness).toBeUndefined();
   });
 });

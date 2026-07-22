@@ -33,11 +33,22 @@ export function MatchDetails({ matchData, discoveredAt }: MatchDetailsProps) {
 
   return (
     <div className="space-y-3">
-      {matchData.recommendation && (
-        <Badge variant="outline" className="capitalize">
-          {matchData.recommendation}
-        </Badge>
-      )}
+      <div className="flex flex-wrap items-center gap-2">
+        {matchData.recommendation && (
+          <Badge variant="outline" className="capitalize">
+            {matchData.recommendation}
+          </Badge>
+        )}
+        {matchData.descriptionCompleteness &&
+          matchData.descriptionCompleteness !== "full" && (
+            <Badge
+              variant="secondary"
+              title="Scored from an incomplete job description — re-run the match after adding the full posting."
+            >
+              Provisional score
+            </Badge>
+          )}
+      </div>
 
       {html ? (
         <div className="text-sm leading-relaxed [&_p]:mt-2 [&_ul]:mt-2 [&_ol]:mt-2 [&_h2]:mt-4 [&_h2]:font-semibold">
