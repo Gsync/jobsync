@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { APP_CONSTANTS } from "@/lib/constants";
+import { APP_CONSTANTS, JOB_STATUS_VALUES } from "@/lib/constants";
 
 // Raw input shape for MCP tool registration (no transforms — SDK uses this for JSON schema)
 export const McpAddJobInputShape = {
@@ -11,7 +11,22 @@ export const McpAddJobInputShape = {
   source: z.string().optional().describe("Job board or site the listing came from, e.g. 'LinkedIn', 'Indeed', 'company website'. If not stated explicitly, infer it from the job posting's URL/domain when possible instead of leaving it blank."),
   jobType: z.string().optional().describe("Employment type: 'Full-time', 'Part-time', or 'Contract'"),
   workplaceType: z.string().optional().describe("Work arrangement: 'Remote', 'Hybrid', or 'Onsite'"),
-  status: z.string().optional().describe("Application status: draft, applied, interview, offer, rejected, expired, or archived. Defaults to 'draft'"),
+  // Lowercased before the enum check so a caller sending "Applied"/"Draft"
+  // (capitalized, like the old free-text field silently tolerated via
+  // resolveJobStatus's case-insensitive DB lookup) still validates instead
+  // of being newly rejected by this stricter enum. Verified this preserves
+  // the JSON-schema `enum: [...]` the MCP SDK exposes in tools/list (zod v4's
+  // pipe-aware conversion keeps the target enum on the input side too) — it
+  // is NOT just cosmetic.
+  status: z
+    .preprocess(
+      (v) => (typeof v === "string" ? v.toLowerCase() : v),
+      z.enum(JOB_STATUS_VALUES),
+    )
+    .optional()
+    .describe(
+      `Application status. One of: ${JOB_STATUS_VALUES.join(", ")}. Defaults to '${APP_CONSTANTS.MCP_DEFAULT_STATUS}'.`,
+    ),
   dueDate: z.string().datetime({ offset: true }).optional().describe("Application deadline as an ISO-8601 datetime string"),
   applied: z.boolean().optional().describe("Set true if you have already submitted the application"),
   appliedDate: z.string().datetime({ offset: true }).optional().describe("Date the application was submitted as an ISO-8601 datetime string"),

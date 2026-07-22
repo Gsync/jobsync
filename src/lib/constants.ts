@@ -160,6 +160,12 @@ export const JOB_STATUSES = [
   { label: "Archived", value: "archived" },
 ] as const;
 
+// Zod's z.enum needs a non-empty tuple; JOB_STATUSES is the source of truth.
+export const JOB_STATUS_VALUES = JOB_STATUSES.map((s) => s.value) as unknown as [
+  string,
+  ...string[],
+];
+
 export const DISCOVERY_STATUSES = [
   { label: "New", value: "new" },
   { label: "Accepted", value: "accepted" },
