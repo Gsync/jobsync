@@ -4,6 +4,11 @@ import { useState, useEffect } from "react";
 import { ResponsiveBar } from "@nivo/bar";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { cn } from "@/lib/utils";
+import { APP_CONSTANTS } from "@/lib/constants";
+import {
+  getFromLocalStorage,
+  saveToLocalStorage,
+} from "@/utils/localstorage.utils";
 
 type ChartConfig = {
   label: string;
@@ -24,6 +29,25 @@ export default function WeeklyBarChartToggle({
   const [activeIndex, setActiveIndex] = useState(0);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
   const current = charts[activeIndex];
+
+  const selectTab = (index: number) => {
+    setActiveIndex(index);
+    saveToLocalStorage(
+      APP_CONSTANTS.DASHBOARD_WEEKLY_CHART_STORAGE_KEY,
+      charts[index].label,
+    );
+  };
+
+  useEffect(() => {
+    const savedLabel = getFromLocalStorage(
+      APP_CONSTANTS.DASHBOARD_WEEKLY_CHART_STORAGE_KEY,
+      null,
+    );
+    const savedIndex = charts.findIndex((chart) => chart.label === savedLabel);
+    if (savedIndex !== -1) setActiveIndex(savedIndex);
+    // Restore the saved tab once on mount only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 640px)");
@@ -93,7 +117,7 @@ export default function WeeklyBarChartToggle({
             {charts.map((chart, index) => (
               <button
                 key={chart.label}
-                onClick={() => setActiveIndex(index)}
+                onClick={() => selectTab(index)}
                 className={cn(
                   "px-2 py-1 transition-colors",
                   index === 0 && "rounded-l-md",

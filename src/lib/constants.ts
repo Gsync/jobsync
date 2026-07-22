@@ -29,6 +29,8 @@ export const APP_CONSTANTS = {
   INTERSECTION_OBSERVER_THRESHOLD: 0.1,
   TOAST_LIMIT: 1,
   SIDEBAR_STORAGE_KEY: "sidebar-expanded",
+  DASHBOARD_WEEKLY_CHART_STORAGE_KEY: "dashboard-weekly-chart-tab",
+  DASHBOARD_RECENT_CARD_STORAGE_KEY: "dashboard-recent-card-tab",
   SIDEBAR_DOM_ID: "app-sidebar",
   // Paired so the rail width and its matching content offset can't drift.
   SIDEBAR_WIDTH: {

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { PowerIcon, Settings, Info } from "lucide-react";
-import { Button } from "./ui/button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -46,14 +45,14 @@ export function ProfileDropdown({ user, signOutAction }: ProfileDropdownProps) {
             Support
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <form action={signOutAction}>
-            <DropdownMenuItem>
-              <Button variant="ghost" className="w-full">
-                <PowerIcon className="w-5" />
-                <div className="hidden md:block mx-2">Logout</div>
-              </Button>
-            </DropdownMenuItem>
-          </form>
+          <DropdownMenuItem asChild className="cursor-pointer">
+            <form action={signOutAction}>
+              <button type="submit" className="flex w-full items-center">
+                <PowerIcon className="w-5 mr-2" />
+                <div className="hidden md:block">Logout</div>
+              </button>
+            </form>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
