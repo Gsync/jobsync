@@ -13,7 +13,6 @@ import NumberCardToggle from "@/components/dashboard/NumberCardToggle";
 import RecentCardToggle from "@/components/dashboard/RecentCardToggle";
 import TopActivitiesCard from "@/components/dashboard/TopActivitiesCard";
 import WeeklyBarChartToggle from "@/components/dashboard/WeeklyBarChartToggle";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Metadata } from "next";
 
@@ -100,20 +99,10 @@ export default async function Dashboard() {
         <RecentCardToggle jobs={recentJobs} activities={recentActivities} />
       </div>
       <div className="w-full col-span-3">
-        <Tabs defaultValue={activityCalendarDataKeys.at(-1)}>
-          <TabsList className="w-full justify-start overflow-x-auto">
-            {activityCalendarDataKeys.map((year) => (
-              <TabsTrigger key={year} value={year}>
-                {year}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          {activityCalendarDataKeys.map((year) => (
-            <TabsContent key={year} value={year}>
-              <ActivityCalendar year={year} data={activityCalendarData[year]} />
-            </TabsContent>
-          ))}
-        </Tabs>
+        <ActivityCalendar
+          years={activityCalendarDataKeys}
+          dataByYear={activityCalendarData}
+        />
       </div>
     </>
   );

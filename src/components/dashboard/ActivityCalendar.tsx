@@ -1,29 +1,53 @@
 "use client";
+import { useState } from "react";
 import { ResponsiveCalendar } from "@nivo/calendar";
 import { format, parseISO } from "date-fns";
 import { useTheme } from "next-themes";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 // make sure parent container have a defined height when using
 // responsive component, otherwise height will be 0 and
 // no chart will be rendered.
 // website examples showcase many properties,
 // you'll often use just a few of them.
 export default function ActivityCalendar({
-  year,
-  data,
+  years,
+  dataByYear,
 }: {
-  year: string;
-  data: any[];
+  years: string[];
+  dataByYear: Record<string, any[]>;
 }) {
   const { resolvedTheme } = useTheme();
+  const [year, setYear] = useState(years.at(-1));
   const borderColor = resolvedTheme === "light" ? "#ffffff" : "#0e1117";
+  const data = dataByYear[year ?? ""] ?? [];
   const hoursMap = Object.fromEntries(
     data.map((d) => [d.day, d.hours ?? 0]),
   );
   return (
     <Card className="w-[100%]">
       <CardHeader>
-        <CardTitle className="text-green-600">Activity Calendar</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-green-600">Activity Calendar</CardTitle>
+          <Select value={year} onValueChange={setYear}>
+            <SelectTrigger className="w-[100px]" aria-label="Select year">
+              <SelectValue placeholder="Select year" />
+            </SelectTrigger>
+            <SelectContent>
+              {years.map((y) => (
+                <SelectItem key={y} value={y}>
+                  {y}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent className="h-[200px]">
         <ResponsiveCalendar
