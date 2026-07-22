@@ -33,7 +33,23 @@ export const McpAddJobInputShape = {
   jobUrl: z.string().url().optional().describe("Direct URL to the job posting"),
   salaryRange: z.string().optional().describe("Salary range as a free-form string, e.g. '$120k–$150k' or '100,000 CAD'"),
   tags: z.array(z.string()).optional().describe("Skills required for the job (max 10 applied, extras are dropped). Tags are created if they don't exist. e.g. ['React', 'TypeScript', 'Node.js']"),
-  allowDuplicate: z.boolean().optional(),
+  allowDuplicate: z
+    .boolean()
+    .optional()
+    .describe(
+      "Force-create even if a matching job already exists. Prefer upsert:true " +
+        "for re-runs of the same search; use this only for a genuinely " +
+        "different posting.",
+    ),
+  upsert: z
+    .boolean()
+    .optional()
+    .describe(
+      "If a job with this URL (or same company+title within the dedupe " +
+        "window) already exists, update it with the fields supplied here " +
+        "instead of reporting a duplicate. Recommended for scheduled searches " +
+        "that resurface the same posting daily.",
+    ),
 };
 
 // Full schema with transforms for parsing raw MCP input in the handler
