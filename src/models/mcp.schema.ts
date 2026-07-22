@@ -19,11 +19,15 @@ export const McpAddJobInputShape = {
   salaryRange: z.string().optional().describe("Salary range as a free-form string, e.g. '$120k–$150k' or '100,000 CAD'"),
   tags: z.array(z.string()).optional().describe("Skills required for the job (max 10 applied, extras are dropped). Tags are created if they don't exist. e.g. ['React', 'TypeScript', 'Node.js']"),
   allowDuplicate: z.boolean().optional(),
+  autoMatch: z.boolean().optional().describe(
+    "Reserved for server-side matching. Defaults to false and never returns resume content.",
+  ),
 };
 
 // Full schema with transforms for parsing raw MCP input in the handler
 export const McpAddJobSchema = z.object({
   ...McpAddJobInputShape,
+  autoMatch: z.boolean().optional().default(false),
   dueDate: z.string().datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
   appliedDate: z.string().datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
 });

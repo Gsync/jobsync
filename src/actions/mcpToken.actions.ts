@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/utils/user.utils";
 import { handleError } from "@/lib/utils";
 import { generateToken } from "@/lib/mcp/tokens";
 import { APP_CONSTANTS } from "@/lib/constants";
+import { DEFAULT_MCP_TOKEN_SCOPES } from "@/lib/mcp/scopes";
 
 export interface PublicTokenMeta {
   id: string;
@@ -44,7 +45,7 @@ export async function createMcpToken(input: {
         name: input.name.trim(),
         tokenHash: hash,
         tokenPrefix: prefix,
-        scopes: JSON.stringify(["jobs:write", "questions:write", "resume:write"]),
+        scopes: JSON.stringify(DEFAULT_MCP_TOKEN_SCOPES),
         expiresAt,
       },
     });

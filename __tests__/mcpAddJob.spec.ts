@@ -1,155 +1,94 @@
 import { handleAddJob } from "@/lib/mcp/tools/addJob";
 import { createJobFromNames } from "@/lib/jobs/createJobFromNames";
-import { getDefaultResumeForUser } from "@/lib/jobs/getDefaultResumeForUser";
-import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 import { checkMcpRateLimit } from "@/lib/mcp/rate-limit";
 
 vi.mock("@/lib/jobs/createJobFromNames", () => ({
   createJobFromNames: vi.fn(),
 }));
 
-vi.mock("@/lib/jobs/getDefaultResumeForUser", () => ({
-  getDefaultResumeForUser: vi.fn(),
-}));
-
-vi.mock("@/lib/ai/tools/preprocessing", () => ({
-  preprocessResume: vi.fn(),
-}));
-
 vi.mock("@/lib/mcp/rate-limit", () => ({
   checkMcpRateLimit: vi.fn(() => ({ allowed: true, resetIn: 0 })),
 }));
 
-const longDescription = "a".repeat(250);
-const shortDescription = "Short JD.";
-
 const baseInput = {
   company: "Acme",
   jobTitle: "Engineer",
-  jobDescription: longDescription,
+  jobDescription: "A substantive fictional description ".repeat(10),
+  autoMatch: false,
 };
 
-describe("handleAddJob match gating", () => {
+describe("handleAddJob privacy boundary", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("appends resume text + save_match_result directive when created + substantive + default resume usable", async () => {
+  it("creates a job without returning default resume content", async () => {
     (createJobFromNames as any).mockResolvedValue({
       created: true,
       jobId: "job-1",
       resolutions: [],
       message: "Created Acme; Created Engineer. Job created (id: job-1).",
     });
-    (getDefaultResumeForUser as any).mockResolvedValue({ id: "resume-1", title: "My Resume" });
-    (preprocessResume as any).mockResolvedValue({
-      success: true,
-      data: { normalizedText: "NORMALIZED RESUME TEXT", metadata: {}, isValid: true },
-    });
 
-    const result = await handleAddJob(baseInput as any, "user-1", "my-token");
+    const result = await handleAddJob(baseInput, "user-1", "my-token");
     const text = result.content[0].text;
 
     expect(text).toContain("Job created (id: job-1)");
-    expect(text).toContain("NORMALIZED RESUME TEXT");
-    expect(text).toContain("job-1");
-    expect(text).toContain("save_match_result");
-    expect(text).toContain("SCORES: match=<0-100> recommendation=<strong|good|partial|weak>");
-    // Directive requests the four structured sections (richer match body).
-    expect(text).toContain("## Overall Fit");
-    expect(text).toContain("## Key Strengths");
-    expect(text).toContain("## Gaps / Risks");
-    expect(text).toContain("## Recommendation");
-    // Directive threads the resumeId back for save_match_result provenance.
-    expect(text).toContain('"resumeId": "resume-1"');
+    expect(text).not.toContain("DEFAULT RESUME");
+    expect(text).not.toContain("save_match_result");
+    expect(result.structuredContent).toEqual({
+      created: true,
+      jobId: "job-1",
+      duplicateJobId: null,
+      autoMatchPerformed: false,
+    });
   });
 
-  it("adds a short-description note and no directive when description is under the threshold", async () => {
+  it("keeps autoMatch fail-closed without disclosing a resume", async () => {
     (createJobFromNames as any).mockResolvedValue({
       created: true,
       jobId: "job-1",
       resolutions: [],
-      message: "Created Acme; Created Engineer. Job created (id: job-1).",
+      message: "Job created (id: job-1).",
     });
 
     const result = await handleAddJob(
-      { ...baseInput, jobDescription: shortDescription } as any,
-      "user-2",
+      { ...baseInput, autoMatch: true },
+      "user-1",
       "my-token",
     );
-    const text = result.content[0].text;
 
-    expect(text).toContain("Description too short to match");
-    expect(text).not.toContain("save_match_result");
-    expect(getDefaultResumeForUser).not.toHaveBeenCalled();
+    expect(result.content[0].text).toContain("Automatic MCP matching is disabled");
+    expect(result.content[0].text).not.toContain("DEFAULT RESUME");
+    expect(result.structuredContent.autoMatchPerformed).toBe(false);
   });
 
-  it("adds an actionable note when no default resume is set", async () => {
-    (createJobFromNames as any).mockResolvedValue({
-      created: true,
-      jobId: "job-1",
-      resolutions: [],
-      message: "Created Acme; Created Engineer. Job created (id: job-1).",
-    });
-    (getDefaultResumeForUser as any).mockResolvedValue(null);
-
-    const result = await handleAddJob(baseInput as any, "user-3", "my-token");
-    const text = result.content[0].text;
-
-    expect(text).toContain("No default resume set");
-    expect(text).not.toContain("save_match_result");
-    expect(preprocessResume).not.toHaveBeenCalled();
-  });
-
-  it("adds a distinct note when the default resume exists but fails preprocessing", async () => {
-    (createJobFromNames as any).mockResolvedValue({
-      created: true,
-      jobId: "job-1",
-      resolutions: [],
-      message: "Created Acme; Created Engineer. Job created (id: job-1).",
-    });
-    (getDefaultResumeForUser as any).mockResolvedValue({ id: "resume-1", title: "My Resume" });
-    (preprocessResume as any).mockResolvedValue({
-      success: false,
-      error: { code: "TOO_SHORT", message: "Resume is too short" },
-    });
-
-    const result = await handleAddJob(baseInput as any, "user-4", "my-token");
-    const text = result.content[0].text;
-
-    expect(text).toContain("Default resume couldn't be used for matching");
-    expect(text).not.toContain("No default resume set");
-    expect(text).not.toContain("save_match_result");
-  });
-
-  it("does not offer a match on a duplicate, and explains why", async () => {
+  it("returns a structured duplicate identifier", async () => {
     (createJobFromNames as any).mockResolvedValue({
       created: false,
       duplicateOf: { id: "job-existing", title: "Engineer", company: "Acme" },
       resolutions: [],
-      message: 'Duplicate detected — existing job "Engineer" at "Acme" (id: job-existing).',
+      message: "Duplicate detected.",
     });
 
-    const result = await handleAddJob(baseInput as any, "user-5", "my-token");
-    const text = result.content[0].text;
+    const result = await handleAddJob(baseInput, "user-1", "my-token");
 
-    expect(text).toContain("Duplicate detected");
-    expect(text).toContain("No match offered for duplicates");
-    expect(getDefaultResumeForUser).not.toHaveBeenCalled();
-    expect(preprocessResume).not.toHaveBeenCalled();
+    expect(result.structuredContent).toMatchObject({
+      created: false,
+      duplicateJobId: "job-existing",
+    });
   });
 
-  it("returns a rate-limit message and never creates a job when the limit is exceeded", async () => {
+  it("returns a structured rate-limit error without creating a job", async () => {
     (checkMcpRateLimit as any).mockReturnValueOnce({
       allowed: false,
-      resetIn: 60000,
+      resetIn: 60_000,
     });
 
-    const result = await handleAddJob(baseInput as any, "user-6", "my-token");
-    const text = result.content[0].text;
+    const result = await handleAddJob(baseInput, "user-1", "my-token");
 
-    expect(text).toContain("Rate limit exceeded");
-    expect(text).toContain("60s");
+    expect(result.content[0].text).toContain("Rate limit exceeded");
+    expect(result.structuredContent.created).toBe(false);
     expect(createJobFromNames).not.toHaveBeenCalled();
   });
 });

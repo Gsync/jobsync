@@ -65,6 +65,13 @@ describe("handleSaveMatchResult", () => {
     expect(result.content[0].text).toContain("Match saved for job job-1");
     expect(result.content[0].text).toContain("good match");
     expect(result.content[0].text).toContain("78");
+    expect(result.structuredContent).toMatchObject({
+      saved: true,
+      jobId: "job-1",
+      score: 78,
+      recommendation: "good match",
+      errorCode: null,
+    });
   });
 
   it("returns a parse-error message when matchText has no SCORES line", async () => {
@@ -75,6 +82,7 @@ describe("handleSaveMatchResult", () => {
     );
 
     expect(result.content[0].text).toContain("Could not parse a SCORES line");
+    expect(result.structuredContent.errorCode).toBe("invalid_match_format");
     expect(prisma.job.update).not.toHaveBeenCalled();
   });
 
@@ -90,6 +98,7 @@ describe("handleSaveMatchResult", () => {
     expect(result.content[0].text).toBe(
       "Job not found, not owned by this token's user, or not eligible for a match via MCP.",
     );
+    expect(result.structuredContent.errorCode).toBe("not_found_or_forbidden");
   });
 
   it("overwrites a prior match (last-write-wins, no pre-check)", async () => {
