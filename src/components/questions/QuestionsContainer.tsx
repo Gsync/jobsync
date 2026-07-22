@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -35,6 +36,8 @@ function QuestionsContainer({
   filterKey,
   onQuestionsChanged,
 }: QuestionsContainerProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [page, setPage] = useState(1);
   const [totalQuestions, setTotalQuestions] = useState(0);
@@ -94,6 +97,18 @@ function QuestionsContainer({
     setEditQuestion(null);
     setDialogOpen(true);
   };
+
+  useEffect(() => {
+    if (!dialogOpen && searchParams.get("add-question") === "true") {
+      setDialogOpen(true);
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("add-question");
+      const newPath = params.toString()
+        ? `?${params.toString()}`
+        : window.location.pathname;
+      router.replace(newPath);
+    }
+  }, [dialogOpen, router, searchParams]);
 
   useEffect(() => {
     loadQuestions(1, filterKey, searchTerm || undefined);

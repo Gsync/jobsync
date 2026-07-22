@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -61,6 +62,8 @@ function TasksContainer({
   onFilterChange,
   onTasksChanged,
 }: TasksContainerProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { refreshCurrentActivity } = useActivity();
   const { requestStart, confirmDialog } = useActivitySwitchConfirm();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -207,6 +210,18 @@ function TasksContainer({
   const resetEditTask = () => {
     setEditTask(null);
   };
+
+  useEffect(() => {
+    if (!dialogOpen && searchParams.get("add-task") === "true") {
+      setDialogOpen(true);
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("add-task");
+      const newPath = params.toString()
+        ? `?${params.toString()}`
+        : window.location.pathname;
+      router.replace(newPath);
+    }
+  }, [dialogOpen, router, searchParams]);
 
   useEffect(() => {
     (async () =>

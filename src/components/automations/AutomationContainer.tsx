@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { ResponsiveCardHeader } from "@/components/ResponsiveCardHeader";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,8 @@ interface AutomationContainerProps {
 }
 
 export function AutomationContainer({ resumes }: AutomationContainerProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [automations, setAutomations] = useState<AutomationWithResume[]>([]);
   const [loading, setLoading] = useState(true);
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -47,6 +50,18 @@ export function AutomationContainer({ resumes }: AutomationContainerProps) {
   useEffect(() => {
     loadAutomations();
   }, [loadAutomations]);
+
+  useEffect(() => {
+    if (!wizardOpen && searchParams.get("add-automation") === "true") {
+      setWizardOpen(true);
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("add-automation");
+      const newPath = params.toString()
+        ? `?${params.toString()}`
+        : window.location.pathname;
+      router.replace(newPath);
+    }
+  }, [wizardOpen, router, searchParams]);
 
   const handleEdit = (automation: AutomationWithResume) => {
     setEditAutomation(automation);
