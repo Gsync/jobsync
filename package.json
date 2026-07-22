@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:e2e": "npx playwright test",
+    "test:e2e": "npx playwright test --project=chromium",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "eval:resume-review": "promptfoo eval --config evals/resume-review/promptfooconfig.yaml",

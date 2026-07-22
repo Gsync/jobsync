@@ -184,7 +184,11 @@ export const McpUpdateJobInputShape = {
   tags: z
     .array(z.string())
     .optional()
-    .describe("Replaces the job's tags wholesale (max 10 applied)."),
+    .describe(
+      "Skills required for the job, e.g. ['React', 'TypeScript']. Replaces " +
+        "the job's existing tags wholesale rather than merging, so include " +
+        "the tags returned by find_job that should be kept (max 10 applied).",
+    ),
 };
 
 export const McpUpdateJobSchema = z.object({
