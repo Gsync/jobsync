@@ -43,9 +43,9 @@ function SigninForm() {
       formData.set("password", data.password);
       const errorResponse = await authenticate("", formData);
       if (errorResponse) {
+        router.push("/dashboard");
         setError(errorResponse);
       } else {
-        router.push("/dashboard");
       }
     });
   };

@@ -36,6 +36,7 @@ function NavLink({ label, Icon, route, pathname }: NavLinkProps) {
             })}
           />
           <span className="sr-only">{label}</span>
+          
         </Link>
       </TooltipTrigger>
       <TooltipContent side="right">{label}</TooltipContent>
