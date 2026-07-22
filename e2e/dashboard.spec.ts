@@ -111,7 +111,10 @@ test.describe("Dashboard page", () => {
       page.getByRole("heading", { name: "Activity Calendar", exact: true }),
     ).toBeVisible();
     const currentYear = new Date().getFullYear().toString();
-    await expect(page.getByRole("tab", { name: currentYear })).toBeVisible();
+    await page.getByLabel("Select year").click();
+    await expect(
+      page.getByRole("option", { name: currentYear, exact: true }),
+    ).toBeVisible();
   });
 
   test("should navigate to create a new job and a new task from dashboard quick actions", async ({

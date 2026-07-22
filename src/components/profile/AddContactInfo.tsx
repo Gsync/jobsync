@@ -4,6 +4,7 @@ import { Button } from "../ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
@@ -45,6 +46,9 @@ function AddContactInfo({
   const pageTitle = contactInfoToEdit
     ? "Edit Contact Info"
     : "Add Contact Info";
+  const pageDescription = contactInfoToEdit
+    ? "Update your contact information on your resume."
+    : "Add your contact information to your resume.";
 
   const form = useForm<z.infer<typeof AddContactInfoFormSchema>>({
     resolver: zodResolver(AddContactInfoFormSchema),
@@ -121,6 +125,7 @@ function AddContactInfo({
       <DialogContent className="lg:max-h-screen overflow-y-scroll">
         <DialogHeader>
           <DialogTitle>{pageTitle}</DialogTitle>
+          <DialogDescription>{pageDescription}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form

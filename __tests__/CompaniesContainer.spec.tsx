@@ -227,10 +227,13 @@ describe("CompaniesContainer Search Functionality", () => {
     });
 
     it("should preserve search term when loading more companies", async () => {
-      (getCompanyList as any).mockResolvedValue({
-        data: mockCompanies,
-        total: 5,
-      });
+      (getCompanyList as any)
+        .mockResolvedValueOnce({ data: mockCompanies, total: 5 })
+        .mockResolvedValueOnce({ data: mockCompanies, total: 5 })
+        .mockResolvedValueOnce({
+          data: [{ id: "3", label: "Meta", value: "meta", createdBy: "user-1" }],
+          total: 5,
+        });
 
       render(<CompaniesContainer />);
 

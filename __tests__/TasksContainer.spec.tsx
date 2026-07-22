@@ -1,5 +1,5 @@
 import TasksContainer from "@/components/tasks/TasksContainer";
-import { screen, render, waitFor } from "@testing-library/react";
+import { screen, render, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   getTasksList,
@@ -781,10 +781,12 @@ describe("TasksContainer Component", () => {
       });
 
       // Simulate sentinel becoming visible
-      intersectionCallback(
-        [{ isIntersecting: true }] as IntersectionObserverEntry[],
-        {} as IntersectionObserver,
-      );
+      await act(async () => {
+        intersectionCallback(
+          [{ isIntersecting: true }] as IntersectionObserverEntry[],
+          {} as IntersectionObserver,
+        );
+      });
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(2, 25, undefined, [
@@ -923,7 +925,9 @@ describe("TasksContainer Component", () => {
       expect(getTasksList).not.toHaveBeenCalled();
 
       // Fast-forward past the 300ms debounce
-      vi.advanceTimersByTime(300);
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(
@@ -964,7 +968,9 @@ describe("TasksContainer Component", () => {
         "Task 1"
       );
 
-      vi.advanceTimersByTime(300);
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
 
       await waitFor(() => {
         expect(screen.getByText("Task 1")).toBeInTheDocument();
@@ -997,7 +1003,9 @@ describe("TasksContainer Component", () => {
         "nonexistent"
       );
 
-      vi.advanceTimersByTime(300);
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
 
       await waitFor(() => {
         expect(screen.getByText(/No tasks found/i)).toBeInTheDocument();
@@ -1049,7 +1057,9 @@ describe("TasksContainer Component", () => {
         "Task"
       );
 
-      vi.advanceTimersByTime(300);
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(
@@ -1091,7 +1101,9 @@ describe("TasksContainer Component", () => {
         "Development"
       );
 
-      vi.advanceTimersByTime(300);
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(
@@ -1135,7 +1147,9 @@ describe("TasksContainer Component", () => {
         "Task"
       );
 
-      vi.advanceTimersByTime(300);
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(
@@ -1150,10 +1164,12 @@ describe("TasksContainer Component", () => {
       vi.clearAllMocks();
 
       // Simulate sentinel becoming visible
-      intersectionCallback(
-        [{ isIntersecting: true }] as IntersectionObserverEntry[],
-        {} as IntersectionObserver,
-      );
+      await act(async () => {
+        intersectionCallback(
+          [{ isIntersecting: true }] as IntersectionObserverEntry[],
+          {} as IntersectionObserver,
+        );
+      });
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(
@@ -1187,7 +1203,9 @@ describe("TasksContainer Component", () => {
         "first search"
       );
 
-      vi.advanceTimersByTime(300);
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(
@@ -1210,7 +1228,9 @@ describe("TasksContainer Component", () => {
         "second search"
       );
 
-      vi.advanceTimersByTime(300);
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(
@@ -1248,7 +1268,9 @@ describe("TasksContainer Component", () => {
       await typingUser.type(searchInput, "Task");
 
       // Only after full debounce should API be called
-      vi.advanceTimersByTime(300);
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenLastCalledWith(
@@ -1288,7 +1310,9 @@ describe("TasksContainer Component", () => {
         "Task"
       );
 
-      vi.advanceTimersByTime(300);
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(

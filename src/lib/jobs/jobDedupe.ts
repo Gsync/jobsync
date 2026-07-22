@@ -1,5 +1,5 @@
 import prisma from "@/lib/db";
-import { jobDedupeKey } from "@/lib/scraper/utils";
+import { jobDedupeKey, normalizeJobUrl } from "@/lib/scraper/utils";
 
 export interface ExistingJobRef {
   id: string;
@@ -48,19 +48,39 @@ export async function getExistingJobDedupeMap(
 // (which the batch automation runner needs, since it must also dedupe
 // URL-less jobs by title/company/location), a single add only ever checks
 // one URL, so this skips the Location join and jobs that have no URL at all.
+const existingJobByUrlSelect = {
+  id: true,
+  jobUrl: true,
+  JobTitle: { select: { label: true } },
+  Company: { select: { label: true } },
+} as const;
+
 export async function findExistingJobByUrl(
   userId: string,
   jobUrl: string,
 ): Promise<ExistingJobRef | null> {
+  // Fast path: jobUrl is stored normalized (normalizeJobUrl), so an exact
+  // match on the same normalization covers the overwhelming majority of
+  // adds without scanning every URL-bearing job.
+  const exact = await prisma.job.findFirst({
+    where: { userId, jobUrl: normalizeJobUrl(jobUrl) },
+    select: existingJobByUrlSelect,
+  });
+  if (exact) {
+    return {
+      id: exact.id,
+      title: exact.JobTitle.label,
+      company: exact.Company.label,
+    };
+  }
+
+  // Fallback: urlDedupeKey folds host case/www, which normalizeJobUrl
+  // deliberately doesn't, so a small number of stored URLs may only match
+  // via the aggressive canonical key. Scan only when the fast path misses.
   const key = jobDedupeKey({ url: jobUrl });
   const jobs = await prisma.job.findMany({
     where: { userId, jobUrl: { not: null } },
-    select: {
-      id: true,
-      jobUrl: true,
-      JobTitle: { select: { label: true } },
-      Company: { select: { label: true } },
-    },
+    select: existingJobByUrlSelect,
   });
   for (const job of jobs) {
     if (jobDedupeKey({ url: job.jobUrl }) === key) {

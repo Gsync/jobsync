@@ -2,6 +2,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogOverlay,
   DialogTitle,
@@ -116,6 +117,9 @@ export function QuestionForm({
   }
 
   const pageTitle = editQuestion ? "Edit Question" : "Add Question";
+  const pageDescription = editQuestion
+    ? "Update this question in your question bank."
+    : "Add a question to your question bank.";
 
   const closeDialog = () => {
     reset();
@@ -131,6 +135,7 @@ export function QuestionForm({
             <DialogTitle data-testid="question-form-dialog-title">
               {pageTitle}
             </DialogTitle>
+            <DialogDescription>{pageDescription}</DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form

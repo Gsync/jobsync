@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -177,6 +178,9 @@ function ActivitiesContainer() {
             <DialogContent className="sm:max-w-[725px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Activity</DialogTitle>
+                <DialogDescription>
+                  Log a new activity to track your time and progress.
+                </DialogDescription>
               </DialogHeader>
               <div className="p-4">
                 <ActivityForm

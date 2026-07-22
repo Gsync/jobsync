@@ -18,7 +18,7 @@ import {
   updateTaskStatus,
   startActivityFromTask,
 } from "@/actions/task.actions";
-import { toast } from "../ui/use-toast";
+import { toastActionResult, toastError } from "@/lib/toast";
 import { Task, TaskStatus, TASK_STATUSES } from "@/models/task.model";
 import {
   Select,
@@ -112,11 +112,7 @@ function TasksContainer({
         setTotalTasks(total);
         setPage(pageNum);
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: message,
-        });
+        toastError(message);
       }
       setInitialLoading(false);
       setLoadingMore(false);
@@ -130,30 +126,17 @@ function TasksContainer({
   }, [loadTasks, filterKey, statusFilter, searchTerm, onTasksChanged]);
 
   const onDeleteTask = async (taskId: string) => {
-    const { success, message } = await deleteTaskById(taskId);
-    if (success) {
-      toast({
-        variant: "success",
-        description: "Task has been deleted successfully",
-      });
-      reloadTasks();
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: message,
-      });
-    }
+    const result = await deleteTaskById(taskId);
+    toastActionResult(result, {
+      success: "Task has been deleted successfully",
+      onSuccess: () => reloadTasks(),
+    });
   };
 
   const onEditTask = async (taskId: string) => {
     const { data, success, message } = await getTaskById(taskId);
     if (!success) {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: message,
-      });
+      toastError(message);
       return;
     }
     setEditTask(data);
@@ -171,39 +154,22 @@ function TasksContainer({
       prev.map((task) => (task.id === taskId ? { ...task, status } : task)),
     );
 
-    const { success, message } = await updateTaskStatus(taskId, status);
-    if (success) {
-      toast({
-        variant: "success",
-        description: "Task status updated successfully",
-      });
+    const result = await updateTaskStatus(taskId, status);
+    if (result.success) {
       onTasksChanged?.();
     } else {
       setTasks(originalTasks);
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: message,
-      });
     }
+    toastActionResult(result, { success: "Task status updated successfully" });
   };
 
   const onStartActivity = (taskId: string) => {
     requestStart(async () => {
-      const { success, message } = await startActivityFromTask(taskId);
-      if (success) {
-        await refreshCurrentActivity();
-        toast({
-          variant: "success",
-          description: "Activity started from task",
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: message,
-        });
-      }
+      const result = await startActivityFromTask(taskId);
+      toastActionResult(result, {
+        success: "Activity started from task",
+        onSuccess: () => refreshCurrentActivity(),
+      });
     });
   };
 

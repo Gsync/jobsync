@@ -31,7 +31,9 @@ test.describe("Add New Job", () => {
     );
     await expect(page.getByLabel("Job Source")).toContainText("Indeed");
     await expect(page.getByLabel("Select Job Status")).toContainText("Draft");
-    await expect(page.getByRole("paragraph")).toContainText("test description");
+    await expect(
+      page.getByLabel("Job Description").getByRole("paragraph"),
+    ).toContainText("test description");
     await page.getByText("test description").click();
     await page
       .getByLabel("Job Description")

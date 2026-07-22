@@ -2,6 +2,7 @@ import { useForm } from "react-hook-form";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
@@ -43,6 +44,9 @@ function AddResumeSummary({
   const [isPending, startTransition] = useTransition();
 
   const pageTitle = summaryToEdit ? "Edit Summary" : "Add Summary";
+  const pageDescription = summaryToEdit
+    ? "Update the professional summary on your resume."
+    : "Add a professional summary to your resume.";
 
   const form = useForm<z.infer<typeof AddSummarySectionFormSchema>>({
     resolver: zodResolver(AddSummarySectionFormSchema),
@@ -101,6 +105,7 @@ function AddResumeSummary({
       <DialogContent className="lg:max-h-screen overflow-y-scroll">
         <DialogHeader>
           <DialogTitle>{pageTitle}</DialogTitle>
+          <DialogDescription>{pageDescription}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form

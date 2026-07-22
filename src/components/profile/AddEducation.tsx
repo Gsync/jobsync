@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
@@ -46,6 +47,9 @@ function AddEducation({
   educationToEdit,
 }: AddEducationProps) {
   const pageTitle = educationToEdit ? "Edit Education" : "Add Education";
+  const pageDescription = educationToEdit
+    ? "Update this education entry on your resume."
+    : "Add an education entry to your resume.";
   const [isPending, startTransition] = useTransition();
   const [locations, setLocations] = useState<JobLocation[]>([]);
 
@@ -149,6 +153,7 @@ function AddEducation({
       <DialogContent className="h-full md:h-[85%] lg:max-h-screen md:max-w-[40rem] overflow-y-scroll">
         <DialogHeader>
           <DialogTitle>{pageTitle}</DialogTitle>
+          <DialogDescription>{pageDescription}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form

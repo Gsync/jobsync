@@ -155,7 +155,21 @@ describe("TagsContainer Search Functionality", () => {
     });
 
     it("should preserve search term when loading more skills", async () => {
-      (getTagList as any).mockResolvedValue({ data: mockTags, total: 5 });
+      (getTagList as any)
+        .mockResolvedValueOnce({ data: mockTags, total: 5 })
+        .mockResolvedValueOnce({ data: mockTags, total: 5 })
+        .mockResolvedValueOnce({
+          data: [
+            {
+              id: "3",
+              label: "TypeScript",
+              value: "typescript",
+              createdBy: "user-1",
+              _count: { jobs: 0, questions: 0, skills: 0 },
+            },
+          ],
+          total: 5,
+        });
 
       render(<TagsContainer />);
 

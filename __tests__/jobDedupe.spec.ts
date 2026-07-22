@@ -5,7 +5,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 vi.mock("@prisma/client", () => {
-  const m = { job: { findMany: vi.fn() } };
+  const m = { job: { findMany: vi.fn(), findFirst: vi.fn() } };
   return { PrismaClient: vi.fn(function () { return m; }) };
 });
 
@@ -123,7 +123,10 @@ describe("add_job Tier 1 URL matching via the dedupe map", () => {
 });
 
 describe("findExistingJobByUrl", () => {
-  beforeEach(() => (prisma.job.findMany as any).mockReset());
+  beforeEach(() => {
+    (prisma.job.findMany as any).mockReset();
+    (prisma.job.findFirst as any).mockReset().mockResolvedValue(null);
+  });
 
   it("returns null when the user has no jobs", async () => {
     mockJobs([]);
@@ -131,7 +134,27 @@ describe("findExistingJobByUrl", () => {
     expect(hit).toBeNull();
   });
 
-  it("scopes the query to the given user and excludes null jobUrls", async () => {
+  it("tries an indexed exact match before scanning", async () => {
+    (prisma.job.findFirst as any).mockResolvedValue(
+      row({ id: "j1", jobUrl: "https://ex.com/j/1", title: "Engineer", company: "Acme" }),
+    );
+
+    const hit = await findExistingJobByUrl("user-1", "https://ex.com/j/1");
+
+    expect(hit).toEqual({ id: "j1", title: "Engineer", company: "Acme" });
+    expect(prisma.job.findMany).not.toHaveBeenCalled();
+  });
+
+  it("scopes the exact-match query to the given user and normalized URL", async () => {
+    mockJobs([]);
+    await findExistingJobByUrl("user-42", "https://ex.com/j/1/?utm_source=li");
+    expect((prisma.job.findFirst as any).mock.calls[0][0].where).toEqual({
+      userId: "user-42",
+      jobUrl: "https://ex.com/j/1",
+    });
+  });
+
+  it("falls back to scanning and scopes to the given user, excluding null jobUrls", async () => {
     mockJobs([]);
     await findExistingJobByUrl("user-42", "https://ex.com/j/1");
     expect((prisma.job.findMany as any).mock.calls[0][0].where).toEqual({
@@ -140,7 +163,7 @@ describe("findExistingJobByUrl", () => {
     });
   });
 
-  it("finds a match and reports its identity", async () => {
+  it("falls back to a scan and finds a match by identity", async () => {
     mockJobs([
       row({ id: "j1", jobUrl: "https://ex.com/j/1", title: "Engineer", company: "Acme" }),
     ]);
@@ -150,12 +173,12 @@ describe("findExistingJobByUrl", () => {
     expect(hit).toEqual({ id: "j1", title: "Engineer", company: "Acme" });
   });
 
-  it("matches a normalized URL variant (www + tracking params)", async () => {
+  it("falls back to a scan and matches a canonical URL variant (www + host case)", async () => {
     mockJobs([row({ id: "j1", jobUrl: "https://ex.com/j/1" })]);
 
     const hit = await findExistingJobByUrl(
       "user-1",
-      "https://www.ex.com/j/1?utm_source=li",
+      "https://Www.Ex.com/j/1",
     );
 
     expect(hit?.id).toBe("j1");

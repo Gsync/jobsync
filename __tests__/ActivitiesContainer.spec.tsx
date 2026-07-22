@@ -392,11 +392,33 @@ describe("ActivitiesContainer Search Functionality", () => {
 
   describe("Infinite Scroll with Search", () => {
     it("should preserve search term when loading more via scroll", async () => {
-      (getActivitiesList as any).mockResolvedValue({
-        success: true,
-        data: mockActivities,
-        total: 50,
-      });
+      (getActivitiesList as any)
+        .mockResolvedValueOnce({
+          success: true,
+          data: mockActivities,
+          total: 50,
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          data: mockActivities,
+          total: 50,
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          data: [
+            {
+              id: "4",
+              activityName: "Interview Prep",
+              startTime: new Date("2024-06-21T09:00:00"),
+              endTime: new Date("2024-06-21T10:00:00"),
+              duration: 60,
+              description: "Practicing interview questions",
+              createdAt: new Date("2024-06-21"),
+              activityType: { id: "1", label: "Learning", value: "learning" },
+            },
+          ],
+          total: 50,
+        });
 
       renderComponent();
 

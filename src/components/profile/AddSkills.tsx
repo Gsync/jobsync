@@ -7,6 +7,7 @@ import { PlusCircle, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -145,10 +146,10 @@ function AddSkills({
       <DialogContent className="max-h-[85vh] md:max-w-[40rem] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Edit Skills" : "Add Skills"}</DialogTitle>
-          <p className="text-sm text-muted-foreground">
+          <DialogDescription>
             Group your skills into categories. Leave a name blank to list skills
             without a heading.
-          </p>
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form

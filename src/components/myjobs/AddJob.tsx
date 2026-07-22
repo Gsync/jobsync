@@ -2,6 +2,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogOverlay,
   DialogTitle,
@@ -197,6 +198,9 @@ export function AddJob({
   }
 
   const pageTitle = editJob ? "Edit Job" : "Add Job";
+  const pageDescription = editJob
+    ? "Update the details of this job application."
+    : "Track a new job application.";
 
   const addJobForm = () => {
     reset(newJobDefaultValues);
@@ -244,6 +248,7 @@ export function AddJob({
               <DialogTitle data-testid="add-job-dialog-title">
                 {pageTitle}
               </DialogTitle>
+              <DialogDescription>{pageDescription}</DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form
@@ -429,7 +434,7 @@ export function AddJob({
                       <FormItem className="flex flex-row">
                         <Switch
                           id="applied-switch"
-                          checked={field.value}
+                          checked={field.value ?? false}
                           onCheckedChange={(a) => {
                             field.onChange(a);
                             jobAppliedChange(a);

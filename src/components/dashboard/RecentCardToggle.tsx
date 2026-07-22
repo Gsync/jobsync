@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,10 +7,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { getJobStatusBadgeColor } from "@/lib/badge-colors";
 import { cn } from "@/lib/utils";
 import { APP_CONSTANTS } from "@/lib/constants";
-import {
-  getFromLocalStorage,
-  saveToLocalStorage,
-} from "@/utils/localstorage.utils";
+import { usePersistedTabIndex } from "@/hooks/usePersistedTabIndex";
 import { useActivity } from "@/context/ActivityContext";
 import { useActivitySwitchConfirm } from "@/hooks/useActivitySwitchConfirm";
 import { JobResponse } from "@/models/job.model";
@@ -76,26 +72,12 @@ export default function RecentCardToggle({
   jobs,
   activities,
 }: RecentCardToggleProps) {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, selectTab] = usePersistedTabIndex(
+    APP_CONSTANTS.DASHBOARD_RECENT_CARD_STORAGE_KEY,
+    tabs,
+  );
   const { startActivity } = useActivity();
   const { requestStart, confirmDialog } = useActivitySwitchConfirm();
-
-  const selectTab = (index: number) => {
-    setActiveIndex(index);
-    saveToLocalStorage(
-      APP_CONSTANTS.DASHBOARD_RECENT_CARD_STORAGE_KEY,
-      tabs[index],
-    );
-  };
-
-  useEffect(() => {
-    const savedTab = getFromLocalStorage(
-      APP_CONSTANTS.DASHBOARD_RECENT_CARD_STORAGE_KEY,
-      null,
-    );
-    const savedIndex = tabs.indexOf(savedTab);
-    if (savedIndex !== -1) setActiveIndex(savedIndex);
-  }, []);
 
   return (
     <Card className="mb-2">

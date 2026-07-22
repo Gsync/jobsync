@@ -8,6 +8,7 @@ import { z } from "zod";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
@@ -51,6 +52,9 @@ function AddExperience({
   const [locations, setLocations] = useState<JobLocation[]>([]);
   const [jobTitles, setJobTitles] = useState<JobTitle[]>([]);
   const pageTitle = experienceToEdit ? "Edit Experience" : "Add Experience";
+  const pageDescription = experienceToEdit
+    ? "Update this work experience on your resume."
+    : "Add a work experience to your resume.";
   const [isPending, startTransition] = useTransition();
   const getTitleCompanyAndLocationData = useCallback(async () => {
     const [_companies, _titles, _locations] = await Promise.all([
@@ -148,6 +152,7 @@ function AddExperience({
       <DialogContent className="h-full md:h-[85%] lg:max-h-screen md:max-w-[40rem] overflow-y-scroll">
         <DialogHeader>
           <DialogTitle>{pageTitle}</DialogTitle>
+          <DialogDescription>{pageDescription}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form
@@ -254,7 +259,7 @@ function AddExperience({
                 render={({ field }) => (
                   <FormItem className="flex flex-row">
                     <Switch
-                      checked={field.value}
+                      checked={field.value ?? false}
                       onCheckedChange={(c) => {
                         field.onChange(c);
                         onCurrentJob(c);

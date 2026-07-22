@@ -9,6 +9,7 @@ import { useEffect, useState, useTransition } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -59,6 +60,9 @@ function CreateResume({
   const router = useRouter();
 
   const pageTitle = resumeToEdit ? "Edit Resume Title" : "Create Resume";
+  const pageDescription = resumeToEdit
+    ? "Update the title of this resume."
+    : "Create a new resume for your profile.";
 
   const form = useForm<z.infer<typeof CreateResumeFormSchema>>({
     resolver: zodResolver(CreateResumeFormSchema),
@@ -193,6 +197,7 @@ function CreateResume({
       <DialogContent className="lg:max-h-screen overflow-y-scroll">
         <DialogHeader>
           <DialogTitle>{pageTitle}</DialogTitle>
+          <DialogDescription>{pageDescription}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form

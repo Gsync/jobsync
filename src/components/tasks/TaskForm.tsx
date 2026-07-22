@@ -2,6 +2,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogOverlay,
   DialogTitle,
@@ -131,6 +132,9 @@ export function TaskForm({
   );
 
   const pageTitle = editTask ? "Edit Task" : "Add Task";
+  const pageDescription = editTask
+    ? "Update the details of this task."
+    : "Add a new task to track.";
 
   const closeDialog = () => {
     reset();
@@ -146,6 +150,7 @@ export function TaskForm({
             <DialogTitle data-testid="task-form-dialog-title">
               {pageTitle}
             </DialogTitle>
+            <DialogDescription>{pageDescription}</DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form

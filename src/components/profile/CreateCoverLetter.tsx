@@ -9,6 +9,7 @@ import { useEffect, useTransition } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -48,6 +49,9 @@ function CreateCoverLetter({
   const pageTitle = coverLetterToEdit
     ? "Edit Cover Letter"
     : "Create Cover Letter";
+  const pageDescription = coverLetterToEdit
+    ? "Update this cover letter."
+    : "Create a new cover letter for your profile.";
 
   const form = useForm<z.infer<typeof CoverLetterFormSchema>>({
     resolver: zodResolver(CoverLetterFormSchema),
@@ -104,6 +108,7 @@ function CreateCoverLetter({
       <DialogContent className="lg:max-w-screen-md lg:max-h-screen overflow-y-scroll">
         <DialogHeader>
           <DialogTitle>{pageTitle}</DialogTitle>
+          <DialogDescription>{pageDescription}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form

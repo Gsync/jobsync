@@ -161,10 +161,20 @@ describe("JobTitlesContainer Search Functionality", () => {
     });
 
     it("should preserve search term when loading more job titles", async () => {
-      (getJobTitleList as any).mockResolvedValue({
-        data: mockTitles,
-        total: 5,
-      });
+      (getJobTitleList as any)
+        .mockResolvedValueOnce({ data: mockTitles, total: 5 })
+        .mockResolvedValueOnce({ data: mockTitles, total: 5 })
+        .mockResolvedValueOnce({
+          data: [
+            {
+              id: "3",
+              label: "Designer",
+              value: "designer",
+              createdBy: "user-1",
+            },
+          ],
+          total: 5,
+        });
 
       render(<JobTitlesContainer />);
 

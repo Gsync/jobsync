@@ -625,11 +625,51 @@ describe("JobsContainer Search Functionality", () => {
 
   describe("Infinite Scroll with Search", () => {
     it("should preserve search term when loading more via scroll", async () => {
-      (getJobsList as any).mockResolvedValue({
-        success: true,
-        data: mockJobs,
-        total: 50,
-      });
+      (getJobsList as any)
+        .mockResolvedValueOnce({
+          success: true,
+          data: mockJobs,
+          total: 50,
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          data: mockJobs,
+          total: 50,
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          data: [
+            {
+              id: "3",
+              userId: "user-1",
+              JobTitle: {
+                id: "3",
+                label: "Backend Developer",
+                value: "backend developer",
+                createdBy: "user-1",
+              },
+              Company: {
+                id: "3",
+                label: "Meta",
+                value: "meta",
+                createdBy: "user-1",
+                logoUrl: "",
+              },
+              Location: {
+                id: "3",
+                label: "New York",
+                value: "new york",
+                createdBy: "user-1",
+              },
+              Status: { id: "1", label: "Applied", value: "applied" },
+              JobSource: { id: "1", label: "Indeed", value: "indeed" },
+              jobType: "FT",
+              appliedDate: new Date("2024-06-21"),
+              dueDate: new Date("2024-06-26"),
+            },
+          ],
+          total: 50,
+        });
 
       renderComponent();
 

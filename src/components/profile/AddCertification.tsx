@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
@@ -47,6 +48,9 @@ function AddCertification({
   const pageTitle = certificationToEdit
     ? "Edit Certification / License"
     : "Add Certification / License";
+  const pageDescription = certificationToEdit
+    ? "Update this certification or license on your resume."
+    : "Add a certification or license to your resume.";
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<z.infer<typeof AddCertificationFormSchema>>({
@@ -127,6 +131,7 @@ function AddCertification({
       <DialogContent className="h-full md:h-[85%] lg:max-h-screen md:max-w-[40rem] overflow-y-scroll">
         <DialogHeader>
           <DialogTitle>{pageTitle}</DialogTitle>
+          <DialogDescription>{pageDescription}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form

@@ -5,10 +5,7 @@ import { ResponsiveBar } from "@nivo/bar";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { cn } from "@/lib/utils";
 import { APP_CONSTANTS } from "@/lib/constants";
-import {
-  getFromLocalStorage,
-  saveToLocalStorage,
-} from "@/utils/localstorage.utils";
+import { usePersistedTabIndex } from "@/hooks/usePersistedTabIndex";
 
 type ChartConfig = {
   label: string;
@@ -26,28 +23,12 @@ type WeeklyBarChartToggleProps = {
 export default function WeeklyBarChartToggle({
   charts,
 }: WeeklyBarChartToggleProps) {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, selectTab] = usePersistedTabIndex(
+    APP_CONSTANTS.DASHBOARD_WEEKLY_CHART_STORAGE_KEY,
+    charts.map((chart) => chart.label),
+  );
   const [isSmallScreen, setIsSmallScreen] = useState(false);
   const current = charts[activeIndex];
-
-  const selectTab = (index: number) => {
-    setActiveIndex(index);
-    saveToLocalStorage(
-      APP_CONSTANTS.DASHBOARD_WEEKLY_CHART_STORAGE_KEY,
-      charts[index].label,
-    );
-  };
-
-  useEffect(() => {
-    const savedLabel = getFromLocalStorage(
-      APP_CONSTANTS.DASHBOARD_WEEKLY_CHART_STORAGE_KEY,
-      null,
-    );
-    const savedIndex = charts.findIndex((chart) => chart.label === savedLabel);
-    if (savedIndex !== -1) setActiveIndex(savedIndex);
-    // Restore the saved tab once on mount only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 640px)");
