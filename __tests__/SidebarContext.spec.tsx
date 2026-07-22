@@ -105,6 +105,18 @@ describe("SidebarContext", () => {
     expect(screen.getByText("expanded")).toBeInTheDocument();
   });
 
+  // Autofill/extension-dispatched keydown events can omit `key` entirely.
+  it("ignores a keydown event with no key property", () => {
+    renderHook(() => useSidebar(), {
+      wrapper: makeWrapper(true),
+    });
+
+    const event = new KeyboardEvent("keydown", { metaKey: true });
+    Object.defineProperty(event, "key", { value: undefined });
+
+    expect(() => window.dispatchEvent(event)).not.toThrow();
+  });
+
   it("throws when used outside the provider", () => {
     const consoleError = vi
       .spyOn(console, "error")

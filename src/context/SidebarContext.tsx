@@ -32,7 +32,7 @@ export function SidebarProvider({
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== "b" || (!e.metaKey && !e.ctrlKey)) return;
+      if (e.key?.toLowerCase() !== "b" || (!e.metaKey && !e.ctrlKey)) return;
 
       // Let editable elements (inputs, Tiptap/ProseMirror) keep Cmd/Ctrl+B
       // for their own shortcuts (e.g. bold) instead of toggling the sidebar.
