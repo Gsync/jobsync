@@ -12,12 +12,18 @@ import {
   McpReviewResumeSchema,
   McpSaveResumeReviewInputShape,
   McpSaveResumeReviewSchema,
+  McpFindJobInputShape,
+  McpFindJobSchema,
+  McpUpdateJobInputShape,
+  McpUpdateJobSchema,
 } from "@/models/mcp.schema";
 import { handleAddJob } from "@/lib/mcp/tools/addJob";
 import { handleAddQuestion } from "@/lib/mcp/tools/addQuestion";
 import { handleSaveMatchResult } from "@/lib/mcp/tools/saveMatchResult";
 import { handleReviewResume } from "@/lib/mcp/tools/reviewResume";
 import { handleSaveResumeReview } from "@/lib/mcp/tools/saveResumeReview";
+import { handleFindJob } from "@/lib/mcp/tools/findJob";
+import { handleUpdateJob } from "@/lib/mcp/tools/updateJob";
 
 function isMcpEnabled(): boolean {
   const env = process.env.MCP_ENABLED;
@@ -69,6 +75,52 @@ async function handler(req: Request): Promise<Response> {
         };
       }
       return handleAddJob(parsed.data, userId, tokenName);
+    },
+  );
+
+  server.tool(
+    "find_job",
+    "Look up whether a job posting URL is already saved in JobSync. Call this before add_job when re-running a search, so an already-tracked posting is updated instead of duplicated.",
+    McpFindJobInputShape,
+    async (rawInput) => {
+      if (!auth.scopes.includes("jobs:write")) {
+        return {
+          content: [
+            { type: "text" as const, text: "Insufficient scope. Required: jobs:write" },
+          ],
+        };
+      }
+      const parsed = McpFindJobSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => i.message).join("; ");
+        return {
+          content: [{ type: "text" as const, text: `Validation error: ${issues}` }],
+        };
+      }
+      return handleFindJob(parsed.data, userId);
+    },
+  );
+
+  server.tool(
+    "update_job",
+    "Correct or enrich a job previously added through MCP. Only the fields you supply change. Supplying a fuller jobDescription re-classifies the posting and requests a fresh match analysis — use this instead of re-adding with allowDuplicate.",
+    McpUpdateJobInputShape,
+    async (rawInput) => {
+      if (!auth.scopes.includes("jobs:write")) {
+        return {
+          content: [
+            { type: "text" as const, text: "Insufficient scope. Required: jobs:write" },
+          ],
+        };
+      }
+      const parsed = McpUpdateJobSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => i.message).join("; ");
+        return {
+          content: [{ type: "text" as const, text: `Validation error: ${issues}` }],
+        };
+      }
+      return handleUpdateJob(parsed.data, userId);
     },
   );
 

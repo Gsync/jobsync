@@ -108,3 +108,73 @@ export const McpSaveResumeReviewSchema = z.object(
 export type McpSaveResumeReviewInput = z.infer<
   typeof McpSaveResumeReviewSchema
 >;
+
+// find_job — URL is the only lookup key; it's the one identifier an agent
+// reliably has from a job board, and it's what add_job dedupes on.
+export const McpFindJobInputShape = {
+  jobUrl: z
+    .string()
+    .url()
+    .describe(
+      "Direct URL to the job posting. Matched against saved jobs using the " +
+        "same canonical key as add_job's duplicate detection, so tracking " +
+        "parameters and host casing don't matter.",
+    ),
+};
+
+export const McpFindJobSchema = z.object(McpFindJobInputShape);
+export type McpFindJobInput = z.infer<typeof McpFindJobSchema>;
+
+// update_job — every field except jobId is optional; only supplied fields
+// change. Mirrors add_job's field names exactly.
+export const McpUpdateJobInputShape = {
+  jobId: z
+    .string()
+    .min(1)
+    .describe(
+      "The id of the job to update, as returned by add_job or find_job. " +
+        "Only jobs created through MCP can be updated.",
+    ),
+  company: z.string().min(1).optional(),
+  jobTitle: z.string().min(1).optional(),
+  jobDescription: z
+    .string()
+    .min(10)
+    .optional()
+    .describe(
+      "The complete job posting text, copied in full — do not summarize. " +
+        "Supplying this re-classifies the job's description completeness and, " +
+        "if it is now substantive enough, a fresh match analysis is requested.",
+    ),
+  location: z.string().optional(),
+  source: z.string().optional(),
+  jobType: z.string().optional().describe("Employment type: 'Full-time', 'Part-time', or 'Contract'"),
+  workplaceType: z.string().optional().describe("Work arrangement: 'Remote', 'Hybrid', or 'Onsite'"),
+  // Same lowercase-preprocess treatment as add_job's status (Task 1) — the
+  // SDK validates against this exact shape, so the case-insensitivity has to
+  // live here too, not just on the transformed McpUpdateJobSchema.
+  status: z
+    .preprocess(
+      (v) => (typeof v === "string" ? v.toLowerCase() : v),
+      z.enum(JOB_STATUS_VALUES),
+    )
+    .optional()
+    .describe(`Application status. One of: ${JOB_STATUS_VALUES.join(", ")}.`),
+  dueDate: z.string().datetime({ offset: true }).optional(),
+  applied: z.boolean().optional(),
+  appliedDate: z.string().datetime({ offset: true }).optional(),
+  jobUrl: z.string().url().optional(),
+  salaryRange: z.string().optional(),
+  tags: z
+    .array(z.string())
+    .optional()
+    .describe("Replaces the job's tags wholesale (max 10 applied)."),
+};
+
+export const McpUpdateJobSchema = z.object({
+  ...McpUpdateJobInputShape,
+  dueDate: z.string().datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
+  appliedDate: z.string().datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
+});
+
+export type McpUpdateJobInput = z.infer<typeof McpUpdateJobSchema>;
