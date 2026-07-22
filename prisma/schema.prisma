@@ -323,6 +323,9 @@ model Job {
 
   // MCP provenance: which agent/token created this job (null = UI or automation)
   createdVia      String?
+  // Word-count classification of `description` at write time:
+  // "title-only" | "partial" | "full". Null for pre-existing/UI jobs.
+  descriptionCompleteness String?
 
   @@index([userId, automationId])
   @@index([userId, discoveryStatus])

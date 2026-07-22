@@ -4,6 +4,8 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import { normalizeJobUrl } from "@/lib/scraper/utils";
 import { findExistingJobByUrl } from "@/lib/jobs/jobDedupe";
 import { createJobRecord } from "@/lib/jobs/createJobRecord";
+import { classifyDescriptionCompleteness } from "@/lib/jobs/descriptionCompleteness";
+import type { DescriptionCompleteness } from "@/models/job.model";
 import {
   resolveCompany,
   resolveJobTitle,
@@ -44,6 +46,7 @@ export interface CreateJobFromNamesResult {
   jobId?: string;
   duplicateOf?: { id: string; title: string; company: string };
   resolutions: ResolvedEntity[];
+  descriptionCompleteness?: DescriptionCompleteness;
   message: string;
 }
 
@@ -121,6 +124,8 @@ export async function createJobFromNames(
   // Default appliedDate if applied is true but no date provided
   const resolvedAppliedDate = applied && !appliedDate ? new Date() : (appliedDate ?? null);
 
+  const descriptionCompleteness = classifyDescriptionCompleteness(jobDescription);
+
   const job = await createJobRecord({
     jobTitleId: resolvedTitle.id,
     companyId: resolvedCompany.id,
@@ -141,6 +146,7 @@ export async function createJobFromNames(
     applied,
     tagIds: resolvedTagsResult.resolved.map((t) => t.id),
     createdVia: createdVia ?? null,
+    descriptionCompleteness,
   });
 
   const message = buildSuccessMessage(resolutions, resolvedTagsResult.dropped, job.id);
@@ -149,6 +155,7 @@ export async function createJobFromNames(
     created: true,
     jobId: job.id,
     resolutions,
+    descriptionCompleteness,
     message,
   };
 }
@@ -213,6 +220,8 @@ function buildDuplicateMessage(
   });
   return (
     `Duplicate detected — existing job "${dup.title}" at "${dup.company}" (id: ${dup.id}). ` +
-    `Pass allowDuplicate: true to force create. Resolutions: ${parts.join("; ")}.`
+    `To enrich or correct it, call update_job with jobId "${dup.id}" instead of re-adding. ` +
+    `Pass allowDuplicate: true only if this is genuinely a different posting. ` +
+    `Resolutions: ${parts.join("; ")}.`
   );
 }

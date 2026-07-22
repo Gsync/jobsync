@@ -19,6 +19,7 @@ export async function createJobRecord(fields: {
   coverLetterId?: string | null;
   tagIds?: string[];
   createdVia?: string | null;
+  descriptionCompleteness?: string | null;
 }) {
   const { tagIds = [], ...rest } = fields;
   return prisma.job.create({

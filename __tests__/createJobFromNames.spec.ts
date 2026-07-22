@@ -138,7 +138,7 @@ describe("createJobFromNames", () => {
       company: "Acme",
     });
     expect(result.message).toContain("Duplicate detected");
-    expect(result.message).toContain("Pass allowDuplicate: true to force create");
+    expect(result.message).toContain("update_job");
     expect(createJobRecord).not.toHaveBeenCalled();
   });
 
@@ -161,5 +161,30 @@ describe("createJobFromNames", () => {
 
     expect(result.created).toBe(true);
     expect(result.duplicateOf).toBeUndefined();
+  });
+
+  it("classifies and persists descriptionCompleteness from the raw description", async () => {
+    const full = Array.from({ length: 200 }, () => "word").join(" ");
+    const result = await createJobFromNames(
+      { ...baseInput, jobDescription: full },
+      userId,
+    );
+
+    expect(result.descriptionCompleteness).toBe("full");
+    expect(createJobRecord).toHaveBeenCalledWith(
+      expect.objectContaining({ descriptionCompleteness: "full" }),
+    );
+  });
+
+  it("marks a stub description as title-only", async () => {
+    const result = await createJobFromNames(
+      { ...baseInput, jobDescription: "Frontend Developer, $120k, Remote." },
+      userId,
+    );
+
+    expect(result.descriptionCompleteness).toBe("title-only");
+    expect(createJobRecord).toHaveBeenCalledWith(
+      expect.objectContaining({ descriptionCompleteness: "title-only" }),
+    );
   });
 });

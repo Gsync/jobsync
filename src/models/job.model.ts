@@ -138,3 +138,5 @@ export function getWorkplaceTypeLabel(
   if (!code) return fallback;
   return (WORKPLACE_TYPES as Record<string, string>)[code] ?? fallback;
 }
+
+export type DescriptionCompleteness = "title-only" | "partial" | "full";
