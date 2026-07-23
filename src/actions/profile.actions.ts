@@ -19,6 +19,7 @@ import {
   buildInsufficientSectionsMessage,
   hasMinResumeSections,
 } from "@/lib/resumeSections";
+import { buildCopyTitle, ensureUniqueTitle } from "@/lib/resumeCopyTitle";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import path from "path";
@@ -457,6 +458,42 @@ export const editResume = async (
     return { success: true, data: res };
   } catch (error) {
     const msg = "Failed to update resume or file.";
+    return handleError(error, msg);
+  }
+};
+
+export const getResumeCopyTitleSuggestion = async (
+  resumeId: string,
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const source = await prisma.resume.findUnique({
+      where: { id: resumeId, profile: { userId: user.id } },
+      select: { title: true },
+    });
+    if (!source) {
+      throw new Error("Resume not found or access denied");
+    }
+
+    // All titles, not just the current page, so the suggestion never collides
+    const existing = await prisma.resume.findMany({
+      where: { profile: { userId: user.id } },
+      select: { title: true },
+    });
+
+    return {
+      success: true,
+      data: buildCopyTitle(
+        source.title,
+        existing.map((r) => r.title),
+      ),
+    };
+  } catch (error) {
+    const msg = "Failed to build a title for the copy.";
     return handleError(error, msg);
   }
 };
