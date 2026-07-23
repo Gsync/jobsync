@@ -1,5 +1,6 @@
 "use client";
 import {
+  Copy,
   FilePenLine,
   MoreVertical,
   Paperclip,
@@ -43,6 +44,7 @@ type DocumentTableProps = {
   documents: ProfileDocument[];
   editResume: (doc: ProfileDocument) => void;
   editCoverLetter: (doc: ProfileDocument) => void;
+  copyResume: (doc: ProfileDocument) => void;
   reloadDocuments: () => void;
   defaultResumeId?: string | null;
 };
@@ -51,6 +53,7 @@ function DocumentTable({
   documents,
   editResume,
   editCoverLetter,
+  copyResume,
   reloadDocuments,
   defaultResumeId,
 }: DocumentTableProps) {
@@ -109,6 +112,15 @@ function DocumentTable({
     } else {
       performSetDefault(doc);
     }
+  };
+
+  const onCopyResume = (doc: ProfileDocument) => {
+    if (!doc.id) return;
+    if (!hasMinResumeSections(doc.sectionCount)) {
+      warnInsufficientResumeSections("creating a copy");
+      return;
+    }
+    copyResume(doc);
   };
 
   const deleteDocument = async (doc: ProfileDocument) => {
@@ -232,6 +244,14 @@ function DocumentTable({
                               View/Edit Resume
                             </DropdownMenuItem>
                           </Link>
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={() => onCopyResume(doc)}
+                            data-testid="copy-resume-menu-item"
+                          >
+                            <Copy className="mr-2 h-4 w-4" />
+                            Create a copy
+                          </DropdownMenuItem>
                           {!doc.isDefault && (
                             <DropdownMenuItem
                               className="cursor-pointer"

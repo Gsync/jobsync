@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import CreateResume from "./CreateResume";
 import CreateCoverLetter from "./CreateCoverLetter";
+import CopyResumeDialog from "./CopyResumeDialog";
 import { Card, CardContent, CardTitle } from "../ui/card";
 import { ResponsiveCardHeader } from "../ResponsiveCardHeader";
 import { getResumeList, getDefaultResumeId } from "@/actions/profile.actions";
@@ -34,6 +35,10 @@ const ProfileContainer = () => {
   const [resumeToEdit, setResumeToEdit] = useState<Resume | null>(null);
   const [coverLetterToEdit, setCoverLetterToEdit] =
     useState<CoverLetter | null>(null);
+  const [copyDialogOpen, setCopyDialogOpen] = useState(false);
+  const [resumeToCopy, setResumeToCopy] = useState<ProfileDocument | null>(
+    null,
+  );
   const [totalResumes, setTotalResumes] = useState<number>(0);
   const [totalCoverLetters, setTotalCoverLetters] = useState<number>(0);
   const [defaultResumeId, setDefaultResumeId] = useState<string | null>(null);
@@ -153,6 +158,11 @@ const ProfileContainer = () => {
     setResumeDialogOpen(true);
   };
 
+  const onCopyResume = (doc: ProfileDocument) => {
+    setResumeToCopy(doc);
+    setCopyDialogOpen(true);
+  };
+
   const onEditCoverLetter = (doc: ProfileDocument) => {
     setCoverLetterToEdit({
       id: doc.id,
@@ -212,6 +222,12 @@ const ProfileContainer = () => {
             coverLetterToEdit={coverLetterToEdit}
             reloadDocuments={reloadDocuments}
           />
+          <CopyResumeDialog
+            open={copyDialogOpen}
+            setOpen={setCopyDialogOpen}
+            sourceDoc={resumeToCopy}
+            onCopied={reloadDocuments}
+          />
         </div>
       </ResponsiveCardHeader>
       <CardContent>
@@ -222,6 +238,7 @@ const ProfileContainer = () => {
               documents={documents}
               editResume={onEditResume}
               editCoverLetter={onEditCoverLetter}
+              copyResume={onCopyResume}
               reloadDocuments={reloadDocuments}
               defaultResumeId={defaultResumeId}
             />
