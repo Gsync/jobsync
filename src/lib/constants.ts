@@ -63,6 +63,10 @@ export const APP_CONSTANTS = {
   // local model can take minutes; too low cuts the stream mid-analysis.
   AI_JOB_MATCH_TIMEOUT_MS: 180_000,
 
+  // Cover letter generation timeout. Shorter than match/review because the
+  // output is a single 250-400 word letter, not a multi-section analysis.
+  AI_COVER_LETTER_TIMEOUT_MS: 120_000,
+
   // Automation manual run rate limiting
   AUTOMATION_MAX_MANUAL_RUNS_PER_HOUR: 5,
   AUTOMATION_RATE_LIMIT_WINDOW_MS: 60 * 60 * 1000, // 1 hour
