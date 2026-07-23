@@ -14,6 +14,8 @@ export {
   buildJobMatchPrompt,
   AUTOMATION_JOB_MATCH_SYSTEM_PROMPT,
   buildAutomationJobMatchPrompt,
+  COVER_LETTER_SYSTEM_PROMPT,
+  buildCoverLetterPrompt,
 } from "./prompts";
 
 // Analysis tools

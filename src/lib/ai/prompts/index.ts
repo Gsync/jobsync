@@ -30,3 +30,9 @@ export {
   RESUME_IMPORT_SYSTEM_PROMPT,
   buildResumeImportPrompt,
 } from "./resume-import";
+
+// Cover Letter exports
+export {
+  COVER_LETTER_SYSTEM_PROMPT,
+  buildCoverLetterPrompt,
+} from "./cover-letter";
