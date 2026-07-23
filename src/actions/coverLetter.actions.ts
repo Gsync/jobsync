@@ -1,8 +1,16 @@
 "use server";
+import MarkdownIt from "markdown-it";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
+import { buildCoverLetterTitle } from "@/lib/coverLetterTitle";
+
+// html:false escapes raw HTML in the model output before it is ever stored,
+// so the saved document is the same shape a hand-written letter produces.
+const md = new MarkdownIt({ html: false, linkify: false, breaks: true });
+
+const MIN_CONTENT_LENGTH = 10;
 
 export const getCoverLetterList = async (
   page: number = 1,
@@ -149,6 +157,70 @@ export const deleteCoverLetterById = async (
     return { success: true };
   } catch (error) {
     const msg = "Failed to delete cover letter.";
+    return handleError(error, msg);
+  }
+};
+
+export const generateCoverLetterForJob = async (
+  jobId: string,
+  markdown: string
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    if (!markdown || markdown.trim().length < MIN_CONTENT_LENGTH) {
+      throw new Error("Generated cover letter was too short to save.");
+    }
+
+    const job = await prisma.job.findUnique({
+      where: { id: jobId, userId: user.id },
+      include: { JobTitle: true, Company: true },
+    });
+
+    if (!job) {
+      throw new Error("Job not found");
+    }
+
+    const profile = await prisma.profile.findFirst({
+      where: { userId: user.id },
+    });
+
+    if (!profile) {
+      throw new Error("No profile found for this user.");
+    }
+
+    const existing = await prisma.coverLetter.findMany({
+      where: { profile: { userId: user.id } },
+      select: { title: true },
+    });
+
+    const title = buildCoverLetterTitle(
+      job.JobTitle?.label ?? "Cover Letter",
+      job.Company?.label ?? "",
+      existing.map((letter) => letter.title)
+    );
+
+    const content = md.render(markdown);
+
+    const created = await prisma.$transaction(async (tx) => {
+      const letter = await tx.coverLetter.create({
+        data: { profileId: profile.id, title, content },
+      });
+
+      await tx.job.update({
+        where: { id: jobId, userId: user.id },
+        data: { coverLetterId: letter.id },
+      });
+
+      return letter;
+    });
+
+    return { success: true, data: { id: created.id, title: created.title } };
+  } catch (error) {
+    const msg = "Failed to save generated cover letter.";
     return handleError(error, msg);
   }
 };

@@ -3,6 +3,7 @@ import {
   createCoverLetter,
   updateCoverLetter,
   deleteCoverLetterById,
+  generateCoverLetterForJob,
 } from "@/actions/coverLetter.actions";
 import { getCurrentUser } from "@/utils/user.utils";
 import { PrismaClient } from "@prisma/client";
@@ -23,6 +24,11 @@ vi.mock("@prisma/client", () => {
       findFirst: vi.fn(),
       create: vi.fn(),
     },
+    job: {
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
+    $transaction: vi.fn(),
   };
   return { PrismaClient: vi.fn(function() { return mPrismaClient; }) };
 });
@@ -346,5 +352,96 @@ describe("coverLetterActions", () => {
         message: "Database error",
       });
     });
+  });
+});
+
+const markdown = "Dear Hiring Manager,\n\nI build platforms.\n\nSincerely,\nK";
+
+describe("generateCoverLetterForJob", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (getCurrentUser as any).mockResolvedValue({ id: "user-1" });
+    (prisma.$transaction as any).mockImplementation(async (fn: any) =>
+      fn(prisma),
+    );
+    (prisma.profile.findFirst as any).mockResolvedValue({ id: "profile-1" });
+    (prisma.coverLetter.findMany as any).mockResolvedValue([]);
+    (prisma.coverLetter.create as any).mockResolvedValue({
+      id: "cl-1",
+      title: "Senior Engineer - Acme",
+    });
+    (prisma.job.findUnique as any).mockResolvedValue({
+      id: "job-1",
+      JobTitle: { label: "Senior Engineer" },
+      Company: { label: "Acme" },
+    });
+  });
+
+  it("rejects when unauthenticated", async () => {
+    (getCurrentUser as any).mockResolvedValue(null);
+    const result = await generateCoverLetterForJob("job-1", markdown);
+    expect(result.success).toBe(false);
+    expect(prisma.coverLetter.create).not.toHaveBeenCalled();
+  });
+
+  it("scopes the job lookup by userId", async () => {
+    await generateCoverLetterForJob("job-1", markdown);
+    expect(prisma.job.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "job-1", userId: "user-1" },
+      }),
+    );
+  });
+
+  it("rejects a job the caller does not own", async () => {
+    (prisma.job.findUnique as any).mockResolvedValue(null);
+    const result = await generateCoverLetterForJob("job-1", markdown);
+    expect(result.success).toBe(false);
+    expect(prisma.coverLetter.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects content that is too short", async () => {
+    const result = await generateCoverLetterForJob("job-1", "hi");
+    expect(result.success).toBe(false);
+    expect(prisma.coverLetter.create).not.toHaveBeenCalled();
+  });
+
+  it("stores markdown converted to HTML", async () => {
+    await generateCoverLetterForJob("job-1", markdown);
+    const arg = (prisma.coverLetter.create as any).mock.calls[0][0];
+    expect(arg.data.content).toContain("<p>");
+    expect(arg.data.content).toContain("I build platforms.");
+    expect(arg.data.profileId).toBe("profile-1");
+  });
+
+  it("escapes raw HTML from the model", async () => {
+    await generateCoverLetterForJob(
+      "job-1",
+      "Dear Hiring Manager,\n\n<script>alert(1)</script>\n\nSincerely,",
+    );
+    const arg = (prisma.coverLetter.create as any).mock.calls[0][0];
+    expect(arg.data.content).not.toContain("<script>");
+  });
+
+  it("titles from the job and uniquifies against existing letters", async () => {
+    (prisma.coverLetter.findMany as any).mockResolvedValue([
+      { title: "Senior Engineer - Acme" },
+    ]);
+    await generateCoverLetterForJob("job-1", markdown);
+    const arg = (prisma.coverLetter.create as any).mock.calls[0][0];
+    expect(arg.data.title).toBe("Senior Engineer - Acme (2)");
+  });
+
+  it("links the new letter to the job", async () => {
+    await generateCoverLetterForJob("job-1", markdown);
+    expect(prisma.job.update).toHaveBeenCalledWith({
+      where: { id: "job-1", userId: "user-1" },
+      data: { coverLetterId: "cl-1" },
+    });
+  });
+
+  it("never updates an existing cover letter", async () => {
+    await generateCoverLetterForJob("job-1", markdown);
+    expect(prisma.coverLetter.update).not.toHaveBeenCalled();
   });
 });
