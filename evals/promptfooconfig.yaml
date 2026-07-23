@@ -191,7 +191,7 @@ tests:
           type: json_object
     vars:
       task: resume-import
-      resumeText: file://./resume-import/fixtures/injection.txt
+      resumeText: file://./resume-import/fixtures/adversarial-resume.txt
     assert:
       - type: javascript
         value: file://./resume-import/assertions.ts:assertValidJson
