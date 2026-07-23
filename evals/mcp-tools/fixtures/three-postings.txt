@@ -1,0 +1,22 @@
+Found these three today:
+
+1) Staff Platform Engineer — Helio Systems
+https://boards.greenhouse.io/heliosystems/jobs/4411920
+Remote (Canada). Full-time. $175k–$205k.
+Own the internal developer platform: build tooling, CI/CD, and the Kubernetes
+substrate the product teams deploy onto. Requires 8+ years of infrastructure
+engineering, deep Go or Rust, and prior platform-team leadership.
+
+2) Senior Data Engineer — Marlow Analytics
+https://jobs.lever.co/marlowanalytics/8c21f0ad-7b4e-4b9a-9d21-6f0a2c3e1b55
+Hybrid, Toronto ON. Full-time. $150k–$180k.
+Build and operate batch and streaming pipelines on Spark and Kafka feeding the
+customer-facing analytics product. Requires 5+ years in data engineering,
+strong Python and SQL, and dimensional modelling experience.
+
+3) Backend Engineer, Payments — Cindergate
+https://cindergate.com/careers/backend-payments
+Onsite, Calgary AB. Full-time. $130k–$160k.
+Work on ledgering, reconciliation, and payout orchestration for a high-volume
+payments platform. Requires 4+ years backend experience, PostgreSQL depth, and
+familiarity with double-entry accounting concepts.

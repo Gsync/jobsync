@@ -15,6 +15,7 @@
     "eval:job-match": "promptfoo eval --config evals/job-match/promptfooconfig.yaml",
     "eval:automation-match": "promptfoo eval --config evals/job-match/automation.promptfooconfig.yaml",
     "eval:resume-import": "promptfoo eval --config evals/resume-import/promptfooconfig.yaml",
+    "eval:mcp-tools": "tsx evals/mcp-tools/generate-tools.ts && promptfoo eval --config evals/mcp-tools/promptfooconfig.yaml",
     "eval:all": "promptfoo eval --config evals/promptfooconfig.yaml",
     "eval:view": "promptfoo view"
   },

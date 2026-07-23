@@ -1,0 +1,121 @@
+description: MCP tool-routing regression tests — which tool the agent picks, and with what args
+
+# These rows exercise TOOL SELECTION only. No MCP server is attached and no
+# handler runs: the tools are declared statically from the same Zod shapes and
+# descriptions route.ts registers, so the model chooses and promptfoo asserts on
+# the raw tool_calls. Nothing touches the database and no PAT is needed.
+# Handler behaviour (dedupe, scopes, rate limits) stays in __tests__/mcp*.spec.ts.
+
+providers:
+  - id: openai:chat:deepseek-v4-flash
+    config:
+      apiBaseUrl: https://api.deepseek.com
+      apiKeyEnvar: DEEPSEEK_API_KEY
+      showThinking: false
+      temperature: 0
+      max_tokens: 8192
+      tool_choice: auto
+      tools: file://./tools.json
+
+prompts:
+  - file://./prompt.ts
+
+tests:
+  - description: Single posting with a full JD - routes to add_job, not batch
+    vars:
+      jobPosting: file://../job-match/fixtures/backend-job.txt
+      userMessage: |
+        Save this job posting to JobSync:
+
+        {{jobPosting}}
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertRoutesToAddJob
+      - type: javascript
+        value: file://./assertions.ts:assertDescriptionNotSummarized
+
+  - description: Three postings in one message - routes to add_jobs_batch, one call
+    vars:
+      jobPosting: file://./fixtures/three-postings.txt
+      # "None are tracked yet" isolates batching from deduping — otherwise the
+      # model spends its turn on parallel find_job probes and never reaches the
+      # add, which tests find_job's description rather than add_jobs_batch's.
+      userMessage: |
+        Add all of these to JobSync. None of them are tracked yet, so don't bother
+        checking for duplicates.
+
+        {{jobPosting}}
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertRoutesToAddJobsBatch
+
+  - description: Editing a tracked job - never routes to the create path
+    vars:
+      # The URL is supplied so find_job is actionable — without any handle on
+      # the job, asking the user for one is legitimate, not a routing failure.
+      userMessage: >
+        The Northwind Cloud senior backend role I saved last week lists the salary
+        wrong. It should be $185k-$210k, not $160k-$190k. Fix it — the posting is
+        at https://northwindcloud.com/careers/senior-backend-engineer
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertRoutesToUpdatePath
+
+  - description: Re-running a saved search - checks find_job or sets upsert
+    vars:
+      jobPosting: file://../job-match/fixtures/backend-job.txt
+      userMessage: |
+        This is my daily automated search run. Save this posting - it may already
+        be tracked from a previous run.
+
+        {{jobPosting}}
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertDedupeAware
+
+  - description: Follows the match directive after add_job
+    vars:
+      userMessage: |
+        Save this job posting to JobSync, then do whatever it asks you to do next.
+
+        Senior Backend Engineer at Northwind Cloud. Remote, North America.
+        Requires 7+ years backend, Go, Kubernetes, AWS, PostgreSQL, and
+        distributed systems design experience. $160k-$190k.
+      priorTool: add_job
+      priorArgs: '{"company":"Northwind Cloud","jobTitle":"Senior Backend Engineer","jobDescription":"Senior Backend Engineer at Northwind Cloud. Remote, North America. Requires 7+ years backend, Go, Kubernetes, AWS, PostgreSQL, and distributed systems design experience. $160k-$190k."}'
+      priorResult: >
+        Job created (id: cm4x9j2k70001abcd1234efgh). Company "Northwind Cloud" matched
+        an existing record; job title "Senior Backend Engineer" was created.
+        MATCH DIRECTIVE: this posting has a full description. Produce a job-fit match
+        analysis against the user's default resume, then call save_match_result with
+        jobId cm4x9j2k70001abcd1234efgh.
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertFollowsMatchDirective
+
+  - description: Title-only posting - no fabricated match result
+    vars:
+      jobPosting: file://./fixtures/title-only.txt
+      userMessage: |
+        Save this and score how well it fits me:
+
+        {{jobPosting}}
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoFabricatedMatch
+
+  - description: Interview question - routes to add_question, not add_job
+    vars:
+      userMessage: >
+        They asked me this in the Northwind screen today, save it for prep:
+        "Walk me through how you'd design a rate limiter for a multi-tenant API."
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertRoutesToAddQuestion
+
+  - description: Resume review request - routes to review_resume first
+    vars:
+      userMessage: Can you review my resume and tell me where it's weak?
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertRoutesToReviewResume
