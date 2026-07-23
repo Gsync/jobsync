@@ -95,7 +95,7 @@ export default async function Dashboard() {
           ]}
         />
       </div>
-      <div>
+      <div className="lg:relative lg:self-stretch">
         <RecentCardToggle jobs={recentJobs} activities={recentActivities} />
       </div>
       <div className="w-full col-span-3">
