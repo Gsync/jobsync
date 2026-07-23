@@ -25,6 +25,7 @@ import {
 import { Button } from "../ui/button";
 import {
   ArrowLeft,
+  FileText,
   MoreVertical,
   Pencil,
   Sparkles,
@@ -35,6 +36,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AiJobMatchSection } from "../profile/AiJobMatchSection";
+import { GenerateCoverLetterSection } from "./GenerateCoverLetterSection";
 import { NotesSection } from "./NotesSection";
 import { useState, useMemo, useCallback } from "react";
 import { DownloadFileButton } from "../profile/DownloadFileButton";
@@ -82,6 +84,10 @@ function JobDetails({
   const [currentMatchScore, setCurrentMatchScore] = useState(job.matchScore);
   const [currentMatchData, setCurrentMatchData] = useState(job.matchData);
   const [currentStatus, setCurrentStatus] = useState(job.Status);
+  const [coverLetterOpen, setCoverLetterOpen] = useState(false);
+  const [currentCoverLetterId, setCurrentCoverLetterId] = useState(
+    job.coverLetterId,
+  );
   const [editJobTarget, setEditJobTarget] = useState<JobResponse | null>(
     null,
   );
@@ -109,6 +115,15 @@ function JobDetails({
   const getAiJobMatch = async () => {
     setAiSectionOpen(true);
   };
+
+  const coverLetterBlockedReason =
+    job.descriptionCompleteness === "title-only"
+      ? "Add a job description first"
+      : undefined;
+
+  const handleCoverLetterSaved = useCallback((coverLetterId: string) => {
+    setCurrentCoverLetterId(coverLetterId);
+  }, []);
 
   const onEditJob = () => {
     setEditJobTarget({ ...job, Status: currentStatus });
@@ -184,6 +199,20 @@ function JobDetails({
             <Sparkles className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
               Match with AI
+            </span>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 gap-1 cursor-pointer"
+            data-testid="generate-cover-letter-btn"
+            disabled={!!coverLetterBlockedReason}
+            title={coverLetterBlockedReason}
+            onClick={() => setCoverLetterOpen(true)}
+          >
+            <FileText className="h-3.5 w-3.5" />
+            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+              {currentCoverLetterId ? "Regenerate Letter" : "Cover Letter"}
             </span>
           </Button>
           <DropdownMenu>
@@ -368,6 +397,13 @@ function JobDetails({
           onMatchSaved={handleMatchSaved}
         />
       }
+      <GenerateCoverLetterSection
+        jobId={job?.id}
+        jobResumeId={job.resumeId}
+        open={coverLetterOpen}
+        triggerChange={setCoverLetterOpen}
+        onSaved={handleCoverLetterSaved}
+      />
       <AddJob
         jobStatuses={jobStatuses}
         companies={companies}

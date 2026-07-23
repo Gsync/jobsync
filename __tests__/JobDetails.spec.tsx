@@ -2,6 +2,7 @@ import React from "react";
 import JobDetails from "@/components/myjobs/JobDetails";
 import { JobResponse, Tag } from "@/models/job.model";
 import { render, screen, act } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ back: vi.fn(), push: vi.fn(), replace: vi.fn() })),
@@ -16,6 +17,11 @@ vi.mock("@/components/profile/AiJobMatchSection", () => ({
     capturedOnMatchSaved = props.onMatchSaved;
     return null;
   },
+}));
+
+vi.mock("@/components/myjobs/GenerateCoverLetterSection", () => ({
+  GenerateCoverLetterSection: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="cover-letter-sheet" /> : null,
 }));
 
 vi.mock("@/components/myjobs/NotesSection", () => ({
@@ -207,5 +213,52 @@ describe("JobDetails – match data display", () => {
 
     expect(screen.queryByText("60%")).not.toBeInTheDocument();
     expect(screen.getByText("90%")).toBeInTheDocument();
+  });
+});
+
+describe("JobDetails cover letter action", () => {
+  it("stays enabled when no resume is linked", () => {
+    render(<JobDetails {...baseProps} job={makeJob({ resumeId: undefined })} />);
+    expect(screen.getByTestId("generate-cover-letter-btn")).toBeEnabled();
+  });
+
+  it("disables the action for a title-only description", () => {
+    render(
+      <JobDetails
+        {...baseProps}
+        job={makeJob({
+          resumeId: "resume-1",
+          descriptionCompleteness: "title-only",
+        })}
+      />,
+    );
+    expect(screen.getByTestId("generate-cover-letter-btn")).toBeDisabled();
+  });
+
+  it("enables the action for a real description", () => {
+    render(
+      <JobDetails {...baseProps} job={makeJob({ resumeId: "resume-1" })} />,
+    );
+    expect(screen.getByTestId("generate-cover-letter-btn")).toBeEnabled();
+  });
+
+  it("opens the sheet on click", async () => {
+    render(
+      <JobDetails {...baseProps} job={makeJob({ resumeId: "resume-1" })} />,
+    );
+    await userEvent.click(screen.getByTestId("generate-cover-letter-btn"));
+    expect(screen.getByTestId("cover-letter-sheet")).toBeInTheDocument();
+  });
+
+  it("labels the action Regenerate when a letter is already linked", () => {
+    render(
+      <JobDetails
+        {...baseProps}
+        job={makeJob({ resumeId: "resume-1", coverLetterId: "cl-1" })}
+      />,
+    );
+    expect(screen.getByTestId("generate-cover-letter-btn")).toHaveTextContent(
+      /regenerate/i,
+    );
   });
 });

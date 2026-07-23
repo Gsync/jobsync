@@ -56,6 +56,7 @@ export interface JobResponse {
   tags?: Tag[];
   createdVia?: string | null;
   discoveryStatus?: string | null;
+  descriptionCompleteness?: DescriptionCompleteness | null;
   _count?: { Notes?: number };
 }
 
