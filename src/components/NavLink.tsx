@@ -30,8 +30,7 @@ function NavLink({ label, Icon, route, pathname, expanded }: NavLinkProps) {
       href={route}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "navlink w-full hover:text-foreground",
-        expanded ? "h-10 justify-start gap-3 px-4" : "h-12 justify-center",
+        "navlink h-10 w-full hover:text-foreground",
         isActive ? "text-foreground" : "text-muted-foreground",
         isActive && expanded && "rounded-md bg-accent"
       )}
@@ -42,25 +41,29 @@ function NavLink({ label, Icon, route, pathname, expanded }: NavLinkProps) {
           className="absolute left-0 top-0 h-full w-0.5 bg-foreground"
         />
       )}
-      <Icon className="h-6 w-6 shrink-0" strokeWidth={1.5} />
-      {/* Collapsed uses sr-only, not opacity: an in-flow hidden span still
-          takes flex space and pushes the icon off-center in the rail. */}
-      {expanded ? (
-        <span className="truncate text-sm">{label}</span>
-      ) : (
-        <span className="sr-only">{label}</span>
-      )}
+      {/* Fixed-width lead box (= collapsed rail width) so the icon sits at the
+          same spot in both states and never moves during the slide. */}
+      <span className="flex h-full w-14 shrink-0 items-center justify-center">
+        <Icon className="h-6 w-6 shrink-0" strokeWidth={1.5} />
+      </span>
+      <span
+        className={cn(
+          "truncate text-sm transition-opacity duration-200",
+          expanded ? "opacity-100 delay-100" : "opacity-0"
+        )}
+      >
+        {label}
+      </span>
     </Link>
   );
 
-  if (expanded) {
-    return link;
-  }
-
+  // Always render the Tooltip wrapper so the <Link> keeps a stable position in
+  // the tree across expand/collapse — remounting it would reset the CSS
+  // transitions and make the toggle snap instead of animate.
   return (
     <Tooltip>
       <TooltipTrigger asChild>{link}</TooltipTrigger>
-      <TooltipContent side="right">{label}</TooltipContent>
+      {!expanded && <TooltipContent side="right">{label}</TooltipContent>}
     </Tooltip>
   );
 }
