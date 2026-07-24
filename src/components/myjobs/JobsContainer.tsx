@@ -352,7 +352,7 @@ function JobsContainer({
     <>
       <Card x-chunk="dashboard-06-chunk-0">
         <CardHeader className="flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
-          <div className="flex items-baseline gap-2">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <CardTitle>Jobs</CardTitle>
             {!initialLoading && totalJobs > 0 && (
               <RecordsCount
@@ -362,7 +362,7 @@ function JobsContainer({
               />
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto">
             {companyLabel && (
               <button
                 onClick={clearCompanyFilter}

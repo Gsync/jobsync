@@ -82,12 +82,12 @@ export default function RecentCardToggle({
   return (
     <Card className="mb-2 lg:absolute lg:inset-0 lg:mb-0 lg:flex lg:flex-col">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-green-600">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-green-600 min-w-0 truncate">
             Recent {tabs[activeIndex]}
           </CardTitle>
           <div
-            className="flex rounded-md border text-xs"
+            className="flex shrink-0 rounded-md border text-xs"
             data-testid="recent-card-toggle-group"
           >
             {tabs.map((tab, index) => (

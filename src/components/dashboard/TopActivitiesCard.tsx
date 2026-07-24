@@ -19,12 +19,12 @@ export default function TopActivitiesCard({ data }: TopActivitiesCardProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium text-green-600">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-sm font-medium text-green-600 min-w-0 truncate">
             Activities
           </CardTitle>
           <div
-            className="flex rounded-md border text-xs"
+            className="flex shrink-0 rounded-md border text-xs"
             data-testid="top-activities-toggle-group"
           >
             {data.map((item, index) => (

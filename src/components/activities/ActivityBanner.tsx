@@ -43,8 +43,10 @@ export function ActivityBanner({
       )}
     >
       <div className="flex-shrink-0">{variantIcons[variant]}</div>
-      <div className="flex-1 font-medium">{message}</div>
-      <span>{formatElapsedTime(elapsedTime)}</span>
+      <div className="flex-1 min-w-0 font-medium truncate">{message}</div>
+      <span className="flex-shrink-0 whitespace-nowrap">
+        {formatElapsedTime(elapsedTime)}
+      </span>
       {
         <button
           title="Stop Activity"

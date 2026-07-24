@@ -268,7 +268,7 @@ function TasksContainer({
     <>
       <Card x-chunk="dashboard-tasks-chunk-0" className="h-full">
         <ResponsiveCardHeader>
-          <div className="flex items-baseline gap-2">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <CardTitle>Tasks</CardTitle>
             {!initialLoading && totalTasks > 0 && (
               <RecordsCount
@@ -278,7 +278,7 @@ function TasksContainer({
               />
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto">
             <SearchInput
               value={searchTerm}
               onChange={setSearchTerm}
