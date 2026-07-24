@@ -79,10 +79,10 @@ test.describe("Dashboard page", () => {
     await navigateToDashboard(page);
 
     await expect(
-      page.getByRole("button", { name: "New Job" }),
+      page.getByRole("button", { name: "Job", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "New Task" }),
+      page.getByRole("button", { name: "Task", exact: true }),
     ).toBeVisible();
 
     await expect(
@@ -120,14 +120,14 @@ test.describe("Dashboard page", () => {
   test("should navigate to create a new job and a new task from dashboard quick actions", async ({
     page,
   }) => {
-    await page.getByRole("button", { name: "New Job" }).click();
+    await page.getByRole("button", { name: "Job", exact: true }).click();
     await expect(page).toHaveURL(/\/dashboard\/myjobs/);
     await expect(page.getByTestId("add-job-dialog-title")).toBeVisible();
     await page.getByRole("button", { name: "Cancel" }).click();
     await expect(page.getByTestId("add-job-dialog-title")).not.toBeVisible();
 
     await navigateToDashboard(page);
-    await page.getByRole("button", { name: "New Task" }).click();
+    await page.getByRole("button", { name: "Task", exact: true }).click();
     await expect(page).toHaveURL(/\/dashboard\/tasks/);
   });
 
