@@ -156,10 +156,12 @@ export default function RecentCardToggle({
                   {dateActivities.map((activity) => (
                     <div
                       key={activity.id}
+                      data-testid="recent-activity-row"
                       className="group relative flex items-center gap-1"
                     >
                       <Button
                         title="Start Activity"
+                        data-testid="recent-activity-start-btn"
                         size="icon"
                         variant="ghost"
                         onClick={() => requestStart(() => startActivity(activity.id))}

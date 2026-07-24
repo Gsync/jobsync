@@ -261,7 +261,7 @@ describe("AddJob Component", () => {
         dateApplied: undefined,
         salaryRange: "1",
         jobDescription: "<p>New Job Description</p>",
-        jobUrl: undefined,
+        jobUrl: "",
         applied: false,
         tags: [],
       });

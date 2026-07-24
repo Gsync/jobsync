@@ -104,6 +104,7 @@ export function AddJob({
     dueDate: addDays(new Date(), 3),
     status: jobStatuses[0]?.id,
     salaryRange: "1",
+    jobUrl: "",
   };
 
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
@@ -153,7 +154,7 @@ export function AddJob({
         salaryRange: editJob.salaryRange,
         jobDescription: editJob.description,
         applied: editJob.applied,
-        jobUrl: editJob.jobUrl ?? undefined,
+        jobUrl: editJob.jobUrl ?? "",
         dateApplied: editJob.appliedDate ?? undefined,
         resume: editJob.Resume?.id ?? undefined,
         coverLetter: editJob.CoverLetter?.id ?? undefined,

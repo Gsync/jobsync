@@ -15,20 +15,20 @@ describe("JobsAppliedCard", () => {
     (useRouter as any).mockReturnValue({ push: mockPush });
   });
 
-  it("should navigate to myjobs with add-job=true when New Job button is clicked", async () => {
+  it("should navigate to myjobs with add-job=true when Job button is clicked", async () => {
     const user = userEvent.setup();
     render(<JobsAppliedCard />);
 
-    await user.click(screen.getByRole("button", { name: /new job/i }));
+    await user.click(screen.getByRole("button", { name: /^job$/i }));
 
     expect(mockPush).toHaveBeenCalledWith("/dashboard/myjobs?add-job=true");
   });
 
-  it("should navigate to tasks page with add-task=true when New Task button is clicked", async () => {
+  it("should navigate to tasks page with add-task=true when Task button is clicked", async () => {
     const user = userEvent.setup();
     render(<JobsAppliedCard />);
 
-    await user.click(screen.getByRole("button", { name: /new task/i }));
+    await user.click(screen.getByRole("button", { name: /^task$/i }));
 
     expect(mockPush).toHaveBeenCalledWith("/dashboard/tasks?add-task=true");
   });
