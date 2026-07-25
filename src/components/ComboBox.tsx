@@ -43,9 +43,10 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
   const handleEnterKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter") return;
 
-    const hasHighlightedItem = !!document.querySelector(
-      '[cmdk-item][aria-selected="true"]'
-    );
+    // Scope to this Command; a global query matches other mounted cmdk lists
+    const hasHighlightedItem = !!e.currentTarget
+      .closest("[cmdk-root]")
+      ?.querySelector('[cmdk-item][aria-selected="true"]');
 
     if (hasHighlightedItem) return;
 
@@ -99,6 +100,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
         default:
           break;
       }
+      if (!response?.id) return;
       options.unshift(response);
       field.onChange(response.id);
       setIsPopoverOpen(false);
