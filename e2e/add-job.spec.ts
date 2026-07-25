@@ -325,6 +325,74 @@ test.describe("Add New Job", () => {
     await expect(page.getByText(jobText).first()).toBeVisible();
   });
 
+  test("should create title, company and location with the Enter key", async ({
+    page,
+    cleanup,
+  }) => {
+    const jobText = uniqueName("developer test title enter create");
+    const suffix = jobText.replace(/\s+/g, "-");
+    await createNewJob(page, jobText, cleanup, { useEnterKey: true });
+    await expect(page.getByRole("row", { name: jobText }).first()).toBeVisible();
+
+    await page
+      .getByRole("row", { name: jobText })
+      .getByTestId("job-actions-menu-btn")
+      .first()
+      .click();
+    await page.getByRole("menuitem", { name: "Edit Job" }).click();
+    await expect(page.getByLabel("Job Title")).toContainText(jobText);
+    await expect(page.getByLabel("Company")).toContainText(`company ${suffix}`);
+    await expect(page.getByLabel("Job Location")).toContainText(
+      `location ${suffix}`,
+    );
+  });
+
+  test("should select an existing company with the Enter key instead of duplicating it", async ({
+    page,
+    cleanup,
+  }) => {
+    const firstJobText = uniqueName("developer test title enter reuse first");
+    const secondJobText = uniqueName("developer test title enter reuse second");
+    const sharedCompany = `company ${firstJobText.replace(/\s+/g, "-")}`;
+
+    await createNewJob(page, firstJobText, cleanup);
+    await expect(
+      page.getByRole("row", { name: firstJobText }).first(),
+    ).toBeVisible();
+
+    // The company already exists, so cmdk highlights it and Enter must select
+    // rather than fall through to ComboBox's create branch.
+    await createNewJob(page, secondJobText, cleanup, {
+      company: sharedCompany,
+      useEnterKey: true,
+    });
+    await expect(
+      page.getByRole("row", { name: secondJobText }).first(),
+    ).toBeVisible();
+
+    await expect(
+      page.getByRole("row", { name: secondJobText }).getByText(sharedCompany),
+    ).toBeVisible();
+  });
+
+  test("should not create or submit when Enter is pressed on an empty combobox search", async ({
+    page,
+  }) => {
+    // No cleanup needed: nothing should be created by this test.
+    await page.getByRole("button", { name: "Job", exact: true }).click();
+    await expect(page.getByTestId("add-job-dialog-title")).toBeVisible();
+
+    await page.getByLabel("Job Title").click();
+    const input = page.getByPlaceholder("Create or Search title");
+    await input.click();
+    await input.press("Enter");
+
+    // The popover stays open and the dialog must not submit.
+    await expect(input).toBeVisible();
+    await expect(page.getByTestId("add-job-dialog-title")).toBeVisible();
+    await expect(page.getByText("Job title is required.")).not.toBeVisible();
+  });
+
   test("should add and persist a skill tag on a job", async ({
     page,
     cleanup,

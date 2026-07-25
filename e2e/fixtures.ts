@@ -45,6 +45,28 @@ export async function selectOrCreate(
   await expect(input).not.toBeVisible({ timeout: 15000 });
 }
 
+// Same contract as selectOrCreate, but commits with the Enter key instead of
+// clicking the option — ComboBox handles Enter itself on the create path and
+// defers to cmdk when an option is highlighted, so both branches are covered.
+export async function selectOrCreateWithEnter(
+  page: Page,
+  label: string,
+  placeholder: string,
+  value: string,
+) {
+  await page.getByLabel(label).click();
+  const input = page.getByPlaceholder(placeholder);
+  await input.click();
+  await input.fill(value);
+  const createOption = page.getByText(`Create: ${value}`);
+  const existingOption = page.getByRole("option", { name: value, exact: true });
+  await expect(createOption.or(existingOption).first()).toBeVisible();
+  await input.press("Enter");
+  // Same rationale as selectOrCreate: wait for the popover to close, not the
+  // trigger label, which renders blank after an inline create.
+  await expect(input).not.toBeVisible({ timeout: 15000 });
+}
+
 export async function createNewJob(
   page: Page,
   jobText: string,
@@ -54,6 +76,7 @@ export async function createNewJob(
     beforeSave?: (page: Page) => Promise<void>;
     company?: string;
     location?: string;
+    useEnterKey?: boolean;
   },
 ): Promise<string> {
   const suffix = jobText.replace(/\s+/g, "-");
@@ -77,16 +100,12 @@ export async function createNewJob(
   // Register each Library item the moment it's persisted (the "Create" click
   // saves it via its own server action), so a failure before the job is saved
   // still tears the item down.
-  await selectOrCreate(page, "Job Title", "Create or Search title", jobText);
+  const pick = options?.useEnterKey ? selectOrCreateWithEnter : selectOrCreate;
+  await pick(page, "Job Title", "Create or Search title", jobText);
   cleanup.title(jobText);
-  await selectOrCreate(page, "Company", "Create or Search company", companyText);
+  await pick(page, "Company", "Create or Search company", companyText);
   cleanup.company(companyText);
-  await selectOrCreate(
-    page,
-    "Job Location",
-    "Create or Search location",
-    locationText,
-  );
+  await pick(page, "Job Location", "Create or Search location", locationText);
   cleanup.location(locationText);
 
   await page.getByText("Part-time").click();

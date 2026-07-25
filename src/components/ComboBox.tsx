@@ -40,7 +40,25 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
 
   const [isPending, startTransition] = useTransition();
+  const handleEnterKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
 
+    // Scope to this Command; a global query matches other mounted cmdk lists
+    const hasHighlightedItem = !!e.currentTarget
+      .closest("[cmdk-root]")
+      ?.querySelector('[cmdk-item][aria-selected="true"]');
+
+    if (hasHighlightedItem) return;
+
+    if (!creatable) return;
+
+    const label = newOption.trim();
+    if (!label) return;
+
+    e.preventDefault();
+    onCreateOption(label);
+    setNewOption("");
+  };
   const onCreateOption = (label: string) => {
     if (!label) return;
     startTransition(async () => {
@@ -82,6 +100,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
         default:
           break;
       }
+      if (!response?.id) return;
       options.unshift(response);
       field.onChange(response.id);
       setIsPopoverOpen(false);
@@ -124,6 +143,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
             value={newOption}
             onValueChange={(val: string) => setNewOption(val)}
             placeholder={`${creatable ? "Create or " : ""}Search ${field.name}`}
+            onKeyDown={(e) => handleEnterKey(e)}
           />
           <CommandList className="capitalize">
             <CommandEmpty
