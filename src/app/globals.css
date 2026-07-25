@@ -145,7 +145,7 @@
 
   /* Navlink */
   .navlink {
-    @apply relative flex items-center overflow-hidden transition-colors;
+    @apply relative flex items-center overflow-hidden transition-all duration-200 ease-in-out;
   }
 }
 

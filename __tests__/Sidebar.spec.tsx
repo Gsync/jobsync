@@ -81,12 +81,12 @@ describe("NavLink - label rendering", () => {
     expect(screen.getByText("Jobs")).not.toHaveClass("sr-only");
   });
 
-  // A hidden-but-in-flow label takes flex space and pushes the icon
-  // off-center in the collapsed rail, so it must be sr-only there.
-  it("keeps the label screen-reader-only when collapsed", () => {
+  // The icon sits in a fixed-width lead box, so the label can stay in
+  // flow and just fade out instead of needing sr-only positioning.
+  it("fades the label out visually when collapsed", () => {
     renderNavLink(false);
 
-    expect(screen.getByText("Jobs")).toHaveClass("sr-only");
+    expect(screen.getByText("Jobs")).toHaveClass("opacity-0");
   });
 
   it("keeps an accessible name in both states", () => {
@@ -177,11 +177,11 @@ describe("SidebarToggle", () => {
     const user = userEvent.setup();
     renderSidebar();
 
-    expect(screen.getByText("Jobs")).not.toHaveClass("sr-only");
+    expect(screen.getByText("Jobs")).not.toHaveClass("opacity-0");
 
     await user.click(screen.getByRole("button", { name: "Collapse sidebar" }));
 
-    expect(screen.getByText("Jobs")).toHaveClass("sr-only");
+    expect(screen.getByText("Jobs")).toHaveClass("opacity-0");
   });
 
   it("persists the collapsed state as a cookie", async () => {

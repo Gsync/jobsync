@@ -82,6 +82,7 @@ function TasksContainer({
   const [searchTerm, setSearchTerm] = useState("");
   const hasSearched = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const autoOpenHandled = useRef(false);
   const [mounted, setMounted] = useState(false);
 
   // Avoid hydration mismatch with Radix UI components
@@ -178,7 +179,9 @@ function TasksContainer({
   };
 
   useEffect(() => {
-    if (!dialogOpen && searchParams.get("add-task") === "true") {
+    if (autoOpenHandled.current) return;
+    if (searchParams.get("add-task") === "true") {
+      autoOpenHandled.current = true;
       setDialogOpen(true);
       const params = new URLSearchParams(searchParams.toString());
       params.delete("add-task");
@@ -187,7 +190,7 @@ function TasksContainer({
         : window.location.pathname;
       router.replace(newPath);
     }
-  }, [dialogOpen, router, searchParams]);
+  }, [router, searchParams]);
 
   useEffect(() => {
     (async () =>
@@ -265,7 +268,7 @@ function TasksContainer({
     <>
       <Card x-chunk="dashboard-tasks-chunk-0" className="h-full">
         <ResponsiveCardHeader>
-          <div className="flex items-baseline gap-2">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <CardTitle>Tasks</CardTitle>
             {!initialLoading && totalTasks > 0 && (
               <RecordsCount
@@ -275,7 +278,7 @@ function TasksContainer({
               />
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto">
             <SearchInput
               value={searchTerm}
               onChange={setSearchTerm}

@@ -211,6 +211,70 @@ test.describe("Profile page", () => {
       page.getByRole("heading", { name: "test school" }).first(),
     ).toBeVisible();
   });
+
+  test("should add resume skills section", async ({ page, cleanup }) => {
+    const resumeTitle = uniqueName("Test Resume");
+    const skillText = uniqueName("Skill Test");
+    await page.getByRole("link", { name: "Profile" }).click();
+    await createResume(page, resumeTitle, cleanup);
+    await addSkill(page, resumeTitle, skillText, cleanup);
+    await expect(
+      page.getByRole("heading", { name: "Core Skills" }),
+    ).toBeVisible();
+    await expect(page.getByText(skillText, { exact: true })).toBeVisible();
+  });
+
+  test("should delete resume skills section", async ({ page, cleanup }) => {
+    const resumeTitle = uniqueName("Test Resume");
+    const skillText = uniqueName("Skill Test");
+    await page.getByRole("link", { name: "Profile" }).click();
+    await createResume(page, resumeTitle, cleanup);
+    await addSkill(page, resumeTitle, skillText, cleanup);
+    await expect(page.getByText(skillText, { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Delete" }).click();
+    await expect(page.getByRole("alertdialog")).toContainText(
+      "Delete skills section?",
+    );
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Delete" })
+      .click();
+    await expect(page.getByText(skillText, { exact: true })).not.toBeVisible();
+  });
+
+  test("should add resume certification section", async ({
+    page,
+    cleanup,
+  }) => {
+    const resumeTitle = uniqueName("Test Resume");
+    const certTitle = uniqueName("AWS Certified Solutions Architect");
+    await page.getByRole("link", { name: "Profile" }).click();
+    await createResume(page, resumeTitle, cleanup);
+    await addCertification(page, resumeTitle, certTitle, cleanup);
+    await expect(
+      page.getByRole("heading", { name: certTitle }).first(),
+    ).toBeVisible();
+    await expect(page.getByText("Amazon Web Services")).toBeVisible();
+  });
+
+  test("should edit resume certification", async ({ page, cleanup }) => {
+    const resumeTitle = uniqueName("Test Resume");
+    const certTitle = uniqueName("AWS Certified Solutions Architect");
+    const editedOrg = uniqueName("Edited Org");
+    await page.getByRole("link", { name: "Profile" }).click();
+    await createResume(page, resumeTitle, cleanup);
+    await addCertification(page, resumeTitle, certTitle, cleanup);
+    await expect(
+      page.getByRole("heading", { name: certTitle }).first(),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Edit" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Edit Certification / License" }),
+    ).toBeVisible();
+    await page.getByLabel("Issuing Organization").fill(editedOrg);
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText(editedOrg)).toBeVisible();
+  });
 });
 
 async function addExperience(
@@ -258,6 +322,64 @@ async function addExperience(
   await dateCell.click();
   await page.locator("div:nth-child(2) > .tiptap").click();
   await page.locator("div:nth-child(2) > .tiptap").fill("test description");
+  await page.getByRole("button", { name: "Save" }).click();
+}
+
+async function addSkill(
+  page: Page,
+  resumeTitle: string,
+  skillText: string,
+  cleanup: CleanupRegistry,
+) {
+  await page
+    .getByRole("row", { name: new RegExp(resumeTitle, "i") })
+    .first()
+    .getByTestId("document-actions-menu-btn")
+    .click();
+  await page.getByRole("link", { name: "View/Edit Resume" }).click();
+  await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible();
+  await page.getByRole("button", { name: "Add Section" }).click();
+  await page.getByRole("menuitem", { name: "Add Skills" }).click();
+  await page.getByRole("combobox", { name: "Search or add a skill…" }).click();
+  await page.getByPlaceholder("Type a skill...").fill(skillText);
+  await page.getByText(`Create "${skillText}"`).click();
+  cleanup.tag(skillText);
+  await expect(page.getByText(skillText, { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Save" }).click();
+}
+
+async function addCertification(
+  page: Page,
+  resumeTitle: string,
+  certTitle: string,
+  cleanup: CleanupRegistry,
+) {
+  await page
+    .getByRole("row", { name: new RegExp(resumeTitle, "i") })
+    .first()
+    .getByTestId("document-actions-menu-btn")
+    .click();
+  await page.getByRole("link", { name: "View/Edit Resume" }).click();
+  await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible();
+  await page.getByRole("button", { name: "Add Section" }).click();
+  await page
+    .getByRole("menuitem", { name: "Add Certification / License" })
+    .click();
+  // Wait for the dialog to open
+  await page.waitForTimeout(500);
+  // Only fill section title if it's visible (when creating new section)
+  const sectionTitleField = page.getByPlaceholder("Ex: Certifications");
+  if (await sectionTitleField.isVisible()) {
+    await sectionTitleField.fill("Certifications");
+  }
+  await page.getByLabel("Certification / License Name").fill(certTitle);
+  await page.getByLabel("Issuing Organization").fill("Amazon Web Services");
+  await page.getByLabel("Issue Date").click();
+  // Wait for calendar popover to open
+  await page.waitForTimeout(1000);
+  const issueDateCell = page.getByRole("gridcell", { name: "10" }).first();
+  await issueDateCell.waitFor({ state: "visible", timeout: 5000 });
+  await issueDateCell.click();
   await page.getByRole("button", { name: "Save" }).click();
 }
 

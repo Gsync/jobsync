@@ -12,7 +12,7 @@ export function RecordsCount({
   label = "records",
 }: RecordsCountProps) {
   return (
-    <div className="text-xs text-muted-foreground">
+    <div className="text-xs text-muted-foreground whitespace-nowrap">
       Showing{" "}
       <strong>
         1 to {count}

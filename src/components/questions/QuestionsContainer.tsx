@@ -46,6 +46,7 @@ function QuestionsContainer({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const hasSearched = useRef(false);
+  const autoOpenHandled = useRef(false);
 
   const loadQuestions = useCallback(
     async (pageNum: number, filter?: string, search?: string) => {
@@ -99,7 +100,9 @@ function QuestionsContainer({
   };
 
   useEffect(() => {
-    if (!dialogOpen && searchParams.get("add-question") === "true") {
+    if (autoOpenHandled.current) return;
+    if (searchParams.get("add-question") === "true") {
+      autoOpenHandled.current = true;
       setDialogOpen(true);
       const params = new URLSearchParams(searchParams.toString());
       params.delete("add-question");
@@ -108,7 +111,7 @@ function QuestionsContainer({
         : window.location.pathname;
       router.replace(newPath);
     }
-  }, [dialogOpen, router, searchParams]);
+  }, [router, searchParams]);
 
   useEffect(() => {
     loadQuestions(1, filterKey, searchTerm || undefined);
