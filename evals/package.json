@@ -6,6 +6,7 @@
     "eval:resume-review": "promptfoo eval --env-file ../.env --config resume-review/promptfooconfig.yaml",
     "eval:job-match": "promptfoo eval --env-file ../.env --config job-match/promptfooconfig.yaml",
     "eval:automation-match": "promptfoo eval --env-file ../.env --config job-match/automation.promptfooconfig.yaml",
+    "eval:cover-letter": "promptfoo eval --env-file ../.env --config cover-letter/promptfooconfig.yaml",
     "eval:resume-import": "promptfoo eval --env-file ../.env --config resume-import/promptfooconfig.yaml",
     "eval:mcp-tools": "tsx mcp-tools/generate-tools.ts && promptfoo eval --env-file ../.env --config mcp-tools/promptfooconfig.yaml",
     "eval:all": "promptfoo eval --env-file ../.env --config promptfooconfig.yaml",

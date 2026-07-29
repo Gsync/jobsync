@@ -1,4 +1,4 @@
-description: All prompt regression tests (resume-review + job-match + automation + resume-import) in one table
+description: All prompt regression tests (resume-review + job-match + automation + cover-letter + resume-import) in one table
 
 providers:
   - id: openai:chat:deepseek-v4-flash
@@ -144,6 +144,79 @@ tests:
         value: file://./job-match/assertions.ts:assertRecommendationConsistent
       - type: javascript
         value: file://./job-match/assertions.ts:assertWeakMatchLow
+
+  # Cover letter (free-form markdown letter, no scores line)
+  - description: "[cover-letter] backend resume vs backend JD - no guidance"
+    vars:
+      task: cover-letter
+      resumeText: file://./job-match/fixtures/backend-resume.txt
+      jobDescription: file://./job-match/fixtures/backend-job.txt
+    assert:
+      - type: javascript
+        value: file://./cover-letter/assertions.ts:assertNotJsonOrFenced
+      - type: javascript
+        value: file://./cover-letter/assertions.ts:assertStartsWithSalutation
+      - type: javascript
+        value: file://./cover-letter/assertions.ts:assertSignOff
+      - type: javascript
+        value: file://./cover-letter/assertions.ts:assertCandidateNameSignature
+      - type: javascript
+        value: file://./cover-letter/assertions.ts:assertWordCount
+      - type: javascript
+        value: file://./cover-letter/assertions.ts:assertNoPlaceholders
+      - type: javascript
+        value: file://./cover-letter/assertions.ts:assertNoInventedNumbers
+      - type: icontains-any
+        value:
+          - "Kubernetes"
+          - "Go"
+          - "AWS"
+      - type: llm-rubric
+        provider:
+          id: openai:chat:deepseek-v4-flash
+          config:
+            apiBaseUrl: https://api.deepseek.com
+            apiKeyEnvar: DEEPSEEK_API_KEY
+            temperature: 0
+        value: >-
+          Every employer, job title, date, degree, certification, and metric in
+          the letter must appear in the candidate's resume below. Fail if the
+          letter names any employer, title, school, degree, or certification the
+          resume does not contain, or states an achievement the resume does not
+          support. Company names taken from the job posting are acceptable when
+          used as the employer being applied to. Resume:
+
+          {{resumeText}}
+
+  - description: "[cover-letter] backend resume vs backend JD - with match guidance"
+    vars:
+      task: cover-letter
+      resumeText: file://./job-match/fixtures/backend-resume.txt
+      jobDescription: file://./job-match/fixtures/backend-job.txt
+      guidance: file://./cover-letter/fixtures/match-guidance.txt
+    assert:
+      - type: javascript
+        value: file://./cover-letter/assertions.ts:assertNotJsonOrFenced
+      - type: javascript
+        value: file://./cover-letter/assertions.ts:assertStartsWithSalutation
+      - type: javascript
+        value: file://./cover-letter/assertions.ts:assertSignOff
+      - type: javascript
+        value: file://./cover-letter/assertions.ts:assertCandidateNameSignature
+      - type: javascript
+        value: file://./cover-letter/assertions.ts:assertWordCount
+      - type: javascript
+        value: file://./cover-letter/assertions.ts:assertNoPlaceholders
+      - type: javascript
+        value: file://./cover-letter/assertions.ts:assertNoInventedNumbers
+      - type: icontains
+        value: "Meridian Technologies"
+      - type: icontains-any
+        value:
+          - "95K"
+          - "95,000"
+          - "documents per second"
+          - "documents/second"
 
   # Resume import (structured JSON via Output.object). These rows override the
   # provider to JSON mode; the shared markdown provider above can't be reused
