@@ -41,18 +41,22 @@ export default function prompt({ vars }: { vars: Record<string, string> }) {
         },
       ];
     case 'resume-import':
-      // Import rows override the provider to json_object mode (see the combined
-      // config), mirroring the route's Output.object; append the JSON hint that
-      // DeepSeek's JSON mode requires.
-      return [
-        { role: 'system', content: RESUME_IMPORT_SYSTEM_PROMPT },
-        {
-          role: 'user',
-          content:
-            buildResumeImportPrompt(vars.resumeText) +
-            '\n\nReturn the result as a single JSON object.',
-        },
-      ];
+      // Returning config alongside the prompt switches only these rows to
+      // json_object mode, mirroring the route's Output.object, so every
+      // provider stays markdown-mode for the other tasks. The trailing hint is
+      // what DeepSeek's JSON mode requires.
+      return {
+        prompt: [
+          { role: 'system', content: RESUME_IMPORT_SYSTEM_PROMPT },
+          {
+            role: 'user',
+            content:
+              buildResumeImportPrompt(vars.resumeText) +
+              '\n\nReturn the result as a single JSON object.',
+          },
+        ],
+        config: { response_format: { type: 'json_object' } },
+      };
     default:
       throw new Error(`Unknown eval task: ${vars.task}`);
   }
