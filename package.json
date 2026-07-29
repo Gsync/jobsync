@@ -11,13 +11,13 @@
     "test:e2e": "npx playwright test --project=chromium",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "eval:resume-review": "promptfoo eval --config evals/resume-review/promptfooconfig.yaml",
-    "eval:job-match": "promptfoo eval --config evals/job-match/promptfooconfig.yaml",
-    "eval:automation-match": "promptfoo eval --config evals/job-match/automation.promptfooconfig.yaml",
-    "eval:resume-import": "promptfoo eval --config evals/resume-import/promptfooconfig.yaml",
-    "eval:mcp-tools": "tsx evals/mcp-tools/generate-tools.ts && promptfoo eval --config evals/mcp-tools/promptfooconfig.yaml",
-    "eval:all": "promptfoo eval --config evals/promptfooconfig.yaml",
-    "eval:view": "promptfoo view"
+    "eval:resume-review": "npm --prefix evals run eval:resume-review",
+    "eval:job-match": "npm --prefix evals run eval:job-match",
+    "eval:automation-match": "npm --prefix evals run eval:automation-match",
+    "eval:resume-import": "npm --prefix evals run eval:resume-import",
+    "eval:mcp-tools": "npm --prefix evals run eval:mcp-tools",
+    "eval:all": "npm --prefix evals run eval:all",
+    "eval:view": "npm --prefix evals run eval:view"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^2.0.4",
@@ -98,17 +98,14 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "postcss": "^8.5.12",
     "prisma": "^6.19.0",
-    "promptfoo": "^0.121.18",
     "tailwindcss": "^3.4.16",
     "ts-node": "^10.9.2",
-    "tsx": "^4.22.4",
     "typescript": "^5",
     "vitest": "^4.1.3"
   },
   "overrides": {
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "handlebars": ">=4.7.9",
     "lodash": ">=4.18.0",
     "picomatch": ">=2.3.2",
     "defu": ">=6.1.5",
@@ -122,13 +119,10 @@
     "hono": ">=4.12.27 <5",
     "body-parser": ">=2.3.0 <3",
     "js-yaml@5": ">=5.2.2 <6",
-    "fast-xml-parser": ">=5.10.1 <6",
     "brace-expansion@^1": "1.1.16",
     "brace-expansion@^2": "2.1.2",
     "brace-expansion@^5": "5.0.8",
     "ws": ">=8.21.0 <9",
-    "esbuild": ">=0.28.1 <0.29",
-    "mongoose": ">=9.7.2 <10",
-    "adm-zip": ">=0.6.0 <0.7"
+    "esbuild": ">=0.28.1 <0.29"
   }
 }
