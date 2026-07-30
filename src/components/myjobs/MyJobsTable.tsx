@@ -100,6 +100,10 @@ function MyJobsTable({
                     alt="Company logo"
                     className="aspect-square rounded-md object-cover h-8 w-8"
                     src={job.Company?.logoUrl || "/images/jobsync-logo.svg"}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = "/images/jobsync-logo.svg";
+                    }}
                   />
                 </TableCell>
                 <TableCell className="hidden md:table-cell w-[120px] whitespace-nowrap">

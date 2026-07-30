@@ -108,6 +108,10 @@ function CompaniesTable({
                     alt="Company logo"
                     className="w-8 h-8 rounded-md object-cover"
                     src={company.logoUrl || "/images/jobsync-logo.svg"}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = "/images/jobsync-logo.svg";
+                    }}
                   />
                 </TableCell>
                 <TableCell className="font-medium">{company.label}</TableCell>
