@@ -1,5 +1,100 @@
 # Changelog
 
+## [1.1.15](https://github.com/Gsync/jobsync/compare/v1.1.14...v1.1.15) (2026-07-30)
+
+
+### Features
+
+*  pair name and email/phone fields on one row
+*  add Jenkins pipeline for CI/CD process
+*  enhance RecentCardToggle layout and increase displayed jobs/activities limit
+*  add generate action to job details
+*  add generation sheet
+*  add client stream util
+*  save generated letter and link it to the job
+*  add streaming generation endpoint
+*  add generation prompts
+*  extract keywords and tailoring tips from match data
+*  add title builder helper
+*  add 'Create a copy' action to resume menu
+*  add copy resume dialog
+*  add copyResume server action
+*  suggest a title for resume copies
+*  add resume copy title helpers
+*  add MCP tool-routing regression tests
+*  add add_jobs_batch and save_match_results_batch tools
+*  add upsert-by-URL routing to add_job
+*  add find_job and update_job tools
+*  add updateJobFromNames patch helper
+*  label matches scored from incomplete descriptions as provisional
+*  gate match directive on description completeness
+*  classify and persist job description completeness
+*  document job status enum in add_job tool schema
+*  implement local storage for tab selection in RecentCardToggle and WeeklyBarChartToggle components
+*  refactor to use year selection on activity calender
+*  add Save & Start functionality and update task creation flow
+*  add automation and question shortcut on dashboard
+*  create a reusable QuestionTagBadge component and update usages in QuestionCard and QuestionsSidebar refactor(Sidebar): adjust sidebar layout and spacing for improved responsiveness refactor(TasksSidebar): modify layout for better alignment in task sidebar
+*  add collapsible dashboard sidebar with persisted state
+*  add edit and delete buttons for job management
+*  implement duration guard for stopping activities and discard short ones
+*  replace Load More buttons with infinite scroll
+*  add backend search to Companies, Job Titles, and Skills lists
+*  add review_resume + save_resume_review tools
+
+### Bug Fixes
+
+*  add error handling for company logo image fallback
+*  improve update logic to prevent duplicate companies and handle unchanged labels
+*  exclude nested node_modules from the vitest run
+*  scope section writes to the owned resume
+*  reconcile the per-user running activity across sessions
+*  refetch tasks with group-aware ordering on group-by change
+*  reduce timeout duration for AddJob component tests
+*  harden cover-letter/resume-import prompts and MCP schema wording
+*  pin exact JSON key names in resume-import prompt
+*  move promptfoo out of root package.json into evals/
+*  patch dev-scope and remaining runtime advisories via overrides
+*  patch runtime-scope high advisories via overrides
+*  bump next-auth to 5.0.0-beta.32 for critical advisories
+*  scope ComboBox Enter-key highlight check to its own cmdk list
+*  update label visibility logic for collapsed sidebar
+*  smooth sidebar collapse/expand transition
+*  handle Enter key for creatable combobox
+* fix failings tests
+*  point combined config at renamed resume-import fixture
+*  enhance tag description in McpUpdateJobInputShape
+*  handle keydown events with undefined key property
+*  give auto-discovered "new" job status its own badge color
+*  update mockUpdate function signature for consistency
+*  automation schedule conflict
+*  update activity-start tests for stay-on-tasks behavior
+
+### Other Changes
+
+* Update readme with screenshots
+*  update project description, enhance feature details, and improve formatting
+*  add edit coverage for contact info, summary, and education
+*  cover contact info actions and form schema
+*  run prompt regressions against local Ollama alongside DeepSeek
+*  add cover-letter prompt regression tests
+*  improve layout and styling for various components
+* update button selectors for job actions and add resume skills/certifications tests
+* refactor JobsAppliedCard layout for improved button display
+*  update next and eslint-config-next to version 15.5.21
+* Enhance various components with DialogDescription for improved user guidance and update test cases for better data handling
+*  consolidate success/error toasts into shared helpers
+*  update activity test to ensure short activities are discarded and not displayed
+*  replace dropdown menu with direct edit/delete buttons in QuestionCard and update sidebar layout
+*  update job title selection to use userEvent and verify options count
+*  ensure spinner is displayed during save operation
+*  verify job title combobox has more than one option
+* Bump mcp rate limit
+*  consolidate entity resolution behind shared canonical resolver
+*  add activity and automation e2e tests
+*  add unit tests for API authentication and key resolution
+
+
 ## [1.1.14](https://github.com/Gsync/jobsync/compare/v1.1.13...v1.1.14) (2026-07-13)
 
 
