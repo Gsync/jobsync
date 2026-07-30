@@ -63,55 +63,56 @@ test.describe("Profile page", () => {
     const resumeTitle = uniqueName("Test Resume");
     await page.getByRole("link", { name: "Profile" }).click();
     await createResume(page, resumeTitle, cleanup);
-    await page
-      .getByRole("row", { name: new RegExp(resumeTitle, "i") })
-      .first()
-      .getByTestId("document-actions-menu-btn")
-      .click();
-    await page.getByRole("link", { name: "View/Edit Resume" }).click();
-    await page.getByRole("button", { name: "Add Section" }).click();
-    await page.getByRole("menuitem", { name: "Add Contact Info" }).click();
-    await page.getByLabel("First Name").waitFor({ state: "visible" });
-    await page.getByLabel("First Name").click();
-    await page.getByLabel("First Name").fill("John");
-    await page.getByLabel("Last Name").click();
-    await page.getByLabel("Last Name").fill("Doe");
-    await page.getByLabel("Headline").click();
-    await page
-      .getByLabel("Headline")
-      .fill("Skill developer with testing skills");
-    await page.getByLabel("Email").click();
-    await page.getByLabel("Email").fill("admin@example.com");
-    await page.getByLabel("Phone").click();
-    await page.getByLabel("Phone").fill("123456789");
-    await page.getByLabel("Address").click();
-    await page.getByLabel("Address").fill("Calgary");
-    await page.getByRole("button", { name: "Save" }).click();
+    await addContactInfo(page, resumeTitle, "John", "Doe");
     // Same reload-under-load headroom as the create/delete assertions above.
     await expect(
       page.getByRole("heading", { name: "John Doe" }),
     ).toBeVisible({ timeout: 20000 });
   });
 
+  test("should edit resume contact info", async ({ page, cleanup }) => {
+    const resumeTitle = uniqueName("Test Resume");
+    await page.getByRole("link", { name: "Profile" }).click();
+    await createResume(page, resumeTitle, cleanup);
+    await addContactInfo(page, resumeTitle, "John", "Doe");
+    await expect(
+      page.getByRole("heading", { name: "John Doe" }),
+    ).toBeVisible({ timeout: 20000 });
+    await page.getByRole("button", { name: "Edit" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Edit Contact Info" }),
+    ).toBeVisible();
+    await page.getByLabel("First Name").fill("Jane");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("heading", { name: "Jane Doe" })).toBeVisible();
+  });
+
   test("should add resume summary section", async ({ page, cleanup }) => {
     const resumeTitle = uniqueName("Test Resume");
     await page.getByRole("link", { name: "Profile" }).click();
     await createResume(page, resumeTitle, cleanup);
-    await page
-      .getByRole("row", { name: new RegExp(resumeTitle, "i") })
-      .first()
-      .getByTestId("document-actions-menu-btn")
-      .click();
-    await page.getByRole("link", { name: "View/Edit Resume" }).click();
-    await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible();
-    await page.getByRole("button", { name: "Add Section" }).click();
-    await page.getByRole("menuitem", { name: "Add Summary" }).click();
-    await page.getByLabel("Section Title").fill("Summary");
-    await page.locator(".tiptap").click();
-    await page.locator(".tiptap").fill("this is test summary\n");
-    await page.getByRole("button", { name: "Save" }).click();
+    await addSummary(page, resumeTitle, "this is test summary");
     await expect(page.getByRole("heading", { name: "Summary" })).toBeVisible();
     await expect(page.getByText("this is test summary")).toBeVisible();
+  });
+
+  test("should edit resume summary section", async ({ page, cleanup }) => {
+    const resumeTitle = uniqueName("Test Resume");
+    await page.getByRole("link", { name: "Profile" }).click();
+    await createResume(page, resumeTitle, cleanup);
+    await addSummary(page, resumeTitle, "this is test summary");
+    await expect(page.getByText("this is test summary")).toBeVisible();
+    await page.getByRole("button", { name: "Edit" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Edit Summary" }),
+    ).toBeVisible();
+    await page
+      .getByRole("dialog")
+      .locator(".tiptap")
+      .fill("this is updated summary\n");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("this is updated summary")).toBeVisible();
+    await expect(page.getByText("this is test summary")).not.toBeVisible();
   });
 
   test("should add resume work experience section", async ({
@@ -158,57 +159,33 @@ test.describe("Profile page", () => {
 
   test("should add resume education section", async ({ page, cleanup }) => {
     const resumeTitle = uniqueName("Test Resume");
-    const locationText = uniqueName("location test");
+    const schoolText = uniqueName("test school");
     await page.getByRole("link", { name: "Profile" }).click();
     await createResume(page, resumeTitle, cleanup);
-    await page
-      .getByRole("row", { name: new RegExp(resumeTitle, "i") })
-      .first()
-      .getByTestId("document-actions-menu-btn")
-      .click({ force: true });
-    await page.getByRole("link", { name: "View/Edit Resume" }).click();
-    await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible();
-    await page.getByRole("button", { name: "Add Section" }).click();
-    await page.getByRole("menuitem", { name: "Add Education" }).click();
-    // Wait for the dialog to open
-    await page.waitForTimeout(500);
-    // Only fill section title if it's visible (when creating new section)
-    const sectionTitleField = page.getByPlaceholder("Ex: Education");
-    if (await sectionTitleField.isVisible()) {
-      await sectionTitleField.fill("Education");
-    }
-    await page.getByPlaceholder("Ex: Stanford").click();
-    await page.getByPlaceholder("Ex: Stanford").fill("test school");
-    await selectOrCreate(
-      page,
-      "Location",
-      "Create or Search location",
-      locationText,
-    );
-    cleanup.location(locationText);
-    await page.getByPlaceholder("Ex: Bachelor's").click();
-    await page.getByPlaceholder("Ex: Bachelor's").fill("degree text");
-    await page.getByPlaceholder("Ex: Computer Science").click();
-    await page.getByPlaceholder("Ex: Computer Science").fill("computer science");
-    await page.getByLabel("Start Date").click();
-    // Wait for calendar popover to open
-    await page.waitForTimeout(1000);
-    // Click on any available date in the calendar
-    const startDateCell = page.getByRole("gridcell", { name: "15" }).first();
-    await startDateCell.waitFor({ state: "visible", timeout: 5000 });
-    await startDateCell.click();
-    await page.getByLabel("End Date").click();
-    // Wait for calendar popover to open
-    await page.waitForTimeout(1000);
-    // Click on any available date in the calendar
-    const endDateCell = page.getByRole("gridcell", { name: "20" }).first();
-    await endDateCell.waitFor({ state: "visible", timeout: 5000 });
-    await endDateCell.click();
-    await page.locator("div:nth-child(2) > .tiptap").click();
-    await page.locator("div:nth-child(2) > .tiptap").fill("test description");
+    await addEducation(page, resumeTitle, schoolText, cleanup);
+    await expect(
+      page.getByRole("heading", { name: schoolText }).first(),
+    ).toBeVisible();
+  });
+
+  test("should edit resume education section", async ({ page, cleanup }) => {
+    const resumeTitle = uniqueName("Test Resume");
+    const schoolText = uniqueName("test school");
+    const editedSchoolText = uniqueName("edited school");
+    await page.getByRole("link", { name: "Profile" }).click();
+    await createResume(page, resumeTitle, cleanup);
+    await addEducation(page, resumeTitle, schoolText, cleanup);
+    await expect(
+      page.getByRole("heading", { name: schoolText }).first(),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Edit" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Edit Education" }),
+    ).toBeVisible();
+    await page.getByPlaceholder("Ex: Stanford").fill(editedSchoolText);
     await page.getByRole("button", { name: "Save" }).click();
     await expect(
-      page.getByRole("heading", { name: "test school" }).first(),
+      page.getByRole("heading", { name: editedSchoolText }).first(),
     ).toBeVisible();
   });
 
@@ -276,6 +253,109 @@ test.describe("Profile page", () => {
     await expect(page.getByText(editedOrg)).toBeVisible();
   });
 });
+
+async function addContactInfo(
+  page: Page,
+  resumeTitle: string,
+  firstName: string,
+  lastName: string,
+) {
+  await page
+    .getByRole("row", { name: new RegExp(resumeTitle, "i") })
+    .first()
+    .getByTestId("document-actions-menu-btn")
+    .click();
+  await page.getByRole("link", { name: "View/Edit Resume" }).click();
+  await page.getByRole("button", { name: "Add Section" }).click();
+  await page.getByRole("menuitem", { name: "Add Contact Info" }).click();
+  await page.getByLabel("First Name").waitFor({ state: "visible" });
+  await page.getByLabel("First Name").click();
+  await page.getByLabel("First Name").fill(firstName);
+  await page.getByLabel("Last Name").click();
+  await page.getByLabel("Last Name").fill(lastName);
+  await page.getByLabel("Headline").click();
+  await page
+    .getByLabel("Headline")
+    .fill("Skill developer with testing skills");
+  await page.getByLabel("Email").click();
+  await page.getByLabel("Email").fill("admin@example.com");
+  await page.getByLabel("Phone").click();
+  await page.getByLabel("Phone").fill("123456789");
+  await page.getByLabel("Address").click();
+  await page.getByLabel("Address").fill("Calgary");
+  await page.getByRole("button", { name: "Save" }).click();
+}
+
+async function addSummary(page: Page, resumeTitle: string, summaryText: string) {
+  await page
+    .getByRole("row", { name: new RegExp(resumeTitle, "i") })
+    .first()
+    .getByTestId("document-actions-menu-btn")
+    .click();
+  await page.getByRole("link", { name: "View/Edit Resume" }).click();
+  await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible();
+  await page.getByRole("button", { name: "Add Section" }).click();
+  await page.getByRole("menuitem", { name: "Add Summary" }).click();
+  await page.getByLabel("Section Title").fill("Summary");
+  await page.locator(".tiptap").click();
+  await page.locator(".tiptap").fill(summaryText + "\n");
+  await page.getByRole("button", { name: "Save" }).click();
+}
+
+async function addEducation(
+  page: Page,
+  resumeTitle: string,
+  schoolText: string,
+  cleanup: CleanupRegistry,
+) {
+  const locationText = uniqueName("location test");
+  await page
+    .getByRole("row", { name: new RegExp(resumeTitle, "i") })
+    .first()
+    .getByTestId("document-actions-menu-btn")
+    .click({ force: true });
+  await page.getByRole("link", { name: "View/Edit Resume" }).click();
+  await expect(page.getByRole("heading", { name: "Resume" })).toBeVisible();
+  await page.getByRole("button", { name: "Add Section" }).click();
+  await page.getByRole("menuitem", { name: "Add Education" }).click();
+  // Wait for the dialog to open
+  await page.waitForTimeout(500);
+  // Only fill section title if it's visible (when creating new section)
+  const sectionTitleField = page.getByPlaceholder("Ex: Education");
+  if (await sectionTitleField.isVisible()) {
+    await sectionTitleField.fill("Education");
+  }
+  await page.getByPlaceholder("Ex: Stanford").click();
+  await page.getByPlaceholder("Ex: Stanford").fill(schoolText);
+  await selectOrCreate(
+    page,
+    "Location",
+    "Create or Search location",
+    locationText,
+  );
+  cleanup.location(locationText);
+  await page.getByPlaceholder("Ex: Bachelor's").click();
+  await page.getByPlaceholder("Ex: Bachelor's").fill("degree text");
+  await page.getByPlaceholder("Ex: Computer Science").click();
+  await page.getByPlaceholder("Ex: Computer Science").fill("computer science");
+  await page.getByLabel("Start Date").click();
+  // Wait for calendar popover to open
+  await page.waitForTimeout(1000);
+  // Click on any available date in the calendar
+  const startDateCell = page.getByRole("gridcell", { name: "15" }).first();
+  await startDateCell.waitFor({ state: "visible", timeout: 5000 });
+  await startDateCell.click();
+  await page.getByLabel("End Date").click();
+  // Wait for calendar popover to open
+  await page.waitForTimeout(1000);
+  // Click on any available date in the calendar
+  const endDateCell = page.getByRole("gridcell", { name: "20" }).first();
+  await endDateCell.waitFor({ state: "visible", timeout: 5000 });
+  await endDateCell.click();
+  await page.locator("div:nth-child(2) > .tiptap").click();
+  await page.locator("div:nth-child(2) > .tiptap").fill("test description");
+  await page.getByRole("button", { name: "Save" }).click();
+}
 
 async function addExperience(
   page: Page,
