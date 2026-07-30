@@ -190,6 +190,67 @@ describe("taskActions", () => {
       });
     });
 
+    it("should order by dueDate when grouping by due date", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      const mockTasks = [mockTask];
+      (prisma.task.findMany as any).mockResolvedValue(mockTasks);
+      (prisma.task.count as any).mockResolvedValue(1);
+
+      await getTasksList(1, 25, undefined, undefined, undefined, "dueDate");
+
+      expect(prisma.task.findMany).toHaveBeenCalledWith({
+        where: { userId: mockUser.id },
+        include: {
+          activityType: true,
+          activities: {
+            select: { id: true },
+          },
+        },
+        orderBy: [
+          { dueDate: "asc" },
+          { priority: "desc" },
+          { createdAt: "desc" },
+        ],
+        skip: 0,
+        take: 25,
+      });
+    });
+
+    it("should order by activityType label when grouping by activity type", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      const mockTasks = [mockTask];
+      (prisma.task.findMany as any).mockResolvedValue(mockTasks);
+      (prisma.task.count as any).mockResolvedValue(1);
+
+      await getTasksList(
+        1,
+        25,
+        undefined,
+        undefined,
+        undefined,
+        "activityType",
+      );
+
+      expect(prisma.task.findMany).toHaveBeenCalledWith({
+        where: { userId: mockUser.id },
+        include: {
+          activityType: true,
+          activities: {
+            select: { id: true },
+          },
+        },
+        orderBy: [
+          { activityType: { label: "asc" } },
+          { priority: "desc" },
+          { createdAt: "desc" },
+        ],
+        skip: 0,
+        take: 25,
+      });
+    });
+
     it("should return error when user is not authenticated", async () => {
       (getCurrentUser as any).mockResolvedValue(null);
 

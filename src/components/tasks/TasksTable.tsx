@@ -45,7 +45,12 @@ import {
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
 import { useState } from "react";
-import { Task, TASK_STATUSES, TaskStatus } from "@/models/task.model";
+import {
+  Task,
+  TASK_STATUSES,
+  TaskGroupBy,
+  TaskStatus,
+} from "@/models/task.model";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 
 type TasksTableProps = {
@@ -54,7 +59,7 @@ type TasksTableProps = {
   editTask: (id: string) => void;
   onChangeTaskStatus: (id: string, status: TaskStatus) => void;
   onStartActivity: (id: string) => void;
-  groupBy?: "none" | "createdDate" | "dueDate" | "updatedDate" | "activityType";
+  groupBy?: TaskGroupBy;
 };
 
 type PriorityLevel = "low" | "medium" | "high" | "critical";

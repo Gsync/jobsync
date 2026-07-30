@@ -386,7 +386,8 @@ describe("TasksPageClient Component", () => {
           25,
           "type-1",
           expect.any(Array),
-          undefined
+          undefined,
+          "none"
         );
       });
     });
@@ -418,7 +419,8 @@ describe("TasksPageClient Component", () => {
           25,
           "type-1",
           expect.any(Array),
-          undefined
+          undefined,
+          "none"
         );
       });
 
@@ -435,7 +437,8 @@ describe("TasksPageClient Component", () => {
           25,
           undefined,
           expect.any(Array),
-          undefined
+          undefined,
+          "none"
         );
       });
     });

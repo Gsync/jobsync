@@ -203,7 +203,7 @@ describe("TasksContainer Component", () => {
         expect(getTasksList).toHaveBeenCalledWith(1, 25, undefined, [
           "in-progress",
           "needs-attention",
-        ], undefined);
+        ], undefined, "none");
       });
 
       await waitFor(() => {
@@ -704,7 +704,7 @@ describe("TasksContainer Component", () => {
         expect(getTasksList).toHaveBeenCalledWith(1, 25, "type-1", [
           "in-progress",
           "needs-attention",
-        ], undefined);
+        ], undefined, "none");
       });
     });
 
@@ -722,7 +722,7 @@ describe("TasksContainer Component", () => {
       await waitFor(() => {
         expect(getTasksList).toHaveBeenCalledWith(1, 25, "type-1", [
           "needs-attention",
-        ], undefined);
+        ], undefined, "none");
       });
     });
 
@@ -735,6 +735,13 @@ describe("TasksContainer Component", () => {
 
       await waitFor(() => {
         expect(groupBySelect).toHaveTextContent("Due Date");
+      });
+
+      await waitFor(() => {
+        expect(getTasksList).toHaveBeenLastCalledWith(1, 25, "type-1", [
+          "in-progress",
+          "needs-attention",
+        ], undefined, "dueDate");
       });
     });
   });
@@ -792,7 +799,7 @@ describe("TasksContainer Component", () => {
         expect(getTasksList).toHaveBeenCalledWith(2, 25, undefined, [
           "in-progress",
           "needs-attention",
-        ], undefined);
+        ], undefined, "none");
       });
     });
 
@@ -909,7 +916,8 @@ describe("TasksContainer Component", () => {
           25,
           undefined,
           ["in-progress", "needs-attention"],
-          undefined
+          undefined,
+          "none"
         );
       });
 
@@ -935,7 +943,8 @@ describe("TasksContainer Component", () => {
           25,
           undefined,
           ["in-progress", "needs-attention"],
-          "Task 1"
+          "Task 1",
+          "none"
         );
       });
     });
@@ -1044,7 +1053,8 @@ describe("TasksContainer Component", () => {
           25,
           undefined,
           ["needs-attention"],
-          undefined
+          undefined,
+          "none"
         );
       });
 
@@ -1067,7 +1077,8 @@ describe("TasksContainer Component", () => {
           25,
           undefined,
           ["needs-attention"],
-          "Task"
+          "Task",
+          "none"
         );
       });
     });
@@ -1089,7 +1100,8 @@ describe("TasksContainer Component", () => {
           25,
           "type-1",
           ["in-progress", "needs-attention"],
-          undefined
+          undefined,
+          "none"
         );
       });
 
@@ -1111,7 +1123,8 @@ describe("TasksContainer Component", () => {
           25,
           "type-1",
           ["in-progress", "needs-attention"],
-          "Development"
+          "Development",
+          "none"
         );
       });
     });
@@ -1157,7 +1170,8 @@ describe("TasksContainer Component", () => {
           25,
           undefined,
           ["in-progress", "needs-attention"],
-          "Task"
+          "Task",
+          "none"
         );
       });
 
@@ -1177,7 +1191,8 @@ describe("TasksContainer Component", () => {
           25,
           undefined,
           ["in-progress", "needs-attention"],
-          "Task"
+          "Task",
+          "none"
         );
       });
     });
@@ -1213,7 +1228,8 @@ describe("TasksContainer Component", () => {
           25,
           undefined,
           ["in-progress", "needs-attention"],
-          "first search"
+          "first search",
+          "none"
         );
       });
 
@@ -1238,7 +1254,8 @@ describe("TasksContainer Component", () => {
           25,
           undefined,
           ["in-progress", "needs-attention"],
-          "second search"
+          "second search",
+          "none"
         );
       });
     });
@@ -1278,7 +1295,8 @@ describe("TasksContainer Component", () => {
           25,
           undefined,
           ["in-progress", "needs-attention"],
-          "Task"
+          "Task",
+          "none"
         );
       });
     });
@@ -1320,7 +1338,8 @@ describe("TasksContainer Component", () => {
           25,
           undefined,
           ["in-progress", "needs-attention"],
-          "Task"
+          "Task",
+          "none"
         );
       });
 

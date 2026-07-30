@@ -1,18 +1,50 @@
 "use server";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
-import { Task, TaskStatus } from "@/models/task.model";
+import { Task, TaskGroupBy, TaskStatus } from "@/models/task.model";
 import { AddTaskFormSchema } from "@/models/addTaskForm.schema";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { z } from "zod";
+
+function getTasksOrderBy(groupBy?: TaskGroupBy) {
+  switch (groupBy) {
+    case "dueDate":
+      return [
+        { dueDate: "asc" as const },
+        { priority: "desc" as const },
+        { createdAt: "desc" as const },
+      ];
+    case "createdDate":
+      return [{ createdAt: "desc" as const }, { priority: "desc" as const }];
+    case "updatedDate":
+      return [
+        { updatedAt: "desc" as const },
+        { priority: "desc" as const },
+        { createdAt: "desc" as const },
+      ];
+    case "activityType":
+      return [
+        { activityType: { label: "asc" as const } },
+        { priority: "desc" as const },
+        { createdAt: "desc" as const },
+      ];
+    default:
+      return [
+        { priority: "desc" as const },
+        { createdAt: "desc" as const },
+        { updatedAt: "desc" as const },
+      ];
+  }
+}
 
 export const getTasksList = async (
   page: number = 1,
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
   filter?: string,
   statusFilter?: TaskStatus[],
-  search?: string
+  search?: string,
+  groupBy?: TaskGroupBy
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -52,7 +84,7 @@ export const getTasksList = async (
             select: { id: true },
           },
         },
-        orderBy: [{ priority: "desc" }, { createdAt: "desc" }, { updatedAt: "desc" }],
+        orderBy: getTasksOrderBy(groupBy),
         skip: offset,
         take: limit,
       }),

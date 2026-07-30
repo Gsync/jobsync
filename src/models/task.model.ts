@@ -9,6 +9,13 @@ export const TASK_STATUSES = {
 
 export type TaskStatus = keyof typeof TASK_STATUSES;
 
+export type TaskGroupBy =
+  | "none"
+  | "createdDate"
+  | "dueDate"
+  | "updatedDate"
+  | "activityType";
+
 export interface Task {
   id: string;
   userId: string;

@@ -19,7 +19,12 @@ import {
   startActivityFromTask,
 } from "@/actions/task.actions";
 import { toastActionResult, toastError } from "@/lib/toast";
-import { Task, TaskStatus, TASK_STATUSES } from "@/models/task.model";
+import {
+  Task,
+  TaskGroupBy,
+  TaskStatus,
+  TASK_STATUSES,
+} from "@/models/task.model";
 import {
   Select,
   SelectContent,
@@ -72,9 +77,7 @@ function TasksContainer({
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [initialLoading, setInitialLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [groupBy, setGroupBy] = useState<
-    "none" | "createdDate" | "dueDate" | "updatedDate" | "activityType"
-  >("none");
+  const [groupBy, setGroupBy] = useState<TaskGroupBy>("none");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<TaskStatus[]>(
     DEFAULT_STATUS_FILTER,
@@ -98,6 +101,7 @@ function TasksContainer({
       filter?: string,
       statuses?: TaskStatus[],
       search?: string,
+      group?: TaskGroupBy,
     ) => {
       if (pageNum === 1) setInitialLoading(true);
       else setLoadingMore(true);
@@ -107,6 +111,7 @@ function TasksContainer({
         filter,
         statuses,
         search,
+        group,
       );
       if (success && data) {
         setTasks((prev) => (pageNum === 1 ? data : [...prev, ...data]));
@@ -122,9 +127,15 @@ function TasksContainer({
   );
 
   const reloadTasks = useCallback(async () => {
-    await loadTasks(1, filterKey, statusFilter, searchTerm || undefined);
+    await loadTasks(
+      1,
+      filterKey,
+      statusFilter,
+      searchTerm || undefined,
+      groupBy,
+    );
     onTasksChanged?.();
-  }, [loadTasks, filterKey, statusFilter, searchTerm, onTasksChanged]);
+  }, [loadTasks, filterKey, statusFilter, searchTerm, groupBy, onTasksChanged]);
 
   const onDeleteTask = async (taskId: string) => {
     const result = await deleteTaskById(taskId);
@@ -194,9 +205,15 @@ function TasksContainer({
 
   useEffect(() => {
     (async () =>
-      await loadTasks(1, filterKey, statusFilter, searchTerm || undefined))();
+      await loadTasks(
+        1,
+        filterKey,
+        statusFilter,
+        searchTerm || undefined,
+        groupBy,
+      ))();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadTasks, filterKey, statusFilter]);
+  }, [loadTasks, filterKey, statusFilter, groupBy]);
 
   // Debounced search effect
   useEffect(() => {
@@ -206,7 +223,7 @@ function TasksContainer({
     if (searchTerm === "" && !hasSearched.current) return;
 
     const timer = setTimeout(() => {
-      loadTasks(1, filterKey, statusFilter, searchTerm || undefined);
+      loadTasks(1, filterKey, statusFilter, searchTerm || undefined, groupBy);
     }, 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -225,7 +242,13 @@ function TasksContainer({
           !loadingMore &&
           tasks.length < totalTasks
         ) {
-          loadTasks(page + 1, filterKey, statusFilter, searchTerm || undefined);
+          loadTasks(
+            page + 1,
+            filterKey,
+            statusFilter,
+            searchTerm || undefined,
+            groupBy,
+          );
         }
       },
       { threshold: APP_CONSTANTS.INTERSECTION_OBSERVER_THRESHOLD },
@@ -240,20 +263,14 @@ function TasksContainer({
     filterKey,
     statusFilter,
     searchTerm,
+    groupBy,
     initialLoading,
     loadingMore,
     loadTasks,
   ]);
 
   const onGroupByChange = (value: string) => {
-    setGroupBy(
-      value as
-        | "none"
-        | "createdDate"
-        | "dueDate"
-        | "updatedDate"
-        | "activityType",
-    );
+    setGroupBy(value as TaskGroupBy);
   };
 
   const toggleStatusFilter = (status: TaskStatus) => {
