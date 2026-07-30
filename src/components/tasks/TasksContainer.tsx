@@ -182,6 +182,7 @@ function TasksContainer({
         success: "Activity started from task",
         onSuccess: () => refreshCurrentActivity(),
       });
+      return result.success;
     });
   };
 

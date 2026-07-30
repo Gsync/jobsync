@@ -113,13 +113,22 @@ describe("ActivityContext stopActivity duration guard", () => {
     );
   });
 
-  it("shows an error toast and keeps the activity when discarding fails", async () => {
+  it("shows an error toast and keeps the activity when discarding fails but it is still running", async () => {
     (deleteActivityById as any).mockResolvedValue({
       success: false,
       message: "Failed to delete activity.",
     });
 
     await startWith(new Date(), "act-fail");
+    (getCurrentActivity as any).mockResolvedValue({
+      success: true,
+      activity: {
+        id: "act-fail",
+        activityName: "Test Activity",
+        startTime: new Date(),
+        activityType: { id: "t1", label: "Coding" },
+      },
+    });
     await user.click(screen.getByText("Stop"));
 
     await waitFor(() => {
@@ -133,5 +142,64 @@ describe("ActivityContext stopActivity duration guard", () => {
     });
     expect(stopActivityById).not.toHaveBeenCalled();
     expect(screen.getByTestId("current")).toHaveTextContent("act-fail");
+  });
+
+  // Another session (or tab) can end the same activity — the per-user running
+  // activity is a singleton, so the local copy goes stale and every further
+  // stop attempt fails against a row that is gone.
+  it("clears the stale activity when discarding fails because it no longer exists", async () => {
+    (deleteActivityById as any).mockResolvedValue({
+      success: false,
+      message: "Failed to delete activity.",
+    });
+
+    await startWith(new Date(), "act-gone");
+    await user.click(screen.getByText("Stop"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("current")).toHaveTextContent("none")
+    );
+  });
+
+  it("clears the stale activity when saving fails because it no longer exists", async () => {
+    (stopActivityById as any).mockResolvedValue({
+      success: false,
+      message: "Failed to stop activity.",
+    });
+
+    const startTime = new Date(
+      Date.now() - (APP_CONSTANTS.ACTIVITY_MIN_DURATION_MINUTES + 3) * 60 * 1000
+    );
+    await startWith(startTime, "act-gone-long");
+    await user.click(screen.getByText("Stop"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("current")).toHaveTextContent("none")
+    );
+  });
+
+  it("adopts the activity that is actually running when the local one is stale", async () => {
+    (deleteActivityById as any).mockResolvedValue({
+      success: false,
+      message: "Failed to delete activity.",
+    });
+
+    await startWith(new Date(), "act-stale");
+    (getCurrentActivity as any).mockResolvedValue({
+      success: true,
+      activity: {
+        id: "act-other-session",
+        activityName: "Other Activity",
+        startTime: new Date(),
+        activityType: { id: "t1", label: "Coding" },
+      },
+    });
+    await user.click(screen.getByText("Stop"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("current")).toHaveTextContent(
+        "act-other-session"
+      )
+    );
   });
 });

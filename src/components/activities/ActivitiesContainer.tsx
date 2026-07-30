@@ -86,6 +86,7 @@ function ActivitiesContainer() {
       if (success) {
         reloadActivities();
       }
+      return success;
     });
   };
 

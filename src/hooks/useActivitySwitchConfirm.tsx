@@ -3,19 +3,37 @@ import { useCallback, useState } from "react";
 import { useActivity } from "@/context/ActivityContext";
 import { DeleteAlertDialog } from "@/components/DeleteAlertDialog";
 
+// Returning false means the start was rejected; anything else counts as done.
+type StartAction = () => boolean | void | Promise<boolean | void>;
+
 export function useActivitySwitchConfirm() {
-  const { currentActivity, stopActivity } = useActivity();
-  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  const { currentActivity, stopActivity, refreshCurrentActivity } =
+    useActivity();
+  const [pendingAction, setPendingAction] = useState<StartAction | null>(null);
+
+  // The running activity is a per-user singleton, so another session may have
+  // claimed it since this page last synced — a start that looked valid against
+  // local state gets rejected server-side. Resync and offer the switch rather
+  // than dead-ending on an error toast.
+  const runStart = useCallback(
+    async (action: StartAction) => {
+      const started = await action();
+      if (started !== false) return;
+      const running = await refreshCurrentActivity();
+      if (running) setPendingAction(() => action);
+    },
+    [refreshCurrentActivity],
+  );
 
   const requestStart = useCallback(
-    (action: () => void) => {
+    (action: StartAction) => {
       if (currentActivity) {
         setPendingAction(() => action);
       } else {
-        action();
+        runStart(action);
       }
     },
-    [currentActivity],
+    [currentActivity, runStart],
   );
 
   const confirmSwitch = useCallback(async () => {
@@ -23,8 +41,8 @@ export function useActivitySwitchConfirm() {
     setPendingAction(null);
     if (!action) return;
     await stopActivity();
-    action();
-  }, [pendingAction, stopActivity]);
+    await runStart(action);
+  }, [pendingAction, stopActivity, runStart]);
 
   const confirmDialog = (
     <DeleteAlertDialog

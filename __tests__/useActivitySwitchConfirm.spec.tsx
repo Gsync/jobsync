@@ -92,6 +92,74 @@ describe("useActivitySwitchConfirm", () => {
     });
   });
 
+  // Another session can grab the per-user running activity between this page's
+  // last sync and the click, so the server rejects a start that looked valid
+  // locally. Resync and offer the switch instead of dead-ending on a toast.
+  it("prompts to switch when the start is rejected and another activity is running", async () => {
+    const mockRefresh = vi
+      .fn()
+      .mockResolvedValue({ id: "a2", activityName: "Other session activity" });
+    (useActivity as any).mockReturnValue({
+      currentActivity: undefined,
+      stopActivity: mockStopActivity,
+      refreshCurrentActivity: mockRefresh,
+    });
+
+    const action = vi.fn().mockResolvedValue(false);
+    render(<TestHarness action={action} />);
+
+    await user.click(screen.getByText("Trigger Start"));
+
+    await waitFor(() => expect(mockRefresh).toHaveBeenCalledTimes(1));
+    expect(
+      await screen.findByText(/Stop current activity and start a new one/i)
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Stop & Start" }));
+
+    await waitFor(() => {
+      expect(mockStopActivity).toHaveBeenCalledTimes(1);
+      expect(action).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it("does not prompt when the start is rejected and nothing is running", async () => {
+    const mockRefresh = vi.fn().mockResolvedValue(undefined);
+    (useActivity as any).mockReturnValue({
+      currentActivity: undefined,
+      stopActivity: mockStopActivity,
+      refreshCurrentActivity: mockRefresh,
+    });
+
+    const action = vi.fn().mockResolvedValue(false);
+    render(<TestHarness action={action} />);
+
+    await user.click(screen.getByText("Trigger Start"));
+
+    await waitFor(() => expect(mockRefresh).toHaveBeenCalledTimes(1));
+    expect(
+      screen.queryByText(/Stop current activity and start a new one/i)
+    ).not.toBeInTheDocument();
+    expect(action).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not resync when the start succeeds", async () => {
+    const mockRefresh = vi.fn();
+    (useActivity as any).mockReturnValue({
+      currentActivity: undefined,
+      stopActivity: mockStopActivity,
+      refreshCurrentActivity: mockRefresh,
+    });
+
+    const action = vi.fn().mockResolvedValue(true);
+    render(<TestHarness action={action} />);
+
+    await user.click(screen.getByText("Trigger Start"));
+
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+    expect(mockRefresh).not.toHaveBeenCalled();
+  });
+
   it("does not run the action when the dialog is dismissed", async () => {
     (useActivity as any).mockReturnValue({
       currentActivity: { id: "a1", activityName: "Writing docs" },

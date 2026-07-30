@@ -474,10 +474,15 @@ describe("TasksContainer Component", () => {
       const startActivityButtons = screen.getAllByTestId(/start-activity-/);
       await user.click(startActivityButtons[0]);
 
+      // A rejected start resyncs the per-user running activity, but with
+      // nothing running it must not offer to switch.
       await waitFor(() => {
         expect(startActivityFromTask).toHaveBeenCalledWith("task-1");
-        expect(mockRefreshCurrentActivity).not.toHaveBeenCalled();
+        expect(mockRefreshCurrentActivity).toHaveBeenCalledTimes(1);
       });
+      expect(
+        screen.queryByText(/Stop current activity and start a new one/i),
+      ).not.toBeInTheDocument();
     });
   });
 

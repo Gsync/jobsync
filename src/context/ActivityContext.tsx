@@ -25,7 +25,7 @@ interface ActivityContextType {
   isLoading: boolean;
   startActivity: (activityId: string) => Promise<boolean>;
   stopActivity: (autoStop?: boolean) => Promise<boolean>;
-  refreshCurrentActivity: () => Promise<void>;
+  refreshCurrentActivity: () => Promise<Activity | undefined>;
 }
 
 const ActivityContext = createContext<ActivityContextType | undefined>(
@@ -84,6 +84,22 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
     return true; // Timer started successfully
   }, [stopTimer]);
 
+  const refreshCurrentActivity = useCallback(async (): Promise<
+    Activity | undefined
+  > => {
+    const { activity, success } = await getCurrentActivity();
+    if (!isMountedRef.current) return undefined;
+
+    if (success && activity) {
+      setCurrentActivity(activity);
+      return activity;
+    }
+
+    setCurrentActivity(undefined);
+    stopTimer();
+    return undefined;
+  }, [stopTimer]);
+
   const stopActivity = useCallback(
     async (autoStop: boolean = false): Promise<boolean> => {
       if (!currentActivity) return false;
@@ -112,6 +128,10 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
           });
           return true;
         } else {
+          // The running activity is a per-user singleton, so another session
+          // may have already ended it — resync so a stale copy can't leave an
+          // undismissable banner.
+          await refreshCurrentActivity();
           toast({
             variant: "destructive",
             title: "Error!",
@@ -140,6 +160,7 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
         });
         return true;
       } else {
+        await refreshCurrentActivity();
         toast({
           variant: "destructive",
           title: "Error!",
@@ -148,7 +169,7 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
         return false;
       }
     },
-    [currentActivity, stopTimer]
+    [currentActivity, stopTimer, refreshCurrentActivity]
   );
 
   const startActivity = useCallback(
@@ -181,18 +202,6 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
     },
     []
   );
-
-  const refreshCurrentActivity = useCallback(async () => {
-    const { activity, success } = await getCurrentActivity();
-    if (!isMountedRef.current) return;
-
-    if (success && activity) {
-      setCurrentActivity(activity);
-    } else {
-      setCurrentActivity(undefined);
-      stopTimer();
-    }
-  }, [stopTimer]);
 
   // Handle timer when currentActivity changes
   useEffect(() => {
