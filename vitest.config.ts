@@ -42,7 +42,7 @@ export default defineConfig({
       provider: "v8",
       reportsDirectory: "coverage",
     },
-    exclude: ["e2e/**", "node_modules/**"],
+    exclude: ["e2e/**", "**/node_modules/**"],
     server: {
       deps: {
         inline: [/@prisma/, /next-auth/, /@auth/, /@next/, /jose/],
