@@ -867,6 +867,7 @@ export const addExperience = async (
     const experience = await prisma.resumeSection.update({
       where: {
         id: section ? section.id : data.sectionId,
+        resumeId: data.resumeId!,
       },
       data: {
         workExperiences: {
@@ -954,6 +955,7 @@ export const addEducation = async (
     const education = await prisma.resumeSection.update({
       where: {
         id: section ? section.id : data.sectionId,
+        resumeId: data.resumeId!,
       },
       data: {
         educations: {
@@ -1043,6 +1045,7 @@ export const addCertification = async (
     const result = await prisma.resumeSection.update({
       where: {
         id: section ? section.id : data.sectionId,
+        resumeId: data.resumeId!,
       },
       data: {
         licenseOrCertifications: {
