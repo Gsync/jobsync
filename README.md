@@ -16,12 +16,12 @@
 
 JobSync is a free, open-source companion for your job search: track applications, manage and export resumes, and run AI-powered resume reviews, job matching, generate cover letter — all self-hosted on your own server, so your data stays under your control. AI features can run entirely locally via Ollama or through your choice of cloud provider, and JobSync's built-in MCP server lets AI agents like Claude Desktop add jobs and interview questions straight from your chat.
 
-![App Snapshot](./screenshots/jobsync-dashboard-screenshot.png?raw=true "App Snapshot Image")
+![App Snapshot](./screenshots/jobsync-dashboard.png?raw=true "Jobsync dashboard")
 
 ## Key Features
 - **Application Tracker:** Keep a detailed record of all your job applications, including company details, job titles, application dates, and current status.
 
-  ![Jobs Applied List](./screenshots/jobsync-myjobs.png?raw=true "My Jobs Page Snapshot Image")
+  ![Jobs Applied List](./screenshots/jobsync-jobs.png?raw=true "Jobsync Jobs Page")
 
 - **Monitoring Dashboard:** Visualize your job search progress with an interactive dashboard that provides insights into your application activities, success rates, and upcoming tasks.
 
