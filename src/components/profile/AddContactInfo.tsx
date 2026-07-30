@@ -23,7 +23,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useEffect, useState, useTransition } from "react";
-import { toast } from "../ui/use-toast";
+import { toastActionResult } from "@/lib/toast";
 import { ContactInfo } from "@/models/profile.model";
 import { addContactInfo, updateContactInfo } from "@/actions/profile.actions";
 
@@ -99,22 +99,15 @@ function AddContactInfo({
       const res = contactInfoToEdit
         ? await updateContactInfo(data)
         : await addContactInfo(data);
-      if (!res.success) {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: res.message,
-        });
-      } else {
-        reset();
-        setDialogOpen(false);
-        toast({
-          variant: "success",
-          description: `Contact Info has been ${
-            contactInfoToEdit ? "updated" : "created"
-          } successfully`,
-        });
-      }
+      toastActionResult(res, {
+        success: `Contact Info has been ${
+          contactInfoToEdit ? "updated" : "created"
+        } successfully`,
+        onSuccess: () => {
+          reset();
+          setDialogOpen(false);
+        },
+      });
     });
   };
 
@@ -133,7 +126,7 @@ function AddContactInfo({
             className="grid grid-cols-1 md:grid-cols-2 gap-4 p-2"
           >
             {/* FIRST NAME */}
-            <div className="md:col-span-2">
+            <div>
               <FormField
                 control={form.control}
                 name="firstName"
@@ -150,7 +143,7 @@ function AddContactInfo({
             </div>
 
             {/* LAST NAME */}
-            <div className="md:col-span-2">
+            <div>
               <FormField
                 control={form.control}
                 name="lastName"
@@ -184,7 +177,7 @@ function AddContactInfo({
             </div>
 
             {/* EMAIL */}
-            <div className="md:col-span-2">
+            <div>
               <FormField
                 control={form.control}
                 name="email"
@@ -201,7 +194,7 @@ function AddContactInfo({
             </div>
 
             {/* PHONE */}
-            <div className="md:col-span-2">
+            <div>
               <FormField
                 control={form.control}
                 name="phone"
