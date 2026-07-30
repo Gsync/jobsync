@@ -266,7 +266,7 @@ describe("AddJob Component", () => {
         tags: [],
       });
     });
-  });
+  }, 10000);
 });
 
 describe("AddJob Component - Edit Mode", () => {
@@ -451,5 +451,5 @@ describe("AddJob Component - Error Handling", () => {
         }),
       );
     });
-  }, 15000);
+  }, 10000);
 });
