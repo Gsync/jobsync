@@ -1,46 +1,42 @@
-# JobSync - Job Search Assistant
+# JobSync
 
-## <a href="https://demo.jobsync.ca">Live Demo</a>
+<p align="center"><strong>The self-hosted job search assistant with AI-powered resume review, job matching, and automated discovery</strong></p>
 
-JobSync is a web app companion for managing your job search journey. This free and open-source project is designed to help job seekers efficiently track and organize their job applications. Say goodbye to the chaos of scattered information and hello to a streamlined, intuitive, and powerful job search experience running locally on your system.
+<p align="center">
+  <a href="https://demo.jobsync.ca">Live Demo</a> ·
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="#mcp-server-ai-agent-integration">MCP Setup</a>
+</p>
 
-Job searching can be overwhelming, with numerous applications to track and deadlines to meet. JobSeeker Assistant is here to simplify this process, allowing you to focus on big picture and keep track of your job search related activities. JobSync app platform empowers you with the tools you need to stay organized, informed, and proactive throughout your job search.
+<p align="center">
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/Gsync/jobsync" alt="License"></a>
+  <a href="https://github.com/Gsync/jobsync/stargazers"><img src="https://img.shields.io/github/stars/Gsync/jobsync?style=social" alt="GitHub Stars"></a>
+  <img src="https://img.shields.io/badge/self--hosted-Docker-blue" alt="Self-hosted with Docker">
+</p>
 
-### Dashboard
+JobSync is a free, open-source companion for your job search: track applications, manage and export resumes, and run AI-powered resume reviews, job matching, generate cover letter — all self-hosted on your own server, so your data stays under your control. AI features can run entirely locally via Ollama or through your choice of cloud provider, and JobSync's built-in MCP server lets AI agents like Claude Desktop add jobs and interview questions straight from your chat.
 
 ![App Snapshot](./screenshots/jobsync-dashboard-screenshot.png?raw=true "App Snapshot Image")
 
-### Jobs Applied list
-
-![App Snapshot](./screenshots/jobsync-myjobs.png?raw=true "My Jobs Page Snapshot Image")
-
-### AI Resume review
-
-![JobSync AI Demo](./screenshots/jobsync-ai.gif)
-
-### AI Job match
-
-![JobSync AI Demo](./screenshots/jobsync-ai-jobmatch.gif)
-
 ## Key Features
 - **Application Tracker:** Keep a detailed record of all your job applications, including company details, job titles, application dates, and current status.
+
+  ![Jobs Applied List](./screenshots/jobsync-myjobs.png?raw=true "My Jobs Page Snapshot Image")
 
 - **Monitoring Dashboard:** Visualize your job search progress with an interactive dashboard that provides insights into your application activities, success rates, and upcoming tasks.
 
 - **Resume Management:** Store and manage your resumes, export them as professionally formatted PDFs (Simple or Professional template), and use them with AI to get reviews and match with job descriptions. Import existing resumes from PDF or Word (.docx) files — AI extracts and structures your contact info, experience, education, and certifications so you can review and save each section individually.
 
-- **Automated Job Discovery:** Schedule and run automations that track companies directly via the Greenhouse and Lever job board APIs, then AI-match each listing against your resume and surface the best fits for review. More job board sources coming soon.
+- **Automated Job Discovery:** Schedule automations that track companies via job board APIs, then AI-match each listing against your resume and surface the best fits for review. See [Features in Detail](#automated-job-discovery) below.
 
-- **Task & Activity Management:** Manage tasks, track activites linked with tasks included with time tracking. 
+- **Task & Activity Management:** Manage tasks, track activities linked with tasks including time tracking.
 
-- **AI Assistant:** Leverage the power of AI to improve your resumes and match with jobs. Get personalized job matching with scoring to identify the best opportunities tailored to your profile.
+- **AI Assistant:** Leverage the power of AI to improve your resumes and match with jobs. Get personalized job matching with scoring to identify the best opportunities tailored to your profile, and generate a tailored cover letter from a job description and resume in one click.
+
+  ![AI Resume Review](./screenshots/jobsync-ai.gif)
+  ![AI Job Match](./screenshots/jobsync-ai-jobmatch.gif)
 
 - **AI Agent Integration (MCP):** Connect AI agents like Claude Desktop via a built-in MCP server to add job applications and Question Bank entries directly from your chat, with your approval. When a job description is substantial enough, the agent can also analyze it against your default resume and save a job match score right from the chat.
-
-
-## Free to Use and Self-Hosted
-JobSync Assistant is completely free to use and open source. It provides a powerful job search management tool at no cost and ensures that everyone has access to the resources they need. Additionally, JobSeeker Assistant is designed to be self-hosted, giving you full control over your data. By using Docker, you can easily set up and run JobSync Assistant on your own server, ensuring a secure and personalized experience.
-
 
 ## Quick Start
 
@@ -52,7 +48,7 @@ cd jobsync
 docker compose up
 ```
 
-> **Note:** If app is unreachable after container starts, wait for a few minutes before accessing the app in browser.
+> **Note:** The first startup builds the app image, which can take a few minutes — if the app is unreachable right after `docker compose up`, wait a bit before accessing it in your browser.
 
 Open [http://localhost:3737](http://localhost:3737) and create your account. That's it!
 
@@ -206,7 +202,7 @@ Works with [Ollama](https://ollama.com) to run AI models locally on your machine
 
 - Make sure Ollama is installed and running on the same system
 - AI settings will show a list of available models based on what you have downloaded in Ollama
-- **Recommended:** Increase the Ollama context length from the default 4k for better results
+- **Recommended:** Increase the Ollama context length from the default 4k to 16k — this mainly helps automated job matching avoid truncating longer resume/job description prompts; increasing it further doesn't necessarily improve results
 - No API key required — runs entirely on your hardware
 - If you are running jobsync on a homelab server, you can expose ollama to network from Ollama settings on your local machine. Also make sure your ollama base url is pointed to your local system IP under API keys section of settings.
 
