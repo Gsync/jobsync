@@ -16,7 +16,7 @@ Never substitute a synonym (e.g. "title" for "jobTitle", "url" for
 - education: academic history with institution, degree, fieldOfStudy, location, startDate, endDate,
   description
 - certifications: licenses and certifications with title, organization, issueDate, expirationDate, credentialUrl
-- unrecognizedSections: section names whose content cannot be mapped to any of the above fields (e.g. Projects, Publications, Volunteer Work, Awards). Do NOT include sections whose content was successfully parsed into contactInfo, summary, experience, education, certifications, or skills — even if the heading combines multiple categories (e.g. "Education & Certifications" or "Experience & Projects").
+- unrecognizedSections: a flat array of plain section-name STRINGS whose content cannot be mapped to any of the above fields (e.g. ["Projects", "Publications", "Volunteer Work", "Awards"]). Names only — never objects, and never the section's content. Do NOT include sections whose content was successfully parsed into contactInfo, summary, experience, education, certifications, or skills — even if the heading combines multiple categories (e.g. "Education & Certifications" or "Experience & Projects").
 
 FIELD PRIORITY — for every experience and education entry, in this order:
 1. company/institution and jobTitle/degree

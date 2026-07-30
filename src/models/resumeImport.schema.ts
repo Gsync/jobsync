@@ -58,6 +58,22 @@ export const ImportSkillsSchema = z.object({
   confidence,
 });
 
+// One unrecognized section, as a plain name. Unknown shapes collapse to ""
+// rather than throwing, so a single odd element can't void the whole array.
+const unrecognizedSectionName = z
+  .union([
+    z.string(),
+    z
+      .object({
+        name: z.string().optional(),
+        sectionName: z.string().optional(),
+        title: z.string().optional(),
+        heading: z.string().optional(),
+      })
+      .transform((o) => o.name ?? o.sectionName ?? o.title ?? o.heading ?? ""),
+  ])
+  .catch("");
+
 export const ResumeImportSchema = z.object({
   contactInfo: ImportContactInfoSchema.optional(),
   summary: z.string().catch(""),
@@ -67,16 +83,13 @@ export const ResumeImportSchema = z.object({
   experience: z.array(ImportExperienceSchema).default([]),
   education: z.array(ImportEducationSchema).default([]),
   certifications: z.array(ImportCertificationSchema).default([]),
-  // Models inconsistently return strings or { name } objects here — accept both
-  // and normalize to strings. .catch keeps this non-critical field from ever
-  // failing whole-object validation.
+  // Models inconsistently return strings or objects here, keying the name as
+  // name/sectionName/title/heading. Normalize per element and drop only what
+  // yields no name — an array-level .catch turned one unknown shape into a
+  // silent [], so the user was never told content had been dropped.
   unrecognizedSections: z
-    .array(
-      z.union([
-        z.string(),
-        z.object({ name: z.string() }).transform((o) => o.name),
-      ]),
-    )
+    .array(unrecognizedSectionName)
+    .transform((names) => names.filter(Boolean))
     .catch([])
     .default([]),
 });

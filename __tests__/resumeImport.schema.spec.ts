@@ -258,4 +258,27 @@ describe("ResumeImportSchema", () => {
       expect(result.data.certifications).toHaveLength(1);
     }
   });
+
+  it("normalizes { sectionName, content } objects in unrecognizedSections", () => {
+    const result = ResumeImportSchema.safeParse({
+      unrecognizedSections: [
+        { sectionName: "PROJECTS", content: "Built a thing" },
+        { sectionName: "AWARDS", content: "Won a thing" },
+      ],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.unrecognizedSections).toEqual(["PROJECTS", "AWARDS"]);
+    }
+  });
+
+  it("keeps recognizable unrecognizedSections when one element is an unknown shape", () => {
+    const result = ResumeImportSchema.safeParse({
+      unrecognizedSections: ["Projects", { content: "no name key" }, 42, "Awards"],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.unrecognizedSections).toEqual(["Projects", "Awards"]);
+    }
+  });
 });

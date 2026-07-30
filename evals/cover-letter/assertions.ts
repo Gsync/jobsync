@@ -118,10 +118,20 @@ export function assertNoInventedNumbers(
       m[0].replace(/,/g, ''),
     );
 
+  // "95K" and "95,000" are the same figure written two ways, so a source
+  // number carrying a K/M/B suffix also allows its expanded form. This is not
+  // the same as allowing derived numbers — the prompt forbids computing
+  // percentages or totals, and those stay caught.
+  const SUFFIX_SCALE: Record<string, number> = { k: 1e3, m: 1e6, b: 1e9 };
+  const scaledIn = (text: string) =>
+    [...(text || '').matchAll(/(\d+(?:[.,]\d+)*)\s*([KkMmBb])\b/g)].map((m) =>
+      String(Number(m[1].replace(/,/g, '')) * SUFFIX_SCALE[m[2].toLowerCase()]),
+    );
+
   const allowed = new Set(
     [context.vars.resumeText, context.vars.jobDescription, context.vars.guidance]
       .filter(Boolean)
-      .flatMap((source) => numbersIn(source)),
+      .flatMap((source) => [...numbersIn(source), ...scaledIn(source)]),
   );
 
   const invented = [...new Set(numbersIn(clean(output)))].filter(

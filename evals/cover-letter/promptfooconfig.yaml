@@ -26,6 +26,24 @@ providers:
 prompts:
   - file://./prompt.ts
 
+# Grading provider for every llm-rubric below. Declared once here rather than
+# inline per assertion, so a new rubric can't silently inherit promptfoo's
+# defaults for these two settings:
+#   max_tokens — the default 1024 is a shared budget, and DeepSeek's reasoning
+#     can consume all of it, leaving zero content and a "No output" grade.
+#   showThinking — defaults true, which prepends "Thinking: ...\n\n" to the
+#     grade and breaks llm-rubric's JSON extraction.
+defaultTest:
+  options:
+    provider:
+      id: openai:chat:deepseek-v4-flash
+      config:
+        apiBaseUrl: https://api.deepseek.com
+        apiKeyEnvar: DEEPSEEK_API_KEY
+        showThinking: false
+        temperature: 0
+        max_tokens: 4096
+
 # The letter is generated at a creative temperature in the app (TEMPERATURES.
 # FEEDBACK), but evals run at 0 for repeatability — same trade-off as the other
 # markdown prompts here.
@@ -56,19 +74,18 @@ tests:
           - "Go"
           - "AWS"
       - type: llm-rubric
-        provider:
-          id: openai:chat:deepseek-v4-flash
-          config:
-            apiBaseUrl: https://api.deepseek.com
-            apiKeyEnvar: DEEPSEEK_API_KEY
-            temperature: 0
         value: >-
           Every employer, job title, date, degree, certification, and metric in
           the letter must appear in the candidate's resume below. Fail if the
           letter names any employer, title, school, degree, or certification the
-          resume does not contain, or states an achievement the resume does not
-          support. Company names taken from the job posting are acceptable when
-          used as the employer being applied to. Resume:
+          resume does not contain, states an achievement the resume does not
+          support, or credits one employer with an achievement the resume lists
+          under a different employer. Company names taken from the job posting
+          are acceptable when used as the employer being applied to. Judge only
+          titles the letter claims the candidate has HELD at a named employer —
+          a general self-description aligned to the role applied for ("I am a
+          senior backend engineer") is not a title claim and is acceptable.
+          Resume:
 
           {{resumeText}}
 

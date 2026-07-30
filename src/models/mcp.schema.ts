@@ -37,18 +37,13 @@ export const McpAddJobInputShape = {
     .boolean()
     .optional()
     .describe(
-      "Force-create even if a matching job already exists. Prefer upsert:true " +
-        "for re-runs of the same search; use this only for a genuinely " +
-        "different posting.",
+      "Force-create even if a matching job already exists. Prefer upsert:true for re-runs of the same search; use this only for a genuinely different posting.",
     ),
   upsert: z
     .boolean()
     .optional()
     .describe(
-      "If a job with this URL (or same company+title within the dedupe " +
-        "window) already exists, update it with the fields supplied here " +
-        "instead of reporting a duplicate. Recommended for scheduled searches " +
-        "that resurface the same posting daily.",
+      "If this posting is already saved, update it with the fields supplied here instead of reporting a duplicate. A posting counts as already saved when it matches on URL, or on company+title within the dedupe window — so this works for postings with no URL at all. Set this on every re-run of a saved or scheduled search, whether or not you have a URL.",
     ),
 };
 
@@ -85,12 +80,10 @@ export const McpSaveMatchResultInputShape = {
     .min(1)
     .optional()
     .describe(
-      "The id of the resume this match was scored against, exactly as given " +
-        "in the add_job directive. Omit only if the directive had none.",
+      "The id of the resume this match was scored against, exactly as given in the add_job directive. Omit only if the directive had none.",
     ),
   matchText: z.string().min(20).describe(
-    "Your full match analysis: a leading 'SCORES: match=<0-100> " +
-      "recommendation=<strong|good|partial|weak>' line, then a markdown body.",
+    "Your full match analysis: a leading 'SCORES: match=<0-100> recommendation=<strong|good|partial|weak>' line, then a markdown body.",
   ),
 };
 
@@ -109,12 +102,10 @@ export const McpSaveResumeReviewInputShape = {
     .string()
     .min(1)
     .describe(
-      "The id of the resume this review was produced for, exactly as given " +
-        "in the review_resume directive.",
+      "The id of the resume this review was produced for, exactly as given in the review_resume directive.",
     ),
   reviewText: z.string().min(20).describe(
-    "Your full resume review: a leading 'SCORES: overall=<0-100> " +
-      "impact=<0-100> clarity=<0-100> ats=<0-100>' line, then a markdown body.",
+    "Your full resume review: a leading 'SCORES: overall=<0-100> impact=<0-100> clarity=<0-100> ats=<0-100>' line, then a markdown body.",
   ),
 };
 
@@ -132,9 +123,7 @@ export const McpFindJobInputShape = {
     .string()
     .url()
     .describe(
-      "Direct URL to the job posting. Matched against saved jobs using the " +
-        "same canonical key as add_job's duplicate detection, so tracking " +
-        "parameters and host casing don't matter.",
+      "Direct URL to the job posting. Matched against saved jobs using the same canonical key as add_job's duplicate detection, so tracking parameters and host casing don't matter.",
     ),
 };
 
@@ -148,8 +137,7 @@ export const McpUpdateJobInputShape = {
     .string()
     .min(1)
     .describe(
-      "The id of the job to update, as returned by add_job or find_job. " +
-        "Only jobs created through MCP can be updated.",
+      "The id of the job to update, as returned by add_job or find_job. Only jobs created through MCP can be updated.",
     ),
   company: z.string().min(1).optional(),
   jobTitle: z.string().min(1).optional(),
@@ -158,9 +146,7 @@ export const McpUpdateJobInputShape = {
     .min(10)
     .optional()
     .describe(
-      "The complete job posting text, copied in full — do not summarize. " +
-        "Supplying this re-classifies the job's description completeness and, " +
-        "if it is now substantive enough, a fresh match analysis is requested.",
+      "The complete job posting text, copied in full — do not summarize. Supplying this re-classifies the job's description completeness and, if it is now substantive enough, a fresh match analysis is requested.",
     ),
   location: z.string().optional(),
   source: z.string().optional(),
@@ -185,9 +171,7 @@ export const McpUpdateJobInputShape = {
     .array(z.string())
     .optional()
     .describe(
-      "Skills required for the job, e.g. ['React', 'TypeScript']. Replaces " +
-        "the job's existing tags wholesale rather than merging, so include " +
-        "the tags returned by find_job that should be kept (max 10 applied).",
+      "Skills required for the job, e.g. ['React', 'TypeScript']. Replaces the job's existing tags wholesale rather than merging, so include the tags returned by find_job that should be kept (max 10 applied).",
     ),
 };
 
@@ -207,9 +191,7 @@ export const McpAddJobsBatchInputShape = {
     .min(1)
     .max(APP_CONSTANTS.MCP_BATCH_MAX_ITEMS)
     .describe(
-      `Up to ${APP_CONSTANTS.MCP_BATCH_MAX_ITEMS} jobs, each with the same ` +
-        `fields as add_job. Processed in order; each item consumes one unit ` +
-        `of the MCP rate-limit budget.`,
+      `Up to ${APP_CONSTANTS.MCP_BATCH_MAX_ITEMS} jobs, each with the same fields as add_job. Processed in order; each item consumes one unit of the MCP rate-limit budget.`,
     ),
 };
 
@@ -224,8 +206,7 @@ export const McpSaveMatchResultsBatchInputShape = {
     .min(1)
     .max(APP_CONSTANTS.MCP_BATCH_MAX_ITEMS)
     .describe(
-      `Up to ${APP_CONSTANTS.MCP_BATCH_MAX_ITEMS} match analyses, each with ` +
-        `the same fields as save_match_result.`,
+      `Up to ${APP_CONSTANTS.MCP_BATCH_MAX_ITEMS} match analyses, each with the same fields as save_match_result.`,
     ),
 };
 
