@@ -499,7 +499,14 @@ describe("Company Actions", () => {
     it("should update a company successfully", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
 
-      (prisma.company.findFirst as any).mockResolvedValue(null);
+      (prisma.company.findFirst as any)
+        .mockResolvedValueOnce({
+          id: "company-id",
+          label: "Old Employer",
+          value: "old employer",
+          createdBy: mockUser.id,
+        })
+        .mockResolvedValueOnce(null);
 
       const mockUpdatedCompany = {
         id: "company-id",
@@ -512,7 +519,10 @@ describe("Company Actions", () => {
 
       expect(result).toEqual({ success: true, data: mockUpdatedCompany });
 
-      expect(prisma.company.findFirst).toHaveBeenCalledWith({
+      expect(prisma.company.findFirst).toHaveBeenNthCalledWith(1, {
+        where: { id: "company-id", createdBy: mockUser.id },
+      });
+      expect(prisma.company.findFirst).toHaveBeenNthCalledWith(2, {
         where: { value: "updated employer", createdBy: mockUser.id },
       });
 
@@ -526,6 +536,41 @@ describe("Company Actions", () => {
       });
     });
 
+    it("does not recompute the value or check for duplicates when the label is unchanged", async () => {
+      // Regression guard: a company whose stored `value` isn't derivable
+      // from its label (e.g. mock-seeded rows with a `__mock__` prefix)
+      // must not have its value clobbered by an unrelated logo-only save.
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      (prisma.company.findFirst as any).mockResolvedValueOnce({
+        id: "company-id",
+        label: "Amazon",
+        value: "__mock__amazon",
+        createdBy: mockUser.id,
+      });
+
+      const mockUpdatedCompany = { id: "company-id", value: "__mock__amazon" };
+      (prisma.company.update as any).mockResolvedValue(mockUpdatedCompany);
+
+      const result = await updateCompany({
+        id: "company-id",
+        company: "Amazon",
+        logoUrl: "http://example.com/logo.png",
+        createdBy: "user-id",
+      });
+
+      expect(result).toEqual({ success: true, data: mockUpdatedCompany });
+      expect(prisma.company.findFirst).toHaveBeenCalledTimes(1);
+      expect(prisma.company.update).toHaveBeenCalledWith({
+        where: { id: "company-id", createdBy: "user-id" },
+        data: {
+          value: "__mock__amazon",
+          label: "Amazon",
+          logoUrl: "http://example.com/logo.png",
+        },
+      });
+    });
+
     it("strips a legal suffix so 'Acme Inc.' matches an existing 'Acme'", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockExistingCompany = {
@@ -534,14 +579,21 @@ describe("Company Actions", () => {
         value: "acme",
         createdBy: mockUser.id,
       };
-      (prisma.company.findFirst as any).mockResolvedValue(mockExistingCompany);
+      (prisma.company.findFirst as any)
+        .mockResolvedValueOnce({
+          id: "company-id",
+          label: "Something Else",
+          value: "something else",
+          createdBy: mockUser.id,
+        })
+        .mockResolvedValueOnce(mockExistingCompany);
 
       const result = await updateCompany({
         ...validData,
         company: "Acme Inc.",
       });
 
-      expect(prisma.company.findFirst).toHaveBeenCalledWith({
+      expect(prisma.company.findFirst).toHaveBeenNthCalledWith(2, {
         where: { value: "acme", createdBy: mockUser.id },
       });
       expect(result).toEqual({
@@ -635,7 +687,12 @@ describe("Company Actions", () => {
     it("should allow empty logo URL", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
 
-      (prisma.company.findFirst as any).mockResolvedValue(null);
+      (prisma.company.findFirst as any).mockResolvedValueOnce({
+        id: "company-id",
+        label: "Updated Employer",
+        value: "updated employer",
+        createdBy: mockUser.id,
+      });
 
       const mockUpdatedCompany = {
         id: "company-id",

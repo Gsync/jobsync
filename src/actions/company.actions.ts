@@ -219,17 +219,37 @@ export const updateCompany = async (
       );
     }
 
-    const value = canonicalizeEntityValue(company.trim(), { stripLegalSuffix: true });
-
-    const companyExists = await prisma.company.findFirst({
+    const existingCompany = await prisma.company.findFirst({
       where: {
-        value,
+        id,
         createdBy: user.id,
       },
     });
 
-    if (companyExists && companyExists.id !== id) {
-      throw new Error("Company already exists!");
+    if (!existingCompany) {
+      throw new Error("Company not found");
+    }
+
+    const trimmedLabel = company.trim();
+
+    // Only recompute the match key when the label actually changed. Some
+    // rows (e.g. mock-seeded companies) intentionally hold a `value` that
+    // isn't derivable from their label — recomputing on every save would
+    // collide with an unrelated company sharing the same canonical label.
+    let value = existingCompany.value;
+    if (trimmedLabel !== existingCompany.label) {
+      value = canonicalizeEntityValue(trimmedLabel, { stripLegalSuffix: true });
+
+      const companyExists = await prisma.company.findFirst({
+        where: {
+          value,
+          createdBy: user.id,
+        },
+      });
+
+      if (companyExists && companyExists.id !== id) {
+        throw new Error("Company already exists!");
+      }
     }
 
     const res = await prisma.company.update({
