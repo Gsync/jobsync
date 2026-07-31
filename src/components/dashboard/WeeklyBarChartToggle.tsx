@@ -154,6 +154,7 @@ export default function WeeklyBarChartToggle({
             enableGridX={false}
             enableGridY={false}
             enableLabel={true}
+            labelSkipHeight={1}
             labelTextColor={{
               from: "color",
               modifiers: [["darker", 1.6]],

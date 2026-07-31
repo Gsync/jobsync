@@ -1,17 +1,14 @@
-import Image from "next/image";
+import { User } from "lucide-react";
 import { CurrentUser } from "@/models/user.model";
-// import { useSession } from "next-auth/react";
+import { Avatar, AvatarFallback } from "./ui/avatar";
 
 export default function UserAvatar({ user }: { user: CurrentUser | null }) {
-  // const { data: session, status } = useSession();
   if (!user) return null;
   return (
-    <Image
-      src="/images/placeholder-user.jpg"
-      width={36}
-      height={36}
-      alt="Avatar"
-      className="overflow-hidden rounded-full"
-    />
+    <Avatar className="h-9 w-9">
+      <AvatarFallback className="bg-muted text-muted-foreground">
+        <User className="h-5 w-5" />
+      </AvatarFallback>
+    </Avatar>
   );
 }
