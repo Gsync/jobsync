@@ -229,6 +229,43 @@ describe("Combobox Enter key", () => {
     });
   });
 
+  // Tailwind's `capitalize` renders a stored "eBay" as "EBay". jsdom applies
+  // no stylesheet, so assert on the class chain around the label instead.
+  describe("label casing", () => {
+    const trademark = [{ id: "ebay-id", value: "ebay", label: "eBay" }];
+
+    function expectNoCapitalize(el: HTMLElement | null) {
+      for (let node = el; node; node = node.parentElement) {
+        expect(node.className).not.toMatch(/(^|\s|:)capitalize(\s|$)/);
+      }
+    }
+
+    it("does not capitalize an option label in the list", async () => {
+      await openCombobox({ options: trademark });
+
+      expectNoCapitalize(screen.getByText("eBay"));
+    });
+
+    it("does not capitalize the create prompt", async () => {
+      const { user, input } = await openCombobox({ options: [] });
+
+      await user.type(input, "eBay");
+
+      expectNoCapitalize(screen.getByText("eBay"));
+    });
+
+    it("does not capitalize the selected label on the trigger", async () => {
+      const { user } = await openCombobox({ options: trademark });
+
+      await user.click(screen.getByText("eBay"));
+
+      await waitFor(() =>
+        expect(screen.queryByPlaceholderText(/Search company/i)).toBeNull()
+      );
+      expectNoCapitalize(screen.getByText("eBay"));
+    });
+  });
+
   describe("preserving cmdk defaults", () => {
     it("still selects an arrow-key highlighted option on Enter", async () => {
       const { user, input, onChange } = await openCombobox();

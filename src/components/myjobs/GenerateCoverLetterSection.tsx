@@ -294,11 +294,7 @@ export const GenerateCoverLetterSection = ({
                   <SelectContent>
                     <SelectGroup>
                       {(resumes ?? []).map((resume) => (
-                        <SelectItem
-                          key={resume.id}
-                          value={resume.id!}
-                          className="capitalize"
-                        >
+                        <SelectItem key={resume.id} value={resume.id!}>
                           {resume.title}
                         </SelectItem>
                       ))}

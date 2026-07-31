@@ -460,7 +460,7 @@ export function AddJob({
                     control={form.control}
                     name="status"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col [&>button]:capitalize">
+                      <FormItem className="flex flex-col">
                         <FormLabel>Status</FormLabel>
                         <SelectFormCtrl
                           label="Job Status"
@@ -538,7 +538,7 @@ export function AddJob({
                     control={form.control}
                     name="resume"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col [&>button]:capitalize">
+                      <FormItem className="flex flex-col">
                         <FormLabel>Resume</FormLabel>
                         <SelectFormCtrl
                           label="Resume"
@@ -566,7 +566,7 @@ export function AddJob({
                     control={form.control}
                     name="coverLetter"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col [&>button]:capitalize">
+                      <FormItem className="flex flex-col">
                         <FormLabel>Cover Letter</FormLabel>
                         <SelectFormCtrl
                           label="Cover Letter"

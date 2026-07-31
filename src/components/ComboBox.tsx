@@ -115,7 +115,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
             variant="outline"
             role="combobox"
             className={cn(
-              "md:w-[240px] lg:w-[280px] justify-between capitalize",
+              "md:w-[240px] lg:w-[280px] justify-between",
               !field.value && "text-muted-foreground"
             )}
           >
@@ -145,7 +145,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
             placeholder={`${creatable ? "Create or " : ""}Search ${field.name}`}
             onKeyDown={(e) => handleEnterKey(e)}
           />
-          <CommandList className="capitalize">
+          <CommandList>
             <CommandEmpty
               onClick={() => {
                 onCreateOption(newOption);

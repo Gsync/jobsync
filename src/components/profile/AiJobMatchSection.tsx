@@ -311,11 +311,7 @@ export const AiJobMatchSection = ({
                   <SelectContent>
                     <SelectGroup>
                       {resumesRef.current.map((resume) => (
-                        <SelectItem
-                          key={resume.id}
-                          value={resume.id!}
-                          className="capitalize"
-                        >
+                        <SelectItem key={resume.id} value={resume.id!}>
                           {resume.title}
                         </SelectItem>
                       ))}

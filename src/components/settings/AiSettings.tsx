@@ -256,7 +256,7 @@ function AiSettings() {
               {AI_PROVIDERS.map((id) => {
                 const entry = PROVIDER_REGISTRY[id];
                 return (
-                  <SelectItem key={id} value={id} className="capitalize">
+                  <SelectItem key={id} value={id}>
                     {entry.displayName}
                   </SelectItem>
                 );
@@ -289,7 +289,7 @@ function AiSettings() {
             <SelectContent>
               <SelectGroup>
                 {fetchedModels.map((model) => (
-                  <SelectItem key={model} value={model} className="capitalize">
+                  <SelectItem key={model} value={model}>
                     {model}
                   </SelectItem>
                 ))}

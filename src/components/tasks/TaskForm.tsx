@@ -204,7 +204,7 @@ export function TaskForm({
                   control={form.control}
                   name="status"
                   render={({ field }) => (
-                    <FormItem className="flex flex-col [&>button]:capitalize">
+                    <FormItem className="flex flex-col">
                       <FormLabel>Status</FormLabel>
                       <SelectFormCtrl
                         label="Task Status"

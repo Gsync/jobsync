@@ -34,11 +34,7 @@ function SelectFormCtrl({ label, options, field }: SelectProps) {
             {options &&
               options.map((option) => {
                 return (
-                  <SelectItem
-                    key={option.id}
-                    value={option.id}
-                    className="capitalize"
-                  >
+                  <SelectItem key={option.id} value={option.id}>
                     {option.label ?? option.value ?? option.title}
                   </SelectItem>
                 );
