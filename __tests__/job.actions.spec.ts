@@ -199,6 +199,7 @@ describe("jobActions", () => {
                 { JobTitle: { label: { contains: "Amazon" } } },
                 { Company: { label: { contains: "Amazon" } } },
                 { Location: { label: { contains: "Amazon" } } },
+                { JobSource: { label: { contains: "Amazon" } } },
                 { description: { contains: "Amazon" } },
               ],
             }),
@@ -211,6 +212,7 @@ describe("jobActions", () => {
                 { JobTitle: { label: { contains: "Amazon" } } },
                 { Company: { label: { contains: "Amazon" } } },
                 { Location: { label: { contains: "Amazon" } } },
+                { JobSource: { label: { contains: "Amazon" } } },
                 { description: { contains: "Amazon" } },
               ],
             }),
@@ -254,6 +256,42 @@ describe("jobActions", () => {
         const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
           Location: { label: { contains: "Remote" } },
+        });
+      });
+
+      it("should search across job source", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, "LinkedIn");
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.OR).toContainEqual({
+          JobSource: { label: { contains: "LinkedIn" } },
+        });
+      });
+
+      it("should exclude JobSource from search OR when sourceValue is set", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(
+          1,
+          10,
+          undefined,
+          "LinkedIn",
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "linkedin",
+        );
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.OR).not.toContainEqual({
+          JobSource: { label: { contains: "LinkedIn" } },
         });
       });
 
@@ -385,6 +423,7 @@ describe("jobActions", () => {
         expect(findManyCall.where.OR).toEqual([
           { JobTitle: { label: { contains: "Developer" } } },
           { Location: { label: { contains: "Developer" } } },
+          { JobSource: { label: { contains: "Developer" } } },
           { description: { contains: "Developer" } },
         ]);
         expect(findManyCall.where.OR).not.toContainEqual({

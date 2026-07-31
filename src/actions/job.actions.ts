@@ -118,6 +118,9 @@ export const getJobsList = async (
       if (!locationValue) {
         searchConditions.push({ Location: { label: { contains: search } } });
       }
+      if (!sourceValue) {
+        searchConditions.push({ JobSource: { label: { contains: search } } });
+      }
       searchConditions.push(
         { description: { contains: search } },
       );
