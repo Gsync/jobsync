@@ -9,7 +9,7 @@ import {
 } from "../ui/card";
 import { Button } from "../ui/button";
 import { SearchInput } from "../SearchInput";
-import { File, ListFilter, Loader, X } from "lucide-react";
+import { File, ListFilter, Loader, RefreshCw, X } from "lucide-react";
 import {
   deleteJobById,
   getJobDetails,
@@ -399,6 +399,19 @@ function JobsContainer({
                 <X className="h-3.5 w-3.5" />
               </button>
             )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 w-8 p-0"
+              disabled={initialLoading}
+              title="Reload jobs"
+              onClick={() => loadJobs(1, filterKey, searchTerm || undefined)}
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${initialLoading ? "animate-spin" : ""}`}
+              />
+              <span className="sr-only">Reload jobs</span>
+            </Button>
             <SearchInput
               value={searchTerm}
               onChange={setSearchTerm}
@@ -422,8 +435,12 @@ function JobsContainer({
                   <SelectItem value="draft">Draft</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
                   <SelectItem value="PT">Part-time</SelectItem>
-                  <SelectItem value="accepted">Accepted (discovered)</SelectItem>
-                  <SelectItem value="dismissed">Dismissed (discovered)</SelectItem>
+                  <SelectItem value="accepted">
+                    Accepted (discovered)
+                  </SelectItem>
+                  <SelectItem value="dismissed">
+                    Dismissed (discovered)
+                  </SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>
