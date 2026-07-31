@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 function Sidebar() {
   const path = usePathname();
   const { expanded } = useSidebar();
+  const isOnDashboard = path === "/dashboard";
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -27,7 +28,11 @@ function Sidebar() {
         <div className="flex h-14 shrink-0 items-center overflow-hidden sm:mt-2">
           <div className="flex w-14 shrink-0 items-center justify-center">
             <Link
-              href="/"
+              href="/dashboard"
+              aria-current={isOnDashboard ? "page" : undefined}
+              onClick={(e) => {
+                if (isOnDashboard) e.preventDefault();
+              }}
               className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground md:h-8 md:w-8"
             >
               <Briefcase className="h-4 w-4 transition-transform group-hover:scale-110" />
