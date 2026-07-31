@@ -18,7 +18,14 @@ import {
   ArrowRight,
   ArrowUp,
   Flame,
+  AlignLeft,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "../StatusBadge";
 import { TASK_STATUS_BADGE_COLORS } from "@/lib/badge-colors";
@@ -52,6 +59,7 @@ import {
   TaskStatus,
 } from "@/models/task.model";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
+import { getDescriptionExcerpt, hasDescription } from "@/lib/tasks/description";
 
 type TasksTableProps = {
   tasks: Task[];
@@ -237,13 +245,29 @@ function TasksTable({
           task.status === "complete" && "line-through",
         )}
       >
-        <button
-          onClick={() => editTask(task.id)}
-          className="text-left hover:underline cursor-pointer"
-          aria-label={`Edit ${task.title}`}
-        >
-          {task.title}
-        </button>
+        <span className="inline-flex items-center gap-1.5">
+          <button
+            onClick={() => editTask(task.id)}
+            className="text-left hover:underline cursor-pointer"
+            aria-label={`Edit ${task.title}`}
+          >
+            {task.title}
+          </button>
+          {hasDescription(task.description) && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AlignLeft
+                  className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                  aria-label="Has description"
+                  data-testid="task-description-indicator"
+                />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-sm text-xs">
+                {getDescriptionExcerpt(task.description)}
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </span>
       </TableCell>
       <TableCell className="py-1 px-2">
         {task.activityType?.label || "—"}
@@ -386,7 +410,7 @@ function TasksTable({
   );
 
   const renderGroupedTables = (entries: [string, Task[]][]) => (
-    <>
+    <TooltipProvider delayDuration={300}>
       {entries.map(([label, groupTasks]) => (
         <div key={label} className="mb-6">
           <h3 className="text-sm font-semibold mb-2 px-2 py-1">
@@ -404,7 +428,7 @@ function TasksTable({
         onOpenChange={setAlertOpen}
         onDelete={() => deleteTask(taskIdToDelete)}
       />
-    </>
+    </TooltipProvider>
   );
 
   const formatDateLabel = (dateStr: string) => {
@@ -457,7 +481,7 @@ function TasksTable({
   }
 
   return (
-    <>
+    <TooltipProvider delayDuration={300}>
       <Table>
         {renderTableHeader()}
         <TableBody>{tasks.map(renderTaskRow)}</TableBody>
@@ -468,7 +492,7 @@ function TasksTable({
         onOpenChange={setAlertOpen}
         onDelete={() => deleteTask(taskIdToDelete)}
       />
-    </>
+    </TooltipProvider>
   );
 }
 
