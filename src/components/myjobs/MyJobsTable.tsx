@@ -98,7 +98,7 @@ function MyJobsTable({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     alt="Company logo"
-                    className="aspect-square rounded-md object-cover h-8 w-8"
+                    className="rounded-md object-cover h-8 w-8 min-w-8"
                     src={job.Company?.logoUrl || "/images/jobsync-logo.svg"}
                     onError={(e) => {
                       e.currentTarget.onerror = null;
