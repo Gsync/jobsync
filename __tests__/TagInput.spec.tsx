@@ -4,14 +4,14 @@ import { Tag } from "@/models/job.model";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createTag } from "@/actions/tag.actions";
-import { toast } from "@/components/ui/use-toast";
+import { toastError } from "@/lib/toast";
 
 vi.mock("@/actions/tag.actions", () => ({
   createTag: vi.fn(),
 }));
 
-vi.mock("@/components/ui/use-toast", () => ({
-  toast: vi.fn(),
+vi.mock("@/lib/toast", () => ({
+  toastError: vi.fn(),
 }));
 
 // Required by Radix UI Popover / Command components
@@ -280,12 +280,7 @@ describe("TagInput Component", () => {
 
     await waitFor(() => {
       expect(createTag).toHaveBeenCalledWith("GraphQL");
-      expect(toast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variant: "destructive",
-          description: "Server error",
-        }),
-      );
+      expect(toastError).toHaveBeenCalledWith("Server error");
     });
   });
 

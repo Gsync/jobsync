@@ -23,7 +23,7 @@ import Link from "next/link";
 import { AlertDialog } from "@/models/alertDialog.model";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { deleteJobTitleById } from "@/actions/jobtitle.actions";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 type JobTitlesTableProps = {
   jobTitles: JobTitle[];
@@ -59,17 +59,10 @@ function JobTitlesTable({ jobTitles, reloadJobTitles }: JobTitlesTableProps) {
     if (titleId) {
       const { success, message } = await deleteJobTitleById(titleId);
       if (success) {
-        toast({
-          variant: "success",
-          description: `Job title has been deleted successfully`,
-        });
+        toastSuccess(`Job title has been deleted successfully`);
         reloadJobTitles();
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: message,
-        });
+        toastError(message);
       }
     }
   };

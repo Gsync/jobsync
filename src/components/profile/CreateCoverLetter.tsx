@@ -24,7 +24,7 @@ import {
 } from "../ui/form";
 import { Input } from "../ui/input";
 import { CoverLetter } from "@/models/profile.model";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import {
   createCoverLetter,
   updateCoverLetter,
@@ -84,21 +84,14 @@ function CreateCoverLetter({
         : await createCoverLetter(data.title, data.content);
 
       if (!success) {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: message,
-        });
+        toastError(message);
       } else {
         reset();
         setDialogOpen(false);
         reloadDocuments();
-        toast({
-          variant: "success",
-          description: `Cover letter has been ${
-            coverLetterToEdit ? "updated" : "created"
-          } successfully`,
-        });
+        toastSuccess(`Cover letter has been ${
+          coverLetterToEdit ? "updated" : "created"
+        } successfully`);
       }
     });
   };

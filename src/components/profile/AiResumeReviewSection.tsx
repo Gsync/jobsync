@@ -15,7 +15,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSheetAutoScroll } from "@/hooks/useSheetAutoScroll";
 import { useResizablePanel } from "@/hooks/useResizablePanel";
 import { APP_CONSTANTS } from "@/lib/constants";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { Resume } from "@/models/profile.model";
 import { AiModel, AiProvider, defaultModel } from "@/models/ai.model";
 import { AiResumeReviewResponseContent } from "./AiResumeReviewResponseContent";
@@ -115,13 +115,9 @@ const AiResumeReviewSection = ({ resume, onReviewSaved }: AiSectionProps) => {
       saveResumeReviewResult(resume.id!, reviewData).then((res) => {
         if (res?.success) {
           onReviewSaved?.(reviewData);
-          toast({ title: "Review saved" });
+          toastSuccess("Review saved");
         } else {
-          toast({
-            variant: "destructive",
-            title: "Error!",
-            description: res?.message || "Failed to save review",
-          });
+          toastError(res?.message || "Failed to save review");
         }
       });
     },
@@ -155,12 +151,9 @@ const AiResumeReviewSection = ({ resume, onReviewSaved }: AiSectionProps) => {
     } catch (err) {
       // Aborting (e.g. closing the sheet) is expected — don't toast.
       if (controller.signal.aborted) return;
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description:
-          err instanceof Error ? err.message : "Failed to get AI review",
-      });
+      toastError(
+        err instanceof Error ? err.message : "Failed to get AI review",
+      );
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
       setIsLoading(false);

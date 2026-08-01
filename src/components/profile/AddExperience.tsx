@@ -23,7 +23,7 @@ import {
 } from "../ui/form";
 import { Input } from "../ui/input";
 import TiptapEditor from "../TiptapEditor";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { Combobox } from "../ComboBox";
 import { DatePicker } from "../DatePicker";
 import { Company, JobLocation, JobTitle } from "@/models/job.model";
@@ -121,20 +121,13 @@ function AddExperience({
         ? await updateExperience(data)
         : await addExperience(data);
       if (!res.success) {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: res.message,
-        });
+        toastError(res.message);
       } else {
         reset();
         setDialogOpen(false);
-        toast({
-          variant: "success",
-          description: `Experience has been ${
-            experienceToEdit ? "updated" : "added"
-          } successfully`,
-        });
+        toastSuccess(`Experience has been ${
+          experienceToEdit ? "updated" : "added"
+        } successfully`);
       }
     });
   };

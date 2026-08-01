@@ -24,7 +24,7 @@ import { Input } from "../ui/input";
 import { DatePicker } from "../DatePicker";
 import { Switch } from "../ui/switch";
 import { useEffect, useTransition } from "react";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import {
   addCertification,
   updateCertification,
@@ -106,20 +106,13 @@ function AddCertification({
         ? await updateCertification(data)
         : await addCertification(data);
       if (!res.success) {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: res.message,
-        });
+        toastError(res.message);
       } else {
         reset();
         setDialogOpen(false);
-        toast({
-          variant: "success",
-          description: `Certification has been ${
-            certificationToEdit ? "updated" : "added"
-          } successfully`,
-        });
+        toastSuccess(`Certification has been ${
+          certificationToEdit ? "updated" : "added"
+        } successfully`);
       }
     });
   };

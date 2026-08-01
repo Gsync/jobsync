@@ -6,7 +6,7 @@ import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { ResponsiveCardHeader } from "@/components/ResponsiveCardHeader";
 import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw } from "lucide-react";
-import { toast } from "@/components/ui/use-toast";
+import { toastError } from "@/lib/toast";
 import { getAutomationsList } from "@/actions/automation.actions";
 import type { AutomationWithResume } from "@/models/automation.model";
 import { AutomationList } from "./AutomationList";
@@ -39,11 +39,7 @@ export function AutomationContainer({ resumes }: AutomationContainerProps) {
     if (result.success && result.data) {
       setAutomations(result.data);
     } else {
-      toast({
-        title: "Error",
-        description: result.message || "Failed to load automations",
-        variant: "destructive",
-      });
+      toastError(result.message || "Failed to load automations");
     }
     setLoading(false);
   }, []);

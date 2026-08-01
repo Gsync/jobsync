@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { buttonVariants } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import {
   ArrowLeft,
   Pause,
@@ -186,11 +186,7 @@ export default function AutomationDetailPage() {
           setAutomation(automationResult.data);
           setRuns(automationResult.data.runs || []);
         } else {
-          toast({
-            title: "Error",
-            description: automationResult.message || "Automation not found",
-            variant: "destructive",
-          });
+          toastError(automationResult.message || "Automation not found");
           router.push("/dashboard/automations");
           return;
         }
@@ -210,11 +206,7 @@ export default function AutomationDetailPage() {
           }
         }
       } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load automation details",
-          variant: "destructive",
-        });
+        toastError("Failed to load automation details");
       }
       if (showLoading) setLoading(false);
     },
@@ -400,19 +392,12 @@ export default function AutomationDetailPage() {
     setActionLoading(false);
 
     if (result.success) {
-      toast({
-        title:
-          automation.status === "active"
-            ? "Automation paused"
-            : "Automation resumed",
-      });
+      toastSuccess(
+        automation.status === "active" ? "Automation paused" : "Automation resumed",
+      );
       loadData();
     } else {
-      toast({
-        title: "Error",
-        description: result.message,
-        variant: "destructive",
-      });
+      toastError(result.message);
     }
   };
 
@@ -438,13 +423,14 @@ export default function AutomationDetailPage() {
       // Run is terminal; drop the live-follow signal so a later LogsTab remount
       // (e.g. switching tabs) doesn't re-init its badge to "Running".
       setRunKey(0);
-      toast({
-        title:
-          latest.status === "cancelled"
-            ? "Run cancelled"
-            : "Automation run complete",
-        description: `Saved ${latest.jobsSaved} new jobs`,
-      });
+      if (latest.status === "cancelled") {
+        toastError(`Saved ${latest.jobsSaved} new jobs`, "Run cancelled");
+      } else {
+        toastSuccess(
+          `Saved ${latest.jobsSaved} new jobs`,
+          "Automation run complete",
+        );
+      }
       loadData();
     };
 
@@ -486,11 +472,7 @@ export default function AutomationDetailPage() {
           setRunKey(0);
           setLogData((prev) => ({ ...prev, isRunning: false }));
         }
-        toast({
-          title: "Error",
-          description: data.message || "Failed to start run",
-          variant: "destructive",
-        });
+        toastError(data.message || "Failed to start run");
       }
       // On success the run is running in the background; the watcher effect
       // above handles completion.
@@ -498,11 +480,7 @@ export default function AutomationDetailPage() {
       setRunNowLoading(false);
       setRunKey(0);
       setLogData((prev) => ({ ...prev, isRunning: false }));
-      toast({
-        title: "Error",
-        description: "Failed to start run",
-        variant: "destructive",
-      });
+      toastError("Failed to start run");
     }
   };
 
@@ -526,14 +504,10 @@ export default function AutomationDetailPage() {
     setDeleteConfirmOpen(false);
 
     if (result.success) {
-      toast({ title: "Automation deleted" });
+      toastSuccess("Automation deleted");
       router.push("/dashboard/automations");
     } else {
-      toast({
-        title: "Error",
-        description: result.message,
-        variant: "destructive",
-      });
+      toastError(result.message);
     }
   };
 

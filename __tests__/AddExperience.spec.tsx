@@ -6,7 +6,7 @@ import { getAllJobLocations } from "@/actions/jobLocation.actions";
 import { screen, render, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ResumeSection } from "@/models/profile.model";
-import { toast } from "@/components/ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 vi.mock("@/actions/profile.actions", () => ({
   addExperience: vi.fn(),
@@ -79,8 +79,9 @@ vi.mock("@/components/DatePicker", () => ({
 }));
 
 // Mock toast
-vi.mock("@/components/ui/use-toast", () => ({
-  toast: vi.fn(),
+vi.mock("@/lib/toast", () => ({
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
 }));
 
 describe("AddExperience Component", () => {
@@ -543,11 +544,8 @@ describe("AddExperience Component", () => {
 
     await waitFor(() => {
       expect(mockSetDialogOpen).toHaveBeenCalledWith(false);
-      expect(toast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variant: "success",
-          description: "Experience has been added successfully",
-        })
+      expect(toastSuccess).toHaveBeenCalledWith(
+        "Experience has been added successfully"
       );
     });
   });
@@ -606,13 +604,7 @@ describe("AddExperience Component", () => {
     await user.click(saveButton);
 
     await waitFor(() => {
-      expect(toast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variant: "destructive",
-          title: "Error!",
-          description: "Failed to add experience",
-        })
-      );
+      expect(toastError).toHaveBeenCalledWith("Failed to add experience");
       expect(mockSetDialogOpen).not.toHaveBeenCalledWith(false);
     });
   });
@@ -676,11 +668,8 @@ describe("AddExperience Component", () => {
     await user.click(saveButton);
 
     await waitFor(() => {
-      expect(toast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variant: "success",
-          description: "Experience has been updated successfully",
-        })
+      expect(toastSuccess).toHaveBeenCalledWith(
+        "Experience has been updated successfully"
       );
     });
   });

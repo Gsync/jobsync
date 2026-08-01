@@ -12,7 +12,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import { Label } from "../ui/label";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -130,11 +130,7 @@ function ApiKeySettings() {
       const verifyData = await verifyRes.json();
 
       if (!verifyData.success) {
-        toast({
-          variant: "destructive",
-          title: "Verification failed",
-          description: verifyData.error || "Could not verify the key",
-        });
+        toastError(verifyData.error || "Could not verify the key", "Verification failed");
         return;
       }
 
@@ -145,28 +141,16 @@ function ApiKeySettings() {
         sensitive: providerConfig?.sensitive ?? true,
       });
       if (saveResult.success) {
-        toast({
-          variant: "success",
-          title: "API key saved",
-          description: `${PROVIDERS.find((p) => p.id === provider)?.name} key verified and saved.`,
-        });
+        toastSuccess(`${PROVIDERS.find((p) => p.id === provider)?.name} key verified and saved.`, "API key saved");
         setEditingProvider(null);
         setInputValue("");
         await fetchKeys();
       } else {
-        toast({
-          variant: "destructive",
-          title: "Save failed",
-          description: saveResult.message || "Failed to save API key",
-        });
+        toastError(saveResult.message || "Failed to save API key", "Save failed");
       }
     } catch (error) {
       console.error("Error saving API key:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "An unexpected error occurred",
-      });
+      toastError("An unexpected error occurred");
     } finally {
       setVerifying(false);
     }
@@ -177,18 +161,10 @@ function ApiKeySettings() {
     try {
       const result = await deleteApiKey(provider);
       if (result.success) {
-        toast({
-          variant: "success",
-          title: "API key deleted",
-          description: `${PROVIDERS.find((p) => p.id === provider)?.name} key removed.`,
-        });
+        toastSuccess(`${PROVIDERS.find((p) => p.id === provider)?.name} key removed.`, "API key deleted");
         await fetchKeys();
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: result.message || "Failed to delete API key",
-        });
+        toastError(result.message || "Failed to delete API key");
       }
     } catch (error) {
       console.error("Error deleting API key:", error);

@@ -17,7 +17,7 @@ import {
 import { ActivityForm } from "./ActivityForm";
 import { getActivitiesList } from "@/actions/activity.actions";
 import { Activity } from "@/models/activity.model";
-import { toast } from "../ui/use-toast";
+import { toastError } from "@/lib/toast";
 import Loading from "../Loading";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { RecordsCount } from "../RecordsCount";
@@ -56,18 +56,10 @@ function ActivitiesContainer() {
           setTotalActivities(total);
           setPage(page);
         } else {
-          toast({
-            variant: "destructive",
-            title: "Error!",
-            description: message,
-          });
+          toastError(message);
         }
       } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: "Failed to load activities. Please try again.",
-        });
+        toastError("Failed to load activities. Please try again.");
       } finally {
         setInitialLoading(false);
         setLoadingMore(false);

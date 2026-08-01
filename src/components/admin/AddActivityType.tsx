@@ -22,7 +22,7 @@ import {
   FormMessage,
 } from "../ui/form";
 import { Input } from "../ui/input";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { createActivityType } from "@/actions/activity.actions";
 
 const AddActivityTypeFormSchema = z.object({
@@ -58,19 +58,12 @@ function AddActivityType({ reloadActivityTypes }: AddActivityTypeProps) {
     startTransition(async () => {
       try {
         await createActivityType(values.label);
-        toast({
-          variant: "success",
-          description: "Activity type has been added successfully.",
-        });
+        toastSuccess("Activity type has been added successfully.");
         setDialogOpen(false);
         reset();
         reloadActivityTypes();
       } catch {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: "Failed to create activity type.",
-        });
+        toastError("Failed to create activity type.");
       }
     });
   };

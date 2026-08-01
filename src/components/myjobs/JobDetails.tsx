@@ -59,7 +59,7 @@ import {
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { AddJob } from "./AddJob";
 import { deleteJobById, updateJobStatus } from "@/actions/job.actions";
-import { toast } from "../ui/use-toast";
+import { toastError, toastSuccess } from "@/lib/toast";
 
 type JobDetailsProps = {
   job: JobResponse;
@@ -139,33 +139,19 @@ function JobDetails({
     const { success, message } = await updateJobStatus(job.id, status);
     if (success) {
       setCurrentStatus(status);
-      toast({
-        variant: "success",
-        description: `Job has been updated successfully`,
-      });
+      toastSuccess(`Job has been updated successfully`);
     } else {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: message,
-      });
+      toastError(message);
     }
   };
 
   const onDeleteJob = async () => {
     const { success, message } = await deleteJobById(job.id);
     if (success) {
-      toast({
-        variant: "success",
-        description: `Job has been deleted successfully`,
-      });
+      toastSuccess(`Job has been deleted successfully`);
       router.push("/dashboard/myjobs");
     } else {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: message,
-      });
+      toastError(message);
     }
   };
 

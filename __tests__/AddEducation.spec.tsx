@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import AddEducation from "@/components/profile/AddEducation";
 import { addEducation, updateEducation } from "@/actions/profile.actions";
 import { getAllJobLocations } from "@/actions/jobLocation.actions";
-import { toast } from "@/components/ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 // Mock the actions
 vi.mock("@/actions/profile.actions", () => ({
@@ -16,8 +16,9 @@ vi.mock("@/actions/jobLocation.actions", () => ({
 }));
 
 // Mock toast
-vi.mock("@/components/ui/use-toast", () => ({
-  toast: vi.fn(),
+vi.mock("@/lib/toast", () => ({
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
 }));
 
 // Mock Combobox component
@@ -480,11 +481,8 @@ describe("AddEducation Component", () => {
 
     await waitFor(() => {
       expect(mockSetDialogOpen).toHaveBeenCalledWith(false);
-      expect(toast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variant: "success",
-          description: expect.stringContaining("added"),
-        })
+      expect(toastSuccess).toHaveBeenCalledWith(
+        "Education has been added successfully"
       );
     });
   });
@@ -546,13 +544,7 @@ describe("AddEducation Component", () => {
     await user.click(saveButton);
 
     await waitFor(() => {
-      expect(toast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variant: "destructive",
-          title: "Error!",
-          description: "Failed to add education",
-        })
-      );
+      expect(toastError).toHaveBeenCalledWith("Failed to add education");
       expect(mockSetDialogOpen).not.toHaveBeenCalledWith(false);
     });
   });
@@ -618,11 +610,8 @@ describe("AddEducation Component", () => {
     await user.click(saveButton);
 
     await waitFor(() => {
-      expect(toast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variant: "success",
-          description: expect.stringContaining("updated"),
-        })
+      expect(toastSuccess).toHaveBeenCalledWith(
+        "Education has been updated successfully"
       );
     });
   });

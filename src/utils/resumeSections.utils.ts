@@ -1,4 +1,4 @@
-import { toast } from "@/components/ui/use-toast";
+import { toastError } from "@/lib/toast";
 import {
   buildInsufficientSectionsMessage,
   hasMinResumeSections,
@@ -10,9 +10,5 @@ export const warnInsufficientResumeSections = (
   action: string,
   hint?: string,
 ): void => {
-  toast({
-    variant: "destructive",
-    title: "Not enough content",
-    description: buildInsufficientSectionsMessage(action, hint),
-  });
+  toastError(buildInsufficientSectionsMessage(action, hint), "Not enough content");
 };

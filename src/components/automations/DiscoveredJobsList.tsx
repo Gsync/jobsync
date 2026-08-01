@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { toast } from "@/components/ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -169,24 +169,13 @@ export function DiscoveredJobsList({
     try {
       const result = await analyzeDiscoveredJob(jobId);
       if (result.success) {
-        toast({
-          title: "Match analyzed",
-          description: "AI match score is ready.",
-        });
+        toastSuccess("AI match score is ready.", "Match analyzed");
         onRefresh();
       } else {
-        toast({
-          title: "Error",
-          description: result.message,
-          variant: "destructive",
-        });
+        toastError(result.message);
       }
     } catch {
-      toast({
-        title: "Error",
-        description: "Failed to analyze job",
-        variant: "destructive",
-      });
+      toastError("Failed to analyze job");
     } finally {
       setLoadingAction(null);
     }
@@ -197,24 +186,13 @@ export function DiscoveredJobsList({
     try {
       const result = await acceptDiscoveredJob(job.id);
       if (result.success) {
-        toast({
-          title: "Job accepted",
-          description: "The job has been added to your tracked jobs.",
-        });
+        toastSuccess("The job has been added to your tracked jobs.", "Job accepted");
         onRefresh();
       } else {
-        toast({
-          title: "Error",
-          description: result.message,
-          variant: "destructive",
-        });
+        toastError(result.message);
       }
     } catch {
-      toast({
-        title: "Error",
-        description: "Failed to accept job",
-        variant: "destructive",
-      });
+      toastError("Failed to accept job");
     } finally {
       setLoadingAction(null);
     }
@@ -225,21 +203,13 @@ export function DiscoveredJobsList({
     try {
       const result = await dismissDiscoveredJob(jobId);
       if (result.success) {
-        toast({ title: "Job dismissed" });
+        toastSuccess("Job dismissed");
         onRefresh();
       } else {
-        toast({
-          title: "Error",
-          description: result.message,
-          variant: "destructive",
-        });
+        toastError(result.message);
       }
     } catch {
-      toast({
-        title: "Error",
-        description: "Failed to dismiss job",
-        variant: "destructive",
-      });
+      toastError("Failed to dismiss job");
     } finally {
       setLoadingAction(null);
     }
@@ -255,17 +225,10 @@ export function DiscoveredJobsList({
     setClearOpen(false);
 
     if (result.success) {
-      toast({
-        title: "Discovered jobs cleared",
-        description: `Removed ${result.deleted ?? 0} job(s).`,
-      });
+      toastSuccess(`Removed ${result.deleted ?? 0} job(s).`, "Discovered jobs cleared");
       onRefresh();
     } else {
-      toast({
-        title: "Error",
-        description: result.message,
-        variant: "destructive",
-      });
+      toastError(result.message);
     }
   };
 

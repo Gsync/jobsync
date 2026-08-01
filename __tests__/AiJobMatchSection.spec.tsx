@@ -31,9 +31,11 @@ vi.mock("@/utils/ai.utils", () => ({
   checkOllamaConnection: vi.fn().mockResolvedValue({ isConnected: true }),
 }));
 
-const mockToast = vi.fn();
-vi.mock("@/components/ui/use-toast", () => ({
-  toast: (...args: any[]) => mockToast(...args),
+const mockToastSuccess = vi.fn();
+const mockToastError = vi.fn();
+vi.mock("@/lib/toast", () => ({
+  toastSuccess: (...args: any[]) => mockToastSuccess(...args),
+  toastError: (...args: any[]) => mockToastError(...args),
 }));
 
 vi.mock("@/components/profile/AiJobMatchResponseContent", () => ({
@@ -150,7 +152,7 @@ describe("AiJobMatchSection – auto-save", () => {
     render(<AiJobMatchSection {...defaultProps} />);
 
     await waitFor(() => {
-      expect(mockToast).toHaveBeenCalledWith({ title: "Match result saved" });
+      expect(mockToastSuccess).toHaveBeenCalledWith("Match result saved");
     });
   });
 
@@ -208,11 +210,7 @@ describe("AiJobMatchSection – auto-save", () => {
     render(<AiJobMatchSection {...defaultProps} />);
 
     await waitFor(() => {
-      expect(mockToast).toHaveBeenCalledWith({
-        variant: "destructive",
-        title: "Error!",
-        description: "DB error",
-      });
+      expect(mockToastError).toHaveBeenCalledWith("DB error");
     });
 
     expect(defaultProps.onMatchSaved).not.toHaveBeenCalled();

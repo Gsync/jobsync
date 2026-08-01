@@ -39,7 +39,7 @@ import { getAllJobTitles, createJobTitle } from "@/actions/jobtitle.actions";
 import { getAllTags, createTag } from "@/actions/tag.actions";
 import { getAllJobLocations } from "@/actions/jobLocation.actions";
 import { createLocation } from "@/actions/job.actions";
-import { toast } from "@/components/ui/use-toast";
+import { toastError } from "@/lib/toast";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type {
@@ -143,11 +143,7 @@ function EntityStringChipInput({
     startCreate(async () => {
       const created = await createOption(lbl);
       if (!created) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: `Failed to create ${noun}.`,
-        });
+        toastError(`Failed to create ${noun}.`);
         return;
       }
       setOptions((prev) =>

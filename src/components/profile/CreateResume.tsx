@@ -25,7 +25,7 @@ import {
 import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
 import { Resume } from "@/models/profile.model";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { AiModel, AiProvider, defaultModel } from "@/models/ai.model";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { checkOllamaConnection } from "@/utils/ai.utils";
@@ -146,11 +146,7 @@ function CreateResume({
       });
       const response = await res.json();
       if (!response.success) {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: response?.message,
-        });
+        toastError(response?.message);
         return;
       }
 
@@ -183,10 +179,7 @@ function CreateResume({
       if (newResumeId) {
         setNewResumeId(newResumeId);
       }
-      toast({
-        variant: "success",
-        description: `Resume title has been ${resumeToEdit ? "updated" : "created"} successfully`,
-      });
+      toastSuccess(`Resume title has been ${resumeToEdit ? "updated" : "created"} successfully`);
     });
   };
 

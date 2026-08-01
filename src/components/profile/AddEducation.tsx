@@ -25,7 +25,7 @@ import { DatePicker } from "../DatePicker";
 import { Switch } from "../ui/switch";
 import TiptapEditor from "../TiptapEditor";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { Combobox } from "../ComboBox";
 import { JobLocation } from "@/models/job.model";
 import { addEducation, updateEducation } from "@/actions/profile.actions";
@@ -128,20 +128,13 @@ function AddEducation({
         ? await updateEducation(data)
         : await addEducation(data);
       if (!res.success) {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: res.message,
-        });
+        toastError(res.message);
       } else {
         reset();
         setDialogOpen(false);
-        toast({
-          variant: "success",
-          description: `Education has been ${
-            educationToEdit ? "updated" : "added"
-          } successfully`,
-        });
+        toastSuccess(`Education has been ${
+          educationToEdit ? "updated" : "added"
+        } successfully`);
       }
     });
   };

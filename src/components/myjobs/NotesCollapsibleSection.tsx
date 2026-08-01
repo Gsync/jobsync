@@ -16,7 +16,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../ui/collapsible";
-import { toast } from "../ui/use-toast";
+import { toastError, toastSuccess } from "@/lib/toast";
 import TiptapEditor from "../TiptapEditor";
 
 type NotesCollapsibleSectionProps = {
@@ -77,18 +77,11 @@ export function NotesCollapsibleSection({
         : await addNote({ jobId, content: editorContent });
 
       if (result.success) {
-        toast({
-          variant: "success",
-          description: `Note ${editingNote ? "updated" : "added"} successfully`,
-        });
+        toastSuccess(`Note ${editingNote ? "updated" : "added"} successfully`);
         handleCancel();
         loadNotes();
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: result.message,
-        });
+        toastError(result.message);
       }
     });
   };
@@ -103,18 +96,11 @@ export function NotesCollapsibleSection({
     startTransition(async () => {
       const result = await deleteNote(deleteConfirmId);
       if (result.success) {
-        toast({
-          variant: "success",
-          description: "Note deleted successfully",
-        });
+        toastSuccess("Note deleted successfully");
         setDeleteConfirmId(null);
         loadNotes();
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: result.message,
-        });
+        toastError(result.message);
       }
     });
   };

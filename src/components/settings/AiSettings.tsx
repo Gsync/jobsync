@@ -22,7 +22,7 @@ import {
 } from "../ui/select";
 import { Label } from "../ui/label";
 import { Button } from "../ui/button";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { XCircle, Loader2, RefreshCw } from "lucide-react";
 import { checkOllamaConnection } from "@/utils/ai.utils";
 import { getUserSettings, updateAiSettings } from "@/actions/userSettings.actions";
@@ -173,11 +173,7 @@ function AiSettings() {
 
   const saveModelSettings = async () => {
     if (!selectedModel.model) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please select a model to save.",
-      });
+      toastError("Please select a model to save.");
       return;
     }
     setIsSaving(true);
@@ -187,25 +183,13 @@ function AiSettings() {
         model: selectedModel.model,
       });
       if (result.success) {
-        toast({
-          variant: "success",
-          title: "Saved!",
-          description: "AI Settings saved successfully.",
-        });
+        toastSuccess("AI Settings saved successfully.", "Saved!");
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: result.message || "Failed to save AI settings.",
-        });
+        toastError(result.message || "Failed to save AI settings.");
       }
     } catch (error) {
       console.error("Error saving AI settings:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to save AI settings.",
-      });
+      toastError("Failed to save AI settings.");
     } finally {
       setIsSaving(false);
     }

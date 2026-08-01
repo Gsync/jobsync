@@ -12,9 +12,11 @@ vi.mock("@/actions/profile.actions", () => ({
   getResumeCopyTitleSuggestion: vi.fn(),
 }));
 
-const mockToast = vi.fn();
-vi.mock("@/components/ui/use-toast", () => ({
-  toast: (args: any) => mockToast(args),
+const mockToastError = vi.fn();
+const mockToastSuccess = vi.fn();
+vi.mock("@/lib/toast", () => ({
+  toastError: (...args: any[]) => mockToastError(...args),
+  toastSuccess: (...args: any[]) => mockToastSuccess(...args),
 }));
 
 const sourceDoc: ProfileDocument = {
@@ -88,8 +90,8 @@ describe("CopyResumeDialog", () => {
     );
     await waitFor(() => expect(onCopied).toHaveBeenCalled());
     expect(setOpen).toHaveBeenCalledWith(false);
-    expect(mockToast).toHaveBeenCalledWith(
-      expect.objectContaining({ variant: "success" }),
+    expect(mockToastSuccess).toHaveBeenCalledWith(
+      'Copy created: "Backend Resume (Copy)"',
     );
   });
 
@@ -109,12 +111,7 @@ describe("CopyResumeDialog", () => {
     await user.click(screen.getByRole("button", { name: /create copy/i }));
 
     await waitFor(() =>
-      expect(mockToast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variant: "destructive",
-          description: "Failed to copy resume.",
-        }),
-      ),
+      expect(mockToastError).toHaveBeenCalledWith("Failed to copy resume."),
     );
     expect(onCopied).not.toHaveBeenCalled();
   });

@@ -5,7 +5,7 @@ import { addCompany } from "@/actions/company.actions";
 import { createLocation, createJobSource } from "@/actions/job.actions";
 import { createJobTitle } from "@/actions/jobtitle.actions";
 import { createActivityType } from "@/actions/activity.actions";
-import { toast } from "@/components/ui/use-toast";
+import { toastError } from "@/lib/toast";
 import { useForm } from "react-hook-form";
 import { Form, FormField, FormItem } from "@/components/ui/form";
 import {
@@ -32,8 +32,8 @@ vi.mock("@/actions/activity.actions", () => ({
   createActivityType: vi.fn(),
 }));
 
-vi.mock("@/components/ui/use-toast", () => ({
-  toast: vi.fn(),
+vi.mock("@/lib/toast", () => ({
+  toastError: vi.fn(),
 }));
 
 // jsdom lacks scrollIntoView, which cmdk calls when selecting an item
@@ -321,7 +321,7 @@ describe("Combobox Enter key", () => {
 
       await user.type(input, "Toronto{Enter}");
 
-      await waitFor(() => expect(toast).toHaveBeenCalled());
+      await waitFor(() => expect(toastError).toHaveBeenCalled());
       expect(onChange).not.toHaveBeenCalled();
     });
 
@@ -338,7 +338,7 @@ describe("Combobox Enter key", () => {
 
       await user.type(input, "Referral{Enter}");
 
-      await waitFor(() => expect(toast).toHaveBeenCalled());
+      await waitFor(() => expect(toastError).toHaveBeenCalled());
       expect(onChange).not.toHaveBeenCalled();
     });
   });

@@ -1,22 +1,19 @@
 import { warnInsufficientResumeSections } from "@/utils/resumeSections.utils";
 import { buildInsufficientSectionsMessage } from "@/lib/resumeSections";
 
-const mockToast = vi.fn();
-vi.mock("@/components/ui/use-toast", () => ({
-  toast: (...args: any[]) => mockToast(...args),
+const mockToastError = vi.fn();
+vi.mock("@/lib/toast", () => ({
+  toastError: (...args: any[]) => mockToastError(...args),
 }));
 
 describe("warnInsufficientResumeSections", () => {
   it("shows a destructive toast with the built message", () => {
     warnInsufficientResumeSections("setting this resume as default");
 
-    expect(mockToast).toHaveBeenCalledWith({
-      variant: "destructive",
-      title: "Not enough content",
-      description: buildInsufficientSectionsMessage(
-        "setting this resume as default",
-      ),
-    });
+    expect(mockToastError).toHaveBeenCalledWith(
+      buildInsufficientSectionsMessage("setting this resume as default"),
+      "Not enough content",
+    );
   });
 
   it("forwards the hint through to the built message", () => {
@@ -25,13 +22,12 @@ describe("warnInsufficientResumeSections", () => {
       "e.g. Summary and Experience",
     );
 
-    expect(mockToast).toHaveBeenCalledWith({
-      variant: "destructive",
-      title: "Not enough content",
-      description: buildInsufficientSectionsMessage(
+    expect(mockToastError).toHaveBeenCalledWith(
+      buildInsufficientSectionsMessage(
         "running a review",
         "e.g. Summary and Experience",
       ),
-    });
+      "Not enough content",
+    );
   });
 });

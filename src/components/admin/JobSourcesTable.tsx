@@ -23,7 +23,7 @@ import Link from "next/link";
 import { AlertDialog } from "@/models/alertDialog.model";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { deleteJobSourceById } from "@/actions/jobSource.actions";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 type JobSourcesTableProps = {
   jobSources: JobSource[];
@@ -63,17 +63,10 @@ function JobSourcesTable({
     if (sourceId) {
       const { success, message } = await deleteJobSourceById(sourceId);
       if (success) {
-        toast({
-          variant: "success",
-          description: `Job source has been deleted successfully`,
-        });
+        toastSuccess(`Job source has been deleted successfully`);
         reloadJobSources();
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: message,
-        });
+        toastError(message);
       }
     }
   };

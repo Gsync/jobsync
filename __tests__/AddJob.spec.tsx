@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/utils/user.utils";
 import userEvent from "@testing-library/user-event";
 import { format } from "date-fns";
 import { addJob, updateJob } from "@/actions/job.actions";
-import { toast } from "@/components/ui/use-toast";
+import { toastActionResult } from "@/lib/toast";
 import type { JobResponse } from "@/models/job.model";
 vi.mock("@/utils/user.utils", () => ({
   getCurrentUser: vi.fn(),
@@ -25,8 +25,10 @@ vi.mock("@/actions/note.actions", () => ({
   deleteNote: vi.fn(),
 }));
 
-vi.mock("@/components/ui/use-toast", () => ({
-  toast: vi.fn(),
+vi.mock("@/lib/toast", () => ({
+  toastActionResult: vi.fn((result, opts) => {
+    if (result?.success) opts.onSuccess?.(result.data);
+  }),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -443,12 +445,9 @@ describe("AddJob Component - Error Handling", () => {
     await user.click(screen.getByTestId("save-job-btn"));
 
     await waitFor(() => {
-      expect(toast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to save job",
-        }),
+      expect(toastActionResult).toHaveBeenCalledWith(
+        expect.objectContaining({ success: false, message: "Failed to save job" }),
+        expect.objectContaining({ success: "Job has been created successfully" }),
       );
     });
   }, 10000);

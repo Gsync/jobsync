@@ -10,6 +10,7 @@ import {
 import AiResumeReviewSection from "@/components/profile/AiResumeReviewSection";
 import { Resume, SectionType } from "@/models/profile.model";
 import type { ResumeReviewResult } from "@/utils/streamResumeReview.utils";
+import { buildInsufficientSectionsMessage } from "@/lib/resumeSections";
 
 const mockStreamResumeReview = vi.fn();
 vi.mock("@/utils/streamResumeReview.utils", () => ({
@@ -33,9 +34,11 @@ vi.mock("@/utils/ai.utils", () => ({
   checkOllamaConnection: vi.fn().mockResolvedValue({ isConnected: true }),
 }));
 
-const mockToast = vi.fn();
-vi.mock("@/components/ui/use-toast", () => ({
-  toast: (...args: any[]) => mockToast(...args),
+const mockToastSuccess = vi.fn();
+const mockToastError = vi.fn();
+vi.mock("@/lib/toast", () => ({
+  toastSuccess: (...args: any[]) => mockToastSuccess(...args),
+  toastError: (...args: any[]) => mockToastError(...args),
 }));
 
 vi.mock("@/components/profile/AiResumeReviewResponseContent", () => ({
@@ -143,11 +146,12 @@ describe("AiResumeReviewSection – Generate AI Review button", () => {
   it("shows toast error when resume has fewer than 2 sections", () => {
     render(<AiResumeReviewSection resume={makeResume(1)} />);
     fireEvent.click(getGenerateButton());
-    expect(mockToast).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variant: "destructive",
-        title: "Not enough content",
-      }),
+    expect(mockToastError).toHaveBeenCalledWith(
+      buildInsufficientSectionsMessage(
+        "running a review",
+        "e.g. Summary and Experience",
+      ),
+      "Not enough content",
     );
     expect(mockStreamResumeReview).not.toHaveBeenCalled();
   });
@@ -260,7 +264,7 @@ describe("AiResumeReviewSection – auto-save", () => {
     fireEvent.click(getGenerateButton());
 
     await waitFor(() => {
-      expect(mockToast).toHaveBeenCalledWith({ title: "Review saved" });
+      expect(mockToastSuccess).toHaveBeenCalledWith("Review saved");
     });
   });
 
@@ -337,11 +341,7 @@ describe("AiResumeReviewSection – auto-save", () => {
     fireEvent.click(getGenerateButton());
 
     await waitFor(() => {
-      expect(mockToast).toHaveBeenCalledWith({
-        variant: "destructive",
-        title: "Error!",
-        description: "DB error",
-      });
+      expect(mockToastError).toHaveBeenCalledWith("DB error");
     });
 
     expect(onReviewSaved).not.toHaveBeenCalled();

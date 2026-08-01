@@ -10,7 +10,7 @@ import {
   startActivityById,
   stopActivityById,
 } from "@/actions/activity.actions";
-import { toast } from "@/components/ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { APP_CONSTANTS } from "@/lib/constants";
 
 vi.mock("@/actions/activity.actions", () => ({
@@ -20,8 +20,9 @@ vi.mock("@/actions/activity.actions", () => ({
   deleteActivityById: vi.fn(),
 }));
 
-vi.mock("@/components/ui/use-toast", () => ({
-  toast: vi.fn(),
+vi.mock("@/lib/toast", () => ({
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
 }));
 
 function TestHarness() {
@@ -75,13 +76,10 @@ describe("ActivityContext stopActivity duration guard", () => {
       expect(deleteActivityById).toHaveBeenCalledWith("act-short");
     });
     expect(stopActivityById).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variant: "destructive",
-        description: expect.stringContaining(
-          `less than ${APP_CONSTANTS.ACTIVITY_MIN_DURATION_MINUTES} minutes`
-        ),
-      })
+    expect(toastError).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `less than ${APP_CONSTANTS.ACTIVITY_MIN_DURATION_MINUTES} minutes`
+      )
     );
     await waitFor(() =>
       expect(screen.getByTestId("current")).toHaveTextContent("none")
@@ -105,9 +103,7 @@ describe("ActivityContext stopActivity duration guard", () => {
       );
     });
     expect(deleteActivityById).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith(
-      expect.objectContaining({ variant: "success" })
-    );
+    expect(toastSuccess).toHaveBeenCalledWith("Activity stopped successfully");
     await waitFor(() =>
       expect(screen.getByTestId("current")).toHaveTextContent("none")
     );
@@ -132,13 +128,7 @@ describe("ActivityContext stopActivity duration guard", () => {
     await user.click(screen.getByText("Stop"));
 
     await waitFor(() => {
-      expect(toast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variant: "destructive",
-          title: "Error!",
-          description: "Failed to delete activity.",
-        })
-      );
+      expect(toastError).toHaveBeenCalledWith("Failed to delete activity.");
     });
     expect(stopActivityById).not.toHaveBeenCalled();
     expect(screen.getByTestId("current")).toHaveTextContent("act-fail");

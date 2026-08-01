@@ -19,7 +19,7 @@ import {
 } from "../ui/form";
 import { Input } from "../ui/input";
 import { useEffect, useTransition } from "react";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { z } from "zod";
 import TiptapEditor from "../TiptapEditor";
 import {
@@ -80,20 +80,13 @@ function AddResumeSummary({
         ? await updateResumeSummary(data)
         : await addResumeSummary(data);
       if (!res.success) {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: res.message,
-        });
+        toastError(res.message);
       } else {
         reset();
         setDialogOpen(false);
-        toast({
-          variant: "success",
-          description: `Summary has been ${
-            summaryToEdit ? "updated" : "created"
-          } successfully`,
-        });
+        toastSuccess(`Summary has been ${
+          summaryToEdit ? "updated" : "created"
+        } successfully`);
       }
     });
   };

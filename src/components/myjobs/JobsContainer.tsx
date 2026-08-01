@@ -16,7 +16,7 @@ import {
   getJobsList,
   updateJobStatus,
 } from "@/actions/job.actions";
-import { toast } from "../ui/use-toast";
+import { toastError, toastSuccess } from "@/lib/toast";
 import {
   Company,
   JobLocation,
@@ -177,11 +177,7 @@ function JobsContainer({
         setTotalJobs(total);
         setPage(page);
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: message,
-        });
+        toastError(message);
       }
       setInitialLoading(false);
       setLoadingMore(false);
@@ -206,16 +202,9 @@ function JobsContainer({
   const onDeleteJob = async (jobId: string) => {
     const { res, success, message } = await deleteJobById(jobId);
     if (success) {
-      toast({
-        variant: "success",
-        description: `Job has been deleted successfully`,
-      });
+      toastSuccess(`Job has been deleted successfully`);
     } else {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: message,
-      });
+      toastError(message);
     }
     reloadJobs();
   };
@@ -223,11 +212,7 @@ function JobsContainer({
   const onEditJob = async (jobId: string) => {
     const { job, success, message } = await getJobDetails(jobId);
     if (!success) {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: message,
-      });
+      toastError(message);
       return;
     }
     setEditJob(job);
@@ -237,16 +222,9 @@ function JobsContainer({
     const { success, message } = await updateJobStatus(jobId, jobStatus);
     if (success) {
       router.refresh();
-      toast({
-        variant: "success",
-        description: `Job has been updated successfully`,
-      });
+      toastSuccess(`Job has been updated successfully`);
     } else {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: message,
-      });
+      toastError(message);
     }
     reloadJobs();
   };
@@ -334,17 +312,11 @@ function JobsContainer({
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast({
-        variant: "success",
-        title: "Downloaded successfully!",
-      });
+      toastSuccess("Downloaded successfully!");
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description:
-          error instanceof Error ? error.message : "Unknown error occurred.",
-      });
+      toastError(
+        error instanceof Error ? error.message : "Unknown error occurred.",
+      );
     }
   };
 

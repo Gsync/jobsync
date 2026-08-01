@@ -22,7 +22,7 @@ import { JobLocation } from "@/models/job.model";
 import { Briefcase, MoreVertical, Trash } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog } from "@/models/alertDialog.model";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { deleteJobLocationById } from "@/actions/jobLocation.actions";
 
 type JobLocationsTableProps = {
@@ -61,17 +61,10 @@ function JobLocationsTable({
     if (locationId) {
       const { success, message } = await deleteJobLocationById(locationId);
       if (success) {
-        toast({
-          variant: "success",
-          description: `Job location has been deleted successfully`,
-        });
+        toastSuccess(`Job location has been deleted successfully`);
         reloadJobLocations();
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: message,
-        });
+        toastError(message);
       }
     }
   };

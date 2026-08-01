@@ -1,16 +1,15 @@
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import type { ActionResult } from "@/models/action.model";
 
-export function toastSuccess(description: string, title?: string) {
-  toast({ variant: "success", title, description });
+export function toastSuccess(message: string, title?: string) {
+  if (title) toast.success(title, { description: message });
+  else toast.success(message);
 }
 
-export function toastError(description?: string, title = "Error") {
-  toast({
-    variant: "destructive",
-    title,
-    description: description ?? "Something went wrong. Please try again.",
-  });
+export function toastError(message?: string, title?: string) {
+  const text = message ?? "Something went wrong. Please try again.";
+  if (title) toast.error(title, { description: text });
+  else toast.error(text);
 }
 
 // Collapses the repeated success/error branch into one call.

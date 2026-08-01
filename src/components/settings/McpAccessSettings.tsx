@@ -6,7 +6,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import { Label } from "../ui/label";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import {
   Dialog,
   DialogContent,
@@ -51,11 +51,7 @@ function CopyButton({ text }: { text: string }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast({
-        title: "Copy failed",
-        description: "Couldn't copy to clipboard. Please copy the text manually.",
-        variant: "destructive",
-      });
+      toastError("Couldn't copy to clipboard. Please copy the text manually.", "Copy failed");
     }
   };
   return (
@@ -180,7 +176,7 @@ export default function McpAccessSettings() {
     const result = await createMcpToken({ name: tokenName.trim(), expiryDays });
     setGenerating(false);
     if (!result.success) {
-      toast({ title: "Error", description: result.message, variant: "destructive" });
+      toastError(result.message);
       return;
     }
     setRevealedToken({ token: result.token, name: result.record.name });
@@ -195,11 +191,11 @@ export default function McpAccessSettings() {
     const result = await revokeMcpToken(id);
     setRevoking(null);
     if (!result.success) {
-      toast({ title: "Error", description: result.message ?? "Failed to revoke", variant: "destructive" });
+      toastError(result.message ?? "Failed to revoke");
       return;
     }
     setTokens((prev) => prev.filter((t) => t.id !== id));
-    toast({ title: "Token revoked" });
+    toastSuccess("Token revoked");
   };
 
   return (

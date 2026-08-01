@@ -19,7 +19,7 @@ import { Tag } from "@/models/job.model";
 import { MoreVertical, Trash } from "lucide-react";
 import { useState } from "react";
 import { deleteTagById } from "@/actions/tag.actions";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { AlertDialog } from "@/models/alertDialog.model";
 
@@ -67,17 +67,10 @@ function TagsTable({ tags, reloadTags }: TagsTableProps) {
     if (!tagId) return;
     const { success, message } = await deleteTagById(tagId);
     if (success) {
-      toast({
-        variant: "success",
-        description: "Skill tag has been deleted successfully",
-      });
+      toastSuccess("Skill tag has been deleted successfully");
       reloadTags();
     } else {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: message,
-      });
+      toastError(message);
     }
   };
 

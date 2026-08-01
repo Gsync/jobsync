@@ -20,7 +20,7 @@ import { Button } from "../ui/button";
 import { format } from "date-fns";
 import { Activity, ActivityType } from "@/models/activity.model";
 import { deleteActivityById } from "@/actions/activity.actions";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { useMemo, useState } from "react";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 
@@ -54,17 +54,10 @@ function ActivitiesTable({
   const deleteActivity = async () => {
     const { success, message } = await deleteActivityById(activityIdToDelete!);
     if (success) {
-      toast({
-        variant: "success",
-        description: `Activity has been deleted successfully`,
-      });
+      toastSuccess(`Activity has been deleted successfully`);
       reloadActivities();
     } else {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: message,
-      });
+      toastError(message);
     }
   };
   return (

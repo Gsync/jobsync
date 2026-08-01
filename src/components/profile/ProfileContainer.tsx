@@ -15,7 +15,7 @@ import {
 import { APP_CONSTANTS } from "@/lib/constants";
 import Loading from "../Loading";
 import DocumentTable from "./ResumeTable";
-import { toast } from "../ui/use-toast";
+import { toastError } from "@/lib/toast";
 import { ChevronDown, PlusCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { RecordsCount } from "../RecordsCount";
@@ -55,11 +55,7 @@ const ProfileContainer = () => {
         setTotalResumes(total);
         setPage(page);
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: message,
-        });
+        toastError(message);
       }
     },
     [],
@@ -74,11 +70,7 @@ const ProfileContainer = () => {
       setCoverLetters(data);
       setTotalCoverLetters(total);
     } else {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: message,
-      });
+      toastError(message);
     }
   }, []);
 

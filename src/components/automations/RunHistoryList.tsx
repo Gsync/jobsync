@@ -37,7 +37,7 @@ import {
 import type { AutomationRun, FunnelStage } from "@/models/automation.model";
 import { DeleteAlertDialog } from "@/components/DeleteAlertDialog";
 import { deleteAutomationRun } from "@/actions/automation.actions";
-import { toast } from "@/components/ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 interface RunHistoryListProps {
   runs: AutomationRun[];
@@ -139,14 +139,10 @@ export function RunHistoryList({
     const result = await deleteAutomationRun(deleteRunId);
     setDeleteRunId(null);
     if (result.success) {
-      toast({ title: "Run deleted" });
+      toastSuccess("Run deleted");
       onDelete?.();
     } else {
-      toast({
-        title: "Error",
-        description: result.message,
-        variant: "destructive",
-      });
+      toastError(result.message);
     }
   };
 

@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { toast } from "@/components/ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import {
   Building2,
   MapPin,
@@ -63,18 +63,14 @@ export function DiscoveredJobDetail({
     try {
       const result = await analyzeDiscoveredJob(job.id);
       if (result.success) {
-        toast({ title: "Match analyzed", description: "AI match score is ready." });
+        toastSuccess("AI match score is ready.", "Match analyzed");
         onOpenChange(false);
         onRefresh();
       } else {
-        toast({
-          title: "Error",
-          description: result.message,
-          variant: "destructive",
-        });
+        toastError(result.message);
       }
     } catch {
-      toast({ title: "Error", description: "Failed to analyze job", variant: "destructive" });
+      toastError("Failed to analyze job");
     } finally {
       setLoadingAction(null);
     }
@@ -85,18 +81,14 @@ export function DiscoveredJobDetail({
     try {
       const result = await acceptDiscoveredJob(job.id);
       if (result.success) {
-        toast({ title: "Job accepted", description: "The job has been added to your tracked jobs." });
+        toastSuccess("The job has been added to your tracked jobs.", "Job accepted");
         onOpenChange(false);
         onRefresh();
       } else {
-        toast({
-          title: "Error",
-          description: result.message,
-          variant: "destructive",
-        });
+        toastError(result.message);
       }
     } catch {
-      toast({ title: "Error", description: "Failed to accept job", variant: "destructive" });
+      toastError("Failed to accept job");
     } finally {
       setLoadingAction(null);
     }
@@ -107,18 +99,14 @@ export function DiscoveredJobDetail({
     try {
       const result = await dismissDiscoveredJob(job.id);
       if (result.success) {
-        toast({ title: "Job dismissed" });
+        toastSuccess("Job dismissed");
         onOpenChange(false);
         onRefresh();
       } else {
-        toast({
-          title: "Error",
-          description: result.message,
-          variant: "destructive",
-        });
+        toastError(result.message);
       }
     } catch {
-      toast({ title: "Error", description: "Failed to dismiss job", variant: "destructive" });
+      toastError("Failed to dismiss job");
     } finally {
       setLoadingAction(null);
     }

@@ -23,7 +23,7 @@ import {
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Loader } from "lucide-react";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { TagInput } from "../myjobs/TagInput";
 import { Tag } from "@/models/job.model";
 import { ResumeSection, Skill } from "@/models/profile.model";
@@ -71,7 +71,7 @@ function AddSkills({
       if (Array.isArray(tags)) {
         setAllTags(tags);
       } else {
-        toast({ variant: "destructive", title: "Error", description: "Failed to load skills. Please close and reopen the dialog." });
+        toastError("Failed to load skills. Please close and reopen the dialog.");
       }
     });
 
@@ -125,18 +125,11 @@ function AddSkills({
       }
 
       if (!res.success) {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: res.message,
-        });
+        toastError(res.message);
       } else {
         form.reset();
         setDialogOpen(false);
-        toast({
-          variant: "success",
-          description: `Skills section ${isEditing ? "updated" : "added"} successfully`,
-        });
+        toastSuccess(`Skills section ${isEditing ? "updated" : "added"} successfully`);
       }
     });
   };

@@ -13,7 +13,7 @@ import {
   useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import SummarySectionCard from "./SummarySectionCard";
 import ExperienceCard from "./ExperienceCard";
 import EducationCard from "./EducationCard";
@@ -438,11 +438,10 @@ function ResumeContainer({
         const cards = buildPendingCards(data);
         if (cards.length === 0) {
           setImportMode(false);
-          toast({
-            title: "No sections found",
-            description:
-              "No structured data could be extracted from the document.",
-          });
+          toastError(
+            "No structured data could be extracted from the document.",
+            "No sections found",
+          );
           return;
         }
         setPendingCards(cards);
@@ -454,14 +453,9 @@ function ResumeContainer({
         // Client-initiated abort (unmount/navigation) — not a user-facing error.
         if (abortController.signal.aborted) return;
         setImportMode(false);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description:
-            error instanceof Error
-              ? error.message
-              : "Failed to contact AI service.",
-        });
+        toastError(
+          error instanceof Error ? error.message : "Failed to contact AI service.",
+        );
       } finally {
         if (importAbortRef.current === abortController) {
           importAbortRef.current = null;
@@ -555,11 +549,7 @@ function ResumeContainer({
         setPendingCards((prev) => prev.filter((c) => c.id !== cardId));
         router.refresh();
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: result.message,
-        });
+        toastError(result.message);
       }
     },
     [pendingCards, resume.id, router],
@@ -576,11 +566,7 @@ function ResumeContainer({
     if (result?.success) {
       router.push("/dashboard/profile");
     } else {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: result?.message,
-      });
+      toastError(result?.message);
     }
   };
 
@@ -631,12 +617,10 @@ function ResumeContainer({
         s.skills?.length,
     );
     if (!hasName && !hasSections) {
-      toast({
-        title: "Nothing to export",
-        description:
-          "Add your contact info and at least one section (Summary, Experience, or Education) before exporting.",
-        variant: "destructive",
-      });
+      toastError(
+        "Add your contact info and at least one section (Summary, Experience, or Education) before exporting.",
+        "Nothing to export",
+      );
       return;
     }
 
@@ -648,19 +632,13 @@ function ResumeContainer({
       if (!resume.FileId) {
         triggerDownload(blob, filename);
         await uploadPdfAsAttachment(blob, filename, false);
-        toast({
-          title: "PDF exported",
-          description: "Saved to Downloads and attached to this resume.",
-        });
+        toastSuccess("Saved to Downloads and attached to this resume.", "PDF exported");
       } else {
         setPendingPdf({ blob, filename });
         setShowAttachConfirm(true);
       }
     } catch {
-      toast({
-        title: "Failed to generate PDF. Please try again.",
-        variant: "destructive",
-      });
+      toastError("Failed to generate PDF. Please try again.");
     } finally {
       setIsExporting(false);
     }
@@ -675,21 +653,12 @@ function ResumeContainer({
       triggerDownload(blob, filename);
       if (choice === "replace") {
         await uploadPdfAsAttachment(blob, filename, true);
-        toast({
-          title: "PDF exported",
-          description: "Saved to Downloads and attachment replaced.",
-        });
+        toastSuccess("Saved to Downloads and attachment replaced.", "PDF exported");
       } else {
-        toast({
-          title: "PDF exported",
-          description: "Saved to your Downloads folder.",
-        });
+        toastSuccess("Saved to your Downloads folder.", "PDF exported");
       }
     } catch {
-      toast({
-        title: "Failed to upload PDF. Please try again.",
-        variant: "destructive",
-      });
+      toastError("Failed to upload PDF. Please try again.");
     } finally {
       setIsExporting(false);
       setPendingPdf(null);
@@ -742,11 +711,7 @@ function ResumeContainer({
     if (!skillsSection?.id) return;
     const result = await deleteSkillsSection(skillsSection.id);
     if (!result.success) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: result.message,
-      });
+      toastError(result.message);
     } else {
       router.refresh();
     }
@@ -772,17 +737,10 @@ function ResumeContainer({
     if (!resume?.id) return;
     const { success, message } = await setDefaultResume(resume.id);
     if (success) {
-      toast({
-        variant: "success",
-        description: "This resume is now your default.",
-      });
+      toastSuccess("This resume is now your default.");
       router.refresh();
     } else {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: message,
-      });
+      toastError(message);
     }
   };
 

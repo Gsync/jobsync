@@ -18,7 +18,7 @@ import {
 import { MoreVertical, Trash } from "lucide-react";
 import { useState } from "react";
 import { deleteActivityTypeById } from "@/actions/activity.actions";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { AlertDialog } from "@/models/alertDialog.model";
 
@@ -75,17 +75,10 @@ function ActivityTypesTable({
     if (!id) return;
     const { success, message } = await deleteActivityTypeById(id);
     if (success) {
-      toast({
-        variant: "success",
-        description: "Activity type has been deleted successfully",
-      });
+      toastSuccess("Activity type has been deleted successfully");
       reloadActivityTypes();
     } else {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: message,
-      });
+      toastError(message);
     }
   };
 

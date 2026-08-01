@@ -1,8 +1,8 @@
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { toastSuccess, toastError, toastActionResult } from "@/lib/toast";
 
-vi.mock("@/components/ui/use-toast", () => ({
-  toast: vi.fn(),
+vi.mock("sonner", () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
 }));
 
 beforeEach(() => {
@@ -10,49 +10,41 @@ beforeEach(() => {
 });
 
 describe("toastSuccess", () => {
-  it("toasts a success variant with the given description", () => {
+  it("calls toast.success with just the message when no title is given", () => {
     toastSuccess("Job has been created successfully");
-    expect(toast).toHaveBeenCalledWith({
-      variant: "success",
-      title: undefined,
-      description: "Job has been created successfully",
-    });
+    expect(toast.success).toHaveBeenCalledWith("Job has been created successfully");
   });
 
-  it("accepts an optional title", () => {
-    toastSuccess("Saved", "Nice");
-    expect(toast).toHaveBeenCalledWith({
-      variant: "success",
-      title: "Nice",
-      description: "Saved",
+  it("promotes the title to the message and the message to the description", () => {
+    toastSuccess("Saved to Downloads.", "PDF exported");
+    expect(toast.success).toHaveBeenCalledWith("PDF exported", {
+      description: "Saved to Downloads.",
     });
   });
 });
 
 describe("toastError", () => {
-  it("defaults the title to 'Error'", () => {
+  it("calls toast.error with just the message when no title is given", () => {
     toastError("Failed to save job");
-    expect(toast).toHaveBeenCalledWith({
-      variant: "destructive",
-      title: "Error",
-      description: "Failed to save job",
+    expect(toast.error).toHaveBeenCalledWith("Failed to save job");
+  });
+
+  it("does not pass an options object when there is no title", () => {
+    toastError("Failed to save job");
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(toast.error).mock.calls[0]).toHaveLength(1);
+  });
+
+  it("promotes the title to the message and the message to the description", () => {
+    toastError("Remove it from resumes first.", "Skill is in use!");
+    expect(toast.error).toHaveBeenCalledWith("Skill is in use!", {
+      description: "Remove it from resumes first.",
     });
   });
 
-  it("falls back to a generic message when no description is given", () => {
+  it("falls back to a generic message when no message is given", () => {
     toastError();
-    expect(toast).toHaveBeenCalledWith({
-      variant: "destructive",
-      title: "Error",
-      description: "Something went wrong. Please try again.",
-    });
-  });
-
-  it("allows overriding the title", () => {
-    toastError("Nope", "Custom Title");
-    expect(toast).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "Custom Title" }),
-    );
+    expect(toast.error).toHaveBeenCalledWith("Something went wrong. Please try again.");
   });
 });
 
@@ -64,12 +56,7 @@ describe("toastActionResult", () => {
       { success: "Job has been created successfully", onSuccess },
     );
 
-    expect(toast).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variant: "success",
-        description: "Job has been created successfully",
-      }),
-    );
+    expect(toast.success).toHaveBeenCalledWith("Job has been created successfully");
     expect(onSuccess).toHaveBeenCalledWith({ id: "1" });
   });
 
@@ -80,38 +67,22 @@ describe("toastActionResult", () => {
       { success: "Job has been created successfully", onSuccess },
     );
 
-    expect(toast).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to save job",
-      }),
-    );
+    expect(toast.error).toHaveBeenCalledWith("Failed to save job");
     expect(onSuccess).not.toHaveBeenCalled();
   });
 
-  it("toasts the fallback error when result is undefined", () => {
+  it("toasts the error override when result is undefined", () => {
     toastActionResult(undefined, {
       success: "Job has been created successfully",
       error: "Could not create job",
     });
 
-    expect(toast).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variant: "destructive",
-        title: "Error",
-        description: "Could not create job",
-      }),
-    );
+    expect(toast.error).toHaveBeenCalledWith("Could not create job");
   });
 
   it("falls back to the generic message when result is undefined and no error override is given", () => {
     toastActionResult(undefined, { success: "Job has been created successfully" });
 
-    expect(toast).toHaveBeenCalledWith(
-      expect.objectContaining({
-        description: "Something went wrong. Please try again.",
-      }),
-    );
+    expect(toast.error).toHaveBeenCalledWith("Something went wrong. Please try again.");
   });
 });

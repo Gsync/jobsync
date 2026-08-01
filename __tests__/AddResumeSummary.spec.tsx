@@ -6,7 +6,7 @@ import {
 import { screen, render, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ResumeSection } from "@/models/profile.model";
-import { toast } from "@/components/ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 vi.mock("@/actions/profile.actions", () => ({
   addResumeSummary: vi.fn(),
@@ -28,8 +28,9 @@ vi.mock("@/components/TiptapEditor", () => ({
 }));
 
 // Mock toast
-vi.mock("@/components/ui/use-toast", () => ({
-  toast: vi.fn(),
+vi.mock("@/lib/toast", () => ({
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
 }));
 
 describe("AddResumeSummary Component", () => {
@@ -261,11 +262,8 @@ describe("AddResumeSummary Component", () => {
 
     await waitFor(() => {
       expect(mockSetDialogOpen).toHaveBeenCalledWith(false);
-      expect(toast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variant: "success",
-          description: "Summary has been created successfully",
-        })
+      expect(toastSuccess).toHaveBeenCalledWith(
+        "Summary has been created successfully"
       );
     });
   });
@@ -300,13 +298,7 @@ describe("AddResumeSummary Component", () => {
     await user.click(saveButton);
 
     await waitFor(() => {
-      expect(toast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variant: "destructive",
-          title: "Error!",
-          description: "Failed to create summary",
-        })
-      );
+      expect(toastError).toHaveBeenCalledWith("Failed to create summary");
       expect(mockSetDialogOpen).not.toHaveBeenCalledWith(false);
     });
   });
@@ -386,11 +378,8 @@ describe("AddResumeSummary Component", () => {
     await user.click(saveButton);
 
     await waitFor(() => {
-      expect(toast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variant: "success",
-          description: "Summary has been updated successfully",
-        })
+      expect(toastSuccess).toHaveBeenCalledWith(
+        "Summary has been updated successfully"
       );
     });
   });

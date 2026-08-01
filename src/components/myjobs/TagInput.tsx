@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tag } from "@/models/job.model";
 import { createTag } from "@/actions/tag.actions";
-import { toast } from "../ui/use-toast";
+import { toastError } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 
@@ -91,11 +91,7 @@ export function TagInput({
     startTransition(async () => {
       const result = await createTag(label);
       if (!result?.success) {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: result?.message ?? "Failed to create skill tag.",
-        });
+        toastError(result?.message ?? "Failed to create skill tag.");
         return;
       }
       const newTag: Tag = result.data;

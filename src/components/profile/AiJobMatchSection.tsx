@@ -14,7 +14,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSheetAutoScroll } from "@/hooks/useSheetAutoScroll";
 import { useResizablePanel } from "@/hooks/useResizablePanel";
 import { Resume } from "@/models/profile.model";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import {
   Select,
   SelectContent,
@@ -104,13 +104,9 @@ export const AiJobMatchSection = ({
       saveJobMatchResult(jobId, scores.matchScore, matchData).then((res) => {
         if (res?.success) {
           onMatchSaved?.(scores.matchScore, matchData);
-          toast({ title: "Match result saved" });
+          toastSuccess("Match result saved");
         } else {
-          toast({
-            variant: "destructive",
-            title: "Error!",
-            description: res?.message || "Failed to save match result",
-          });
+          toastError(res?.message || "Failed to save match result");
         }
       });
     },
@@ -134,11 +130,7 @@ export const AiJobMatchSection = ({
     } catch (error) {
       const message = "Error fetching resume list";
       const description = error instanceof Error ? error.message : message;
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description,
-      });
+      toastError(description);
     }
   };
 
@@ -164,12 +156,9 @@ export const AiJobMatchSection = ({
     } catch (err) {
       // Aborting (e.g. closing the sheet) is expected — don't toast.
       if (controller.signal.aborted) return;
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description:
-          err instanceof Error ? err.message : "Failed to get job match analysis",
-      });
+      toastError(
+        err instanceof Error ? err.message : "Failed to get job match analysis",
+      );
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
       setIsLoading(false);

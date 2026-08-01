@@ -13,7 +13,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { Button } from "../ui/button";
 import { useTheme } from "next-themes";
 import { Loader2 } from "lucide-react";
@@ -70,24 +70,13 @@ function DisplaySettings() {
       const result = await updateDisplaySettings({ theme: data.theme });
       if (result.success) {
         setTheme(data.theme);
-        toast({
-          variant: "success",
-          title: "Your selected theme has been saved.",
-        });
+        toastSuccess("Your selected theme has been saved.");
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: result.message || "Failed to save display settings.",
-        });
+        toastError(result.message || "Failed to save display settings.");
       }
     } catch (error) {
       console.error("Error saving display settings:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to save display settings.",
-      });
+      toastError("Failed to save display settings.");
     } finally {
       setIsSaving(false);
     }

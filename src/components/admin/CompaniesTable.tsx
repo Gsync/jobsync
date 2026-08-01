@@ -20,7 +20,7 @@ import { Briefcase, MoreVertical, Pencil, Trash } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { deleteCompanyById } from "@/actions/company.actions";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { AlertDialog } from "@/models/alertDialog.model";
 
@@ -64,17 +64,10 @@ function CompaniesTable({
     if (companyId) {
       const { res, success, message } = await deleteCompanyById(companyId);
       if (success) {
-        toast({
-          variant: "success",
-          description: `Company has been deleted successfully`,
-        });
+        toastSuccess(`Company has been deleted successfully`);
         reloadCompanies();
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: message,
-        });
+        toastError(message);
       }
     }
   };

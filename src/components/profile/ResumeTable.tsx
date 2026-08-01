@@ -28,7 +28,7 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { useMemo, useState } from "react";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { deleteResumeById, setDefaultResume } from "@/actions/profile.actions";
 import { deleteCoverLetterById } from "@/actions/coverLetter.actions";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
@@ -83,17 +83,10 @@ function DocumentTable({
     if (!doc.id) return;
     const { success, message } = await setDefaultResume(doc.id);
     if (success) {
-      toast({
-        variant: "success",
-        description: `"${doc.title}" is now your default resume.`,
-      });
+      toastSuccess(`"${doc.title}" is now your default resume.`);
       reloadDocuments();
     } else {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: message,
-      });
+      toastError(message);
     }
   };
 
@@ -127,11 +120,7 @@ function DocumentTable({
     if (!doc.id) return;
     if (doc.jobCount > 0) {
       const label = doc.type === "resume" ? "resume" : "cover letter";
-      return toast({
-        variant: "destructive",
-        title: "Error!",
-        description: `Number of jobs using ${label} must be 0!`,
-      });
+      return toastError(`Number of jobs using ${label} must be 0!`);
     }
 
     const { success, message } =
@@ -141,17 +130,10 @@ function DocumentTable({
 
     if (success) {
       const label = doc.type === "resume" ? "Resume" : "Cover letter";
-      toast({
-        variant: "success",
-        description: `${label} has been deleted successfully`,
-      });
+      toastSuccess(`${label} has been deleted successfully`);
       reloadDocuments();
     } else {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: message,
-      });
+      toastError(message);
     }
   };
 

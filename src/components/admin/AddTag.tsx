@@ -22,7 +22,7 @@ import {
   FormMessage,
 } from "../ui/form";
 import { Input } from "../ui/input";
-import { toast } from "../ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { createTag } from "@/actions/tag.actions";
 
 const AddTagFormSchema = z.object({
@@ -56,19 +56,12 @@ function AddTag({ reloadTags }: AddTagProps) {
     startTransition(async () => {
       const result = await createTag(values.label);
       if (result?.success) {
-        toast({
-          variant: "success",
-          description: "Skill tag has been added successfully.",
-        });
+        toastSuccess("Skill tag has been added successfully.");
         setDialogOpen(false);
         reset();
         reloadTags();
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: result?.message ?? "Failed to create skill tag.",
-        });
+        toastError(result?.message ?? "Failed to create skill tag.");
       }
     });
   };

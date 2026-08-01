@@ -25,7 +25,7 @@ import { createLocation } from "@/actions/job.actions";
 import { JobForm } from "@/models/job.model";
 import { addCompany } from "@/actions/company.actions";
 import { createJobTitle } from "@/actions/jobtitle.actions";
-import { toast } from "./ui/use-toast";
+import { toastError } from "@/lib/toast";
 import { createActivityType } from "@/actions/activity.actions";
 import { createJobSource } from "@/actions/job.actions";
 
@@ -74,22 +74,14 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
         case "location":
           const { data, success, message } = await createLocation(label);
           if (!success) {
-            toast({
-              variant: "destructive",
-              title: "Error!",
-              description: message,
-            });
+            toastError(message);
           }
           response = data;
           break;
         case "source":
           const sourceRes = await createJobSource(label);
           if (!sourceRes.success) {
-            toast({
-              variant: "destructive",
-              title: "Error!",
-              description: sourceRes.message,
-            });
+            toastError(sourceRes.message);
           }
           response = sourceRes.data;
           if (!sourceRes.success) return;

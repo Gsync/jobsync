@@ -16,7 +16,7 @@ import {
   stopActivityById,
 } from "@/actions/activity.actions";
 import { Activity, ActivityType } from "@/models/activity.model";
-import { toast } from "@/components/ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { APP_CONSTANTS } from "@/lib/constants";
 
 interface ActivityContextType {
@@ -122,21 +122,16 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
         if (success) {
           stopTimer();
           setCurrentActivity(undefined);
-          toast({
-            variant: "destructive",
-            description: `Activity not saved because duration was less than ${APP_CONSTANTS.ACTIVITY_MIN_DURATION_MINUTES} minutes`,
-          });
+          toastError(
+            `Activity not saved because duration was less than ${APP_CONSTANTS.ACTIVITY_MIN_DURATION_MINUTES} minutes`
+          );
           return true;
         } else {
           // The running activity is a per-user singleton, so another session
           // may have already ended it — resync so a stale copy can't leave an
           // undismissable banner.
           await refreshCurrentActivity();
-          toast({
-            variant: "destructive",
-            title: "Error!",
-            description: message,
-          });
+          toastError(message);
           return false;
         }
       }
@@ -152,20 +147,15 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
       if (success) {
         stopTimer();
         setCurrentActivity(undefined);
-        toast({
-          variant: "success",
-          description: autoStop
+        toastSuccess(
+          autoStop
             ? `Activity auto-stopped after reaching maximum duration of ${maxDurationMinutes / 60} hours`
-            : "Activity stopped successfully",
-        });
+            : "Activity stopped successfully"
+        );
         return true;
       } else {
         await refreshCurrentActivity();
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: message,
-        });
+        toastError(message);
         return false;
       }
     },
@@ -184,18 +174,11 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
 
       if (success && newActivity) {
         setCurrentActivity(newActivity as Activity);
-        toast({
-          variant: "success",
-          description: "Activity started successfully",
-        });
+        toastSuccess("Activity started successfully");
         setIsLoading(false);
         return true;
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: message,
-        });
+        toastError(message);
         setIsLoading(false);
         return false;
       }

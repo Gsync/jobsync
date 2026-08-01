@@ -39,7 +39,7 @@ import {
   createAutomation,
   updateAutomation,
 } from "@/actions/automation.actions";
-import { toast } from "@/components/ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import type { AutomationWithResume, JobBoard } from "@/models/automation.model";
 import { isAtsBoard } from "@/models/automation.model";
 import { AtsSearchStep, type AtsConfigValue } from "./AtsSearchStep";
@@ -150,29 +150,21 @@ export function AutomationWizard({
         : await createAutomation(data);
 
       if (result.success) {
-        toast({
-          title: editAutomation ? "Automation updated" : "Automation created",
-          description: editAutomation
+        toastSuccess(
+          editAutomation
             ? "Your automation has been updated successfully."
             : "Your automation has been created and will run at the scheduled time.",
-        });
+          editAutomation ? "Automation updated" : "Automation created",
+        );
         form.reset();
         setStep(0);
         onOpenChange(false);
         onSuccess();
       } else {
-        toast({
-          title: "Error",
-          description: result.message || "Something went wrong",
-          variant: "destructive",
-        });
+        toastError(result.message || "Something went wrong");
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save automation",
-        variant: "destructive",
-      });
+      toastError("Failed to save automation");
     } finally {
       setIsSubmitting(false);
     }
@@ -605,11 +597,7 @@ export function AutomationWizard({
             onSubmit={form.handleSubmit(onSubmit, (errors) => {
               const firstError = Object.values(errors)[0];
               if (firstError?.message) {
-                toast({
-                  title: "Validation Error",
-                  description: firstError.message as string,
-                  variant: "destructive",
-                });
+                toastError(firstError.message as string, "Validation Error");
               }
             })}
           >

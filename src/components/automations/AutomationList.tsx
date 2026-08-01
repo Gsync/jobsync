@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toast } from "@/components/ui/use-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import {
   MoreVertical,
   Pause,
@@ -65,14 +65,10 @@ export function AutomationList({
     setLoadingAction(null);
 
     if (result.success) {
-      toast({ title: "Automation paused" });
+      toastSuccess("Automation paused");
       onRefresh();
     } else {
-      toast({
-        title: "Error",
-        description: result.message,
-        variant: "destructive",
-      });
+      toastError(result.message);
     }
   };
 
@@ -82,14 +78,10 @@ export function AutomationList({
     setLoadingAction(null);
 
     if (result.success) {
-      toast({ title: "Automation resumed" });
+      toastSuccess("Automation resumed");
       onRefresh();
     } else {
-      toast({
-        title: "Error",
-        description: result.message,
-        variant: "destructive",
-      });
+      toastError(result.message);
     }
   };
 
@@ -102,14 +94,10 @@ export function AutomationList({
     setDeleteId(null);
 
     if (result.success) {
-      toast({ title: "Automation deleted" });
+      toastSuccess("Automation deleted");
       onRefresh();
     } else {
-      toast({
-        title: "Error",
-        description: result.message,
-        variant: "destructive",
-      });
+      toastError(result.message);
     }
   };
 

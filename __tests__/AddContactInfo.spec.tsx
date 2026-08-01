@@ -2,14 +2,18 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import AddContactInfo from "@/components/profile/AddContactInfo";
 import { addContactInfo, updateContactInfo } from "@/actions/profile.actions";
-import { toast } from "@/components/ui/use-toast";
+import { toastActionResult } from "@/lib/toast";
 
 vi.mock("@/actions/profile.actions", () => ({
   addContactInfo: vi.fn(),
   updateContactInfo: vi.fn(),
 }));
 
-vi.mock("@/components/ui/use-toast", () => ({ toast: vi.fn() }));
+vi.mock("@/lib/toast", () => ({
+  toastActionResult: vi.fn((result, opts) => {
+    if (result?.success) opts.onSuccess?.(result.data);
+  }),
+}));
 
 const contactInfoToEdit = {
   id: "contact-1",
@@ -246,11 +250,9 @@ describe("AddContactInfo Component", () => {
       await waitFor(() => {
         expect(mockSetDialogOpen).toHaveBeenCalledWith(false);
       });
-      expect(toast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variant: "success",
-          description: expect.stringContaining("created"),
-        }),
+      expect(toastActionResult).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ success: "Contact Info has been created successfully" }),
       );
     });
 
@@ -264,11 +266,9 @@ describe("AddContactInfo Component", () => {
       await user.click(screen.getByRole("button", { name: /save/i }));
 
       await waitFor(() => {
-        expect(toast).toHaveBeenCalledWith(
-          expect.objectContaining({
-            variant: "success",
-            description: expect.stringContaining("updated"),
-          }),
+        expect(toastActionResult).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({ success: "Contact Info has been updated successfully" }),
         );
       });
     });
@@ -284,12 +284,9 @@ describe("AddContactInfo Component", () => {
       await user.click(screen.getByRole("button", { name: /save/i }));
 
       await waitFor(() => {
-        expect(toast).toHaveBeenCalledWith(
-          expect.objectContaining({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to create contact info.",
-          }),
+        expect(toastActionResult).toHaveBeenCalledWith(
+          expect.objectContaining({ success: false, message: "Failed to create contact info." }),
+          expect.objectContaining({ success: "Contact Info has been created successfully" }),
         );
       });
       expect(mockSetDialogOpen).not.toHaveBeenCalledWith(false);
