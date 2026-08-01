@@ -172,7 +172,7 @@ function EntityStringChipInput({
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          className="p-0 w-[--radix-popover-trigger-width]"
+          className="p-0 w-(--radix-popover-trigger-width)"
           align="start"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
@@ -394,7 +394,7 @@ export function AtsSearchStep({ provider, value, onChange }: AtsSearchStepProps)
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            className="p-0 w-[--radix-popover-trigger-width]"
+            className="p-0 w-(--radix-popover-trigger-width)"
             align="start"
             onOpenAutoFocus={(e) => e.preventDefault()}
           >
