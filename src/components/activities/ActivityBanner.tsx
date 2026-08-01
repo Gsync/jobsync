@@ -52,7 +52,7 @@ export function ActivityBanner({
           title="Stop Activity"
           type="button"
           className={cn(
-            "flex-shrink-0 rounded-lg p-1.5 inline-flex items-center justify-center hover:bg-opacity-10 hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2",
+            "flex-shrink-0 rounded-lg p-1.5 inline-flex items-center justify-center hover:bg-opacity-10 hover:bg-black focus:outline-hidden focus:ring-2 focus:ring-offset-2",
             {
               "focus:ring-green-500": variant === "success",
               "focus:ring-yellow-500": variant === "warning",

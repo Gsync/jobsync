@@ -33,7 +33,7 @@ const Tiptap = ({ field }: { field: ControllerRenderProps<any, any> }) => {
     editorProps: {
       attributes: {
         class:
-          "min-h-[140px] border rounded-md px-3 py-2 placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:outline-none",
+          "min-h-[140px] border rounded-md px-3 py-2 placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:outline-hidden",
       },
     },
     content: field.value,
