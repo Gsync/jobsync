@@ -248,12 +248,12 @@ function ApiKeySettings() {
                       </div>
                     ) : ollamaConnected === true ? (
                       <div className="flex items-center gap-1 text-green-600 text-sm">
-                        <CheckCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                        <CheckCircle className="h-3.5 w-3.5 shrink-0" />
                         <span>Ollama is running</span>
                       </div>
                     ) : ollamaConnected === false ? (
                       <div className="flex items-center gap-1 text-red-600 text-sm">
-                        <XCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                        <XCircle className="h-3.5 w-3.5 shrink-0" />
                         <span>Ollama is not running</span>
                       </div>
                     ) : null}

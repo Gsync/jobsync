@@ -282,7 +282,7 @@ function AiSettings() {
           </Select>
           {fetchError && (
             <div className="flex items-center gap-1 text-red-600 text-sm mt-2">
-              <XCircle className="h-4 w-4 flex-shrink-0" />
+              <XCircle className="h-4 w-4 shrink-0" />
               <span>{fetchError}</span>
             </div>
           )}
@@ -291,7 +291,7 @@ function AiSettings() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-6 flex-shrink-0 text-muted-foreground"
+                className="h-6 shrink-0 text-muted-foreground"
                 onClick={retryConnection}
                 disabled={isLoadingModels}
               >
@@ -299,7 +299,7 @@ function AiSettings() {
                 Retry
               </Button>
               <div className="flex items-center gap-1 text-red-600 text-sm">
-                <XCircle className="h-4 w-4 flex-shrink-0" />
+                <XCircle className="h-4 w-4 shrink-0" />
                 <span>{connectionError}</span>
               </div>
             </div>

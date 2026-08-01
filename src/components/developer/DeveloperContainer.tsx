@@ -30,9 +30,9 @@ function StatusBanner({ message }: { message: StatusMessage }) {
       }`}
     >
       {message.type === "error" ? (
-        <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+        <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
       ) : (
-        <CheckCircle2 className="h-5 w-5 flex-shrink-0 mt-0.5" />
+        <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
       )}
       <div className="flex-1">
         <p className="font-semibold">
