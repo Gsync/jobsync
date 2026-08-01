@@ -29,7 +29,7 @@ export default function AuthCard({ mode }: AuthCardProps) {
           onClick={() => router.push("/signin")}
           className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all duration-200 ${
             mode === "signin"
-              ? "bg-background text-foreground shadow-sm"
+              ? "bg-background text-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -39,7 +39,7 @@ export default function AuthCard({ mode }: AuthCardProps) {
           onClick={() => router.push("/signup")}
           className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all duration-200 ${
             mode === "signup"
-              ? "bg-background text-foreground shadow-sm"
+              ? "bg-background text-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -48,7 +48,7 @@ export default function AuthCard({ mode }: AuthCardProps) {
       </div>
 
       {/* Form card */}
-      <div className="rounded-xl border bg-card p-6 shadow-sm">
+      <div className="rounded-xl border bg-card p-6 shadow-xs">
         {mode === "signin" ? (
           <>
             <div className="mb-5">

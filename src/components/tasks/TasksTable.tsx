@@ -225,7 +225,7 @@ function TasksTable({
             )
           }
           className={cn(
-            "h-5 w-5 rounded border flex items-center justify-center transition-colors",
+            "h-5 w-5 rounded-sm border flex items-center justify-center transition-colors",
             task.status === "complete"
               ? "bg-green-500 border-green-500 text-white"
               : "border-gray-300 hover:border-gray-400",

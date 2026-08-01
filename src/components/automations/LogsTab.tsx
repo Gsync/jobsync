@@ -167,7 +167,7 @@ export function LogsTab({ logData, onClearLogs }: LogsTabProps) {
               {[...filteredLogs].reverse().map((log, index) => (
                 <div
                   key={index}
-                  className="flex gap-2 p-2 rounded border hover:bg-muted/50"
+                  className="flex gap-2 p-2 rounded-sm border hover:bg-muted/50"
                 >
                   <div className="flex-shrink-0 pt-0.5">
                     {getLevelIcon(log.level)}

@@ -33,7 +33,7 @@ function SidebarToggle() {
         </TooltipTrigger>
         <TooltipContent side="bottom">
           {expanded ? "Collapse sidebar" : "Expand sidebar"}
-          <kbd className="ml-2 rounded border px-1 text-[10px]">⌘B</kbd>
+          <kbd className="ml-2 rounded-sm border px-1 text-[10px]">⌘B</kbd>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

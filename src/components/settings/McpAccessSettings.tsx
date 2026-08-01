@@ -66,7 +66,7 @@ function CodeSnippet({ label, code }: { label: string; code: string }) {
     <div className="space-y-1">
       <p className="text-xs text-muted-foreground font-medium">{label}</p>
       <div className="flex gap-2 items-start">
-        <pre className="flex-1 bg-muted rounded p-2 text-xs overflow-x-auto whitespace-pre-wrap break-all">{code}</pre>
+        <pre className="flex-1 bg-muted rounded-sm p-2 text-xs overflow-x-auto whitespace-pre-wrap break-all">{code}</pre>
         <CopyButton text={code} />
       </div>
     </div>
@@ -246,7 +246,7 @@ export default function McpAccessSettings() {
           ) : (
             <div className="space-y-3">
               {tokens.map((t) => (
-                <div key={t.id} className="flex items-center justify-between border rounded p-3 gap-3">
+                <div key={t.id} className="flex items-center justify-between border rounded-sm p-3 gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-sm truncate">{t.name}</p>
                     <p className="text-xs text-muted-foreground font-mono">{t.tokenPrefix}…</p>
