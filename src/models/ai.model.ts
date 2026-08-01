@@ -17,6 +17,7 @@ export interface AiModel {
 export enum AiProvider {
   OLLAMA = "ollama",
   OPENAI = "openai",
+  OPENAI_COMPATIBLE = "openai-compatible",
   DEEPSEEK = "deepseek",
   GEMINI = "gemini",
   OPENROUTER = "openrouter",

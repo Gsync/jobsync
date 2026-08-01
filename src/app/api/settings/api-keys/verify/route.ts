@@ -8,7 +8,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 });
   }
 
-  const { provider, key } = await req.json();
+  const body = await req.json();
+  const { provider, key, apiKey } = body;
 
   if (!provider || !key) {
     return NextResponse.json(
@@ -26,7 +27,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await verifier(key);
+    const verifyKey = provider === "openai-compatible"
+      ? { baseURL: key, apiKey }
+      : key;
+    const result = await verifier(verifyKey);
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Verification failed";

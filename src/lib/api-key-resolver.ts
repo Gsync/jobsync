@@ -7,6 +7,7 @@ import { PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
 // RapidAPI is not in the AI provider registry but still needs env var resolution
 const EXTRA_ENV_VARS: Record<string, string> = {
   rapidapi: "RAPIDAPI_KEY",
+  "openai-compatible-key": "OPENAI_COMPAT_API_KEY",
 };
 
 export async function resolveApiKey(

@@ -61,6 +61,26 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     },
   },
 
+  "openai-compatible": {
+    id: "openai-compatible",
+    displayName: "OpenAI Compatible",
+    credentialType: "base-url",
+    category: "local",
+    envVar: "OPENAI_COMPAT_BASE_URL",
+    defaultCredential: "http://127.0.0.1:8000",
+    modelsEndpoint: "openai-compatible/models",
+    parseModelsResponse: (data) =>
+      data.data?.map((m: any) => m.id) ?? [],
+    requiresRunningCheck: false,
+    supportsKeepAlive: false,
+    keyConfig: {
+      placeholder: "http://127.0.0.1:8000",
+      inputType: "text",
+      description: "Base URL for any OpenAI-compatible API (e.g. LM Studio, Ollama with OpenAI API, Azure OpenAI)",
+      sensitive: false,
+    },
+  },
+
   deepseek: {
     id: "deepseek",
     displayName: "DeepSeek",
@@ -117,7 +137,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
   },
 };
 
-export const AI_PROVIDERS = ["ollama", "openai", "deepseek", "openrouter", "gemini"] as const;
+export const AI_PROVIDERS = ["ollama", "openai", "openai-compatible", "deepseek", "openrouter", "gemini"] as const;
 export type AiProviderId = (typeof AI_PROVIDERS)[number];
 
 export function getAiProviders(): ProviderRegistryEntry[] {

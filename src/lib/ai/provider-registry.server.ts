@@ -11,6 +11,9 @@ export const PROVIDER_FACTORIES: Record<
   (credential: string, modelName: string) => any
 > = {
   openai: (apiKey, model) => createOpenAI({ apiKey })(model),
+  "openai-compatible": () => {
+    throw new Error("openai-compatible is handled specially in getModel()");
+  },
   openrouter: (apiKey, model) =>
     createOpenAI({ apiKey, baseURL: "https://openrouter.ai/api/v1" })(model),
   deepseek: (apiKey, model) => createDeepSeek({ apiKey })(model),
@@ -21,7 +24,7 @@ export const PROVIDER_FACTORIES: Record<
 
 export const PROVIDER_VERIFIERS: Record<
   string,
-  (key: string) => Promise<{ success: boolean; error?: string }>
+  (key: any) => Promise<{ success: boolean; error?: string }>
 > = {
   openai: async (key) => {
     const res = await fetch("https://api.openai.com/v1/models", {
@@ -34,6 +37,25 @@ export const PROVIDER_VERIFIERS: Record<
           res.status === 401
             ? "Invalid API key"
             : `OpenAI returned ${res.status}`,
+      };
+    return { success: true };
+  },
+
+  "openai-compatible": async (key) => {
+    const params = typeof key === "object" ? key : { baseURL: key, apiKey: undefined };
+    const headers: Record<string, string> = {};
+    if (params.apiKey) {
+      headers["Authorization"] = `Bearer ${params.apiKey}`;
+    }
+    const baseUrl = params.baseURL.replace(/\/+$/, "");
+    const res = await fetch(`${baseUrl}/v1/models`, { headers });
+    if (!res.ok)
+      return {
+        success: false,
+        error:
+          res.status === 401
+            ? "Invalid API key"
+            : `OpenAI-compatible endpoint returned ${res.status}`,
       };
     return { success: true };
   },
