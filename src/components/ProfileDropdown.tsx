@@ -25,7 +25,7 @@ export function ProfileDropdown({ user, signOutAction }: ProfileDropdownProps) {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger>
+        <DropdownMenuTrigger aria-label="User menu">
           <UserAvatar user={user} />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">

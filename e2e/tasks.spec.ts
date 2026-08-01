@@ -370,10 +370,16 @@ test.describe("Tasks Management", () => {
         .click({ force: true });
       await page.keyboard.press("Escape");
 
+      // Widening the filter refetches page 1 (25 rows, ordered priority desc),
+      // so a default-priority task can land on a later page once completed
+      // tasks join the list. Search by the unique title to pin it on screen.
+      await page.getByPlaceholder("Search tasks...").fill(completedTaskTitle);
+
       // Try to start activity via menu - should show error
       const completedTaskRow = page
         .getByRole("row", { name: new RegExp(completedTaskTitle, "i") })
         .first();
+      await expect(completedTaskRow).toBeVisible({ timeout: 10000 });
       await completedTaskRow
         .getByTestId("task-actions-menu-btn")
         .click({ force: true });
@@ -381,9 +387,11 @@ test.describe("Tasks Management", () => {
         .getByRole("menuitem", { name: "Start Activity" })
         .click({ force: true });
 
-      await expect(page.getByRole("status").first()).toContainText(
-        /Cannot start an activity from a completed or cancelled task/,
-      );
+      await expect(
+        page.locator("[data-sonner-toast]").filter({
+          hasText: "Cannot start an activity from a completed or cancelled task",
+        }),
+      ).toBeVisible();
     });
   });
 });

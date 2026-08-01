@@ -22,7 +22,7 @@ test("Signin and out from app", async ({ page, baseURL }) => {
 
   await expect(page).toHaveURL(baseURL + "/dashboard");
 
-  await page.getByRole("button", { name: "Avatar" }).click();
+  await page.getByRole("button", { name: "User menu" }).click();
   await page.getByRole("button", { name: "Logout" }).click();
 
   await expect(
