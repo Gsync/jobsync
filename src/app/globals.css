@@ -114,6 +114,18 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* v4 Preflight sets buttons to cursor:default; v3 used pointer */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  /* v4 Preflight renders placeholders at 50% currentColor; v3 used gray-400 */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
 }
 
 /* Hide scrollbar across browsers */
