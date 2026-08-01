@@ -180,16 +180,16 @@
 }
 
 @utility header-title {
-  @apply text-24 lg:text-30 font-semibold text-gray-900;
+  @apply text-24 lg:text-30 font-semibold text-foreground;
 }
 
 @utility header-subtext {
-  @apply text-14 lg:text-16 font-normal text-gray-600;
+  @apply text-14 lg:text-16 font-normal text-muted-foreground;
 }
 
 /* Sidebar */
 @utility sidebar {
-  @apply sticky left-0 top-0 flex h-screen w-fit flex-col justify-between border-r border-gray-200 bg-white pt-8 text-white max-md:hidden sm:p-4 xl:p-6 2xl:w-[355px];
+  @apply sticky left-0 top-0 flex h-screen w-fit flex-col justify-between border-r border-border bg-card pt-8 text-foreground max-md:hidden sm:p-4 xl:p-6 2xl:w-[355px];
 }
 
 @utility sidebar-logo {
@@ -201,7 +201,7 @@
 }
 
 @utility sidebar-label {
-  @apply text-16 font-semibold text-black max-xl:hidden;
+  @apply text-16 font-semibold text-foreground max-xl:hidden;
 }
 
 /* Navlink */
