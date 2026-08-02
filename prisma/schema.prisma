@@ -35,6 +35,7 @@ model User {
   Tag            Tag[]
   Question       Question[]
   McpAccessToken McpAccessToken[]
+  ChatConversation ChatConversation?
   defaultResumeId String?
   defaultResume   Resume?          @relation("UserDefaultResume", fields: [defaultResumeId], references: [id], onDelete: SetNull)
 }
@@ -520,4 +521,13 @@ model McpAccessToken {
 
   @@unique([userId, name])
   @@index([userId])
+}
+
+model ChatConversation {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  messages  String   // JSON-serialized UIMessage[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

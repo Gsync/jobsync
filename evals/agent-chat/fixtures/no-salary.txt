@@ -1,0 +1,32 @@
+Frontend Engineer, Design Systems
+Larkspur Software
+
+ABOUT THE ROLE
+Larkspur Software is looking for a Frontend Engineer to join the team that owns our internal design system. The system is consumed by eleven product squads and is the reason our interface stayed coherent through three years of fast feature work. You will be the third engineer on a team that also includes two designers.
+
+WHAT YOU'LL DO
+- Build and maintain accessible React components used across every Larkspur product
+- Own the component API review process and keep the library's surface small
+- Drive our migration from styled-components to CSS-first tokens
+- Maintain the documentation site and the component playground
+- Partner with designers to turn Figma libraries into shipped primitives
+- Run the accessibility audit process and fix what it finds
+
+REQUIREMENTS
+- 4+ years building production frontend applications
+- Deep React and TypeScript experience
+- Strong CSS fundamentals, including modern layout and custom properties
+- Practical accessibility knowledge — WCAG 2.2 AA, screen reader testing, keyboard navigation
+- Experience maintaining a shared component library or design system
+- Comfort writing component tests with Testing Library
+
+NICE TO HAVE
+- Experience with Storybook or a comparable documentation tool
+- Familiarity with visual regression testing
+- Design tooling experience, particularly Figma's API
+- Contributions to an open-source component library
+
+INTERVIEW PROCESS
+Recruiter screen, a portfolio conversation about component work you have shipped, a practical component-building exercise, then two final conversations with the design system team and a product engineer who consumes the library.
+
+Larkspur Software is an equal opportunity employer.

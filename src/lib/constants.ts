@@ -120,6 +120,31 @@ export const APP_CONSTANTS = {
   // shared MCP rate-limit budget, so this caps a single call at a sixth of it.
   MCP_BATCH_MAX_ITEMS: 10,
 
+  // Agent chat (in-app tool-calling panel)
+  AGENT_CHAT_CREATED_VIA: "chat",
+  AGENT_CHAT_MAX_STEPS: 4,
+  AGENT_CHAT_MAX_STORED_MESSAGES: 50,
+  AGENT_CHAT_HISTORY_MESSAGES: 20,
+  // Longer than the review timeout: one chat turn may contain more than one
+  // generation (tool call, then a corrective retry).
+  AGENT_CHAT_TIMEOUT_MS: 240_000,
+  // Deliberately not AI_OLLAMA_NUM_CTX: a chat turn carries a system prompt,
+  // tool schemas, a paste head and history. Raising the shared value would
+  // change review/match latency.
+  AGENT_CHAT_NUM_CTX: 16384,
+  AGENT_CHAT_PASTE_THRESHOLD: 1500,
+  AGENT_CHAT_PASTE_HEAD_CHARS: 2000,
+  AGENT_CHAT_PASTE_MAX_CHARS: 120_000,
+  // A paste is spliced into add_job / injected into the prompt only while it
+  // sits within this many trailing user messages. Bounds how long an
+  // abandoned paste can shadow a later typed add.
+  AGENT_CHAT_PASTE_ACTIVE_USER_MESSAGES: 2,
+  // No fallback model constant, deliberately. An unset settings.ai.model is
+  // a pre-stream 503 pointing at Settings, not a silently substituted model
+  // the user never chose.
+  // Must not be "ai-panel-width" — that key belongs to the three AI sheets.
+  AGENT_CHAT_PANEL_WIDTH_KEY: "agent-chat-width",
+
   // File uploads
   UPLOADS_DIR: process.env.NODE_ENV !== "production" ? "data" : "/data",
   MAX_RESUME_FILE_SIZE_BYTES: 5 * 1024 * 1024, // 5 MB

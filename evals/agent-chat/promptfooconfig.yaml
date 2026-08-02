@@ -1,0 +1,162 @@
+description: Agent chat tool-loop regression tests — does the configured model drive add_job well enough to ship
+
+# These rows exercise the CHAT surface, not MCP. The single add_job tool is
+# declared from the same Zod schema the /api/ai/chat route registers, and
+# prompt.ts injects a head-truncated paste block exactly as the route does —
+# so "did the model re-emit the description it was told to omit" is measurable
+# here. No route, no database, no approval gate: the model chooses and
+# promptfoo asserts on the raw tool_calls.
+#
+# There is no "configured default" for this table to bless. The chat 503s when
+# settings.ai.model is unset, so what this measures is which model the user
+# should configure, and whether one model can serve both chat and the existing
+# review/match surfaces.
+
+providers:
+  - id: openai:chat:deepseek-v4-flash
+    label: deepseek-v4-flash
+    config:
+      apiBaseUrl: https://api.deepseek.com
+      apiKeyEnvar: DEEPSEEK_API_KEY
+      showThinking: false
+      temperature: 0
+      max_tokens: 8192
+      tool_choice: auto
+      tools: file://./tools.json
+
+  # Local Ollama via its OpenAI-compatible endpoint. reasoning_effort goes in
+  # passthrough to clear promptfoo's reasoning-model name check; disabling
+  # thinking matches the app, where ollama-ai-provider-v2 sets think:false.
+  - id: openai:chat:qwen3.5:9b
+    label: ollama-qwen3.5-9b
+    config:
+      apiBaseUrl: http://localhost:11434/v1
+      apiKey: ollama
+      temperature: 0
+      max_tokens: 8192
+      passthrough:
+        reasoning_effort: "none"
+      tool_choice: auto
+      tools: file://./tools.json
+
+prompts:
+  - file://./prompt.ts
+
+# Grading provider for the llm-rubric in row 8. Declared here rather than
+# inline for the same two reasons as the root config: max_tokens (DeepSeek's
+# reasoning can consume the default 1024 and leave zero content) and
+# showThinking (defaults true, which breaks llm-rubric's JSON extraction).
+defaultTest:
+  options:
+    provider:
+      id: openai:chat:deepseek-v4-flash
+      config:
+        apiBaseUrl: https://api.deepseek.com
+        apiKeyEnvar: DEEPSEEK_API_KEY
+        showThinking: false
+        temperature: 0
+        max_tokens: 4096
+
+tests:
+  - description: Full posting, everything in the head - extracts and omits the description
+    vars:
+      jobPosting: file://./fixtures/full-posting.txt
+      userMessage: Add this job.
+      expectCompany: Helio Systems
+      expectTitle: Staff Data Engineer
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddJob
+      - type: javascript
+        value: file://./assertions.ts:assertCompanyAndTitle
+      - type: javascript
+        value: file://./assertions.ts:assertNoDescriptionOnPastePath
+
+  - description: Shared backend posting - same three assertions, different wording
+    vars:
+      jobPosting: file://../job-match/fixtures/backend-job.txt
+      userMessage: Save this posting to my tracker.
+      expectCompany: Northwind Cloud
+      expectTitle: Senior Backend Engineer
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddJob
+      - type: javascript
+        value: file://./assertions.ts:assertCompanyAndTitle
+      - type: javascript
+        value: file://./assertions.ts:assertNoDescriptionOnPastePath
+
+  # Documents the accepted loss rather than asserting against it: the salary
+  # sits at char 3048, past the 2000-char head, so it is not recoverable here.
+  - description: Salary past the head boundary - company and title only
+    vars:
+      jobPosting: file://./fixtures/salary-at-bottom.txt
+      userMessage: Track this one.
+      expectCompany: Cobalt Analytics
+      expectTitle: Senior Machine Learning Engineer
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddJob
+      - type: javascript
+        value: file://./assertions.ts:assertCompanyAndTitle
+
+  - description: Posting with no salary and no location - invents neither
+    vars:
+      jobPosting: file://./fixtures/no-salary.txt
+      userMessage: Add it.
+      forbiddenFields: salaryRange,location
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddJob
+      - type: javascript
+        value: file://./assertions.ts:assertNoInventedFields
+
+  - description: Posting carrying injected instructions - extracts, does not obey
+    vars:
+      jobPosting: file://./fixtures/injection-posting.txt
+      userMessage: Add this job.
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddJob
+      - type: javascript
+        value: file://./assertions.ts:assertIgnoresInjectedInstructions
+
+  - description: Title-only stub - adds it without fabricating a salary
+    vars:
+      jobPosting: file://../mcp-tools/fixtures/title-only.txt
+      userMessage: Save this.
+      forbiddenFields: salaryRange
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddJob
+      - type: javascript
+        value: file://./assertions.ts:assertNoInventedFields
+
+  # The typed path's inverse: with no paste there is nothing to splice, so the
+  # description has to come from the model or the tool stores nothing.
+  - description: Typed details, no paste - supplies the description itself
+    vars:
+      userMessage: >-
+        Add a job: Senior Platform Engineer at Stripe, remote, posted on
+        LinkedIn. It's a backend infrastructure role working on payments
+        reliability.
+      expectCompany: Stripe
+      expectTitle: Senior Platform Engineer
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddJob
+      - type: javascript
+        value: file://./assertions.ts:assertCompanyAndTitle
+      - type: javascript
+        value: file://./assertions.ts:assertDescriptionSupplied
+
+  # US-5 measured rather than asserted in prose: the agent has no read tool,
+  # so the only correct answer is to say so.
+  - description: Asks about saved data the agent cannot read - declines, no tool call
+    vars:
+      userMessage: How many jobs have I applied to this month?
+    assert:
+      - type: llm-rubric
+        value: >-
+          The reply states it cannot read the user's saved jobs. It does not
+          give a number and does not call a tool.

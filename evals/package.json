@@ -9,6 +9,7 @@
     "eval:cover-letter": "promptfoo eval --env-file ../.env --config cover-letter/promptfooconfig.yaml",
     "eval:resume-import": "promptfoo eval --env-file ../.env --config resume-import/promptfooconfig.yaml",
     "eval:mcp-tools": "tsx mcp-tools/generate-tools.ts && promptfoo eval --env-file ../.env --config mcp-tools/promptfooconfig.yaml",
+    "eval:agent-chat": "tsx agent-chat/generate-tools.ts && promptfoo eval --env-file ../.env --config agent-chat/promptfooconfig.yaml",
     "eval:all": "promptfoo eval --env-file ../.env --config promptfooconfig.yaml",
     "eval:view": "promptfoo view"
   },

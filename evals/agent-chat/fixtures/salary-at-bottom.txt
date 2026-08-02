@@ -1,0 +1,45 @@
+Senior Machine Learning Engineer — Ranking
+Cobalt Analytics
+Toronto, ON (Remote within Canada)
+Employment type: Full-time
+
+ABOUT COBALT ANALYTICS
+Cobalt Analytics builds the search and discovery layer used by mid-market e-commerce retailers across Canada and the United States. Our customers plug our API into their storefronts and we decide, in under forty milliseconds, what products to show and in what order. We serve about nine hundred merchants, handle roughly two billion ranking requests a month, and the machine learning group is nine engineers split across ranking, embeddings and evaluation.
+
+ABOUT THE ROLE
+We are hiring a Senior Machine Learning Engineer for the ranking team. You will own models that decide product ordering for every query our platform serves, from the retrieval candidate set through to the final re-ranking pass. This is an applied role with real production ownership: you will train the models, ship them, watch them in production, and be responsible for the online metrics they move. You will report to the Head of Machine Learning and work alongside two other ranking engineers, a dedicated evaluation engineer, and the platform team that owns our feature store.
+
+WHAT YOU'LL DO
+- Own the ranking model lifecycle end to end: training data, features, training, serving, monitoring
+- Design and run online experiments, and defend the results to product stakeholders
+- Improve our learning-to-rank stack, currently gradient-boosted trees moving toward a two-tower neural retriever
+- Build and maintain the offline evaluation harness the whole group relies on
+- Reduce p99 inference latency, which is our binding constraint on model complexity
+- Partner with the feature-store team on freshness and training-serving consistency
+- Mentor two junior engineers and review model designs across the group
+
+REQUIREMENTS
+- 5+ years of applied machine learning experience with production ownership
+- Strong Python, and comfort in a compiled language for serving paths
+- Direct experience with learning-to-rank, recommender systems or search relevance
+- Solid grounding in offline and online evaluation, including experiment design
+- Experience with PyTorch or TensorFlow in a production setting
+- Working knowledge of feature stores and training-serving skew
+- SQL fluency and comfort working directly with large behavioural datasets
+
+NICE TO HAVE
+- Vector search and approximate nearest-neighbour indexes
+- E-commerce or marketplace domain experience
+- Experience with Ray, Kubeflow or a comparable training orchestrator
+- Publications or conference talks in information retrieval
+
+INTERVIEW PROCESS
+Recruiter screen, a technical conversation about a system you have shipped, a take-home evaluation exercise, then a virtual onsite of four sessions covering modelling depth, coding, system design and team fit.
+
+BENEFITS
+Full medical, dental and vision; RRSP matching; five weeks of vacation; annual learning budget; fully remote within Canada with quarterly team gatherings in Toronto.
+
+COMPENSATION
+Base salary range is $165,000 – $195,000 CAD, plus stock options and an annual performance bonus.
+
+Cobalt Analytics is an equal opportunity employer.

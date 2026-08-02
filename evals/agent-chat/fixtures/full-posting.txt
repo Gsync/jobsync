@@ -1,0 +1,42 @@
+Staff Data Engineer — Streaming Platform
+Helio Systems
+Austin, TX (Hybrid — 3 days onsite)
+Compensation: $185,000 – $215,000 base, plus equity and annual bonus
+Employment type: Full-time
+
+ABOUT HELIO SYSTEMS
+Helio Systems builds the telemetry backbone for industrial energy operators. Our platform ingests roughly four million sensor events per second from wind, solar and grid-storage sites across North America and Europe, and turns them into the dashboards, alerts and settlement reports our customers run their businesses on. We are a 300-person company, profitable since 2023, and the data platform group is twelve engineers.
+
+ABOUT THE ROLE
+We are hiring a Staff Data Engineer to own the architecture of our streaming ingestion tier. You will be the technical lead for the pipeline that moves sensor data from edge collectors through Kafka into our lakehouse, and you will set the standard for how the rest of the group builds on top of it. This is a hands-on staff role: roughly seventy percent design and implementation, thirty percent mentorship and technical direction. You will report to the Director of Data Platform and partner closely with the reliability and analytics teams.
+
+WHAT YOU'LL DO
+- Own the design and evolution of our Kafka-based ingestion tier end to end
+- Rebuild our batch settlement jobs as incremental streaming pipelines
+- Define schema evolution and data contracts across twenty producing services
+- Drive our migration from Redshift to an Iceberg-backed lakehouse on S3
+- Establish freshness, completeness and lineage SLOs, and the tooling to prove them
+- Mentor four mid-level engineers and lead design review for the group
+
+REQUIREMENTS
+- 8+ years building production data infrastructure, including 2+ at staff or equivalent scope
+- Deep experience with Kafka or an equivalent log-structured streaming system
+- Strong Python and SQL; production Scala or Java for stream processing
+- Hands-on experience with Spark Structured Streaming or Apache Flink
+- Practical knowledge of a table format — Iceberg, Delta Lake or Hudi
+- Experience designing schema evolution strategies across many producers
+- Track record of mentoring engineers and leading cross-team technical work
+
+NICE TO HAVE
+- Time-series or IoT telemetry workloads at scale
+- dbt and analytics engineering practice
+- Terraform and Kubernetes
+- Experience with energy markets or industrial data
+
+INTERVIEW PROCESS
+Recruiter screen, technical phone screen, a take-home design exercise reviewed in a follow-up conversation, then a virtual onsite of four sessions. We do not do live algorithm puzzles.
+
+BENEFITS
+Full medical, dental and vision from day one; 401(k) with six percent match; four weeks of vacation plus company holidays; $3,000 annual learning budget; home-office stipend.
+
+Helio Systems is an equal opportunity employer.
