@@ -28,6 +28,7 @@ import {
 } from "@/app/api/profile/resume/route";
 import { POST as reviewResume } from "@/app/api/ai/resume/review/route";
 import { POST as generateCoverLetter } from "@/app/api/ai/cover-letter/route";
+import { POST as agentChat } from "@/app/api/ai/chat/route";
 
 const anonAuth = () => (auth as any).mockResolvedValue(null);
 
@@ -78,6 +79,11 @@ describe("API auth contract: guarded routes reject anonymous requests", () => {
 
   it("POST /api/ai/cover-letter -> 401", async () => {
     const res = await generateCoverLetter(req());
+    expect(res.status).toBe(401);
+  });
+
+  it("POST /api/ai/chat -> 401", async () => {
+    const res = await agentChat(req());
     expect(res.status).toBe(401);
   });
 });
