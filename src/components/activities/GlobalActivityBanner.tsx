@@ -9,12 +9,13 @@ export function GlobalActivityBanner() {
   if (!currentActivity) return null;
 
   const activityType = currentActivity.activityType as ActivityType;
-  const message = `${activityType?.label || "Activity"} - ${currentActivity.activityName}`;
 
   return (
     <div className="px-4 sm:px-6">
       <ActivityBanner
-        message={message}
+        title={currentActivity.activityName}
+        typeLabel={activityType?.label || "Activity"}
+        startTime={new Date(currentActivity.startTime)}
         onStopActivity={stopActivity}
         elapsedTime={timeElapsed}
       />
