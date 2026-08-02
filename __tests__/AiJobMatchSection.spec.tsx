@@ -1,5 +1,15 @@
 import React from "react";
-import { render, waitFor, act } from "@testing-library/react";
+import {
+  render as rtlRender,
+  waitFor,
+  act,
+  type RenderOptions,
+} from "@testing-library/react";
+import { RightRailProvider } from "@/context/RightRailContext";
+
+// The sheet claims the right rail on open, so it needs the provider.
+const render = (ui: React.ReactElement, options?: RenderOptions) =>
+  rtlRender(ui, { wrapper: RightRailProvider, ...options });
 import { AiJobMatchSection } from "@/components/profile/AiJobMatchSection";
 import type { JobMatchResult } from "@/utils/streamJobMatch.utils";
 

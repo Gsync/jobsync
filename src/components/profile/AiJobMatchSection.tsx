@@ -12,6 +12,7 @@ import {
 } from "../ui/sheet";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSheetAutoScroll } from "@/hooks/useSheetAutoScroll";
+import { useRightRailPanel } from "@/context/RightRailContext";
 import { useResizablePanel } from "@/hooks/useResizablePanel";
 import { Resume } from "@/models/profile.model";
 import { toastSuccess, toastError } from "@/lib/toast";
@@ -57,6 +58,7 @@ export const AiJobMatchSection = ({
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const [result, setResult] = useState<JobMatchResult | undefined>();
   const [isLoading, setIsLoading] = useState(false);
+  const { claim, release } = useRightRailPanel("job-match");
   const resumesRef = useRef<Resume[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const { scrollAnchorRef, handleSheetScroll, resetScroll } = useSheetAutoScroll(isLoading, result);
@@ -185,6 +187,8 @@ export const AiJobMatchSection = ({
 
   const onOpenChange = async (openState: boolean) => {
     triggerChange(openState);
+    if (openState) claim();
+    else release();
     if (!openState && isLoading) {
       stop();
     }

@@ -13,6 +13,7 @@ import {
 import Loading from "../Loading";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSheetAutoScroll } from "@/hooks/useSheetAutoScroll";
+import { useRightRailPanel } from "@/context/RightRailContext";
 import { useResizablePanel } from "@/hooks/useResizablePanel";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { toastSuccess, toastError } from "@/lib/toast";
@@ -44,6 +45,7 @@ const AiResumeReviewSection = ({ resume, onReviewSaved }: AiSectionProps) => {
   const [connectionError, setConnectionError] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<AiModel>(defaultModel);
   const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+  const { claim, release } = useRightRailPanel("resume-review");
 
   const checkConnectionStatus = useCallback(async (provider: AiProvider) => {
     setOllamaConnected(null);
@@ -162,6 +164,8 @@ const AiResumeReviewSection = ({ resume, onReviewSaved }: AiSectionProps) => {
 
   const triggerSheetChange = (openState: boolean) => {
     setAiSectionOpen(openState);
+    if (openState) claim();
+    else release();
     if (!openState && isLoading) {
       stop();
     }

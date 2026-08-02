@@ -1,12 +1,18 @@
 import React from "react";
 import {
-  render,
+  render as rtlRender,
   screen,
   fireEvent,
   waitFor,
   within,
   act,
+  type RenderOptions,
 } from "@testing-library/react";
+import { RightRailProvider } from "@/context/RightRailContext";
+
+// The sheet claims the right rail on open, so it needs the provider.
+const render = (ui: React.ReactElement, options?: RenderOptions) =>
+  rtlRender(ui, { wrapper: RightRailProvider, ...options });
 import AiResumeReviewSection from "@/components/profile/AiResumeReviewSection";
 import { Resume, SectionType } from "@/models/profile.model";
 import type { ResumeReviewResult } from "@/utils/streamResumeReview.utils";

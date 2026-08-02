@@ -19,6 +19,7 @@ import { toastSuccess, toastError } from "@/lib/toast";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { AiModel, defaultModel } from "@/models/ai.model";
 import { useSheetAutoScroll } from "@/hooks/useSheetAutoScroll";
+import { useRightRailPanel } from "@/context/RightRailContext";
 import { useResizablePanel } from "@/hooks/useResizablePanel";
 import { useSlowResponseWarning } from "@/hooks/useSlowResponseWarning";
 import { checkOllamaConnection } from "@/utils/ai.utils";
@@ -63,6 +64,7 @@ export const GenerateCoverLetterSection = ({
   const [letter, setLetter] = useState("");
   const [savedTitle, setSavedTitle] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { claim, release } = useRightRailPanel("cover-letter");
   const abortRef = useRef<AbortController | null>(null);
   const startedRef = useRef(false);
   const { scrollAnchorRef, handleSheetScroll, resetScroll } =
@@ -199,6 +201,8 @@ export const GenerateCoverLetterSection = ({
 
   const onOpenChange = (openState: boolean) => {
     triggerChange(openState);
+    if (openState) claim();
+    else release();
     if (!openState) {
       if (isLoading) stop();
       setLetter("");
