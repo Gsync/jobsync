@@ -10,6 +10,7 @@ import {
 } from "@/components/ai-elements/conversation";
 import { Button } from "@/components/ui/button";
 import { AgentApprovalCard } from "@/components/agent/AgentApprovalCard";
+import { AgentMarkdown } from "@/components/agent/AgentMarkdown";
 import { AgentResultCard } from "@/components/agent/AgentResultCard";
 import { AgentStatusRow } from "@/components/agent/AgentStatusRow";
 import { AgentToolRunningCard } from "@/components/agent/AgentToolRunningCard";
@@ -99,18 +100,19 @@ export function AgentChatMessages() {
           >
             {message.parts.map((part, i) => {
               if (part.type === "text") {
-                return (
-                  <p
-                    key={i}
-                    className={cn(
-                      "whitespace-pre-wrap break-words",
-                      message.role === "user" &&
-                        "rounded-md bg-muted px-3 py-2",
-                    )}
-                  >
-                    {part.text}
-                  </p>
-                );
+                // User text stays plain: it is their own words, and a user
+                // who types a markdown table did not ask for it to render.
+                if (message.role === "user") {
+                  return (
+                    <p
+                      key={i}
+                      className="whitespace-pre-wrap break-words rounded-md bg-muted px-3 py-2"
+                    >
+                      {part.text}
+                    </p>
+                  );
+                }
+                return <AgentMarkdown key={i} text={part.text} />;
               }
               if (isAgentPastePart(part))
                 return <PasteChip key={i} data={part.data} />;

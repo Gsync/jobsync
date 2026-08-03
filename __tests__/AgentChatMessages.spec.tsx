@@ -14,6 +14,11 @@ const chat = {
 vi.mock("@/components/agent/AgentChatProvider", () => ({
   useAgentChat: () => chat,
 }));
+vi.mock("@/components/TipTapContentViewer", () => ({
+  TipTapContentViewer: ({ content }: { content: string }) => (
+    <div data-testid="tiptap-content" dangerouslySetInnerHTML={{ __html: content }} />
+  ),
+}));
 
 import { AgentChatMessages } from "@/components/agent/AgentChatMessages";
 
@@ -194,6 +199,33 @@ describe("AgentChatMessages", () => {
     ];
     const { container } = render(<AgentChatMessages />);
     expect(container.innerHTML).not.toContain("<img");
-    expect(screen.getByText("![x](http://evil/a.png)")).toBeInTheDocument();
+    expect(screen.getByTestId("tiptap-content")).toHaveTextContent(
+      "![x](http://evil/a.png)",
+    );
+  });
+
+  it("renders assistant markdown as formatted HTML", () => {
+    chat.messages = [
+      assistant([{ type: "text", text: "## Summary\n\n- one\n- two" }]),
+    ];
+    render(<AgentChatMessages />);
+    const rendered = screen.getByTestId("tiptap-content");
+    expect(rendered.innerHTML).toContain("<h2>Summary</h2>");
+    expect(rendered.innerHTML).toContain("<li>one</li>");
+  });
+
+  it("leaves user text unformatted", () => {
+    chat.messages = [user([{ type: "text", text: "## not a heading" }])];
+    render(<AgentChatMessages />);
+    expect(screen.queryByTestId("tiptap-content")).not.toBeInTheDocument();
+    expect(screen.getByText("## not a heading")).toBeInTheDocument();
+  });
+
+  it("does not render a link the model emitted", () => {
+    chat.messages = [
+      assistant([{ type: "text", text: "[click](https://evil.example/?d=x)" }]),
+    ];
+    render(<AgentChatMessages />);
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 });
