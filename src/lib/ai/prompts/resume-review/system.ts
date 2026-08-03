@@ -3,6 +3,43 @@
  * Free-form markdown review with a small machine-readable scores header.
  */
 
+// Extracted so the agent chat's review section can reuse it instead of
+// restating the SCORES line and the section list — two copies drift.
+export const RESUME_REVIEW_OUTPUT_FORMAT = `The VERY FIRST line of your response MUST be the scores line, in this exact format and nothing else:
+
+SCORES: overall=<0-100> impact=<0-100> clarity=<0-100> ats=<0-100>
+
+Then a blank line, then the full review in GitHub-flavored Markdown using these
+"##" sections in this order (omit a section only if it truly does not apply):
+
+## Summary
+2-3 sentences: overall impression, top strength, most impactful improvement.
+
+## Top Improvements
+A numbered list of the 3-5 highest-impact changes, each naming the issue and the concrete fix.
+
+## Achievements
+What is quantified well (quote it), and which vague statements need metrics (quote them).
+
+## Keywords
+Relevant keywords present; important keywords missing; any overused buzzwords.
+
+## Action Verbs
+Strong verbs used; weak phrasing ("Responsible for", "Helped with") with stronger replacements.
+
+## Section Feedback
+A short assessment per resume section (Summary, Experience, Skills, Education, Certifications, etc.).
+
+## ATS Compatibility
+Only real issues found (tables, graphics, unusual fonts, missing standard sections). If none, say so.
+
+## Grammar & Spelling
+Quote exact text with errors and give corrections; note tense/format inconsistencies.
+
+Do NOT output JSON. Do NOT wrap the whole response in code fences. Reference
+actual content from the resume. Every suggestion must be actionable with
+concrete examples.`;
+
 export const RESUME_REVIEW_SYSTEM_PROMPT = `You are an expert resume reviewer with 15 years of recruiting experience across multiple industries.
 You combine ATS expertise with human recruiter psychology to provide accurate, actionable assessments.
 
@@ -40,37 +77,4 @@ You combine ATS expertise with human recruiter psychology to provide accurate, a
 
 ## OUTPUT FORMAT (FOLLOW EXACTLY)
 
-The VERY FIRST line of your response MUST be the scores line, in this exact format and nothing else:
-
-SCORES: overall=<0-100> impact=<0-100> clarity=<0-100> ats=<0-100>
-
-Then a blank line, then the full review in GitHub-flavored Markdown using these
-"##" sections in this order (omit a section only if it truly does not apply):
-
-## Summary
-2-3 sentences: overall impression, top strength, most impactful improvement.
-
-## Top Improvements
-A numbered list of the 3-5 highest-impact changes, each naming the issue and the concrete fix.
-
-## Achievements
-What is quantified well (quote it), and which vague statements need metrics (quote them).
-
-## Keywords
-Relevant keywords present; important keywords missing; any overused buzzwords.
-
-## Action Verbs
-Strong verbs used; weak phrasing ("Responsible for", "Helped with") with stronger replacements.
-
-## Section Feedback
-A short assessment per resume section (Summary, Experience, Skills, Education, Certifications, etc.).
-
-## ATS Compatibility
-Only real issues found (tables, graphics, unusual fonts, missing standard sections). If none, say so.
-
-## Grammar & Spelling
-Quote exact text with errors and give corrections; note tense/format inconsistencies.
-
-Do NOT output JSON. Do NOT wrap the whole response in code fences. Reference
-actual content from the resume. Every suggestion must be actionable with
-concrete examples.`;
+${RESUME_REVIEW_OUTPUT_FORMAT}`;

@@ -57,5 +57,26 @@ export type AgentAddJobResult = {
   validationError?: string;
 };
 
-export const AGENT_CHAT_TOOL_NAMES = ["add_job"] as const;
+// Which rule picked the resume. Surfaced so the result card can say "your
+// default resume" instead of leaving the user guessing which one was read.
+export type AgentResumeSource = "named" | "page" | "default" | "only";
+
+// What get_resume returns to the model AND to the result card. resumeText is
+// the only large field; the card must never render it.
+export type AgentGetResumeResult =
+  | {
+      status: "ok";
+      resumeId: string;
+      title: string;
+      resumeText: string;
+      chars: number;
+      truncated: boolean;
+      source: AgentResumeSource;
+      ambiguousTitle?: boolean;
+    }
+  | { status: "needs_selection"; resumes: { id: string; title: string }[] }
+  | { status: "no_resumes" }
+  | { status: "unreadable"; title: string; reason: string };
+
+export const AGENT_CHAT_TOOL_NAMES = ["add_job", "get_resume"] as const;
 export type AgentChatToolName = (typeof AGENT_CHAT_TOOL_NAMES)[number];

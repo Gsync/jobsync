@@ -1,4 +1,10 @@
 import { render, screen } from "@testing-library/react";
+
+const sendMessage = vi.fn();
+vi.mock("@/components/agent/AgentChatProvider", () => ({
+  useAgentChat: () => ({ sendMessage }),
+}));
+
 import { AgentResultCard } from "@/components/agent/AgentResultCard";
 
 const resultPart = (output: unknown, state = "output-available") =>
@@ -117,5 +123,55 @@ describe("AgentResultCard", () => {
       />,
     );
     expect(screen.getByText(/could not|failed/i)).toBeInTheDocument();
+  });
+
+  const getResumePart = (output: unknown) => ({
+    type: "tool-get_resume",
+    toolCallId: "c2",
+    state: "output-available",
+    input: {},
+    output,
+  });
+
+  it("names the resume it read without dumping the text", () => {
+    render(
+      <AgentResultCard
+        part={
+          getResumePart({
+            status: "ok",
+            resumeId: "r1",
+            title: "Senior Engineer Resume",
+            resumeText: "SECRET RESUME BODY",
+            chars: 18,
+            truncated: false,
+            source: "default",
+          }) as any
+        }
+      />,
+    );
+    expect(screen.getByText(/Senior Engineer Resume/)).toBeInTheDocument();
+    expect(screen.queryByText(/SECRET RESUME BODY/)).not.toBeInTheDocument();
+  });
+
+  it("offers a picker when the resume is ambiguous", () => {
+    render(
+      <AgentResultCard
+        part={
+          getResumePart({
+            status: "needs_selection",
+            resumes: [
+              { id: "r1", title: "Engineer Resume" },
+              { id: "r2", title: "PM Resume" },
+            ],
+          }) as any
+        }
+      />,
+    );
+    expect(screen.getByLabelText("Select a resume")).toBeInTheDocument();
+  });
+
+  it("says so when there are no resumes rather than inventing one", () => {
+    render(<AgentResultCard part={getResumePart({ status: "no_resumes" }) as any} />);
+    expect(screen.getByText(/don't have any resumes/i)).toBeInTheDocument();
   });
 });

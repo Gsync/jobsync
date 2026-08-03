@@ -35,6 +35,16 @@ type AgentChatValue = ReturnType<typeof useAgentChatValue>;
 
 const AgentChatContext = createContext<AgentChatValue | null>(null);
 
+// The only route that identifies a resource the chat can read. Derived from
+// the pathname rather than plumbed through props so no page has to know the
+// panel exists.
+const RESUME_ROUTE = /^\/dashboard\/profile\/resume\/([^/]+)$/;
+
+export function pageContextFor(pathname: string): PageContext {
+  const resumeId = pathname.match(RESUME_ROUTE)?.[1];
+  return resumeId ? { route: pathname, resumeId } : { route: pathname };
+}
+
 function useAgentChatValue(initialMessages: UIMessage[]) {
   const router = useRouter();
   const pathname = usePathname();
@@ -56,9 +66,9 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     ok: true,
   });
 
-  const pageContextRef = useRef<PageContext>({ route: pathname });
+  const pageContextRef = useRef<PageContext>(pageContextFor(pathname));
   useEffect(() => {
-    pageContextRef.current = { route: pathname };
+    pageContextRef.current = pageContextFor(pathname);
   }, [pathname]);
 
   const chat = useChat({

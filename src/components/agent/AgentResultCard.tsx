@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { getToolName, type ToolUIPart } from "ai";
 import { Badge } from "@/components/ui/badge";
-import type { AgentAddJobResult } from "@/models/agent.model";
+import { AgentResumePicker } from "@/components/agent/AgentResumePicker";
+import type { AgentAddJobResult, AgentGetResumeResult } from "@/models/agent.model";
 
 // Composed from the tool result's STRUCTURED fields, never from
 // createJobFromNames' message string — that prose is MCP-facing protocol text
@@ -80,6 +81,56 @@ function AddJobResult({
   );
 }
 
+// The resume text itself is never rendered: the user is about to read the
+// review, not the serialization, and the card would be a wall of text.
+function GetResumeResult({ output }: { output: AgentGetResumeResult }) {
+  if (output.status === "no_resumes") {
+    return (
+      <p className="text-sm">
+        You don&apos;t have any resumes yet — create one on the Profile page.
+      </p>
+    );
+  }
+
+  if (output.status === "unreadable") {
+    return (
+      <p className="text-sm">
+        Couldn&apos;t read <strong>{output.title}</strong> — {output.reason}
+      </p>
+    );
+  }
+
+  if (output.status === "needs_selection") {
+    return (
+      <div className="text-sm">
+        <p>Which resume?</p>
+        <AgentResumePicker resumes={output.resumes} />
+      </div>
+    );
+  }
+
+  const sourceNote =
+    output.source === "default"
+      ? " (your default)"
+      : output.source === "page"
+        ? " (the one you're viewing)"
+        : "";
+
+  return (
+    <div className="text-sm">
+      <p>
+        Read <strong>{output.title}</strong>
+        {sourceNote}.
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {output.chars.toLocaleString()} characters
+        {output.truncated ? " · truncated" : ""}
+        {output.ambiguousTitle ? " · more than one resume has this title" : ""}
+      </p>
+    </div>
+  );
+}
+
 export function AgentResultCard({ part }: { part: ToolUIPart }) {
   if (part.state === "output-denied") {
     return (
@@ -99,12 +150,15 @@ export function AgentResultCard({ part }: { part: ToolUIPart }) {
 
   if (part.state !== "output-available") return null;
 
+  const toolName = getToolName(part);
   const body =
-    getToolName(part) === "add_job" ? (
+    toolName === "add_job" ? (
       <AddJobResult
         output={part.output as AgentAddJobResult}
         input={(part.input ?? {}) as Record<string, unknown>}
       />
+    ) : toolName === "get_resume" ? (
+      <GetResumeResult output={part.output as AgentGetResumeResult} />
     ) : null;
 
   return <div className="rounded-sm border p-3">{body}</div>;

@@ -40,6 +40,7 @@ vi.mock("@/utils/ai.utils", () => ({
 
 import {
   AgentChatProvider,
+  pageContextFor,
   useAgentChat,
 } from "@/components/agent/AgentChatProvider";
 import { RightRailProvider, useRightRail } from "@/context/RightRailContext";
@@ -188,5 +189,40 @@ describe("AgentChatProvider", () => {
     });
     expect(screen.getByTestId("state").textContent).toMatch(/false$/);
     expect(checkOllamaConnection).not.toHaveBeenCalled();
+  });
+
+  it("puts the page context in the request body", () => {
+    render(
+      <RightRailProvider>
+        <AgentChatProvider initialMessages={[]}>
+          <Probe />
+        </AgentChatProvider>
+      </RightRailProvider>,
+    );
+    // prepareSendMessagesRequest is `protected` on HttpChatTransport: it is
+    // there at runtime and only tsc objects. Cast rather than drop the test —
+    // this is what proves the derived resumeId reaches the server, as opposed
+    // to pageContextFor, which proves only the regex.
+    const transport = chatInit().transport as any;
+    const { body } = transport.prepareSendMessagesRequest({ messages: [] });
+    expect(body.pageContext).toEqual({ route: "/dashboard/myjobs" });
+  });
+});
+
+describe("pageContextFor", () => {
+  it("extracts the resume id from a resume detail route", () => {
+    expect(pageContextFor("/dashboard/profile/resume/abc-123")).toEqual({
+      route: "/dashboard/profile/resume/abc-123",
+      resumeId: "abc-123",
+    });
+  });
+
+  it("omits resumeId everywhere else", () => {
+    expect(pageContextFor("/dashboard/myjobs")).toEqual({
+      route: "/dashboard/myjobs",
+    });
+    expect(pageContextFor("/dashboard/profile/resume")).toEqual({
+      route: "/dashboard/profile/resume",
+    });
   });
 });

@@ -7,6 +7,7 @@ import { useAgentChat } from "@/components/agent/AgentChatProvider";
 // be edited before it costs a 30–60s local generation.
 const EXAMPLES = [
   "Add this job posting",
+  "Review my resume",
   "Add a job: Senior Platform Engineer at Stripe, remote",
 ];
 
@@ -19,8 +20,9 @@ export function AgentChatEmptyState() {
           asked what it can do will happily invent capabilities. */}
       <p className="text-sm text-muted-foreground">
         I can add a job to your tracker — paste a posting or type the details,
-        and I&apos;ll show you what I extracted before anything is saved. I
-        can&apos;t read your existing jobs, resumes or tasks yet.
+        and I&apos;ll show you what I extracted before anything is saved. I can
+        also read and review your resumes. I can&apos;t read your existing jobs
+        or tasks yet.
       </p>
 
       {preflight.checked && !preflight.ok ? (

@@ -27,7 +27,7 @@ import { mapAgentError } from "@/lib/agent/errors";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { saveChatConversation } from "@/actions/agentChat.actions";
 import { AiProvider } from "@/models/ai.model";
-import type { AgentAddJobResult } from "@/models/agent.model";
+import type { AgentAddJobResult, AgentGetResumeResult } from "@/models/agent.model";
 
 // One structured line per turn. Sizes and outcomes only — never the pasted
 // posting and never the extracted arguments.
@@ -42,16 +42,23 @@ function outcomeOf(message: UIMessage | undefined): {
 } {
   for (const part of message?.parts ?? []) {
     if (!isToolUIPart(part)) continue;
+    const tool = part.type.replace(/^tool-/, "");
+    if (part.state !== "output-available") {
+      return { tool, state: part.state, outcome: part.state };
+    }
+    // Read and write tools report success differently; casting every output
+    // to AgentAddJobResult logged a resume read as "duplicate".
+    if (tool === "get_resume") {
+      const output = part.output as AgentGetResumeResult | undefined;
+      return { tool, state: part.state, outcome: output?.status ?? "none" };
+    }
     const output = part.output as AgentAddJobResult | undefined;
-    const outcome =
-      part.state !== "output-available"
-        ? part.state
-        : output?.validationError
-          ? "validation"
-          : output?.created
-            ? "created"
-            : "duplicate";
-    return { tool: part.type.replace(/^tool-/, ""), state: part.state, outcome };
+    const outcome = output?.validationError
+      ? "validation"
+      : output?.created
+        ? "created"
+        : "duplicate";
+    return { tool, state: part.state, outcome };
   }
   return { tool: null, state: null, outcome: "none" };
 }

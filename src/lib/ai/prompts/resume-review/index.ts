@@ -3,7 +3,7 @@
  */
 
 // System prompts
-export { RESUME_REVIEW_SYSTEM_PROMPT } from "./system";
+export { RESUME_REVIEW_SYSTEM_PROMPT, RESUME_REVIEW_OUTPUT_FORMAT } from "./system";
 
 // User prompt builders
 export { buildResumeReviewPrompt } from "./user";

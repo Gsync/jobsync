@@ -4,6 +4,12 @@ import {
   AGENT_TOOL_DESCRIPTIONS,
   buildPasteContextMessage,
 } from "@/lib/agent/prompt";
+import {
+  RESUME_REVIEW_SYSTEM_PROMPT,
+  RESUME_REVIEW_OUTPUT_FORMAT,
+} from "@/lib/ai/prompts/resume-review";
+
+const SCORES_LINE = "SCORES: overall=<0-100> impact=<0-100> clarity=<0-100> ats=<0-100>";
 
 describe("agent chat system prompt", () => {
   it("is composed from named sections, all of which appear in the prompt", () => {
@@ -50,5 +56,28 @@ describe("agent chat system prompt", () => {
   it("describes add_job without mentioning tools the chat does not expose", () => {
     expect(AGENT_TOOL_DESCRIPTIONS.add_job).toBeTruthy();
     expect(AGENT_TOOL_DESCRIPTIONS.add_job).not.toMatch(/upsert|allowDuplicate|update_job/);
+  });
+
+  // One source of truth: the MCP path and the review route already share
+  // this text, and a second copy in the chat would drift silently.
+  it("reuses the review output format rather than restating it", () => {
+    expect(AGENT_CHAT_SYSTEM_PROMPT).toContain(RESUME_REVIEW_OUTPUT_FORMAT);
+    expect(RESUME_REVIEW_SYSTEM_PROMPT).toContain(RESUME_REVIEW_OUTPUT_FORMAT);
+  });
+
+  it("keeps the exact SCORES line the shared parser matches", () => {
+    expect(RESUME_REVIEW_OUTPUT_FORMAT).toContain(SCORES_LINE);
+    expect(RESUME_REVIEW_OUTPUT_FORMAT).toContain("## Grammar & Spelling");
+  });
+
+  it("no longer claims resumes are unreadable", () => {
+    expect(AGENT_CHAT_SYSTEM_PROMPT).toContain("get_resume");
+    expect(AGENT_CHAT_SYSTEM_PROMPT).not.toContain(
+      "saved jobs, resumes, tasks",
+    );
+  });
+
+  it("describes both tools", () => {
+    expect(Object.keys(AGENT_TOOL_DESCRIPTIONS)).toEqual(["add_job", "get_resume"]);
   });
 });

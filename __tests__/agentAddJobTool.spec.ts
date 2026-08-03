@@ -102,7 +102,7 @@ describe("add_job agent tool", () => {
     expect(result.validationError).not.toContain("db is down");
   });
 
-  it("registers exactly one tool in v1", () => {
-    expect(Object.keys(buildAgentTools({ userId: "user-1" }))).toEqual(["add_job"]);
+  it("registers exactly the two tools the chat exposes", () => {
+    expect(Object.keys(buildAgentTools({ userId: "user-1" }))).toEqual(["add_job", "get_resume"]);
   });
 });

@@ -38,3 +38,12 @@ export const AgentAddJobParseSchema = AgentAddJobSchema.extend({
 });
 
 export type AgentAddJobInput = z.infer<typeof AgentAddJobParseSchema>;
+
+// One optional field, and never an id: the model names a resume the way the
+// user did, and the server resolves it ownership-scoped. An id-shaped input
+// would be an IDOR surface the model could be talked into filling.
+export const AgentGetResumeSchema = z.object({
+  resumeTitle: z.string().optional().describe("The title of the resume to read, as the user referred to it. Omit this entirely if the user did not name one — the app then uses the resume they are currently viewing, or their default resume."),
+});
+
+export type AgentGetResumeInput = z.infer<typeof AgentGetResumeSchema>;
