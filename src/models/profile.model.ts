@@ -130,6 +130,8 @@ export interface CoverLetter {
   profileId?: string;
   title: string;
   content: string;
+  FileId?: string | null;
+  File?: File | null;
   createdAt?: Date;
   updatedAt?: Date;
   _count?: {

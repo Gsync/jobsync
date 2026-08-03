@@ -15,6 +15,7 @@ vi.mock("@prisma/client", () => {
     coverLetter: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
+      findUnique: vi.fn(),
       count: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
@@ -23,6 +24,11 @@ vi.mock("@prisma/client", () => {
     profile: {
       findFirst: vi.fn(),
       create: vi.fn(),
+    },
+    file: {
+      create: vi.fn(),
+      findFirst: vi.fn(),
+      delete: vi.fn(),
     },
     job: {
       findUnique: vi.fn(),
@@ -35,6 +41,10 @@ vi.mock("@prisma/client", () => {
 
 vi.mock("@/utils/user.utils", () => ({
   getCurrentUser: vi.fn(),
+}));
+
+vi.mock("@/actions/profile.actions", () => ({
+  deleteFile: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe("coverLetterActions", () => {
@@ -79,8 +89,17 @@ describe("coverLetterActions", () => {
           profileId: true,
           title: true,
           content: true,
+          FileId: true,
           createdAt: true,
           updatedAt: true,
+          File: {
+            select: {
+              id: true,
+              fileName: true,
+              filePath: true,
+              fileType: true,
+            },
+          },
           _count: {
             select: { Job: true },
           },
@@ -166,6 +185,7 @@ describe("coverLetterActions", () => {
           title: "My Cover Letter",
           content:
             "This is the content of my cover letter for the position.",
+          FileId: null,
         },
       });
     });
@@ -176,25 +196,68 @@ describe("coverLetterActions", () => {
       (prisma.profile.findFirst as any).mockResolvedValue(null);
       (prisma.profile.create as any).mockResolvedValue({
         id: "new-profile-id",
+        coverLetters: [{ id: "cl-new" }],
       });
 
       const result = await createCoverLetter("New CL", "Content for the new cover letter here.");
 
       expect(result).toEqual({
         success: true,
-        data: { id: "new-profile-id" },
+        data: { id: "new-profile-id", coverLetters: [{ id: "cl-new" }] },
       });
       expect(prisma.profile.create).toHaveBeenCalledWith({
         data: {
           userId: mockUser.id,
           coverLetters: {
             create: [
-              { title: "New CL", content: "Content for the new cover letter here." },
+              {
+                title: "New CL",
+                content: "Content for the new cover letter here.",
+                FileId: null,
+              },
             ],
           },
         },
+        include: { coverLetters: { select: { id: true } } },
       });
       expect(prisma.coverLetter.create).not.toHaveBeenCalled();
+    });
+
+    it("should create a cover letter with an uploaded file", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.coverLetter.findFirst as any).mockResolvedValue(null);
+      (prisma.profile.findFirst as any).mockResolvedValue({
+        id: "profile-id",
+      });
+      (prisma.file.create as any).mockResolvedValue({ id: "file-1" });
+      (prisma.coverLetter.create as any).mockResolvedValue({
+        ...mockCoverLetter,
+        FileId: "file-1",
+      });
+
+      const result = await createCoverLetter(
+        "PDF Letter",
+        "",
+        "letter.pdf",
+        "data/files/cover-letters/letter.pdf",
+      );
+
+      expect(result?.success).toBe(true);
+      expect(prisma.file.create).toHaveBeenCalledWith({
+        data: {
+          fileName: "letter.pdf",
+          filePath: "data/files/cover-letters/letter.pdf",
+          fileType: "cover-letter",
+        },
+      });
+      expect(prisma.coverLetter.create).toHaveBeenCalledWith({
+        data: {
+          profileId: "profile-id",
+          title: "PDF Letter",
+          content: "",
+          FileId: "file-1",
+        },
+      });
     });
 
     it("should return error when title already exists", async () => {
@@ -316,6 +379,9 @@ describe("coverLetterActions", () => {
   describe("deleteCoverLetterById", () => {
     it("should delete a cover letter successfully", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.coverLetter.findUnique as any).mockResolvedValue({
+        FileId: null,
+      });
       (prisma.coverLetter.delete as any).mockResolvedValue(
         mockCoverLetter,
       );
@@ -326,6 +392,20 @@ describe("coverLetterActions", () => {
       expect(prisma.coverLetter.delete).toHaveBeenCalledWith({
         where: { id: "cl-id", profile: { userId: "user-id" } },
       });
+    });
+
+    it("should delete attached file before deleting cover letter", async () => {
+      const { deleteFile } = await import("@/actions/profile.actions");
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.coverLetter.findUnique as any).mockResolvedValue({
+        FileId: "file-1",
+      });
+      (prisma.coverLetter.delete as any).mockResolvedValue(mockCoverLetter);
+
+      const result = await deleteCoverLetterById("cl-id");
+
+      expect(result).toEqual({ success: true });
+      expect(deleteFile).toHaveBeenCalledWith("file-1");
     });
 
     it("should return error when user is not authenticated", async () => {
@@ -341,6 +421,9 @@ describe("coverLetterActions", () => {
 
     it("should handle database errors", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.coverLetter.findUnique as any).mockResolvedValue({
+        FileId: null,
+      });
       (prisma.coverLetter.delete as any).mockRejectedValue(
         new Error("Database error"),
       );

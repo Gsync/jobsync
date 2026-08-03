@@ -425,12 +425,13 @@ export const createResumeProfile = async (
 const createFileEntry = async (
   fileName: string | undefined,
   filePath: string | undefined,
+  fileType: string = "resume",
 ) => {
   const newFileEntry = await prisma.file.create({
     data: {
       fileName: fileName!,
       filePath: filePath!,
-      fileType: "resume",
+      fileType,
     },
   });
   return newFileEntry.id;
@@ -743,7 +744,10 @@ export const deleteFile = async (fileId: string) => {
   const file = await prisma.file.findFirst({
     where: {
       id: fileId,
-      Resume: { profile: { userId: user.id } },
+      OR: [
+        { Resume: { profile: { userId: user.id } } },
+        { CoverLetter: { profile: { userId: user.id } } },
+      ],
     },
   });
 

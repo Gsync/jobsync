@@ -95,20 +95,23 @@ model CoverLetter {
   id        String   @id @default(uuid())
   profileId String
   title     String
-  content   String
+  content   String   @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   profile   Profile  @relation(fields: [profileId], references: [id])
+  File      File?    @relation(fields: [FileId], references: [id])
+  FileId    String?  @unique
   Job       Job[]
 }
 
 model File {
-  id         String   @id @default(uuid())
-  fileName   String
-  filePath   String
-  fileType   String
-  uploadedAt DateTime @default(now())
-  Resume     Resume?
+  id          String       @id @default(uuid())
+  fileName    String
+  filePath    String
+  fileType    String
+  uploadedAt  DateTime     @default(now())
+  Resume      Resume?
+  CoverLetter CoverLetter?
 }
 
 model ResumeSection {
