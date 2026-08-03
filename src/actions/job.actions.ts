@@ -6,8 +6,16 @@ import { AddJobFormSchema } from "@/models/addJobForm.schema";
 import { JOB_TYPES, JobStatus } from "@/models/job.model";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
+import { assertResumeOwnership } from "@/lib/resumeOwnership";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+
+/** Coerce empty/whitespace optional FK strings to null (avoids Prisma P2003). */
+const optionalFkId = (value?: string | null): string | null => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
 
 export const getStatusList = async (): Promise<any | undefined> => {
   try {
@@ -355,6 +363,13 @@ export const addJob = async (
       tags,
     } = data;
 
+    const resumeId = optionalFkId(resume);
+    const coverLetterId = optionalFkId(coverLetter);
+
+    if (resumeId) {
+      await assertResumeOwnership(resumeId, user.id);
+    }
+
     const job = await createJobRecord({
       jobTitleId: title,
       companyId: company,
@@ -370,8 +385,8 @@ export const addJob = async (
       userId: user.id,
       jobUrl,
       applied,
-      resumeId: resume,
-      coverLetterId: coverLetter,
+      resumeId,
+      coverLetterId,
       tagIds: tags ?? [],
     });
     revalidatePath("/dashboard");
@@ -415,7 +430,13 @@ export const updateJob = async (
       tags,
     } = data;
 
+    const resumeId = optionalFkId(resume);
+    const coverLetterId = optionalFkId(coverLetter);
     const tagIds = tags ?? [];
+
+    if (resumeId) {
+      await assertResumeOwnership(resumeId, user.id);
+    }
 
     const job = await prisma.job.update({
       where: {
@@ -437,8 +458,8 @@ export const updateJob = async (
         workplaceType,
         jobUrl,
         applied,
-        resumeId: resume,
-        coverLetterId: coverLetter,
+        resumeId,
+        coverLetterId,
         tags: { set: tagIds.map((id) => ({ id })) },
       },
     });

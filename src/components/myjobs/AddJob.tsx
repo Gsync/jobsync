@@ -118,25 +118,28 @@ export function AddJob({
 
   const loadResumes = useCallback(async () => {
     try {
-      const resumes = await getResumeList(
-        1,
-        APP_CONSTANTS.RECORDS_PER_PAGE,
-        APP_CONSTANTS.MIN_RESUME_SECTIONS_FOR_SELECTION,
-      );
-      setResumes(resumes.data);
+      // Load all of the user's resumes (minSections=0). The section-count
+      // filter is for AI/automation pickers only; job assignment should list
+      // every resume the user can see on Profile.
+      const result = await getResumeList(1, APP_CONSTANTS.RECORDS_PER_PAGE);
+      if (result?.success) {
+        setResumes(result.data ?? []);
+      }
     } catch (error) {
       console.error("Failed to load resumes:", error);
     }
-  }, [setResumes]);
+  }, []);
 
   const loadCoverLetters = useCallback(async () => {
     try {
       const result = await getCoverLetterList(1, 100);
-      setCoverLetters(result.data);
+      if (result?.success) {
+        setCoverLetters(result.data ?? []);
+      }
     } catch (error) {
       console.error("Failed to load cover letters:", error);
     }
-  }, [setCoverLetters]);
+  }, []);
 
   useEffect(() => {
     if (editJob) {

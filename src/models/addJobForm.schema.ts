@@ -59,7 +59,14 @@ export const AddJobFormSchema = z.object({
     }),
   jobUrl: z.string().optional(),
   applied: z.boolean().default(false),
-  resume: z.string().optional(),
-  coverLetter: z.string().optional(),
+  // Empty select values must not become FK strings (Prisma P2003).
+  resume: z
+    .string()
+    .optional()
+    .transform((val) => (val && val.trim() !== "" ? val : undefined)),
+  coverLetter: z
+    .string()
+    .optional()
+    .transform((val) => (val && val.trim() !== "" ? val : undefined)),
   tags: z.array(z.string()).max(APP_CONSTANTS.MAX_JOB_TAGS).optional().default([]),
 });

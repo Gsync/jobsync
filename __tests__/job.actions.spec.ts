@@ -44,6 +44,9 @@ vi.mock("@prisma/client", () => {
       create: vi.fn(),
       update: vi.fn(),
     },
+    resume: {
+      findUnique: vi.fn(),
+    },
   };
   return {
     PrismaClient: vi.fn(function () {
@@ -929,6 +932,7 @@ describe("jobActions", () => {
 
       expect(result).toStrictEqual({ data: jobData, success: true });
       expect(prisma.job.create).toHaveBeenCalledTimes(1);
+      expect(prisma.resume.findUnique).not.toHaveBeenCalled();
       expect(prisma.job.create).toHaveBeenCalledWith({
         data: {
           jobTitleId: jobData.title,
@@ -942,10 +946,12 @@ describe("jobActions", () => {
           appliedDate: jobData.dateApplied,
           description: jobData.jobDescription,
           jobType: jobData.type,
+          workplaceType: undefined,
           userId: mockUser.id,
           jobUrl: jobData.jobUrl,
           applied: jobData.applied,
-          resumeId: jobData.resume,
+          resumeId: null,
+          coverLetterId: null,
         },
       });
     });
@@ -970,14 +976,60 @@ describe("jobActions", () => {
           salaryRange: jobData.salaryRange,
           createdAt: jobData.createdAt,
           dueDate: jobData.dueDate,
+          appliedDate: undefined,
           description: jobData.jobDescription,
           jobType: jobData.type,
+          workplaceType: undefined,
           userId: mockUser.id,
+          jobUrl: undefined,
           applied: jobData.applied,
-          resumeId: jobData.resume,
+          resumeId: null,
+          coverLetterId: null,
         },
       });
       expect(result).toEqual({ data: jobData, success: true });
+    });
+    it("should normalize empty resume to null and skip ownership check", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.create as any).mockResolvedValue(jobData);
+
+      await addJob({ ...jobData, resume: "   " });
+
+      expect(prisma.resume.findUnique).not.toHaveBeenCalled();
+      expect(prisma.job.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ resumeId: null }),
+        }),
+      );
+    });
+    it("should validate resume ownership when resumeId is provided", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.resume.findUnique as any).mockResolvedValue({ id: "resume-1" });
+      (prisma.job.create as any).mockResolvedValue(jobData);
+
+      await addJob({ ...jobData, resume: "resume-1" });
+
+      expect(prisma.resume.findUnique).toHaveBeenCalledWith({
+        where: { id: "resume-1", profile: { userId: mockUser.id } },
+        select: { id: true },
+      });
+      expect(prisma.job.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ resumeId: "resume-1" }),
+        }),
+      );
+    });
+    it("should reject create when resume is not owned by the user", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.resume.findUnique as any).mockResolvedValue(null);
+
+      await expect(
+        addJob({ ...jobData, resume: "someone-elses-resume" }),
+      ).resolves.toStrictEqual({
+        success: false,
+        message: "Resume not found or access denied",
+      });
+      expect(prisma.job.create).not.toHaveBeenCalled();
     });
     it("should handle unexpected errors", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
@@ -1009,6 +1061,26 @@ describe("jobActions", () => {
 
       expect(result).toStrictEqual({ data: jobData, success: true });
       expect(prisma.job.update).toHaveBeenCalledTimes(1);
+      expect(prisma.job.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            resumeId: null,
+            coverLetterId: null,
+          }),
+        }),
+      );
+    });
+    it("should reject update when resume is not owned by the user", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.resume.findUnique as any).mockResolvedValue(null);
+
+      await expect(
+        updateJob({ ...jobData, resume: "someone-elses-resume" }),
+      ).resolves.toStrictEqual({
+        success: false,
+        message: "Resume not found or access denied",
+      });
+      expect(prisma.job.update).not.toHaveBeenCalled();
     });
     it("should handle unexpected errors", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
