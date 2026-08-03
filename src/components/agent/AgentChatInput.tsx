@@ -50,6 +50,16 @@ function chipAttachment(chip: AgentPastePartData): AttachmentData {
   };
 }
 
+// crypto.randomUUID is secure-context-only, so it is absent over plain http on
+// a LAN host and calling it drops the paste. The id only has to be unique
+// within one composer, never unguessable.
+function chipId(): string {
+  return (
+    crypto.randomUUID?.() ??
+    `paste-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+  );
+}
+
 function queuedText(parts: ComposerPart[]): string {
   const text = parts.find((part) => part.type === "text");
   const chip = parts.find(isAgentPastePart);
@@ -85,7 +95,7 @@ export function AgentChatInput() {
       ? pasted.slice(0, APP_CONSTANTS.AGENT_CHAT_PASTE_MAX_CHARS)
       : pasted;
     setChip({
-      id: crypto.randomUUID(),
+      id: chipId(),
       text: body,
       chars: body.length,
       truncated,

@@ -119,6 +119,16 @@ export const POST = async (req: NextRequest) => {
     return NextResponse.json({ error: "Invalid chat request." }, { status: 400 });
   }
 
+  // A chip-only send — paste, then Send without typing — has no text part,
+  // and the paste part is not a model part, so the message converts to empty
+  // content. Ollama rejects the whole request on it (its content field is a
+  // string; the provider serializes empty content as []), and it keeps doing
+  // so on every later turn while the shell stays in the window. The paste
+  // context message below is what actually carries the posting.
+  modelMessages = modelMessages.filter(
+    (message) => !(Array.isArray(message.content) && message.content.length === 0),
+  );
+
   // Injected only on the turn that introduced the paste. On the approval POST
   // the last message is the assistant's, so nothing is re-injected — and the
   // full text never reaches the model on any turn.

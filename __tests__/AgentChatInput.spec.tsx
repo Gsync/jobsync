@@ -58,6 +58,27 @@ describe("AgentChatInput", () => {
     expect(screen.queryByText(/pasted/i)).not.toBeInTheDocument();
   });
 
+  // Browsers gate crypto.randomUUID behind a secure context, so it is absent
+  // over plain http on a LAN host. Node's global crypto is not gated, which is
+  // why every other test here passes while the browser drops the paste.
+  it("chips an over-threshold paste where crypto.randomUUID is unavailable", async () => {
+    const original = crypto.randomUUID;
+    Object.defineProperty(crypto, "randomUUID", {
+      configurable: true,
+      value: undefined,
+    });
+    try {
+      render(<AgentChatInput />);
+      await paste(long);
+      expect(screen.getByText(/pasted/i)).toBeInTheDocument();
+    } finally {
+      Object.defineProperty(crypto, "randomUUID", {
+        configurable: true,
+        value: original,
+      });
+    }
+  });
+
   it("truncates and labels a paste above the ceiling", async () => {
     render(<AgentChatInput />);
     await paste(huge);

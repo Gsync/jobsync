@@ -96,6 +96,31 @@ describe("POST /api/ai/chat", () => {
     expect(saveOrder).toBeLessThan(streamOrder);
   });
 
+  // Pasting and hitting Send without typing produces a message whose only
+  // part is the chip. convertToModelMessages drops that custom data part, so
+  // the message converts to empty content — and ollama-ai-provider-v2
+  // serializes empty user content as [], which Ollama 400s on because its
+  // content field is a string. The paste context message carries the posting,
+  // so the empty shell has nothing left to say.
+  it("never sends a contentless message when the user pastes without typing", async () => {
+    const chipOnly = {
+      id: "m1",
+      role: "user",
+      parts: [
+        { type: AGENT_PASTE_PART_TYPE, id: "p1", data: { id: "p1", text: "MARKER posting", chars: 14, truncated: false } },
+      ],
+    };
+    await POST(req({ messages: [chipOnly] }));
+    expect(streamText).toHaveBeenCalled();
+    const sent = streamArgs().messages;
+    const contentless = sent.filter(
+      (m: any) => Array.isArray(m.content) && m.content.length === 0,
+    );
+    expect(contentless).toEqual([]);
+    // The posting still has to reach the model, or we fixed it by muting it.
+    expect(JSON.stringify(sent)).toContain("MARKER posting");
+  });
+
   it("sends only the truncated head to the model, never the full paste", async () => {
     const posting = "HEAD_MARKER " + "x".repeat(APP_CONSTANTS.AGENT_CHAT_PASTE_HEAD_CHARS) + " TAIL_MARKER";
     await POST(req({ messages: [pasteMessage(posting)] }));

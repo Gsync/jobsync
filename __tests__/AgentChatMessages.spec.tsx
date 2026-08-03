@@ -135,6 +135,59 @@ describe("AgentChatMessages", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("shows the thinking row while the first assistant part is still pending", () => {
+    chat.status = "submitted";
+    chat.messages = [user([{ type: "text", text: "add a job" }])];
+    render(<AgentChatMessages />);
+    expect(screen.getByText(/thinking/i)).toBeInTheDocument();
+  });
+
+  it("shows the thinking row after a tool result while the reply is composed", () => {
+    chat.status = "streaming";
+    chat.messages = [
+      assistant([
+        toolPart("output-available", {
+          output: { created: true, jobId: "j1", resolutions: [] },
+        }),
+      ]),
+    ];
+    render(<AgentChatMessages />);
+    expect(screen.getByText(/thinking/i)).toBeInTheDocument();
+  });
+
+  it("does not double up on the running card, which spins already", () => {
+    chat.status = "streaming";
+    chat.messages = [assistant([toolPart("input-available")])];
+    render(<AgentChatMessages />);
+    expect(screen.getByText(/preparing to add a job/i)).toBeInTheDocument();
+    expect(screen.queryByText(/thinking/i)).not.toBeInTheDocument();
+  });
+
+  it("does not show the thinking row while an approval is on screen", () => {
+    chat.status = "streaming";
+    chat.messages = [
+      assistant([toolPart("approval-requested", { approval: { id: "ap1" } })]),
+    ];
+    render(<AgentChatMessages />);
+    expect(screen.queryByText(/thinking/i)).not.toBeInTheDocument();
+  });
+
+  it("does not show the thinking row once text is arriving", () => {
+    chat.status = "streaming";
+    chat.messages = [assistant([{ type: "text", text: "I found the" }])];
+    render(<AgentChatMessages />);
+    expect(screen.queryByText(/thinking/i)).not.toBeInTheDocument();
+  });
+
+  it("does not show the thinking row on a settled transcript", () => {
+    chat.messages = [
+      user([{ type: "text", text: "add a job" }]),
+      assistant([{ type: "text", text: "Done." }]),
+    ];
+    render(<AgentChatMessages />);
+    expect(screen.queryByText(/thinking/i)).not.toBeInTheDocument();
+  });
+
   it("renders assistant text as plain text, never as markdown media", () => {
     chat.messages = [
       assistant([{ type: "text", text: "![x](http://evil/a.png)" }]),

@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { AgentApprovalCard } from "@/components/agent/AgentApprovalCard";
 import { AgentResultCard } from "@/components/agent/AgentResultCard";
+import { AgentStatusRow } from "@/components/agent/AgentStatusRow";
 import { AgentToolRunningCard } from "@/components/agent/AgentToolRunningCard";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
 import { resolvePastedText } from "@/lib/agent/paste";
@@ -36,6 +37,34 @@ function endsAwaitingReply(messages: UIMessage[], status: string): boolean {
   return messages[messages.length - 1]?.role === "user";
 }
 
+// Two silent windows on a local model: the wait before the first assistant
+// part lands, and the wait after a tool result while the closing prose is
+// composed. Both look identical — nothing on screen moves and the only signal
+// is the submit button. Suppressed wherever the transcript already narrates
+// itself, so there is never a second spinner beside a card that has one.
+function showThinking(messages: UIMessage[], status: string): boolean {
+  if (status !== "submitted" && status !== "streaming") return false;
+  const last = messages[messages.length - 1];
+  if (!last || last.role !== "assistant") return true;
+
+  const tail = last.parts[last.parts.length - 1];
+  if (!tail) return true;
+  if (tail.type === "text") return tail.text.trim().length === 0;
+  if (!isStaticToolUIPart(tail)) return true;
+  switch (tail.state) {
+    // The running card spins for these two.
+    case "input-streaming":
+    case "input-available":
+    // Waiting on the user, not the model.
+    case "approval-requested":
+    // The approval card already says "Waiting…".
+    case "approval-responded":
+      return false;
+    default:
+      return true;
+  }
+}
+
 export function AgentChatMessages() {
   const {
     messages,
@@ -50,6 +79,7 @@ export function AgentChatMessages() {
   const pastedText = resolvePastedText(messages);
   const showContinue =
     !dismissed && (interruptedTurn || endsAwaitingReply(messages, status));
+  const thinking = showThinking(messages, status);
 
   const dismiss = () => {
     setDismissed(true);
@@ -137,6 +167,8 @@ export function AgentChatMessages() {
             </Button>
           </div>
         )}
+
+        {thinking && <AgentStatusRow label="Thinking…" />}
       </ConversationContent>
       <ConversationScrollButton />
     </Conversation>
