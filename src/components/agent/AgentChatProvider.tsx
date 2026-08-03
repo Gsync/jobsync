@@ -150,6 +150,14 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
 
   const dismissInterrupted = useCallback(() => setInterruptedTurn(false), []);
 
+  // A signal, not a value: the composer's textarea is uncontrolled, so it
+  // remounts on the nonce and picks the text up as its defaultValue.
+  const [prefill, setPrefill] = useState<{ text: string; nonce: number }>();
+  const prefillComposer = useCallback(
+    (text: string) => setPrefill({ text, nonce: Date.now() }),
+    [],
+  );
+
   return {
     isOpen,
     open,
@@ -167,6 +175,8 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     dismissInterrupted,
     clear,
     preflight,
+    prefill,
+    prefillComposer,
   };
 }
 

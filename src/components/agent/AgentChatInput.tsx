@@ -12,7 +12,6 @@ import {
 } from "@/components/ai-elements/attachments";
 import {
   PromptInput,
-  PromptInputBody,
   PromptInputFooter,
   PromptInputHeader,
   PromptInputSubmit,
@@ -67,6 +66,7 @@ export function AgentChatInput() {
     error,
     clearError,
     preflight,
+    prefill,
   } = useAgentChat();
 
   const [text, setText] = useState("");
@@ -127,6 +127,12 @@ export function AgentChatInput() {
     }
   }, [approvalPending, status, queued, sendMessage]);
 
+  // The remounted textarea carries the prefill; `text` has to catch up or
+  // send stays disabled until the user types a character.
+  useEffect(() => {
+    if (prefill) setText(prefill.text);
+  }, [prefill]);
+
   const onStop = useCallback(() => {
     void stop();
   }, [stop]);
@@ -179,50 +185,52 @@ export function AgentChatInput() {
         <p className="text-xs text-muted-foreground">{preflight.error}</p>
       ) : null}
 
+      {/* No PromptInputBody: it wraps these in a display:contents div, and
+          InputGroup only stacks vertically via has-[>[data-align=block-end]],
+          a DOM-child selector that wrapper defeats. Nested, the group stays a
+          row and the textarea collapses to a ~24px sliver beside the footer. */}
       <PromptInput onSubmit={(message) => submit(message.text)}>
-        <PromptInputBody>
-          {chip ? (
-            <PromptInputHeader>
-              <Attachments variant="inline">
-                <Attachment data={chipAttachment(chip)}>
-                  <AttachmentPreview />
-                  <AttachmentInfo />
-                  {/* Not AttachmentRemove: it repeats its label in an sr-only
-                      span, so the chip's wording would appear twice. */}
-                  <Button
-                    aria-label="Remove pasted content"
-                    className="size-5 shrink-0 rounded p-0 [&_svg]:size-2.5"
-                    onClick={() => setChip(undefined)}
-                    type="button"
-                    variant="ghost"
-                  >
-                    <XIcon />
-                  </Button>
-                </Attachment>
-              </Attachments>
-            </PromptInputHeader>
-          ) : null}
-          {/* Uncontrolled: PromptInput reads the textarea through FormData and
-              resets it on submit. `text` mirrors it only to enable send. */}
-          <PromptInputTextarea
-            onChange={(event) => setText(event.currentTarget.value)}
-            onPaste={onPaste}
-            placeholder="Ask or paste a job posting…"
+        {chip ? (
+          <PromptInputHeader>
+            <Attachments variant="inline">
+              <Attachment data={chipAttachment(chip)}>
+                <AttachmentPreview />
+                <AttachmentInfo />
+                {/* Not AttachmentRemove: it repeats its label in an sr-only
+                    span, so the chip's wording would appear twice. */}
+                <Button
+                  aria-label="Remove pasted content"
+                  className="size-5 shrink-0 rounded p-0 [&_svg]:size-2.5"
+                  onClick={() => setChip(undefined)}
+                  type="button"
+                  variant="ghost"
+                >
+                  <XIcon />
+                </Button>
+              </Attachment>
+            </Attachments>
+          </PromptInputHeader>
+        ) : null}
+        {/* Uncontrolled: PromptInput reads the textarea through FormData and
+            resets it on submit. `text` mirrors it only to enable send. */}
+        <PromptInputTextarea
+          defaultValue={prefill?.text}
+          key={prefill?.nonce}
+          onChange={(event) => setText(event.currentTarget.value)}
+          onPaste={onPaste}
+          placeholder="Ask or paste a job posting…"
+        />
+        <PromptInputFooter>
+          <span className="text-xs text-muted-foreground">
+            {approvalPending && !queued ? "Waiting on your approval above" : ""}
+          </span>
+          <PromptInputSubmit
+            aria-label={isGenerating ? "Stop response" : "Send"}
+            disabled={!isGenerating && !canSend}
+            onStop={onStop}
+            status={status}
           />
-          <PromptInputFooter>
-            <span className="text-xs text-muted-foreground">
-              {approvalPending && !queued
-                ? "Waiting on your approval above"
-                : ""}
-            </span>
-            <PromptInputSubmit
-              aria-label={isGenerating ? "Stop response" : "Send"}
-              disabled={!isGenerating && !canSend}
-              onStop={onStop}
-              status={status}
-            />
-          </PromptInputFooter>
-        </PromptInputBody>
+        </PromptInputFooter>
       </PromptInput>
     </div>
   );

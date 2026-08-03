@@ -14,6 +14,7 @@ import { signOut } from "@/auth";
 import { getCurrentUser } from "@/utils/user.utils";
 import { ProfileDropdown } from "./ProfileDropdown";
 import SidebarToggle from "./SidebarToggle";
+import { AgentChatTrigger } from "./AgentChatTrigger";
 
 async function Header() {
   // const session = await auth();
@@ -70,6 +71,8 @@ async function Header() {
           className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
         /> */}
       </div>
+
+      <AgentChatTrigger />
 
       <ProfileDropdown
         user={user}

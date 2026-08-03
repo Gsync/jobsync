@@ -8,6 +8,7 @@ import { getAllCompanies } from "@/actions/company.actions";
 import { getAllJobTitles } from "@/actions/jobtitle.actions";
 import { getAllJobLocations } from "@/actions/jobLocation.actions";
 import { getAllTags } from "@/actions/tag.actions";
+import { notFound } from "next/navigation";
 
 async function JobDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,6 +22,10 @@ async function JobDetailsPage({ params }: { params: Promise<{ id: string }> }) {
       getJobSourceList(),
       getAllTags(),
     ]);
+
+  // A link to a job that was deleted (or never belonged to this user) would
+  // otherwise crash JobDetails on the first job.* read.
+  if (!job) notFound();
 
   return (
     <div className="col-span-3">
