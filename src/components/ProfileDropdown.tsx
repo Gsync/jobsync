@@ -11,25 +11,54 @@ import {
   DropdownMenuSeparator,
   DropdownMenuItem,
 } from "./ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import UserAvatar from "./UserAvatar";
 import { SupportDialog } from "./SupportDialog";
+import { cn } from "@/lib/utils";
 
 interface ProfileDropdownProps {
   user: any;
+  expanded: boolean;
   signOutAction: () => void;
 }
 
-export function ProfileDropdown({ user, signOutAction }: ProfileDropdownProps) {
+export function ProfileDropdown({
+  user,
+  expanded,
+  signOutAction,
+}: ProfileDropdownProps) {
   const [supportDialogOpen, setSupportDialogOpen] = useState(false);
+  const label = user?.email ?? "My Account";
 
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger aria-label="User menu">
-          <UserAvatar user={user} />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuLabel>{user?.email ?? "My Account"}</DropdownMenuLabel>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="User menu"
+                className="navlink h-10 w-full text-muted-foreground hover:text-foreground"
+              >
+                <span className="flex h-full w-14 shrink-0 items-center justify-center">
+                  <UserAvatar user={user} />
+                </span>
+                <span
+                  className={cn(
+                    "truncate text-sm transition-opacity duration-200",
+                    expanded ? "opacity-100 delay-100" : "opacity-0"
+                  )}
+                >
+                  {label}
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          {!expanded && <TooltipContent side="right">{label}</TooltipContent>}
+        </Tooltip>
+        <DropdownMenuContent side="right" align="end">
+          <DropdownMenuLabel>{label}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
             <Link href="/dashboard/settings" className="cursor-pointer">

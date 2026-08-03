@@ -10,6 +10,8 @@ import { AgentChatProvider } from "@/components/agent/AgentChatProvider";
 import { AgentChatPanel } from "@/components/agent/AgentChatPanel";
 import { getChatConversation } from "@/actions/agentChat.actions";
 import { APP_CONSTANTS } from "@/lib/constants";
+import { getCurrentUser } from "@/utils/user.utils";
+import { signOut } from "@/auth";
 
 export default async function RootLayout({
   children,
@@ -23,6 +25,7 @@ export default async function RootLayout({
   // every load, and the race where a message sent before hydration completes
   // is merged against an empty transcript and then persisted.
   const conversation = await getChatConversation();
+  const user = await getCurrentUser();
 
   return (
     <ActivityProvider>
@@ -30,7 +33,13 @@ export default async function RootLayout({
         <RightRailProvider>
           <AgentChatProvider initialMessages={conversation.data ?? []}>
             <div className="flex min-h-screen w-full flex-col bg-muted/40">
-              <Sidebar />
+              <Sidebar
+                user={user}
+                signOutAction={async () => {
+                  "use server";
+                  await signOut({ redirectTo: "/signin" });
+                }}
+              />
               <SidebarInset>
                 <Header />
                 <GlobalActivityBanner />

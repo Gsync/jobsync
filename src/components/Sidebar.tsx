@@ -2,14 +2,21 @@
 import Link from "next/link";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Briefcase, Settings } from "lucide-react";
+import { Briefcase } from "lucide-react";
 import { APP_CONSTANTS, SIDEBAR_LINKS } from "@/lib/constants";
 import NavLink from "./NavLink";
+import { ProfileDropdown } from "./ProfileDropdown";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "@/context/SidebarContext";
 import { cn } from "@/lib/utils";
+import { CurrentUser } from "@/models/user.model";
 
-function Sidebar() {
+interface SidebarProps {
+  user: CurrentUser | null;
+  signOutAction: () => void;
+}
+
+function Sidebar({ user, signOutAction }: SidebarProps) {
   const path = usePathname();
   const { expanded } = useSidebar();
   const isOnDashboard = path === "/dashboard";
@@ -69,12 +76,10 @@ function Sidebar() {
         </nav>
 
         <div className="flex flex-col gap-1 border-t py-2">
-          <NavLink
-            label="Settings"
-            Icon={Settings}
-            route="/dashboard/settings"
-            pathname={path}
+          <ProfileDropdown
+            user={user}
             expanded={expanded}
+            signOutAction={signOutAction}
           />
         </div>
       </aside>

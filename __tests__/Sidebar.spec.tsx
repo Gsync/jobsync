@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { usePathname } from "next/navigation";
 import { Briefcase } from "lucide-react";
@@ -13,10 +13,12 @@ vi.mock("next/navigation", () => ({
   usePathname: vi.fn().mockReturnValue("/dashboard"),
 }));
 
+const testUser = { id: "1", name: "Test User", email: "test@example.com" };
+
 const renderSidebar = () =>
   render(
     <SidebarProvider initialExpanded>
-      <Sidebar />
+      <Sidebar user={testUser} signOutAction={() => {}} />
       <SidebarToggle />
     </SidebarProvider>
   );
@@ -105,7 +107,7 @@ describe("Sidebar", () => {
     (usePathname as any).mockReturnValue("/dashboard");
   });
 
-  it("renders a link for each nav item plus settings", () => {
+  it("renders a link for each nav item", () => {
     renderSidebar();
 
     expect(screen.getByRole("link", { name: "Dashboard" })).toHaveAttribute(
@@ -116,10 +118,20 @@ describe("Sidebar", () => {
       "href",
       "/dashboard/myjobs"
     );
-    expect(screen.getByRole("link", { name: "Settings" })).toHaveAttribute(
-      "href",
-      "/dashboard/settings"
-    );
+  });
+
+  it("shows the user's email and a settings link via the account menu", async () => {
+    const user = userEvent.setup();
+    renderSidebar();
+
+    expect(screen.getByText(testUser.email)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "User menu" }));
+
+    // Radix gives the menu item role="menuitem" rather than "link".
+    expect(
+      await screen.findByRole("menuitem", { name: "Settings" })
+    ).toHaveAttribute("href", "/dashboard/settings");
   });
 
   it("marks the current page with aria-current", () => {
@@ -139,10 +151,13 @@ describe("Sidebar", () => {
   it("does not render a collapse control inside the sidebar", () => {
     renderSidebar();
 
-    // The only toggle lives in the header; the rail is nav links only.
+    // The collapse toggle lives in the header, not the rail; the only
+    // button inside the sidebar is the account menu trigger.
+    const sidebar = within(screen.getByRole("complementary"));
     expect(
-      screen.getByRole("complementary").querySelector("button")
+      sidebar.queryByRole("button", { name: "Collapse sidebar" })
     ).toBeNull();
+    expect(sidebar.getByRole("button", { name: "User menu" })).toBeInTheDocument();
   });
 });
 
