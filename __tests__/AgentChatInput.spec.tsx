@@ -11,6 +11,7 @@ const chat = {
   error: undefined as Error | undefined,
   clearError: vi.fn(),
   preflight: { checked: true, ok: true } as any,
+  composerNonce: 0,
 };
 vi.mock("@/components/agent/AgentChatProvider", () => ({
   useAgentChat: () => chat,
@@ -35,6 +36,7 @@ describe("AgentChatInput", () => {
     chat.approvalPending = false;
     chat.error = undefined;
     chat.preflight = { checked: true, ok: true };
+    chat.composerNonce = 0;
   });
 
   it("leaves a short paste inline in the textarea", async () => {
@@ -140,6 +142,19 @@ describe("AgentChatInput", () => {
     );
     chat.approvalPending = false;
     expect(chat.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it("empties the composer when the conversation is cleared", async () => {
+    chat.approvalPending = true;
+    const { rerender } = render(<AgentChatInput />);
+    await paste(long);
+    await userEvent.type(screen.getByRole("textbox"), "never mind");
+    await userEvent.click(screen.getByRole("button", { name: /send/i }));
+    chat.composerNonce = 1;
+    rerender(<AgentChatInput />);
+    expect(screen.getByRole("textbox")).toHaveValue("");
+    expect(screen.queryByText(/pasted/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/queued/i)).not.toBeInTheDocument();
   });
 
   it("swaps send for stop while streaming", async () => {

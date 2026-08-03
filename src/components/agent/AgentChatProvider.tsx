@@ -19,6 +19,8 @@ import {
 } from "ai";
 import { hasPendingApproval } from "@/lib/agent/paste";
 import { useRightRail } from "@/context/RightRailContext";
+import { useResizablePanel } from "@/hooks/useResizablePanel";
+import { APP_CONSTANTS } from "@/lib/constants";
 import { clearChatConversation } from "@/actions/agentChat.actions";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { checkOllamaConnection } from "@/utils/ai.utils";
@@ -39,6 +41,15 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
   const { holder, requestOpen, close: releaseRail } = useRightRail();
 
   const [isOpen, setIsOpen] = useState(false);
+  // Lives here, not in the panel: SidebarInset offsets page content by this
+  // width so the panel docks beside the page instead of over it.
+  // Not "ai-panel-width": that key is shared by the three AI sheets, and
+  // dragging this panel would silently resize all of them.
+  const {
+    width: panelWidth,
+    handleMouseDown: startResize,
+    isDragging: isResizing,
+  } = useResizablePanel(APP_CONSTANTS.AGENT_CHAT_PANEL_WIDTH_KEY);
   const [interruptedTurn, setInterruptedTurn] = useState(false);
   const [preflight, setPreflight] = useState<Preflight>({
     checked: false,
@@ -133,6 +144,17 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     if (isOpen && holder !== AGENT_CHAT_PANEL_ID) close();
   }, [holder, isOpen, close]);
 
+  // A signal, not a value: the composer's textarea is uncontrolled, so it
+  // remounts on the nonce and picks the text up as its defaultValue.
+  const [prefill, setPrefill] = useState<{ text: string; nonce: number }>();
+  const prefillComposer = useCallback(
+    (text: string) => setPrefill({ text, nonce: Date.now() }),
+    [],
+  );
+
+  // Same reason as prefill: nothing else empties an uncontrolled textarea.
+  const [composerNonce, setComposerNonce] = useState(0);
+
   // Order matters: a late onFinish would otherwise write the conversation
   // back after the delete.
   const clear = useCallback(async () => {
@@ -141,6 +163,10 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     chat.setMessages([]);
     chat.clearError();
     setInterruptedTurn(false);
+    // Dropped, not kept: a stale prefill would refill the textarea the next
+    // time it remounts.
+    setPrefill(undefined);
+    setComposerNonce((n) => n + 1);
   }, [chat]);
 
   const approvalPending = useMemo(
@@ -149,14 +175,6 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
   );
 
   const dismissInterrupted = useCallback(() => setInterruptedTurn(false), []);
-
-  // A signal, not a value: the composer's textarea is uncontrolled, so it
-  // remounts on the nonce and picks the text up as its defaultValue.
-  const [prefill, setPrefill] = useState<{ text: string; nonce: number }>();
-  const prefillComposer = useCallback(
-    (text: string) => setPrefill({ text, nonce: Date.now() }),
-    [],
-  );
 
   return {
     isOpen,
@@ -177,6 +195,10 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     preflight,
     prefill,
     prefillComposer,
+    composerNonce,
+    panelWidth,
+    startResize,
+    isResizing,
   };
 }
 

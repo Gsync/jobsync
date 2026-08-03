@@ -67,6 +67,7 @@ export function AgentChatInput() {
     clearError,
     preflight,
     prefill,
+    composerNonce,
   } = useAgentChat();
 
   const [text, setText] = useState("");
@@ -132,6 +133,15 @@ export function AgentChatInput() {
   useEffect(() => {
     if (prefill) setText(prefill.text);
   }, [prefill]);
+
+  // Clearing the conversation clears the composer with it. The textarea empties
+  // by remounting on the same nonce below — nothing else resets it.
+  useEffect(() => {
+    if (!composerNonce) return;
+    setText("");
+    setChip(undefined);
+    setQueued(undefined);
+  }, [composerNonce]);
 
   const onStop = useCallback(() => {
     void stop();
@@ -215,7 +225,7 @@ export function AgentChatInput() {
             resets it on submit. `text` mirrors it only to enable send. */}
         <PromptInputTextarea
           defaultValue={prefill?.text}
-          key={prefill?.nonce}
+          key={prefill?.nonce ?? composerNonce}
           onChange={(event) => setText(event.currentTarget.value)}
           onPaste={onPaste}
           placeholder="Ask or paste a job posting…"

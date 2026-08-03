@@ -7,16 +7,17 @@ import { AgentChatEmptyState } from "@/components/agent/AgentChatEmptyState";
 import { AgentChatInput } from "@/components/agent/AgentChatInput";
 import { AgentChatMessages } from "@/components/agent/AgentChatMessages";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
-import { useResizablePanel } from "@/hooks/useResizablePanel";
 import { APP_CONSTANTS } from "@/lib/constants";
 
 export function AgentChatPanel() {
-  const { isOpen, close, clear, messages } = useAgentChat();
-  // Not "ai-panel-width": that key is shared by the three AI sheets, and
-  // dragging this panel would silently resize all of them.
-  const { width, handleMouseDown } = useResizablePanel(
-    APP_CONSTANTS.AGENT_CHAT_PANEL_WIDTH_KEY,
-  );
+  const {
+    isOpen,
+    close,
+    clear,
+    messages,
+    panelWidth: width,
+    startResize,
+  } = useAgentChat();
 
   return (
     <Sheet
@@ -44,14 +45,14 @@ export function AgentChatPanel() {
         {/* VS Code-style drag handle; docking only applies at lg+ */}
         <div
           className="absolute left-0 top-0 h-full w-1 cursor-col-resize z-10 group hidden lg:block"
-          onMouseDown={handleMouseDown}
+          onMouseDown={startResize}
         >
           <div className="h-full w-px bg-transparent group-hover:bg-primary/50 transition-colors" />
         </div>
 
         <div className="flex items-center gap-3 px-4 py-2.5 border-b bg-muted/20 shrink-0">
           <SheetTitle className="text-[11px] font-bold tracking-[0.15em] uppercase text-foreground leading-none shrink-0 m-0">
-            JOBSYNC AGENT
+            AI AGENT
           </SheetTitle>
           <span className="text-muted-foreground/30 text-xs select-none">
             ···

@@ -29,14 +29,17 @@ function PasteChip({ data }: { data: AgentPastePartData }) {
 
 // The seeded transcript ending on a user message means the reply never came
 // back — the tab was closed mid-turn, or the server died. Same remedy as an
-// explicitly interrupted turn.
-function endsAwaitingReply(messages: UIMessage[]): boolean {
+// explicitly interrupted turn. Gated on status because a turn still waiting on
+// its first chunk looks identical, and on a local model that wait is 30–60s.
+function endsAwaitingReply(messages: UIMessage[], status: string): boolean {
+  if (status === "submitted" || status === "streaming") return false;
   return messages[messages.length - 1]?.role === "user";
 }
 
 export function AgentChatMessages() {
   const {
     messages,
+    status,
     regenerate,
     addToolApprovalResponse,
     interruptedTurn,
@@ -46,7 +49,7 @@ export function AgentChatMessages() {
 
   const pastedText = resolvePastedText(messages);
   const showContinue =
-    !dismissed && (interruptedTurn || endsAwaitingReply(messages));
+    !dismissed && (interruptedTurn || endsAwaitingReply(messages, status));
 
   const dismiss = () => {
     setDismissed(true);

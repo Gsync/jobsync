@@ -56,6 +56,7 @@ function Probe() {
       <button onClick={c.close}>close</button>
       <button onClick={c.clear}>clear</button>
       <span data-testid="state">{`${c.isOpen}|${c.approvalPending}|${c.interruptedTurn}|${holder}|${c.preflight.ok}`}</span>
+      <span data-testid="composer-nonce">{c.composerNonce}</span>
     </div>
   );
 }
@@ -155,6 +156,13 @@ describe("AgentChatProvider", () => {
     const resetOrder = chat.setMessages.mock.invocationCallOrder[0];
     expect(stopOrder).toBeLessThan(deleteOrder);
     expect(deleteOrder).toBeLessThan(resetOrder);
+  });
+
+  it("signals the composer to reset on clear", async () => {
+    setup();
+    expect(screen.getByTestId("composer-nonce").textContent).toBe("0");
+    await userEvent.click(screen.getByText("clear"));
+    expect(screen.getByTestId("composer-nonce").textContent).toBe("1");
   });
 
   it("preflights Ollama on open and reports a failure", async () => {

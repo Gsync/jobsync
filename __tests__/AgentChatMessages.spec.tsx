@@ -115,6 +115,15 @@ describe("AgentChatMessages", () => {
     expect(screen.getByRole("button", { name: /continue/i })).toBeInTheDocument();
   });
 
+  it("does not offer Continue while the reply is still in flight", () => {
+    chat.status = "submitted";
+    chat.messages = [user([{ type: "text", text: "add a job" }])];
+    render(<AgentChatMessages />);
+    expect(
+      screen.queryByRole("button", { name: /continue/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it("does not offer Continue after a completed assistant turn", () => {
     chat.messages = [
       user([{ type: "text", text: "add a job" }]),

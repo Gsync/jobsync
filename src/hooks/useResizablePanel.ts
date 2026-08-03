@@ -13,6 +13,8 @@ export function useResizablePanel(storageKey: string) {
     getFromLocalStorage(storageKey, DEFAULT_WIDTH)
   );
   const isDragging = useRef(false);
+  // Mirrored into state so consumers can suppress width transitions mid-drag.
+  const [dragging, setDragging] = useState(false);
   const startX = useRef(0);
   const startWidth = useRef(0);
   const widthRef = useRef(width);
@@ -23,6 +25,7 @@ export function useResizablePanel(storageKey: string) {
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     isDragging.current = true;
+    setDragging(true);
     startX.current = e.clientX;
     startWidth.current = widthRef.current;
     document.body.style.userSelect = "none";
@@ -43,6 +46,7 @@ export function useResizablePanel(storageKey: string) {
     const onMouseUp = () => {
       if (!isDragging.current) return;
       isDragging.current = false;
+      setDragging(false);
       document.body.style.userSelect = "";
       document.body.style.cursor = "";
       saveToLocalStorage(storageKey, widthRef.current);
@@ -56,5 +60,5 @@ export function useResizablePanel(storageKey: string) {
     };
   }, [storageKey]);
 
-  return { width, handleMouseDown };
+  return { width, handleMouseDown, isDragging: dragging };
 }
