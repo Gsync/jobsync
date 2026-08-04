@@ -20,20 +20,12 @@ import {
   hasMinResumeSections,
 } from "@/lib/resumeSections";
 import { buildCopyTitle, ensureUniqueTitle } from "@/lib/resumeCopyTitle";
+import { assertResumeOwnership } from "@/lib/resumeOwnership";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import path from "path";
 import fs from "fs";
 import { writeFile } from "fs/promises";
-
-// Canonical IDOR guard for actions that only need to confirm resume ownership
-const assertResumeOwnership = async (resumeId: string, userId: string) => {
-  const owned = await prisma.resume.findUnique({
-    where: { id: resumeId, profile: { userId } },
-    select: { id: true },
-  });
-  if (!owned) throw new Error("Resume not found or access denied");
-};
 
 const resumeListSelect = {
   id: true,
