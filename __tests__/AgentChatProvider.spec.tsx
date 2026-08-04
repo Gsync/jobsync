@@ -20,9 +20,10 @@ vi.mock("@ai-sdk/react", () => ({
 const chatInit = (call = 0) => useChatSpy.mock.calls[call][0] as any;
 
 const refresh = vi.fn();
+let currentPathname = "/dashboard/myjobs";
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh }),
-  usePathname: () => "/dashboard/myjobs",
+  usePathname: () => currentPathname,
 }));
 
 vi.mock("@/actions/agentChat.actions", () => ({
@@ -57,29 +58,33 @@ import { saveResumeReviewResult } from "@/actions/profile.actions";
 function Probe() {
   const c = useAgentChat();
   const { holder } = useRightRail();
-  const { expanded } = useSidebar();
+  const { expanded, toggle } = useSidebar();
   return (
     <div>
       <button onClick={c.open}>open</button>
       <button onClick={c.close}>close</button>
       <button onClick={c.clear}>clear</button>
+      <button onClick={c.togglePanelExpand}>togglePanelExpand</button>
+      <button onClick={toggle}>toggleSidebar</button>
       <span data-testid="sidebar">{String(expanded)}</span>
       <span data-testid="state">{`${c.isOpen}|${c.approvalPending}|${c.interruptedTurn}|${holder}|${c.preflight.ok}`}</span>
       <span data-testid="composer-nonce">{c.composerNonce}</span>
+      <span data-testid="panel-expanded">{String(c.isPanelExpanded)}</span>
     </div>
   );
 }
 
-const setup = (initialMessages: any[] = []) =>
-  render(
-    <SidebarProvider initialExpanded>
-      <RightRailProvider>
-        <AgentChatProvider initialMessages={initialMessages}>
-          <Probe />
-        </AgentChatProvider>
-      </RightRailProvider>
-    </SidebarProvider>,
-  );
+const tree = (initialMessages: any[] = []) => (
+  <SidebarProvider initialExpanded>
+    <RightRailProvider>
+      <AgentChatProvider initialMessages={initialMessages}>
+        <Probe />
+      </AgentChatProvider>
+    </RightRailProvider>
+  </SidebarProvider>
+);
+
+const setup = (initialMessages: any[] = []) => render(tree(initialMessages));
 
 const reviewMessage = {
   id: "a2",
@@ -134,6 +139,7 @@ describe("AgentChatProvider", () => {
     chat.messages = [];
     chat.status = "ready";
     chat.error = undefined;
+    currentPathname = "/dashboard/myjobs";
   });
 
   it("seeds useChat with the persisted transcript", () => {
@@ -306,6 +312,28 @@ describe("AgentChatProvider", () => {
       });
     });
     expect(saveResumeReviewResult).not.toHaveBeenCalled();
+  });
+
+  it("restores an expanded panel when the sidebar re-expands", async () => {
+    setup();
+    await userEvent.click(screen.getByText("open"));
+    await userEvent.click(screen.getByText("togglePanelExpand"));
+    expect(screen.getByTestId("panel-expanded").textContent).toBe("true");
+    await userEvent.click(screen.getByText("toggleSidebar"));
+    expect(screen.getByTestId("panel-expanded").textContent).toBe("false");
+  });
+
+  // The docked-flush width only makes sense on the page it was expanded on;
+  // navigating away (e.g. clicking Dashboard/Jobs in the sidebar) leaves the
+  // sidebar collapsed, so only a pathname change can catch this case.
+  it("restores an expanded panel when the page navigates to a different route", async () => {
+    const { rerender } = setup();
+    await userEvent.click(screen.getByText("open"));
+    await userEvent.click(screen.getByText("togglePanelExpand"));
+    expect(screen.getByTestId("panel-expanded").textContent).toBe("true");
+    currentPathname = "/dashboard/jobs";
+    rerender(tree());
+    expect(screen.getByTestId("panel-expanded").textContent).toBe("false");
   });
 });
 

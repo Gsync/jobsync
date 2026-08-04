@@ -29,7 +29,9 @@ function SidebarInset({ children }: { children: React.ReactNode }) {
       style={
         isOpen
           ? ({
-              "--agent-chat-offset": `min(${panelWidth}px, ${APP_CONSTANTS.RESIZABLE_PANEL_MAX_WIDTH_RATIO * 100}vw)`,
+              // 100vw, not the drag-resize ratio cap: expanding docks the
+              // panel flush against the sidebar, which can exceed that ratio.
+              "--agent-chat-offset": `min(${panelWidth}px, 100vw)`,
             } as React.CSSProperties)
           : undefined
       }

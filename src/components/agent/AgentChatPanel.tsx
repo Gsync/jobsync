@@ -1,13 +1,12 @@
 "use client";
 
-import { X } from "lucide-react";
+import { Scan, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { AgentChatEmptyState } from "@/components/agent/AgentChatEmptyState";
 import { AgentChatInput } from "@/components/agent/AgentChatInput";
 import { AgentChatMessages } from "@/components/agent/AgentChatMessages";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
-import { APP_CONSTANTS } from "@/lib/constants";
 
 export function AgentChatPanel() {
   const {
@@ -17,6 +16,8 @@ export function AgentChatPanel() {
     messages,
     panelWidth: width,
     startResize,
+    isPanelExpanded,
+    togglePanelExpand,
   } = useAgentChat();
 
   return (
@@ -38,7 +39,9 @@ export function AgentChatPanel() {
         style={
           {
             "--agent-chat-w": `${width}px`,
-            "--agent-chat-max": `${APP_CONSTANTS.RESIZABLE_PANEL_MAX_WIDTH_RATIO * 100}vw`,
+            // 100vw, not the drag-resize ratio cap: expanding docks the panel
+            // flush against the sidebar, which can exceed that ratio.
+            "--agent-chat-max": "100vw",
           } as React.CSSProperties
         }
       >
@@ -66,6 +69,15 @@ export function AgentChatPanel() {
             variant="ghost"
           >
             Clear
+          </Button>
+          <Button
+            aria-label={isPanelExpanded ? "Restore panel" : "Expand panel"}
+            className="h-6 w-6 shrink-0 rounded-sm opacity-70 hover:opacity-100 hidden lg:inline-flex"
+            onClick={togglePanelExpand}
+            size="icon"
+            variant="ghost"
+          >
+            <Scan className="h-3.5 w-3.5" />
           </Button>
           <Button
             aria-label="Close chat"

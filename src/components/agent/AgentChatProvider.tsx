@@ -61,7 +61,7 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
   const router = useRouter();
   const pathname = usePathname();
   const { holder, requestOpen, close: releaseRail } = useRightRail();
-  const { collapse: collapseSidebar } = useSidebar();
+  const { expanded: sidebarExpanded, collapse: collapseSidebar } = useSidebar();
 
   const [isOpen, setIsOpen] = useState(false);
   // Lives here, not in the panel: SidebarInset offsets page content by this
@@ -72,7 +72,20 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     width: panelWidth,
     handleMouseDown: startResize,
     isDragging: isResizing,
+    isExpanded: isPanelExpanded,
+    toggleExpand: togglePanelExpand,
   } = useResizablePanel(APP_CONSTANTS.AGENT_CHAT_PANEL_WIDTH_KEY);
+
+  // The maximized width only makes sense on the page it was expanded on: if
+  // the sidebar re-expands it would overlap, and navigating away (sidebar nav
+  // links leave the sidebar collapsed) leaves it flush against a new page.
+  const lastPathnameRef = useRef(pathname);
+  useEffect(() => {
+    const navigated = lastPathnameRef.current !== pathname;
+    lastPathnameRef.current = pathname;
+    if (isPanelExpanded && (sidebarExpanded || navigated)) togglePanelExpand();
+  }, [sidebarExpanded, isPanelExpanded, pathname, togglePanelExpand]);
+
   const [interruptedTurn, setInterruptedTurn] = useState(false);
   const [preflight, setPreflight] = useState<Preflight>({
     checked: false,
@@ -257,6 +270,8 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     panelWidth,
     startResize,
     isResizing,
+    isPanelExpanded,
+    togglePanelExpand,
   };
 }
 
