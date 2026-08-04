@@ -71,6 +71,13 @@ function deniedTurn(messageId: string): Record<string, unknown>[] {
 }
 
 async function openChat(page: Page) {
+  // open() runs a real preflight fetch to check Ollama's reachability before
+  // Send is enabled. Stub it so the panel doesn't depend on a live local
+  // Ollama daemon — an unmocked call here raced the disabled Send button
+  // against test steps and made "keeps the transcript..." flaky.
+  await page.route("**/api/ai/ollama/tags", (route) =>
+    route.fulfill({ contentType: "application/json", body: "{}" }),
+  );
   await page.goto("/dashboard/myjobs");
   await page.getByRole("button", { name: "Open assistant" }).click();
   // A shared user can carry a transcript in from another run or a manual

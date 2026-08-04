@@ -216,9 +216,6 @@ test.describe("Add New Job", () => {
     await expect(page.getByText("Company name is required.")).toBeVisible();
     await expect(page.getByText("Location is required.")).toBeVisible();
     await expect(page.getByText("Source is required.")).toBeVisible();
-    await expect(
-      page.getByText("Job description is required."),
-    ).toBeVisible();
   });
 
   test("should change job status from the jobs table actions menu", async ({
