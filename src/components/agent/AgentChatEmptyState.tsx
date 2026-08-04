@@ -3,16 +3,18 @@
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
 
-// Complete prompts, not fragments — clicking one fills the composer so it can
-// be edited before it costs a 30–60s local generation.
-const EXAMPLES = [
-  "Add this job posting",
-  "Review my resume",
-  "Add a job: Senior Platform Engineer at Stripe, remote",
-];
+// Both send immediately on click — neither needs editing first. "Add this
+// job posting" has no company/title yet, so the model asks the user to
+// paste it rather than calling add_job.
+const EXAMPLES = ["Add this job posting", "Review my resume"];
 
 export function AgentChatEmptyState() {
-  const { prefillComposer } = useAgentChat();
+  const { sendMessage, preflight } = useAgentChat();
+
+  const handleClick = (example: string) => {
+    if (!preflight.ok) return;
+    void sendMessage({ parts: [{ type: "text", text: example }] });
+  };
 
   return (
     <div className="flex flex-1 flex-col justify-end gap-4 p-4">
@@ -28,8 +30,9 @@ export function AgentChatEmptyState() {
       <Suggestions>
         {EXAMPLES.map((example) => (
           <Suggestion
+            disabled={!preflight.ok}
             key={example}
-            onClick={prefillComposer}
+            onClick={handleClick}
             suggestion={example}
           />
         ))}

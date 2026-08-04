@@ -117,10 +117,18 @@ export function AgentChatPanel() {
           </Button>
         </div>
 
-        {messages.length > 0 ? <AgentChatMessages /> : <AgentChatEmptyState />}
+        <div className="flex min-h-0 flex-1 flex-col lg:mx-auto lg:w-full lg:max-w-6xl">
+          {messages.length > 0 ? (
+            <AgentChatMessages />
+          ) : (
+            <AgentChatEmptyState />
+          )}
+        </div>
 
         <div className="shrink-0 border-t p-3">
-          <AgentChatInput />
+          <div className="lg:mx-auto lg:w-full lg:max-w-6xl">
+            <AgentChatInput />
+          </div>
         </div>
       </SheetContent>
     </Sheet>
