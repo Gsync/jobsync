@@ -80,7 +80,7 @@ export default function RecentCardToggle({
   const { requestStart, confirmDialog } = useActivitySwitchConfirm();
 
   return (
-    <Card className="mb-2 lg:absolute lg:inset-0 lg:mb-0 lg:flex lg:flex-col">
+    <Card className="mb-2 @3xl/main:absolute @3xl/main:inset-0 @3xl/main:mb-0 @3xl/main:flex @3xl/main:flex-col">
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-green-600 min-w-0 truncate">
@@ -109,7 +109,7 @@ export default function RecentCardToggle({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="grid auto-rows-max gap-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+      <CardContent className="grid auto-rows-max gap-6 @3xl/main:min-h-0 @3xl/main:flex-1 @3xl/main:overflow-y-auto">
         {activeIndex === 0
           ? groupJobsByDate(jobs).map(([date, dateJobs]) => (
               <div key={date} className="grid gap-4">

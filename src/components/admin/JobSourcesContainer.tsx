@@ -52,7 +52,7 @@ function JobSourcesContainer() {
                 <RecordsCount count={sources.length} total={totalJobSources} label="job sources" />
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+            <div className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto">
             </div>
           </ResponsiveCardHeader>
           <CardContent>

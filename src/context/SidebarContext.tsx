@@ -6,6 +6,7 @@ import { APP_CONSTANTS } from "@/lib/constants";
 type SidebarContextValue = {
   expanded: boolean;
   toggle: () => void;
+  collapse: () => void;
 };
 
 const SidebarContext = createContext<SidebarContextValue | null>(null);
@@ -24,6 +25,10 @@ export function SidebarProvider({
 
   const toggle = useCallback(() => {
     setExpanded((prev) => !prev);
+  }, []);
+
+  const collapse = useCallback(() => {
+    setExpanded(false);
   }, []);
 
   useEffect(() => {
@@ -47,7 +52,7 @@ export function SidebarProvider({
   }, [toggle]);
 
   return (
-    <SidebarContext.Provider value={{ expanded, toggle }}>
+    <SidebarContext.Provider value={{ expanded, toggle, collapse }}>
       {children}
     </SidebarContext.Provider>
   );

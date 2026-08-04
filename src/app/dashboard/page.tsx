@@ -53,8 +53,8 @@ export default async function Dashboard() {
     );
   return (
     <>
-      <div className="grid auto-rows-max items-start gap-2 md:gap-2 lg:col-span-2">
-        <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4">
+      <div className="@container grid auto-rows-max items-start gap-2 md:gap-2 @3xl/main:col-span-2">
+        <div className="grid gap-2 @sm:grid-cols-2 @lg:grid-cols-4">
           <JobsApplied />
           <NumberCardToggle
             data={[
@@ -95,7 +95,7 @@ export default async function Dashboard() {
           ]}
         />
       </div>
-      <div className="lg:relative lg:self-stretch">
+      <div className="@3xl/main:relative @3xl/main:self-stretch">
         <RecentCardToggle jobs={recentJobs} activities={recentActivities} />
       </div>
       <div className="w-full col-span-3">

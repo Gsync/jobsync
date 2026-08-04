@@ -43,8 +43,12 @@ export default async function RootLayout({
               <SidebarInset>
                 <Header />
                 <GlobalActivityBanner />
-                <main className="flex-1 md:block lg:grid items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-4 lg:grid-cols-3 xl:grid-cols-3">
-                  {children}
+                {/* Container, not viewport, queries: the docked chat panel
+                    shrinks this box without changing the viewport width. */}
+                <main className="@container/main flex-1 p-4 sm:px-6 sm:py-0">
+                  <div className="items-start gap-4 md:gap-4 @3xl/main:grid @3xl/main:grid-cols-3">
+                    {children}
+                  </div>
                 </main>
               </SidebarInset>
               {/* Portaled, so it sits outside the 3-column grid and needs no

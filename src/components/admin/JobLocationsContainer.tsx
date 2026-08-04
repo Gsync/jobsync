@@ -66,7 +66,7 @@ function JobLocationsContainer() {
                 <RecordsCount count={locations.length} total={totalJobLocations} label="job locations" />
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+            <div className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto">
               {/* <AddCompany reloadCompanies={reloadJobLocations} /> */}
             </div>
           </ResponsiveCardHeader>

@@ -38,6 +38,7 @@ import { AgentChatProvider } from "@/components/agent/AgentChatProvider";
 import { AgentChatPanel } from "@/components/agent/AgentChatPanel";
 import { AgentChatTrigger } from "@/components/AgentChatTrigger";
 import { RightRailProvider, useRightRail } from "@/context/RightRailContext";
+import { SidebarProvider } from "@/context/SidebarContext";
 
 function OtherPanel() {
   const { requestOpen } = useRightRail();
@@ -46,13 +47,15 @@ function OtherPanel() {
 
 const setup = (initialMessages: any[] = []) =>
   render(
-    <RightRailProvider>
-      <AgentChatProvider initialMessages={initialMessages}>
-        <AgentChatTrigger />
-        <OtherPanel />
-        <AgentChatPanel />
-      </AgentChatProvider>
-    </RightRailProvider>,
+    <SidebarProvider initialExpanded>
+      <RightRailProvider>
+        <AgentChatProvider initialMessages={initialMessages}>
+          <AgentChatTrigger />
+          <OtherPanel />
+          <AgentChatPanel />
+        </AgentChatProvider>
+      </RightRailProvider>
+    </SidebarProvider>,
   );
 
 const openPanel = async () => {

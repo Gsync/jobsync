@@ -91,7 +91,7 @@ function TagsContainer() {
                 <RecordsCount count={tags.length} total={totalTags} label="skills" />
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+            <div className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto">
               <SearchInput
                 value={searchTerm}
                 onChange={setSearchTerm}

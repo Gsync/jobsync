@@ -51,7 +51,7 @@ function ActivityTypesContainer() {
                 <RecordsCount count={activityTypes.length} total={totalActivityTypes} label="activity types" />
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+            <div className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto">
               <AddActivityType reloadActivityTypes={reloadActivityTypes} />
             </div>
           </ResponsiveCardHeader>

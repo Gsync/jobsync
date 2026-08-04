@@ -148,7 +148,7 @@ function ActivitiesContainer() {
             <RecordsCount count={activitiesList.length} total={totalActivities} label="activities" />
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <SearchInput
             value={searchTerm}
             onChange={setSearchTerm}

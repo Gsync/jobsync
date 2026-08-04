@@ -48,6 +48,7 @@ import {
   useAgentChat,
 } from "@/components/agent/AgentChatProvider";
 import { RightRailProvider, useRightRail } from "@/context/RightRailContext";
+import { SidebarProvider, useSidebar } from "@/context/SidebarContext";
 import { clearChatConversation } from "@/actions/agentChat.actions";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { checkOllamaConnection } from "@/utils/ai.utils";
@@ -56,11 +57,13 @@ import { saveResumeReviewResult } from "@/actions/profile.actions";
 function Probe() {
   const c = useAgentChat();
   const { holder } = useRightRail();
+  const { expanded } = useSidebar();
   return (
     <div>
       <button onClick={c.open}>open</button>
       <button onClick={c.close}>close</button>
       <button onClick={c.clear}>clear</button>
+      <span data-testid="sidebar">{String(expanded)}</span>
       <span data-testid="state">{`${c.isOpen}|${c.approvalPending}|${c.interruptedTurn}|${holder}|${c.preflight.ok}`}</span>
       <span data-testid="composer-nonce">{c.composerNonce}</span>
     </div>
@@ -69,11 +72,13 @@ function Probe() {
 
 const setup = (initialMessages: any[] = []) =>
   render(
-    <RightRailProvider>
-      <AgentChatProvider initialMessages={initialMessages}>
-        <Probe />
-      </AgentChatProvider>
-    </RightRailProvider>,
+    <SidebarProvider initialExpanded>
+      <RightRailProvider>
+        <AgentChatProvider initialMessages={initialMessages}>
+          <Probe />
+        </AgentChatProvider>
+      </RightRailProvider>
+    </SidebarProvider>,
   );
 
 const reviewMessage = {
@@ -151,6 +156,15 @@ describe("AgentChatProvider", () => {
     expect(screen.getByTestId("state").textContent).toContain(
       "false|false|false|null",
     );
+  });
+
+  it("collapses the sidebar on open and leaves it collapsed on close", async () => {
+    setup();
+    expect(screen.getByTestId("sidebar").textContent).toBe("true");
+    await userEvent.click(screen.getByText("open"));
+    expect(screen.getByTestId("sidebar").textContent).toBe("false");
+    await userEvent.click(screen.getByText("close"));
+    expect(screen.getByTestId("sidebar").textContent).toBe("false");
   });
 
   it("stops the stream on close and flags the turn interrupted", async () => {
@@ -231,11 +245,13 @@ describe("AgentChatProvider", () => {
 
   it("puts the page context in the request body", () => {
     render(
-      <RightRailProvider>
-        <AgentChatProvider initialMessages={[]}>
-          <Probe />
-        </AgentChatProvider>
-      </RightRailProvider>,
+      <SidebarProvider initialExpanded>
+        <RightRailProvider>
+          <AgentChatProvider initialMessages={[]}>
+            <Probe />
+          </AgentChatProvider>
+        </RightRailProvider>
+      </SidebarProvider>,
     );
     // prepareSendMessagesRequest is `protected` on HttpChatTransport: it is
     // there at runtime and only tsc objects. Cast rather than drop the test —

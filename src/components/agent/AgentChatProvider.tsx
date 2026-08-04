@@ -22,6 +22,7 @@ import { detectReviewSave } from "@/lib/agent/review";
 import { saveResumeReviewResult } from "@/actions/profile.actions";
 import { toastSuccess, toastError } from "@/lib/toast";
 import { useRightRail } from "@/context/RightRailContext";
+import { useSidebar } from "@/context/SidebarContext";
 import { useResizablePanel } from "@/hooks/useResizablePanel";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { clearChatConversation } from "@/actions/agentChat.actions";
@@ -60,6 +61,7 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
   const router = useRouter();
   const pathname = usePathname();
   const { holder, requestOpen, close: releaseRail } = useRightRail();
+  const { collapse: collapseSidebar } = useSidebar();
 
   const [isOpen, setIsOpen] = useState(false);
   // Lives here, not in the panel: SidebarInset offsets page content by this
@@ -187,11 +189,13 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     });
   }, []);
 
+  // Collapsing the rail buys the docked panel ~140px of page width.
   const open = useCallback(() => {
+    collapseSidebar();
     requestOpen(AGENT_CHAT_PANEL_ID);
     setIsOpen(true);
     void runPreflight();
-  }, [requestOpen, runPreflight]);
+  }, [collapseSidebar, requestOpen, runPreflight]);
 
   // Losing the rail to another panel is a close, with the same abort.
   useEffect(() => {
