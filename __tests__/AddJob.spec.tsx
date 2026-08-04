@@ -151,9 +151,6 @@ describe("AddJob Component", () => {
     expect(screen.getByText("Company name is required.")).toBeInTheDocument();
     expect(screen.getByText("Location is required.")).toBeInTheDocument();
     expect(screen.getByText("Source is required.")).toBeInTheDocument();
-    expect(
-      screen.getByText("Job description is required."),
-    ).toBeInTheDocument();
   });
   it("should close the dialog when clicked on cancel button", async () => {
     const cancelBtn = screen.getByRole("button", { name: /cancel/i });

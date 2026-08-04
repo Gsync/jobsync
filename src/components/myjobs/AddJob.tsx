@@ -94,7 +94,9 @@ export function AddJob({
     if (!dialogOpen && searchParams.get("add-job") === "true") {
       const params = new URLSearchParams(searchParams.toString());
       params.delete("add-job");
-      const newPath = params.toString() ? `?${params.toString()}` : window.location.pathname;
+      const newPath = params.toString()
+        ? `?${params.toString()}`
+        : window.location.pathname;
       router.replace(newPath);
     }
   }, [dialogOpen, router, searchParams]);
@@ -105,6 +107,7 @@ export function AddJob({
     status: jobStatuses[0]?.id,
     salaryRange: "1",
     jobUrl: "",
+    jobDescription: "N/A",
   };
 
   const form = useForm<z.infer<typeof AddJobFormSchema>>({

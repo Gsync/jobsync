@@ -54,12 +54,16 @@ export const AddJobFormSchema = z.object({
     .string({
       error: "Job description is required.",
     })
-    .min(10, {
+    .refine((val) => val === "N/A" || val.length >= 10, {
       message: "Job description must be at least 10 characters.",
     }),
   jobUrl: z.string().optional(),
   applied: z.boolean().default(false),
   resume: z.string().optional(),
   coverLetter: z.string().optional(),
-  tags: z.array(z.string()).max(APP_CONSTANTS.MAX_JOB_TAGS).optional().default([]),
+  tags: z
+    .array(z.string())
+    .max(APP_CONSTANTS.MAX_JOB_TAGS)
+    .optional()
+    .default([]),
 });
