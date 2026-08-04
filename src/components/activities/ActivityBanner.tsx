@@ -4,11 +4,10 @@ import {
   CircleStop,
   Clock,
   Monitor,
-  Timer,
   XCircle,
 } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns";
-import { cn, formatElapsedTime } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import React from "react";
 
 type BannerVariant = "success" | "warning" | "error" | "info";
@@ -67,13 +66,7 @@ export function ActivityBanner({
       <span className="shrink-0 opacity-80">{variantIcons[variant]}</span>
       <span className="flex-1 min-w-0 truncate">{title}</span>
 
-      <span className="hidden shrink-0 items-center gap-1.5 sm:flex">
-        <Timer className="size-4 opacity-80" />
-        <span className="min-w-16 tabular-nums">
-          {formatElapsedTime(elapsedTime)}
-        </span>
-      </span>
-      <span className="hidden shrink-0 items-center gap-1.5 tabular-nums md:flex">
+      <span className="hidden shrink-0 items-center gap-1.5 tabular-nums sm:flex">
         <Clock className="size-4 opacity-80" />
         Started {formatDistanceToNowStrict(startTime, { addSuffix: true })}
       </span>
@@ -83,9 +76,6 @@ export function ActivityBanner({
           {typeLabel}
         </span>
       )}
-      <span className="min-w-16 shrink-0 tabular-nums sm:hidden">
-        {formatElapsedTime(elapsedTime)}
-      </span>
 
       <button
         title="Stop Activity"
