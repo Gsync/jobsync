@@ -1,7 +1,7 @@
-description: Agent chat tool-loop regression tests — does the configured model drive add_job well enough to ship
+description: Agent chat tool-loop regression tests — does the configured model drive add_job and get_resume well enough to ship
 
-# These rows exercise the CHAT surface, not MCP. The single add_job tool is
-# declared from the same Zod schema the /api/ai/chat route registers, and
+# These rows exercise the CHAT surface, not MCP. Both tools are declared from
+# the same Zod schemas the /api/ai/chat route registers, and
 # prompt.ts injects a head-truncated paste block exactly as the route does —
 # so "did the model re-emit the description it was told to omit" is measurable
 # here. No route, no database, no approval gate: the model chooses and
@@ -160,3 +160,73 @@ tests:
         value: >-
           The reply states it cannot read the user's saved jobs. It does not
           give a number and does not call a tool.
+
+  # The review flow's first step. No resume text is supplied, so the only
+  # correct move is to read one.
+  - description: Review request - calls get_resume rather than inventing a review
+    vars:
+      userMessage: Review my resume.
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsGetResume
+
+  # get_resume is a general read, not a review tool. A plain question about
+  # resume contents should reach for it too.
+  - description: Plain resume question - reads the resume instead of refusing
+    vars:
+      userMessage: What skills are listed on my resume?
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsGetResume
+
+  # Second step of the turn: the read already happened, so what is measured
+  # is the review itself, through the parser all three surfaces share.
+  - description: After the read - produces a parseable SCORES line and a full review
+    vars:
+      userMessage: Review my resume.
+      resumeText: file://../resume-review/fixtures/strong-senior.txt
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertReviewParses
+
+  - description: Sparse resume - still produces a parseable review, not a refusal
+    vars:
+      userMessage: Review my resume.
+      resumeText: file://../resume-review/fixtures/weak-sparse.txt
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertReviewParses
+
+  # Follow-ups are the whole point of moving review into the chat: answered
+  # from context, no second read, and no second SCORES line to re-trigger a
+  # save.
+  - description: Follow-up question - answers from context, no re-read, no new scores
+    vars:
+      userMessage: Review my resume.
+      resumeText: file://../resume-review/fixtures/strong-senior.txt
+      priorReview: file://./fixtures/prior-review.md
+      followUp: Which of those improvements would you do first, and why?
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertFollowUpStaysConversational
+
+  - description: Follow-up asking about a specific section - still conversational
+    vars:
+      userMessage: Review my resume.
+      resumeText: file://../resume-review/fixtures/strong-senior.txt
+      priorReview: file://./fixtures/prior-review.md
+      followUp: Rewrite the summary bullet you flagged.
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertFollowUpStaysConversational
+
+  # Capability honesty, restated for two tools: resumes are now readable,
+  # jobs still are not. The existing jobs row stays as-is.
+  - description: Asks about tasks it still cannot read - declines, no tool call
+    vars:
+      userMessage: What tasks are due this week?
+    assert:
+      - type: llm-rubric
+        value: >-
+          The reply states it cannot read the user's tasks. It does not list
+          tasks and does not call a tool.
