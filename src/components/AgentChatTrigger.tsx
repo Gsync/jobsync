@@ -15,7 +15,7 @@ export function AgentChatTrigger() {
       onClick={() => (isOpen ? close() : open())}
     >
       <MessageSquare className="h-4 w-4" />
-      AI Agent
+      Chat AI
       {/* Deliberately no streaming state: nothing generates while the panel
           is closed, so there is no background activity to advertise. */}
       {approvalPending && (

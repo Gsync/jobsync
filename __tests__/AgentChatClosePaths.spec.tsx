@@ -136,6 +136,6 @@ describe("agent chat close paths", () => {
     expect(screen.queryByLabelText("Approval pending")).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /open assistant/i }).textContent,
-    ).toBe("AI Agent");
+    ).toBe("Chat AI");
   });
 });

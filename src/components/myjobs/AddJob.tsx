@@ -53,6 +53,10 @@ import { getResumeList } from "@/actions/profile.actions";
 import { getCoverLetterList } from "@/actions/coverLetter.actions";
 import { TagInput } from "./TagInput";
 import { APP_CONSTANTS } from "@/lib/constants";
+import {
+  getFromLocalStorage,
+  saveToLocalStorage,
+} from "@/utils/localstorage.utils";
 
 type AddJobProps = {
   jobStatuses: JobStatus[];
@@ -100,6 +104,17 @@ export function AddJob({
       router.replace(newPath);
     }
   }, [dialogOpen, router, searchParams]);
+  // Pre-fill with the last-used location/source, but only if that entity
+  // still exists (handles deletion and cross-user localStorage collisions,
+  // since `locations`/`jobSources` are already scoped to the current user).
+  const lastLocationId = getFromLocalStorage(
+    APP_CONSTANTS.LAST_JOB_LOCATION_STORAGE_KEY,
+    null,
+  );
+  const lastSourceId = getFromLocalStorage(
+    APP_CONSTANTS.LAST_JOB_SOURCE_STORAGE_KEY,
+    null,
+  );
   const newJobDefaultValues = {
     type: Object.keys(JOB_TYPES)[0],
     workplaceType: "ONSITE",
@@ -108,6 +123,8 @@ export function AddJob({
     salaryRange: "1",
     jobUrl: "",
     jobDescription: "N/A",
+    location: locations.find((l) => l.id === lastLocationId)?.id,
+    source: jobSources.find((s) => s.id === lastSourceId)?.id,
   };
 
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
@@ -193,6 +210,14 @@ export function AddJob({
       toastActionResult(result, {
         success: `Job has been ${editJob ? "updated" : "created"} successfully`,
         onSuccess: () => {
+          saveToLocalStorage(
+            APP_CONSTANTS.LAST_JOB_LOCATION_STORAGE_KEY,
+            data.location,
+          );
+          saveToLocalStorage(
+            APP_CONSTANTS.LAST_JOB_SOURCE_STORAGE_KEY,
+            data.source,
+          );
           reset();
           setDialogOpen(false);
           redirect(redirectPath ?? "/dashboard/myjobs");
