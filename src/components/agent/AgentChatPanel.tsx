@@ -1,12 +1,13 @@
 "use client";
 
-import { Scan, X } from "lucide-react";
+import { CheckCircle, Loader2, Scan, Sparkles, X, XCircle } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { AgentChatEmptyState } from "@/components/agent/AgentChatEmptyState";
 import { AgentChatInput } from "@/components/agent/AgentChatInput";
 import { AgentChatMessages } from "@/components/agent/AgentChatMessages";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
+import { AiProvider } from "@/models/ai.model";
 
 export function AgentChatPanel() {
   const {
@@ -18,7 +19,25 @@ export function AgentChatPanel() {
     startResize,
     isPanelExpanded,
     togglePanelExpand,
+    preflight,
   } = useAgentChat();
+
+  // Status icon for the terminal header bar — mirrors AiResumeReviewSection.
+  const statusIcon = !preflight.checked ? (
+    <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
+  ) : preflight.provider === AiProvider.OLLAMA ? (
+    preflight.ok ? (
+      <CheckCircle className="h-3.5 w-3.5 shrink-0 text-green-500" />
+    ) : (
+      <XCircle className="h-3.5 w-3.5 shrink-0 text-destructive" />
+    )
+  ) : (
+    <Sparkles className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+  );
+
+  const providerLabel = preflight.provider
+    ? preflight.provider.charAt(0).toUpperCase() + preflight.provider.slice(1)
+    : "";
 
   return (
     <Sheet
@@ -60,6 +79,14 @@ export function AgentChatPanel() {
           <span className="text-muted-foreground/30 text-xs select-none">
             ···
           </span>
+          <div className="flex items-center gap-1.5 min-w-0">
+            {statusIcon}
+            <span className="text-xs text-muted-foreground font-mono truncate">
+              {preflight.model
+                ? `${providerLabel} / ${preflight.model}`
+                : providerLabel}
+            </span>
+          </div>
           {/* Never gated on the approval: it is the way out of a card whose
               approvalId the server no longer recognizes. */}
           <Button

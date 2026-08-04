@@ -12,7 +12,7 @@ const EXAMPLES = [
 ];
 
 export function AgentChatEmptyState() {
-  const { preflight, prefillComposer } = useAgentChat();
+  const { prefillComposer } = useAgentChat();
 
   return (
     <div className="flex flex-1 flex-col justify-end gap-4 p-4">
@@ -25,19 +25,15 @@ export function AgentChatEmptyState() {
         or tasks yet.
       </p>
 
-      {preflight.checked && !preflight.ok ? (
-        <p className="text-sm text-destructive">{preflight.error}</p>
-      ) : (
-        <Suggestions>
-          {EXAMPLES.map((example) => (
-            <Suggestion
-              key={example}
-              onClick={prefillComposer}
-              suggestion={example}
-            />
-          ))}
-        </Suggestions>
-      )}
+      <Suggestions>
+        {EXAMPLES.map((example) => (
+          <Suggestion
+            key={example}
+            onClick={prefillComposer}
+            suggestion={example}
+          />
+        ))}
+      </Suggestions>
     </div>
   );
 }

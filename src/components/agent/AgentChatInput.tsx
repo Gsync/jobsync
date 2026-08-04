@@ -202,7 +202,7 @@ export function AgentChatInput() {
       ) : null}
 
       {preflight.checked && !preflight.ok && preflight.error ? (
-        <p className="text-xs text-muted-foreground">{preflight.error}</p>
+        <p className="text-xs text-destructive">{preflight.error}</p>
       ) : null}
 
       {/* No PromptInputBody: it wraps these in a display:contents div, and
