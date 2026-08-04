@@ -77,6 +77,15 @@ describe("agent chat system prompt", () => {
     );
   });
 
+  // Observed, not assumed: qwen3.5:9b answered "Review my resume" by asking
+  // which resume AND leading with a zeroed SCORES line, because the shared
+  // output format demands that line unconditionally.
+  it("forbids a scores line for a turn that read no resume", () => {
+    expect(AGENT_CHAT_PROMPT_SECTIONS.review).toMatch(/never emit a SCORES line/i);
+    expect(AGENT_CHAT_PROMPT_SECTIONS.review).toMatch(/FIRST action is to call get_resume/i);
+    expect(AGENT_CHAT_PROMPT_SECTIONS.review).toMatch(/do not ask them which resume/i);
+  });
+
   it("describes both tools", () => {
     expect(Object.keys(AGENT_TOOL_DESCRIPTIONS)).toEqual(["add_job", "get_resume"]);
   });

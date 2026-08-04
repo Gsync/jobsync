@@ -35,6 +35,22 @@ const user = (parts: any[]) => ({ id: "u1", role: "user", parts });
 
 const posting = "Senior Platform Engineer at Acme. We run payments reliability.";
 
+const resumeRead = {
+  type: "tool-get_resume",
+  toolCallId: "t1",
+  state: "output-available",
+  input: {},
+  output: {
+    status: "ok",
+    resumeId: "r1",
+    title: "Senior Engineer Resume",
+    resumeText: "TXT",
+    chars: 3,
+    truncated: false,
+    source: "default",
+  },
+} as any;
+
 describe("AgentChatMessages", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -227,5 +243,53 @@ describe("AgentChatMessages", () => {
     ];
     render(<AgentChatMessages />);
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  it("renders a score card and hides the scores line for a review", () => {
+    chat.messages = [
+      assistant([
+        resumeRead,
+        {
+          type: "text",
+          text: "SCORES: overall=78 impact=72 clarity=81 ats=69\n\n## Summary\n\nSolid resume.",
+        },
+      ]),
+    ];
+    render(<AgentChatMessages />);
+    expect(screen.getByText("Impact")).toBeInTheDocument();
+    expect(screen.queryByText(/SCORES:/)).not.toBeInTheDocument();
+    expect(screen.getByTestId("tiptap-content").innerHTML).toContain(
+      "<h2>Summary</h2>",
+    );
+  });
+
+  // The output format demands a leading scores line unconditionally, so a
+  // model that declines to review still emits one, zeroed. A card rendered
+  // from that told the user their resume scored 0 on a turn that read
+  // nothing.
+  it("renders no score card when the turn read no resume", () => {
+    chat.messages = [
+      assistant([
+        {
+          type: "text",
+          text: "SCORES: overall=0 impact=0 clarity=0 ats=0\n\nI need to read your resume first.",
+        },
+      ]),
+    ];
+    render(<AgentChatMessages />);
+    expect(screen.queryByText("Impact")).not.toBeInTheDocument();
+    expect(screen.getByTestId("tiptap-content")).toHaveTextContent(
+      "I need to read your resume first.",
+    );
+  });
+
+  it("renders a follow-up answer with no score card", () => {
+    chat.messages = [
+      assistant([
+        { type: "text", text: "Your ATS score is held back by the tables." },
+      ]),
+    ];
+    render(<AgentChatMessages />);
+    expect(screen.queryByText("Impact")).not.toBeInTheDocument();
   });
 });

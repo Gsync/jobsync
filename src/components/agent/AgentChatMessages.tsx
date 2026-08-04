@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { FileTextIcon, XIcon } from "lucide-react";
 import { isStaticToolUIPart, type UIMessage } from "ai";
 import {
@@ -12,10 +12,13 @@ import { Button } from "@/components/ui/button";
 import { AgentApprovalCard } from "@/components/agent/AgentApprovalCard";
 import { AgentMarkdown } from "@/components/agent/AgentMarkdown";
 import { AgentResultCard } from "@/components/agent/AgentResultCard";
+import { AgentReviewScoreCard } from "@/components/agent/AgentReviewScoreCard";
 import { AgentStatusRow } from "@/components/agent/AgentStatusRow";
 import { AgentToolRunningCard } from "@/components/agent/AgentToolRunningCard";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
 import { resolvePastedText } from "@/lib/agent/paste";
+import { detectReviewSave } from "@/lib/agent/review";
+import { parseResumeReview } from "@/lib/ai/resumeReview/parse";
 import { cn } from "@/lib/utils";
 import { isAgentPastePart, type AgentPastePartData } from "@/models/agent.model";
 
@@ -66,6 +69,38 @@ function showThinking(messages: UIMessage[], status: string): boolean {
   }
 }
 
+// Every assistant message goes through the shared parser, not just reviews:
+// a message with no SCORES line simply comes back with scores undefined and
+// its body unchanged. One path means the scores line can never flash into
+// the prose mid-stream, which is what the old surface does too.
+//
+// A parsed scores line is not on its own proof of a review. The output format
+// says the first line MUST be the scores line, so a model that declines to
+// review still leads with one — all zeros — and a card rendered from that is
+// a lie. detectReviewSave is the same predicate the save uses, so the card
+// appears exactly when something persists.
+function AssistantText({
+  text,
+  message,
+  messages,
+}: {
+  text: string;
+  message: UIMessage;
+  messages: UIMessage[];
+}) {
+  const { scores, body } = useMemo(() => parseResumeReview(text), [text]);
+  const reviewed = useMemo(
+    () => (scores ? detectReviewSave(messages, message) : null),
+    [scores, messages, message],
+  );
+  return (
+    <>
+      {scores && reviewed && <AgentReviewScoreCard scores={scores} />}
+      <AgentMarkdown text={body} />
+    </>
+  );
+}
+
 export function AgentChatMessages() {
   const {
     messages,
@@ -112,7 +147,14 @@ export function AgentChatMessages() {
                     </p>
                   );
                 }
-                return <AgentMarkdown key={i} text={part.text} />;
+                return (
+                  <AssistantText
+                    key={i}
+                    message={message}
+                    messages={messages}
+                    text={part.text}
+                  />
+                );
               }
               if (isAgentPastePart(part))
                 return <PasteChip key={i} data={part.data} />;

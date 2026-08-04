@@ -37,6 +37,10 @@ vi.mock("@/actions/userSettings.actions", () => ({
 vi.mock("@/utils/ai.utils", () => ({
   checkOllamaConnection: vi.fn(async () => ({ isConnected: true })),
 }));
+vi.mock("@/actions/profile.actions", () => ({
+  saveResumeReviewResult: vi.fn().mockResolvedValue({ success: true }),
+}));
+vi.mock("@/lib/toast", () => ({ toastSuccess: vi.fn(), toastError: vi.fn() }));
 
 import {
   AgentChatProvider,
@@ -47,6 +51,7 @@ import { RightRailProvider, useRightRail } from "@/context/RightRailContext";
 import { clearChatConversation } from "@/actions/agentChat.actions";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { checkOllamaConnection } from "@/utils/ai.utils";
+import { saveResumeReviewResult } from "@/actions/profile.actions";
 
 function Probe() {
   const c = useAgentChat();
@@ -70,6 +75,39 @@ const setup = (initialMessages: any[] = []) =>
       </AgentChatProvider>
     </RightRailProvider>,
   );
+
+const reviewMessage = {
+  id: "a2",
+  role: "assistant",
+  parts: [
+    {
+      type: "text",
+      text: "SCORES: overall=78 impact=72 clarity=81 ats=69\n\n## Summary\n\nSolid.",
+    },
+  ],
+} as any;
+
+const readMessage = {
+  id: "a1",
+  role: "assistant",
+  parts: [
+    {
+      type: "tool-get_resume",
+      toolCallId: "t1",
+      state: "output-available",
+      input: {},
+      output: {
+        status: "ok",
+        resumeId: "r1",
+        title: "Senior Engineer Resume",
+        resumeText: "TXT",
+        chars: 3,
+        truncated: false,
+        source: "default",
+      },
+    },
+  ],
+} as any;
 
 const approvalMessage = {
   id: "a1",
@@ -206,6 +244,52 @@ describe("AgentChatProvider", () => {
     const transport = chatInit().transport as any;
     const { body } = transport.prepareSendMessagesRequest({ messages: [] });
     expect(body.pageContext).toEqual({ route: "/dashboard/myjobs" });
+  });
+
+  it("saves a completed review to the resume it read", async () => {
+    setup();
+    await act(async () => {
+      chatInit().onFinish({
+        message: reviewMessage,
+        messages: [readMessage, reviewMessage],
+      });
+    });
+    expect(saveResumeReviewResult).toHaveBeenCalledTimes(1);
+    const [resumeId, payload] = (saveResumeReviewResult as any).mock.calls[0];
+    expect(resumeId).toBe("r1");
+    expect(JSON.parse(payload)).toMatchObject({
+      overall: 78,
+      atsCompatibility: 69,
+    });
+    expect(JSON.parse(payload).body).toContain("## Summary");
+  });
+
+  it("does not save a reply with no scores line", async () => {
+    setup();
+    const chatter = {
+      id: "a2",
+      role: "assistant",
+      parts: [{ type: "text", text: "The tables hurt your ATS score." }],
+    } as any;
+    await act(async () => {
+      chatInit().onFinish({ message: chatter, messages: [readMessage, chatter] });
+    });
+    expect(saveResumeReviewResult).not.toHaveBeenCalled();
+  });
+
+  // Closing the panel mid-stream aborts, and onFinish still fires with what
+  // streamed. Since the SCORES line comes first, that partial parses — and
+  // saving it would overwrite a complete review with no way back.
+  it("does not save a review the user aborted mid-stream", async () => {
+    setup();
+    await act(async () => {
+      chatInit().onFinish({
+        message: reviewMessage,
+        messages: [readMessage, reviewMessage],
+        isAbort: true,
+      });
+    });
+    expect(saveResumeReviewResult).not.toHaveBeenCalled();
   });
 });
 

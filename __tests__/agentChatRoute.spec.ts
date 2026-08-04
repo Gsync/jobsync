@@ -138,7 +138,7 @@ describe("POST /api/ai/chat", () => {
     expect(buildAgentTools).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "user-1", pastedText: posting }),
     );
-    expect(Object.keys(streamArgs().tools)).toEqual(["add_job"]);
+    expect(Object.keys(streamArgs().tools)).toEqual(["add_job", "get_resume"]);
   });
 
   it("configures the loop bounds the design specifies", async () => {
