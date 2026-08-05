@@ -32,6 +32,7 @@ export const APP_CONSTANTS = {
   DASHBOARD_RECENT_CARD_STORAGE_KEY: "dashboard-recent-card-tab",
   LAST_JOB_LOCATION_STORAGE_KEY: "last-job-location",
   LAST_JOB_SOURCE_STORAGE_KEY: "last-job-source",
+  JOBS_VIEW_MODE_STORAGE_KEY: "jobs-view-mode",
   SIDEBAR_DOM_ID: "app-sidebar",
   // Paired so the rail width and its matching content offset can't drift.
   SIDEBAR_WIDTH: {

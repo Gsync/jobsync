@@ -60,6 +60,8 @@ export interface JobResponse {
   _count?: { Notes?: number };
 }
 
+export type JobsViewMode = "table" | "cards";
+
 export interface JobTitle {
   id: string;
   label: string;
