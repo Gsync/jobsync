@@ -229,11 +229,9 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
                 if (!grouped.has(key)) grouped.set(key, []);
                 grouped.get(key)!.push(s);
               }
-              const toTitleCase = (s: string) =>
-                s.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
               const lines = Array.from(grouped.entries()).map(([cat, items]) => {
                 const labels = items.map((s) => s.Tag?.label).filter(Boolean).join(", ");
-                return cat ? `${toTitleCase(cat)}: ${labels}` : labels;
+                return cat ? `${cat}: ${labels}` : labels;
               });
               return `## ${section.sectionTitle.toUpperCase()}\n${lines.join("\n")}`;
             }
