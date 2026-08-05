@@ -226,12 +226,12 @@ export default function McpAccessSettings() {
       </Card>
 
       <Card>
-        <CardHeader className="flex-row items-start justify-between">
-          <div>
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
             <CardTitle>Personal Access Tokens</CardTitle>
             <CardDescription>Tokens authenticate external agents to call MCP tools.</CardDescription>
           </div>
-          <Button size="sm" onClick={() => setShowGenerateDialog(true)} disabled={isLoading}>
+          <Button size="sm" className="shrink-0" onClick={() => setShowGenerateDialog(true)} disabled={isLoading}>
             <Plus className="h-4 w-4 mr-1" />
             Generate
           </Button>
@@ -246,7 +246,7 @@ export default function McpAccessSettings() {
           ) : (
             <div className="space-y-3">
               {tokens.map((t) => (
-                <div key={t.id} className="flex items-center justify-between border rounded-sm p-3 gap-3">
+                <div key={t.id} className="flex items-start justify-between border rounded-sm p-3 gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-sm truncate">{t.name}</p>
                     <p className="text-xs text-muted-foreground font-mono">{t.tokenPrefix}…</p>
@@ -255,7 +255,7 @@ export default function McpAccessSettings() {
                       <span>Expires {format(new Date(t.expiresAt), "PP")}</span>
                       {t.lastUsedAt && <span>Last used {format(new Date(t.lastUsedAt), "PP")}</span>}
                     </div>
-                    <div className="flex gap-1 mt-1">
+                    <div className="flex flex-wrap gap-1 mt-1">
                       {t.scopes.map((s) => (
                         <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>
                       ))}

@@ -253,7 +253,7 @@ function AiSettings() {
         <Label className="my-4" htmlFor="ai-model">
           Model
         </Label>
-        <div className="flex items-start gap-2">
+        <div className="flex flex-wrap items-start gap-2">
           <Select
             value={isLoadingModels ? undefined : selectedModel.model}
             onValueChange={setSelectedProviderModel}
@@ -281,13 +281,13 @@ function AiSettings() {
             </SelectContent>
           </Select>
           {fetchError && (
-            <div className="flex items-center gap-1 text-red-600 text-sm mt-2">
-              <XCircle className="h-4 w-4 shrink-0" />
+            <div className="flex items-start gap-1 text-red-600 text-sm mt-2">
+              <XCircle className="h-4 w-4 shrink-0 mt-0.5" />
               <span>{fetchError}</span>
             </div>
           )}
           {connectionError && (
-            <div className="flex items-center gap-1 mt-2">
+            <div className="flex items-start gap-2 mt-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -298,8 +298,8 @@ function AiSettings() {
                 <RefreshCw className={`h-3.5 w-3.5 ${isLoadingModels ? "animate-spin" : ""}`} />
                 Retry
               </Button>
-              <div className="flex items-center gap-1 text-red-600 text-sm">
-                <XCircle className="h-4 w-4 shrink-0" />
+              <div className="flex items-start gap-1 text-red-600 text-sm">
+                <XCircle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>{connectionError}</span>
               </div>
             </div>
