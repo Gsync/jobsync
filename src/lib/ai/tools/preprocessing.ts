@@ -247,7 +247,6 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
     const sections = formatResumeSections(resume.ResumeSections);
 
     const parts = [
-      `# ${resume.title}`,
       contactInfo ? `## CONTACT\n${contactInfo}` : "",
       sections,
     ].filter(Boolean);
