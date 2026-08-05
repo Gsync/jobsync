@@ -1061,4 +1061,48 @@ describe("JobsContainer Search Functionality", () => {
       });
     });
   });
+
+  describe("view mode toggle", () => {
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    it("renders the table by default and switches to cards on toggle", async () => {
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() =>
+        expect(screen.getByRole("table")).toBeInTheDocument(),
+      );
+
+      await user.click(screen.getByTestId("jobs-view-cards-btn"));
+
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      expect(localStorage.getItem("jobs-view-mode")).toBe('"cards"');
+    });
+
+    it("restores the persisted card view on mount", async () => {
+      localStorage.setItem("jobs-view-mode", '"cards"');
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() =>
+        expect(screen.getByTestId("jobs-view-cards-btn")).toHaveAttribute(
+          "aria-pressed",
+          "true",
+        ),
+      );
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    });
+  });
 });

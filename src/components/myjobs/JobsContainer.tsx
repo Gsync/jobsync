@@ -23,6 +23,7 @@ import {
   JobResponse,
   JobSource,
   JobStatus,
+  JobsViewMode,
   JobTitle,
   Tag,
 } from "@/models/job.model";
@@ -41,9 +42,12 @@ import Loading from "../Loading";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AddJob } from "./AddJob";
 import MyJobsTable from "./MyJobsTable";
+import MyJobsGrid from "./MyJobsGrid";
+import { JobsViewToggle } from "./JobsViewToggle";
 import { NoteDialog } from "./NoteDialog";
 import { format } from "date-fns";
 import { RecordsCount } from "../RecordsCount";
+import { getFromLocalStorage, saveToLocalStorage } from "@/utils/localstorage.utils";
 
 type MyJobsProps = {
   statuses: JobStatus[];
@@ -90,6 +94,7 @@ function JobsContainer({
     queryParams.get("applied") === "true",
   );
   const [jobs, setJobs] = useState<JobResponse[]>([]);
+  const [viewMode, setViewMode] = useState<JobsViewMode>("table");
   const [page, setPage] = useState(1);
   const [totalJobs, setTotalJobs] = useState(0);
   const [filterKey, setFilterKey] = useState<string>("none");
@@ -154,6 +159,21 @@ function JobsContainer({
     setSourceFilter(sp);
     setAppliedFilter(ap);
   }, [queryParams]);
+
+  // Read after mount: localStorage is unavailable during SSR, so seeding the
+  // initial state from it would cause a hydration mismatch.
+  useEffect(() => {
+    const saved = getFromLocalStorage(
+      APP_CONSTANTS.JOBS_VIEW_MODE_STORAGE_KEY,
+      null,
+    );
+    if (saved === "cards" || saved === "table") setViewMode(saved);
+  }, []);
+
+  const onChangeViewMode = (mode: JobsViewMode) => {
+    setViewMode(mode);
+    saveToLocalStorage(APP_CONSTANTS.JOBS_VIEW_MODE_STORAGE_KEY, mode);
+  };
 
   const jobsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
 
@@ -335,6 +355,7 @@ function JobsContainer({
             )}
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto">
+            <JobsViewToggle value={viewMode} onChange={onChangeViewMode} />
             {companyLabel && (
               <button
                 onClick={clearCompanyFilter}
@@ -443,8 +464,17 @@ function JobsContainer({
         </CardHeader>
         <CardContent>
           {initialLoading && <Loading />}
-          {jobs.length > 0 && (
-            <>
+          {jobs.length > 0 &&
+            (viewMode === "cards" ? (
+              <MyJobsGrid
+                jobs={jobs}
+                jobStatuses={statuses}
+                deleteJob={onDeleteJob}
+                editJob={onEditJob}
+                onChangeJobStatus={onChangeJobStatus}
+                onAddNote={onAddNote}
+              />
+            ) : (
               <MyJobsTable
                 jobs={jobs}
                 jobStatuses={statuses}
@@ -453,8 +483,7 @@ function JobsContainer({
                 onChangeJobStatus={onChangeJobStatus}
                 onAddNote={onAddNote}
               />
-            </>
-          )}
+            ))}
           {jobs.length < totalJobs && (
             <div ref={sentinelRef} className="flex justify-center p-4">
               {loadingMore && (
