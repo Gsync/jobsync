@@ -7,38 +7,16 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import {
-  ListCollapse,
-  MoreVertical,
-  Pencil,
-  StickyNote,
-  Tags,
-  Trash,
-} from "lucide-react";
+import { StickyNote } from "lucide-react";
 import { Badge } from "../ui/badge";
-import { StatusBadge } from "../StatusBadge";
-import { getJobStatusBadgeColor } from "@/lib/badge-colors";
 import { format } from "date-fns";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import { Button } from "../ui/button";
 import { useState } from "react";
 import { JobResponse, JobStatus } from "@/models/job.model";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { CircularScore } from "@/components/CircularScore";
+import { JobStatusBadge } from "./JobStatusBadge";
+import { JobActionsMenu } from "./JobActionsMenu";
 
 type MyJobsTableProps = {
   jobs: JobResponse[];
@@ -59,11 +37,6 @@ function MyJobsTable({
 }: MyJobsTableProps) {
   const [alertOpen, setAlertOpen] = useState(false);
   const [jobIdToDelete, setJobIdToDelete] = useState("");
-
-  const router = useRouter();
-  const viewJobDetails = (jobId: string) => {
-    router.push(`/dashboard/myjobs/${jobId}`);
-  };
 
   const onDeleteJob = (jobId: string) => {
     setAlertOpen(true);
@@ -131,26 +104,10 @@ function MyJobsTable({
                   <span className="block truncate">{job.Location?.label}</span>
                 </TableCell>
                 <TableCell>
-                  {job.discoveryStatus === "dismissed" ? (
-                    <Badge
-                      variant="outline"
-                      className="w-[70px] justify-center text-muted-foreground"
-                    >
-                      Dismissed
-                    </Badge>
-                  ) : job.dueDate && new Date() > job.dueDate && job.Status?.value === "draft" ? (
-                    <StatusBadge
-                      label="Expired"
-                      color="amber"
-                      className="w-[70px] justify-center"
-                    />
-                  ) : (
-                    <StatusBadge
-                      label={job.Status?.label ?? ""}
-                      color={getJobStatusBadgeColor(job.Status?.value ?? "")}
-                      className="w-[70px] justify-center"
-                    />
-                  )}
+                  <JobStatusBadge
+                    job={job}
+                    className="w-[70px] justify-center"
+                  />
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {job.matchScore != null ? (
@@ -163,94 +120,14 @@ function MyJobsTable({
                   {job.JobSource?.label}
                 </TableCell>
                 <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        aria-haspopup="true"
-                        size="icon"
-                        variant="ghost"
-                        data-testid="job-actions-menu-btn"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-[200px]">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuGroup>
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          onClick={() => viewJobDetails(job?.id)}
-                        >
-                          <ListCollapse className="mr-2 h-4 w-4" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          onClick={() => editJob(job.id)}
-                        >
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit Job
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          onClick={() => onAddNote(job.id)}
-                        >
-                          <StickyNote className="mr-2 h-4 w-4" />
-                          Add a Note
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuSub>
-                          <DropdownMenuSubTrigger>
-                            <Tags className="mr-2 h-4 w-4" />
-                            Change status
-                          </DropdownMenuSubTrigger>
-                          <DropdownMenuPortal>
-                            <DropdownMenuSubContent className="p-0">
-                              {jobStatuses.map((status) => (
-                                <DropdownMenuItem
-                                  className="cursor-pointer"
-                                  key={status.id}
-                                  onSelect={(_) => {
-                                    onChangeJobStatus(job.id, status);
-                                  }}
-                                  disabled={status.id === job.Status.id}
-                                >
-                                  <span>{status.label}</span>
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuSubContent>
-                          </DropdownMenuPortal>
-                          {/* <Command>
-                              <CommandList>
-                                <CommandGroup>
-                                  {jobStatuses.map((status) => (
-                                    <CommandItem
-                                      className="cursor-pointer"
-                                      key={status.id}
-                                      value={status.label}
-                                      onSelect={(value) => {
-                                        onChangeJobStatus(value);
-                                      }}
-                                    >
-                                      {status.label}
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command> */}
-                        </DropdownMenuSub>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-red-600 cursor-pointer"
-                          onClick={() => onDeleteJob(job.id)}
-                        >
-                          <Trash className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <JobActionsMenu
+                    job={job}
+                    jobStatuses={jobStatuses}
+                    editJob={editJob}
+                    onChangeJobStatus={onChangeJobStatus}
+                    onAddNote={onAddNote}
+                    onDeleteJob={onDeleteJob}
+                  />
                 </TableCell>
               </TableRow>
             );
