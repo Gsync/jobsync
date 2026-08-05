@@ -1211,7 +1211,7 @@ async function convertResumeForMatch(
 
   for (const section of resume.ResumeSections) {
     if (section.sectionType === "summary" && section.summary?.content) {
-      parts.push("## SUMMARY", section.summary.content);
+      parts.push("## SUMMARY", removeHtmlTags(section.summary.content));
     }
 
     if (
@@ -1224,7 +1224,7 @@ async function convertResumeForMatch(
           `Company: ${exp.Company.label}`,
           `Job Title: ${exp.jobTitle.label}`,
           `Location: ${exp.location.label}`,
-          `Description: ${exp.description}`,
+          `Description: ${removeHtmlTags(exp.description)}`,
           "",
         );
       }
@@ -1237,7 +1237,7 @@ async function convertResumeForMatch(
           `Institution: ${edu.institution}`,
           `Degree: ${edu.degree}`,
           `Field: ${edu.fieldOfStudy}`,
-          edu.description ? `Description: ${edu.description}` : "",
+          edu.description ? `Description: ${removeHtmlTags(edu.description)}` : "",
           "",
         );
       }

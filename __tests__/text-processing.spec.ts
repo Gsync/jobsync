@@ -65,6 +65,18 @@ describe("removeHtmlTags", () => {
     const result = removeHtmlTags(html);
     expect(result).toContain("• Content");
   });
+
+  it("decodes HTML entities left over from tag stripping", () => {
+    const html = "<p>Baker Hughes, &amp; EPIROC</p>";
+    const result = removeHtmlTags(html);
+    expect(result).toBe("Baker Hughes, & EPIROC");
+  });
+
+  it("decodes common named and numeric entities", () => {
+    const html = "<p>&lt;tag&gt; &quot;quoted&quot; &#39;it&#39;s&#39;</p>";
+    const result = removeHtmlTags(html);
+    expect(result).toBe('<tag> "quoted" \'it\'s\'');
+  });
 });
 
 describe("normalizeWhitespace", () => {

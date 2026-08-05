@@ -25,6 +25,12 @@ describe("toPlainText", () => {
   it("decodes non-breaking spaces to whitespace", () => {
     expect(toPlainText("<p>a&nbsp;b</p>")).toBe("a b");
   });
+
+  it("decodes HTML entities like &amp; back to their characters", () => {
+    expect(toPlainText("<p>Sales &amp; Marketing</p>")).toBe(
+      "Sales & Marketing",
+    );
+  });
 });
 
 describe("hasDescription", () => {

@@ -6,17 +6,39 @@
 
 // HTML AND WHITESPACE NORMALIZATION
 
+const NAMED_ENTITIES: Record<string, string> = {
+  "&lt;": "<",
+  "&gt;": ">",
+  "&quot;": '"',
+  "&apos;": "'",
+  "&#39;": "'",
+  "&nbsp;": " ",
+  "&amp;": "&", // keep ampersand last so it does not undo other entities
+};
+
+const decodeHtmlEntities = (text: string): string => {
+  let out = text.replace(/&#(\d+);/g, (_, code) =>
+    String.fromCodePoint(Number(code)),
+  );
+  for (const [entity, char] of Object.entries(NAMED_ENTITIES)) {
+    out = out.split(entity).join(char);
+  }
+  return out;
+};
+
 export const removeHtmlTags = (description: string | undefined): string => {
   if (!description) return "";
 
-  return description
-    .replace(/<li[^>]*>/gi, "• ")
-    .replace(/<\/(li|p|div|br)[^>]*>/gi, "\n")
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .replace(/\n\s*\n/g, "\n")
-    .trim();
+  return decodeHtmlEntities(
+    description
+      .replace(/<li[^>]*>/gi, "• ")
+      .replace(/<\/(li|p|div|br)[^>]*>/gi, "\n")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .replace(/\n\s*\n/g, "\n")
+      .trim(),
+  );
 };
 
 export const normalizeWhitespace = (text: string): string => {

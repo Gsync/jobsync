@@ -169,4 +169,38 @@ describe("runAutomation (lever)", () => {
     expect(result.errorMessage).toBe("no_companies");
     expect((searchLeverJobs as any).mock.calls.length).toBe(0);
   });
+
+  it("strips HTML and decodes entities from the resume before matching", async () => {
+    (prisma.resume.findUnique as any).mockResolvedValue({
+      id: "resume1",
+      title: "My Resume",
+      ContactInfo: null,
+      ResumeSections: [
+        {
+          sectionType: "experience",
+          workExperiences: [
+            {
+              description: "<p>Sales &amp; Marketing</p>",
+              startDate: new Date("2020-01-01"),
+              endDate: null,
+              Company: { label: "Acme" },
+              jobTitle: { label: "Engineer" },
+              location: { label: "Remote" },
+            },
+          ],
+        },
+      ],
+    });
+    (searchLeverJobs as any).mockResolvedValue({
+      jobs: [makeJob("Frontend Engineer", "React")],
+      errors: [],
+    });
+
+    await runAutomation(leverAutomation);
+
+    const prompt = (generateText as any).mock.calls[0][0].prompt as string;
+    expect(prompt).toContain("Sales & Marketing");
+    expect(prompt).not.toContain("&amp;");
+    expect(prompt).not.toContain("<p>");
+  });
 });
