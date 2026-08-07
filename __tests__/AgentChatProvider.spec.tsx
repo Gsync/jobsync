@@ -38,10 +38,6 @@ vi.mock("@/actions/userSettings.actions", () => ({
 vi.mock("@/utils/ai.utils", () => ({
   checkOllamaConnection: vi.fn(async () => ({ isConnected: true })),
 }));
-vi.mock("@/actions/profile.actions", () => ({
-  saveResumeReviewResult: vi.fn().mockResolvedValue({ success: true }),
-}));
-vi.mock("@/lib/toast", () => ({ toastSuccess: vi.fn(), toastError: vi.fn() }));
 
 import {
   AgentChatProvider,
@@ -53,7 +49,6 @@ import { SidebarProvider, useSidebar } from "@/context/SidebarContext";
 import { clearChatConversation } from "@/actions/agentChat.actions";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { checkOllamaConnection } from "@/utils/ai.utils";
-import { saveResumeReviewResult } from "@/actions/profile.actions";
 
 function Probe() {
   const c = useAgentChat();
@@ -70,6 +65,7 @@ function Probe() {
       <span data-testid="state">{`${c.isOpen}|${c.approvalPending}|${c.interruptedTurn}|${holder}|${c.preflight.ok}`}</span>
       <span data-testid="composer-nonce">{c.composerNonce}</span>
       <span data-testid="panel-expanded">{String(c.isPanelExpanded)}</span>
+      <span data-testid="review-stream">{c.reviewStreams["rv1"] ?? ""}</span>
     </div>
   );
 }
@@ -85,39 +81,6 @@ const tree = (initialMessages: any[] = []) => (
 );
 
 const setup = (initialMessages: any[] = []) => render(tree(initialMessages));
-
-const reviewMessage = {
-  id: "a2",
-  role: "assistant",
-  parts: [
-    {
-      type: "text",
-      text: "SCORES: overall=78 impact=72 clarity=81 ats=69\n\n## Summary\n\nSolid.",
-    },
-  ],
-} as any;
-
-const readMessage = {
-  id: "a1",
-  role: "assistant",
-  parts: [
-    {
-      type: "tool-get_resume",
-      toolCallId: "t1",
-      state: "output-available",
-      input: {},
-      output: {
-        status: "ok",
-        resumeId: "r1",
-        title: "Senior Engineer Resume",
-        resumeText: "TXT",
-        chars: 3,
-        truncated: false,
-        source: "default",
-      },
-    },
-  ],
-} as any;
 
 const approvalMessage = {
   id: "a1",
@@ -268,50 +231,50 @@ describe("AgentChatProvider", () => {
     expect(body.pageContext).toEqual({ route: "/dashboard/myjobs" });
   });
 
-  it("saves a completed review to the resume it read", async () => {
+  const reviewToolMessage = {
+    id: "a2",
+    role: "assistant",
+    parts: [
+      {
+        type: "tool-review_resume",
+        toolCallId: "rv1",
+        state: "output-available",
+        input: {},
+        output: {
+          status: "ok",
+          resumeId: "r1",
+          title: "Senior Engineer Resume",
+          scores: { overall: 78, impact: 72, clarity: 81, atsCompatibility: 69 },
+          body: "## Summary",
+          saved: true,
+        },
+      },
+    ],
+  } as any;
+
+  // The save lives in review_resume's execute now: it holds the resumeId and
+  // the finished text, so nothing client-side has to infer either. What is
+  // left here is the refresh, so a stale saved-review card behind the panel
+  // does not survive a review the user just watched land.
+  it("refreshes the page after a completed review", async () => {
     setup();
     await act(async () => {
       chatInit().onFinish({
-        message: reviewMessage,
-        messages: [readMessage, reviewMessage],
+        message: reviewToolMessage,
+        messages: [reviewToolMessage],
       });
     });
-    expect(saveResumeReviewResult).toHaveBeenCalledTimes(1);
-    const [resumeId, payload] = (saveResumeReviewResult as any).mock.calls[0];
-    expect(resumeId).toBe("r1");
-    expect(JSON.parse(payload)).toMatchObject({
-      overall: 78,
-      atsCompatibility: 69,
-    });
-    expect(JSON.parse(payload).body).toContain("## Summary");
+    expect(refresh).toHaveBeenCalled();
   });
 
-  it("does not save a reply with no scores line", async () => {
-    setup();
-    const chatter = {
-      id: "a2",
-      role: "assistant",
-      parts: [{ type: "text", text: "The tables hurt your ATS score." }],
-    } as any;
-    await act(async () => {
-      chatInit().onFinish({ message: chatter, messages: [readMessage, chatter] });
-    });
-    expect(saveResumeReviewResult).not.toHaveBeenCalled();
-  });
-
-  // Closing the panel mid-stream aborts, and onFinish still fires with what
-  // streamed. Since the SCORES line comes first, that partial parses — and
-  // saving it would overwrite a complete review with no way back.
-  it("does not save a review the user aborted mid-stream", async () => {
+  it("accumulates transient review deltas keyed by tool call id", async () => {
     setup();
     await act(async () => {
-      chatInit().onFinish({
-        message: reviewMessage,
-        messages: [readMessage, reviewMessage],
-        isAbort: true,
-      });
+      chatInit().onData({ type: "data-review", id: "rv1", data: { delta: "SCO" } });
+      chatInit().onData({ type: "data-review", id: "rv1", data: { delta: "RES:" } });
+      chatInit().onData({ type: "data-paste", id: "rv1", data: { delta: "nope" } });
     });
-    expect(saveResumeReviewResult).not.toHaveBeenCalled();
+    expect(screen.getByTestId("review-stream")).toHaveTextContent("SCORES:");
   });
 
   it("restores an expanded panel when the sidebar re-expands", async () => {

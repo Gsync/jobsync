@@ -13,14 +13,12 @@ import { useRouter, usePathname } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import {
   DefaultChatTransport,
+  getToolName,
   isToolUIPart,
   lastAssistantMessageIsCompleteWithApprovalResponses,
   type UIMessage,
 } from "ai";
 import { hasPendingApproval } from "@/lib/agent/paste";
-import { detectReviewSave } from "@/lib/agent/review";
-import { saveResumeReviewResult } from "@/actions/profile.actions";
-import { toastSuccess, toastError } from "@/lib/toast";
 import { useRightRail } from "@/context/RightRailContext";
 import { useSidebar } from "@/context/SidebarContext";
 import { useResizablePanel } from "@/hooks/useResizablePanel";
@@ -42,8 +40,6 @@ type Preflight = {
   checked: boolean;
   ok: boolean;
   error?: string;
-  // Kept for the review save's provenance fields, which mirror what the
-  // review sheet writes.
   provider?: string;
   model?: string;
 };
@@ -97,10 +93,6 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     ok: true,
   });
 
-  // onFinish needs the preflight's provider/model without re-subscribing the
-  // chat to preflight state.
-  const aiRef = useRef<{ provider?: string; model?: string }>({});
-
   const pageContextRef = useRef<PageContext>(pageContextFor(pathname));
   useEffect(() => {
     pageContextRef.current = pageContextFor(pathname);
@@ -128,40 +120,24 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
       const { delta } = part.data as AgentReviewStreamData;
       setReviewStreams((prev) => ({ ...prev, [id]: (prev[id] ?? "") + delta }));
     },
-    onFinish: ({ message, messages, isAbort, isError }) => {
-      // onFinish runs from a finally block, so it fires on abort too. The
-      // SCORES line streams first, so a partial review parses — and
-      // reviewData has no history to recover from.
+    onFinish: ({ message, isAbort, isError }) => {
+      // onFinish runs from a finally block, so it fires on abort too.
       if (isAbort || isError) return;
 
-      const wrote = (message?.parts ?? []).some((part) => {
-        if (!isToolUIPart(part) || part.state !== "output-available")
-          return false;
+      const finishedParts = message?.parts ?? [];
+      const wrote = finishedParts.some((part) => {
+        if (!isToolUIPart(part) || part.state !== "output-available") return false;
         return (part.output as AgentAddJobResult | undefined)?.created === true;
       });
-
-      // The user watched the whole review stream, so there is nothing an
-      // approval gate would show them that they have not already seen. Same
-      // auto-save-after-stream pattern as the review sheet.
-      const review = detectReviewSave(messages, message);
-      if (review) {
-        const reviewData = JSON.stringify({
-          ...review.scores,
-          body: review.body,
-          reviewedAt: new Date().toISOString(),
-          provider: aiRef.current.provider,
-          model: aiRef.current.model,
-        });
-        void saveResumeReviewResult(review.resumeId, reviewData).then((res) => {
-          if (res?.success) toastSuccess("Review saved");
-          else toastError(res?.message || "Failed to save review");
-        });
-      }
+      const reviewed = finishedParts.some((part) => {
+        if (!isToolUIPart(part) || part.state !== "output-available") return false;
+        return getToolName(part) === "review_resume";
+      });
 
       // Unconditional: an RSC refresh on an irrelevant page is a wasted
       // request, not a bug. A stale jobs list or a stale saved review behind
       // the panel right after watching one land reads as one.
-      if (wrote || review) router.refresh();
+      if (wrote || reviewed) router.refresh();
     },
   });
 
@@ -190,7 +166,6 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     // so the empty state says it and send is disabled — the user never
     // spends a turn to learn it, and the route's 503 stays the backstop.
     if (!ai?.model) {
-      aiRef.current = { provider };
       setPreflight({
         checked: true,
         ok: false,
@@ -201,7 +176,6 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
       return;
     }
 
-    aiRef.current = { provider, model: ai.model };
     if (provider !== AiProvider.OLLAMA) {
       setPreflight({ checked: true, ok: true, provider, model: ai.model });
       return;

@@ -78,6 +78,19 @@ const approvalMessage = {
   ],
 };
 
+const reviewRunningMessage = {
+  id: "a1",
+  role: "assistant",
+  parts: [
+    {
+      type: "tool-review_resume",
+      toolCallId: "rv1",
+      state: "input-available",
+      input: {},
+    },
+  ],
+};
+
 describe("agent chat close paths", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -137,5 +150,18 @@ describe("agent chat close paths", () => {
     expect(
       screen.getByRole("button", { name: /open assistant/i }).textContent,
     ).toBe("Chat AI");
+  });
+
+  // The nested generation is inside the outer streamText's tool call, so the
+  // same abort covers it — nothing keeps reviewing while the panel is shut.
+  it("stops a running nested review when the panel closes", async () => {
+    chat.messages = [reviewRunningMessage];
+    chat.status = "streaming";
+    setup([reviewRunningMessage]);
+    await openPanel();
+    await act(async () => {
+      await userEvent.click(screen.getByRole("button", { name: "Close chat" }));
+    });
+    expect(chat.stop).toHaveBeenCalled();
   });
 });
