@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, PanelRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
 
@@ -14,8 +14,14 @@ export function AgentChatTrigger() {
       aria-label={isOpen ? "Close assistant" : "Open assistant"}
       onClick={() => (isOpen ? close() : open())}
     >
-      <MessageSquare className="h-4 w-4" />
-      Chat AI
+      {isOpen ? (
+        <PanelRight className="h-4 w-4" />
+      ) : (
+        <>
+          <MessageSquare className="h-4 w-4" />
+          Chat AI
+        </>
+      )}
       {/* Deliberately no streaming state: nothing generates while the panel
           is closed, so there is no background activity to advertise. */}
       {approvalPending && (
