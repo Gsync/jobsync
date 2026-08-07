@@ -125,6 +125,8 @@ export const APP_CONSTANTS = {
 
   // Agent chat (in-app tool-calling panel)
   AGENT_CHAT_CREATED_VIA: "chat",
+  // Provenance on Resume.reviewData, alongside the MCP path's "mcp" marker.
+  AGENT_CHAT_REVIEW_SURFACE: "chat",
   AGENT_CHAT_MAX_STEPS: 4,
   AGENT_CHAT_MAX_STORED_MESSAGES: 50,
   AGENT_CHAT_HISTORY_MESSAGES: 20,

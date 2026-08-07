@@ -47,3 +47,12 @@ export const AgentGetResumeSchema = z.object({
 });
 
 export type AgentGetResumeInput = z.infer<typeof AgentGetResumeSchema>;
+
+// Same one-optional-field shape as AgentGetResumeSchema, and never an id: the
+// model names a resume the way the user did, and the server resolves it
+// ownership-scoped.
+export const AgentReviewResumeSchema = z.object({
+  resumeTitle: z.string().optional().describe("The title of the resume to review, as the user referred to it. Omit this entirely if the user did not name one — the app then uses the resume they are currently viewing, or their default resume."),
+});
+
+export type AgentReviewResumeInput = z.infer<typeof AgentReviewResumeSchema>;

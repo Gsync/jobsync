@@ -1,4 +1,5 @@
 import type { DescriptionCompleteness } from "@/models/job.model";
+import type { ResumeScores } from "@/models/ai.schemas";
 
 // Dependency-free by design: client components import these types, so nothing
 // here may pull in Prisma or server-only code. Type-only imports are erased.
@@ -78,5 +79,30 @@ export type AgentGetResumeResult =
   | { status: "no_resumes" }
   | { status: "unreadable"; title: string; reason: string };
 
-export const AGENT_CHAT_TOOL_NAMES = ["add_job", "get_resume"] as const;
+// Transient stream part carrying the nested review generation's tokens. It is
+// never persisted: the finished review lands in the tool result, and keeping
+// both would duplicate it in storage and in model context.
+export const AGENT_REVIEW_PART_TYPE = "data-review";
+
+export type AgentReviewStreamData = { delta: string };
+
+// What review_resume returns to the model AND to the result card. The resume
+// text is deliberately absent — follow-ups answer from `body`, not from the
+// serialization.
+export type AgentReviewResumeResult =
+  | {
+      status: "ok";
+      resumeId: string;
+      title: string;
+      scores: ResumeScores;
+      body: string;
+      saved: boolean;
+      saveError?: string;
+    }
+  | { status: "needs_selection"; resumes: { id: string; title: string }[] }
+  | { status: "no_resumes" }
+  | { status: "unreadable"; title: string; reason: string }
+  | { status: "generation_failed"; title: string; reason: string };
+
+export const AGENT_CHAT_TOOL_NAMES = ["add_job", "get_resume", "review_resume"] as const;
 export type AgentChatToolName = (typeof AGENT_CHAT_TOOL_NAMES)[number];

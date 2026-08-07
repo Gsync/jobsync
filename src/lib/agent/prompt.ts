@@ -27,6 +27,7 @@ export const AGENT_CHAT_SYSTEM_PROMPT = [
 export const AGENT_TOOL_DESCRIPTIONS = {
   add_job: "Add a job application to JobSync. Resolves or creates company, job title, location and source by name, and detects duplicates automatically. The user confirms the extracted details before anything is saved.",
   get_resume: "Read the contents of one of the user's own resumes in JobSync and return it as text. Optionally takes the resume's title; with no title the app uses the resume the user is currently viewing, or their default resume. Returns their resume titles instead if it cannot tell which one they mean.",
+  review_resume: "Produce a full scored review of one of the user's own resumes in JobSync. The app generates the review itself, streams it to the user and saves it, then returns the scores and the review text to you. Optionally takes the resume's title; with no title the app uses the resume the user is currently viewing, or their default resume. Returns their resume titles instead if it cannot tell which one they mean.",
 } as const;
 
 export type AgentToolName = keyof typeof AGENT_TOOL_DESCRIPTIONS;

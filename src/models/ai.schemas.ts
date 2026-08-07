@@ -20,6 +20,9 @@ export type ResumeReviewData = ResumeScores & {
   reviewedAt?: string;
   provider?: string;
   model?: string;
+  // Which surface produced it. Optional: rows written before this existed
+  // simply do not have it, and ReviewDetails ignores it.
+  surface?: string;
 };
 
 // JOB MATCH TYPES
