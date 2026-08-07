@@ -3,6 +3,7 @@ import { getDefaultResumeForUser } from "@/lib/jobs/getDefaultResumeForUser";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 import { checkMcpRateLimit } from "@/lib/mcp/rate-limit";
 import { APP_CONSTANTS } from "@/lib/constants";
+import { buildResumeReviewPrompt } from "@/lib/ai/prompts/resume-review";
 
 vi.mock("@/lib/jobs/getDefaultResumeForUser", () => ({
   getDefaultResumeForUser: vi.fn(),
@@ -41,6 +42,26 @@ describe("handleReviewResume", () => {
       "SCORES: overall=<0-100> impact=<0-100> clarity=<0-100> ats=<0-100>",
     );
     expect(text).toContain('"resumeId": "resume-1"');
+    // The serialization disclaimer lives only in buildResumeReviewPrompt.
+    // Without it an MCP review docks ATS points for the "##" markers the app
+    // itself inserted — the one gap MCP had that chat did not.
+    expect(text).toContain("artifacts of this serialization");
+    expect(text).toContain("<resume>");
+    expect(text).toContain("</resume>");
+    expect(text).not.toContain("DEFAULT RESUME (normalized):");
+  });
+
+  it("emits the shared user prompt verbatim, so the three surfaces cannot drift", async () => {
+    (getDefaultResumeForUser as any).mockResolvedValue({ id: "resume-1" });
+    (preprocessResume as any).mockResolvedValue({
+      success: true,
+      data: { normalizedText: longResumeText, metadata: {}, isValid: true },
+    });
+
+    const result = await handleReviewResume("user-1");
+    expect(result.content[0].text).toContain(
+      buildResumeReviewPrompt(longResumeText),
+    );
   });
 
   it("returns a note when no default resume is set", async () => {

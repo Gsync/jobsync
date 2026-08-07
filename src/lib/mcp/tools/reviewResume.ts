@@ -2,11 +2,15 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import { checkMcpRateLimit } from "@/lib/mcp/rate-limit";
 import { getDefaultResumeForUser } from "@/lib/jobs/getDefaultResumeForUser";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
-import { RESUME_REVIEW_SYSTEM_PROMPT } from "@/lib/ai/prompts/resume-review";
+import {
+  RESUME_REVIEW_SYSTEM_PROMPT,
+  buildResumeReviewPrompt,
+} from "@/lib/ai/prompts/resume-review";
 
-// Do not restate the SCORES line format or the "##" section list here —
-// RESUME_REVIEW_SYSTEM_PROMPT already fully specifies both. Restating them
-// would create two sources that can drift.
+// Do not restate the SCORES line format, the "##" section list or the
+// serialization disclaimer here — the shared system prompt and user-prompt
+// builder specify all three. Restating any of them creates a second source
+// that can drift.
 function buildReviewDirective(
   resumeId: string,
   normalizedResumeText: string,
@@ -14,8 +18,8 @@ function buildReviewDirective(
   return (
     `Act as the reviewer described below and produce a review of the ` +
     `resume shown here.\n\n` +
-    `DEFAULT RESUME (normalized):\n${normalizedResumeText}\n\n` +
     `${RESUME_REVIEW_SYSTEM_PROMPT}\n\n` +
+    `${buildResumeReviewPrompt(normalizedResumeText)}\n\n` +
     `Then call save_resume_review with the full SCORES line + markdown body ` +
     `you just produced as the "reviewText" argument (not as a chat message):\n` +
     `    { "resumeId": "${resumeId}", "reviewText": "<the full SCORES line + markdown body>" }`
