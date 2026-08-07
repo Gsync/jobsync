@@ -15,7 +15,6 @@ export function GlobalActivityBanner() {
       <ActivityBanner
         title={currentActivity.activityName}
         typeLabel={activityType?.label || "Activity"}
-        startTime={new Date(currentActivity.startTime)}
         onStopActivity={stopActivity}
         elapsedTime={timeElapsed}
       />

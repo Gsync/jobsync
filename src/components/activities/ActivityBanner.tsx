@@ -6,8 +6,7 @@ import {
   Monitor,
   XCircle,
 } from "lucide-react";
-import { formatDistanceToNowStrict } from "date-fns";
-import { cn } from "@/lib/utils";
+import { cn, formatElapsedTime } from "@/lib/utils";
 import React from "react";
 
 type BannerVariant = "success" | "warning" | "error" | "info";
@@ -15,7 +14,6 @@ type BannerVariant = "success" | "warning" | "error" | "info";
 interface BannerProps {
   title: string;
   typeLabel?: string;
-  startTime: Date;
   variant?: BannerVariant;
   onStopActivity: (autoStop: boolean) => void;
   elapsedTime: number;
@@ -49,7 +47,6 @@ const focusRing: Record<BannerVariant, string> = {
 export function ActivityBanner({
   title,
   typeLabel,
-  startTime,
   variant = "success",
   onStopActivity,
   elapsedTime,
@@ -68,7 +65,7 @@ export function ActivityBanner({
 
       <span className="hidden shrink-0 items-center gap-1.5 tabular-nums sm:flex">
         <Clock className="size-4 opacity-80" />
-        Started {formatDistanceToNowStrict(startTime, { addSuffix: true })}
+        {formatElapsedTime(elapsedTime)}
       </span>
       {typeLabel && (
         <span className="hidden shrink-0 items-center gap-1.5 lg:flex">
