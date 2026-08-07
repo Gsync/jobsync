@@ -24,19 +24,18 @@ providers:
       tool_choice: auto
       tools: file://./tools.json
 
-  # Local Ollama via its OpenAI-compatible endpoint. reasoning_effort goes in
-  # passthrough to clear promptfoo's reasoning-model name check; disabling
-  # thinking matches the app, where ollama-ai-provider-v2 sets think:false.
-  - id: openai:chat:qwen3.5:9b
+  # Local Ollama via its NATIVE endpoint, which is what the app uses. The
+  # OpenAI-compatible /v1 shim cannot measure this surface: promptfoo's
+  # openai:chat provider checks message.reasoning FIRST and discards
+  # tool_calls when both are present, so every thinking tool call scores as
+  # "no tool call". Verified in promptfoo 0.121.19 and 0.122.0 alike.
+  - id: ollama:chat:qwen3.5:9b
     label: ollama-qwen3.5-9b
     config:
-      apiBaseUrl: http://localhost:11434/v1
-      apiKey: ollama
       temperature: 0
-      max_tokens: 8192
-      passthrough:
-        reasoning_effort: "none"
-      tool_choice: auto
+      # Mirrors the route: providerOptions.ollama.think plus AGENT_CHAT_NUM_CTX.
+      think: true
+      num_ctx: 16384
       tools: file://./tools.json
 
 prompts:

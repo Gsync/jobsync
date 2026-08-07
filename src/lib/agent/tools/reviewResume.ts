@@ -75,6 +75,9 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
           prompt: buildResumeReviewPrompt(pre.data.normalizedText),
           temperature: TEMPERATURES.FEEDBACK,
           abortSignal: AbortSignal.any(signals),
+          // Deliberately no think:true. This is a plain text generation with
+          // no tools, so reasoning buys nothing and costs 30s on a call that
+          // already runs 30-120s. The chat loop enables it; this does not.
           providerOptions: {
             ollama: { options: { num_ctx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX } },
           },

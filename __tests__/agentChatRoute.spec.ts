@@ -161,6 +161,9 @@ describe("POST /api/ai/chat", () => {
     expect(args.temperature).toBe(0.1);
     expect(args.abortSignal).toBeDefined();
     expect(args.providerOptions.ollama.options.num_ctx).toBe(APP_CONSTANTS.AGENT_CHAT_NUM_CTX);
+    // qwen3.5 deliberates in the content channel when thinking is off, and
+    // content and a tool call are mutually exclusive. Measured 1/7 vs 7/7.
+    expect(args.providerOptions.ollama.think).toBe(true);
   });
 
   it("returns 503 naming Settings when no model is configured, and never guesses one", async () => {

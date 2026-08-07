@@ -186,7 +186,11 @@ export const POST = async (req: NextRequest) => {
         temperature: TEMPERATURES.ANALYSIS,
         abortSignal: controller.signal,
         providerOptions: {
-          ollama: { options: { num_ctx: APP_CONSTANTS.AGENT_CHAT_NUM_CTX } },
+          // qwen3.5 is a hybrid-reasoning model and the provider defaults
+          // think to false. With the thinking channel shut it deliberates in
+          // the content channel, and content and a tool call are mutually
+          // exclusive — add_job measured 1/7 with it off, 7/7 with it on.
+          ollama: { think: true, options: { num_ctx: APP_CONSTANTS.AGENT_CHAT_NUM_CTX } },
         },
       });
       // createUIMessageStream emits no start/finish of its own — the merged

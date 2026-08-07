@@ -231,6 +231,20 @@ describe("AgentChatMessages", () => {
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 
+  // think:true means reasoning parts now reach the client. They are the
+  // model's scratchpad, not its answer, and must never render as prose.
+  it("renders nothing for a reasoning part", () => {
+    chat.messages = [
+      assistant([
+        { type: "reasoning", text: "The user pasted a posting, so I omit jobDescription." },
+        { type: "text", text: "Added." },
+      ]),
+    ];
+    render(<AgentChatMessages />);
+    expect(screen.getByText("Added.")).toBeInTheDocument();
+    expect(screen.queryByText(/omit jobDescription/)).not.toBeInTheDocument();
+  });
+
   // The transcript no longer parses assistant prose for a SCORES line at all
   // — the card comes from the tool part. A model that emits one anyway is
   // rendered as the plain text it is.
