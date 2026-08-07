@@ -37,7 +37,13 @@ function easeOutCubic(t: number) {
   return 1 - Math.pow(1 - t, 3);
 }
 
-export function RadialChartComponent({ score }: { score: number }) {
+export function RadialChartComponent({
+  score,
+  size = 180,
+}: {
+  score: number;
+  size?: number;
+}) {
   const cx = 130;
   const cy = 130;
   const innerRadius = 80;
@@ -74,7 +80,7 @@ export function RadialChartComponent({ score }: { score: number }) {
   const scoreStart = improveSweep;
 
   return (
-    <div className="mx-auto w-full max-w-[180px] mb-[-20px]">
+    <div className="mx-auto w-full mb-[-20px]" style={{ maxWidth: size }}>
       <svg viewBox="-2 -2 264 190" className="w-full">
         {/* Improve (remaining) sector */}
         {animatedScore < 100 && (

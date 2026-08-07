@@ -12,6 +12,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { TipTapContentViewer } from "@/components/TipTapContentViewer";
+import { AgentReviewScoreCard } from "@/components/agent/AgentReviewScoreCard";
 import type { ResumeReviewData } from "@/models/ai.schemas";
 
 // html:false escapes any raw HTML in the model output; TipTapContentViewer
@@ -33,16 +34,8 @@ export function ReviewDetails({ reviewData }: ReviewDetailsProps) {
 
   return (
     <Collapsible open={expanded} onOpenChange={setExpanded}>
-      <div className="space-y-1">
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="text-lg font-semibold">
-            Overall {reviewData.overall}
-          </span>
-          <span className="text-sm text-muted-foreground">
-            Impact {reviewData.impact} · Clarity {reviewData.clarity} · ATS{" "}
-            {reviewData.atsCompatibility}
-          </span>
-        </div>
+      <div className="space-y-3">
+        <AgentReviewScoreCard scores={reviewData} size={130} />
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
           {reviewData.reviewedAt ? (
             <span>

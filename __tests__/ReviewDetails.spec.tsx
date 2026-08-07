@@ -29,10 +29,12 @@ describe("ReviewDetails", () => {
 
   it("renders the compact score summary and metadata line", () => {
     render(<ReviewDetails reviewData={reviewData} />);
-    expect(screen.getByText("Overall 85")).toBeInTheDocument();
-    expect(
-      screen.getByText("Impact 80 · Clarity 82 · ATS 78"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Impact")).toBeInTheDocument();
+    expect(screen.getByText("80")).toBeInTheDocument();
+    expect(screen.getByText("Clarity")).toBeInTheDocument();
+    expect(screen.getByText("82")).toBeInTheDocument();
+    expect(screen.getByText("ATS")).toBeInTheDocument();
+    expect(screen.getByText("78")).toBeInTheDocument();
     const date = format(
       new Date(reviewData.reviewedAt!),
       "MMM d, yyyy 'at' h:mm a",

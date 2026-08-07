@@ -1,6 +1,6 @@
 "use client";
 import { Resume, ResumeSection, SectionType } from "@/models/profile.model";
-import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardHeader, CardTitle } from "../ui/card";
 import { ResponsiveCardHeader } from "../ResponsiveCardHeader";
 import AddResumeSection, { AddResumeSectionRef } from "./AddResumeSection";
 import ContactInfoCard from "./ContactInfoCard";
@@ -742,22 +742,12 @@ function ResumeContainer({
 
   return (
     <>
-      <div className="flex justify-between">
-        <Button title="Go Back" size="sm" variant="outline" onClick={goBack}>
-          <ArrowLeft />
-        </Button>
-      </div>
-      <Card>
-        <CardHeader className="flex-col gap-2 sm:flex-row sm:justify-between sm:items-center lg:grid lg:grid-cols-3 lg:items-center">
-          <div className="flex items-center gap-2">
-            <CardTitle>Resume</CardTitle>
-            {isDefault && (
-              <Badge className="border-transparent bg-green-600 text-white hover:bg-green-600/90">
-                Default
-              </Badge>
-            )}
-          </div>
-          <CardDescription className="mt-0 lg:flex lg:justify-center">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <Button title="Go Back" size="sm" variant="outline" onClick={goBack}>
+            <ArrowLeft />
+          </Button>
+          <CardTitle>
             {resume.FileId && resume.File?.filePath
               ? DownloadFileButton(
                   resume.File?.filePath,
@@ -765,86 +755,91 @@ function ResumeContainer({
                   resume.File?.fileName,
                 )
               : title}
-          </CardDescription>
-          <div className="flex items-center gap-2 flex-wrap lg:justify-end">
-            <AddResumeSection resume={resume} ref={resumeSectionRef} />
-            <Button
-              className="h-8 gap-1 cursor-pointer"
-              onClick={() => {
-                openChat();
-                // A pending approval already owns the composer's queue slot
-                // (see AgentChatInput), which this button can't reach, so it
-                // falls back to prefill rather than sending underneath it.
-                if (approvalPending) {
-                  prefillComposer(`Review ${title}`);
-                } else {
-                  void sendMessage({
-                    parts: [{ type: "text", text: `Review ${title}` }],
-                  });
-                }
-              }}
-              size="sm"
-              variant="outline"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                Review
-              </span>
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="outline">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger
-                    className="cursor-pointer"
-                    disabled={isExporting}
-                  >
-                    <FileDown className="h-4 w-4 mr-2" />
-                    {isExporting ? "Generating…" : "Export to PDF"}
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent>
-                    <DropdownMenuItem
-                      className="cursor-pointer"
-                      onClick={() => handleExportPdf("simple")}
-                      disabled={isExporting}
-                    >
-                      Simple
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="cursor-pointer"
-                      onClick={() => handleExportPdf("professional")}
-                      disabled={isExporting}
-                    >
-                      Professional
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-                {!isDefault && (
+          </CardTitle>
+          {isDefault && (
+            <Badge className="border-transparent bg-green-600 text-white hover:bg-green-600/90">
+              Default
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <AddResumeSection resume={resume} ref={resumeSectionRef} />
+          <Button
+            className="h-8 gap-1 cursor-pointer"
+            onClick={() => {
+              openChat();
+              // A pending approval already owns the composer's queue slot
+              // (see AgentChatInput), which this button can't reach, so it
+              // falls back to prefill rather than sending underneath it.
+              if (approvalPending) {
+                prefillComposer(`Review ${title}`);
+              } else {
+                void sendMessage({
+                  parts: [{ type: "text", text: `Review ${title}` }],
+                });
+              }
+            }}
+            size="sm"
+            variant="outline"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+              Review
+            </span>
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger
+                  className="cursor-pointer"
+                  disabled={isExporting}
+                >
+                  <FileDown className="h-4 w-4 mr-2" />
+                  {isExporting ? "Generating…" : "Export to PDF"}
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
                   <DropdownMenuItem
                     className="cursor-pointer"
-                    onClick={() => {
-                      if (!hasMinResumeSections(ResumeSections?.length)) {
-                        warnInsufficientResumeSections(
-                          "setting this resume as default",
-                        );
-                        return;
-                      }
-                      setSetDefaultConfirmOpen(true);
-                    }}
+                    onClick={() => handleExportPdf("simple")}
+                    disabled={isExporting}
                   >
-                    <Star className="h-4 w-4 mr-2" />
-                    Set as default
+                    Simple
                   </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </CardHeader>
-      </Card>
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => handleExportPdf("professional")}
+                    disabled={isExporting}
+                  >
+                    Professional
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              {!isDefault && (
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() => {
+                    if (!hasMinResumeSections(ResumeSections?.length)) {
+                      warnInsufficientResumeSections(
+                        "setting this resume as default",
+                      );
+                      return;
+                    }
+                    setSetDefaultConfirmOpen(true);
+                  }}
+                >
+                  <Star className="h-4 w-4 mr-2" />
+                  Set as default
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
 
       <DeleteAlertDialog
         pageTitle="resume"

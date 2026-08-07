@@ -6,7 +6,13 @@ import type { ResumeScores } from "@/models/ai.schemas";
 // Started as a copy of the retired review sheet's ScoresSection, kept
 // separate so that surface could be deleted without touching this one.
 // AiJobMatchResponseContent still has its own near-identical version.
-export function AgentReviewScoreCard({ scores }: { scores: ResumeScores }) {
+export function AgentReviewScoreCard({
+  scores,
+  size,
+}: {
+  scores: ResumeScores;
+  size?: number;
+}) {
   const items = [
     { label: "Impact", value: scores.impact },
     { label: "Clarity", value: scores.clarity },
@@ -15,7 +21,7 @@ export function AgentReviewScoreCard({ scores }: { scores: ResumeScores }) {
 
   return (
     <div className="rounded-sm border p-3">
-      <RadialChartComponent score={scores.overall} />
+      <RadialChartComponent score={scores.overall} size={size} />
       <div className="mt-1 grid grid-cols-3 gap-2">
         {items.map((item) => (
           <div key={item.label} className="text-center">
