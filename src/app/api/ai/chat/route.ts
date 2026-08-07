@@ -4,6 +4,8 @@ import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 import {
   convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
   hasToolCall,
   isToolUIPart,
   stepCountIs,
@@ -148,25 +150,29 @@ export const POST = async (req: NextRequest) => {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), APP_CONSTANTS.AGENT_CHAT_TIMEOUT_MS);
 
-  const result = streamText({
-    model,
-    system: AGENT_CHAT_SYSTEM_PROMPT,
-    messages: modelMessages,
-    tools: buildAgentTools({ userId, pastedText, pageContext }),
-    // Stop after the write: the result card renders deterministically from
-    // structured fields, so a second generation just to narrate it is 10-30s
-    // of local inference for a sentence that could be wrong.
-    stopWhen: [stepCountIs(APP_CONSTANTS.AGENT_CHAT_MAX_STEPS), hasToolCall("add_job")],
-    // Argument extraction wants determinism.
-    temperature: TEMPERATURES.ANALYSIS,
-    abortSignal: controller.signal,
-    providerOptions: {
-      ollama: { options: { num_ctx: APP_CONSTANTS.AGENT_CHAT_NUM_CTX } },
-    },
-  });
-
-  return result.toUIMessageStreamResponse({
+  const stream = createUIMessageStream({
     originalMessages: messages,
+    execute: ({ writer }) => {
+      const result = streamText({
+        model,
+        system: AGENT_CHAT_SYSTEM_PROMPT,
+        messages: modelMessages,
+        tools: buildAgentTools({ userId, pastedText, pageContext }),
+        // Stop after the write: the result card renders deterministically from
+        // structured fields, so a second generation just to narrate it is 10-30s
+        // of local inference for a sentence that could be wrong.
+        stopWhen: [stepCountIs(APP_CONSTANTS.AGENT_CHAT_MAX_STEPS), hasToolCall("add_job")],
+        // Argument extraction wants determinism.
+        temperature: TEMPERATURES.ANALYSIS,
+        abortSignal: controller.signal,
+        providerOptions: {
+          ollama: { options: { num_ctx: APP_CONSTANTS.AGENT_CHAT_NUM_CTX } },
+        },
+      });
+      // createUIMessageStream emits no start/finish of its own — the merged
+      // stream carries them, so this is byte-identical to the old response.
+      writer.merge(result.toUIMessageStream());
+    },
     onFinish: async ({ messages: finalMessages, responseMessage, isAborted }) => {
       clearTimeout(timer);
       const { tool, state, outcome } = outcomeOf(responseMessage);
@@ -190,4 +196,6 @@ export const POST = async (req: NextRequest) => {
       return mapAgentError(error, errorContext);
     },
   });
+
+  return createUIMessageStreamResponse({ stream });
 };

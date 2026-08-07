@@ -16,8 +16,17 @@ vi.mock("@/lib/agent/tools", async (importOriginal) => {
   return { ...actual, buildAgentTools: vi.fn(actual.buildAgentTools) };
 });
 
-const toUIMessageStreamResponse = vi.fn(() => ({ status: 200, __stream: true }));
-const streamText = vi.fn((..._args: any[]) => ({ toUIMessageStreamResponse }));
+// The route merges this into createUIMessageStream now. An immediately
+// closed stream is enough — these tests assert on the streamText ARGS.
+const toUIMessageStream = vi.fn(
+  () =>
+    new ReadableStream({
+      start(controller) {
+        controller.close();
+      },
+    }),
+);
+const streamText = vi.fn((..._args: any[]) => ({ toUIMessageStream }));
 const streamArgs = (): any => streamText.mock.calls[0]![0];
 vi.mock("ai", async (importOriginal) => {
   const actual = await importOriginal<typeof import("ai")>();
