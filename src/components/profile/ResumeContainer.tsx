@@ -361,7 +361,8 @@ function ResumeContainer({
   const goBack = () => router.back();
   const isDefault = !!resume?.id && resume.id === defaultResumeId;
   const [setDefaultConfirmOpen, setSetDefaultConfirmOpen] = useState(false);
-  const { open: openChat, prefillComposer } = useAgentChat();
+  const { open: openChat, prefillComposer, sendMessage, approvalPending } =
+    useAgentChat();
   const parsedReviewData = useMemo(() => {
     if (!resume.reviewData) return null;
     try {
@@ -770,8 +771,17 @@ function ResumeContainer({
             <Button
               className="h-8 gap-1 cursor-pointer"
               onClick={() => {
-                prefillComposer(`Review ${title}`);
                 openChat();
+                // A pending approval already owns the composer's queue slot
+                // (see AgentChatInput), which this button can't reach, so it
+                // falls back to prefill rather than sending underneath it.
+                if (approvalPending) {
+                  prefillComposer(`Review ${title}`);
+                } else {
+                  void sendMessage({
+                    parts: [{ type: "text", text: `Review ${title}` }],
+                  });
+                }
               }}
               size="sm"
               variant="outline"
