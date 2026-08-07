@@ -123,17 +123,16 @@ export function assertCallsGetResume(output: unknown): AssertionResult {
   return { pass, score: pass ? 1 : 0, reason: pass ? 'called get_resume' : `expected one get_resume call, got: ${describe(calls)}` };
 }
 
-// The three parse paths share this function, so passing here means the chat
-// transcript, the review sheet and the MCP handler all read it identically.
-export function assertReviewParses(output: unknown): AssertionResult {
-  const { scores, body } = parseResumeReview(textOf(output));
-  if (!scores) {
-    return { pass: false, score: 0, reason: 'no parseable SCORES line in the review' };
-  }
-  const inRange = [scores.overall, scores.impact, scores.clarity, scores.atsCompatibility].every((n) => n >= 0 && n <= 100);
-  const long = body.length >= 400;
-  const pass = inRange && long;
-  return { pass, score: pass ? 1 : 0, reason: pass ? `parsed overall=${scores.overall}, body ${body.length} chars` : `scores parsed but ${!inRange ? 'out of range' : `body only ${body.length} chars`}` };
+export function assertCallsReviewResume(output: unknown): AssertionResult {
+  const calls = parseToolCalls(output);
+  const pass = calls.length === 1 && calls[0].name === 'review_resume';
+  return {
+    pass,
+    score: pass ? 1 : 0,
+    reason: pass
+      ? 'called review_resume'
+      : `expected one review_resume call, got: ${describe(calls)}`,
+  };
 }
 
 export function assertFollowUpStaysConversational(output: unknown): AssertionResult {

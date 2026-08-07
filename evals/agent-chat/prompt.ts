@@ -8,17 +8,17 @@ type Message = Record<string, unknown>;
 // across runs; the route generates a random one per request.
 const NONCE = 'EVALNONCE0001';
 
-// Mirrors a completed get_resume round-trip so review rows can start after
-// the read, exactly as the model sees it on the second step of a turn.
-function resumeTurn(resumeText: string): Message[] {
+// Mirrors a completed review_resume round-trip so follow-up rows start after
+// the review, exactly as the model sees it on the second turn. The review
+// text is the tool's OUTPUT now, not the model's own prose.
+function reviewTurn(reviewBody: string): Message[] {
   const output = {
     status: 'ok',
     resumeId: 'resume-eval-1',
     title: 'Senior Engineer Resume',
-    resumeText,
-    chars: resumeText.length,
-    truncated: false,
-    source: 'default',
+    scores: { overall: 78, impact: 72, clarity: 81, atsCompatibility: 69 },
+    body: reviewBody,
+    saved: true,
   };
   return [
     {
@@ -29,13 +29,13 @@ function resumeTurn(resumeText: string): Message[] {
       reasoning_content: '',
       tool_calls: [
         {
-          id: 'call_get_resume_1',
+          id: 'call_review_resume_1',
           type: 'function',
-          function: { name: 'get_resume', arguments: '{}' },
+          function: { name: 'review_resume', arguments: '{}' },
         },
       ],
     },
-    { role: 'tool', tool_call_id: 'call_get_resume_1', content: JSON.stringify(output) },
+    { role: 'tool', tool_call_id: 'call_review_resume_1', content: JSON.stringify(output) },
   ];
 }
 
@@ -51,8 +51,7 @@ export default function prompt({ vars }: { vars: Record<string, string> }): Mess
     messages.push({ role: 'user', content: buildPasteContextMessage(block) });
   }
 
-  if (vars.resumeText) messages.push(...resumeTurn(vars.resumeText));
-  if (vars.priorReview) messages.push({ role: 'assistant', content: vars.priorReview });
+  if (vars.priorReview) messages.push(...reviewTurn(vars.priorReview));
   if (vars.followUp) messages.push({ role: 'user', content: vars.followUp });
 
   return messages;
