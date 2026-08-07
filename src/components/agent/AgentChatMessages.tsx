@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { FileTextIcon, XIcon } from "lucide-react";
-import { isStaticToolUIPart, type UIMessage } from "ai";
+import { getToolName, isStaticToolUIPart, type UIMessage } from "ai";
 import {
   Conversation,
   ConversationContent,
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { AgentApprovalCard } from "@/components/agent/AgentApprovalCard";
 import { AgentMarkdown } from "@/components/agent/AgentMarkdown";
 import { AgentResultCard } from "@/components/agent/AgentResultCard";
+import { AgentReviewContent } from "@/components/agent/AgentReviewContent";
 import { AgentReviewScoreCard } from "@/components/agent/AgentReviewScoreCard";
 import { AgentStatusRow } from "@/components/agent/AgentStatusRow";
 import { AgentToolRunningCard } from "@/components/agent/AgentToolRunningCard";
@@ -104,6 +105,7 @@ function AssistantText({
 export function AgentChatMessages() {
   const {
     messages,
+    reviewStreams,
     status,
     regenerate,
     addToolApprovalResponse,
@@ -163,8 +165,21 @@ export function AgentChatMessages() {
               if (!isStaticToolUIPart(part)) return null;
               switch (part.state) {
                 case "input-streaming":
-                case "input-available":
-                  return <AgentToolRunningCard key={i} part={part} />;
+                case "input-available": {
+                  const streamed =
+                    getToolName(part) === "review_resume"
+                      ? reviewStreams[part.toolCallId]
+                      : undefined;
+                  if (!streamed) return <AgentToolRunningCard key={i} part={part} />;
+                  const parsed = parseResumeReview(streamed);
+                  return (
+                    <AgentReviewContent
+                      key={i}
+                      body={parsed.body}
+                      scores={parsed.scores}
+                    />
+                  );
+                }
                 case "approval-requested":
                 case "approval-responded":
                   return (

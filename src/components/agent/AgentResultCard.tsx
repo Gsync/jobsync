@@ -4,7 +4,12 @@ import Link from "next/link";
 import { getToolName, type ToolUIPart } from "ai";
 import { Badge } from "@/components/ui/badge";
 import { AgentResumePicker } from "@/components/agent/AgentResumePicker";
-import type { AgentAddJobResult, AgentGetResumeResult } from "@/models/agent.model";
+import { AgentReviewContent } from "@/components/agent/AgentReviewContent";
+import type {
+  AgentAddJobResult,
+  AgentGetResumeResult,
+  AgentReviewResumeResult,
+} from "@/models/agent.model";
 
 // Composed from the tool result's STRUCTURED fields, never from
 // createJobFromNames' message string — that prose is MCP-facing protocol text
@@ -131,6 +136,47 @@ function GetResumeResult({ output }: { output: AgentGetResumeResult }) {
   );
 }
 
+// The scores and body come from the tool output, not from parsed prose — the
+// review is a server-side generation now, so the card cannot disagree with
+// what was saved.
+function ReviewResumeResult({ output }: { output: AgentReviewResumeResult }) {
+  if (output.status === "no_resumes") {
+    return (
+      <p className="text-sm">
+        You don&apos;t have any resumes yet — create one on the Profile page.
+      </p>
+    );
+  }
+
+  if (output.status === "needs_selection") {
+    return (
+      <div className="text-sm">
+        <p>Which resume?</p>
+        <AgentResumePicker resumes={output.resumes} />
+      </div>
+    );
+  }
+
+  if (output.status === "unreadable" || output.status === "generation_failed") {
+    return (
+      <p className="text-sm">
+        Couldn&apos;t review <strong>{output.title}</strong> — {output.reason}
+      </p>
+    );
+  }
+
+  return (
+    <div className="text-sm">
+      <AgentReviewContent body={output.body} scores={output.scores} />
+      {!output.saved && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Review not saved — {output.saveError}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function AgentResultCard({ part }: { part: ToolUIPart }) {
   if (part.state === "output-denied") {
     return (
@@ -159,6 +205,8 @@ export function AgentResultCard({ part }: { part: ToolUIPart }) {
       />
     ) : toolName === "get_resume" ? (
       <GetResumeResult output={part.output as AgentGetResumeResult} />
+    ) : toolName === "review_resume" ? (
+      <ReviewResumeResult output={part.output as AgentReviewResumeResult} />
     ) : null;
 
   return <div className="rounded-sm border p-3">{body}</div>;

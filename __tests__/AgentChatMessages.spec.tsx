@@ -10,6 +10,7 @@ const chat = {
   addToolApprovalResponse: vi.fn(),
   interruptedTurn: false,
   dismissInterrupted: vi.fn(),
+  reviewStreams: {} as Record<string, string>,
 };
 vi.mock("@/components/agent/AgentChatProvider", () => ({
   useAgentChat: () => chat,
@@ -57,6 +58,7 @@ describe("AgentChatMessages", () => {
     chat.messages = [];
     chat.status = "ready";
     chat.interruptedTurn = false;
+    chat.reviewStreams = {};
   });
 
   it("renders the running card while the tool input is still arriving", () => {
@@ -291,5 +293,34 @@ describe("AgentChatMessages", () => {
     ];
     render(<AgentChatMessages />);
     expect(screen.queryByText("Impact")).not.toBeInTheDocument();
+  });
+
+  const reviewRunning = {
+    type: "tool-review_resume",
+    toolCallId: "rv1",
+    state: "input-available",
+    input: {},
+  } as any;
+
+  it("renders the review as it streams, before the tool result exists", () => {
+    chat.status = "streaming";
+    chat.reviewStreams = {
+      rv1: "SCORES: overall=78 impact=72 clarity=81 ats=69\n\n## Summary\n\nSolid.",
+    };
+    chat.messages = [assistant([reviewRunning])];
+    render(<AgentChatMessages />);
+    expect(screen.getByText("Impact")).toBeInTheDocument();
+    expect(screen.queryByText(/SCORES:/)).not.toBeInTheDocument();
+    expect(screen.getByTestId("tiptap-content").innerHTML).toContain(
+      "<h2>Summary</h2>",
+    );
+  });
+
+  it("shows the running card until the first review token arrives", () => {
+    chat.status = "streaming";
+    chat.reviewStreams = {};
+    chat.messages = [assistant([reviewRunning])];
+    render(<AgentChatMessages />);
+    expect(screen.getByText(/reviewing your resume/i)).toBeInTheDocument();
   });
 });

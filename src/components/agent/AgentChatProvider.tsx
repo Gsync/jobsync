@@ -29,7 +29,12 @@ import { clearChatConversation } from "@/actions/agentChat.actions";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { checkOllamaConnection } from "@/utils/ai.utils";
 import { AiProvider } from "@/models/ai.model";
-import type { AgentAddJobResult, PageContext } from "@/models/agent.model";
+import {
+  AGENT_REVIEW_PART_TYPE,
+  type AgentAddJobResult,
+  type AgentReviewStreamData,
+  type PageContext,
+} from "@/models/agent.model";
 
 export const AGENT_CHAT_PANEL_ID = "chat";
 
@@ -101,6 +106,11 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     pageContextRef.current = pageContextFor(pathname);
   }, [pathname]);
 
+  // Transient data parts never land in message.parts — the SDK hands them to
+  // onData and drops them — so the review's streaming text lives here, keyed
+  // by toolCallId so two reviews in one conversation cannot collide.
+  const [reviewStreams, setReviewStreams] = useState<Record<string, string>>({});
+
   const chat = useChat({
     messages: initialMessages,
     transport: new DefaultChatTransport({
@@ -112,6 +122,12 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     // Without this the approval is resolved client-side and nothing ever
     // POSTs back to execute the tool. It is the mechanism, not a nicety.
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
+    onData: (part) => {
+      if (part.type !== AGENT_REVIEW_PART_TYPE || !part.id) return;
+      const id = part.id;
+      const { delta } = part.data as AgentReviewStreamData;
+      setReviewStreams((prev) => ({ ...prev, [id]: (prev[id] ?? "") + delta }));
+    },
     onFinish: ({ message, messages, isAbort, isError }) => {
       // onFinish runs from a finally block, so it fires on abort too. The
       // SCORES line streams first, so a partial review parses — and
@@ -238,6 +254,7 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     // time it remounts.
     setPrefill(undefined);
     setComposerNonce((n) => n + 1);
+    setReviewStreams({});
   }, [chat]);
 
   const approvalPending = useMemo(
@@ -252,6 +269,7 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     open,
     close,
     messages: chat.messages,
+    reviewStreams,
     status: chat.status,
     error: chat.error,
     clearError: chat.clearError,
