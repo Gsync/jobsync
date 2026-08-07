@@ -3,9 +3,9 @@
 import { RadialChartComponent } from "@/components/RadialChartSvg";
 import type { ResumeScores } from "@/models/ai.schemas";
 
-// Deliberately a copy of AiResumeReviewResponseContent's ScoresSection rather
-// than a shared extraction: the old surface stays byte-identical until it is
-// retired, and this is the thing that proves the new one works.
+// Started as a copy of the retired review sheet's ScoresSection, kept
+// separate so that surface could be deleted without touching this one.
+// AiJobMatchResponseContent still has its own near-identical version.
 export function AgentReviewScoreCard({ scores }: { scores: ResumeScores }) {
   const items = [
     { label: "Impact", value: scores.impact },

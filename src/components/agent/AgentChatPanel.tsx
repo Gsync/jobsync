@@ -22,7 +22,8 @@ export function AgentChatPanel() {
     preflight,
   } = useAgentChat();
 
-  // Status icon for the terminal header bar — mirrors AiResumeReviewSection.
+  // Status icon for the terminal header bar — same shape the other AI
+  // surfaces use for their provider preflight.
   const statusIcon = !preflight.checked ? (
     <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
   ) : preflight.provider === AiProvider.OLLAMA ? (

@@ -19,8 +19,8 @@ import ExperienceCard from "./ExperienceCard";
 import EducationCard from "./EducationCard";
 import CertificationCard from "./CertificationCard";
 import SkillsSectionCard from "./SkillsSectionCard";
-import AiResumeReviewSection from "./AiResumeReviewSection";
 import { ReviewDetails } from "./ReviewDetails";
+import { useAgentChat } from "@/components/agent/AgentChatProvider";
 import { DownloadFileButton } from "./DownloadFileButton";
 import type { ResumeReviewData } from "@/models/ai.schemas";
 import {
@@ -361,20 +361,15 @@ function ResumeContainer({
   const goBack = () => router.back();
   const isDefault = !!resume?.id && resume.id === defaultResumeId;
   const [setDefaultConfirmOpen, setSetDefaultConfirmOpen] = useState(false);
-  const [currentReviewData, setCurrentReviewData] = useState(
-    resume.reviewData,
-  );
+  const { open: openChat, prefillComposer } = useAgentChat();
   const parsedReviewData = useMemo(() => {
-    if (!currentReviewData) return null;
+    if (!resume.reviewData) return null;
     try {
-      return JSON.parse(currentReviewData) as ResumeReviewData;
+      return JSON.parse(resume.reviewData) as ResumeReviewData;
     } catch {
       return null;
     }
-  }, [currentReviewData]);
-  const handleReviewSaved = useCallback((reviewData: string) => {
-    setCurrentReviewData(reviewData);
-  }, []);
+  }, [resume.reviewData]);
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [pendingPdf, setPendingPdf] = useState<{
@@ -772,10 +767,20 @@ function ResumeContainer({
           </CardDescription>
           <div className="flex items-center gap-2 flex-wrap lg:justify-end">
             <AddResumeSection resume={resume} ref={resumeSectionRef} />
-            <AiResumeReviewSection
-              resume={resume}
-              onReviewSaved={handleReviewSaved}
-            />
+            <Button
+              className="h-8 gap-1 cursor-pointer"
+              onClick={() => {
+                prefillComposer(`Review ${title}`);
+                openChat();
+              }}
+              size="sm"
+              variant="outline"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                Review
+              </span>
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm" variant="outline">
