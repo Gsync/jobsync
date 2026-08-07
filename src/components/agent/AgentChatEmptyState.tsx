@@ -6,7 +6,7 @@ import { useAgentChat } from "@/components/agent/AgentChatProvider";
 // Both send immediately on click — neither needs editing first. "Add this
 // job posting" has no company/title yet, so the model asks the user to
 // paste it rather than calling add_job.
-const EXAMPLES = ["Add this job posting", "Review my resume"];
+const EXAMPLES = ["Add a job posting", "Review resume"];
 
 export function AgentChatEmptyState() {
   const { sendMessage, preflight } = useAgentChat();

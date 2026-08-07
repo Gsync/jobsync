@@ -154,8 +154,14 @@ export const POST = async (req: NextRequest) => {
     modelMessages.push({ role: "user", content: buildPasteContextMessage(block) });
   }
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), APP_CONSTANTS.AGENT_CHAT_TIMEOUT_MS);
+  // req.signal is what makes stop()/Clear/close actually stop generating: the
+  // client aborting its fetch is otherwise invisible here, and streamText would
+  // keep pulling tokens until the deadline. Tools inherit this via execute's
+  // abortSignal, so a nested generation is cancelled too.
+  const turnSignal = AbortSignal.any([
+    req.signal,
+    AbortSignal.timeout(APP_CONSTANTS.AGENT_CHAT_TIMEOUT_MS),
+  ]);
 
   const stream = createUIMessageStream({
     originalMessages: messages,
@@ -184,7 +190,7 @@ export const POST = async (req: NextRequest) => {
         ],
         // Argument extraction wants determinism.
         temperature: TEMPERATURES.ANALYSIS,
-        abortSignal: controller.signal,
+        abortSignal: turnSignal,
         providerOptions: {
           // qwen3.5 is a hybrid-reasoning model and the provider defaults
           // think to false. With the thinking channel shut it deliberates in
@@ -198,7 +204,6 @@ export const POST = async (req: NextRequest) => {
       writer.merge(result.toUIMessageStream());
     },
     onFinish: async ({ messages: finalMessages, responseMessage, isAborted }) => {
-      clearTimeout(timer);
       const { tool, state, outcome } = outcomeOf(responseMessage);
       logTurn({
         provider,
@@ -210,15 +215,18 @@ export const POST = async (req: NextRequest) => {
         pasteChars: pastedText?.length ?? 0,
         messageCount: finalMessages.length,
       });
+      // A cancelled turn never writes back. Clear deletes the conversation and
+      // this fires afterwards on the stream's cancel path, so saving here would
+      // restore exactly what the user just deleted. The write-on-receipt above
+      // already made their message durable, and an incomplete review is not
+      // worth persisting.
+      if (isAborted) return;
       // Stubbing happens here so it lives in exactly one place.
       await saveChatConversation(stubConsumedPastes(finalMessages));
     },
     // NOTE: this signature takes the error directly, unlike streamText's
     // onError which takes { error }.
-    onError: (error) => {
-      clearTimeout(timer);
-      return mapAgentError(error, errorContext);
-    },
+    onError: (error) => mapAgentError(error, errorContext),
   });
 
   return createUIMessageStreamResponse({ stream });

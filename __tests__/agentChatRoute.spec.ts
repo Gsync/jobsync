@@ -28,9 +28,19 @@ const toUIMessageStream = vi.fn(
 );
 const streamText = vi.fn((..._args: any[]) => ({ toUIMessageStream }));
 const streamArgs = (): any => streamText.mock.calls[0]![0];
+// The turn's write-back lives in onFinish, which only fires once the stream is
+// consumed. Captured here so the abort branch can be driven directly.
+let capturedOnFinish: ((arg: any) => Promise<void>) | undefined;
 vi.mock("ai", async (importOriginal) => {
   const actual = await importOriginal<typeof import("ai")>();
-  return { ...actual, streamText: (...args: unknown[]) => streamText(...(args as [])) };
+  return {
+    ...actual,
+    streamText: (...args: unknown[]) => streamText(...(args as [])),
+    createUIMessageStream: (options: any) => {
+      capturedOnFinish = options.onFinish;
+      return actual.createUIMessageStream(options);
+    },
+  };
 });
 
 import { POST } from "@/app/api/ai/chat/route";
@@ -43,7 +53,10 @@ import { buildAgentTools } from "@/lib/agent/tools";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { AGENT_PASTE_PART_TYPE } from "@/models/agent.model";
 
-const req = (body: unknown) => ({ json: async () => body }) as any;
+// signal is not optional on a real Request — the route composes the turn's
+// abort signal from it so a client disconnect stops generation.
+const req = (body: unknown) =>
+  ({ json: async () => body, signal: new AbortController().signal }) as any;
 
 const pasteMessage = (text: string) => ({
   id: "m1",
@@ -105,6 +118,34 @@ describe("POST /api/ai/chat", () => {
     expect(saveOrder).toBeLessThan(streamOrder);
   });
 
+  // Clear deletes the conversation row and the cancelled turn's onFinish fires
+  // afterwards — writing there would restore exactly what was just deleted.
+  it("does not write the turn back when it was cancelled", async () => {
+    await POST(req({ messages: [pasteMessage("posting")] }));
+    const afterReceipt = (saveChatConversation as any).mock.calls.length;
+
+    await capturedOnFinish!({
+      messages: [pasteMessage("posting")],
+      responseMessage: undefined,
+      isAborted: true,
+    });
+    expect((saveChatConversation as any).mock.calls.length).toBe(afterReceipt);
+  });
+
+  it("still writes the turn back when it finished normally", async () => {
+    await POST(req({ messages: [pasteMessage("posting")] }));
+    const afterReceipt = (saveChatConversation as any).mock.calls.length;
+
+    await capturedOnFinish!({
+      messages: [pasteMessage("posting")],
+      responseMessage: undefined,
+      isAborted: false,
+    });
+    expect((saveChatConversation as any).mock.calls.length).toBe(
+      afterReceipt + 1,
+    );
+  });
+
   // Pasting and hitting Send without typing produces a message whose only
   // part is the chip. convertToModelMessages drops that custom data part, so
   // the message converts to empty content — and ollama-ai-provider-v2
@@ -164,6 +205,20 @@ describe("POST /api/ai/chat", () => {
     // qwen3.5 deliberates in the content channel when thinking is off, and
     // content and a tool call are mutually exclusive. Measured 1/7 vs 7/7.
     expect(args.providerOptions.ollama.think).toBe(true);
+  });
+
+  // Without this the client aborting its fetch — stop(), Clear, closing the
+  // panel — was invisible to the server and generation ran to the deadline.
+  it("aborts the generation when the client disconnects", async () => {
+    const controller = new AbortController();
+    await POST({
+      json: async () => ({ messages: [pasteMessage("posting")] }),
+      signal: controller.signal,
+    } as any);
+    const { abortSignal } = streamArgs();
+    expect(abortSignal.aborted).toBe(false);
+    controller.abort();
+    expect(abortSignal.aborted).toBe(true);
   });
 
   it("returns 503 naming Settings when no model is configured, and never guesses one", async () => {

@@ -33,12 +33,14 @@ vi.mock("@/actions/userSettings.actions", () => ({
 vi.mock("@/utils/ai.utils", () => ({
   checkOllamaConnection: vi.fn(async () => ({ isConnected: true })),
 }));
+vi.mock("@/lib/toast", () => ({ toastInfo: vi.fn() }));
 
 import { AgentChatProvider } from "@/components/agent/AgentChatProvider";
 import { AgentChatPanel } from "@/components/agent/AgentChatPanel";
 import { AgentChatTrigger } from "@/components/AgentChatTrigger";
 import { RightRailProvider, useRightRail } from "@/context/RightRailContext";
 import { SidebarProvider } from "@/context/SidebarContext";
+import { toastInfo } from "@/lib/toast";
 
 function OtherPanel() {
   const { requestOpen } = useRightRail();
@@ -150,6 +152,39 @@ describe("agent chat close paths", () => {
     expect(
       screen.getByRole("button", { name: /open assistant/i }).textContent,
     ).toBe("Chat AI");
+  });
+
+  // Closing is the only abort with no on-screen trace: the panel that would
+  // have shown it is gone, and interruptedTurn only surfaces on reopen.
+  it("toasts when closing aborts a stream", async () => {
+    setup();
+    await openPanel();
+    await act(async () => {
+      await userEvent.click(screen.getByRole("button", { name: "Close chat" }));
+    });
+    expect(vi.mocked(toastInfo).mock.calls[0]![0]).toMatch(/stopped/i);
+  });
+
+  it("toasts when Clear aborts a stream", async () => {
+    setup();
+    await openPanel();
+    await act(async () => {
+      await userEvent.click(screen.getByRole("button", { name: "Clear" }));
+    });
+    expect(vi.mocked(toastInfo).mock.calls[0]![0]).toMatch(/cleared/i);
+  });
+
+  // Both toasts are gated on an actual abort — closing or clearing an idle
+  // panel interrupted nothing and must stay silent.
+  it("stays silent when nothing was streaming", async () => {
+    chat.status = "ready";
+    setup();
+    await openPanel();
+    await act(async () => {
+      await userEvent.click(screen.getByRole("button", { name: "Clear" }));
+      await userEvent.click(screen.getByRole("button", { name: "Close chat" }));
+    });
+    expect(toastInfo).not.toHaveBeenCalled();
   });
 
   // The nested generation is inside the outer streamText's tool call, so the

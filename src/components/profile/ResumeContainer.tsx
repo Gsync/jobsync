@@ -361,8 +361,13 @@ function ResumeContainer({
   const goBack = () => router.back();
   const isDefault = !!resume?.id && resume.id === defaultResumeId;
   const [setDefaultConfirmOpen, setSetDefaultConfirmOpen] = useState(false);
-  const { open: openChat, prefillComposer, sendMessage, approvalPending } =
-    useAgentChat();
+  const {
+    open: openChat,
+    sendMessage,
+    clear: clearChat,
+    approvalPending,
+  } = useAgentChat();
+  const [showClearChatConfirm, setShowClearChatConfirm] = useState(false);
   const parsedReviewData = useMemo(() => {
     if (!resume.reviewData) return null;
     try {
@@ -678,6 +683,27 @@ function ResumeContainer({
     (s) => s.sectionType === SectionType.SKILLS,
   );
 
+  // Panel first so a failed clear can never leave the button looking dead,
+  // and the review is sent either way — a conversation that would not clear
+  // is no reason to withhold it.
+  const startReview = async () => {
+    openChat();
+    try {
+      await clearChat();
+    } catch {
+      // Reported by the action itself; the review still goes out.
+    }
+    void sendMessage({ parts: [{ type: "text", text: `Review ${title}` }] });
+  };
+
+  const onReviewClick = () => {
+    if (approvalPending) {
+      setShowClearChatConfirm(true);
+      return;
+    }
+    void startReview();
+  };
+
   const openContactInfoDialog = () =>
     resumeSectionRef.current?.openContactInfoDialog(ContactInfo!);
   const openSummaryDialogForEdit = () =>
@@ -766,19 +792,7 @@ function ResumeContainer({
           <AddResumeSection resume={resume} ref={resumeSectionRef} />
           <Button
             className="h-8 gap-1 cursor-pointer"
-            onClick={() => {
-              openChat();
-              // A pending approval already owns the composer's queue slot
-              // (see AgentChatInput), which this button can't reach, so it
-              // falls back to prefill rather than sending underneath it.
-              if (approvalPending) {
-                prefillComposer(`Review ${title}`);
-              } else {
-                void sendMessage({
-                  parts: [{ type: "text", text: `Review ${title}` }],
-                });
-              }
-            }}
+            onClick={onReviewClick}
             size="sm"
             variant="outline"
           >
@@ -1022,6 +1036,28 @@ function ResumeContainer({
             </Button>
             <AlertDialogAction onClick={() => handleAttachChoice("replace")}>
               Replace attachment
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* CLEAR CHAT BEFORE REVIEW CONFIRM */}
+      <AlertDialog
+        open={showClearChatConfirm}
+        onOpenChange={setShowClearChatConfirm}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear the assistant conversation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A job is waiting for your approval in the assistant. Starting a
+              review clears the conversation, and that job will not be saved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void startReview()}>
+              Clear and review
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

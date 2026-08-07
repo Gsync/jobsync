@@ -92,6 +92,20 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
             transient: true,
           });
         }
+
+        // The stream running out is not the generation finishing, and neither
+        // case throws: an abort (the user closing the panel) ends textStream
+        // cleanly and rejects this promise, and a response body that stops
+        // without Ollama's done chunk resolves it to "other". The SCORES line
+        // is the first thing emitted, so both leave a fragment that parses.
+        const finishReason = await sub.finishReason;
+        if (finishReason !== "stop") {
+          return {
+            status: "generation_failed",
+            title,
+            reason: "The review stopped before it finished, so nothing was saved.",
+          };
+        }
       } catch (error) {
         console.error("[agent-chat] review_resume generation failed:", error);
         return {

@@ -76,7 +76,6 @@ export function AgentChatInput() {
     error,
     clearError,
     preflight,
-    prefill,
     composerNonce,
   } = useAgentChat();
 
@@ -137,12 +136,6 @@ export function AgentChatInput() {
       setQueued(undefined);
     }
   }, [approvalPending, status, queued, sendMessage]);
-
-  // The remounted textarea carries the prefill; `text` has to catch up or
-  // send stays disabled until the user types a character.
-  useEffect(() => {
-    if (prefill) setText(prefill.text);
-  }, [prefill]);
 
   // Clearing the conversation clears the composer with it. The textarea empties
   // by remounting on the same nonce below — nothing else resets it.
@@ -234,8 +227,7 @@ export function AgentChatInput() {
         {/* Uncontrolled: PromptInput reads the textarea through FormData and
             resets it on submit. `text` mirrors it only to enable send. */}
         <PromptInputTextarea
-          defaultValue={prefill?.text}
-          key={prefill?.nonce ?? composerNonce}
+          key={composerNonce}
           onChange={(event) => setText(event.currentTarget.value)}
           onPaste={onPaste}
           placeholder="Ask or paste a job posting…"

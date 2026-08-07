@@ -31,11 +31,12 @@ const REVIEW =
 // A resume long enough that the old 12k get_resume ceiling would have cut it.
 const LONG_RESUME = "R".repeat(APP_CONSTANTS.AGENT_CHAT_RESUME_MAX_CHARS + 5_000);
 
-function textStreamOf(chunks: string[]) {
+function textStreamOf(chunks: string[], finishReason: unknown = "stop") {
   return {
     textStream: (async function* () {
       for (const chunk of chunks) yield chunk;
     })(),
+    finishReason: Promise.resolve(finishReason),
   };
 }
 
@@ -180,6 +181,41 @@ describe("review_resume agent tool", () => {
     expect(result.status).toBe("generation_failed");
     expect(save).not.toHaveBeenCalled();
   });
+
+  // The SCORES line is the FIRST line, so it survives any cut-off after the
+  // first few tokens. Without a completion check a half review parses, scores
+  // and all, and overwrites the last good one.
+  it("saves nothing when the sub-call is aborted mid-stream", async () => {
+    const abortError = Object.assign(new Error("This operation was aborted"), {
+      name: "AbortError",
+    });
+    const rejected = Promise.reject(abortError);
+    rejected.catch(() => {});
+    streamText.mockReturnValue({
+      textStream: (async function* () {
+        yield "SCORES: overall=78 impact=72 clarity=81 ats=69\n\n## Summary\nKhuram presents an";
+      })(),
+      finishReason: rejected,
+    });
+    const result = await execute(buildReviewResumeTool(ctx()), {});
+    expect(result.status).toBe("generation_failed");
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it.each(["other", "length"])(
+    "saves nothing when the stream ends with finishReason %s",
+    async (finishReason) => {
+      streamText.mockReturnValue(
+        textStreamOf(
+          ["SCORES: overall=78 impact=72 clarity=81 ats=69\n\n## Summary\nCut off mid-"],
+          finishReason,
+        ),
+      );
+      const result = await execute(buildReviewResumeTool(ctx()), {});
+      expect(result.status).toBe("generation_failed");
+      expect(save).not.toHaveBeenCalled();
+    },
+  );
 
   it("returns generation_failed rather than throwing when the sub-call errors", async () => {
     streamText.mockReturnValue({

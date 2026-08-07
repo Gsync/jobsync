@@ -23,6 +23,7 @@ import { useRightRail } from "@/context/RightRailContext";
 import { useSidebar } from "@/context/SidebarContext";
 import { useResizablePanel } from "@/hooks/useResizablePanel";
 import { APP_CONSTANTS } from "@/lib/constants";
+import { toastInfo } from "@/lib/toast";
 import { clearChatConversation } from "@/actions/agentChat.actions";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { checkOllamaConnection } from "@/utils/ai.utils";
@@ -152,6 +153,9 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     if (streamingRef.current) {
       chat.stop();
       setInterruptedTurn(true);
+      // The one abort the user gets no on-screen signal for — the panel they
+      // would have read it in is the thing that just went away.
+      toastInfo("Generation stopped. Reopen the assistant to continue.");
     }
     setIsOpen(false);
     releaseRail(AGENT_CHAT_PANEL_ID);
@@ -205,31 +209,45 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     if (isOpen && holder !== AGENT_CHAT_PANEL_ID) close();
   }, [holder, isOpen, close]);
 
-  // A signal, not a value: the composer's textarea is uncontrolled, so it
-  // remounts on the nonce and picks the text up as its defaultValue.
-  const [prefill, setPrefill] = useState<{ text: string; nonce: number }>();
-  const prefillComposer = useCallback(
-    (text: string) => setPrefill({ text, nonce: Date.now() }),
-    [],
-  );
-
-  // Same reason as prefill: nothing else empties an uncontrolled textarea.
+  // A signal, not a value: the composer's textarea is uncontrolled, so
+  // remounting it on the nonce is the only thing that empties it.
   const [composerNonce, setComposerNonce] = useState(0);
 
-  // Order matters: a late onFinish would otherwise write the conversation
-  // back after the delete.
+  // stop() before the delete is load-bearing: the route skips its onFinish
+  // write when the turn was aborted, and that is what stops a late save from
+  // restoring the conversation this just deleted.
   const clear = useCallback(async () => {
+    const wasStreaming = streamingRef.current;
     chat.stop();
     await clearChatConversation();
     chat.setMessages([]);
     chat.clearError();
     setInterruptedTurn(false);
-    // Dropped, not kept: a stale prefill would refill the textarea the next
-    // time it remounts.
-    setPrefill(undefined);
     setComposerNonce((n) => n + 1);
     setReviewStreams({});
+    // Clearing an idle conversation aborted nothing worth reporting.
+    if (wasStreaming) toastInfo("Conversation cleared and generation stopped.");
   }, [chat]);
+
+  // Resuming the turn is what ends the interruption — Continue, or simply
+  // typing the next message. Cleared here rather than on a status transition
+  // because close() flags the turn while stop() is still settling, and an
+  // effect watching status would race it back to false.
+  const regenerate = useCallback<typeof chat.regenerate>(
+    (...args) => {
+      setInterruptedTurn(false);
+      return chat.regenerate(...args);
+    },
+    [chat],
+  );
+
+  const sendMessage = useCallback<typeof chat.sendMessage>(
+    (...args) => {
+      setInterruptedTurn(false);
+      return chat.sendMessage(...args);
+    },
+    [chat],
+  );
 
   const approvalPending = useMemo(
     () => hasPendingApproval(chat.messages),
@@ -247,17 +265,15 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     status: chat.status,
     error: chat.error,
     clearError: chat.clearError,
-    sendMessage: chat.sendMessage,
+    sendMessage,
     stop: chat.stop,
-    regenerate: chat.regenerate,
+    regenerate,
     addToolApprovalResponse: chat.addToolApprovalResponse,
     approvalPending,
     interruptedTurn,
     dismissInterrupted,
     clear,
     preflight,
-    prefill,
-    prefillComposer,
     composerNonce,
     panelWidth,
     startResize,

@@ -12,6 +12,12 @@ export function toastError(message?: string, title?: string) {
   else toast.error(text);
 }
 
+// For outcomes that are neither: a deliberate interruption is not an error.
+export function toastInfo(message: string, title?: string) {
+  if (title) toast.info(title, { description: message });
+  else toast.info(message);
+}
+
 // Collapses the repeated success/error branch into one call.
 export function toastActionResult<T>(
   result: ActionResult<T> | undefined,

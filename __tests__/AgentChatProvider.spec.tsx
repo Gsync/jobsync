@@ -59,6 +59,10 @@ function Probe() {
       <button onClick={c.open}>open</button>
       <button onClick={c.close}>close</button>
       <button onClick={c.clear}>clear</button>
+      <button onClick={() => void c.regenerate()}>regenerate</button>
+      <button onClick={() => void c.sendMessage({ parts: [] } as any)}>
+        sendMessage
+      </button>
       <button onClick={c.togglePanelExpand}>togglePanelExpand</button>
       <button onClick={toggle}>toggleSidebar</button>
       <span data-testid="sidebar">{String(expanded)}</span>
@@ -149,6 +153,36 @@ describe("AgentChatProvider", () => {
     setup();
     await userEvent.click(screen.getByText("open"));
     await userEvent.click(screen.getByText("close"));
+    expect(screen.getByTestId("state").textContent).toContain(
+      "false|false|false|null",
+    );
+  });
+
+  // The interrupted notice describes a turn that is no longer interrupted the
+  // moment the user resumes it, so it must not outlive the reply it asked for.
+  it("clears the interrupted flag when the turn is resumed with Continue", async () => {
+    chat.status = "streaming";
+    setup();
+    await userEvent.click(screen.getByText("open"));
+    await userEvent.click(screen.getByText("close"));
+    expect(screen.getByTestId("state").textContent).toContain("|true|");
+
+    await userEvent.click(screen.getByText("regenerate"));
+    expect(chat.regenerate).toHaveBeenCalled();
+    expect(screen.getByTestId("state").textContent).toContain(
+      "false|false|false|null",
+    );
+  });
+
+  it("clears the interrupted flag when the user sends a new message instead", async () => {
+    chat.status = "streaming";
+    setup();
+    await userEvent.click(screen.getByText("open"));
+    await userEvent.click(screen.getByText("close"));
+    expect(screen.getByTestId("state").textContent).toContain("|true|");
+
+    await userEvent.click(screen.getByText("sendMessage"));
+    expect(chat.sendMessage).toHaveBeenCalled();
     expect(screen.getByTestId("state").textContent).toContain(
       "false|false|false|null",
     );
