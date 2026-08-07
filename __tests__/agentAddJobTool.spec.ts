@@ -15,6 +15,16 @@ const created = {
 const longDescription = Array.from({ length: 200 }, () => "word").join(" ");
 const execute = (tool: any, input: any) => tool.execute(input, { toolCallId: "c", messages: [] });
 
+// review_resume needs the resolved model and the stream writer, so the
+// registry's context object is wider than a read tool's own arguments.
+const toolCtx = {
+  userId: "user-1",
+  model: {} as any,
+  provider: "ollama",
+  modelName: "qwen3.5:9b",
+  writer: { write: () => {}, merge: () => {}, onError: undefined } as any,
+};
+
 describe("add_job agent tool", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -102,7 +112,11 @@ describe("add_job agent tool", () => {
     expect(result.validationError).not.toContain("db is down");
   });
 
-  it("registers exactly the two tools the chat exposes", () => {
-    expect(Object.keys(buildAgentTools({ userId: "user-1" }))).toEqual(["add_job", "get_resume"]);
+  it("registers exactly the tools the chat exposes", () => {
+    expect(Object.keys(buildAgentTools(toolCtx))).toEqual([
+      "add_job",
+      "get_resume",
+      "review_resume",
+    ]);
   });
 });

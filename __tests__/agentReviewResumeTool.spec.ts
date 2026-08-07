@@ -76,6 +76,12 @@ describe("review_resume agent tool", () => {
     expect(buildReviewResumeTool(ctx()).needsApproval).toBeUndefined();
   });
 
+  it("is registered in the tool registry", async () => {
+    const { buildAgentTools } = await import("@/lib/agent/tools");
+    const tools = buildAgentTools(ctx());
+    expect(Object.keys(tools)).toContain("review_resume");
+  });
+
   it("passes the SESSION userId, never one supplied by the model", async () => {
     await execute(buildReviewResumeTool(ctx()), { userId: "attacker-user" });
     expect(resolve).toHaveBeenCalledWith("session-user", expect.anything());

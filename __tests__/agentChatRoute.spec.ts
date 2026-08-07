@@ -147,13 +147,17 @@ describe("POST /api/ai/chat", () => {
     expect(buildAgentTools).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "user-1", pastedText: posting }),
     );
-    expect(Object.keys(streamArgs().tools)).toEqual(["add_job", "get_resume"]);
+    expect(Object.keys(streamArgs().tools)).toEqual([
+      "add_job",
+      "get_resume",
+      "review_resume",
+    ]);
   });
 
   it("configures the loop bounds the design specifies", async () => {
     await POST(req({ messages: [pasteMessage("posting")] }));
     const args = streamArgs();
-    expect(args.stopWhen).toHaveLength(2);
+    expect(args.stopWhen).toHaveLength(3);
     expect(args.temperature).toBe(0.1);
     expect(args.abortSignal).toBeDefined();
     expect(args.providerOptions.ollama.options.num_ctx).toBe(APP_CONSTANTS.AGENT_CHAT_NUM_CTX);

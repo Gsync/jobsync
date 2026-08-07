@@ -14,6 +14,16 @@ const resume = { id: "r1", title: "Senior Engineer Resume" };
 const execute = (tool: any, input: any) =>
   tool.execute(input, { toolCallId: "c", messages: [] });
 
+// review_resume needs the resolved model and the stream writer, so the
+// registry's context object is wider than a read tool's own arguments.
+const toolCtx = {
+  userId: "user-1",
+  model: {} as any,
+  provider: "ollama",
+  modelName: "qwen3.5:9b",
+  writer: { write: () => {}, merge: () => {}, onError: undefined } as any,
+};
+
 describe("get_resume agent tool", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -31,7 +41,7 @@ describe("get_resume agent tool", () => {
   });
 
   it("is registered in the tool registry", () => {
-    const tools = buildAgentTools({ userId: "user-1" });
+    const tools = buildAgentTools(toolCtx);
     expect(Object.keys(tools)).toContain("get_resume");
   });
 

@@ -29,7 +29,11 @@ import { mapAgentError } from "@/lib/agent/errors";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { saveChatConversation } from "@/actions/agentChat.actions";
 import { AiProvider } from "@/models/ai.model";
-import type { AgentAddJobResult, AgentGetResumeResult } from "@/models/agent.model";
+import type {
+  AgentAddJobResult,
+  AgentGetResumeResult,
+  AgentReviewResumeResult,
+} from "@/models/agent.model";
 
 // One structured line per turn. Sizes and outcomes only — never the pasted
 // posting and never the extracted arguments.
@@ -50,8 +54,11 @@ function outcomeOf(message: UIMessage | undefined): {
     }
     // Read and write tools report success differently; casting every output
     // to AgentAddJobResult logged a resume read as "duplicate".
-    if (tool === "get_resume") {
-      const output = part.output as AgentGetResumeResult | undefined;
+    if (tool === "get_resume" || tool === "review_resume") {
+      const output = part.output as
+        | AgentGetResumeResult
+        | AgentReviewResumeResult
+        | undefined;
       return { tool, state: part.state, outcome: output?.status ?? "none" };
     }
     const output = part.output as AgentAddJobResult | undefined;
@@ -157,11 +164,24 @@ export const POST = async (req: NextRequest) => {
         model,
         system: AGENT_CHAT_SYSTEM_PROMPT,
         messages: modelMessages,
-        tools: buildAgentTools({ userId, pastedText, pageContext }),
+        tools: buildAgentTools({
+          userId,
+          pastedText,
+          pageContext,
+          model,
+          provider,
+          modelName,
+          writer,
+        }),
         // Stop after the write: the result card renders deterministically from
         // structured fields, so a second generation just to narrate it is 10-30s
-        // of local inference for a sentence that could be wrong.
-        stopWhen: [stepCountIs(APP_CONSTANTS.AGENT_CHAT_MAX_STEPS), hasToolCall("add_job")],
+        // of local inference for a sentence that could be wrong. Same reasoning
+        // for review_resume — the card and the review are already on screen.
+        stopWhen: [
+          stepCountIs(APP_CONSTANTS.AGENT_CHAT_MAX_STEPS),
+          hasToolCall("add_job"),
+          hasToolCall("review_resume"),
+        ],
         // Argument extraction wants determinism.
         temperature: TEMPERATURES.ANALYSIS,
         abortSignal: controller.signal,

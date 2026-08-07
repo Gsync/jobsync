@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { AGENT_TOOL_DESCRIPTIONS } from '../../src/lib/agent/prompt';
-import { AgentAddJobSchema, AgentGetResumeSchema } from '../../src/models/agent.schema';
+import {
+  AgentAddJobSchema,
+  AgentGetResumeSchema,
+  AgentReviewResumeSchema,
+} from '../../src/models/agent.schema';
 
 // The same schemas the chat route registers, so the model sees the exact
 // parameter schema and .describe() text the real surface advertises.
@@ -20,6 +24,14 @@ export function getTools() {
         name: 'get_resume',
         description: AGENT_TOOL_DESCRIPTIONS.get_resume,
         parameters: z.toJSONSchema(AgentGetResumeSchema, { io: 'input' }),
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'review_resume',
+        description: AGENT_TOOL_DESCRIPTIONS.review_resume,
+        parameters: z.toJSONSchema(AgentReviewResumeSchema, { io: 'input' }),
       },
     },
   ];
