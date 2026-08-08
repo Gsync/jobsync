@@ -212,6 +212,50 @@ describe("windowMessages", () => {
     expect(windowed).toHaveLength(APP_CONSTANTS.AGENT_CHAT_HISTORY_MESSAGES);
     expect(windowed[windowed.length - 1].id).toBe(`m${many.length - 1}`);
   });
+
+  it("cuts on the token budget before the message count when messages are fat", () => {
+    // A third of the budget each, so only the newest few fit.
+    const fatText = "x".repeat(
+      (APP_CONSTANTS.AGENT_CHAT_HISTORY_TOKEN_BUDGET / 3) *
+        APP_CONSTANTS.AGENT_CHAT_CHARS_PER_TOKEN,
+    );
+    const many = Array.from(
+      { length: APP_CONSTANTS.AGENT_CHAT_HISTORY_MESSAGES },
+      (_, i) => userMsg(`m${i}`, [{ type: "text", text: fatText }]),
+    );
+    const windowed = windowMessages(many as any);
+    expect(windowed.length).toBeLessThan(
+      APP_CONSTANTS.AGENT_CHAT_HISTORY_MESSAGES,
+    );
+    expect(windowed[windowed.length - 1].id).toBe(`m${many.length - 1}`);
+  });
+
+  it("keeps the newest message even when it alone exceeds the budget", () => {
+    const huge = "x".repeat(
+      APP_CONSTANTS.AGENT_CHAT_HISTORY_TOKEN_BUDGET *
+        APP_CONSTANTS.AGENT_CHAT_CHARS_PER_TOKEN *
+        2,
+    );
+    const messages = [
+      userMsg("1", [{ type: "text", text: "earlier" }]),
+      userMsg("2", [{ type: "text", text: huge }]),
+    ] as any;
+    const windowed = windowMessages(messages);
+    expect(windowed).toHaveLength(1);
+    expect(windowed[0].id).toBe("2");
+  });
+
+  // The payoff over a message count: a paste part is dropped by
+  // convertToModelMessages, so charging history for it would evict real
+  // context to make room for text the model never sees.
+  it("does not charge the budget for a data-paste part", () => {
+    const huge = "x".repeat(APP_CONSTANTS.AGENT_CHAT_PASTE_MAX_CHARS);
+    const messages = [
+      userMsg("1", [{ type: "text", text: "earlier" }]),
+      userMsg("2", [{ type: "text", text: "add this" }, pastePart("p1", huge)]),
+    ] as any;
+    expect(windowMessages(messages)).toHaveLength(2);
+  });
 });
 
 // Settles spec "to verify" item 1: the head has to be injected explicitly

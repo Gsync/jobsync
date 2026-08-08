@@ -18,7 +18,7 @@ import {
   lastAssistantMessageIsCompleteWithApprovalResponses,
   type UIMessage,
 } from "ai";
-import { hasPendingApproval } from "@/lib/agent/paste";
+import { hasPendingApproval, stubConsumedPastes } from "@/lib/agent/paste";
 import { useRightRail } from "@/context/RightRailContext";
 import { useSidebar } from "@/context/SidebarContext";
 import { useResizablePanel } from "@/hooks/useResizablePanel";
@@ -143,6 +143,14 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
         if (!isToolUIPart(part) || part.state !== "output-available") return false;
         return getToolName(part) === "review_resume";
       });
+
+      // The route stubs the paste on its way into the DB, but that copy is
+      // not the one the client POSTs next turn — so without this the browser
+      // keeps a consumed posting marked unconsumed, resolvePastedText finds
+      // it one user message later, and the next thing the user types calls
+      // add_job again on the job they just saved. It self-corrected only on
+      // reload, when the stubbed row re-seeded the transcript.
+      if (wrote) chat.setMessages((prev) => stubConsumedPastes(prev));
 
       // Unconditional: an RSC refresh on an irrelevant page is a wasted
       // request, not a bug. A stale jobs list or a stale saved review behind

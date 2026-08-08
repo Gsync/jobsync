@@ -124,9 +124,11 @@ export const POST = async (req: NextRequest) => {
   // Async in ai@6 (correction #5), and the messages array is client-supplied
   // — a shape z.array(z.any()) let through can reject the conversion, and
   // that is a bad request, not a server crash.
+  const windowed = windowMessages(messages);
+
   let modelMessages;
   try {
-    modelMessages = await convertToModelMessages(windowMessages(messages));
+    modelMessages = await convertToModelMessages(windowed);
   } catch {
     return NextResponse.json({ error: "Invalid chat request." }, { status: 400 });
   }
@@ -207,6 +209,9 @@ export const POST = async (req: NextRequest) => {
         aborted: isAborted,
         pasteChars: pastedText?.length ?? 0,
         messageCount: finalMessages.length,
+        // Windowing is invisible to the user, so this is the only signal that
+        // the model was given less history than the transcript holds.
+        historyDropped: messages.length - windowed.length,
       });
       // A cancelled turn never writes back. Clear deletes the conversation and
       // this fires afterwards on the stream's cancel path, so saving here would

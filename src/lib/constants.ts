@@ -130,6 +130,18 @@ export const APP_CONSTANTS = {
   AGENT_CHAT_MAX_STEPS: 4,
   AGENT_CHAT_MAX_STORED_MESSAGES: 50,
   AGENT_CHAT_HISTORY_MESSAGES: 20,
+  // Message count alone cannot bound context: one review output or resume read
+  // is worth a dozen ordinary turns, and think:true adds 1.2-2.3k chars of
+  // reasoning per turn that persists and replays. Derived from the
+  // AGENT_CHAT_NUM_CTX floor: ~700 system prompt + ~950 tool schemas + ~500
+  // paste head + ~3000 for reasoning and tool args across MAX_STEPS, rounded
+  // up to a ~7000 reserve. Symptom it is too tight: the assistant forgets
+  // things a 20-message window used to carry.
+  AGENT_CHAT_HISTORY_TOKEN_BUDGET: 9000,
+  // No tokenizer dependency: with Ollama, DeepSeek and OpenAI models all
+  // reachable there is no single correct vocab, and a real tokenizer would be
+  // precisely wrong rather than approximately right.
+  AGENT_CHAT_CHARS_PER_TOKEN: 4,
   // Must clear one nested generation plus the thinking steps around it: two
   // 15-30s think steps plus a 180s review is ~242s, which the old 240s cut off
   // after the user had watched the whole review stream in.

@@ -301,6 +301,67 @@ describe("AgentChatProvider", () => {
     expect(refresh).toHaveBeenCalled();
   });
 
+  const createdToolMessage = {
+    id: "a3",
+    role: "assistant",
+    parts: [
+      {
+        type: "tool-add_job",
+        toolCallId: "c1",
+        state: "output-available",
+        input: { company: "Acme", jobTitle: "Engineer" },
+        output: { created: true },
+      },
+    ],
+  } as any;
+
+  // The route stubs only the copy it writes to the DB. Without the client
+  // doing the same to its own transcript, the next thing the user types
+  // re-injects the posting and calls add_job again on the job just saved.
+  it("stubs the client-side paste after a successful add_job", async () => {
+    setup();
+    await act(async () => {
+      chatInit().onFinish({
+        message: createdToolMessage,
+        messages: [createdToolMessage],
+      });
+    });
+    const update = chat.setMessages.mock.calls.at(-1)![0] as any;
+    const stubbed = update([
+      {
+        id: "u1",
+        role: "user",
+        parts: [
+          {
+            type: "data-paste",
+            id: "p1",
+            data: {
+              id: "p1",
+              text: "SECRET_POSTING_BODY",
+              chars: 19,
+              truncated: false,
+              consumed: false,
+            },
+          },
+        ],
+      },
+      createdToolMessage,
+    ]);
+    expect(stubbed[0].parts[0].data.consumed).toBe(true);
+    expect(JSON.stringify(stubbed)).not.toContain("SECRET_POSTING_BODY");
+  });
+
+  it("does not stub the client-side paste when no job was created", async () => {
+    setup();
+    await act(async () => {
+      chatInit().onFinish({
+        message: reviewToolMessage,
+        messages: [reviewToolMessage],
+      });
+    });
+    expect(chat.setMessages).not.toHaveBeenCalled();
+  });
+
   it("accumulates transient review deltas keyed by tool call id", async () => {
     setup();
     await act(async () => {
