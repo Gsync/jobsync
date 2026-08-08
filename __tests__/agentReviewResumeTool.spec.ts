@@ -49,6 +49,7 @@ const ctx = () => ({
   provider: "ollama",
   modelName: "qwen3.5:9b",
   writer: writer as any,
+  guard: { running: false },
 });
 
 const execute = (agentTool: any, input: any) =>

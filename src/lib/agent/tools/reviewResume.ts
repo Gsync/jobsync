@@ -1,6 +1,6 @@
 import "server-only";
 
-import { streamText, tool, type LanguageModel, type UIMessageStreamWriter } from "ai";
+import { tool, type LanguageModel, type UIMessageStreamWriter } from "ai";
 import { TEMPERATURES } from "@/lib/ai/config";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
@@ -13,7 +13,10 @@ import {
 } from "@/lib/ai/prompts/resume-review";
 import { parseResumeReview } from "@/lib/ai/resumeReview/parse";
 import { saveResumeReviewResult } from "@/actions/profile.actions";
-import { AGENT_NESTED_STREAM_PART_TYPE } from "@/models/agent.model";
+import {
+  runNestedGeneration,
+  type NestedGenerationGuard,
+} from "@/lib/agent/nestedGeneration";
 import type { AgentReviewResumeResult } from "@/models/agent.model";
 import type { ResumeReviewData } from "@/models/ai.schemas";
 
@@ -24,6 +27,7 @@ type ReviewResumeContext = {
   provider: string;
   modelName: string;
   writer: UIMessageStreamWriter;
+  guard: NestedGenerationGuard;
 };
 
 /**
@@ -60,54 +64,34 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
         };
       }
 
-      // Own deadline, plus the outer turn's signal so closing the panel
-      // aborts this too.
-      const signals: AbortSignal[] = [
-        AbortSignal.timeout(APP_CONSTANTS.AI_RESUME_REVIEW_TIMEOUT_MS),
-      ];
-      if (abortSignal) signals.push(abortSignal);
-
-      let generated = "";
-      try {
-        const sub = streamText({
-          model: ctx.model,
-          system: RESUME_REVIEW_SYSTEM_PROMPT,
-          prompt: buildResumeReviewPrompt(pre.data.normalizedText),
-          temperature: TEMPERATURES.FEEDBACK,
-          abortSignal: AbortSignal.any(signals),
-          // Deliberately no think:true. This is a plain text generation with
-          // no tools, so reasoning buys nothing and costs 30s on a call that
-          // already runs 30-120s. The chat loop enables it; this does not.
-          providerOptions: {
-            ollama: { options: { num_ctx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX } },
-          },
-        });
-
-        for await (const delta of sub.textStream) {
-          generated += delta;
-          ctx.writer.write({
-            type: AGENT_NESTED_STREAM_PART_TYPE,
-            id: toolCallId,
-            data: { delta },
-            transient: true,
-          });
-        }
-
-        // The stream running out is not the generation finishing, and neither
-        // case throws: an abort (the user closing the panel) ends textStream
-        // cleanly and rejects this promise, and a response body that stops
-        // without Ollama's done chunk resolves it to "other". The SCORES line
-        // is the first thing emitted, so both leave a fragment that parses.
-        const finishReason = await sub.finishReason;
-        if (finishReason !== "stop") {
-          return {
-            status: "generation_failed",
-            title,
-            reason: "The review stopped before it finished, so nothing was saved.",
-          };
-        }
-      } catch (error) {
-        console.error("[agent-chat] review_resume generation failed:", error);
+      const generation = await runNestedGeneration({
+        model: ctx.model,
+        system: RESUME_REVIEW_SYSTEM_PROMPT,
+        prompt: buildResumeReviewPrompt(pre.data.normalizedText),
+        temperature: TEMPERATURES.FEEDBACK,
+        numCtx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
+        timeoutMs: APP_CONSTANTS.AI_RESUME_REVIEW_TIMEOUT_MS,
+        writer: ctx.writer,
+        toolCallId,
+        abortSignal,
+        guard: ctx.guard,
+        label: "review_resume",
+      });
+      if (generation.status === "busy") {
+        return {
+          status: "generation_failed",
+          title,
+          reason: "Another analysis is already running — ask for this one once it finishes.",
+        };
+      }
+      if (generation.status === "incomplete") {
+        return {
+          status: "generation_failed",
+          title,
+          reason: "The review stopped before it finished, so nothing was saved.",
+        };
+      }
+      if (generation.status === "failed") {
         return {
           status: "generation_failed",
           title,
@@ -115,7 +99,7 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
         };
       }
 
-      const { scores, body } = parseResumeReview(generated);
+      const { scores, body } = parseResumeReview(generation.text);
       // reviewData is overwrite-only with no history, so an unscored or
       // half-finished generation must not be written.
       if (!scores) {

@@ -1,5 +1,6 @@
 import type { LanguageModel, ToolSet, UIMessageStreamWriter } from "ai";
 import type { PageContext } from "@/models/agent.model";
+import type { NestedGenerationGuard } from "@/lib/agent/nestedGeneration";
 import { buildAddJobTool } from "./addJob";
 import { buildGetResumeTool } from "./getResume";
 import { buildReviewResumeTool } from "./reviewResume";
@@ -18,6 +19,10 @@ export function buildAgentTools(ctx: {
   modelName: string;
   writer: UIMessageStreamWriter;
 }): ToolSet {
+  // One per request, so the two nested tools cannot run at once but two users
+  // never block each other.
+  const nestedGuard: NestedGenerationGuard = { running: false };
+
   return {
     add_job: buildAddJobTool(ctx.userId, ctx.pastedText),
     get_resume: buildGetResumeTool(ctx.userId, ctx.pageContext?.resumeId),
@@ -28,6 +33,7 @@ export function buildAgentTools(ctx: {
       provider: ctx.provider,
       modelName: ctx.modelName,
       writer: ctx.writer,
+      guard: nestedGuard,
     }),
     match_job: buildMatchJobTool({
       userId: ctx.userId,
@@ -36,6 +42,7 @@ export function buildAgentTools(ctx: {
       provider: ctx.provider,
       modelName: ctx.modelName,
       writer: ctx.writer,
+      guard: nestedGuard,
     }),
   };
 }
