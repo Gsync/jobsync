@@ -60,9 +60,17 @@ function Probe() {
       <button onClick={c.close}>close</button>
       <button onClick={c.clear}>clear</button>
       <button onClick={() => void c.regenerate()}>regenerate</button>
-      <button onClick={() => void c.sendMessage({ parts: [] } as any)}>
+      <button
+        onClick={() =>
+          void c.sendMessage({ parts: [{ type: "text", text: "hello" }] } as any)
+        }
+      >
         sendMessage
       </button>
+      <button onClick={c.clearQueued}>clearQueued</button>
+      <span data-testid="queued">
+        {c.queued ? (c.queued.parts[0] as any).text : ""}
+      </span>
       <button onClick={c.togglePanelExpand}>togglePanelExpand</button>
       <button onClick={toggle}>toggleSidebar</button>
       <span data-testid="sidebar">{String(expanded)}</span>
@@ -160,13 +168,18 @@ describe("AgentChatProvider", () => {
 
   // The interrupted notice describes a turn that is no longer interrupted the
   // moment the user resumes it, so it must not outlive the reply it asked for.
+  // close() aborts through stop(), so the chat is idle by the time the user
+  // sees the Continue button — the rerender is what the real status callback
+  // does here.
   it("clears the interrupted flag when the turn is resumed with Continue", async () => {
     chat.status = "streaming";
-    setup();
+    const { rerender } = setup();
     await userEvent.click(screen.getByText("open"));
     await userEvent.click(screen.getByText("close"));
     expect(screen.getByTestId("state").textContent).toContain("|true|");
 
+    chat.status = "ready";
+    rerender(tree());
     await userEvent.click(screen.getByText("regenerate"));
     expect(chat.regenerate).toHaveBeenCalled();
     expect(screen.getByTestId("state").textContent).toContain(
@@ -176,16 +189,105 @@ describe("AgentChatProvider", () => {
 
   it("clears the interrupted flag when the user sends a new message instead", async () => {
     chat.status = "streaming";
-    setup();
+    const { rerender } = setup();
     await userEvent.click(screen.getByText("open"));
     await userEvent.click(screen.getByText("close"));
     expect(screen.getByTestId("state").textContent).toContain("|true|");
 
+    chat.status = "ready";
+    rerender(tree());
     await userEvent.click(screen.getByText("sendMessage"));
     expect(chat.sendMessage).toHaveBeenCalled();
     expect(screen.getByTestId("state").textContent).toContain(
       "false|false|false|null",
     );
+  });
+
+  // The duplicate-key bug: a send during a live turn opened a second request,
+  // useChat aborted neither, and the two streams took turns appending copies
+  // of each other's message under the same id.
+  it("holds a send instead of opening a second overlapping request", async () => {
+    chat.status = "streaming";
+    setup();
+    await userEvent.click(screen.getByText("sendMessage"));
+    expect(chat.sendMessage).not.toHaveBeenCalled();
+    expect(screen.getByTestId("queued").textContent).toBe("hello");
+  });
+
+  it("dispatches the held message once the turn finishes", async () => {
+    chat.status = "streaming";
+    const { rerender } = setup();
+    await userEvent.click(screen.getByText("sendMessage"));
+    expect(chat.sendMessage).not.toHaveBeenCalled();
+
+    chat.status = "ready";
+    await act(async () => {
+      rerender(tree());
+    });
+    expect(chat.sendMessage).toHaveBeenCalledTimes(1);
+    expect(chat.sendMessage.mock.calls[0][0].parts[0].text).toBe("hello");
+    expect(screen.getByTestId("queued").textContent).toBe("");
+  });
+
+  it("holds a send while an approval is pending", async () => {
+    chat.messages = [approvalMessage];
+    setup([approvalMessage]);
+    await userEvent.click(screen.getByText("sendMessage"));
+    expect(chat.sendMessage).not.toHaveBeenCalled();
+    expect(screen.getByTestId("queued").textContent).toBe("hello");
+  });
+
+  // approvalPending clears at the same instant sendAutomaticallyWhen fires the
+  // POST that executes the approved tool. Releasing on that alone would race
+  // it and cut the tool off mid-execution server-side.
+  it("keeps holding while the approval's follow-up POST is streaming", async () => {
+    chat.messages = [approvalMessage];
+    const { rerender } = setup([approvalMessage]);
+    await userEvent.click(screen.getByText("sendMessage"));
+
+    chat.messages = [];
+    chat.status = "streaming";
+    await act(async () => {
+      rerender(tree());
+    });
+    expect(chat.sendMessage).not.toHaveBeenCalled();
+
+    chat.status = "ready";
+    await act(async () => {
+      rerender(tree());
+    });
+    expect(chat.sendMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops a held message when the conversation is cleared", async () => {
+    chat.status = "streaming";
+    const { rerender } = setup();
+    await userEvent.click(screen.getByText("sendMessage"));
+    await userEvent.click(screen.getByText("clear"));
+
+    chat.status = "ready";
+    await act(async () => {
+      rerender(tree());
+    });
+    expect(chat.sendMessage).not.toHaveBeenCalled();
+    expect(screen.getByTestId("queued").textContent).toBe("");
+  });
+
+  it("lets the held message be discarded", async () => {
+    chat.status = "streaming";
+    setup();
+    await userEvent.click(screen.getByText("sendMessage"));
+    await userEvent.click(screen.getByText("clearQueued"));
+    expect(screen.getByTestId("queued").textContent).toBe("");
+  });
+
+  // Continue only renders while idle, so this is defence — but it is the same
+  // second-request hazard, and regenerate has no queue to fall back on.
+  it("ignores Continue while a turn is still streaming", async () => {
+    chat.status = "streaming";
+    setup();
+    await userEvent.click(screen.getByText("regenerate"));
+    expect(chat.regenerate).not.toHaveBeenCalled();
   });
 
   it("reports a pending approval from a rehydrated transcript", () => {

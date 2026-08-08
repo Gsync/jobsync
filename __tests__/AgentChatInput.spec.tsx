@@ -8,6 +8,8 @@ const chat = {
   stop: vi.fn(),
   status: "ready" as string,
   approvalPending: false,
+  queued: undefined as any,
+  clearQueued: vi.fn(),
   error: undefined as Error | undefined,
   clearError: vi.fn(),
   preflight: { checked: true, ok: true } as any,
@@ -34,6 +36,7 @@ describe("AgentChatInput", () => {
     vi.clearAllMocks();
     chat.status = "ready";
     chat.approvalPending = false;
+    chat.queued = undefined;
     chat.error = undefined;
     chat.preflight = { checked: true, ok: true };
     chat.composerNonce = 0;
@@ -105,77 +108,62 @@ describe("AgentChatInput", () => {
     expect(parts.some((p: any) => p.type === AGENT_PASTE_PART_TYPE)).toBe(true);
   });
 
-  it("queues rather than sends while an approval is pending", async () => {
+  // Whether a send waits — for an approval, or for a reply already streaming —
+  // is the provider's call, because it is the only place that sees all five
+  // senders. A composer that second-guesses it disagrees with the resume
+  // page's Review button. Holding is covered in AgentChatProvider.spec.
+  it("delegates every send to the provider, approval pending or not", async () => {
     chat.approvalPending = true;
     render(<AgentChatInput />);
     await userEvent.type(screen.getByRole("textbox"), "the company is wrong");
     await userEvent.click(screen.getByRole("button", { name: /send/i }));
-    expect(chat.sendMessage).not.toHaveBeenCalled();
-    expect(screen.getByText(/waiting on your approval/i)).toBeInTheDocument();
-    expect(screen.getByText(/the company is wrong/)).toBeInTheDocument();
-  });
-
-  it("keeps a new paste out of messages while the card is open — the paste-drift invariant", async () => {
-    chat.approvalPending = true;
-    render(<AgentChatInput />);
-    await paste(long);
-    await userEvent.click(screen.getByRole("button", { name: /send/i }));
-    expect(chat.sendMessage).not.toHaveBeenCalled();
-  });
-
-  it("dispatches the queued message once the approval resolves", async () => {
-    chat.approvalPending = true;
-    const { rerender } = render(<AgentChatInput />);
-    await userEvent.type(screen.getByRole("textbox"), "the company is wrong");
-    await userEvent.click(screen.getByRole("button", { name: /send/i }));
-    chat.approvalPending = false;
-    rerender(<AgentChatInput />);
-    expect(chat.sendMessage).toHaveBeenCalled();
+    expect(chat.sendMessage).toHaveBeenCalledTimes(1);
     expect(chat.sendMessage.mock.calls[0][0].parts[0].text).toBe(
       "the company is wrong",
     );
   });
 
-  it("holds the queued message while the approval's follow-up POST is streaming", async () => {
-    // approvalPending clears at the same instant sendAutomaticallyWhen fires
-    // the POST that executes the approved tool. Dispatching on that render
-    // would race it — the queue waits for status to return to ready.
-    chat.approvalPending = true;
+  it("shows a held message and says what it is waiting for", () => {
+    chat.queued = { parts: [{ type: "text", text: "the company is wrong" }] };
     const { rerender } = render(<AgentChatInput />);
-    await userEvent.type(screen.getByRole("textbox"), "the company is wrong");
-    await userEvent.click(screen.getByRole("button", { name: /send/i }));
-    chat.approvalPending = false;
-    chat.status = "streaming";
+    expect(screen.getByText(/current reply finishes/i)).toBeInTheDocument();
+    expect(screen.getByText(/the company is wrong/)).toBeInTheDocument();
+    chat.approvalPending = true;
     rerender(<AgentChatInput />);
-    expect(chat.sendMessage).not.toHaveBeenCalled();
-    chat.status = "ready";
-    rerender(<AgentChatInput />);
-    expect(chat.sendMessage).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/waiting on your approval/i)).toBeInTheDocument();
   });
 
-  it("lets the user discard a queued message", async () => {
-    chat.approvalPending = true;
+  it("labels a held paste-only message with its chip", () => {
+    chat.queued = {
+      parts: [
+        {
+          type: AGENT_PASTE_PART_TYPE,
+          id: "p1",
+          data: { id: "p1", text: "x", chars: 1234, truncated: false },
+        },
+      ],
+    };
     render(<AgentChatInput />);
-    await userEvent.type(screen.getByRole("textbox"), "never mind");
-    await userEvent.click(screen.getByRole("button", { name: /send/i }));
+    expect(screen.getByText(/pasted posting · 1,234 chars/i)).toBeInTheDocument();
+  });
+
+  it("hands the discard back to the provider", async () => {
+    chat.queued = { parts: [{ type: "text", text: "never mind" }] };
+    render(<AgentChatInput />);
     await userEvent.click(
       screen.getByRole("button", { name: /remove from queue/i }),
     );
-    chat.approvalPending = false;
-    expect(chat.sendMessage).not.toHaveBeenCalled();
+    expect(chat.clearQueued).toHaveBeenCalled();
   });
 
   it("empties the composer when the conversation is cleared", async () => {
-    chat.approvalPending = true;
     const { rerender } = render(<AgentChatInput />);
     await paste(long);
     await userEvent.type(screen.getByRole("textbox"), "never mind");
-    await userEvent.click(screen.getByRole("button", { name: /send/i }));
     chat.composerNonce = 1;
     rerender(<AgentChatInput />);
     expect(screen.getByRole("textbox")).toHaveValue("");
     expect(screen.queryByText(/pasted/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/queued/i)).not.toBeInTheDocument();
   });
 
   it("swaps send for stop while streaming", async () => {

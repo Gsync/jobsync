@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { XIcon } from "lucide-react";
-import type { TextUIPart } from "ai";
+import type { TextUIPart, UIMessage } from "ai";
 import {
   Attachment,
   AttachmentInfo,
@@ -60,7 +60,7 @@ function chipId(): string {
   );
 }
 
-function queuedText(parts: ComposerPart[]): string {
+function queuedText(parts: UIMessage["parts"]): string {
   const text = parts.find((part) => part.type === "text");
   const chip = parts.find(isAgentPastePart);
   if (text?.type === "text" && text.text) return text.text;
@@ -73,6 +73,8 @@ export function AgentChatInput() {
     stop,
     status,
     approvalPending,
+    queued,
+    clearQueued,
     error,
     clearError,
     preflight,
@@ -81,7 +83,6 @@ export function AgentChatInput() {
 
   const [text, setText] = useState("");
   const [chip, setChip] = useState<AgentPastePartData | undefined>();
-  const [queued, setQueued] = useState<ComposerPart[] | undefined>();
 
   const onPaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const pasted = event.clipboardData.getData("text/plain");
@@ -116,26 +117,13 @@ export function AgentChatInput() {
         : []),
     ];
     if (parts.length === 0) return;
-    if (approvalPending) {
-      setQueued(parts); // client-only, never persisted
-    } else {
-      sendMessage({ parts });
-    }
+    // Unconditional. Whether this goes out now or waits — for an approval, or
+    // for the reply already streaming — is the provider's call, because it is
+    // the only place that sees every sender.
+    sendMessage({ parts });
     setText("");
     setChip(undefined);
   };
-
-  // Dispatches once the approval resolves AND the follow-up POST that executes
-  // the approved tool has finished. approvalPending flips false at the same
-  // instant sendAutomaticallyWhen fires that POST — dispatching on that render
-  // would race it, and if sendMessage interrupts the in-flight stream, the
-  // approved tool can be cut off mid-execution server-side.
-  useEffect(() => {
-    if (!approvalPending && status === "ready" && queued) {
-      sendMessage({ parts: queued });
-      setQueued(undefined);
-    }
-  }, [approvalPending, status, queued, sendMessage]);
 
   // Clearing the conversation clears the composer with it. The textarea empties
   // by remounting on the same nonce below — nothing else resets it.
@@ -143,7 +131,6 @@ export function AgentChatInput() {
     if (!composerNonce) return;
     setText("");
     setChip(undefined);
-    setQueued(undefined);
   }, [composerNonce]);
 
   const onStop = useCallback(() => {
@@ -177,14 +164,16 @@ export function AgentChatInput() {
         <div className="flex items-start gap-2 rounded-md border bg-muted/30 p-2 text-sm">
           <div className="min-w-0 flex-1">
             <p className="text-xs text-muted-foreground">
-              Queued — waiting on your approval above
+              {approvalPending
+                ? "Queued — waiting on your approval above"
+                : "Queued — sends when the current reply finishes"}
             </p>
-            <p className="truncate">{queuedText(queued)}</p>
+            <p className="truncate">{queuedText(queued.parts)}</p>
           </div>
           <Button
             aria-label="Remove from queue"
             className="size-6 shrink-0"
-            onClick={() => setQueued(undefined)}
+            onClick={clearQueued}
             size="icon"
             type="button"
             variant="ghost"

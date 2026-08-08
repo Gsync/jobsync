@@ -45,6 +45,10 @@ type Preflight = {
   model?: string;
 };
 
+// Everything the five senders pass. Narrower than chat.sendMessage's union so
+// a held message can be re-dispatched and rendered without narrowing again.
+type QueuedMessage = { parts: UIMessage["parts"] };
+
 type AgentChatValue = ReturnType<typeof useAgentChatValue>;
 
 const AgentChatContext = createContext<AgentChatValue | null>(null);
@@ -230,6 +234,10 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
   // remounting it on the nonce is the only thing that empties it.
   const [composerNonce, setComposerNonce] = useState(0);
 
+  // At most one message waits here. A second send while one is already held
+  // replaces it, which is what the composer did before this moved up.
+  const [queued, setQueued] = useState<QueuedMessage | undefined>();
+
   // stop() before the delete is load-bearing: the route skips its onFinish
   // write when the turn was aborted, and that is what stops a late save from
   // restoring the conversation this just deleted.
@@ -242,34 +250,62 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     setInterruptedTurn(false);
     setComposerNonce((n) => n + 1);
     setReviewStreams({});
+    setQueued(undefined);
     // Clearing an idle conversation aborted nothing worth reporting.
     if (wasStreaming) toastInfo("Conversation cleared and generation stopped.");
   }, [chat]);
-
-  // Resuming the turn is what ends the interruption — Continue, or simply
-  // typing the next message. Cleared here rather than on a status transition
-  // because close() flags the turn while stop() is still settling, and an
-  // effect watching status would race it back to false.
-  const regenerate = useCallback<typeof chat.regenerate>(
-    (...args) => {
-      setInterruptedTurn(false);
-      return chat.regenerate(...args);
-    },
-    [chat],
-  );
-
-  const sendMessage = useCallback<typeof chat.sendMessage>(
-    (...args) => {
-      setInterruptedTurn(false);
-      return chat.sendMessage(...args);
-    },
-    [chat],
-  );
 
   const approvalPending = useMemo(
     () => hasPendingApproval(chat.messages),
     [chat.messages],
   );
+
+  // Resuming the turn is what ends the interruption — Continue, or simply
+  // typing the next message. Cleared here rather than on a status transition
+  // because close() flags the turn while stop() is still settling, and an
+  // effect watching status would race it back to false.
+  const dispatch = useCallback(
+    (message: QueuedMessage) => {
+      setInterruptedTurn(false);
+      return chat.sendMessage(message);
+    },
+    [chat],
+  );
+
+  // Sending while a turn is in flight starts a SECOND request: useChat does
+  // not abort the first, and the two live streams then take turns appending
+  // copies of each other's message into one transcript — the same message.id
+  // in two slots, which is the duplicate-key crash. Every sender funnels
+  // through here, so the hold lives here and not in the composer, which the
+  // resume page's Review button never touches.
+  const sendMessage = useCallback(
+    (message: QueuedMessage) => {
+      if (streamingRef.current || approvalPending) {
+        setQueued(message);
+        return;
+      }
+      void dispatch(message);
+    },
+    [approvalPending, dispatch],
+  );
+
+  // Both conditions are load-bearing. approvalPending flips false at the same
+  // instant sendAutomaticallyWhen fires the POST that executes the approved
+  // tool, so releasing on that alone would race it and cut the tool off
+  // mid-execution; status is what proves the connection is actually free.
+  useEffect(() => {
+    if (!queued || approvalPending || chat.status !== "ready") return;
+    setQueued(undefined);
+    void dispatch(queued);
+  }, [queued, approvalPending, chat.status, dispatch]);
+
+  const regenerate = useCallback(() => {
+    if (streamingRef.current) return;
+    setInterruptedTurn(false);
+    void chat.regenerate();
+  }, [chat]);
+
+  const clearQueued = useCallback(() => setQueued(undefined), []);
 
   const dismissInterrupted = useCallback(() => setInterruptedTurn(false), []);
 
@@ -287,6 +323,8 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     regenerate,
     addToolApprovalResponse: chat.addToolApprovalResponse,
     approvalPending,
+    queued,
+    clearQueued,
     interruptedTurn,
     dismissInterrupted,
     clear,
