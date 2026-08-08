@@ -143,9 +143,12 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
         if (getToolName(part) !== "add_job") return false;
         return (part.output as AgentAddJobResult | undefined)?.created === true;
       });
-      const reviewed = finishedParts.some((part) => {
+      // Any nested tool that saves server-side leaves the page behind the
+      // panel stale — the saved review card, or the job's match score.
+      const generated = finishedParts.some((part) => {
         if (!isToolUIPart(part) || part.state !== "output-available") return false;
-        return getToolName(part) === "review_resume";
+        const tool = getToolName(part);
+        return tool === "review_resume" || tool === "match_job";
       });
 
       // The route stubs the paste on its way into the DB, but that copy is
@@ -157,9 +160,9 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
       if (wrote) chat.setMessages((prev) => stubConsumedPastes(prev));
 
       // Unconditional: an RSC refresh on an irrelevant page is a wasted
-      // request, not a bug. A stale jobs list or a stale saved review behind
-      // the panel right after watching one land reads as one.
-      if (wrote || reviewed) router.refresh();
+      // request, not a bug. A stale jobs list, a stale saved review or a
+      // stale match score right after watching one land reads as one.
+      if (wrote || generated) router.refresh();
     },
   });
 

@@ -299,4 +299,27 @@ describe("AgentChatMessages", () => {
     render(<AgentChatMessages />);
     expect(screen.getByText(/reviewing your resume/i)).toBeInTheDocument();
   });
+
+  it("renders a running match_job from its streamed text", () => {
+    chat.toolStreams = {
+      m1: "SCORES: match=72 recommendation=good\n\n## Summary\n\nStreaming.",
+    };
+    chat.messages = [
+      {
+        id: "a1",
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-match_job",
+            toolCallId: "m1",
+            state: "input-available",
+            input: {},
+          },
+        ],
+      },
+    ] as any;
+    render(<AgentChatMessages />);
+    expect(screen.getByText(/Streaming\./i)).toBeInTheDocument();
+    expect(screen.queryByText(/SCORES:/)).not.toBeInTheDocument();
+  });
 });

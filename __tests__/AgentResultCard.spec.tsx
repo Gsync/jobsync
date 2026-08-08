@@ -16,6 +16,15 @@ const resultPart = (output: unknown, state = "output-available") =>
     output,
   }) as any;
 
+const outputPart = (toolName: string, output: unknown) =>
+  ({
+    type: `tool-${toolName}`,
+    toolCallId: "c1",
+    state: "output-available",
+    input: {},
+    output,
+  }) as any;
+
 describe("AgentResultCard", () => {
   it("names the created job, links to it, and reports the description", () => {
     render(
@@ -248,5 +257,50 @@ describe("AgentResultCard", () => {
     );
     expect(screen.queryByText("Impact")).not.toBeInTheDocument();
     expect(screen.getByText(/could not be generated/i)).toBeInTheDocument();
+  });
+
+  it("renders the match score, recommendation and body from the tool output", () => {
+    render(
+      <AgentResultCard
+        part={outputPart("match_job", {
+          status: "ok",
+          jobId: "job-1",
+          jobTitle: "Senior Backend Engineer",
+          company: "Northwind Cloud",
+          resumeId: "r9",
+          resumeTitle: "Senior Engineer Resume",
+          scores: { matchScore: 72, recommendation: "good match" },
+          body: "## Summary\n\nStrong backend overlap.",
+          saved: true,
+        })}
+      />,
+    );
+    expect(screen.getByText(/good match/i)).toBeInTheDocument();
+    expect(screen.getByText(/Strong backend overlap/i)).toBeInTheDocument();
+  });
+
+  it("tells the user to open a job when there is none in context", () => {
+    render(<AgentResultCard part={outputPart("match_job", { status: "no_job" })} />);
+    expect(screen.getByText(/open the job/i)).toBeInTheDocument();
+  });
+
+  it("reports a match save failure instead of hiding it", () => {
+    render(
+      <AgentResultCard
+        part={outputPart("match_job", {
+          status: "ok",
+          jobId: "job-1",
+          jobTitle: "Senior Backend Engineer",
+          company: "Northwind Cloud",
+          resumeId: "r9",
+          resumeTitle: "Senior Engineer Resume",
+          scores: { matchScore: 72, recommendation: "good match" },
+          body: "## Summary",
+          saved: false,
+          saveError: "Database is locked.",
+        })}
+      />,
+    );
+    expect(screen.getByText(/Database is locked/i)).toBeInTheDocument();
   });
 });

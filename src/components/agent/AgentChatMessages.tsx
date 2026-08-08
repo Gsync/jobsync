@@ -11,12 +11,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { AgentApprovalCard } from "@/components/agent/AgentApprovalCard";
 import { AgentMarkdown } from "@/components/agent/AgentMarkdown";
+import { AgentMatchContent } from "@/components/agent/AgentMatchContent";
 import { AgentResultCard } from "@/components/agent/AgentResultCard";
 import { AgentReviewContent } from "@/components/agent/AgentReviewContent";
 import { AgentStatusRow } from "@/components/agent/AgentStatusRow";
 import { AgentToolRunningCard } from "@/components/agent/AgentToolRunningCard";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
 import { resolvePastedText } from "@/lib/agent/paste";
+import { parseJobMatch } from "@/lib/ai/jobMatch/parse";
 import { parseResumeReview } from "@/lib/ai/resumeReview/parse";
 import { cn } from "@/lib/utils";
 import { isAgentPastePart, type AgentPastePartData } from "@/models/agent.model";
@@ -125,11 +127,23 @@ export function AgentChatMessages() {
               switch (part.state) {
                 case "input-streaming":
                 case "input-available": {
-                  const streamed =
-                    getToolName(part) === "review_resume"
-                      ? toolStreams[part.toolCallId]
-                      : undefined;
+                  const tool = getToolName(part);
+                  const nested =
+                    tool === "review_resume" || tool === "match_job";
+                  const streamed = nested
+                    ? toolStreams[part.toolCallId]
+                    : undefined;
                   if (!streamed) return <AgentToolRunningCard key={i} part={part} />;
+                  if (tool === "match_job") {
+                    const parsed = parseJobMatch(streamed);
+                    return (
+                      <AgentMatchContent
+                        key={i}
+                        body={parsed.body}
+                        scores={parsed.scores}
+                      />
+                    );
+                  }
                   const parsed = parseResumeReview(streamed);
                   return (
                     <AgentReviewContent

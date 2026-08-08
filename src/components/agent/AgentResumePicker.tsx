@@ -13,8 +13,10 @@ import { useAgentChat } from "@/components/agent/AgentChatProvider";
 // scroll fix, and a handful of resumes does not need search.
 export function AgentResumePicker({
   resumes,
+  messageFor,
 }: {
   resumes: { id: string; title: string }[];
+  messageFor?: (title: string) => string;
 }) {
   const { sendMessage } = useAgentChat();
 
@@ -23,11 +25,10 @@ export function AgentResumePicker({
   const pick = (id: string) => {
     const title = resumes.find((r) => r.id === id)?.title;
     if (!title) return;
+    const text = messageFor ? messageFor(title) : `Review my resume "${title}"`;
     // The parts form, matching AgentChatInput — this surface always sends
     // parts, never a bare text shortcut.
-    void sendMessage({
-      parts: [{ type: "text", text: `Review my resume "${title}"` }],
-    });
+    void sendMessage({ parts: [{ type: "text", text }] });
   };
 
   return (
