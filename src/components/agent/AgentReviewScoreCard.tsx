@@ -5,7 +5,7 @@ import type { ResumeScores } from "@/models/ai.schemas";
 
 // Started as a copy of the retired review sheet's ScoresSection, kept
 // separate so that surface could be deleted without touching this one.
-// AiJobMatchResponseContent still has its own near-identical version.
+// AgentMatchScoreCard is its job-match sibling.
 export function AgentReviewScoreCard({
   scores,
   size,
