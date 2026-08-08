@@ -146,6 +146,57 @@ describe("POST /api/ai/chat", () => {
     );
   });
 
+  // The log line discriminates on result shape, not on a tool-name allowlist.
+  // An allowlist logged get_resume as "duplicate" once; a fourth tool would
+  // have re-run that bug with a successful write logged as a rejected one.
+  it("logs a status-carrying result from an unrecognised tool by its status", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    await POST(req({ messages: [pasteMessage("posting")] }));
+    await capturedOnFinish!({
+      messages: [],
+      responseMessage: {
+        id: "a1",
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-match_job",
+            toolCallId: "c1",
+            state: "output-available",
+            output: { status: "ok", score: 78 },
+          },
+        ],
+      },
+      isAborted: false,
+    });
+    const logged = JSON.parse(info.mock.calls.at(-1)![1] as string);
+    expect(logged).toMatchObject({ tool: "match_job", outcome: "ok" });
+    info.mockRestore();
+  });
+
+  it("still logs add_job's create/duplicate outcome, which carries no status", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    await POST(req({ messages: [pasteMessage("posting")] }));
+    await capturedOnFinish!({
+      messages: [],
+      responseMessage: {
+        id: "a1",
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-add_job",
+            toolCallId: "c1",
+            state: "output-available",
+            output: { created: false, duplicateOf: { id: "j" } },
+          },
+        ],
+      },
+      isAborted: false,
+    });
+    const logged = JSON.parse(info.mock.calls.at(-1)![1] as string);
+    expect(logged).toMatchObject({ tool: "add_job", outcome: "duplicate" });
+    info.mockRestore();
+  });
+
   // Pasting and hitting Send without typing produces a message whose only
   // part is the chip. convertToModelMessages drops that custom data part, so
   // the message converts to empty content — and ollama-ai-provider-v2

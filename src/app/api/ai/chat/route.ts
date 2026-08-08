@@ -29,11 +29,7 @@ import { mapAgentError } from "@/lib/agent/errors";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { saveChatConversation } from "@/actions/agentChat.actions";
 import { AiProvider } from "@/models/ai.model";
-import type {
-  AgentAddJobResult,
-  AgentGetResumeResult,
-  AgentReviewResumeResult,
-} from "@/models/agent.model";
+import { AGENT_CHAT_TERMINAL_TOOLS } from "@/models/agent.model";
 
 // One structured line per turn. Sizes and outcomes only — never the pasted
 // posting and never the extracted arguments.
@@ -52,16 +48,16 @@ function outcomeOf(message: UIMessage | undefined): {
     if (part.state !== "output-available") {
       return { tool, state: part.state, outcome: part.state };
     }
-    // Read and write tools report success differently; casting every output
-    // to AgentAddJobResult logged a resume read as "duplicate".
-    if (tool === "get_resume" || tool === "review_resume") {
-      const output = part.output as
-        | AgentGetResumeResult
-        | AgentReviewResumeResult
-        | undefined;
-      return { tool, state: part.state, outcome: output?.status ?? "none" };
+    const output = part.output as
+      | { status?: string; created?: boolean; validationError?: string }
+      | undefined;
+    // Discriminated on shape, not on tool name: a name allowlist logged a
+    // resume read as "duplicate" once already. Status-carrying results report
+    // their own outcome, and add_job is the only shape without a status field,
+    // so it is the fallback rather than the default.
+    if (typeof output?.status === "string") {
+      return { tool, state: part.state, outcome: output.status };
     }
-    const output = part.output as AgentAddJobResult | undefined;
     const outcome = output?.validationError
       ? "validation"
       : output?.created
@@ -179,14 +175,11 @@ export const POST = async (req: NextRequest) => {
           modelName,
           writer,
         }),
-        // Stop after the write: the result card renders deterministically from
-        // structured fields, so a second generation just to narrate it is 10-30s
-        // of local inference for a sentence that could be wrong. Same reasoning
-        // for review_resume — the card and the review are already on screen.
+        // Which tools end the turn — and why — lives beside the tool metadata
+        // in agent.model.ts, where a new tool is registered.
         stopWhen: [
           stepCountIs(APP_CONSTANTS.AGENT_CHAT_MAX_STEPS),
-          hasToolCall("add_job"),
-          hasToolCall("review_resume"),
+          ...AGENT_CHAT_TERMINAL_TOOLS.map((name) => hasToolCall(name)),
         ],
         // Argument extraction wants determinism.
         temperature: TEMPERATURES.ANALYSIS,

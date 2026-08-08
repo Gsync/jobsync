@@ -104,5 +104,9 @@ export type AgentReviewResumeResult =
   | { status: "unreadable"; title: string; reason: string }
   | { status: "generation_failed"; title: string; reason: string };
 
-export const AGENT_CHAT_TOOL_NAMES = ["add_job", "get_resume", "review_resume"] as const;
-export type AgentChatToolName = (typeof AGENT_CHAT_TOOL_NAMES)[number];
+// Tools that end the turn. The result card renders deterministically from
+// structured fields, so a second generation just to narrate it is 10-30s of
+// local inference for a sentence that could be wrong. A tool that runs its
+// own generation MUST be listed here or a single turn can chain two of them
+// and blow the turn timeout, discarding both.
+export const AGENT_CHAT_TERMINAL_TOOLS = ["add_job", "review_resume"] as const;

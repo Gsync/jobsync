@@ -199,11 +199,16 @@ tests:
       - type: javascript
         value: file://./assertions.ts:assertFollowUpStaysConversational
 
+  # The follow-up must be answerable from the review ALONE — the resume text is
+  # never in this transcript, only the critique of it. An earlier version asked
+  # the model to "rewrite the summary bullet you flagged", which the review
+  # neither flags nor quotes, so fetching the resume was the correct response
+  # and the row failed on deepseek for the whole of its life.
   - description: Follow-up asking about a specific section - still conversational
     vars:
       userMessage: Review my resume.
       priorReview: file://./fixtures/prior-review.md
-      followUp: Rewrite the summary bullet you flagged.
+      followUp: In the summary you said several achievements describe responsibilities rather than outcomes. What do you mean by that?
     assert:
       - type: javascript
         value: file://./assertions.ts:assertFollowUpStaysConversational

@@ -49,14 +49,20 @@ type AgentChatValue = ReturnType<typeof useAgentChatValue>;
 
 const AgentChatContext = createContext<AgentChatValue | null>(null);
 
-// The only route that identifies a resource the chat can read. Derived from
-// the pathname rather than plumbed through props so no page has to know the
+// The routes that identify a resource the chat can read. Derived from the
+// pathname rather than plumbed through props so no page has to know the
 // panel exists.
 const RESUME_ROUTE = /^\/dashboard\/profile\/resume\/([^/]+)$/;
+const JOB_ROUTE = /^\/dashboard\/myjobs\/([^/]+)$/;
 
 export function pageContextFor(pathname: string): PageContext {
   const resumeId = pathname.match(RESUME_ROUTE)?.[1];
-  return resumeId ? { route: pathname, resumeId } : { route: pathname };
+  const jobId = pathname.match(JOB_ROUTE)?.[1];
+  return {
+    route: pathname,
+    ...(resumeId ? { resumeId } : {}),
+    ...(jobId ? { jobId } : {}),
+  };
 }
 
 function useAgentChatValue(initialMessages: UIMessage[]) {
@@ -128,6 +134,9 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
       const finishedParts = message?.parts ?? [];
       const wrote = finishedParts.some((part) => {
         if (!isToolUIPart(part) || part.state !== "output-available") return false;
+        // Name-checked for the same reason findConsumingWrite is: created is
+        // add_job's field, and another tool reusing it is not a job write.
+        if (getToolName(part) !== "add_job") return false;
         return (part.output as AgentAddJobResult | undefined)?.created === true;
       });
       const reviewed = finishedParts.some((part) => {

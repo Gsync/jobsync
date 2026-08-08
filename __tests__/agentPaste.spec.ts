@@ -149,6 +149,25 @@ describe("stubConsumedPastes", () => {
       (stubConsumedPastes(messages)[0].parts[0] as any).data.text,
     ).toContain("6kb posting");
   });
+
+  // created is add_job's field. Any future tool reusing the name would
+  // otherwise stub out a posting the user cannot re-derive.
+  it("ignores a created:true result from a tool that is not add_job", () => {
+    const messages = [
+      userMsg("1", [pastePart("p1", "the whole 6kb posting")]),
+      assistantMsg("2", [
+        {
+          ...toolPart("output-available", {
+            output: { created: true, coverLetterId: "cl-1" },
+          }),
+          type: "tool-write_cover_letter",
+        },
+      ]),
+    ] as any;
+    const part: any = stubConsumedPastes(messages)[0].parts[0];
+    expect(part.data.text).toContain("6kb posting");
+    expect(part.data.consumed).toBe(false);
+  });
 });
 
 describe("hasPendingApproval", () => {

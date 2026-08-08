@@ -1,4 +1,4 @@
-import { isToolUIPart, type UIMessage } from "ai";
+import { getToolName, isToolUIPart, type UIMessage } from "ai";
 import { APP_CONSTANTS } from "@/lib/constants";
 import {
   isAgentPastePart,
@@ -46,6 +46,9 @@ function findConsumingWrite(
   for (let i = messages.length - 1; i >= 0; i--) {
     for (const part of messages[i]?.parts ?? []) {
       if (!isToolUIPart(part) || part.state !== "output-available") continue;
+      // add_job is the only tool that consumes a paste. Without this guard any
+      // future tool returning created:true stubs the posting out from under it.
+      if (getToolName(part) !== "add_job") continue;
       const output = part.output as AgentAddJobResult | undefined;
       // Only a successful create consumes the paste. A duplicate or a
       // validation failure leaves it available for the retry.

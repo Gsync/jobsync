@@ -342,7 +342,14 @@ describe("pageContextFor", () => {
     });
   });
 
-  it("omits resumeId everywhere else", () => {
+  it("extracts the job id from a job detail route", () => {
+    expect(pageContextFor("/dashboard/myjobs/job-9")).toEqual({
+      route: "/dashboard/myjobs/job-9",
+      jobId: "job-9",
+    });
+  });
+
+  it("omits both ids everywhere else", () => {
     expect(pageContextFor("/dashboard/myjobs")).toEqual({
       route: "/dashboard/myjobs",
     });

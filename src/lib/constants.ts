@@ -130,9 +130,10 @@ export const APP_CONSTANTS = {
   AGENT_CHAT_MAX_STEPS: 4,
   AGENT_CHAT_MAX_STORED_MESSAGES: 50,
   AGENT_CHAT_HISTORY_MESSAGES: 20,
-  // Longer than the review timeout: one chat turn may contain more than one
-  // generation (tool call, then a corrective retry).
-  AGENT_CHAT_TIMEOUT_MS: 240_000,
+  // Must clear one nested generation plus the thinking steps around it: two
+  // 15-30s think steps plus a 180s review is ~242s, which the old 240s cut off
+  // after the user had watched the whole review stream in.
+  AGENT_CHAT_TIMEOUT_MS: 300_000,
   // Deliberately not AI_OLLAMA_NUM_CTX: a chat turn carries a system prompt,
   // tool schemas, a paste head and history. Raising the shared value would
   // change review/match latency.
