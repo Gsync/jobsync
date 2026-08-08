@@ -117,6 +117,7 @@ describe("add_job agent tool", () => {
       "add_job",
       "get_resume",
       "review_resume",
+      "match_job",
     ]);
   });
 });

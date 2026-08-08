@@ -246,6 +246,7 @@ describe("POST /api/ai/chat", () => {
       "add_job",
       "get_resume",
       "review_resume",
+      "match_job",
     ]);
   });
 

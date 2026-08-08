@@ -3,11 +3,12 @@ import type { PageContext } from "@/models/agent.model";
 import { buildAddJobTool } from "./addJob";
 import { buildGetResumeTool } from "./getResume";
 import { buildReviewResumeTool } from "./reviewResume";
+import { buildMatchJobTool } from "./matchJob";
 
-// review_resume deliberately breaks the "a tool touches neither the route nor
-// provider resolution" rule in CLAUDE.md: it runs its own generation, so it
-// needs the resolved model and the stream writer. Recorded in
-// docs/architecture/agent-chat.md rather than contorted around.
+// review_resume and match_job deliberately break the "a tool touches neither
+// the route nor provider resolution" rule in CLAUDE.md: they run their own
+// generation, so they need the resolved model and the stream writer. Recorded
+// in docs/architecture/agent-chat.md rather than contorted around.
 export function buildAgentTools(ctx: {
   userId: string;
   pastedText?: string;
@@ -28,7 +29,20 @@ export function buildAgentTools(ctx: {
       modelName: ctx.modelName,
       writer: ctx.writer,
     }),
+    match_job: buildMatchJobTool({
+      userId: ctx.userId,
+      pageJobId: ctx.pageContext?.jobId,
+      model: ctx.model,
+      provider: ctx.provider,
+      modelName: ctx.modelName,
+      writer: ctx.writer,
+    }),
   };
 }
 
-export { buildAddJobTool, buildGetResumeTool, buildReviewResumeTool };
+export {
+  buildAddJobTool,
+  buildGetResumeTool,
+  buildReviewResumeTool,
+  buildMatchJobTool,
+};

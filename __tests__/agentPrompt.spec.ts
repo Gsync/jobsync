@@ -86,11 +86,12 @@ describe("agent chat system prompt", () => {
     expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/never write a review yourself/i);
   });
 
-  it("describes all three tools", () => {
+  it("describes all four tools", () => {
     expect(Object.keys(AGENT_TOOL_DESCRIPTIONS)).toEqual([
       "add_job",
       "get_resume",
       "review_resume",
+      "match_job",
     ]);
   });
 
