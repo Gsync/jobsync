@@ -135,6 +135,20 @@ export function assertCallsReviewResume(output: unknown): AssertionResult {
   };
 }
 
+export function assertCallsMatchJob(output: unknown): AssertionResult {
+  const calls = parseToolCalls(output);
+  const pass = calls.length === 1 && calls[0].name === 'match_job';
+  return { pass, score: pass ? 1 : 0, reason: pass ? 'called match_job' : `expected one match_job call, got: ${describe(calls)}` };
+}
+
+// Two nested generations in one step serialize on Ollama past the turn
+// deadline and lose both, so the prompt asks for one per turn. This measures it.
+export function assertOneNestedCall(output: unknown): AssertionResult {
+  const nested = parseToolCalls(output).filter((c) => c.name === 'review_resume' || c.name === 'match_job');
+  const pass = nested.length === 1;
+  return { pass, score: pass ? 1 : 0, reason: pass ? `called ${nested[0].name} alone` : `expected exactly one nested call, got: ${describe(nested)}` };
+}
+
 export function assertFollowUpStaysConversational(output: unknown): AssertionResult {
   const calls = parseToolCalls(output);
   const { scores } = parseResumeReview(textOf(output));

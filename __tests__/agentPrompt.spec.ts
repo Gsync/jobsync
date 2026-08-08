@@ -86,6 +86,14 @@ describe("agent chat system prompt", () => {
     expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/never write a review yourself/i);
   });
 
+  // Measured in eval-B74: told only that match_job "works on a job's page",
+  // qwen3.5:9b asked the user to open one on 3 of 3 rows instead of calling it.
+  // It cannot see the page, so the precondition is the app's to report.
+  it("tells the model to call match_job rather than ask which page the user is on", () => {
+    expect(AGENT_TOOL_DESCRIPTIONS.match_job).toMatch(/never ask them to open a job/i);
+    expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/never ask them to open a job/i);
+  });
+
   it("describes all four tools", () => {
     expect(Object.keys(AGENT_TOOL_DESCRIPTIONS)).toEqual([
       "add_job",

@@ -223,3 +223,39 @@ tests:
         value: >-
           The reply states it cannot read the user's tasks. It does not list
           tasks and does not call a tool.
+
+  # The match flow's only step: one tool call, and the app does the rest.
+  - description: Match request - calls match_job
+    vars:
+      userMessage: How well do I match this job?
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsMatchJob
+
+  # What the job page's Match with AI button actually sends. It is the primary
+  # entry point, so it is measured rather than assumed to behave like the
+  # typed phrasings above.
+  - description: Match button phrasing - calls match_job
+    vars:
+      userMessage: Match my resume to Senior Backend Engineer at Northwind Cloud
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsMatchJob
+
+  # The decision phrasing, which never names a resume or a score.
+  - description: Should-I-apply wording - still match_job
+    vars:
+      userMessage: Should I apply to this one?
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsMatchJob
+
+  # Both nested tools in one step serialize on Ollama past the turn deadline
+  # and lose both generations. The prompt clause says one per turn; this is
+  # what measures whether the model obeys it.
+  - description: Both analyses at once - exactly one nested tool call
+    vars:
+      userMessage: Review my resume and tell me how well I match this job.
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertOneNestedCall
