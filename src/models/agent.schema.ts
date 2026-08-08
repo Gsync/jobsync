@@ -56,3 +56,12 @@ export const AgentReviewResumeSchema = z.object({
 });
 
 export type AgentReviewResumeInput = z.infer<typeof AgentReviewResumeSchema>;
+
+// No job field of any kind: match_job scores the job the user is viewing, and
+// the id comes from server-held page context. An id-shaped input would be an
+// IDOR surface the model could be talked into filling.
+export const AgentMatchJobSchema = z.object({
+  resumeTitle: z.string().optional().describe("The title of the resume to match against, as the user referred to it. Omit this entirely if the user did not name one — the app then uses the resume linked to the job, or their default resume."),
+});
+
+export type AgentMatchJobInput = z.infer<typeof AgentMatchJobSchema>;

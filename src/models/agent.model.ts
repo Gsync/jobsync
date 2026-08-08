@@ -1,5 +1,5 @@
 import type { DescriptionCompleteness } from "@/models/job.model";
-import type { ResumeScores } from "@/models/ai.schemas";
+import type { JobMatchScores, ResumeScores } from "@/models/ai.schemas";
 
 // Dependency-free by design: client components import these types, so nothing
 // here may pull in Prisma or server-only code. Type-only imports are erased.
@@ -105,9 +105,34 @@ export type AgentReviewResumeResult =
   | { status: "unreadable"; title: string; reason: string }
   | { status: "generation_failed"; title: string; reason: string };
 
+// What match_job returns to the model AND to the result card. Neither the
+// resume text nor the job description is here — follow-ups answer from `body`.
+export type AgentMatchJobResult =
+  | {
+      status: "ok";
+      jobId: string;
+      jobTitle: string;
+      company: string;
+      resumeId: string;
+      resumeTitle: string;
+      scores: JobMatchScores;
+      body: string;
+      saved: boolean;
+      saveError?: string;
+    }
+  | { status: "no_job" }
+  | { status: "needs_selection"; resumes: { id: string; title: string }[] }
+  | { status: "no_resumes" }
+  | { status: "unreadable"; what: "job" | "resume"; title: string; reason: string }
+  | { status: "generation_failed"; jobTitle: string; reason: string };
+
 // Tools that end the turn. The result card renders deterministically from
 // structured fields, so a second generation just to narrate it is 10-30s of
 // local inference for a sentence that could be wrong. A tool that runs its
 // own generation MUST be listed here or a single turn can chain two of them
 // and blow the turn timeout, discarding both.
-export const AGENT_CHAT_TERMINAL_TOOLS = ["add_job", "review_resume"] as const;
+export const AGENT_CHAT_TERMINAL_TOOLS = [
+  "add_job",
+  "review_resume",
+  "match_job",
+] as const;

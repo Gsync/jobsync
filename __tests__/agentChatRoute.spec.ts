@@ -51,7 +51,10 @@ import { getUserSettings } from "@/actions/userSettings.actions";
 import { saveChatConversation } from "@/actions/agentChat.actions";
 import { buildAgentTools } from "@/lib/agent/tools";
 import { APP_CONSTANTS } from "@/lib/constants";
-import { AGENT_PASTE_PART_TYPE } from "@/models/agent.model";
+import {
+  AGENT_CHAT_TERMINAL_TOOLS,
+  AGENT_PASTE_PART_TYPE,
+} from "@/models/agent.model";
 
 // signal is not optional on a real Request — the route composes the turn's
 // abort signal from it so a client disconnect stops generation.
@@ -249,7 +252,8 @@ describe("POST /api/ai/chat", () => {
   it("configures the loop bounds the design specifies", async () => {
     await POST(req({ messages: [pasteMessage("posting")] }));
     const args = streamArgs();
-    expect(args.stopWhen).toHaveLength(3);
+    // stepCountIs plus one hasToolCall per terminal tool.
+    expect(args.stopWhen).toHaveLength(AGENT_CHAT_TERMINAL_TOOLS.length + 1);
     expect(args.temperature).toBe(0.1);
     expect(args.abortSignal).toBeDefined();
     expect(args.providerOptions.ollama.options.num_ctx).toBe(APP_CONSTANTS.AGENT_CHAT_NUM_CTX);

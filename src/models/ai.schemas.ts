@@ -64,6 +64,9 @@ export type JobMatchData = JobMatchScores & {
   matchedAt?: string;
   provider?: string;
   model?: string;
+  // Which surface produced it. Optional: rows written before this existed
+  // simply do not have it, and MatchDetails ignores it.
+  surface?: string;
   // Greenhouse-specific
   prerankScore?: number; // raw lexical score (internal sort only; NOT shown as %)
   analyzed?: boolean; // true once LLM match has run (auto top-K or on-demand)
