@@ -77,7 +77,7 @@ function Probe() {
       <span data-testid="state">{`${c.isOpen}|${c.approvalPending}|${c.interruptedTurn}|${holder}|${c.preflight.ok}`}</span>
       <span data-testid="composer-nonce">{c.composerNonce}</span>
       <span data-testid="panel-expanded">{String(c.isPanelExpanded)}</span>
-      <span data-testid="review-stream">{c.reviewStreams["rv1"] ?? ""}</span>
+      <span data-testid="review-stream">{c.toolStreams["rv1"] ?? ""}</span>
     </div>
   );
 }
@@ -467,8 +467,16 @@ describe("AgentChatProvider", () => {
   it("accumulates transient review deltas keyed by tool call id", async () => {
     setup();
     await act(async () => {
-      chatInit().onData({ type: "data-review", id: "rv1", data: { delta: "SCO" } });
-      chatInit().onData({ type: "data-review", id: "rv1", data: { delta: "RES:" } });
+      chatInit().onData({
+        type: "data-nested-stream",
+        id: "rv1",
+        data: { delta: "SCO" },
+      });
+      chatInit().onData({
+        type: "data-nested-stream",
+        id: "rv1",
+        data: { delta: "RES:" },
+      });
       chatInit().onData({ type: "data-paste", id: "rv1", data: { delta: "nope" } });
     });
     expect(screen.getByTestId("review-stream")).toHaveTextContent("SCORES:");

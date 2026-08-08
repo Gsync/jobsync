@@ -59,7 +59,7 @@ describe("nested generation stream plumbing", () => {
               execute: async () => {
                 for (const delta of ["one ", "two ", "three"]) {
                   writer.write({
-                    type: "data-review",
+                    type: "data-nested-stream",
                     id: "call-1",
                     data: { delta },
                     transient: true,
@@ -77,7 +77,7 @@ describe("nested generation stream plumbing", () => {
 
     const chunks = await collect(stream);
     const types = chunks.map((c) => c.type);
-    const firstTransient = types.indexOf("data-review");
+    const firstTransient = types.indexOf("data-nested-stream");
     const output = types.indexOf("tool-output-available");
 
     expect(firstTransient).toBeGreaterThanOrEqual(0);
@@ -86,7 +86,7 @@ describe("nested generation stream plumbing", () => {
     expect(firstTransient).toBeLessThan(output);
     expect(
       chunks
-        .filter((c) => c.type === "data-review")
+        .filter((c) => c.type === "data-nested-stream")
         .map((c) => c.data.delta)
         .join(""),
     ).toBe("one two three");

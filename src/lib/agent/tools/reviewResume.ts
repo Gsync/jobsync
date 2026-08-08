@@ -13,7 +13,7 @@ import {
 } from "@/lib/ai/prompts/resume-review";
 import { parseResumeReview } from "@/lib/ai/resumeReview/parse";
 import { saveResumeReviewResult } from "@/actions/profile.actions";
-import { AGENT_REVIEW_PART_TYPE } from "@/models/agent.model";
+import { AGENT_NESTED_STREAM_PART_TYPE } from "@/models/agent.model";
 import type { AgentReviewResumeResult } from "@/models/agent.model";
 import type { ResumeReviewData } from "@/models/ai.schemas";
 
@@ -86,7 +86,7 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
         for await (const delta of sub.textStream) {
           generated += delta;
           ctx.writer.write({
-            type: AGENT_REVIEW_PART_TYPE,
+            type: AGENT_NESTED_STREAM_PART_TYPE,
             id: toolCallId,
             data: { delta },
             transient: true,

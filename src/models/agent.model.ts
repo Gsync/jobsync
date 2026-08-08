@@ -79,12 +79,13 @@ export type AgentGetResumeResult =
   | { status: "no_resumes" }
   | { status: "unreadable"; title: string; reason: string };
 
-// Transient stream part carrying the nested review generation's tokens. It is
-// never persisted: the finished review lands in the tool result, and keeping
-// both would duplicate it in storage and in model context.
-export const AGENT_REVIEW_PART_TYPE = "data-review";
+// Transient stream part carrying a nested generation's tokens. It is never
+// persisted: the finished artifact lands in the tool result, and keeping both
+// would duplicate it in storage and in model context. Shared by review_resume
+// and match_job — the toolCallId key is what keeps two of them apart.
+export const AGENT_NESTED_STREAM_PART_TYPE = "data-nested-stream";
 
-export type AgentReviewStreamData = { delta: string };
+export type AgentNestedStreamData = { delta: string };
 
 // What review_resume returns to the model AND to the result card. The resume
 // text is deliberately absent — follow-ups answer from `body`, not from the

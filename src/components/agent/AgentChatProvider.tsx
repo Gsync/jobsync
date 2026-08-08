@@ -29,9 +29,9 @@ import { getUserSettings } from "@/actions/userSettings.actions";
 import { checkOllamaConnection } from "@/utils/ai.utils";
 import { AiProvider } from "@/models/ai.model";
 import {
-  AGENT_REVIEW_PART_TYPE,
+  AGENT_NESTED_STREAM_PART_TYPE,
   type AgentAddJobResult,
-  type AgentReviewStreamData,
+  type AgentNestedStreamData,
   type PageContext,
 } from "@/models/agent.model";
 
@@ -110,9 +110,9 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
   }, [pathname]);
 
   // Transient data parts never land in message.parts — the SDK hands them to
-  // onData and drops them — so the review's streaming text lives here, keyed
-  // by toolCallId so two reviews in one conversation cannot collide.
-  const [reviewStreams, setReviewStreams] = useState<Record<string, string>>({});
+  // onData and drops them — so a nested tool's streaming text lives here,
+  // keyed by toolCallId so two nested calls cannot collide.
+  const [toolStreams, setToolStreams] = useState<Record<string, string>>({});
 
   const chat = useChat({
     messages: initialMessages,
@@ -126,10 +126,10 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     // POSTs back to execute the tool. It is the mechanism, not a nicety.
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
     onData: (part) => {
-      if (part.type !== AGENT_REVIEW_PART_TYPE || !part.id) return;
+      if (part.type !== AGENT_NESTED_STREAM_PART_TYPE || !part.id) return;
       const id = part.id;
-      const { delta } = part.data as AgentReviewStreamData;
-      setReviewStreams((prev) => ({ ...prev, [id]: (prev[id] ?? "") + delta }));
+      const { delta } = part.data as AgentNestedStreamData;
+      setToolStreams((prev) => ({ ...prev, [id]: (prev[id] ?? "") + delta }));
     },
     onFinish: ({ message, isAbort, isError }) => {
       // onFinish runs from a finally block, so it fires on abort too.
@@ -249,7 +249,7 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     chat.clearError();
     setInterruptedTurn(false);
     setComposerNonce((n) => n + 1);
-    setReviewStreams({});
+    setToolStreams({});
     setQueued(undefined);
     // Clearing an idle conversation aborted nothing worth reporting.
     if (wasStreaming) toastInfo("Conversation cleared and generation stopped.");
@@ -314,7 +314,7 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     open,
     close,
     messages: chat.messages,
-    reviewStreams,
+    toolStreams,
     status: chat.status,
     error: chat.error,
     clearError: chat.clearError,

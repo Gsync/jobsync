@@ -122,7 +122,7 @@ describe("review_resume agent tool", () => {
     await execute(buildReviewResumeTool(ctx()), {});
     expect(writer.write).toHaveBeenCalledTimes(3);
     const first = writer.write.mock.calls[0][0];
-    expect(first.type).toBe("data-review");
+    expect(first.type).toBe("data-nested-stream");
     expect(first.id).toBe("call-1");
     expect(first.transient).toBe(true);
     expect(

@@ -71,7 +71,7 @@ function showThinking(messages: UIMessage[], status: string): boolean {
 export function AgentChatMessages() {
   const {
     messages,
-    reviewStreams,
+    toolStreams,
     status,
     regenerate,
     addToolApprovalResponse,
@@ -127,7 +127,7 @@ export function AgentChatMessages() {
                 case "input-available": {
                   const streamed =
                     getToolName(part) === "review_resume"
-                      ? reviewStreams[part.toolCallId]
+                      ? toolStreams[part.toolCallId]
                       : undefined;
                   if (!streamed) return <AgentToolRunningCard key={i} part={part} />;
                   const parsed = parseResumeReview(streamed);
