@@ -35,7 +35,17 @@ import {
   Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { AiJobMatchSection } from "../profile/AiJobMatchSection";
+import { useAgentChat } from "@/components/agent/AgentChatProvider";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 import { GenerateCoverLetterSection } from "./GenerateCoverLetterSection";
 import { NotesSection } from "./NotesSection";
 import { useState, useMemo, useCallback } from "react";
@@ -80,9 +90,13 @@ function JobDetails({
   sources,
   tags,
 }: JobDetailsProps) {
-  const [aiSectionOpen, setAiSectionOpen] = useState(false);
-  const [currentMatchScore, setCurrentMatchScore] = useState(job.matchScore);
-  const [currentMatchData, setCurrentMatchData] = useState(job.matchData);
+  const {
+    open: openChat,
+    clear: clearChat,
+    sendMessage,
+    approvalPending,
+  } = useAgentChat();
+  const [showClearChatConfirm, setShowClearChatConfirm] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(job.Status);
   const [coverLetterOpen, setCoverLetterOpen] = useState(false);
   const [currentCoverLetterId, setCurrentCoverLetterId] = useState(
@@ -96,24 +110,41 @@ function JobDetails({
   const router = useRouter();
   const goBack = () => router.back();
 
+  // Derived from the server prop, not local state: the chat saves the match
+  // server-side and fires router.refresh(), so mirrored state would go stale.
   const parsedMatchData = useMemo(() => {
-    if (!currentMatchData) return null;
+    if (!job.matchData) return null;
     try {
-      return JSON.parse(currentMatchData) as JobMatchData;
+      return JSON.parse(job.matchData) as JobMatchData;
     } catch {
       return null;
     }
-  }, [currentMatchData]);
+  }, [job.matchData]);
 
-  const handleMatchSaved = useCallback(
-    (matchScore: number, matchData: string) => {
-      setCurrentMatchScore(matchScore);
-      setCurrentMatchData(matchData);
-    },
-    [],
-  );
-  const getAiJobMatch = async () => {
-    setAiSectionOpen(true);
+  // Panel first so a failed clear can never leave the button looking dead,
+  // and the match is sent either way — a conversation that would not clear
+  // is no reason to withhold it.
+  const startMatch = async () => {
+    openChat();
+    try {
+      await clearChat();
+    } catch {
+      // Reported by the action itself; the match still goes out.
+    }
+    const label = `${job.JobTitle?.label ?? "this job"}${
+      job.Company?.label ? ` at ${job.Company.label}` : ""
+    }`;
+    void sendMessage({
+      parts: [{ type: "text", text: `Match my resume to ${label}` }],
+    });
+  };
+
+  const onMatchClick = () => {
+    if (approvalPending) {
+      setShowClearChatConfirm(true);
+      return;
+    }
+    void startMatch();
   };
 
   const coverLetterBlockedReason =
@@ -179,8 +210,7 @@ function JobDetails({
             size="sm"
             variant="outline"
             className="h-8 gap-1 cursor-pointer"
-            onClick={getAiJobMatch}
-            // disabled={loading}
+            onClick={onMatchClick}
           >
             <Sparkles className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
@@ -293,9 +323,9 @@ function JobDetails({
                   <span className="hidden sm:inline">Delete</span>
                 </Button>
               </div>
-              {currentMatchScore != null && (
+              {job.matchScore != null && (
                 <div className="flex flex-col items-center gap-1">
-                  <CircularScore score={currentMatchScore} size="md" />
+                  <CircularScore score={job.matchScore} size="md" />
                   {parsedMatchData?.recommendation ? (
                     <Badge variant="outline" className="capitalize">
                       {parsedMatchData.recommendation}
@@ -375,14 +405,6 @@ function JobDetails({
           <CardFooter></CardFooter>
         </Card>
       )}
-      {
-        <AiJobMatchSection
-          jobId={job?.id}
-          aISectionOpen={aiSectionOpen}
-          triggerChange={setAiSectionOpen}
-          onMatchSaved={handleMatchSaved}
-        />
-      }
       <GenerateCoverLetterSection
         jobId={job?.id}
         jobResumeId={job.resumeId}
@@ -408,6 +430,27 @@ function JobDetails({
         onOpenChange={setDeleteAlertOpen}
         onDelete={onDeleteJob}
       />
+      {/* CLEAR CHAT BEFORE MATCH CONFIRM */}
+      <AlertDialog
+        open={showClearChatConfirm}
+        onOpenChange={setShowClearChatConfirm}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear the assistant conversation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A job is waiting for your approval in the assistant. Starting a
+              match clears the conversation, and that job will not be saved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void startMatch()}>
+              Clear and match
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
