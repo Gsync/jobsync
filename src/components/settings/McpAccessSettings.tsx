@@ -153,6 +153,7 @@ export default function McpAccessSettings() {
   const [expiryDays, setExpiryDays] = useState<30 | 90 | 365>(
     APP_CONSTANTS.MCP_TOKEN_EXPIRY_DEFAULT_DAYS as 30 | 90 | 365,
   );
+  const [tokenType, setTokenType] = useState<"agent" | "evaluation-worker">("agent");
 
   const [revealedToken, setRevealedToken] = useState<{ token: string; name: string } | null>(null);
 
@@ -173,7 +174,7 @@ export default function McpAccessSettings() {
   const handleGenerate = async () => {
     if (!tokenName.trim()) return;
     setGenerating(true);
-    const result = await createMcpToken({ name: tokenName.trim(), expiryDays });
+    const result = await createMcpToken({ name: tokenName.trim(), expiryDays, type: tokenType });
     setGenerating(false);
     if (!result.success) {
       toastError(result.message);
@@ -183,6 +184,7 @@ export default function McpAccessSettings() {
     setShowGenerateDialog(false);
     setTokenName("");
     setExpiryDays(APP_CONSTANTS.MCP_TOKEN_EXPIRY_DEFAULT_DAYS as 30 | 90 | 365);
+    setTokenType("agent");
     await fetchTokens();
   };
 
@@ -304,6 +306,16 @@ export default function McpAccessSettings() {
                 onChange={(e) => setTokenName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Token type</Label>
+              <Select value={tokenType} onValueChange={(value) => setTokenType(value as "agent" | "evaluation-worker")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="agent">Agent (jobs, questions, resume)</SelectItem>
+                  <SelectItem value="evaluation-worker">Evaluation worker (evaluations only)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Expires in</Label>

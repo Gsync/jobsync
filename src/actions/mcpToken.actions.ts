@@ -19,6 +19,7 @@ export interface PublicTokenMeta {
 export async function createMcpToken(input: {
   name: string;
   expiryDays: 30 | 90 | 365;
+  type?: "agent" | "evaluation-worker";
 }): Promise<
   | { success: true; token: string; record: PublicTokenMeta }
   | { success: false; message: string }
@@ -44,7 +45,9 @@ export async function createMcpToken(input: {
         name: input.name.trim(),
         tokenHash: hash,
         tokenPrefix: prefix,
-        scopes: JSON.stringify(["jobs:write", "questions:write", "resume:write"]),
+        scopes: JSON.stringify(input.type === "evaluation-worker"
+          ? ["evaluations:worker"]
+          : ["jobs:write", "questions:write", "resume:write"]),
         expiresAt,
       },
     });
@@ -105,9 +108,18 @@ function toPublicMeta(record: {
     id: record.id,
     name: record.name,
     tokenPrefix: record.tokenPrefix,
-    scopes: JSON.parse(record.scopes) as string[],
+    scopes: parseScopes(record.scopes),
     expiresAt: record.expiresAt,
     lastUsedAt: record.lastUsedAt,
     createdAt: record.createdAt,
   };
+}
+
+function parseScopes(scopes: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(scopes);
+    return Array.isArray(parsed) && parsed.every((scope) => typeof scope === "string") ? parsed : [];
+  } catch {
+    return [];
+  }
 }

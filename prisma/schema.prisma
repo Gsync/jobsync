@@ -35,6 +35,7 @@ model User {
   Tag            Tag[]
   Question       Question[]
   McpAccessToken McpAccessToken[]
+  JobEvaluation  JobEvaluation[]
   ChatConversation ChatConversation?
   defaultResumeId String?
   defaultResume   Resume?          @relation("UserDefaultResume", fields: [defaultResumeId], references: [id], onDelete: SetNull)
@@ -86,6 +87,7 @@ model Resume {
   File           File?           @relation(fields: [FileId], references: [id])
   FileId         String?         @unique
   Job            Job[]
+  JobEvaluation  JobEvaluation[]
   Automation     Automation[]
   defaultForUser User[]          @relation("UserDefaultResume")
   reviewData     String?
@@ -312,6 +314,7 @@ model Job {
   CoverLetter   CoverLetter? @relation(fields: [coverLetterId], references: [id])
   coverLetterId String?
   Notes         Note[]
+  evaluations   JobEvaluation[]
   tags        Tag[]
 
   // Automation discovery fields
@@ -528,6 +531,42 @@ model McpAccessToken {
 
   @@unique([userId, name])
   @@index([userId])
+}
+
+model JobEvaluation {
+  id               String   @id @default(uuid())
+  userId           String
+  jobId            String
+  resumeId         String
+  evaluatorKey     String
+  evaluatorVersion String
+  definitionHash   String
+  inputHash        String
+  jobHash          String
+  resumeHash       String
+  inputSnapshot    String
+  isCurrent        Boolean  @default(true)
+  status           String   @default("pending")
+  attemptCount     Int      @default(0)
+  nextAttemptAt    DateTime?
+  leaseToken       String?
+  leaseExpiresAt   DateTime?
+  resultJson       String?
+  resultHash       String?
+  lastError        String?
+  evaluatedAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job    Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, resumeId, evaluatorKey, evaluatorVersion, inputHash])
+  @@index([userId, isCurrent, evaluatorKey, evaluatorVersion])
+  @@index([userId, status, nextAttemptAt])
+  @@index([status, leaseExpiresAt])
+  @@index([jobId, isCurrent])
 }
 
 model ChatConversation {

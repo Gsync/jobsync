@@ -23,6 +23,7 @@ export const resumeDetailInclude = {
         },
       },
       licenseOrCertifications: true,
+      others: true,
       skills: { include: { Tag: true } },
     },
   },

@@ -1,10 +1,11 @@
 import prisma from "@/lib/db";
+import type { PrismaClient } from "@prisma/client";
 import { hashToken } from "./tokens";
 
 type AuthSuccess = { ok: true; userId: string; scopes: string[]; tokenName: string };
 type AuthFailure = { ok: false; status: 401 | 403; error: string };
 
-export async function resolveMcpToken(req: Request): Promise<AuthSuccess | AuthFailure> {
+export async function resolveMcpToken(req: Request, db: PrismaClient = prisma): Promise<AuthSuccess | AuthFailure> {
   const authHeader = req.headers.get("authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) {
     return { ok: false, status: 401, error: "Missing or malformed Authorization header" };
@@ -16,7 +17,7 @@ export async function resolveMcpToken(req: Request): Promise<AuthSuccess | AuthF
   }
 
   const tokenHash = hashToken(plaintext);
-  const record = await prisma.mcpAccessToken.findUnique({ where: { tokenHash } });
+  const record = await db.mcpAccessToken.findUnique({ where: { tokenHash } });
 
   if (!record) {
     return { ok: false, status: 401, error: "Invalid token" };
@@ -27,14 +28,18 @@ export async function resolveMcpToken(req: Request): Promise<AuthSuccess | AuthF
   }
 
   // Fire-and-forget lastUsedAt update
-  prisma.mcpAccessToken.update({
+  db.mcpAccessToken.update({
     where: { id: record.id },
     data: { lastUsedAt: new Date() },
   }).catch(() => {});
 
   let scopes: string[];
   try {
-    scopes = JSON.parse(record.scopes) as string[];
+    const parsed: unknown = JSON.parse(record.scopes);
+    if (!Array.isArray(parsed) || !parsed.every((scope) => typeof scope === "string")) {
+      return { ok: false, status: 401, error: "Malformed token scopes" };
+    }
+    scopes = parsed;
   } catch {
     return { ok: false, status: 401, error: "Malformed token scopes" };
   }

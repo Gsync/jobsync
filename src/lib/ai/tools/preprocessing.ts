@@ -236,7 +236,13 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
               return `## ${section.sectionTitle.toUpperCase()}\n${lines.join("\n")}`;
             }
             default:
-              return "";
+              {
+                const others = section.others
+                  ?.map((other) => removeHtmlTags(other.content))
+                  .filter(Boolean)
+                  .join("\n\n");
+                return others ? `## ${section.sectionTitle.toUpperCase()}\n${others}` : "";
+              }
           }
         })
         .filter(Boolean)
