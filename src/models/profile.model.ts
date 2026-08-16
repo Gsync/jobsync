@@ -96,7 +96,14 @@ export interface ResumeSection {
   workExperiences?: WorkExperience[];
   educations?: Education[];
   licenseOrCertifications?: LicenseOrCertification[];
+  others?: OtherSection[];
   skills?: Skill[];
+}
+
+export interface OtherSection {
+  id?: string;
+  title: string;
+  content: string;
 }
 
 export interface WorkExperience {

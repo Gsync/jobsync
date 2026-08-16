@@ -8,6 +8,7 @@ import {
   ContactInfo,
   Education,
   LicenseOrCertification,
+  OtherSection,
   Resume,
   ResumeSection,
   SectionType,
@@ -179,6 +180,17 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
         .join("\n\n");
     };
 
+    const formatOtherSections = (items?: OtherSection[]) => {
+      if (!items || items.length === 0) return "";
+      return items
+        .map((item) => {
+          const content = removeHtmlTags(item.content);
+          return content ? `${item.title}\n${content}` : "";
+        })
+        .filter(Boolean)
+        .join("\n\n");
+    };
+
     const SECTION_ORDER: Record<string, number> = {
       [SectionType.SUMMARY]: 0,
       [SectionType.SKILLS]: 1,
@@ -234,6 +246,14 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
                 return cat ? `${cat}: ${labels}` : labels;
               });
               return `## ${section.sectionTitle.toUpperCase()}\n${lines.join("\n")}`;
+            }
+            case SectionType.COURSE:
+            case SectionType.PROJECT:
+            case SectionType.OTHER: {
+              const content = formatOtherSections(section.others);
+              return content
+                ? `## ${section.sectionTitle.toUpperCase()}\n${content}`
+                : "";
             }
             default:
               return "";

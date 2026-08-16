@@ -90,6 +90,24 @@ describe("resolveMcpToken", () => {
     });
   });
 
+  it("rejects valid JSON that is not an array of string scopes", async () => {
+    (prisma.mcpAccessToken.findUnique as any).mockResolvedValue({
+      id: "t-1",
+      userId: "user-1",
+      scopes: JSON.stringify(["jobs:write", 42]),
+      name: "my-token",
+      expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+    });
+
+    const result = await resolveMcpToken(makeRequest("Bearer jsync_bad-scope-type"));
+
+    expect(result).toEqual({
+      ok: false,
+      status: 401,
+      error: "Malformed token scopes",
+    });
+  });
+
   it("accepts a valid token and looks it up by its hash", async () => {
     const plaintext = "jsync_valid-token";
     (prisma.mcpAccessToken.findUnique as any).mockResolvedValue({

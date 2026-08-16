@@ -4,6 +4,11 @@ import { hashToken } from "./tokens";
 type AuthSuccess = { ok: true; userId: string; scopes: string[]; tokenName: string };
 type AuthFailure = { ok: false; status: 401 | 403; error: string };
 
+export function hasMcpScope(scopes: string[], requiredScope: string): boolean {
+  return scopes.includes(requiredScope) ||
+    (requiredScope === "jobs:read" && scopes.includes("jobs:write"));
+}
+
 export async function resolveMcpToken(req: Request): Promise<AuthSuccess | AuthFailure> {
   const authHeader = req.headers.get("authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) {
@@ -34,7 +39,11 @@ export async function resolveMcpToken(req: Request): Promise<AuthSuccess | AuthF
 
   let scopes: string[];
   try {
-    scopes = JSON.parse(record.scopes) as string[];
+    const parsedScopes = JSON.parse(record.scopes) as unknown;
+    if (!Array.isArray(parsedScopes) || !parsedScopes.every((scope) => typeof scope === "string")) {
+      throw new Error("Invalid scopes");
+    }
+    scopes = parsedScopes;
   } catch {
     return { ok: false, status: 401, error: "Malformed token scopes" };
   }
