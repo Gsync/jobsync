@@ -4,6 +4,7 @@ import { handleError } from "@/lib/utils";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { canonicalizeEntityValue } from "@/lib/jobs/canonicalize";
+import { getReferenceEntityList } from "./referenceList";
 
 export const getAllJobTitles = async (): Promise<any | undefined> => {
   try {
@@ -35,76 +36,17 @@ export const getJobTitleList = async (
     if (!user) {
       throw new Error("Not authenticated");
     }
-    const skip = (page - 1) * limit;
 
-    const whereClause: any = {
-      createdBy: user.id,
-    };
-
-    if (search) {
-      whereClause.label = { contains: search };
-    }
-
-    const [data, total, totalCounts] = await Promise.all([
-      prisma.jobTitle.findMany({
-        where: whereClause,
-        skip,
-        take: limit,
-        ...(countBy
-          ? {
-              select: {
-                id: true,
-                label: true,
-                value: true,
-                _count: {
-                  select: {
-                    jobs: {
-                      where: {
-                        applied: true,
-                      },
-                    },
-                  },
-                },
-              },
-            }
-          : {}),
-        orderBy: {
-          jobs: {
-            _count: "desc",
-          },
-        },
-      }),
-      prisma.jobTitle.count({
-        where: whereClause,
-      }),
-      countBy
-        ? prisma.job.groupBy({
-            by: ["jobTitleId"],
-            where: {
-              userId: user.id,
-            },
-            _count: { id: true },
-          })
-        : Promise.resolve([]),
-    ]);
-
-    const totalMap = new Map(
-      (totalCounts as { jobTitleId: string; _count: { id: number } }[]).map(
-        (r) => [r.jobTitleId, r._count.id],
-      ),
-    );
-
-    const dataWithTotal = countBy
-      ? (data as any[]).map((title) => ({
-          ...title,
-          _count: {
-            ...(title._count ?? {}),
-            jobsTotal: totalMap.get(title.id) ?? 0,
-          },
-        }))
-      : data;
-
-    return { data: dataWithTotal, total };
+    return await getReferenceEntityList({
+      model: prisma.jobTitle,
+      userId: user.id,
+      fkField: "jobTitleId",
+      appliedRelation: "jobs",
+      page,
+      limit,
+      countBy,
+      search,
+    });
   } catch (error) {
     const msg = "Failed to fetch job title list. ";
     return handleError(error, msg);

@@ -173,6 +173,41 @@ describe("Job Location Actions", () => {
 
       expect(result).toEqual({ success: false, message: "Database error" });
     });
+
+    it("should filter locations by label when search is provided", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const mockData = [{ id: "loc-1", label: "New York", value: "new york" }];
+      (prisma.location.findMany as any).mockResolvedValue(mockData);
+      (prisma.location.count as any).mockResolvedValue(1);
+
+      const result = await getJobLocationsList(1, 10, undefined, "New");
+
+      expect(result).toEqual({ data: mockData, total: 1 });
+      expect(prisma.location.findMany).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id, label: { contains: "New" } },
+        skip: 0,
+        take: 10,
+        orderBy: { jobsApplied: { _count: "desc" } },
+      });
+      expect(prisma.location.count).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id, label: { contains: "New" } },
+      });
+    });
+
+    it("should not apply a label filter when search is empty", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.location.findMany as any).mockResolvedValue([]);
+      (prisma.location.count as any).mockResolvedValue(0);
+
+      await getJobLocationsList(1, 10, undefined, "");
+
+      expect(prisma.location.findMany).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id },
+        skip: 0,
+        take: 10,
+        orderBy: { jobsApplied: { _count: "desc" } },
+      });
+    });
   });
 
   describe("deleteJobLocationById", () => {
