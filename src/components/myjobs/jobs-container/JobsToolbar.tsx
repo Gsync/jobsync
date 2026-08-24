@@ -164,7 +164,7 @@ export function JobsToolbar({
             <SelectGroup>
               <SelectLabel>Filter by</SelectLabel>
               <SelectSeparator />
-              <SelectItem value="none">None</SelectItem>
+              <SelectItem value="none">All (Except Dismissed)</SelectItem>
               <SelectItem value="applied">Applied</SelectItem>
               <SelectItem value="interview">Interview</SelectItem>
               <SelectItem value="draft">Draft</SelectItem>
