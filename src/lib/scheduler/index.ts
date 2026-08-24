@@ -6,7 +6,7 @@ import type { JobBoard } from "@/models/automation.model";
 
 let scheduledTask: ScheduledTask | null = null;
 
-async function runDueAutomations() {
+export async function runDueAutomations() {
   const now = new Date();
   console.log(`[Scheduler] Checking for due automations at ${now.toISOString()}`);
 
