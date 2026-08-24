@@ -1,17 +1,14 @@
 "use server";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
-import { getCurrentUser } from "@/utils/user.utils";
+import { requireUser } from "./shared";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { canonicalizeEntityValue } from "@/lib/jobs/canonicalize";
 import { getReferenceEntityList } from "./referenceList";
 
 export const getAllJobTitles = async (): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const user = await requireUser();
     const list = await prisma.jobTitle.findMany({
       where: {
         createdBy: user?.id,
@@ -31,11 +28,7 @@ export const getJobTitleList = async (
   search?: string,
 ): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const user = await requireUser();
 
     return await getReferenceEntityList({
       model: prisma.jobTitle,
@@ -57,11 +50,7 @@ export const createJobTitle = async (
   label: string
 ): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const user = await requireUser();
 
     const value = canonicalizeEntityValue(label.trim());
 
@@ -82,11 +71,7 @@ export const deleteJobTitleById = async (
   jobTitleId: string
 ): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const user = await requireUser();
 
     const experiences = await prisma.workExperience.count({
       where: {

@@ -3,7 +3,7 @@
 import type { UIMessage } from "ai";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
-import { getCurrentUser } from "@/utils/user.utils";
+import { requireUser } from "./shared";
 import { APP_CONSTANTS } from "@/lib/constants";
 
 export const getChatConversation = async (): Promise<{
@@ -12,8 +12,7 @@ export const getChatConversation = async (): Promise<{
   message?: string;
 }> => {
   try {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Not authenticated");
+    const user = await requireUser();
 
     const row = await prisma.chatConversation.findUnique({
       where: { userId: user.id },
@@ -37,8 +36,7 @@ export const saveChatConversation = async (
   messages: UIMessage[],
 ): Promise<{ success: boolean; message?: string }> => {
   try {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Not authenticated");
+    const user = await requireUser();
 
     const trimmed = messages.slice(
       -APP_CONSTANTS.AGENT_CHAT_MAX_STORED_MESSAGES,
@@ -62,8 +60,7 @@ export const clearChatConversation = async (): Promise<{
   message?: string;
 }> => {
   try {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Not authenticated");
+    const user = await requireUser();
 
     // deleteMany, not delete: deleting a row that does not exist must not
     // throw, since Clear is the hard reset and has to always work.

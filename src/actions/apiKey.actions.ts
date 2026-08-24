@@ -2,6 +2,7 @@
 
 import db from "@/lib/db";
 import { getCurrentUser } from "@/utils/user.utils";
+import { requireUser } from "./shared";
 import { handleError } from "@/lib/utils";
 import { encrypt, getLast4 } from "@/lib/encryption";
 import { apiKeySaveSchema } from "@/models/apiKey.schema";
@@ -16,8 +17,7 @@ export async function getUserApiKeys(): Promise<{
   message?: string;
 }> {
   try {
-    const user = await getCurrentUser();
-    if (!user) return { success: false, message: "Not authenticated" };
+    const user = await requireUser();
 
     const keys = await db.apiKey.findMany({
       where: { userId: user.id },
@@ -67,8 +67,7 @@ export async function saveApiKey(input: {
   message?: string;
 }> {
   try {
-    const user = await getCurrentUser();
-    if (!user) return { success: false, message: "Not authenticated" };
+    const user = await requireUser();
 
     const parsed = apiKeySaveSchema.parse(input);
     const isSensitive = parsed.sensitive;
@@ -142,8 +141,7 @@ export async function deleteApiKey(provider: string): Promise<{
   message?: string;
 }> {
   try {
-    const user = await getCurrentUser();
-    if (!user) return { success: false, message: "Not authenticated" };
+    const user = await requireUser();
 
     await db.apiKey.deleteMany({
       where: { userId: user.id, provider },

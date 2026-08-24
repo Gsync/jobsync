@@ -2,7 +2,7 @@
 import MarkdownIt from "markdown-it";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
-import { getCurrentUser } from "@/utils/user.utils";
+import { requireUser } from "./shared";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { buildCoverLetterTitle } from "@/lib/coverLetterTitle";
 
@@ -15,10 +15,7 @@ export const getCoverLetterList = async (
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE
 ): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const user = await requireUser();
     const skip = (page - 1) * limit;
 
     const [data, total] = await Promise.all([
@@ -67,10 +64,7 @@ export const createCoverLetter = async (
   content: string
 ): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const user = await requireUser();
 
     const value = title.trim().toLowerCase();
     const titleExists = await prisma.coverLetter.findFirst({
@@ -122,10 +116,7 @@ export const updateCoverLetter = async (
   content: string
 ): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const user = await requireUser();
 
     const res = await prisma.coverLetter.update({
       where: { id, profile: { userId: user.id } },
@@ -143,10 +134,7 @@ export const deleteCoverLetterById = async (
   coverLetterId: string
 ): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const user = await requireUser();
 
     await prisma.coverLetter.delete({
       where: { id: coverLetterId, profile: { userId: user.id } },
@@ -164,10 +152,7 @@ export const generateCoverLetterForJob = async (
   markdown: string
 ): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const user = await requireUser();
 
     if (
       !markdown ||

@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/lib/db";
-import { getCurrentUser } from "@/utils/user.utils";
+import { requireUser } from "./shared";
 import { handleError } from "@/lib/utils";
 import { generateToken } from "@/lib/mcp/tokens";
 import { APP_CONSTANTS } from "@/lib/constants";
@@ -24,8 +24,7 @@ export async function createMcpToken(input: {
   | { success: false; message: string }
 > {
   try {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Not authenticated");
+    const user = await requireUser();
 
     const count = await prisma.mcpAccessToken.count({ where: { userId: user.id } });
     if (count >= APP_CONSTANTS.MCP_TOKEN_MAX_PER_USER) {
@@ -65,8 +64,7 @@ export async function createMcpToken(input: {
 
 export async function listMcpTokens(): Promise<PublicTokenMeta[]> {
   try {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Not authenticated");
+    const user = await requireUser();
 
     const records = await prisma.mcpAccessToken.findMany({
       where: { userId: user.id },
@@ -81,8 +79,7 @@ export async function listMcpTokens(): Promise<PublicTokenMeta[]> {
 
 export async function revokeMcpToken(id: string): Promise<{ success: boolean; message?: string }> {
   try {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Not authenticated");
+    const user = await requireUser();
 
     await prisma.mcpAccessToken.delete({ where: { id, userId: user.id } });
     return { success: true };

@@ -1,7 +1,7 @@
 "use server";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
-import { getCurrentUser } from "@/utils/user.utils";
+import { requireUser } from "./shared";
 import {
   UserSettingsData,
   defaultUserSettings,
@@ -11,11 +11,7 @@ import {
 
 export const getUserSettings = async (): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const user = await requireUser();
 
     const userSettings = await prisma.userSettings.findUnique({
       where: { userId: user.id },
@@ -53,11 +49,7 @@ export const updateUserSettings = async (
   settings: Partial<UserSettingsData>
 ): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const user = await requireUser();
 
     const existingSettings = await prisma.userSettings.findUnique({
       where: { userId: user.id },

@@ -2,7 +2,7 @@
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { AddQuestionFormSchema } from "@/models/addQuestionForm.schema";
-import { getCurrentUser } from "@/utils/user.utils";
+import { requireUser } from "./shared";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { z } from "zod";
 
@@ -13,8 +13,7 @@ export const getQuestionsList = async (
   search?: string
 ): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Not authenticated");
+    const user = await requireUser();
 
     const offset = (page - 1) * limit;
 
@@ -56,8 +55,7 @@ export const getQuestionById = async (
   questionId: string
 ): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Not authenticated");
+    const user = await requireUser();
 
     const question = await prisma.question.findFirst({
       where: { id: questionId, createdBy: user.id },
@@ -78,8 +76,7 @@ export const createQuestion = async (
   data: z.infer<typeof AddQuestionFormSchema>
 ): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Not authenticated");
+    const user = await requireUser();
 
     const validatedData = AddQuestionFormSchema.parse(data);
 
@@ -105,8 +102,7 @@ export const updateQuestion = async (
   data: z.infer<typeof AddQuestionFormSchema>
 ): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Not authenticated");
+    const user = await requireUser();
 
     if (!data.id) throw new Error("Question ID is required for update");
 
@@ -134,8 +130,7 @@ export const deleteQuestion = async (
   questionId: string
 ): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Not authenticated");
+    const user = await requireUser();
 
     await prisma.question.delete({
       where: { id: questionId, createdBy: user.id },
@@ -151,8 +146,7 @@ export const getTagsWithQuestionCounts = async (): Promise<
   any | undefined
 > => {
   try {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Not authenticated");
+    const user = await requireUser();
 
     const tags = await prisma.tag.findMany({
       where: { createdBy: user.id },

@@ -1,16 +1,13 @@
 "use server";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
-import { getCurrentUser } from "@/utils/user.utils";
+import { requireUser } from "./shared";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { resolveTag as resolveTagCore } from "@/lib/jobs/resolve";
 
 export const getAllTags = async (): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const user = await requireUser();
     const list = await prisma.tag.findMany({
       where: { createdBy: user.id },
       orderBy: { label: "asc" },
@@ -28,10 +25,7 @@ export const getTagList = async (
   search?: string,
 ): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const user = await requireUser();
     const skip = (page - 1) * limit;
 
     const whereClause: any = { createdBy: user.id };
@@ -64,10 +58,7 @@ export const getTagList = async (
 
 export const createTag = async (label: string): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const user = await requireUser();
 
     if (!label.trim()) {
       throw new Error("Tag label cannot be empty.");
@@ -85,10 +76,7 @@ export const deleteTagById = async (
   tagId: string,
 ): Promise<any | undefined> => {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const user = await requireUser();
 
     const [jobs, questions, skills] = await Promise.all([
       prisma.job.count({ where: { tags: { some: { id: tagId } } } }),
