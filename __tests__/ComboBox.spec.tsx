@@ -115,6 +115,39 @@ describe("Combobox Enter key", () => {
       );
     });
 
+    it("keeps the create option when the search matches an existing option by substring", async () => {
+      vi.mocked(createLocation).mockResolvedValue({
+        success: true,
+        data: { id: "new-location-id", label: "CityA", value: "citya" },
+      } as never);
+      const { user, input, onChange } = await openCombobox({
+        name: "location",
+        options: [
+          {
+            id: "compound-location-id",
+            label: "Something-CityA",
+            value: "something-citya",
+          },
+        ],
+      });
+
+      await user.type(input, "CityA");
+
+      const createOption = screen.getByRole("option", {
+        name: "Create: CityA",
+      });
+      expect(createOption).toBeVisible();
+
+      await user.click(createOption);
+
+      await waitFor(() =>
+        expect(createLocation).toHaveBeenCalledWith("CityA")
+      );
+      await waitFor(() =>
+        expect(onChange).toHaveBeenCalledWith("new-location-id")
+      );
+    });
+
     it("trims surrounding whitespace before creating", async () => {
       const { user, input } = await openCombobox();
 

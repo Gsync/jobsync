@@ -40,6 +40,12 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
 
   const [isPending, startTransition] = useTransition();
+  const searchValue = newOption.trim().toLowerCase();
+  const hasExactMatch =
+    searchValue.length > 0 &&
+    options.some((option) => option.value?.toLowerCase() === searchValue);
+  const canCreateOption = Boolean(creatable && searchValue && !hasExactMatch);
+
   const handleEnterKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter") return;
 
@@ -181,6 +187,21 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
                   {option.label}
                 </CommandItem>
               ))}
+              {canCreateOption && (
+                <CommandItem
+                  value={newOption}
+                  onSelect={() => {
+                    onCreateOption(newOption.trim());
+                    setNewOption("");
+                  }}
+                >
+                  <CirclePlus className="mr-2 h-4 w-4" />
+                  <span>Create: </span>
+                  <span className="block max-w-48 truncate font-semibold text-primary">
+                    {newOption.trim()}
+                  </span>
+                </CommandItem>
+              )}
             </CommandGroup>
           </CommandList>
         </Command>
