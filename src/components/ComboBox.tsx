@@ -4,6 +4,7 @@ import { Check, ChevronsUpDown, CirclePlus, Loader } from "lucide-react";
 import { ControllerRenderProps } from "react-hook-form";
 
 import { cn } from "@/lib/utils";
+import { canonicalizeEntityValue } from "@/lib/jobs/canonicalize";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -35,15 +36,27 @@ interface ComboboxProps {
   creatable?: boolean;
 }
 
+function canonicalizeComboboxValue(value: string, fieldName: string): string {
+  const trimmedValue = value.trim();
+
+  if (fieldName === "activityType") {
+    return trimmedValue.toLowerCase();
+  }
+
+  return canonicalizeEntityValue(trimmedValue, {
+    stripLegalSuffix: fieldName === "company",
+  });
+}
+
 export function Combobox({ options, field, creatable }: ComboboxProps) {
   const [newOption, setNewOption] = useState<string>("");
   const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
 
   const [isPending, startTransition] = useTransition();
-  const searchValue = newOption.trim().toLowerCase();
+  const searchValue = canonicalizeComboboxValue(newOption, field.name);
   const hasExactMatch =
     searchValue.length > 0 &&
-    options.some((option) => option.value?.toLowerCase() === searchValue);
+    options.some((option) => option.value === searchValue);
   const canCreateOption = Boolean(creatable && searchValue && !hasExactMatch);
 
   const handleEnterKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -134,7 +147,11 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
       <PopoverContent className="md:w-[240px] lg:w-[280px] p-0">
         <Command
           filter={(value, search) =>
-            value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+            canonicalizeComboboxValue(value, field.name).includes(
+              canonicalizeComboboxValue(search, field.name),
+            )
+              ? 1
+              : 0
           }
         >
           <CommandInput
@@ -146,6 +163,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
           <CommandList>
             <CommandEmpty
               onClick={() => {
+                if (!canCreateOption) return;
                 onCreateOption(newOption);
                 setNewOption("");
               }}
@@ -154,7 +172,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
                 !newOption && "text-muted-foreground cursor-default"
               )}
             >
-              {creatable ? (
+              {creatable && canCreateOption ? (
                 <>
                   <CirclePlus className="h-4 w-4" />
                   <p>Create: </p>

@@ -260,6 +260,41 @@ describe("Combobox Enter key", () => {
       await waitFor(() => expect(onChange).toHaveBeenCalledWith("other-id"));
       expect(addCompany).not.toHaveBeenCalled();
     });
+
+    it("matches location values after diacritics and comma normalization", async () => {
+      const { user, input, onChange } = await openCombobox({
+        name: "location",
+        options: [
+          {
+            id: "zurich-id",
+            label: "Zürich, CH",
+            value: "zurich ch",
+          },
+        ],
+      });
+
+      await user.type(input, "Zürich, CH{Enter}");
+
+      expect(
+        screen.queryByRole("option", { name: "Create: Zürich, CH" }),
+      ).not.toBeInTheDocument();
+      await waitFor(() => expect(onChange).toHaveBeenCalledWith("zurich-id"));
+      expect(createLocation).not.toHaveBeenCalled();
+    });
+
+    it("matches companies after stripping legal suffixes", async () => {
+      const { user, input, onChange } = await openCombobox({
+        options: [{ id: "acme-id", label: "Acme", value: "acme" }],
+      });
+
+      await user.type(input, "Acme Inc{Enter}");
+
+      expect(
+        screen.queryByRole("option", { name: "Create: Acme Inc" }),
+      ).not.toBeInTheDocument();
+      await waitFor(() => expect(onChange).toHaveBeenCalledWith("acme-id"));
+      expect(addCompany).not.toHaveBeenCalled();
+    });
   });
 
   // Tailwind's `capitalize` renders a stored "eBay" as "EBay". jsdom applies
