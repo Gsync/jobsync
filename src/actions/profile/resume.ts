@@ -10,6 +10,10 @@ export const getResumeList = async (
   page: number = 1,
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
   minSections: number = 0,
+  // File-backed resumes can be matched by consumers that extract their file
+  // text (currently automation); other consumers keep the structured-only
+  // behavior by default.
+  includeFileBacked: boolean = false,
 ): Promise<any | undefined> => {
   try {
     const user = await requireUser();
@@ -82,7 +86,11 @@ export const getResumeList = async (
 
     const data =
       minSections > 0
-        ? rawData.filter((r) => r._count.ResumeSections >= minSections)
+        ? rawData.filter(
+            (r) =>
+              r._count.ResumeSections >= minSections ||
+              (includeFileBacked && Boolean(r.FileId)),
+          )
         : rawData;
 
     return { data, total, success: true };

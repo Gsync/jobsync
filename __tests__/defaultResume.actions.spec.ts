@@ -271,5 +271,52 @@ describe("Default Resume Actions", () => {
         }),
       );
     });
+
+    it("includes file-backed resumes when requested for automation matching", async () => {
+      (prisma.user.findUnique as any).mockResolvedValue({
+        defaultResumeId: null,
+      });
+      (prisma.resume.findMany as any).mockResolvedValue([
+        {
+          id: "structured-resume",
+          FileId: null,
+          _count: { Job: 0, ResumeSections: 2 },
+        },
+        {
+          id: "file-backed-resume",
+          FileId: "file-1",
+          _count: { Job: 0, ResumeSections: 0 },
+        },
+        {
+          id: "empty-resume",
+          FileId: null,
+          _count: { Job: 0, ResumeSections: 1 },
+        },
+      ]);
+
+      const result = await getResumeList(1, 100, 2, true);
+
+      expect(result.data.map((r: any) => r.id)).toEqual([
+        "structured-resume",
+        "file-backed-resume",
+      ]);
+    });
+
+    it("keeps file-backed resumes excluded by the default structured-only filter", async () => {
+      (prisma.user.findUnique as any).mockResolvedValue({
+        defaultResumeId: null,
+      });
+      (prisma.resume.findMany as any).mockResolvedValue([
+        {
+          id: "file-backed-resume",
+          FileId: "file-1",
+          _count: { Job: 0, ResumeSections: 0 },
+        },
+      ]);
+
+      const result = await getResumeList(1, 100, 2);
+
+      expect(result.data).toEqual([]);
+    });
   });
 });

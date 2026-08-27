@@ -42,6 +42,7 @@ import {
 import { resolveApiKey } from "@/lib/api-key-resolver";
 import { PROVIDER_VERIFIERS } from "@/lib/ai/provider-registry.server";
 import { getOllamaBaseUrl } from "@/actions/apiKey.actions";
+import { extractAttachedResumeText } from "@/lib/ai/import/read-resume-file";
 
 const MAX_JOBS_PER_RUN = APP_CONSTANTS.MAX_JOBS_PER_RUN;
 
@@ -111,6 +112,7 @@ export interface RunnerResult {
 }
 
 interface ResumeWithSections extends PrismaResume {
+  File: { filePath: string } | null;
   ContactInfo: {
     firstName: string;
     lastName: string;
@@ -271,6 +273,7 @@ export async function runAutomation(
     const resume = await db.resume.findUnique({
       where: { id: automation.resumeId },
       include: {
+        File: { select: { filePath: true } },
         ContactInfo: true,
         ResumeSections: {
           include: {
@@ -1133,7 +1136,7 @@ async function matchJobToResume(
   signal?: AbortSignal,
 ): Promise<MatchResult> {
   try {
-    const resumeText = await convertResumeForMatch(resume);
+    const resumeText = await getResumeMatchText(resume);
     const jobText = `
 Title: ${job.title}
 Company: ${job.company}
@@ -1193,10 +1196,28 @@ ${removeHtmlTags(job.description)}
   }
 }
 
+// A run can match several jobs concurrently. Cache the extracted/structured
+// input by resume object so a file-backed resume is read and parsed once per
+// run rather than once per job.
+const resumeMatchTextCache = new WeakMap<
+  ResumeWithSections,
+  Promise<string>
+>();
+
+function getResumeMatchText(resume: ResumeWithSections): Promise<string> {
+  const cached = resumeMatchTextCache.get(resume);
+  if (cached) return cached;
+
+  const text = convertResumeForMatch(resume);
+  resumeMatchTextCache.set(resume, text);
+  return text;
+}
+
 async function convertResumeForMatch(
   resume: ResumeWithSections,
 ): Promise<string> {
   const parts: string[] = [`# ${resume.title}`];
+  let hasStructuredContent = false;
 
   if (resume.ContactInfo) {
     const contact = resume.ContactInfo;
@@ -1212,6 +1233,7 @@ async function convertResumeForMatch(
   for (const section of resume.ResumeSections) {
     if (section.sectionType === "summary" && section.summary?.content) {
       parts.push("## SUMMARY", removeHtmlTags(section.summary.content));
+      hasStructuredContent = true;
     }
 
     if (
@@ -1219,6 +1241,7 @@ async function convertResumeForMatch(
       section.workExperiences.length > 0
     ) {
       parts.push("## EXPERIENCE");
+      hasStructuredContent = true;
       for (const exp of section.workExperiences) {
         parts.push(
           `Company: ${exp.Company.label}`,
@@ -1232,6 +1255,7 @@ async function convertResumeForMatch(
 
     if (section.sectionType === "education" && section.educations.length > 0) {
       parts.push("## EDUCATION");
+      hasStructuredContent = true;
       for (const edu of section.educations) {
         parts.push(
           `Institution: ${edu.institution}`,
@@ -1249,6 +1273,7 @@ async function convertResumeForMatch(
       section.licenseOrCertifications.length > 0
     ) {
       parts.push(`## ${section.sectionType.toUpperCase()}S`);
+      hasStructuredContent = true;
       for (const cert of section.licenseOrCertifications) {
         parts.push(
           `Title: ${cert.title}`,
@@ -1273,11 +1298,24 @@ async function convertResumeForMatch(
         grouped.get(key)!.push(s);
       }
       parts.push("## SKILLS");
+      hasStructuredContent = true;
       for (const [cat, items] of grouped.entries()) {
         const labels = items.map((s) => s.Tag.label).join(", ");
         parts.push(cat ? `${cat}: ${labels}` : labels);
       }
       parts.push("");
+    }
+  }
+
+  // A newly uploaded resume may not have structured sections yet. Use the
+  // original document as the match input in that case; structured sections
+  // remain authoritative once the user has imported/edited them.
+  if (!hasStructuredContent && resume.File?.filePath) {
+    const attachedText = await extractAttachedResumeText(resume.File.filePath);
+    if (attachedText?.trim()) {
+      return [`# ${resume.title}`, "## ATTACHED RESUME", attachedText].join(
+        "\n",
+      );
     }
   }
 

@@ -222,18 +222,21 @@ export default function AutomationDetailPage() {
   }, [loadData]);
 
   useEffect(() => {
-    getResumeList(1, 100, APP_CONSTANTS.MIN_RESUME_SECTIONS_FOR_SELECTION).then(
-      (result) => {
-        if (result?.data) {
-          setResumes(
-            result.data.map((r: { id: string; title: string }) => ({
-              id: r.id,
-              title: r.title,
-            })),
-          );
-        }
-      },
-    );
+    getResumeList(
+      1,
+      100,
+      APP_CONSTANTS.MIN_RESUME_SECTIONS_FOR_SELECTION,
+      true,
+    ).then((result) => {
+      if (result?.data) {
+        setResumes(
+          result.data.map((r: { id: string; title: string }) => ({
+            id: r.id,
+            title: r.title,
+          })),
+        );
+      }
+    });
     getAutomationsList().then((result) => {
       if (result?.data) setAllAutomations(result.data);
     });
