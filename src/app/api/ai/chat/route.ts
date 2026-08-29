@@ -30,6 +30,7 @@ import {
 } from "@/lib/agent/paste";
 import { truncateForModel } from "@/lib/agent/paste.server";
 import { buildAgentTools } from "@/lib/agent/tools";
+import { measureTurnPrefix, type TurnPrefixMetrics } from "@/lib/agent/turnMetrics";
 import { mapAgentError } from "@/lib/agent/errors";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { saveChatConversation } from "@/actions/agentChat.actions";
@@ -178,22 +179,32 @@ export const POST = async (req: NextRequest) => {
     AbortSignal.timeout(APP_CONSTANTS.AGENT_CHAT_TIMEOUT_MS),
   ]);
 
+  // Written inside execute, read in onFinish, which runs after it.
+  let prefixMetrics: TurnPrefixMetrics | undefined;
+
   const stream = createUIMessageStream({
     originalMessages: messages,
     execute: ({ writer }) => {
+      const tools = buildAgentTools({
+        userId,
+        pastedText,
+        pageContext,
+        model,
+        provider,
+        modelName,
+        writer,
+      });
+      prefixMetrics = measureTurnPrefix({
+        userId,
+        system: AGENT_CHAT_SYSTEM_PROMPT,
+        tools,
+        modelMessages,
+      });
       const result = streamText({
         model,
         system: AGENT_CHAT_SYSTEM_PROMPT,
         messages: modelMessages,
-        tools: buildAgentTools({
-          userId,
-          pastedText,
-          pageContext,
-          model,
-          provider,
-          modelName,
-          writer,
-        }),
+        tools,
         // Which tools end the turn — and why — lives beside the tool metadata
         // in agent.model.ts, where a new tool is registered.
         stopWhen: [
@@ -231,6 +242,13 @@ export const POST = async (req: NextRequest) => {
         // Windowing is invisible to the user, so this is the only signal that
         // the model was given less history than the transcript holds.
         historyDropped: messages.length - windowed.length,
+        // What was actually sent. prefixChanged is the cache signal: the
+        // system prompt and tool material must stay byte-identical within a
+        // conversation or Ollama recomputes the whole prefix.
+        systemChars: prefixMetrics?.systemChars ?? 0,
+        toolChars: prefixMetrics?.toolChars ?? 0,
+        messageChars: prefixMetrics?.messageChars ?? 0,
+        prefixChanged: prefixMetrics?.prefixChanged ?? false,
       });
       // A cancelled turn never writes back. Clear deletes the conversation and
       // this fires afterwards on the stream's cancel path, so saving here would
