@@ -194,6 +194,22 @@ export const APP_CONSTANTS = {
   // Must not be "ai-panel-width" — that key belongs to the three AI sheets.
   AGENT_CHAT_PANEL_WIDTH_KEY: "agent-chat-width",
 
+  // Telemetry (OTLP export)
+  // Flush cadence. A batch is never serialized in the enqueueing caller's
+  // stack — reaching the batch size only arms the timer.
+  TELEMETRY_FLUSH_INTERVAL_MS: 5_000,
+  // Consecutive-failure backoff, resets to the first entry on any success.
+  // A collector down for a day is retried a few dozen times, not 17,000.
+  TELEMETRY_BACKOFF_MS: [5_000, 30_000, 60_000],
+  // Bounded queue, drops oldest — mirrors MAX_LOGS_PER_RUN in
+  // automation-logger.ts. A dead collector cannot grow memory without limit.
+  TELEMETRY_MAX_QUEUE: 1_000,
+  TELEMETRY_BATCH_SIZE: 200,
+  TELEMETRY_EXPORT_TIMEOUT_MS: 5_000,
+  // A resume-review prompt runs 10-50 KB; this caps what leaves the process.
+  // Not the same thing as jobsync.input.truncated — see spec section 8.
+  TELEMETRY_MAX_ATTR_CHARS: 32_000,
+
   // File uploads
   UPLOADS_DIR: process.env.NODE_ENV !== "production" ? "data" : "/data",
 
