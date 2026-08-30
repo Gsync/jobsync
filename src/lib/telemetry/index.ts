@@ -6,3 +6,4 @@ export {
 export { currentSpan, type ActiveSpan } from "./context";
 export { runInSpan, startSpan, withSpan, type Span } from "./span";
 export { type Attrs } from "./otlp";
+export { log, SEVERITY } from "./logger";

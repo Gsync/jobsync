@@ -1,4 +1,15 @@
+import { log as telemetryLog } from "@/lib/telemetry";
+
 export type LogLevel = "info" | "success" | "warning" | "error";
+
+// The store's four levels collapse onto OTLP's three; success is an
+// automation-UI distinction, not a severity.
+const TELEMETRY_LEVEL: Record<LogLevel, "info" | "warn" | "error"> = {
+  info: "info",
+  success: "info",
+  warning: "warn",
+  error: "error",
+};
 
 export interface AutomationLog {
   timestamp: Date;
@@ -86,6 +97,13 @@ class AutomationLoggerService {
     console.log(
       `[Logger] Logged [${level}] for ${automationId}: ${message} (total logs: ${store.logs.length})`,
     );
+
+    // Fans out to OTLP so an automation run's logs outlive the one-hour
+    // in-memory retention and become searchable beside its spans.
+    telemetryLog[TELEMETRY_LEVEL[level]](message, {
+      "automation.id": automationId,
+      ...metadata,
+    });
 
     // Keep only the most recent logs
     if (store.logs.length > this.MAX_LOGS_PER_RUN) {
