@@ -51,12 +51,17 @@ vi.mock("@/lib/ai", async (orig) => {
   return { ...actual, getModel: vi.fn().mockResolvedValue({}) };
 });
 
+vi.mock("@/lib/ai/import/read-resume-file", () => ({
+  extractAttachedResumeText: vi.fn(),
+}));
+
 import { runAutomation } from "@/lib/scraper/runner";
 import { searchGreenhouseJobs } from "@/lib/scraper/greenhouse";
 import { searchJSearchJobs } from "@/lib/scraper/jsearch";
 import { generateText } from "ai";
 import type { Automation } from "@/models/automation.model";
 import { AiProvider } from "@/models/ai.model";
+import { extractAttachedResumeText } from "@/lib/ai/import/read-resume-file";
 
 // Each call to generateText returns a promise you resolve/reject manually,
 // in whatever order the test wants — lets you simulate out-of-order
@@ -200,6 +205,33 @@ describe("runAutomation (greenhouse)", () => {
     expect(result.status).toBe("completed");
     expect(result.jobsSaved).toBe(0);
     expect((generateText as any).mock.calls.length).toBe(0);
+  });
+
+  it("uses attached resume text when structured sections are absent", async () => {
+    (prisma.resume.findUnique as any).mockResolvedValueOnce({
+      id: "resume1",
+      title: "Uploaded Resume",
+      File: { filePath: "/data/files/resumes/uploaded.pdf" },
+      ContactInfo: null,
+      ResumeSections: [],
+    });
+    (extractAttachedResumeText as any).mockResolvedValue(
+      "Senior frontend engineer with React and TypeScript experience.",
+    );
+    (searchGreenhouseJobs as any).mockResolvedValue({
+      jobs: [makeJob("Frontend Engineer", "React")],
+      errors: [],
+    });
+
+    const result = await runAutomation(automation);
+
+    expect(result.status).toBe("completed");
+    expect(extractAttachedResumeText).toHaveBeenCalledWith(
+      "/data/files/resumes/uploaded.pdf",
+    );
+    expect((generateText as any).mock.calls[0][0].prompt).toContain(
+      "Senior frontend engineer with React and TypeScript experience.",
+    );
   });
 
   // Exercises getExistingJobDedupeMap's wiring of real DB row shape (JobTitle/

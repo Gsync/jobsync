@@ -7,6 +7,7 @@ export default async function AutomationsPage() {
     1,
     100,
     APP_CONSTANTS.MIN_RESUME_SECTIONS_FOR_SELECTION,
+    true,
   );
   const resumes =
     resumeResult?.data?.map((r: { id: string; title: string }) => ({

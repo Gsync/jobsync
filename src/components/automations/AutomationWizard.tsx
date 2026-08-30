@@ -383,7 +383,8 @@ export function AutomationWizard({
                   </SelectContent>
                 </Select>
                 <FormDescription>
-                  Jobs will be matched against this resume
+                  Jobs will be matched against this resume&apos;s structured content
+                  or attached document
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -391,8 +392,8 @@ export function AutomationWizard({
           />
           {resumes.length === 0 && (
             <p className="text-sm text-orange-600 dark:text-orange-500">
-              No resumes found. Please create a resume with enough content in
-              your profile first.
+              No matchable resumes found. Add at least 2 sections or attach a
+              PDF/DOCX resume in your profile first.
             </p>
           )}
         </div>
