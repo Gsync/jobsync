@@ -1,0 +1,42 @@
+# Reference only. jobsync's deploy scripts and Jenkinsfile never touch this
+# file — run OpenObserve wherever you like and point the app at it with
+# OTEL_EXPORTER_OTLP_ENDPOINT. Kept separate from docker-compose.otel.yml on
+# purpose: merging them would force-recreate this container on every jobsync
+# deploy via --force-recreate, re-coupling their lifecycles.
+#
+# All values below are starting points, not measured. Verify them against
+# OpenObserve's current environment-variable docs, and watch actual memory and
+# CPU on the host for the first few days of real traffic. The 30-day retention
+# and the four _MAX_SIZE caps are the load-bearing ones on a memory-
+# constrained host.
+#
+# ZO_ROOT_USER_PASSWORD is validated on boot: 8-128 chars with an uppercase, a
+# lowercase, a digit and a special character. A weak value crash-loops the
+# container forever with "backend job init failed: channel closed" while :5080
+# never binds, and the real error is only visible in `docker logs`.
+services:
+  openobserve:
+    image: public.ecr.aws/zinclabs/openobserve:latest
+    container_name: openobserve
+    ports:
+      - "5080:5080"
+    volumes:
+      - ./o2-data:/data
+    environment:
+      ZO_DATA_DIR: /data
+      ZO_ROOT_USER_EMAIL: ${ZO_ROOT_USER_EMAIL}
+      ZO_ROOT_USER_PASSWORD: ${ZO_ROOT_USER_PASSWORD}
+      ZO_COMPACT_DATA_RETENTION_DAYS: "30"
+      ZO_MEMORY_CACHE_MAX_SIZE: "128"
+      ZO_MEMORY_CACHE_DATAFUSION_MAX_SIZE: "128"
+      ZO_MEM_TABLE_MAX_SIZE: "256"
+      ZO_MAX_FILE_SIZE_IN_MEMORY: "64"
+      ZO_DISK_CACHE_MAX_SIZE: "1024"
+      ZO_HTTP_WORKER_NUM: "2"
+      ZO_QUERY_THREAD_NUM: "2"
+      ZO_FILE_MOVE_THREAD_NUM: "1"
+      ZO_MEM_DUMP_THREAD_NUM: "1"
+      ZO_FILE_MERGE_THREAD_NUM: "1"
+      RUST_LOG: error
+    mem_limit: 768m
+    restart: unless-stopped

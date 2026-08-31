@@ -1,0 +1,13 @@
+# Merged in explicitly by the Jenkinsfile's Deploy stage:
+#   docker compose -f docker-compose.yml -f docker-compose.otel.yml up -d
+# Compose merges environment: by key, so this only ADDS the four OTEL_* keys
+# to the app service — nothing in the base file is replaced. Every one
+# defaults to empty, so an operator who sets nothing in .env gets exactly
+# today's behaviour.
+services:
+  app:
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      - OTEL_EXPORTER_OTLP_HEADERS=${OTEL_EXPORTER_OTLP_HEADERS:-}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-jobsync}
+      - OTEL_CAPTURE_CONTENT=${OTEL_CAPTURE_CONTENT:-false}
