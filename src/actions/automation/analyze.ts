@@ -15,6 +15,14 @@ import { getResumeById } from "@/actions/profile.actions";
 import { getJobDetails } from "@/actions/job.actions";
 import { defaultUserSettings } from "@/models/userSettings.model";
 import { automationLogger } from "@/lib/automation-logger";
+import { APP_CONSTANTS } from "@/lib/constants";
+import {
+  genAiRequestAttrs,
+  genAiResponseAttrs,
+  inputSizeAttrs,
+  SURFACES,
+  withSpan,
+} from "@/lib/telemetry";
 import { formatError } from "./shared";
 
 // Runs an on-demand LLM match for an un-analyzed discovered job using the
@@ -76,15 +84,47 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
 
     const model = await getModel(ai.provider, ai.model || "llama3.2", user.id);
 
-    const result = await generateText({
-      model,
-      system: JOB_MATCH_SYSTEM_PROMPT,
-      prompt: buildJobMatchPrompt(
-        resumePre.data.normalizedText,
-        jobPre.data.normalizedText,
-      ),
-      temperature: 0.3,
-    });
+    const promptText = buildJobMatchPrompt(
+      resumePre.data.normalizedText,
+      jobPre.data.normalizedText,
+    );
+
+    const result = await withSpan(
+      "automation.analyze",
+      {
+        ...genAiRequestAttrs({
+          provider: ai.provider,
+          model: ai.model || "llama3.2",
+          temperature: 0.3,
+          numCtx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
+          surface: SURFACES.JOB_MATCH,
+          system: JOB_MATCH_SYSTEM_PROMPT,
+          prompt: promptText,
+        }),
+        ...inputSizeAttrs({
+          resumeChars: resumePre.data.normalizedText.length,
+          jobChars: jobPre.data.normalizedText.length,
+        }),
+        "jobsync.user_id": user.id,
+        "jobsync.job_id": jobId,
+      },
+      async (span) => {
+        const generated = await generateText({
+          model,
+          system: JOB_MATCH_SYSTEM_PROMPT,
+          prompt: promptText,
+          temperature: 0.3,
+        });
+        span.setAttrs(
+          genAiResponseAttrs({
+            usage: generated.totalUsage,
+            finishReason: generated.finishReason,
+            text: generated.text,
+          }),
+        );
+        return generated;
+      },
+    );
 
     const { scores, body } = parseJobMatch(result.text);
     if (!scores) {

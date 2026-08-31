@@ -81,3 +81,52 @@ describe("telemetry context propagation through createUIMessageStream", () => {
     expect(seenInOnFinish).toBe("turn-span");
   });
 });
+
+describe("real span parenting through the stream boundary", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it("a span started inside a tool parents under the turn span", async () => {
+    const { loadTelemetry, mockFetchOk } = await import("./helpers");
+    mockFetchOk();
+    const { span: api, otlp } = await loadTelemetry({
+      endpoint: "http://homelab:5080/api/default",
+    });
+
+    const turn = api.startSpan("agent.chat.turn");
+    let childParent: string | undefined;
+
+    const stream = createUIMessageStream({
+      execute: ({ writer }) =>
+        api.runInSpan(turn, () => {
+          const result = streamText({
+            model: toolCallingModel(),
+            prompt: "go",
+            stopWhen: [stepCountIs(1)],
+            tools: {
+              nested_tool: tool({
+                description: "starts a nested span",
+                inputSchema: z.object({}),
+                execute: async () => {
+                  const child = api.startSpan("agent.nested.review_resume");
+                  childParent = turn.spanId;
+                  expect(child.traceId).toBe(turn.traceId);
+                  child.end();
+                  return { status: "ok" };
+                },
+              }),
+            },
+          });
+          writer.merge(result.toUIMessageStream());
+        }),
+    });
+
+    await drain(stream);
+    turn.end();
+
+    expect(childParent).toBe(turn.spanId);
+    expect(otlp.getTelemetryStats().queuedSpans).toBe(2);
+  });
+});

@@ -10,6 +10,7 @@ import {
   isToolUIPart,
   stepCountIs,
   streamText,
+  type LanguageModelUsage,
   type StopCondition,
   type UIMessage,
 } from "ai";
@@ -35,6 +36,13 @@ import { mapAgentError } from "@/lib/agent/errors";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { saveChatConversation } from "@/actions/agentChat.actions";
 import { AiProvider } from "@/models/ai.model";
+import {
+  genAiRequestAttrs,
+  genAiResponseAttrs,
+  runInSpan,
+  startSpan,
+  SURFACES,
+} from "@/lib/telemetry";
 import { addJobSettled, AGENT_CHAT_TERMINAL_TOOLS } from "@/models/agent.model";
 
 // The one terminal tool whose stop condition is not "was it called" — see
@@ -182,55 +190,80 @@ export const POST = async (req: NextRequest) => {
   // Written inside execute, read in onFinish, which runs after it.
   let prefixMetrics: TurnPrefixMetrics | undefined;
 
+  // Written by streamText's own onFinish, read in the outer onFinish. Must be
+  // totalUsage, not one step's usage: stopWhen permits AGENT_CHAT_MAX_STEPS.
+  let turnUsage: LanguageModelUsage | undefined;
+  let turnFinishReason: string | undefined;
+
+  const turnSpan = startSpan("agent.chat.turn", {
+    ...genAiRequestAttrs({
+      provider,
+      model: modelName,
+      temperature: TEMPERATURES.ANALYSIS,
+      numCtx: APP_CONSTANTS.AGENT_CHAT_NUM_CTX,
+      surface: SURFACES.AGENT_CHAT,
+      system: AGENT_CHAT_SYSTEM_PROMPT,
+      prompt: modelMessages,
+    }),
+    "jobsync.user_id": userId,
+  });
+
   const stream = createUIMessageStream({
     originalMessages: messages,
-    execute: ({ writer }) => {
-      const tools = buildAgentTools({
-        userId,
-        pastedText,
-        pageContext,
-        model,
-        provider,
-        modelName,
-        writer,
-      });
-      prefixMetrics = measureTurnPrefix({
-        userId,
-        system: AGENT_CHAT_SYSTEM_PROMPT,
-        tools,
-        modelMessages,
-      });
-      const result = streamText({
-        model,
-        system: AGENT_CHAT_SYSTEM_PROMPT,
-        messages: modelMessages,
-        tools,
-        // Which tools end the turn — and why — lives beside the tool metadata
-        // in agent.model.ts, where a new tool is registered.
-        stopWhen: [
-          stepCountIs(APP_CONSTANTS.AGENT_CHAT_MAX_STEPS),
-          ...AGENT_CHAT_TERMINAL_TOOLS.map((name) =>
-            name === "add_job" ? addJobSettledStop : hasToolCall(name),
-          ),
-        ],
-        // Argument extraction wants determinism.
-        temperature: TEMPERATURES.ANALYSIS,
-        abortSignal: turnSignal,
-        providerOptions: {
-          // qwen3.5 is a hybrid-reasoning model and the provider defaults
-          // think to false. With the thinking channel shut it deliberates in
-          // the content channel, and content and a tool call are mutually
-          // exclusive — add_job measured 1/7 with it off, 7/7 with it on.
-          ollama: { think: true, options: { num_ctx: APP_CONSTANTS.AGENT_CHAT_NUM_CTX } },
-        },
-      });
-      // createUIMessageStream emits no start/finish of its own — the merged
-      // stream carries them, so this is byte-identical to the old response.
-      writer.merge(result.toUIMessageStream());
-    },
+    execute: ({ writer }) =>
+      runInSpan(turnSpan, () => {
+        const tools = buildAgentTools({
+          userId,
+          pastedText,
+          pageContext,
+          model,
+          provider,
+          modelName,
+          writer,
+        });
+        prefixMetrics = measureTurnPrefix({
+          userId,
+          system: AGENT_CHAT_SYSTEM_PROMPT,
+          tools,
+          modelMessages,
+        });
+        const result = streamText({
+          model,
+          system: AGENT_CHAT_SYSTEM_PROMPT,
+          messages: modelMessages,
+          tools,
+          // Which tools end the turn — and why — lives beside the tool metadata
+          // in agent.model.ts, where a new tool is registered.
+          stopWhen: [
+            stepCountIs(APP_CONSTANTS.AGENT_CHAT_MAX_STEPS),
+            ...AGENT_CHAT_TERMINAL_TOOLS.map((name) =>
+              name === "add_job" ? addJobSettledStop : hasToolCall(name),
+            ),
+          ],
+          // Argument extraction wants determinism.
+          temperature: TEMPERATURES.ANALYSIS,
+          abortSignal: turnSignal,
+          providerOptions: {
+            // qwen3.5 is a hybrid-reasoning model and the provider defaults
+            // think to false. With the thinking channel shut it deliberates in
+            // the content channel, and content and a tool call are mutually
+            // exclusive — add_job measured 1/7 with it off, 7/7 with it on.
+            ollama: { think: true, options: { num_ctx: APP_CONSTANTS.AGENT_CHAT_NUM_CTX } },
+          },
+          // streamText's onFinish, not createUIMessageStream's: result is
+          // scoped inside execute while the span ends in the outer onFinish.
+          onFinish: ({ totalUsage, finishReason }) => {
+            turnUsage = totalUsage;
+            turnFinishReason = finishReason;
+          },
+        });
+        // createUIMessageStream emits no start/finish of its own — the merged
+        // stream carries them, so this is byte-identical to the old response.
+        writer.merge(result.toUIMessageStream());
+      }),
     onFinish: async ({ messages: finalMessages, responseMessage, isAborted }) => {
       const { tool, state, outcome } = outcomeOf(responseMessage);
-      logTurn({
+      const fields = {
         provider,
         model: modelName,
         tool,
@@ -249,6 +282,26 @@ export const POST = async (req: NextRequest) => {
         toolChars: prefixMetrics?.toolChars ?? 0,
         messageChars: prefixMetrics?.messageChars ?? 0,
         prefixChanged: prefixMetrics?.prefixChanged ?? false,
+      };
+      logTurn(fields);
+      // The same curated field set, on the span rather than only in the log,
+      // so it is queryable beside latency, tokens and the tool waterfall.
+      turnSpan.end({
+        ...genAiResponseAttrs({
+          usage: turnUsage,
+          finishReason: turnFinishReason,
+        }),
+        "jobsync.tool": fields.tool,
+        "jobsync.tool_state": fields.toolState,
+        "jobsync.outcome": fields.outcome,
+        "jobsync.aborted": fields.aborted,
+        "jobsync.paste_chars": fields.pasteChars,
+        "jobsync.message_count": fields.messageCount,
+        "jobsync.history_dropped": fields.historyDropped,
+        "jobsync.system_chars": fields.systemChars,
+        "jobsync.tool_chars": fields.toolChars,
+        "jobsync.message_chars": fields.messageChars,
+        "jobsync.prefix_changed": fields.prefixChanged,
       });
       // A cancelled turn never writes back. Clear deletes the conversation and
       // this fires afterwards on the stream's cancel path, so saving here would

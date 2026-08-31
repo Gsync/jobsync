@@ -42,7 +42,7 @@ describe("otlp payload shape", () => {
     expect(encoded.endTimeUnixNano).toBe("1756500001000000000");
   });
 
-  it("types attribute values: string, int, double, bool, and JSON for objects", async () => {
+  it("types attribute values: string, int, float, bool, and JSON for objects", async () => {
     const { otlp } = await loadTelemetry({ endpoint: ENDPOINT });
     const payload = otlp.buildTracePayload([
       span({
@@ -60,7 +60,8 @@ describe("otlp payload shape", () => {
 
     expect(byKey["gen_ai.request.model"]).toEqual({ stringValue: "qwen3.5:9b" });
     expect(byKey["gen_ai.usage.input_tokens"]).toEqual({ intValue: "1234" });
-    expect(byKey["gen_ai.request.temperature"]).toEqual({ doubleValue: 0.1 });
+    // Not doubleValue: OpenObserve 400s that and drops the entire batch.
+    expect(byKey["gen_ai.request.temperature"]).toEqual({ stringValue: "0.1" });
     expect(byKey["jobsync.prefix_changed"]).toEqual({ boolValue: true });
     expect(byKey["gen_ai.prompt"]).toEqual({
       stringValue: '{"role":"user","content":"hi"}',

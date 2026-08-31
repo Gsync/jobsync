@@ -100,6 +100,12 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
         abortSignal,
         guard: ctx.guard,
         label: "match_job",
+        provider: ctx.provider,
+        modelName: ctx.modelName,
+        attrs: {
+          "jobsync.input.resume_chars": resumePre.data.normalizedText.length,
+          "jobsync.input.job_chars": jobPre.data.normalizedText.length,
+        },
       });
       if (generation.status === "busy") {
         return {

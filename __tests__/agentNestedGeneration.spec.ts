@@ -29,6 +29,8 @@ const args = () => ({
   toolCallId: "call-1",
   guard: { running: false },
   label: "test_tool",
+  provider: "ollama",
+  modelName: "test-model",
 });
 
 describe("runNestedGeneration", () => {

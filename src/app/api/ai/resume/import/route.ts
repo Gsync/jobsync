@@ -18,6 +18,14 @@ import {
   RESUME_IMPORT_SYSTEM_PROMPT,
   buildResumeImportPrompt,
 } from "@/lib/ai/prompts/resume-import";
+import {
+  genAiRequestAttrs,
+  genAiResponseAttrs,
+  inputSizeAttrs,
+  runInSpan,
+  startSpan,
+  SURFACES,
+} from "@/lib/telemetry";
 
 export const POST = async (req: NextRequest) => {
   const session = await auth();
@@ -130,29 +138,57 @@ export const POST = async (req: NextRequest) => {
     // partialOutputStream is a generic "No output generated".
     let streamErrorMessage: string | undefined;
 
-    const result = streamText({
-      model,
-      output: Output.object({ schema: ResumeImportSchema }),
-      system: RESUME_IMPORT_SYSTEM_PROMPT,
-      prompt: buildResumeImportPrompt(preprocessResult.data.normalizedText),
-      temperature: TEMPERATURES.ANALYSIS,
-      abortSignal: controller.signal,
-      providerOptions: {
-        ollama: { options: { num_ctx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX } },
-        // OpenAI (and OpenRouter, same factory) default to strict json_schema,
-        // which rejects any object whose `required` omits a key — this schema
-        // is optional-by-design throughout. Non-strict passes it as guidance.
-        openai: { strictJsonSchema: false },
-      },
-      onFinish: () => {
-        clearTimeout(timer);
-      },
-      onError: ({ error }) => {
-        clearTimeout(timer);
-        console.error("Resume import stream error:", error);
-        streamErrorMessage = error instanceof Error ? error.message : undefined;
-      },
+    const importSpan = startSpan("resume.import", {
+      ...genAiRequestAttrs({
+        provider: selectedModel.provider,
+        model: selectedModel.model,
+        temperature: TEMPERATURES.ANALYSIS,
+        numCtx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
+        surface: SURFACES.RESUME_IMPORT,
+        system: RESUME_IMPORT_SYSTEM_PROMPT,
+        prompt: preprocessResult.data.normalizedText,
+      }),
+      ...inputSizeAttrs({
+        resumeChars: preprocessResult.data.normalizedText.length,
+        // The flag extract-text.ts already computes at its 50,000-char and
+        // 5-page limits — did the model see the whole document?
+        truncated,
+      }),
+      "jobsync.user_id": userId,
+      "jobsync.resume_id": resumeId,
     });
+
+    const result = runInSpan(importSpan, () =>
+      streamText({
+        model,
+        output: Output.object({ schema: ResumeImportSchema }),
+        system: RESUME_IMPORT_SYSTEM_PROMPT,
+        prompt: buildResumeImportPrompt(preprocessResult.data.normalizedText),
+        temperature: TEMPERATURES.ANALYSIS,
+        abortSignal: controller.signal,
+        providerOptions: {
+          ollama: { options: { num_ctx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX } },
+          // OpenAI (and OpenRouter, same factory) default to strict
+          // json_schema, which rejects any object whose `required` omits a key
+          // — this schema is optional-by-design throughout. Non-strict passes
+          // it as guidance.
+          openai: { strictJsonSchema: false },
+        },
+        onFinish: ({ totalUsage, finishReason }) => {
+          clearTimeout(timer);
+          importSpan.end(
+            genAiResponseAttrs({ usage: totalUsage, finishReason }),
+          );
+        },
+        onError: ({ error }) => {
+          clearTimeout(timer);
+          console.error("Resume import stream error:", error);
+          streamErrorMessage = error instanceof Error ? error.message : undefined;
+          importSpan.setError(error);
+          importSpan.end();
+        },
+      }),
+    );
 
     // Stream partialOutputStream (not textStream): the SDK parses the model's
     // output regardless of whether the provider used json or tool-call mode, so

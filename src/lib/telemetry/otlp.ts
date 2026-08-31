@@ -70,10 +70,12 @@ function nanos(ms: number): string {
 function encodeValue(value: unknown): unknown {
   if (typeof value === "string") return { stringValue: value };
   if (typeof value === "boolean") return { boolValue: value };
+  // OpenObserve's OTLP-JSON parser rejects doubleValue in every spelling and
+  // 400s the whole batch, so a float rides as a string. Still valid OTLP.
   if (typeof value === "number") {
     return Number.isInteger(value)
       ? { intValue: String(value) }
-      : { doubleValue: value };
+      : { stringValue: String(value) };
   }
   return { stringValue: JSON.stringify(value) };
 }
