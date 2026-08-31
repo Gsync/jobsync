@@ -56,6 +56,7 @@ import {
   AGENT_CHAT_TERMINAL_TOOLS,
   AGENT_PASTE_PART_TYPE,
 } from "@/models/agent.model";
+import { AGENT_PASTE_ONLY_USER_MESSAGE } from "@/lib/agent/prompt";
 
 // signal is not optional on a real Request — the route composes the turn's
 // abort signal from it so a client disconnect stops generation.
@@ -172,7 +173,7 @@ describe("POST /api/ai/chat", () => {
       },
       isAborted: false,
     });
-    const logged = JSON.parse(info.mock.calls.at(-1)![1] as string);
+    const logged = info.mock.calls.at(-1)![1] as Record<string, unknown>;
     expect(logged).toMatchObject({ tool: "match_job", outcome: "ok" });
     info.mockRestore();
   });
@@ -196,7 +197,7 @@ describe("POST /api/ai/chat", () => {
       },
       isAborted: false,
     });
-    const logged = JSON.parse(info.mock.calls.at(-1)![1] as string);
+    const logged = info.mock.calls.at(-1)![1] as Record<string, unknown>;
     expect(logged).toMatchObject({ tool: "add_job", outcome: "duplicate" });
     info.mockRestore();
   });
@@ -224,6 +225,35 @@ describe("POST /api/ai/chat", () => {
     expect(contentless).toEqual([]);
     // The posting still has to reach the model, or we fixed it by muting it.
     expect(JSON.stringify(sent)).toContain("MARKER posting");
+  });
+
+  // The chip-only message is given a body rather than dropped. Dropping it
+  // deleted a user turn that really happened, which moved the last-user
+  // boundary back over an older assistant reply — and DeepSeek's thinking
+  // mode requires reasoning_content on every assistant message after that
+  // boundary, so a reasoning-free reply from two turns ago 400'd the request.
+  it("keeps a chip-only user message in place so the turn boundary survives", async () => {
+    const chipOnly = {
+      id: "m3",
+      role: "user",
+      parts: [
+        { type: AGENT_PASTE_PART_TYPE, id: "p1", data: { id: "p1", text: "MARKER posting", chars: 14, truncated: false } },
+      ],
+    };
+    await POST(
+      req({
+        messages: [
+          { id: "m1", role: "user", parts: [{ type: "text", text: "hello" }] },
+          { id: "m2", role: "assistant", parts: [{ type: "text", text: "I can add jobs." }] },
+          chipOnly,
+        ],
+      }),
+    );
+    const sent = streamArgs().messages;
+    const roles = sent.map((m: any) => m.role);
+    // No assistant may sit after the last user message.
+    expect(roles.lastIndexOf("user")).toBeGreaterThan(roles.lastIndexOf("assistant"));
+    expect(sent[2]).toEqual({ role: "user", content: AGENT_PASTE_ONLY_USER_MESSAGE });
   });
 
   it("sends only the truncated head to the model, never the full paste", async () => {

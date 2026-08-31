@@ -4,6 +4,7 @@ import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
 import { AgentGetResumeSchema } from "@/models/agent.schema";
 import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
+import { log } from "@/lib/telemetry";
 import type { AgentGetResumeResult } from "@/models/agent.model";
 
 /**
@@ -53,7 +54,7 @@ export function buildGetResumeTool(userId: string, pageResumeId?: string) {
           ambiguousTitle: lookup.ambiguousTitle || undefined,
         };
       } catch (error) {
-        console.error("[agent-chat] get_resume failed:", error);
+        log.error("[agent-chat] get_resume failed", { error: String(error) });
         // Returned, not thrown, so the model can tell the user rather than
         // the whole turn failing.
         return {

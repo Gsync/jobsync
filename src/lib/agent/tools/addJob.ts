@@ -4,6 +4,7 @@ import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
 import { AgentAddJobParseSchema, AgentAddJobSchema } from "@/models/agent.schema";
 import { createJobFromNames } from "@/lib/jobs/createJobFromNames";
 import { JobResolutionError } from "@/lib/jobs/resolve";
+import { log } from "@/lib/telemetry";
 import type { AgentAddJobResult } from "@/models/agent.model";
 
 // The model usually reaches here having omitted jobDescription because the
@@ -78,7 +79,7 @@ export function buildAddJobTool(userId: string, pastedText?: string) {
           descriptionCompleteness: result.descriptionCompleteness,
         };
       } catch (error) {
-        console.error("[agent-chat] add_job failed:", error);
+        log.error("[agent-chat] add_job failed", { error: String(error) });
         // Our own text, naming the field and the values it accepts, so the
         // model can fix the argument instead of guessing — its guess was to
         // drop the field, losing a value the posting stated. Every other

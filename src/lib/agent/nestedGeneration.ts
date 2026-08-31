@@ -5,6 +5,7 @@ import { AGENT_NESTED_STREAM_PART_TYPE } from "@/models/agent.model";
 import {
   genAiRequestAttrs,
   genAiResponseAttrs,
+  log,
   runInSpan,
   startSpan,
   SURFACE_BY_NESTED_LABEL,
@@ -138,7 +139,7 @@ export async function runNestedGeneration({
       });
       return { status: "ok", text };
     } catch (error) {
-      console.error(`[agent-chat] ${label} generation failed:`, error);
+      log.error(`[agent-chat] ${label} generation failed`, { error: String(error) });
       span.setError(error);
       span.end({ "jobsync.nested.status": "failed" });
       return { status: "failed" };

@@ -5,6 +5,7 @@ import {
   ToolCallNotFoundForApprovalError,
 } from "ai";
 import { AIUnavailableError } from "@/lib/ai";
+import { log } from "@/lib/telemetry";
 
 type ErrorContext = { provider?: string; model?: string };
 
@@ -35,7 +36,10 @@ export function mapAgentError(
   const name = nameOf(error);
 
   // Always log the real error; only the mapped string crosses the wire.
-  console.error("[agent-chat] error:", error);
+  log.error("[agent-chat] error", {
+    error: String(error),
+    stack: error instanceof Error ? error.stack : undefined,
+  });
 
   if (error instanceof AIUnavailableError) return error.message;
 

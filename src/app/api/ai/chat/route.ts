@@ -21,6 +21,7 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import { AgentChatRequestSchema } from "@/models/agent.schema";
 import {
   AGENT_CHAT_SYSTEM_PROMPT,
+  AGENT_PASTE_ONLY_USER_MESSAGE,
   buildPageContextMessage,
   buildPasteContextMessage,
 } from "@/lib/agent/prompt";
@@ -39,6 +40,7 @@ import { AiProvider } from "@/models/ai.model";
 import {
   genAiRequestAttrs,
   genAiResponseAttrs,
+  log,
   runInSpan,
   startSpan,
   SURFACES,
@@ -53,7 +55,7 @@ const addJobSettledStop: StopCondition<any> = ({ steps }) =>
 // One structured line per turn. Sizes and outcomes only — never the pasted
 // posting and never the extracted arguments.
 function logTurn(fields: Record<string, unknown>) {
-  console.info("[agent-chat]", JSON.stringify(fields));
+  log.info("[agent-chat] turn", fields);
 }
 
 function outcomeOf(message: UIMessage | undefined): {
@@ -156,11 +158,22 @@ export const POST = async (req: NextRequest) => {
   // and the paste part is not a model part, so the message converts to empty
   // content. Ollama rejects the whole request on it (its content field is a
   // string; the provider serializes empty content as []), and it keeps doing
-  // so on every later turn while the shell stays in the window. The paste
-  // context message below is what actually carries the posting.
-  modelMessages = modelMessages.filter(
-    (message) => !(Array.isArray(message.content) && message.content.length === 0),
-  );
+  // so on every later turn while the shell stays in the window.
+  //
+  // It is given a body rather than dropped. Dropping it removed a user turn
+  // that really happened, which moved the last-user-message boundary back
+  // over an older assistant reply — and DeepSeek's thinking mode requires
+  // reasoning_content on every assistant message after that boundary, so a
+  // reasoning-free reply from two turns ago 400'd the whole request. No
+  // provider is special-cased here: the transcript is simply true again.
+  // The paste context message below is what actually carries the posting.
+  modelMessages = modelMessages.flatMap((message) => {
+    if (!(Array.isArray(message.content) && message.content.length === 0)) {
+      return [message];
+    }
+    if (message.role !== "user") return [];
+    return [{ role: "user" as const, content: AGENT_PASTE_ONLY_USER_MESSAGE }];
+  });
 
   // Injected only on the turn that introduced the paste. On the approval POST
   // the last message is the assistant's, so nothing is re-injected — and the
@@ -207,6 +220,20 @@ export const POST = async (req: NextRequest) => {
     }),
     "jobsync.user_id": userId,
   });
+
+  // toUIMessageStream maps and logs a stream failure, then the SDK re-wraps
+  // the mapped string as an Error and hands it to createUIMessageStream's
+  // onError, which would map and log the same failure a second time. Passing
+  // an already-mapped string straight back keeps it to one line per failure.
+  const alreadyMapped = new Set<string>();
+  const mapTurnError = (error: unknown): string =>
+    runInSpan(turnSpan, () => {
+      const message = error instanceof Error ? error.message : "";
+      if (alreadyMapped.has(message)) return message;
+      const mapped = mapAgentError(error, errorContext);
+      alreadyMapped.add(mapped);
+      return mapped;
+    });
 
   const stream = createUIMessageStream({
     originalMessages: messages,
@@ -259,7 +286,15 @@ export const POST = async (req: NextRequest) => {
         });
         // createUIMessageStream emits no start/finish of its own — the merged
         // stream carries them, so this is byte-identical to the old response.
-        writer.merge(result.toUIMessageStream());
+        // Load-bearing: toUIMessageStream catches stream errors itself and
+        // emits an error part, so createUIMessageStream's onError below never
+        // sees them. Without this the user gets the SDK's "An error occurred."
+        // and mapAgentError — the only thing that logs — never runs.
+        writer.merge(
+          result.toUIMessageStream({
+            onError: mapTurnError,
+          }),
+        );
       }),
     onFinish: async ({ messages: finalMessages, responseMessage, isAborted }) => {
       const { tool, state, outcome } = outcomeOf(responseMessage);
@@ -283,7 +318,9 @@ export const POST = async (req: NextRequest) => {
         messageChars: prefixMetrics?.messageChars ?? 0,
         prefixChanged: prefixMetrics?.prefixChanged ?? false,
       };
-      logTurn(fields);
+      // onFinish runs outside execute, so the span context has to be
+      // re-entered for the record to carry the turn's trace id.
+      runInSpan(turnSpan, () => logTurn(fields));
       // The same curated field set, on the span rather than only in the log,
       // so it is queryable beside latency, tokens and the tool waterfall.
       turnSpan.end({
@@ -314,7 +351,7 @@ export const POST = async (req: NextRequest) => {
     },
     // NOTE: this signature takes the error directly, unlike streamText's
     // onError which takes { error }.
-    onError: (error) => mapAgentError(error, errorContext),
+    onError: mapTurnError,
   });
 
   return createUIMessageStreamResponse({ stream });
