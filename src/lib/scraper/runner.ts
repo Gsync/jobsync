@@ -46,6 +46,7 @@ import {
   genAiRequestAttrs,
   genAiResponseAttrs,
   inputSizeAttrs,
+  log,
   SURFACES,
   withSpan,
 } from "@/lib/telemetry";
@@ -174,7 +175,38 @@ export class AutomationAlreadyRunningError extends Error {
   }
 }
 
+// Wraps the work, not the trigger: the 03:00 scheduler and a manual run from
+// the UI are two entry points into identical work, and instrumenting the
+// trigger would export every manual run's scraper.match span parentless.
 export async function runAutomation(
+  automation: Automation,
+  signal?: AbortSignal,
+): Promise<RunnerResult> {
+  return withSpan(
+    "automation.run",
+    {
+      "jobsync.automation_id": automation.id,
+      "jobsync.automation_name": automation.name,
+      "jobsync.job_board": automation.jobBoard,
+      "jobsync.user_id": automation.userId,
+    },
+    (span) =>
+      runAutomationTraced(automation, signal).then((result) => {
+        span.setAttrs({
+          "jobsync.run.id": result.runId,
+          "jobsync.run.status": result.status,
+          "jobsync.run.jobs_searched": result.jobsSearched,
+          "jobsync.run.jobs_deduplicated": result.jobsDeduplicated,
+          "jobsync.run.jobs_processed": result.jobsProcessed,
+          "jobsync.run.jobs_matched": result.jobsMatched,
+          "jobsync.run.jobs_saved": result.jobsSaved,
+        });
+        return result;
+      }),
+  );
+}
+
+async function runAutomationTraced(
   automation: Automation,
   signal?: AbortSignal,
 ): Promise<RunnerResult> {
@@ -200,9 +232,15 @@ export async function runAutomation(
     throw error;
   }
 
-  console.log(`[Automation ${automation.id}] Starting automation run`);
+  log.info("[Automation] Starting automation run", {
+    "automation.id": automation.id,
+    "automation.name": automation.name,
+  });
   automationLogger.startRun(automation.id);
-  console.log(`[Automation ${automation.id}] Created run with ID: ${run.id}`);
+  log.info("[Automation] Created run", {
+    "automation.id": automation.id,
+    "run.id": run.id,
+  });
   automationLogger.log(
     automation.id,
     "info",
@@ -568,7 +606,10 @@ export async function runAutomation(
           "error",
           `Failed to save job: ${errorMsg}`,
         );
-        console.error("Failed to save job:", err);
+        log.error("[Automation] Failed to save job", {
+          "automation.id": automation.id,
+          error: errorMsg,
+        });
       }
     };
 
@@ -639,7 +680,11 @@ export async function runAutomation(
     );
     automationLogger.endRun(automation.id);
 
-    console.error("Automation run failed:", error);
+    log.error("[Automation] Run failed", {
+      "automation.id": automation.id,
+      "run.id": run.id,
+      error: message,
+    });
     return await finalizeRun(run.id, {
       status: "failed",
       errorMessage: message,
@@ -945,7 +990,11 @@ async function runAtsRun(
           );
           if (saved) jobsSaved++;
         } catch (err) {
-          console.error(`${label} Failed to save listing:`, err);
+          log.error("[ATS] Failed to save listing", {
+            "automation.id": automation.id,
+            provider: provider.label,
+            error: String(err),
+          });
         }
       }
     }
@@ -977,7 +1026,11 @@ async function runAtsRun(
           );
           if (saved) jobsSaved++;
         } catch (err) {
-          console.error(`${label} Failed to save listing:`, err);
+          log.error("[ATS] Failed to save listing", {
+            "automation.id": automation.id,
+            provider: provider.label,
+            error: String(err),
+          });
         }
       };
 
@@ -1055,7 +1108,11 @@ async function runAtsRun(
         );
         if (saved) jobsSaved++;
       } catch (err) {
-        console.error(`${label} Failed to save analyzed job:`, err);
+        log.error("[ATS] Failed to save analyzed job", {
+          "automation.id": automation.id,
+          provider: provider.label,
+          error: String(err),
+        });
       }
     };
 
@@ -1111,7 +1168,12 @@ async function runAtsRun(
       `${label} Run failed: ${message}`,
     );
     automationLogger.endRun(automation.id);
-    console.error(`${label} Run failed:`, error);
+    log.error("[ATS] Run failed", {
+      "automation.id": automation.id,
+      "run.id": runId,
+      provider: provider.label,
+      error: message,
+    });
     return await finalizeRun(runId, {
       status: "failed",
       errorMessage: message,
@@ -1216,7 +1278,7 @@ ${removeHtmlTags(job.description)}
 
     const message =
       error instanceof Error ? error.message : "AI matching failed";
-    console.error("AI matching error:", message);
+    log.error("[Automation] AI matching error", { error: message });
 
     if (
       message.includes("ECONNREFUSED") ||

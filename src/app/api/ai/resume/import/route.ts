@@ -22,6 +22,7 @@ import {
   genAiRequestAttrs,
   genAiResponseAttrs,
   inputSizeAttrs,
+  log,
   runInSpan,
   startSpan,
   SURFACES,
@@ -182,7 +183,7 @@ export const POST = async (req: NextRequest) => {
         },
         onError: ({ error }) => {
           clearTimeout(timer);
-          console.error("Resume import stream error:", error);
+          log.error("Resume import stream error", { error: String(error) });
           streamErrorMessage = error instanceof Error ? error.message : undefined;
           importSpan.setError(error);
           importSpan.end();
@@ -205,7 +206,9 @@ export const POST = async (req: NextRequest) => {
         } catch (err) {
           // Abort/network errors: close cleanly so the client salvages the
           // last complete snapshot. onError already logged it.
-          console.error("Resume import stream interrupted:", err);
+          log.error("Resume import stream interrupted", {
+            error: String(err),
+          });
         } finally {
           // The 200 and headers are committed before the provider is called,
           // so a failure can only reach the client in-band as a final line.

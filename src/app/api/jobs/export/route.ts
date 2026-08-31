@@ -5,6 +5,7 @@ import { getJobsIterator } from "@/actions/job.actions";
 import { format } from "date-fns";
 import { auth } from "@/auth";
 import { getWorkplaceTypeLabel } from "@/models/job.model";
+import { log } from "@/lib/telemetry";
 
 const FIELDS: string[] = [
   "index",
@@ -90,7 +91,7 @@ export const POST = async () => {
       }
     } catch (error) {
       hasError = true;
-      console.error("Error streaming CSV:", error);
+      log.error("Error streaming jobs CSV", { error: String(error) });
       if (error instanceof Error) {
         return NextResponse.json(
           {

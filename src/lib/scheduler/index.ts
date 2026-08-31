@@ -3,12 +3,15 @@ import { SCHEDULER_CONSTANTS } from "@/lib/constants";
 import db from "@/lib/db";
 import { runAutomation, AutomationAlreadyRunningError } from "@/lib/scraper";
 import type { JobBoard } from "@/models/automation.model";
+import { log } from "@/lib/telemetry";
 
 let scheduledTask: ScheduledTask | null = null;
 
 async function runDueAutomations() {
   const now = new Date();
-  console.log(`[Scheduler] Checking for due automations at ${now.toISOString()}`);
+  log.info("[Scheduler] Checking for due automations", {
+    "scheduler.checked_at": now.toISOString(),
+  });
 
   try {
     const dueAutomations = await db.automation.findMany({
@@ -22,15 +25,20 @@ async function runDueAutomations() {
     });
 
     if (dueAutomations.length === 0) {
-      console.log("[Scheduler] No automations due to run");
+      log.info("[Scheduler] No automations due to run");
       return;
     }
 
-    console.log(`[Scheduler] Found ${dueAutomations.length} automation(s) to run`);
+    log.info("[Scheduler] Found automations to run", {
+      "scheduler.due_count": dueAutomations.length,
+    });
 
     for (const automation of dueAutomations) {
       if (!automation.resume) {
-        console.log(`[Scheduler] Skipping automation ${automation.id} - no resume`);
+        log.info("[Scheduler] Skipping automation - no resume", {
+          "automation.id": automation.id,
+          "automation.name": automation.name,
+        });
         await db.automationRun.create({
           data: {
             automationId: automation.id,
@@ -53,12 +61,18 @@ async function runDueAutomations() {
         select: { id: true },
       });
       if (activeRun) {
-        console.log(`[Scheduler] Skipping automation ${automation.id} - run already in progress`);
+        log.info("[Scheduler] Skipping automation - run already in progress", {
+          "automation.id": automation.id,
+          "automation.name": automation.name,
+        });
         continue;
       }
 
       try {
-        console.log(`[Scheduler] Running automation: ${automation.name}`);
+        log.info("[Scheduler] Running automation", {
+          "automation.id": automation.id,
+          "automation.name": automation.name,
+        });
         const result = await runAutomation({
           id: automation.id,
           userId: automation.userId,
@@ -76,53 +90,69 @@ async function runDueAutomations() {
           createdAt: automation.createdAt,
           updatedAt: automation.updatedAt,
         });
-        console.log(`[Scheduler] Automation ${automation.name} completed: ${result.status}, saved ${result.jobsSaved} jobs`);
+        log.info("[Scheduler] Automation completed", {
+          "automation.id": automation.id,
+          "automation.name": automation.name,
+          "run.status": result.status,
+          "run.jobs_saved": result.jobsSaved,
+        });
       } catch (error) {
         if (error instanceof AutomationAlreadyRunningError) {
-          console.log(`[Scheduler] Skipping automation ${automation.id} - run already in progress`);
+          log.info("[Scheduler] Skipping automation - run already in progress", {
+            "automation.id": automation.id,
+            "automation.name": automation.name,
+          });
           continue;
         }
         const message = error instanceof Error ? error.message : "Unknown error";
-        console.error(`[Scheduler] Automation ${automation.name} failed:`, message);
+        log.error("[Scheduler] Automation failed", {
+          "automation.id": automation.id,
+          "automation.name": automation.name,
+          error: message,
+        });
       }
     }
   } catch (error) {
-    console.error("[Scheduler] Error running due automations:", error);
+    log.error("[Scheduler] Error running due automations", {
+      error: String(error),
+    });
   }
 }
 
 export function startScheduler() {
   if (!SCHEDULER_CONSTANTS.ENABLED) {
-    console.log("[Scheduler] Disabled via SCHEDULER_CONSTANTS.ENABLED");
+    log.info("[Scheduler] Disabled via SCHEDULER_CONSTANTS.ENABLED");
     return;
   }
 
   if (scheduledTask) {
-    console.log("[Scheduler] Already running");
+    log.info("[Scheduler] Already running");
     return;
   }
 
   const cronExpression = SCHEDULER_CONSTANTS.CRON_EXPRESSION;
 
   if (!cron.validate(cronExpression)) {
-    console.error(`[Scheduler] Invalid cron expression: ${cronExpression}`);
+    log.error("[Scheduler] Invalid cron expression", {
+      "scheduler.cron": cronExpression,
+    });
     return;
   }
 
-  console.log(`[Scheduler] Starting with schedule: ${cronExpression}`);
+  log.info("[Scheduler] Starting", { "scheduler.cron": cronExpression });
 
   scheduledTask = cron.schedule(cronExpression, runDueAutomations, {
     timezone: process.env.TZ || "UTC",
   });
 
-  console.log("[Scheduler] Started successfully");
+  log.info("[Scheduler] Started successfully");
 }
 
 export function stopScheduler() {
   if (scheduledTask) {
     scheduledTask.stop();
     scheduledTask = null;
-    console.log("[Scheduler] Stopped");
+    log.info("[Scheduler] Stopped");
   }
 }
 
@@ -144,11 +174,15 @@ export async function reapStaleRuns(): Promise<number> {
       },
     });
     if (result.count > 0) {
-      console.log(`[Scheduler] Reaped ${result.count} stale running run(s)`);
+      log.info("[Scheduler] Reaped stale running runs", {
+        "scheduler.reaped_count": result.count,
+      });
     }
     return result.count;
   } catch (error) {
-    console.error("[Scheduler] Failed to reap stale runs:", error);
+    log.error("[Scheduler] Failed to reap stale runs", {
+      error: String(error),
+    });
     return 0;
   }
 }

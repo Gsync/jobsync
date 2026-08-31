@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import { resolveApiKey } from "@/lib/api-key-resolver";
+import { log } from "@/lib/telemetry";
 
 export async function GET() {
   try {
@@ -32,7 +33,10 @@ export async function GET() {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Error fetching DeepSeek models:", error);
+    log.error("Error fetching models", {
+      provider: "deepseek",
+      error: String(error),
+    });
     return NextResponse.json(
       { error: "Failed to fetch DeepSeek models" },
       { status: 500 }

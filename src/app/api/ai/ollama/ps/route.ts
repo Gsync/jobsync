@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { getOllamaBaseUrl } from "@/actions/apiKey.actions";
 import { NextResponse } from "next/server";
 import { APP_CONSTANTS } from "@/lib/constants";
+import { log } from "@/lib/telemetry";
 
 export async function GET() {
   try {
@@ -25,7 +26,10 @@ export async function GET() {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Error proxying Ollama ps:", error);
+    log.error("Error proxying Ollama ps", {
+      provider: "ollama",
+      error: String(error),
+    });
     return NextResponse.json(
       { error: "Cannot connect to Ollama service" },
       { status: 502 },

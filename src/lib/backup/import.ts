@@ -21,6 +21,7 @@ import {
   type BackupModel,
 } from "./ordering";
 import { writeSnapshot } from "./snapshot";
+import { log } from "@/lib/telemetry";
 import { BackupDataSchema, type BackupData, type BackupManifest } from "./schema";
 
 export interface PreflightResult {
@@ -282,7 +283,10 @@ export async function importBackup(
   }
 
   if (rejectedFiles.length > 0) {
-    console.warn("[Backup] Dropped file entries that are not resumes:", rejectedFiles);
+    log.warn("[Backup] Dropped file entries that are not resumes", {
+      "backup.rejected_file_count": rejectedFiles.length,
+      "backup.rejected_file_names": rejectedFiles.join(", "),
+    });
   }
 
   // Captured before the wipe so the old bytes can be unlinked after it commits.
@@ -371,7 +375,7 @@ export async function importBackup(
     if (/database is locked|SQLITE_BUSY/i.test(message)) {
       throw new BackupError("The database is busy. Please try the import again.");
     }
-    console.error("[Backup] Import transaction failed:", error);
+    log.error("[Backup] Import transaction failed", { error: String(error) });
     throw new BackupError("Import failed and nothing was changed.");
   }
 
@@ -380,7 +384,10 @@ export async function importBackup(
   for (const filePath of oldFilePaths) {
     if (writtenPaths.includes(filePath)) continue;
     await fs.unlink(filePath).catch((error) => {
-      console.warn("[Backup] Could not remove replaced file", filePath, error);
+      log.warn("[Backup] Could not remove replaced file", {
+        "file.path": filePath,
+        error: String(error),
+      });
     });
   }
 

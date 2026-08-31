@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { BackupError, importBackup } from "@/lib/backup";
 import { isOverUploadCap } from "@/lib/backup/upload";
+import { log } from "@/lib/telemetry";
 
 // The app's first destructive route handler. Route handlers get none of the
 // Origin/Host checking Next.js applies to Server Actions; what stands in for it
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
     if (error instanceof BackupError) {
       return NextResponse.json({ error: error.userMessage }, { status: 400 });
     }
-    console.error("[Backup] Import failed:", error);
+    log.error("[Backup] Import failed", { error: String(error) });
     return NextResponse.json({ error: "Import failed." }, { status: 500 });
   }
 }

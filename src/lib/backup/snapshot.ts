@@ -3,6 +3,7 @@ import path from "path";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { buildBackupZip } from "./export";
 import { BackupError, openBackupZip, readManifest } from "./manifest";
+import { log } from "@/lib/telemetry";
 
 export interface SnapshotInfo {
   id: string;
@@ -60,7 +61,10 @@ export async function listSnapshots(userId: string): Promise<SnapshotInfo[]> {
     } catch (error) {
       // An unreadable snapshot is skipped, not fatal — the list is a recovery
       // surface and must not be taken down by one bad file.
-      console.warn("[Backup] Skipping unreadable snapshot", name, error);
+      log.warn("[Backup] Skipping unreadable snapshot", {
+        "snapshot.name": name,
+        error: String(error),
+      });
     }
   }
 
@@ -122,6 +126,11 @@ export async function pruneSnapshots(
   for (const name of stale) {
     await fs
       .unlink(path.join(dir, name))
-      .catch((error) => console.warn("[Backup] Could not prune", name, error));
+      .catch((error) =>
+        log.warn("[Backup] Could not prune snapshot", {
+          "snapshot.name": name,
+          error: String(error),
+        }),
+      );
   }
 }

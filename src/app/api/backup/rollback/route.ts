@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { BackupError, importBackup, readSnapshot } from "@/lib/backup";
+import { log } from "@/lib/telemetry";
 
 // A rollback is an import whose bytes come off local disk instead of an
 // upload, so it inherits every guard importBackup already has — including
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     if (error instanceof BackupError) {
       return NextResponse.json({ error: error.userMessage }, { status: 400 });
     }
-    console.error("[Backup] Rollback failed:", error);
+    log.error("[Backup] Rollback failed", { error: String(error) });
     return NextResponse.json({ error: "Rollback failed." }, { status: 500 });
   }
 }

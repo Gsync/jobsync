@@ -4,6 +4,7 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import { isNewerVersion } from "@/lib/version";
 import { AppVersionInfo } from "@/models/version.model";
 import packageJson from "../../../../package.json";
+import { log } from "@/lib/telemetry";
 
 const RELEASE_URL = `https://api.github.com/repos/${APP_CONSTANTS.GITHUB_REPO}/releases/latest`;
 
@@ -34,7 +35,7 @@ export async function GET() {
   try {
     release = await fetchLatestRelease();
   } catch (error) {
-    console.error("[Version] Update check failed:", error);
+    log.error("[Version] Update check failed", { error: String(error) });
   }
 
   const updateAvailable = release

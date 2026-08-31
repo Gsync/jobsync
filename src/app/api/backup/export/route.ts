@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import { buildBackupZip } from "@/lib/backup/export";
+import { log } from "@/lib/telemetry";
 
 // A route handler rather than a server action: server actions cannot return a
 // binary stream. Covered by the /api/* middleware matcher; auth() here is
@@ -24,7 +25,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error("[Backup] Export failed:", error);
+    log.error("[Backup] Export failed", { error: String(error) });
     return NextResponse.json({ error: "Export failed" }, { status: 500 });
   }
 }

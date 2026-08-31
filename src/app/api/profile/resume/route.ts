@@ -11,6 +11,7 @@ import fs from "fs";
 import { getTimestampedFileName } from "@/lib/utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { PDF_MAGIC, ZIP_MAGIC } from "@/lib/ai/import/extract-text";
+import { log } from "@/lib/telemetry";
 
 const ALLOWED_MIME = new Set<string>(APP_CONSTANTS.RESUME_ALLOWED_MIME_TYPES);
 
@@ -87,7 +88,7 @@ export const POST = async (req: NextRequest) => {
     );
     return NextResponse.json(response, { status: 201 });
   } catch (error) {
-    console.error(error);
+    log.error("[Resume] Upload failed", { error: String(error) });
     if (error instanceof Error) {
       return NextResponse.json(
         {
@@ -162,7 +163,7 @@ export const GET = async (req: NextRequest) => {
 
     return response;
   } catch (error) {
-    console.error(error);
+    log.error("[Resume] File download failed", { error: String(error) });
     if (error instanceof Error) {
       return NextResponse.json(
         {
