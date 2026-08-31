@@ -1,0 +1,46 @@
+name: Publish Wiki
+
+# One-way: wiki/ is the source, the GitHub wiki is a rendering of it. Set the
+# wiki to collaborator-edit-only after the first successful publish so the two
+# cannot diverge.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "wiki/**"
+      - "src/lib/wiki/**"
+      - "scripts/sync-wiki.mts"
+      - ".github/workflows/wiki.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wiki
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 24, not the 20 that ci.yml and release.yml use: the sync script is a
+      # .mts file run through Node's built-in TypeScript type stripping.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: "npm"
+
+      # The publisher's only runtime dependency is zod; skipping postinstall
+      # avoids a Prisma generate this job has no use for.
+      - run: npm ci --ignore-scripts
+
+      # GITHUB_TOKEN's coverage of wiki repos is ambiguous in GitHub's docs.
+      # If this 403s on push, add a PAT as the WIKI_TOKEN repo secret — no
+      # change to this file is needed.
+      - name: Sync wiki
+        env:
+          WIKI_TOKEN: ${{ secrets.WIKI_TOKEN || github.token }}
+        run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/sync-wiki.mts
