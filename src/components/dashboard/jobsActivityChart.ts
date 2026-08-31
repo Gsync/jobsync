@@ -54,14 +54,61 @@ export const ARC_LABEL_TEXT_COLOR = {
   dark: "#e2e8f0",
 } as const;
 
-const ARC_LABEL_MAX_CHARS = 16;
+// Arc link label geometry. The gutters either side of the donut hold these
+// labels; anything wider than the gutter runs off the SVG and is clipped.
+const ARC_LABEL_CHAR_WIDTH = 6;
+const ARC_LABEL_LINK_LENGTH = 26;
+const MAX_ARC_LABEL_GUTTER = 100;
+const MIN_ARC_LABEL_GUTTER = 76;
+
+// The chart box is 200px tall with 26px above and below the donut.
+export const CHART_HEIGHT = 200;
+const CHART_VERTICAL_MARGIN = 26;
+const MAX_DONUT_DIAMETER = CHART_HEIGHT - CHART_VERTICAL_MARGIN * 2;
+const INNER_RADIUS_RATIO = 0.72;
+
+// Width the card assumes before it has measured itself.
+const FULL_CHART_WIDTH = MAX_ARC_LABEL_GUTTER * 2 + MAX_DONUT_DIAMETER;
+
+export interface DonutLayout {
+  gutter: number;
+  maxLabelChars: number;
+  holeDiameter: number;
+}
+
+// nivo sizes the donut from min(width - gutters, height), so fixed gutters
+// make a narrow card shrink the donut into its own centre text. Letting the
+// gutters give way first spends label characters instead, and the caller
+// gets back the hole it has left to fit that centre text into.
+export function donutLayout(width: number): DonutLayout {
+  const available = width > 0 ? width : FULL_CHART_WIDTH;
+  const gutter = Math.max(
+    MIN_ARC_LABEL_GUTTER,
+    Math.min(MAX_ARC_LABEL_GUTTER, (available - MAX_DONUT_DIAMETER) / 2),
+  );
+  const diameter = Math.max(
+    0,
+    Math.min(MAX_DONUT_DIAMETER, available - gutter * 2),
+  );
+
+  return {
+    gutter,
+    maxLabelChars: Math.floor(
+      (gutter - ARC_LABEL_LINK_LENGTH) / ARC_LABEL_CHAR_WIDTH,
+    ),
+    holeDiameter: diameter * INNER_RADIUS_RATIO,
+  };
+}
 
 // The label renders as two lines, so the name is trimmed rather than left
 // to run off the card edge.
-export function arcLabelLines(slice: DonutSlice): [string, string] {
+export function arcLabelLines(
+  slice: DonutSlice,
+  maxChars: number,
+): [string, string] {
   const name =
-    slice.label.length > ARC_LABEL_MAX_CHARS
-      ? `${slice.label.slice(0, ARC_LABEL_MAX_CHARS - 1).trimEnd()}…`
+    slice.label.length > maxChars
+      ? `${slice.label.slice(0, maxChars - 1).trimEnd()}…`
       : slice.label;
 
   return [name, `${slice.value}h`];

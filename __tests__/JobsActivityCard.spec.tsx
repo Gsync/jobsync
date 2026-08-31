@@ -2,12 +2,20 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import JobsActivityCard from "@/components/dashboard/JobsActivityCard";
 
+// jsdom measures every element as 0 wide, so the card's compact threshold is
+// driven from here instead.
+const chartWidth = vi.hoisted(() => ({ value: 400 }));
+
+vi.mock("@/hooks/useElementWidth", () => ({
+  useElementWidth: () => [{ current: null }, chartWidth.value] as const,
+}));
+
 vi.mock("next-themes", () => ({
   useTheme: () => ({ resolvedTheme: "light" }),
 }));
 
 vi.mock("@nivo/pie", () => ({
-  ResponsivePie: (props: any) => (
+  Pie: (props: any) => (
     <div data-testid="donut">
       {props.data.map((slice: any) => (
         <div key={slice.id} data-testid={`slice-${slice.id}`}>
@@ -26,6 +34,7 @@ describe("JobsActivityCard", () => {
   // "30d" decides the starting tab for every test after it.
   beforeEach(() => {
     localStorage.clear();
+    chartWidth.value = 400;
   });
 
   const data = [
@@ -124,6 +133,23 @@ describe("JobsActivityCard", () => {
     const total = screen.getByTestId("jobs-activity-total");
 
     expect(within(total).queryByText("0%")).not.toBeInTheDocument();
+  });
+
+  it("holds the donut back until the card has measured itself", () => {
+    chartWidth.value = 0;
+    render(<JobsActivityCard data={data} />);
+
+    expect(screen.queryByTestId("donut")).not.toBeInTheDocument();
+  });
+
+  it("drops the trend line when the donut hole gets too small for it", () => {
+    chartWidth.value = 220;
+    render(<JobsActivityCard data={data} />);
+
+    const total = screen.getByTestId("jobs-activity-total");
+
+    expect(within(total).getByText("63.4h")).toBeInTheDocument();
+    expect(within(total).queryByText("25%")).not.toBeInTheDocument();
   });
 
   it("says one job, not one jobs", () => {

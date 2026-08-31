@@ -1,6 +1,7 @@
 import {
   buildDonutSlices,
   arcLabelLines,
+  donutLayout,
   OTHER_SLICE_ID,
 } from "@/components/dashboard/jobsActivityChart";
 
@@ -81,23 +82,73 @@ describe("buildDonutSlices", () => {
 describe("arcLabelLines", () => {
   it("splits the name and the hours onto separate lines", () => {
     expect(
-      arcLabelLines({
-        id: "Jobsync",
-        label: "Jobsync",
-        value: 28.1,
-        color: "#2a9d90",
-      }),
+      arcLabelLines(
+        {
+          id: "Jobsync",
+          label: "Jobsync",
+          value: 28.1,
+          color: "#2a9d90",
+        },
+        12,
+      ),
     ).toEqual(["Jobsync", "28.1h"]);
   });
 
   it("trims a long activity name so it cannot run off the card", () => {
     expect(
-      arcLabelLines({
-        id: "x",
-        label: "Interview Preparation Deep Dive",
-        value: 4,
-        color: "#2a9d90",
-      }),
-    ).toEqual(["Interview Prepa…", "4h"]);
+      arcLabelLines(
+        {
+          id: "x",
+          label: "Interview Preparation Deep Dive",
+          value: 4,
+          color: "#2a9d90",
+        },
+        12,
+      ),
+    ).toEqual(["Interview P…", "4h"]);
+  });
+
+  it("trims harder when the card only affords a narrow gutter", () => {
+    expect(
+      arcLabelLines(
+        {
+          id: "x",
+          label: "Interview Preparation Deep Dive",
+          value: 4,
+          color: "#2a9d90",
+        },
+        7,
+      ),
+    ).toEqual(["Interv…", "4h"]);
+  });
+});
+
+describe("donutLayout", () => {
+  it("gives the labels their full gutter when the card has room", () => {
+    const layout = donutLayout(400);
+
+    expect(layout.gutter).toBe(100);
+    expect(layout.maxLabelChars).toBe(12);
+    expect(layout.holeDiameter).toBeCloseTo(148 * 0.72);
+  });
+
+  it("assumes the roomy case before the card has measured itself", () => {
+    expect(donutLayout(0)).toEqual(donutLayout(348));
+  });
+
+  it("spends gutter, not donut, as the card narrows", () => {
+    const layout = donutLayout(320);
+
+    expect(layout.gutter).toBe(86);
+    expect(layout.maxLabelChars).toBe(10);
+    expect(layout.holeDiameter).toBeCloseTo(148 * 0.72);
+  });
+
+  it("shrinks the donut only once the gutter has bottomed out", () => {
+    const layout = donutLayout(260);
+
+    expect(layout.gutter).toBe(76);
+    expect(layout.maxLabelChars).toBe(8);
+    expect(layout.holeDiameter).toBeCloseTo(108 * 0.72);
   });
 });
