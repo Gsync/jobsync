@@ -1,7 +1,7 @@
 import prisma from "@/lib/db";
 import { calculatePercentageDifference } from "@/lib/utils";
 import { requireUser } from "../shared";
-import { getLocalDayRange } from "./shared";
+import { getLocalDayRange, roundToTenth } from "./shared";
 
 export interface TopActivityType {
   label: string;
@@ -12,11 +12,10 @@ export interface JobsActivitySummary {
   jobsApplied: number;
   jobsTrend: number;
   topActivities: TopActivityType[];
+  otherActivities: TopActivityType[];
   otherHours: number;
   totalHours: number;
 }
-
-const roundToTenth = (hours: number) => Math.round(hours * 10) / 10;
 
 // One read for the merged Jobs & Activity card. Both halves share
 // getLocalDayRange so "7d" means the same window on each; the retired
@@ -76,8 +75,13 @@ export const getJobsActivitySummary = async (
     const topActivities = sorted
       .slice(0, 3)
       .map(({ label, hours }) => ({ label, hours: roundToTenth(hours) }));
+    const otherActivities = sorted
+      .slice(3)
+      .map(({ label, hours }) => ({ label, hours: roundToTenth(hours) }));
+    // Summed from the same rounded values as otherActivities so the donut's
+    // "Other" slice and its tooltip breakdown never disagree.
     const otherHours = roundToTenth(
-      sorted.slice(3).reduce((sum, entry) => sum + entry.hours, 0),
+      otherActivities.reduce((sum, entry) => sum + entry.hours, 0),
     );
     // Totalled from the rounded parts so the number in the donut's
     // center always equals the legend beside it.
@@ -88,7 +92,14 @@ export const getJobsActivitySummary = async (
     const jobsTrend =
       calculatePercentageDifference(priorJobs, jobsApplied) ?? 0;
 
-    return { jobsApplied, jobsTrend, topActivities, otherHours, totalHours };
+    return {
+      jobsApplied,
+      jobsTrend,
+      topActivities,
+      otherActivities,
+      otherHours,
+      totalHours,
+    };
   } catch (error) {
     const msg = "Failed to fetch jobs and activity summary";
     console.error(msg, error);

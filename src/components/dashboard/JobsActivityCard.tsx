@@ -6,7 +6,10 @@ import { animated } from "@react-spring/web";
 import { useTheme } from "next-themes";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { JobsActivitySummary } from "@/actions/dashboard.actions";
+import {
+  JobsActivitySummary,
+  TopActivityType,
+} from "@/actions/dashboard.actions";
 import { useElementWidth } from "@/hooks/useElementWidth";
 import { usePersistedTabIndex } from "@/hooks/usePersistedTabIndex";
 import { APP_CONSTANTS } from "@/lib/constants";
@@ -79,9 +82,20 @@ export default function JobsActivityCard({ data }: JobsActivityCardProps) {
   const { resolvedTheme } = useTheme();
   const theme = resolvedTheme === "light" ? "light" : "dark";
   const current = data[activeIndex];
-  const { jobsApplied, jobsTrend, topActivities, otherHours, totalHours } =
-    current.summary;
-  const slices = buildDonutSlices(topActivities, otherHours, theme);
+  const {
+    jobsApplied,
+    jobsTrend,
+    topActivities,
+    otherActivities,
+    otherHours,
+    totalHours,
+  } = current.summary;
+  const slices = buildDonutSlices(
+    topActivities,
+    otherHours,
+    theme,
+    otherActivities,
+  );
   const layout = donutLayout(chartWidth);
   const roomyTotal = layout.holeDiameter >= FULL_TOTAL_HOLE;
   const maxLabelChars = useRef(layout.maxLabelChars);
@@ -183,6 +197,11 @@ export default function JobsActivityCard({ data }: JobsActivityCardProps) {
                     }}
                   >
                     <strong>{datum.data.label}</strong> — {datum.value}h
+                    {datum.data.breakdown?.map((activity: TopActivityType) => (
+                      <div key={activity.label}>
+                        {activity.label} — {activity.hours}h
+                      </div>
+                    ))}
                   </div>
                 )}
               />

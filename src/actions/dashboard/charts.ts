@@ -1,10 +1,14 @@
 import prisma from "@/lib/db";
 import { getLast7Days } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
+import { OTHER_SLICE_ID } from "@/components/dashboard/jobsActivityChart";
 import { requireUser } from "../shared";
-import { getLocalDayRange } from "./shared";
+import { getLocalDayRange, roundToTenth } from "./shared";
 
-export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
+export const getActivityDataForPeriod = async (): Promise<{
+  data: any[];
+  keys: string[];
+}> => {
   try {
     const user = await requireUser();
     // Use local time for date range to match grouping and getLast7Days
@@ -46,12 +50,55 @@ export const getActivityDataForPeriod = async (): Promise<any | undefined> => {
 
       return acc;
     }, {});
+
+    // Cap to the top 3 activity types by total weekly hours, matching the
+    // donut card's ranking, and fold the rest into "Other" per day.
+    const totalsByLabel: Record<string, number> = {};
+    for (const dayTotals of Object.values(groupedData) as Record<
+      string,
+      number
+    >[]) {
+      for (const [label, hours] of Object.entries(dayTotals)) {
+        totalsByLabel[label] = (totalsByLabel[label] || 0) + hours;
+      }
+    }
+    const topLabels = Object.entries(totalsByLabel)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([label]) => label);
+    const hasOther = Object.keys(totalsByLabel).some(
+      (label) => !topLabels.includes(label),
+    );
+    const keys = hasOther ? [...topLabels, OTHER_SLICE_ID] : topLabels;
+
     const last7Days = getLast7Days("yyyy-MM-dd");
-    const result = last7Days.map((dateStr) => ({
-      day: format(parseISO(dateStr), "EEE, MMM d"),
-      ...groupedData[dateStr],
-    }));
-    return result;
+    const data = last7Days.map((dateStr) => {
+      const dayTotals: Record<string, number> = groupedData[dateStr] || {};
+      const entry: Record<string, any> = {
+        day: format(parseISO(dateStr), "EEE, MMM d"),
+      };
+      for (const label of topLabels) {
+        if (dayTotals[label]) entry[label] = dayTotals[label];
+      }
+      if (hasOther) {
+        const otherBreakdown = Object.entries(dayTotals)
+          .filter(([label]) => !topLabels.includes(label))
+          .map(([label, hours]) => ({ label, hours: roundToTenth(hours) }))
+          .filter((entry) => entry.hours > 0)
+          .sort((a, b) => b.hours - a.hours);
+        const otherHours = otherBreakdown.reduce(
+          (sum, entry) => sum + entry.hours,
+          0,
+        );
+        if (otherHours) {
+          entry[OTHER_SLICE_ID] = otherHours;
+          entry.otherBreakdown = otherBreakdown;
+        }
+      }
+      return entry;
+    });
+
+    return { data, keys };
   } catch (error) {
     const msg = "Failed to fetch activities data.";
     console.error(msg, error);

@@ -37,14 +37,6 @@ export default async function Dashboard() {
     getActivityCalendarData(),
   ]);
   const activityCalendarDataKeys = Object.keys(activityCalendarData);
-  const activitiesDataKeys = (data: string[]) =>
-    Array.from(
-      new Set(
-        data.flatMap((entry) =>
-          Object.keys(entry).filter((key) => key !== "day"),
-        ),
-      ),
-    );
   return (
     <>
       <div className="@container grid grid-cols-1 auto-rows-max items-start gap-2 md:gap-2 @3xl/main:col-span-2">
@@ -67,8 +59,8 @@ export default async function Dashboard() {
             },
             {
               label: "Activities",
-              data: activitiesData,
-              keys: activitiesDataKeys(activitiesData),
+              data: activitiesData.data,
+              keys: activitiesData.keys,
               groupMode: "stacked",
               axisLeftLegend: "TIME SPENT (Hours)",
             },

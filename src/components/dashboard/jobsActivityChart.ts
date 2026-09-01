@@ -3,20 +3,33 @@ import { TopActivityType } from "@/actions/dashboard.actions";
 // Donut hues, validated for colorblind separation against each theme's
 // card surface. The app's own --chart-* tokens fail that check here:
 // light --chart-3 (#274754) reads as near-black grey in a donut.
-const SERIES_COLORS = {
+export const SERIES_COLORS = {
   light: ["#2a9d90", "#c97e22", "#6d4fc7"],
   dark: ["#16a89a", "#c08438", "#8b72e8"],
 } as const;
 
-const OTHER_COLOR = { light: "#94a3b8", dark: "#64748b" } as const;
+export const OTHER_COLOR = { light: "#94a3b8", dark: "#64748b" } as const;
+
+// Matches the "Other" bucket key charts/dashboard.actions builds server-side.
+export const OTHER_ACTIVITY_LABEL = "Other";
 
 export const OTHER_SLICE_ID = "__other__";
+
+// A real activity type can itself be named "Other". When it is, the
+// synthetic bucket needs a distinct display label so the two don't render
+// as two identically-labeled slices/bars.
+export function otherBucketLabel(topLabels: string[]): string {
+  return topLabels.includes(OTHER_ACTIVITY_LABEL)
+    ? "Other activity types"
+    : OTHER_ACTIVITY_LABEL;
+}
 
 export interface DonutSlice {
   id: string;
   label: string;
   value: number;
   color: string;
+  breakdown?: TopActivityType[];
 }
 
 // Hues are assigned by rank and never cycled, so a slice keeps its color
@@ -25,6 +38,7 @@ export function buildDonutSlices(
   topActivities: TopActivityType[],
   otherHours: number,
   theme: "light" | "dark",
+  otherActivities: TopActivityType[] = [],
 ): DonutSlice[] {
   const slices: DonutSlice[] = topActivities
     .filter((activity) => activity.hours > 0)
@@ -38,9 +52,10 @@ export function buildDonutSlices(
   if (otherHours > 0) {
     slices.push({
       id: OTHER_SLICE_ID,
-      label: "Other",
+      label: otherBucketLabel(topActivities.map((activity) => activity.label)),
       value: otherHours,
       color: OTHER_COLOR[theme],
+      breakdown: otherActivities.filter((activity) => activity.hours > 0),
     });
   }
 

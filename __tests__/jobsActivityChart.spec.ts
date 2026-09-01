@@ -52,7 +52,32 @@ describe("buildDonutSlices", () => {
       label: "Other",
       value: 17.5,
       color: "#94a3b8",
+      breakdown: [],
     });
+  });
+
+  it("attaches the leftover activities to the Other slice for the tooltip", () => {
+    const otherActivities = [
+      { label: "Networking", hours: 10.5 },
+      { label: "Interviewing", hours: 7 },
+    ];
+    const slices = buildDonutSlices(
+      activities,
+      17.5,
+      "light",
+      otherActivities,
+    );
+
+    expect(slices[3].breakdown).toEqual(otherActivities);
+  });
+
+  it("drops zero-hour entries from the Other slice's breakdown", () => {
+    const slices = buildDonutSlices(activities, 17.5, "light", [
+      { label: "Networking", hours: 17.5 },
+      { label: "Unused", hours: 0 },
+    ]);
+
+    expect(slices[3].breakdown).toEqual([{ label: "Networking", hours: 17.5 }]);
   });
 
   it("omits the Other slice when there are no leftover hours", () => {

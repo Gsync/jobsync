@@ -1,11 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useTheme } from "next-themes";
 import { ResponsiveBar } from "@nivo/bar";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { cn } from "@/lib/utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { usePersistedTabIndex } from "@/hooks/usePersistedTabIndex";
+import {
+  SERIES_COLORS,
+  OTHER_COLOR,
+  OTHER_SLICE_ID,
+  otherBucketLabel,
+} from "./jobsActivityChart";
 
 type ChartConfig = {
   label: string;
@@ -28,7 +35,21 @@ export default function WeeklyBarChartToggle({
     charts.map((chart) => chart.label),
   );
   const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const { resolvedTheme } = useTheme();
+  const theme = resolvedTheme === "light" ? "light" : "dark";
   const current = charts[activeIndex];
+  const activityColors = useMemo(
+    () =>
+      new Map(
+        current.keys.map((key, index) => [
+          key,
+          key === OTHER_SLICE_ID
+            ? OTHER_COLOR[theme]
+            : SERIES_COLORS[theme][index],
+        ]),
+      ),
+    [current.keys, theme],
+  );
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 640px)");
@@ -130,7 +151,9 @@ export default function WeeklyBarChartToggle({
             padding={0.6}
             groupMode={current.groupMode}
             colors={
-              current.groupMode === "stacked" ? { scheme: "nivo" } : "#2a7ef0"
+              current.groupMode === "stacked"
+                ? (bar) => activityColors.get(String(bar.id)) ?? "#94a3b8"
+                : "#2a7ef0"
             }
             enableTotals={current.groupMode === "stacked" ? true : false}
             valueFormat={(value) =>
@@ -181,7 +204,7 @@ export default function WeeklyBarChartToggle({
               tickValues: intTickValues,
             }}
             motionConfig="gentle"
-            tooltip={({ id, value, indexValue, color }) => (
+            tooltip={({ id, value, indexValue, color, data }) => (
               <div
                 style={{
                   background: "#1e293b",
@@ -192,6 +215,7 @@ export default function WeeklyBarChartToggle({
                   whiteSpace: "nowrap",
                 }}
               >
+                <div style={{ marginBottom: 4 }}>{indexValue}</div>
                 <span
                   style={{
                     display: "inline-block",
@@ -210,13 +234,26 @@ export default function WeeklyBarChartToggle({
                         .replace(/\(.*\)/, "")
                         .trim()
                         .replace(/\b\w/g, (c) => c.toUpperCase())
-                    : String(id)}{" "}
-                – {indexValue}:{" "}
+                    : String(id) === OTHER_SLICE_ID
+                      ? otherBucketLabel(
+                          current.keys.filter((key) => key !== OTHER_SLICE_ID),
+                        )
+                      : String(id)}
+                :{" "}
                 <strong>
                   {current.label === "Activities"
                     ? Number(value).toFixed(1)
                     : value}
                 </strong>
+                {String(id) === OTHER_SLICE_ID &&
+                  (data as any).otherBreakdown?.length > 0 &&
+                  (data as any).otherBreakdown.map(
+                    (activity: { label: string; hours: number }) => (
+                      <div key={activity.label}>
+                        {activity.label} – {activity.hours}h
+                      </div>
+                    ),
+                  )}
               </div>
             )}
           />

@@ -127,9 +127,10 @@ describe("Dashboard Actions", () => {
 
       const result = await getActivityDataForPeriod();
 
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBe(7);
-      expect(result[0]).toHaveProperty("day");
+      expect(Array.isArray(result.data)).toBe(true);
+      expect(result.data.length).toBe(7);
+      expect(result.data[0]).toHaveProperty("day");
+      expect(result.keys).toEqual(["Applying", "Interviewing"]);
       expect(prisma.activity.findMany).toHaveBeenCalledTimes(1);
     });
 
@@ -158,10 +159,58 @@ describe("Dashboard Actions", () => {
 
       const result = await getActivityDataForPeriod();
 
-      expect(result.length).toBe(7);
-      result.forEach((day: any) => {
+      expect(result.data.length).toBe(7);
+      result.data.forEach((day: any) => {
         expect(day).toHaveProperty("day");
       });
+    });
+
+    it("caps to the top three types and attaches a breakdown to the Other bucket", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const today = new Date();
+      const mockActivities = [
+        {
+          startTime: today,
+          duration: 600,
+          activityType: { label: "Jobsync" },
+        },
+        {
+          startTime: today,
+          duration: 300,
+          activityType: { label: "Learning" },
+        },
+        {
+          startTime: today,
+          duration: 180,
+          activityType: { label: "Side Project 1" },
+        },
+        {
+          startTime: today,
+          duration: 120,
+          activityType: { label: "Job Search" },
+        },
+        {
+          startTime: today,
+          duration: 60,
+          activityType: { label: "Networking" },
+        },
+      ];
+      (prisma.activity.findMany as any).mockResolvedValue(mockActivities);
+
+      const result = await getActivityDataForPeriod();
+
+      expect(result.keys).toEqual([
+        "Jobsync",
+        "Learning",
+        "Side Project 1",
+        "__other__",
+      ]);
+      const todayEntry = result.data[result.data.length - 1];
+      expect(todayEntry["__other__"]).toBe(3);
+      expect(todayEntry.otherBreakdown).toEqual([
+        { label: "Job Search", hours: 2 },
+        { label: "Networking", hours: 1 },
+      ]);
     });
 
     it("should handle activities with missing activityType", async () => {
@@ -177,8 +226,8 @@ describe("Dashboard Actions", () => {
 
       const result = await getActivityDataForPeriod();
 
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBe(7);
+      expect(Array.isArray(result.data)).toBe(true);
+      expect(result.data.length).toBe(7);
     });
   });
 
@@ -372,6 +421,10 @@ describe("Dashboard Actions", () => {
         { label: "Learning", hours: 5 },
         { label: "Side Project 1", hours: 3 },
       ]);
+      expect(result.otherActivities).toEqual([
+        { label: "Job Search", hours: 2 },
+        { label: "Networking", hours: 1 },
+      ]);
       expect(result.otherHours).toBe(3);
       expect(result.totalHours).toBe(21);
     });
@@ -425,6 +478,7 @@ describe("Dashboard Actions", () => {
         jobsApplied: 0,
         jobsTrend: 0,
         topActivities: [],
+        otherActivities: [],
         otherHours: 0,
         totalHours: 0,
       });

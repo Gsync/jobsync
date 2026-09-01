@@ -20,6 +20,11 @@ vi.mock("@nivo/pie", () => ({
       {props.data.map((slice: any) => (
         <div key={slice.id} data-testid={`slice-${slice.id}`}>
           {slice.label}:{slice.value}:{slice.color}
+          {slice.breakdown?.length
+            ? `:${slice.breakdown
+                .map((a: any) => `${a.label}=${a.hours}`)
+                .join(",")}`
+            : ""}
         </div>
       ))}
     </div>
@@ -48,6 +53,10 @@ describe("JobsActivityCard", () => {
           { label: "Side Project 1", hours: 9.2 },
           { label: "Learning", hours: 8.6 },
         ],
+        otherActivities: [
+          { label: "Networking", hours: 10.5 },
+          { label: "Interviewing", hours: 7 },
+        ],
         otherHours: 17.5,
         totalHours: 63.4,
       },
@@ -58,6 +67,7 @@ describe("JobsActivityCard", () => {
         jobsApplied: 34,
         jobsTrend: -12,
         topActivities: [{ label: "Job Search", hours: 6.4 }],
+        otherActivities: [],
         otherHours: 0,
         totalHours: 6.4,
       },
@@ -89,7 +99,7 @@ describe("JobsActivityCard", () => {
       "Jobsync:28.1:#2a9d90",
     );
     expect(screen.getByTestId("slice-__other__")).toHaveTextContent(
-      "Other:17.5:#94a3b8",
+      "Other:17.5:#94a3b8:Networking=10.5,Interviewing=7",
     );
   });
 
@@ -162,6 +172,7 @@ describe("JobsActivityCard", () => {
               jobsApplied: 1,
               jobsTrend: 0,
               topActivities: [{ label: "Job Search", hours: 2 }],
+              otherActivities: [],
               otherHours: 0,
               totalHours: 2,
             },
@@ -183,6 +194,7 @@ describe("JobsActivityCard", () => {
               jobsApplied: 3,
               jobsTrend: 0,
               topActivities: [],
+              otherActivities: [],
               otherHours: 0,
               totalHours: 0,
             },

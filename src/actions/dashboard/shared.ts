@@ -1,3 +1,5 @@
+export const roundToTenth = (hours: number) => Math.round(hours * 10) / 10;
+
 // Local-time day range: start at 00:00 daysBack days ago, end today 23:59:59.999
 export const getLocalDayRange = (
   daysBack: number,
