@@ -19,13 +19,13 @@ export function PrerankBreakdown({
     ? [
         {
           label: "Title",
-          weight: APP_CONSTANTS.GREENHOUSE_TITLE_WEIGHT,
+          weight: APP_CONSTANTS.ATS_TITLE_WEIGHT,
           score: components.titleScore,
           hits: components.titleHits,
         },
         {
           label: "Keywords",
-          weight: APP_CONSTANTS.GREENHOUSE_SKILL_WEIGHT,
+          weight: APP_CONSTANTS.ATS_SKILL_WEIGHT,
           score: components.keywordScore,
           hits: components.keywordHits,
         },

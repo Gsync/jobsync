@@ -20,7 +20,7 @@ export function AtsSearchStep({ provider, value, onChange }: AtsSearchStepProps)
 
   const addCompany = (company: LeverCompany) => {
     if (companies.some((c) => c.token === company.token)) return;
-    if (companies.length >= APP_CONSTANTS.MAX_GREENHOUSE_COMPANIES) return;
+    if (companies.length >= APP_CONSTANTS.ATS_MAX_COMPANIES) return;
     onChange({ ...value, companies: [...companies, company] });
   };
 

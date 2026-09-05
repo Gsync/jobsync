@@ -27,12 +27,12 @@ export const GreenhouseCompanySchema = z.object({
 export const GreenhouseSourceConfigSchema = z.object({
   companies: z
     .array(GreenhouseCompanySchema)
-    .max(APP_CONSTANTS.MAX_GREENHOUSE_COMPANIES),
+    .max(APP_CONSTANTS.ATS_MAX_COMPANIES),
   targetTitles: z.array(z.string().min(1).max(100)).optional(),
   keywords: z.array(z.string().min(1).max(100)).optional(),
   locations: z.array(z.string().min(1).max(100)).optional(),
   strictLocation: z.boolean().optional(),
-  topK: z.number().int().min(1).max(APP_CONSTANTS.GREENHOUSE_LISTING_CAP).optional(),
+  topK: z.number().int().min(1).max(APP_CONSTANTS.ATS_LISTING_CAP).optional(),
   saveUnanalyzed: z.boolean().optional(),
 });
 
@@ -47,7 +47,7 @@ export const LeverCompanySchema = GreenhouseCompanySchema.extend({
 export const LeverSourceConfigSchema = GreenhouseSourceConfigSchema.extend({
   companies: z
     .array(LeverCompanySchema)
-    .max(APP_CONSTANTS.MAX_GREENHOUSE_COMPANIES),
+    .max(APP_CONSTANTS.ATS_MAX_COMPANIES),
 });
 
 export const SourceConfigSchema = z.object({

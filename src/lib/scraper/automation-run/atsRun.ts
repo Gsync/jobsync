@@ -3,8 +3,8 @@ import type {
   FunnelStage,
 } from "@/models/automation.model";
 import type { AtsProvider } from "../ats/types";
-import { runGreenhousePipeline } from "../greenhouse/pipeline";
-import type { ScoredJob } from "../greenhouse/pipeline";
+import { runAtsPipeline } from "../ats/pipeline";
+import type { ScoredJob } from "../ats/pipeline";
 import { dedupeJobs } from "../utils";
 import { getExistingJobDedupeMap } from "@/lib/jobs/jobDedupe";
 import { automationLogger } from "@/lib/automation-logger";
@@ -118,7 +118,7 @@ export async function runAtsRun(
       `${label} Ranking against ${termCount} search term(s) (${config.keywords.length} keyword(s) + ${resumeSkills.length} resume skill(s))`,
     );
 
-    const pipeline = runGreenhousePipeline(dedupedJobs, config, resumeSkills, {
+    const pipeline = runAtsPipeline(dedupedJobs, config, resumeSkills, {
       corpus: jobs,
       k: config.topK,
     });
@@ -171,7 +171,7 @@ export async function runAtsRun(
       // Re-rank the pre-dedup corpus so an exhausted board (everything that
       // matches is already saved) reads differently from a search that matches
       // nothing at all. Only pays for itself on this zero path.
-      const beforeDedup = runGreenhousePipeline(jobs, config, resumeSkills, {
+      const beforeDedup = runAtsPipeline(jobs, config, resumeSkills, {
         corpus: jobs,
         k: config.topK,
       });

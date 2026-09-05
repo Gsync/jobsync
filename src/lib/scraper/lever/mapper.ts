@@ -1,6 +1,6 @@
 import type { JobDetails } from "../types";
 import type { LeverPosting } from "./types";
-import { flattenHtml } from "../greenhouse";
+import { flattenHtml } from "../html";
 
 // Lever's workplaceType string → WORKPLACE_TYPES enum key. Undefined for
 // absent/unrecognized values (falls back to isRemote downstream in mapper.ts).

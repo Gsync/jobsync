@@ -98,15 +98,17 @@ export const APP_CONSTANTS = {
   // Ollama runs sequentially since it serializes on the GPU).
   AUTOMATION_MATCH_CONCURRENCY: 3,
 
+  // Shared ATS tuning (applies to every job board provider)
+  ATS_MAX_COMPANIES: 25, // per automation
+  ATS_LISTING_CAP: 50, // safety ceiling applied after the relevance floor
+  ATS_FLOOR_MIN_TITLE_HITS: 1,
+  ATS_FLOOR_MIN_KEYWORD_HITS: 1,
+  ATS_TITLE_WEIGHT: 0.6,
+  ATS_SKILL_WEIGHT: 0.4,
+
   // Greenhouse job source
   GREENHOUSE_BASE_URL: "https://boards-api.greenhouse.io/v1/boards",
   GREENHOUSE_BOARD_URL: "https://boards.greenhouse.io", // public job board (not API)
-  MAX_GREENHOUSE_COMPANIES: 25, // per automation
-  GREENHOUSE_LISTING_CAP: 50, // safety ceiling applied after the relevance floor
-  GREENHOUSE_FLOOR_MIN_TITLE_HITS: 1,
-  GREENHOUSE_FLOOR_MIN_KEYWORD_HITS: 1,
-  GREENHOUSE_TITLE_WEIGHT: 0.6,
-  GREENHOUSE_SKILL_WEIGHT: 0.4,
   GREENHOUSE_FETCH_TIMEOUT_MS: 25_000, // per-board AbortController timeout
   GREENHOUSE_FETCH_CONCURRENCY: 5,
 

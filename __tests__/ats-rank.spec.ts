@@ -3,7 +3,7 @@ import {
   passesFloor,
   locationMatches,
   buildIdf,
-} from "@/lib/scraper/greenhouse/rank";
+} from "@/lib/scraper/ats/rank";
 import type { JobDetails } from "@/lib/scraper/types";
 
 function job(overrides: Partial<JobDetails>): JobDetails {

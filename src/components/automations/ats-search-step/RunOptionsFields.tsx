@@ -20,7 +20,7 @@ export function RunOptionsFields({ value, onChange }: RunOptionsFieldsProps) {
         </Label>
         <Slider
           min={1}
-          max={APP_CONSTANTS.GREENHOUSE_LISTING_CAP}
+          max={APP_CONSTANTS.ATS_LISTING_CAP}
           step={1}
           value={[value.topK ?? APP_CONSTANTS.MAX_JOBS_PER_RUN]}
           onValueChange={(next) => onChange({ ...value, topK: next[0] })}

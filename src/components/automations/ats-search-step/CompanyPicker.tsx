@@ -50,7 +50,7 @@ export function CompanyPicker({
     handleListScroll,
   } = useAtsCompanySearch(provider);
 
-  const atLimit = companies.length >= APP_CONSTANTS.MAX_GREENHOUSE_COMPANIES;
+  const atLimit = companies.length >= APP_CONSTANTS.ATS_MAX_COMPANIES;
 
   const toggleCompany = (company: LeverCompany) => {
     if (companies.some((c) => c.token === company.token)) {
@@ -66,7 +66,7 @@ export function CompanyPicker({
         <span>
           {meta.label} Companies{" "}
           <span className="font-normal text-muted-foreground">
-            ({companies.length}/{APP_CONSTANTS.MAX_GREENHOUSE_COMPANIES})
+            ({companies.length}/{APP_CONSTANTS.ATS_MAX_COMPANIES})
           </span>
         </span>
         {totalCount !== null && totalCount > 0 && (
@@ -88,7 +88,7 @@ export function CompanyPicker({
             disabled={atLimit}
           >
             {atLimit
-              ? `Max ${APP_CONSTANTS.MAX_GREENHOUSE_COMPANIES} companies reached`
+              ? `Max ${APP_CONSTANTS.ATS_MAX_COMPANIES} companies reached`
               : `Search companies (e.g., ${meta.searchExample})`}
             {isSearching ? (
               <Loader2 className="h-4 w-4 animate-spin" />

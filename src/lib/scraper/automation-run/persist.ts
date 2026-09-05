@@ -9,8 +9,8 @@ import { normalizeJobUrl } from "../utils";
 // matchScore column and stays below a perfect LLM score (100). Internal sort
 // only — never shown as a percentage.
 const PRERANK_MAX =
-  APP_CONSTANTS.GREENHOUSE_TITLE_WEIGHT +
-  APP_CONSTANTS.GREENHOUSE_SKILL_WEIGHT +
+  APP_CONSTANTS.ATS_TITLE_WEIGHT +
+  APP_CONSTANTS.ATS_SKILL_WEIGHT +
   0.01;
 
 export function scalePrerank(raw: number): number {

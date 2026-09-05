@@ -126,8 +126,8 @@ export function scoreJob(
         : 0;
 
   const score =
-    APP_CONSTANTS.GREENHOUSE_TITLE_WEIGHT * titleScore +
-    APP_CONSTANTS.GREENHOUSE_SKILL_WEIGHT * keywordScore +
+    APP_CONSTANTS.ATS_TITLE_WEIGHT * titleScore +
+    APP_CONSTANTS.ATS_SKILL_WEIGHT * keywordScore +
     recencyTiebreak(job.postedDate);
 
   return {
@@ -150,7 +150,7 @@ export function scoreJob(
 // invariant to weight tuning.
 export function passesFloor(c: PrerankComponents): boolean {
   return (
-    c.titleHits.length >= APP_CONSTANTS.GREENHOUSE_FLOOR_MIN_TITLE_HITS ||
-    c.keywordHits.length >= APP_CONSTANTS.GREENHOUSE_FLOOR_MIN_KEYWORD_HITS
+    c.titleHits.length >= APP_CONSTANTS.ATS_FLOOR_MIN_TITLE_HITS ||
+    c.keywordHits.length >= APP_CONSTANTS.ATS_FLOOR_MIN_KEYWORD_HITS
   );
 }

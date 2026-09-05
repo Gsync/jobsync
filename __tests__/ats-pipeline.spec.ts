@@ -1,4 +1,4 @@
-import { runGreenhousePipeline } from "@/lib/scraper/greenhouse/pipeline";
+import { runAtsPipeline } from "@/lib/scraper/ats/pipeline";
 import type { JobDetails } from "@/lib/scraper/types";
 
 function job(overrides: Partial<JobDetails>): JobDetails {
@@ -19,14 +19,14 @@ const config = {
   strictLocation: false,
 };
 
-describe("runGreenhousePipeline", () => {
+describe("runAtsPipeline", () => {
   it("keeps only floor-passers", () => {
     const jobs = [
       job({ title: "Frontend Engineer", description: "React" }), // title hit
       job({ title: "Cook", description: "make food" }), // no signal
       job({ title: "Chef", description: "react typescript daily" }), // 2 kw hits
     ];
-    const result = runGreenhousePipeline(jobs, config, []);
+    const result = runAtsPipeline(jobs, config, []);
     expect(result.funnel.relevant).toBe(2);
     const all = [...result.toAnalyze, ...result.toSaveUnanalyzed];
     expect(all).toHaveLength(2);
@@ -36,7 +36,7 @@ describe("runGreenhousePipeline", () => {
     const jobs = Array.from({ length: 8 }, (_, i) =>
       job({ title: "Frontend Engineer", description: `React ${i}` }),
     );
-    const result = runGreenhousePipeline(jobs, config, [], { k: 3, cap: 50 });
+    const result = runAtsPipeline(jobs, config, [], { k: 3, cap: 50 });
     expect(result.toAnalyze).toHaveLength(3);
     expect(result.toSaveUnanalyzed).toHaveLength(5);
   });
@@ -45,7 +45,7 @@ describe("runGreenhousePipeline", () => {
     const jobs = Array.from({ length: 10 }, () =>
       job({ title: "Frontend Engineer" }),
     );
-    const result = runGreenhousePipeline(jobs, config, [], { k: 2, cap: 4 });
+    const result = runAtsPipeline(jobs, config, [], { k: 2, cap: 4 });
     expect(result.funnel.relevant).toBe(4);
     // The uncapped count stays visible so the log can't report the cap as
     // though it were the floor result.
@@ -56,7 +56,7 @@ describe("runGreenhousePipeline", () => {
   });
 
   it("omits the located stage when strictLocation is off", () => {
-    const result = runGreenhousePipeline(
+    const result = runAtsPipeline(
       [job({ title: "Frontend Engineer" })],
       config,
       [],
@@ -70,7 +70,7 @@ describe("runGreenhousePipeline", () => {
       job({ title: "Frontend Engineer", location: "Berlin, Germany" }),
       job({ title: "Frontend Engineer", location: "Remote" }),
     ];
-    const result = runGreenhousePipeline(
+    const result = runAtsPipeline(
       jobs,
       { ...config, strictLocation: true },
       [],
@@ -87,7 +87,7 @@ describe("runGreenhousePipeline", () => {
         location: "Canada",
       }),
     ];
-    const result = runGreenhousePipeline(jobs, config, [], { k: 2 });
+    const result = runAtsPipeline(jobs, config, [], { k: 2 });
     expect(result.toAnalyze[0].score).toBeGreaterThanOrEqual(
       result.toAnalyze[1].score,
     );

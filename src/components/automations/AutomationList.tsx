@@ -133,13 +133,13 @@ export function AutomationList({
               return null;
             }
           })();
-          const ghCompanies: { name: string; token: string }[] =
+          const atsCompanies: { name: string; token: string }[] =
             ats?.companies ?? [];
-          const ghTitles: string[] = ats?.targetTitles ?? [];
-          const ghLocations: string[] = ats?.locations ?? [];
-          const ghKeywords: string[] = ats?.keywords ?? [];
-          const ghTopK: number = ats?.topK ?? APP_CONSTANTS.MAX_JOBS_PER_RUN;
-          const ghSaveUnanalyzed: boolean = ats?.saveUnanalyzed !== false;
+          const atsTitles: string[] = ats?.targetTitles ?? [];
+          const atsLocations: string[] = ats?.locations ?? [];
+          const atsKeywords: string[] = ats?.keywords ?? [];
+          const atsTopK: number = ats?.topK ?? APP_CONSTANTS.MAX_JOBS_PER_RUN;
+          const atsSaveUnanalyzed: boolean = ats?.saveUnanalyzed !== false;
 
           return (
             <div
@@ -190,14 +190,14 @@ export function AutomationList({
                 {!retired && (
                   <div className="space-y-1.5 text-sm text-muted-foreground">
                     <div className="flex flex-wrap items-center gap-1">
-                      {ghCompanies.slice(0, 3).map((c) => (
+                      {atsCompanies.slice(0, 3).map((c) => (
                         <Badge key={c.token} variant="secondary">
                           {c.name}
                         </Badge>
                       ))}
-                      {ghCompanies.length > 3 && (
+                      {atsCompanies.length > 3 && (
                         <Badge variant="secondary">
-                          +{ghCompanies.length - 3} more
+                          +{atsCompanies.length - 3} more
                         </Badge>
                       )}
                     </div>
@@ -206,33 +206,33 @@ export function AutomationList({
                         <span className="font-medium text-foreground">
                           Titles:
                         </span>{" "}
-                        {ghTitles.length ? ghTitles.join(", ") : "Not set"}
+                        {atsTitles.length ? atsTitles.join(", ") : "Not set"}
                       </span>
                       <span>
                         <span className="font-medium text-foreground">
                           Keywords:
                         </span>{" "}
-                        {ghKeywords.length ? ghKeywords.join(", ") : "Any"}
+                        {atsKeywords.length ? atsKeywords.join(", ") : "Any"}
                       </span>
                       <span>
                         <span className="font-medium text-foreground">
                           Location:
                         </span>{" "}
-                        {ghLocations.length
-                          ? ghLocations.join(", ")
+                        {atsLocations.length
+                          ? atsLocations.join(", ")
                           : "Any location"}
                       </span>
                       <span>
                         <span className="font-medium text-foreground">
                           Analyzed/run:
                         </span>{" "}
-                        {ghTopK}
+                        {atsTopK}
                       </span>
                       <span>
                         <span className="font-medium text-foreground">
                           Extra listings:
                         </span>{" "}
-                        {ghSaveUnanalyzed ? "on" : "off"}
+                        {atsSaveUnanalyzed ? "on" : "off"}
                       </span>
                       {automation.resume && (
                         <span>

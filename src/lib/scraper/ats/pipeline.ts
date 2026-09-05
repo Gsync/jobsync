@@ -31,14 +31,14 @@ export interface PipelineResult {
 
 // Pure funnel: optional strict-location gate -> score -> relevance floor ->
 // cap ceiling -> top-K split. No I/O, no LLM; unit-testable in isolation.
-export function runGreenhousePipeline(
+export function runAtsPipeline(
   fetchedJobs: JobDetails[],
   config: PipelineConfig,
   resumeSkills: string[],
   options?: { k?: number; cap?: number; corpus?: JobDetails[] },
 ): PipelineResult {
   const k = options?.k ?? APP_CONSTANTS.MAX_JOBS_PER_RUN;
-  const cap = options?.cap ?? APP_CONSTANTS.GREENHOUSE_LISTING_CAP;
+  const cap = options?.cap ?? APP_CONSTANTS.ATS_LISTING_CAP;
 
   const deduped = fetchedJobs.length;
 
