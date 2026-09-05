@@ -206,7 +206,7 @@ export function AutomationList({
                         <span className="font-medium text-foreground">
                           Titles:
                         </span>{" "}
-                        {ghTitles.length ? ghTitles.join(", ") : "Any"}
+                        {ghTitles.length ? ghTitles.join(", ") : "Not set"}
                       </span>
                       <span>
                         <span className="font-medium text-foreground">

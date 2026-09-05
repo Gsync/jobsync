@@ -68,7 +68,7 @@ describe("scoreJob", () => {
     expect(components.keywordHits.sort()).toEqual(["node", "react"]);
   });
 
-  it("false-positive suppression: off-title role with one stray keyword ranks low and fails floor", () => {
+  it("false-positive suppression: off-title role with one stray keyword ranks below the real one", () => {
     const sales = scoreJob(
       job({ title: "Account Executive", description: "react to client needs" }),
       ["Frontend Engineer"],
@@ -84,7 +84,9 @@ describe("scoreJob", () => {
       [],
     );
     expect(real.score).toBeGreaterThan(sales.score);
-    expect(passesFloor(sales.components)).toBe(false);
+    // A stray hit clears the minimum-signal floor; ranking, not the gate, is
+    // what keeps it out of the top-K.
+    expect(passesFloor(sales.components)).toBe(true);
     expect(passesFloor(real.components)).toBe(true);
   });
 
@@ -195,19 +197,13 @@ describe("passesFloor", () => {
     ).toBe(true);
   });
 
-  it(">=2 keyword hits passes", () => {
+  it(">=1 keyword hit passes", () => {
     expect(
-      passesFloor({ ...base, titleHits: [], keywordHits: ["react", "node"] }),
+      passesFloor({ ...base, titleHits: [], keywordHits: ["react"] }),
     ).toBe(true);
   });
 
-  it("1 stray keyword + no title fails", () => {
-    expect(
-      passesFloor({ ...base, titleHits: [], keywordHits: ["react"] }),
-    ).toBe(false);
-  });
-
-  it("unconventional title rescued by 2 keyword hits", () => {
+  it("unconventional title rescued by a keyword hit", () => {
     expect(
       passesFloor({
         ...base,

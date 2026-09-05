@@ -104,6 +104,20 @@ export async function runAtsRun(
     }
 
     const resumeSkills = extractResumeSkills(resume);
+
+    // The distinct pool scoreJob actually ranks against. Surfacing it makes a
+    // thin search visible instead of showing up only as an unexplained zero.
+    const termCount = new Set(
+      [...config.keywords, ...resumeSkills]
+        .map((t) => t.trim().toLowerCase())
+        .filter(Boolean),
+    ).size;
+    automationLogger.log(
+      automation.id,
+      "info",
+      `${label} Ranking against ${termCount} search term(s) (${config.keywords.length} keyword(s) + ${resumeSkills.length} resume skill(s))`,
+    );
+
     const pipeline = runGreenhousePipeline(dedupedJobs, config, resumeSkills, {
       corpus: jobs,
       k: config.topK,
@@ -117,10 +131,14 @@ export async function runAtsRun(
       );
     }
 
+    const capped =
+      pipeline.funnel.floorSurvivors > pipeline.funnel.relevant
+        ? ` (capped to ${pipeline.funnel.relevant})`
+        : "";
     automationLogger.log(
       automation.id,
       "info",
-      `${label} ${pipeline.funnel.relevant} jobs cleared the relevance floor`,
+      `${label} ${pipeline.funnel.floorSurvivors} jobs cleared the relevance floor${capped}`,
     );
 
     const buildFunnel = (analyzed: number, highlighted: number): string => {
@@ -150,15 +168,21 @@ export async function runAtsRun(
     };
 
     if (pipeline.funnel.relevant === 0) {
+      // Re-rank the pre-dedup corpus so an exhausted board (everything that
+      // matches is already saved) reads differently from a search that matches
+      // nothing at all. Only pays for itself on this zero path.
+      const beforeDedup = runGreenhousePipeline(jobs, config, resumeSkills, {
+        corpus: jobs,
+        k: config.topK,
+      });
       let reason: string;
-      if (pipeline.funnel.located === 0) {
+      if (beforeDedup.funnel.relevant > 0) {
+        reason = `all ${beforeDedup.funnel.relevant} matching job(s) on these boards are already in your list — no new postings since the last run`;
+      } else if (pipeline.funnel.located === 0) {
         reason = `none of the ${jobsDeduplicated} new job(s) matched your location filter (${config.locations.join(", ")})`;
       } else {
         const checked = pipeline.funnel.located ?? jobsDeduplicated;
-        const criteria = config.targetTitles.length > 0
-          ? `target titles (${config.targetTitles.join(", ")})`
-          : "your search criteria";
-        reason = `${checked} new job(s) were ranked but none matched ${criteria} closely enough to clear the relevance threshold`;
+        reason = `none of the ${checked} job(s) checked contained any of your ${termCount} search term(s)`;
       }
       automationLogger.log(
         automation.id,

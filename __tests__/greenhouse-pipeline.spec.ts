@@ -47,6 +47,9 @@ describe("runGreenhousePipeline", () => {
     );
     const result = runGreenhousePipeline(jobs, config, [], { k: 2, cap: 4 });
     expect(result.funnel.relevant).toBe(4);
+    // The uncapped count stays visible so the log can't report the cap as
+    // though it were the floor result.
+    expect(result.funnel.floorSurvivors).toBe(10);
     expect(
       result.toAnalyze.length + result.toSaveUnanalyzed.length,
     ).toBe(4);

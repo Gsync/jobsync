@@ -142,8 +142,10 @@ export function scoreJob(
   };
 }
 
-// The relevance floor. Keep a job iff it has real signal:
-//   >=1 target-title token match OR >=2 distinct keyword/skill hits.
+// The minimum-signal floor. Keep a job iff it hit at least one of the user's
+// terms: a target-title token, or a keyword/resume-skill. Ranking (sort + cap +
+// top-K) picks the winners; this only keeps jobs with no relationship at all to
+// the search out of the LLM budget.
 // Tests presence (the component arrays), not the weighted magnitude, so it is
 // invariant to weight tuning.
 export function passesFloor(c: PrerankComponents): boolean {

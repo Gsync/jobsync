@@ -24,6 +24,7 @@ export interface PipelineResult {
   funnel: {
     deduped: number; // jobs handed in (already deduped by the runner)
     located: number | null; // survivors after strict location gate (null if off)
+    floorSurvivors: number; // jobs clearing the floor, before the cap ceiling
     relevant: number; // floor survivors after the cap ceiling (== total saved)
   };
 }
@@ -78,6 +79,7 @@ export function runGreenhousePipeline(
     funnel: {
       deduped,
       located: located ? located.length : null,
+      floorSurvivors: floorSurvivors.length,
       relevant: capped.length,
     },
   };
