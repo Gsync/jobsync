@@ -61,7 +61,7 @@ import type {
   JobBoard,
   LeverSourceConfig,
 } from "@/models/automation.model";
-import { isAtsBoard } from "@/models/automation.model";
+import { isRetiredBoard } from "@/models/automation.model";
 import { companyBoardUrl } from "@/lib/atsBoardUrl";
 import type { JobMatchData } from "@/models/ai.schemas";
 import { DiscoveredJobsList } from "@/components/automations/DiscoveredJobsList";
@@ -540,9 +540,10 @@ export default function AutomationDetailPage() {
 
   const resumeMissing = !automation.resume;
   const newJobsCount = jobStatusCounts.new;
-  const greenhouseConfig = isAtsBoard(automation.jobBoard)
-    ? parseAtsConfig(automation.sourceConfig, automation.jobBoard)
-    : null;
+  const retired = isRetiredBoard(automation.jobBoard);
+  const greenhouseConfig = retired
+    ? null
+    : parseAtsConfig(automation.sourceConfig, automation.jobBoard);
   // The button must reflect the real run state, not just this page instance's
   // runNowLoading: after navigating away and back, runNowLoading resets but the
   // SSE reports the run is still live, so fall back to logData.isRunning.
@@ -559,6 +560,13 @@ export default function AutomationDetailPage() {
           </Button>
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-bold">{automation.name}</h1>
+            {retired && (
+              <p className="flex items-center gap-2 text-amber-600 text-sm">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                The {automation.jobBoard} job board was removed and no longer
+                runs. Delete this automation.
+              </p>
+            )}
             {(automation.keywords || automation.location) && (
               <p className="text-muted-foreground">
                 {[automation.keywords, automation.location]
@@ -572,10 +580,12 @@ export default function AutomationDetailPage() {
           <Button variant="outline" size="icon" onClick={() => loadData(true)}>
             <RefreshCw className="h-4 w-4" />
           </Button>
-          <Button variant="outline" onClick={() => setWizardOpen(true)}>
-            <Pencil className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
+          {!retired && (
+            <Button variant="outline" onClick={() => setWizardOpen(true)}>
+              <Pencil className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+          )}
           <Button
             variant="outline"
             className="text-destructive hover:text-destructive"
@@ -584,21 +594,23 @@ export default function AutomationDetailPage() {
             <Trash2 className="h-4 w-4 mr-2" />
             Delete
           </Button>
-          <Button
-            variant="outline"
-            onClick={handlePauseResume}
-            disabled={actionLoading || resumeMissing}
-          >
-            {actionLoading ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : automation.status === "active" ? (
-              <Pause className="h-4 w-4 mr-2" />
-            ) : (
-              <Play className="h-4 w-4 mr-2" />
-            )}
-            {automation.status === "active" ? "Pause" : "Resume"}
-          </Button>
-          {runActive ? (
+          {!retired && (
+            <Button
+              variant="outline"
+              onClick={handlePauseResume}
+              disabled={actionLoading || resumeMissing}
+            >
+              {actionLoading ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : automation.status === "active" ? (
+                <Pause className="h-4 w-4 mr-2" />
+              ) : (
+                <Play className="h-4 w-4 mr-2" />
+              )}
+              {automation.status === "active" ? "Pause" : "Resume"}
+            </Button>
+          )}
+          {retired ? null : runActive ? (
             <Button
               variant="destructive"
               onClick={() => setAbortConfirmOpen(true)}

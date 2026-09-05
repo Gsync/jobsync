@@ -252,7 +252,7 @@ describe("mapLeverJob", () => {
 });
 
 describe("workplace precedence in normalizeWorkplaceType (regression)", () => {
-  it("JSearch boolean path unchanged", () => {
+  it("isRemote boolean path unchanged", () => {
     expect(normalizeWorkplaceType(true)).toBe("REMOTE");
     expect(normalizeWorkplaceType(false)).toBeNull();
     expect(normalizeWorkplaceType(undefined)).toBeNull();

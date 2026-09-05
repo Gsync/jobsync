@@ -48,24 +48,14 @@ interface ProviderConfig {
   sensitive: boolean;
 }
 
-const PROVIDERS: ProviderConfig[] = [
-  ...getAiProviders().map((entry) => ({
-    id: entry.id as ApiKeyProvider,
-    name: entry.displayName,
-    placeholder: entry.keyConfig.placeholder,
-    inputType: entry.keyConfig.inputType,
-    description: entry.keyConfig.description,
-    sensitive: entry.keyConfig.sensitive,
-  })),
-  {
-    id: "rapidapi",
-    name: "RapidAPI",
-    placeholder: "Your RapidAPI key",
-    inputType: "password" as const,
-    description: "Used for JSearch job discovery automations",
-    sensitive: true,
-  },
-];
+const PROVIDERS: ProviderConfig[] = getAiProviders().map((entry) => ({
+  id: entry.id as ApiKeyProvider,
+  name: entry.displayName,
+  placeholder: entry.keyConfig.placeholder,
+  inputType: entry.keyConfig.inputType,
+  description: entry.keyConfig.description,
+  sensitive: entry.keyConfig.sensitive,
+}));
 
 function ApiKeySettings() {
   const [keys, setKeys] = useState<ApiKeyClientResponse[]>([]);

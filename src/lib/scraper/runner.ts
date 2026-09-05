@@ -8,8 +8,7 @@ import type {
   JobBoard,
   FunnelStage,
 } from "@/models/automation.model";
-import type { ScraperError, JobDetails } from "./types";
-import { searchJSearchJobs } from "./jsearch";
+import type { JobDetails } from "./types";
 import { ATS_PROVIDERS } from "./ats/registry";
 import type { AtsProvider } from "./ats/types";
 import { runGreenhousePipeline } from "./greenhouse/pipeline";
@@ -51,8 +50,6 @@ import {
   withSpan,
 } from "@/lib/telemetry";
 
-const MAX_JOBS_PER_RUN = APP_CONSTANTS.MAX_JOBS_PER_RUN;
-
 // Ollama serializes on the GPU, so it must process matches one at a time;
 // other providers can fan out concurrently.
 function getAutomationMatchLimit(provider: AiProvider) {
@@ -92,18 +89,6 @@ export async function getUserAiSettings(userId: string): Promise<AiSettings> {
     ...defaultUserSettings.ai,
     ...settings.ai,
   };
-}
-
-function getErrorMessage(error: ScraperError): string {
-  switch (error.type) {
-    case "blocked":
-      return error.reason;
-    case "rate_limited":
-      return `Rate limited${error.retryAfter ? ` - retry after ${error.retryAfter}s` : ""}`;
-    case "network":
-    case "parse":
-      return error.message;
-  }
 }
 
 export interface RunnerResult {
@@ -365,49 +350,16 @@ async function runAutomationTraced(
     );
 
     const atsProvider = ATS_PROVIDERS[automation.jobBoard];
-    if (atsProvider) {
-      return await runAtsRun(
-        automation,
-        atsProvider,
-        run.id,
-        resume as ResumeWithSections,
-        effectiveSignal,
-      );
-    }
-
-    automationLogger.log(
-      automation.id,
-      "info",
-      `Searching for jobs: "${automation.keywords}" in ${automation.location}`,
-    );
-
-    // Use JSearch API with user's key if available
-    const rapidApiKey = await resolveApiKey(automation.userId, "rapidapi");
-    const searchResult = await searchJSearchJobs(
-      automation.keywords,
-      automation.location,
-      rapidApiKey,
-    );
-
-    if (!searchResult.success) {
-      automationLogger.log(
-        automation.id,
-        "error",
-        `Search failed: ${searchResult.error.type} - ${getErrorMessage(searchResult.error)}`,
-      );
+    if (!atsProvider) {
+      // A retired board (jsearch) left on an existing row. The scheduler
+      // filters these out; this covers a direct or manual invocation.
+      const message = `Job board "${automation.jobBoard}" has been removed - delete this automation`;
+      automationLogger.log(automation.id, "error", message);
       automationLogger.endRun(automation.id);
 
-      const status = getStatusFromError(searchResult.error);
       return await finalizeRun(run.id, {
-        status,
-        errorMessage:
-          searchResult.error.type === "network"
-            ? searchResult.error.message
-            : undefined,
-        blockedReason:
-          searchResult.error.type === "blocked"
-            ? searchResult.error.reason
-            : undefined,
+        status: "blocked",
+        blockedReason: "source_removed",
         jobsSearched: 0,
         jobsDeduplicated: 0,
         jobsProcessed: 0,
@@ -416,247 +368,13 @@ async function runAutomationTraced(
       });
     }
 
-    const jobsSearched = searchResult.data.length;
-
-    automationLogger.log(
-      automation.id,
-      "success",
-      `Found ${jobsSearched} jobs from JSearch API`,
-      { jobsSearched },
+    return await runAtsRun(
+      automation,
+      atsProvider,
+      run.id,
+      resume as ResumeWithSections,
+      effectiveSignal,
     );
-
-    if (jobsSearched === 0) {
-      automationLogger.log(
-        automation.id,
-        "warning",
-        "No jobs found matching search criteria",
-      );
-      automationLogger.endRun(automation.id);
-
-      return await finalizeRun(run.id, {
-        status: "completed",
-        jobsSearched: 0,
-        jobsDeduplicated: 0,
-        jobsProcessed: 0,
-        jobsMatched: 0,
-        jobsSaved: 0,
-      });
-    }
-
-    automationLogger.log(
-      automation.id,
-      "info",
-      "Checking for duplicate jobs...",
-    );
-
-    const existingKeys = await getExistingJobDedupeMap(automation.userId);
-    const newJobs = dedupeJobs(searchResult.data, existingKeys);
-    const jobsDeduplicated = newJobs.length;
-
-    automationLogger.log(
-      automation.id,
-      "info",
-      `Filtered to ${jobsDeduplicated} new jobs (${jobsSearched - jobsDeduplicated} duplicates removed)`,
-      { jobsDeduplicated, duplicates: jobsSearched - jobsDeduplicated },
-    );
-
-    const jobsToProcess = newJobs.slice(0, MAX_JOBS_PER_RUN);
-
-    if (jobsToProcess.length < newJobs.length) {
-      automationLogger.log(
-        automation.id,
-        "info",
-        `Processing first ${jobsToProcess.length} of ${newJobs.length} new jobs (limit: ${MAX_JOBS_PER_RUN})`,
-      );
-    }
-
-    let jobsProcessed = 0;
-    let jobsMatched = 0;
-    let jobsSaved = 0;
-    let aiError: string | null = null;
-
-    const limit = getAutomationMatchLimit(aiSettings.provider);
-
-    const processJob = async (job: JobDetails): Promise<void> => {
-      // Queued tasks bail immediately as slots free once aborted/errored.
-      if (effectiveSignal.aborted || aiError) return;
-
-      automationLogger.log(
-        automation.id,
-        "info",
-        `Processing: ${job.title} at ${job.company}`,
-      );
-
-      jobsProcessed++;
-
-      const modelName =
-        aiSettings.model || getDefaultModelForProvider(aiSettings.provider);
-      automationLogger.log(
-        automation.id,
-        "info",
-        `Analyzing job match for: ${job.title} (using ${aiSettings.provider}/${modelName})`,
-      );
-
-      const matchResult = await matchJobToResume(
-        job,
-        resume as ResumeWithSections,
-        automation.jobBoard as JobBoard,
-        aiSettings,
-        automation.userId,
-        effectiveSignal,
-      );
-
-      // Abort may have fired mid-call; bail before saving this job.
-      if (effectiveSignal.aborted) return;
-
-      if (!matchResult.success) {
-        if (matchResult.error === "ai_unavailable") {
-          // Only the first concurrent task to fail logs; siblings stay quiet.
-          if (!aiError) {
-            aiError = `AI provider (${aiSettings.provider}) is not available. Please check your settings.`;
-            automationLogger.log(automation.id, "error", aiError);
-          }
-        } else {
-          automationLogger.log(
-            automation.id,
-            "warning",
-            `AI matching failed: ${matchResult.error}`,
-          );
-        }
-        return;
-      }
-
-      automationLogger.log(
-        automation.id,
-        "info",
-        `Match score: ${matchResult.score}% (threshold: ${automation.matchThreshold}%)`,
-        { score: matchResult.score, threshold: automation.matchThreshold },
-      );
-
-      if (matchResult.score < automation.matchThreshold) {
-        automationLogger.log(
-          automation.id,
-          "info",
-          `Job skipped - score below threshold`,
-        );
-        return;
-      }
-
-      jobsMatched++;
-
-      automationLogger.log(
-        automation.id,
-        "success",
-        `Job matched! Saving to database...`,
-        {
-          title: job.title,
-          company: job.company,
-        },
-      );
-
-      try {
-        const scrapedJob: ScrapedJobData = {
-          title: job.title,
-          company: job.company,
-          location: job.location,
-          description: job.description,
-          sourceUrl: normalizeJobUrl(job.url),
-          sourceBoard: automation.jobBoard as JobBoard,
-          employmentType: job.employmentType,
-          isRemote: job.isRemote,
-        };
-
-        const jobRecord = await mapScrapedJobToJobRecord({
-          scrapedJob,
-          userId: automation.userId,
-          automationId: automation.id,
-          matchScore: matchResult.score,
-          matchData: JSON.stringify({
-            ...matchResult.data,
-            resumeId: resume.id,
-            resumeTitle: resume.title,
-            matchedAt: new Date().toISOString(),
-            provider: aiSettings.provider,
-            model: modelName,
-          }),
-        });
-
-        await db.job.create({ data: jobRecord });
-        jobsSaved++;
-
-        automationLogger.log(
-          automation.id,
-          "success",
-          `Job saved successfully (${jobsSaved} total)`,
-          { jobsSaved },
-        );
-      } catch (err: any) {
-        if (err?.code === "P2002") {
-          // Another concurrent run already saved this URL first.
-          automationLogger.log(
-            automation.id,
-            "info",
-            "Job skipped - already saved by a concurrent run",
-          );
-          return;
-        }
-        const errorMsg = err instanceof Error ? err.message : "Unknown error";
-        automationLogger.log(
-          automation.id,
-          "error",
-          `Failed to save job: ${errorMsg}`,
-        );
-        log.error("[Automation] Failed to save job", {
-          "automation.id": automation.id,
-          error: errorMsg,
-        });
-      }
-    };
-
-    // JSearch returns full job details, no separate extraction needed
-    await Promise.allSettled(
-      jobsToProcess.map((job) => limit(() => processJob(job))),
-    );
-
-    if (effectiveSignal.aborted) {
-      automationLogger.log(automation.id, "warning", "Run aborted by user");
-    }
-
-    // Concurrent dispatch means in-flight jobs can still save after a sibling
-    // sets aiError, so "failed" would be misleading — treat it as partial.
-    const finalStatus: AutomationRunStatus = effectiveSignal.aborted
-      ? "cancelled"
-      : aiError
-        ? "completed_with_errors"
-        : jobsProcessed < jobsToProcess.length
-          ? "completed_with_errors"
-          : "completed";
-
-    automationLogger.log(
-      automation.id,
-      finalStatus === "completed" ? "success" : "warning",
-      `Run finished with status: ${finalStatus}`,
-      {
-        status: finalStatus,
-        jobsSearched,
-        jobsDeduplicated,
-        jobsProcessed,
-        jobsMatched,
-        jobsSaved,
-      },
-    );
-
-    automationLogger.endRun(automation.id);
-
-    return await finalizeRun(run.id, {
-      status: finalStatus,
-      errorMessage: aiError || undefined,
-      jobsSearched,
-      jobsDeduplicated,
-      jobsProcessed,
-      jobsMatched,
-      jobsSaved,
-    });
   } catch (error) {
     // An abort surfaces here as an AbortError; finalize as cancelled, not failed.
     if (effectiveSignal.aborted || (error instanceof Error && error.name === "AbortError")) {
@@ -1383,17 +1101,6 @@ async function convertResumeForMatch(
   }
 
   return parts.filter(Boolean).join("\n");
-}
-
-function getStatusFromError(error: ScraperError): AutomationRunStatus {
-  switch (error.type) {
-    case "blocked":
-      return "blocked";
-    case "rate_limited":
-      return "rate_limited";
-    default:
-      return "failed";
-  }
 }
 
 interface FinalizeData {

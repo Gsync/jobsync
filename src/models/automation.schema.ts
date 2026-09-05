@@ -1,11 +1,10 @@
 import { z } from "zod";
 import { APP_CONSTANTS } from "@/lib/constants";
-import { isAtsBoard } from "./automation.model";
 // Deep-import (NOT the barrel) — utils.ts is pure; the barrel pulls scraper
 // network code into the client bundle via this file's client consumers.
 import { ATS_TOKEN_REGEX } from "@/lib/scraper/utils";
 
-export const JobBoardSchema = z.enum(["jsearch", "greenhouse", "lever"]);
+export const JobBoardSchema = z.enum(["greenhouse", "lever"]);
 
 export const AutomationStatusSchema = z.enum(["active", "paused"]);
 
@@ -68,33 +67,13 @@ export const CreateAutomationSchema = z
     scheduleHour: z.number().min(0).max(23),
   })
   .superRefine((data, ctx) => {
-    if (data.jobBoard === "jsearch") {
-      if (!data.keywords || data.keywords.trim().length === 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["keywords"],
-          message: "Keywords are required",
-        });
-      }
-      if (!data.location || data.location.trim().length === 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["location"],
-          message: "Location is required",
-        });
-      }
-    }
-
-    if (isAtsBoard(data.jobBoard)) {
-      const atsKey = data.jobBoard as "greenhouse" | "lever";
-      const companies = data.sourceConfig?.[atsKey]?.companies ?? [];
-      if (companies.length < 1) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["sourceConfig", atsKey, "companies"],
-          message: "Select at least one company",
-        });
-      }
+    const companies = data.sourceConfig?.[data.jobBoard]?.companies ?? [];
+    if (companies.length < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["sourceConfig", data.jobBoard, "companies"],
+        message: "Select at least one company",
+      });
     }
   });
 
@@ -110,16 +89,14 @@ export const UpdateAutomationSchema = z
     scheduleHour: z.number().min(0).max(23).optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.jobBoard && isAtsBoard(data.jobBoard)) {
-      const atsKey = data.jobBoard as "greenhouse" | "lever";
-      const companies = data.sourceConfig?.[atsKey]?.companies ?? [];
-      if (companies.length < 1) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["sourceConfig", atsKey, "companies"],
-          message: "Select at least one company",
-        });
-      }
+    if (!data.jobBoard) return;
+    const companies = data.sourceConfig?.[data.jobBoard]?.companies ?? [];
+    if (companies.length < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["sourceConfig", data.jobBoard, "companies"],
+        message: "Select at least one company",
+      });
     }
   });
 

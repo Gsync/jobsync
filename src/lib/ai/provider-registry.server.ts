@@ -117,25 +117,4 @@ export const PROVIDER_VERIFIERS: Record<
       };
     return { success: true };
   },
-
-  rapidapi: async (key) => {
-    const res = await fetch(
-      "https://jsearch.p.rapidapi.com/search?query=test&num_pages=1",
-      {
-        headers: {
-          "X-RapidAPI-Key": key,
-          "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
-        },
-      },
-    );
-    if (!res.ok)
-      return {
-        success: false,
-        error:
-          res.status === 403
-            ? "Invalid API key"
-            : `RapidAPI returned ${res.status}`,
-      };
-    return { success: true };
-  },
 };

@@ -2,7 +2,7 @@ import cron, { ScheduledTask } from "node-cron";
 import { SCHEDULER_CONSTANTS } from "@/lib/constants";
 import db from "@/lib/db";
 import { runAutomation, AutomationAlreadyRunningError } from "@/lib/scraper";
-import type { JobBoard } from "@/models/automation.model";
+import { ATS_BOARDS, type JobBoard } from "@/models/automation.model";
 import { log } from "@/lib/telemetry";
 
 let scheduledTask: ScheduledTask | null = null;
@@ -18,6 +18,8 @@ async function runDueAutomations() {
       where: {
         status: "active",
         nextRunAt: { lte: now },
+        // Rows left on a retired board never fire; the UI offers only delete.
+        jobBoard: { in: ATS_BOARDS },
       },
       include: {
         resume: true,

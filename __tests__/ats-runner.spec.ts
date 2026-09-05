@@ -34,10 +34,6 @@ vi.mock("@/lib/scraper/lever", () => ({
   searchLeverJobs: vi.fn(),
 }));
 
-vi.mock("@/lib/scraper/jsearch", () => ({
-  searchJSearchJobs: vi.fn(),
-}));
-
 vi.mock("@/lib/api-key-resolver", () => ({
   resolveApiKey: vi.fn().mockResolvedValue(undefined),
 }));

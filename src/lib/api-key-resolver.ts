@@ -4,11 +4,6 @@ import db from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
 
-// RapidAPI is not in the AI provider registry but still needs env var resolution
-const EXTRA_ENV_VARS: Record<string, string> = {
-  rapidapi: "RAPIDAPI_KEY",
-};
-
 export async function resolveApiKey(
   userId: string | undefined,
   provider: string,
@@ -37,12 +32,6 @@ export async function resolveApiKey(
   const entry = PROVIDER_REGISTRY[provider];
   if (entry?.envVar) {
     const value = process.env[entry.envVar];
-    if (value) return value;
-  }
-
-  const extraEnvVar = EXTRA_ENV_VARS[provider];
-  if (extraEnvVar) {
-    const value = process.env[extraEnvVar];
     if (value) return value;
   }
 

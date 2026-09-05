@@ -95,7 +95,7 @@ export function jobDedupeKey(job: DedupableJob): string {
 }
 
 // Removes jobs already saved (existingKeys) and collapses duplicates within the
-// batch itself. Both source paths (JSearch, Greenhouse) run through here.
+// batch itself. Both ATS source paths (Greenhouse, Lever) run through here.
 // Accepts any key lookup with `.has` so callers can pass a Set or the
 // getExistingJobDedupeMap Map directly.
 export function dedupeJobs<T extends DedupableJob>(

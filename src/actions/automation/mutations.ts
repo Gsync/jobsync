@@ -10,7 +10,7 @@ import {
   type UpdateAutomationInput,
 } from "@/models/automation.schema";
 import type { AutomationWithResume } from "@/models/automation.model";
-import { isAtsBoard } from "@/models/automation.model";
+import { isRetiredBoard } from "@/models/automation.model";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { syncSchedulerState } from "@/lib/scheduler";
 import { formatError } from "./shared";
@@ -117,6 +117,13 @@ export async function updateAutomation(
       return { success: false, message: "Automation not found" };
     }
 
+    if (isRetiredBoard(existing.jobBoard)) {
+      return {
+        success: false,
+        message: `The ${existing.jobBoard} job board has been removed. This automation can only be deleted.`,
+      };
+    }
+
     if (validated.resumeId) {
       const resume = await db.resume.findFirst({
         where: {
@@ -139,7 +146,7 @@ export async function updateAutomation(
     if (validated.sourceConfig !== undefined) {
       updateData.sourceConfig = JSON.stringify(validated.sourceConfig);
     }
-    if (validated.jobBoard && isAtsBoard(validated.jobBoard)) {
+    if (validated.jobBoard) {
       updateData.keywords = validated.keywords ?? "";
       updateData.location = validated.location ?? "";
     }

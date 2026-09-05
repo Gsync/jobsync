@@ -35,7 +35,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { AutomationWithResume } from "@/models/automation.model";
-import { isAtsBoard } from "@/models/automation.model";
+import { isRetiredBoard } from "@/models/automation.model";
 import {
   deleteAutomation,
   pauseAutomation,
@@ -123,17 +123,16 @@ export function AutomationList({
           const isLoading = loadingAction === automation.id;
           const resumeMissing = !automation.resume;
 
-          const ats = isAtsBoard(automation.jobBoard)
-            ? (() => {
-                try {
-                  return JSON.parse(automation.sourceConfig ?? "{}")[
-                    automation.jobBoard
-                  ];
-                } catch {
-                  return null;
-                }
-              })()
-            : null;
+          const retired = isRetiredBoard(automation.jobBoard);
+          const ats = (() => {
+            try {
+              return JSON.parse(automation.sourceConfig ?? "{}")[
+                automation.jobBoard
+              ];
+            } catch {
+              return null;
+            }
+          })();
           const ghCompanies: { name: string; token: string }[] =
             ats?.companies ?? [];
           const ghTitles: string[] = ats?.targetTitles ?? [];
@@ -158,23 +157,37 @@ export function AutomationList({
                   <Badge variant="outline" className="capitalize">
                     {automation.jobBoard}
                   </Badge>
-                  <Badge
-                    variant={
-                      automation.status === "active" ? "default" : "secondary"
-                    }
-                  >
-                    {automation.status}
-                  </Badge>
+                  {retired ? (
+                    <Badge variant="destructive">Retired</Badge>
+                  ) : (
+                    <Badge
+                      variant={
+                        automation.status === "active" ? "default" : "secondary"
+                      }
+                    >
+                      {automation.status}
+                    </Badge>
+                  )}
                 </div>
 
-                {resumeMissing && (
+                {retired && (
+                  <div className="flex items-center gap-2 text-amber-600 text-sm">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span>
+                      This job board was removed and no longer runs. Delete this
+                      automation.
+                    </span>
+                  </div>
+                )}
+
+                {!retired && resumeMissing && (
                   <div className="flex items-center gap-2 text-amber-600 text-sm">
                     <AlertTriangle className="h-4 w-4" />
                     <span>Resume missing - select a new one</span>
                   </div>
                 )}
 
-                {ats ? (
+                {!retired && (
                   <div className="space-y-1.5 text-sm text-muted-foreground">
                     <div className="flex flex-wrap items-center gap-1">
                       {ghCompanies.slice(0, 3).map((c) => (
@@ -231,29 +244,6 @@ export function AutomationList({
                       )}
                     </div>
                   </div>
-                ) : (
-                  <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
-                    <span>
-                      <span className="font-medium text-foreground">
-                        Keywords:
-                      </span>{" "}
-                      {automation.keywords}
-                    </span>
-                    <span>
-                      <span className="font-medium text-foreground">
-                        Location:
-                      </span>{" "}
-                      {automation.location}
-                    </span>
-                    {automation.resume && (
-                      <span>
-                        <span className="font-medium text-foreground">
-                          Resume:
-                        </span>{" "}
-                        {automation.resume.title}
-                      </span>
-                    )}
-                  </div>
                 )}
 
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
@@ -268,12 +258,17 @@ export function AutomationList({
                     <FileText className="h-4 w-4" />
                     <span>{automation.matchThreshold}% threshold</span>
                   </div>
-                  {automation.nextRunAt && automation.status === "active" && (
-                    <span className="text-xs">
-                      Next:{" "}
-                      {format(new Date(automation.nextRunAt), "MMM d, h:mm a")}
-                    </span>
-                  )}
+                  {!retired &&
+                    automation.nextRunAt &&
+                    automation.status === "active" && (
+                      <span className="text-xs">
+                        Next:{" "}
+                        {format(
+                          new Date(automation.nextRunAt),
+                          "MMM d, h:mm a",
+                        )}
+                      </span>
+                    )}
                   {automation.lastRunAt && (
                     <span className="text-xs">
                       Last:{" "}
@@ -290,27 +285,32 @@ export function AutomationList({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {automation.status === "active" ? (
-                    <DropdownMenuItem
-                      onClick={() => handlePause(automation.id)}
-                    >
-                      <Pause className="h-4 w-4 mr-2" />
-                      Pause
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem
-                      onClick={() => handleResume(automation.id)}
-                      disabled={resumeMissing}
-                    >
-                      <Play className="h-4 w-4 mr-2" />
-                      Resume
-                    </DropdownMenuItem>
+                  {!retired &&
+                    (automation.status === "active" ? (
+                      <DropdownMenuItem
+                        onClick={() => handlePause(automation.id)}
+                      >
+                        <Pause className="h-4 w-4 mr-2" />
+                        Pause
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        onClick={() => handleResume(automation.id)}
+                        disabled={resumeMissing}
+                      >
+                        <Play className="h-4 w-4 mr-2" />
+                        Resume
+                      </DropdownMenuItem>
+                    ))}
+                  {!retired && (
+                    <>
+                      <DropdownMenuItem onClick={() => onEdit(automation)}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
                   )}
-                  <DropdownMenuItem onClick={() => onEdit(automation)}>
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive"
                     onClick={() => setDeleteId(automation.id)}

@@ -34,7 +34,6 @@ describe("resolveApiKey", () => {
     process.env = { ...OLD_ENV };
     delete process.env.OPENAI_API_KEY;
     delete process.env.DEEPSEEK_API_KEY;
-    delete process.env.RAPIDAPI_KEY;
   });
 
   afterAll(() => {
@@ -78,12 +77,10 @@ describe("resolveApiKey", () => {
     expect(result).toBe("env-openai");
   });
 
-  it("resolves the rapidapi extra env var (not in the registry)", async () => {
-    process.env.RAPIDAPI_KEY = "rapid-123";
+  it("returns undefined for a provider outside the registry", async () => {
+    const result = await resolveApiKey(undefined, "not-a-provider");
 
-    const result = await resolveApiKey(undefined, "rapidapi");
-
-    expect(result).toBe("rapid-123");
+    expect(result).toBeUndefined();
     expect(mockFindUnique).not.toHaveBeenCalled();
   });
 

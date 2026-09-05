@@ -8,9 +8,9 @@ import {
   resolveJobSource,
 } from "@/lib/jobs/resolve";
 
-// Maps source employment-type strings (JSearch's "FULLTIME"/"CONTRACTOR",
-// Greenhouse's absence of the field, etc.) to JOB_TYPES enum keys. Defaults
-// to full-time when the source doesn't expose employment type at all.
+// Maps source employment-type strings ("FULLTIME"/"CONTRACTOR", Greenhouse's
+// absence of the field, etc.) to JOB_TYPES enum keys. Defaults to full-time
+// when the source doesn't expose employment type at all.
 const JOB_TYPE_ALIASES: Record<string, string> = {
   fulltime: "FT",
   parttime: "PT",

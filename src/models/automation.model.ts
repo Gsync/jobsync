@@ -11,7 +11,7 @@ export type AutomationRunStatus =
   | "rate_limited"
   | "cancelled";
 export type DiscoveryStatus = "new" | "accepted" | "dismissed";
-export type JobBoard = "jsearch" | "greenhouse" | "lever";
+export type JobBoard = "greenhouse" | "lever";
 
 export interface GreenhouseCompany {
   name: string;
@@ -47,12 +47,16 @@ export interface SourceConfig {
   lever?: LeverSourceConfig;
 }
 
-// Plain, dependency-free ATS-board check. Do NOT import this from
-// ats/registry.ts (that pulls the network-calling search fns into client
-// bundles). Both the client-imported schema and the runner import it here.
+// Plain, dependency-free board list. Do NOT import this from ats/registry.ts
+// (that pulls the network-calling search fns into client bundles). Both the
+// client-imported schema and the scheduler import it here.
 export const ATS_BOARDS: JobBoard[] = ["greenhouse", "lever"];
-export function isAtsBoard(board: JobBoard): boolean {
-  return ATS_BOARDS.includes(board);
+
+// Boards that used to exist and were removed. Their Automation rows stay in
+// the database; the UI marks them retired and only offers pause/delete.
+export const RETIRED_BOARDS = ["jsearch"];
+export function isRetiredBoard(board: string): boolean {
+  return RETIRED_BOARDS.includes(board);
 }
 
 export interface Automation {

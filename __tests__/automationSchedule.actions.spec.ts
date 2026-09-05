@@ -37,9 +37,12 @@ const RESUME_ID = "11111111-1111-4111-8111-111111111111";
 function baseInput(overrides: Record<string, unknown> = {}) {
   return {
     name: "Test Automation",
-    jobBoard: "jsearch",
+    jobBoard: "greenhouse",
     keywords: "engineer",
     location: "New York",
+    sourceConfig: {
+      greenhouse: { companies: [{ name: "Anthropic", token: "anthropic" }] },
+    },
     resumeId: RESUME_ID,
     matchThreshold: 80,
     scheduleHour: 8,

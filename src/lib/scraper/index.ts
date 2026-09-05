@@ -2,7 +2,6 @@ export * from "./types";
 export * from "./utils";
 export * from "./mapper";
 export * from "./schedule";
-export { searchJSearchJobs } from "./jsearch";
 export {
   fetchBoardJobs,
   searchGreenhouseJobs,

@@ -11,7 +11,7 @@ import {
 import { PROVIDER_VERIFIERS } from "@/lib/ai/provider-registry.server";
 import { getOllamaBaseUrl } from "@/actions/apiKey.actions";
 import { AiProvider } from "@/models/ai.model";
-import type { JobBoard } from "@/models/automation.model";
+import { isRetiredBoard, type JobBoard } from "@/models/automation.model";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { log } from "@/lib/telemetry";
 
@@ -59,6 +59,15 @@ export async function POST(
 
     if (!automation) {
       return NextResponse.json({ message: "Automation not found" }, { status: 404 });
+    }
+
+    if (isRetiredBoard(automation.jobBoard)) {
+      return NextResponse.json(
+        {
+          message: `The ${automation.jobBoard} job board has been removed. Delete this automation and create a new one.`,
+        },
+        { status: 400 }
+      );
     }
 
     if (!automation.resume) {

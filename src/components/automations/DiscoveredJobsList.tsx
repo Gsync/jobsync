@@ -60,8 +60,8 @@ import {
 import { RecordsCount } from "@/components/RecordsCount";
 
 // A job is "un-analyzed" only when matchData explicitly marks it so (Greenhouse
-// floor survivors). JSearch and legacy jobs have no flag but carry a real AI
-// score, so they count as analyzed.
+// floor survivors). Legacy jobs have no flag but carry a real AI score, so they
+// count as analyzed.
 function isAnalyzed(job: DiscoveredJob): boolean {
   try {
     return JSON.parse(job.matchData ?? "{}").analyzed !== false;
@@ -71,7 +71,7 @@ function isAnalyzed(job: DiscoveredJob): boolean {
 }
 
 // Lexical pre-rank as a percentage (weights sum to ~1, so raw × 100). Only
-// Greenhouse jobs carry it; null for JSearch/legacy jobs.
+// Greenhouse jobs carry it; null for legacy jobs.
 function getPrerankPercent(job: DiscoveredJob): number | null {
   try {
     const raw = JSON.parse(job.matchData ?? "{}").prerankScore;

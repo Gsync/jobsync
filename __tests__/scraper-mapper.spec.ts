@@ -87,7 +87,7 @@ describe("mapScrapedJobToJobRecord - workplaceType precedence", () => {
     expect(result.workplaceType).toBe("ONSITE");
   });
 
-  it("falls back to the isRemote boolean when workplaceType is absent (JSearch)", async () => {
+  it("falls back to the isRemote boolean when workplaceType is absent", async () => {
     const remote = await mapScrapedJobToJobRecord({
       ...baseInput,
       scrapedJob: { ...scrapedJob, isRemote: true },

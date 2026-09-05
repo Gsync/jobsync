@@ -30,10 +30,6 @@ vi.mock("@/lib/scraper/greenhouse", () => ({
   searchGreenhouseJobs: vi.fn(),
 }));
 
-vi.mock("@/lib/scraper/jsearch", () => ({
-  searchJSearchJobs: vi.fn(),
-}));
-
 vi.mock("@/lib/api-key-resolver", () => ({
   resolveApiKey: vi.fn().mockResolvedValue(undefined),
 }));
@@ -53,7 +49,6 @@ vi.mock("@/lib/ai", async (orig) => {
 
 import { runAutomation } from "@/lib/scraper/runner";
 import { searchGreenhouseJobs } from "@/lib/scraper/greenhouse";
-import { searchJSearchJobs } from "@/lib/scraper/jsearch";
 import { generateText } from "ai";
 import type { Automation } from "@/models/automation.model";
 import { AiProvider } from "@/models/ai.model";
@@ -427,94 +422,5 @@ describe("runAutomation (greenhouse)", () => {
       expect(result.jobsMatched).toBe(3); // highlighted: 90, 85, 95
       expect(result.jobsSaved).toBe(5);
     });
-  });
-});
-
-const jsearchAutomation: Automation = {
-  ...automation,
-  id: "auto-js",
-  jobBoard: "jsearch",
-  keywords: "engineer",
-  location: "Remote",
-  sourceConfig: null,
-};
-
-function makeJSearchJob() {
-  return {
-    title: "Frontend Engineer",
-    company: "Acme",
-    location: "Remote",
-    description: "React role",
-    url: `https://jobs.example.com/${Math.random()}`,
-    postedDate: "2026-06-01T00:00:00Z",
-  };
-}
-
-describe("runAutomation (jsearch) concurrency", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-
-    (prisma.automationRun.create as any).mockResolvedValue({ id: "run1" });
-    (prisma.automationRun.update as any).mockResolvedValue({
-      id: "run1",
-      automationId: "auto-js",
-    });
-    (prisma.automation.findUnique as any).mockResolvedValue({ scheduleHour: 8 });
-    (prisma.automation.update as any).mockResolvedValue({});
-    (prisma.resume.findUnique as any).mockResolvedValue({
-      id: "resume1",
-      title: "My Resume",
-      ContactInfo: null,
-      ResumeSections: [],
-    });
-    (prisma.job.findMany as any).mockResolvedValue([]); // no existing urls
-    (prisma.job.create as any).mockResolvedValue({});
-    (prisma.jobTitle.findUnique as any).mockResolvedValue({ id: "jt" });
-    (prisma.location.findUnique as any).mockResolvedValue({ id: "loc" });
-    (prisma.company.findUnique as any).mockResolvedValue({ id: "co" });
-    (prisma.jobSource.findUnique as any).mockResolvedValue({ id: "src" });
-    (prisma.jobStatus.findFirst as any).mockResolvedValue({ id: "st" });
-
-    // Hosted provider -> concurrency 3 (Ollama would force 1).
-    (prisma.userSettings.findUnique as any).mockResolvedValue({
-      settings: JSON.stringify({
-        ai: { provider: AiProvider.OPENAI, model: "gpt-4o-mini" },
-      }),
-    });
-  });
-
-  // Guards the fix for Finding 1: under concurrent dispatch, in-flight jobs
-  // can still save after a sibling sets aiError, so the run must not report
-  // "failed" while jobs were actually persisted.
-  it("reports completed_with_errors (not failed) when aiError fires but jobs saved", async () => {
-    (searchJSearchJobs as any).mockResolvedValue({
-      success: true,
-      data: [
-        makeJSearchJob(),
-        makeJSearchJob(),
-        makeJSearchJob(),
-        makeJSearchJob(),
-        makeJSearchJob(),
-      ],
-    });
-
-    const pending = deferredGenerateTextQueue();
-    const runPromise = runAutomation(jsearchAutomation);
-
-    await vi.waitFor(() => expect(pending.length).toBe(3));
-
-    pending[0].reject(new Error("fetch failed")); // -> ai_unavailable
-    pending[1].resolve({ text: scoreText(90) });
-    pending[2].resolve({ text: scoreText(85) });
-
-    const result = await runPromise;
-
-    // Queued jobs (4, 5) bail on the aiError check before dispatching.
-    expect(pending.length).toBe(3);
-    expect(result.status).toBe("completed_with_errors");
-    // Jobs 1 and 2 were in flight when job 0 failed; they still persist.
-    expect(result.jobsSaved).toBe(2);
-    expect((prisma.job.create as any).mock.calls.length).toBe(2);
-    expect(result.jobsMatched).toBe(2);
   });
 });

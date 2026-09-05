@@ -41,9 +41,8 @@ import {
 } from "@/actions/automation.actions";
 import { toastSuccess, toastError } from "@/lib/toast";
 import type { AutomationWithResume, JobBoard } from "@/models/automation.model";
-import { isAtsBoard } from "@/models/automation.model";
 import { AtsSearchStep, type AtsConfigValue } from "./AtsSearchStep";
-import { ChevronLeft, ChevronRight, Loader2, AlertTriangle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { APP_CONSTANTS } from "@/lib/constants";
 
 type AtsKey = "greenhouse" | "lever";
@@ -170,25 +169,16 @@ export function AutomationWizard({
     }
   };
 
-  const isAts = isAtsBoard(formValues.jobBoard);
-  const atsKey: AtsKey | null = isAts
-    ? (formValues.jobBoard as AtsKey)
-    : null;
+  const atsKey: AtsKey = formValues.jobBoard;
   const atsConfig: AtsConfigValue =
-    (atsKey ? formValues.sourceConfig?.[atsKey] : undefined) ?? EMPTY_ATS;
+    formValues.sourceConfig?.[atsKey] ?? EMPTY_ATS;
 
   const canGoNext = () => {
     switch (step) {
       case 0:
         return (formValues.name?.trim().length ?? 0) > 0;
       case 1:
-        if (isAts) {
-          return (atsConfig.companies?.length ?? 0) > 0;
-        }
-        return (
-          (formValues.keywords?.trim().length ?? 0) > 0 &&
-          (formValues.location?.trim().length ?? 0) > 0
-        );
+        return (atsConfig.companies?.length ?? 0) > 0;
       case 2:
         return (formValues.resumeId?.length ?? 0) > 0;
       case 3:
@@ -274,9 +264,6 @@ export function AutomationWizard({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="jsearch">
-                      JSearch (Google Jobs)
-                    </SelectItem>
                     <SelectItem value="greenhouse">
                       Greenhouse (company boards)
                     </SelectItem>
@@ -286,78 +273,27 @@ export function AutomationWizard({
                   </SelectContent>
                 </Select>
                 <FormDescription>
-                  {formValues.jobBoard === "jsearch"
-                    ? "Keyword-based job search via Google Jobs API (RapidAPI key required)"
-                    : "Track specific companies' job boards"}
+                  Track specific companies&apos; job boards
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
-          {formValues.jobBoard === "jsearch" && (
-            <div className="flex items-center gap-2 text-amber-600 text-sm">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              <span>
-                JSearch will be removed in the next release. More job board
-                options are coming soon.
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Step 1: Search */}
         <div className={step === 1 ? "space-y-4" : "hidden"}>
-          {isAts && atsKey ? (
-            <AtsSearchStep
-              provider={formValues.jobBoard}
-              value={atsConfig}
-              onChange={(next) =>
-                form.setValue(
-                  "sourceConfig",
-                  { [atsKey]: next } as CreateAutomationInput["sourceConfig"],
-                  { shouldValidate: true },
-                )
-              }
-            />
-          ) : (
-            <>
-              <FormField
-                control={form.control}
-                name="keywords"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Search Keywords</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="e.g., Full Stack Developer"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Job titles, skills, or keywords to search for
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Location</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Calgary, AB" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      City, state/province, or region to search in
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </>
-          )}
+          <AtsSearchStep
+            provider={formValues.jobBoard}
+            value={atsConfig}
+            onChange={(next) =>
+              form.setValue(
+                "sourceConfig",
+                { [atsKey]: next } as CreateAutomationInput["sourceConfig"],
+                { shouldValidate: true },
+              )
+            }
+          />
         </div>
 
         {/* Step 2: Resume */}
@@ -415,9 +351,9 @@ export function AutomationWizard({
                   />
                 </FormControl>
                 <FormDescription>
-                  {isAts
-                    ? "Highlight listings whose AI match score exceeds this threshold. Relevant listings are saved regardless — this only flags strong matches."
-                    : "Only save jobs that match your resume above this percentage. Higher = fewer but better matches."}
+                  Highlight listings whose AI match score exceeds this
+                  threshold. Relevant listings are saved regardless — this only
+                  flags strong matches.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -483,67 +419,48 @@ export function AutomationWizard({
                 {formValues.jobBoard || "-"}
               </span>
             </div>
-            {isAts ? (
-              <>
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Companies</span>
-                  <span className="font-medium text-right">
-                    {atsConfig.companies?.length
-                      ? atsConfig.companies.map((c) => c.name).join(", ")
-                      : "-"}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Target titles</span>
-                  <span className="font-medium text-right">
-                    {atsConfig.targetTitles?.length
-                      ? atsConfig.targetTitles.join(", ")
-                      : "Any"}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Locations</span>
-                  <span className="font-medium text-right">
-                    {atsConfig.locations?.length
-                      ? `${atsConfig.locations.join(", ")}${
-                          atsConfig.strictLocation ? " (strict)" : ""
-                        }`
-                      : "Any location"}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">
-                    Jobs analyzed per run
-                  </span>
-                  <span className="font-medium text-right">
-                    {atsConfig.topK ?? APP_CONSTANTS.MAX_JOBS_PER_RUN}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">
-                    Save additional listings
-                  </span>
-                  <span className="font-medium text-right">
-                    {atsConfig.saveUnanalyzed !== false ? "Yes" : "No"}
-                  </span>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Keywords</span>
-                  <span className="font-medium">
-                    {formValues.keywords || "-"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Location</span>
-                  <span className="font-medium">
-                    {formValues.location || "-"}
-                  </span>
-                </div>
-              </>
-            )}
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">Companies</span>
+              <span className="font-medium text-right">
+                {atsConfig.companies?.length
+                  ? atsConfig.companies.map((c) => c.name).join(", ")
+                  : "-"}
+              </span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">Target titles</span>
+              <span className="font-medium text-right">
+                {atsConfig.targetTitles?.length
+                  ? atsConfig.targetTitles.join(", ")
+                  : "Any"}
+              </span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">Locations</span>
+              <span className="font-medium text-right">
+                {atsConfig.locations?.length
+                  ? `${atsConfig.locations.join(", ")}${
+                      atsConfig.strictLocation ? " (strict)" : ""
+                    }`
+                  : "Any location"}
+              </span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">
+                Jobs analyzed per run
+              </span>
+              <span className="font-medium text-right">
+                {atsConfig.topK ?? APP_CONSTANTS.MAX_JOBS_PER_RUN}
+              </span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">
+                Save additional listings
+              </span>
+              <span className="font-medium text-right">
+                {atsConfig.saveUnanalyzed !== false ? "Yes" : "No"}
+              </span>
+            </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Resume</span>
               <span className="font-medium">
