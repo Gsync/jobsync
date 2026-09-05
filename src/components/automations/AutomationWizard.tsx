@@ -1,8 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
   DialogContent,
@@ -12,90 +9,28 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  CreateAutomationSchema,
-  type CreateAutomationInput,
-} from "@/models/automation.schema";
-import {
-  createAutomation,
-  updateAutomation,
-} from "@/actions/automation.actions";
-import { toastSuccess, toastError } from "@/lib/toast";
-import type { AutomationWithResume, JobBoard } from "@/models/automation.model";
-import { AtsSearchStep, type AtsConfigValue } from "./AtsSearchStep";
+import { Form } from "@/components/ui/form";
+import type { CreateAutomationInput } from "@/models/automation.schema";
+import { toastError } from "@/lib/toast";
+import type { AutomationWithResume } from "@/models/automation.model";
+import { AtsSearchStep } from "./AtsSearchStep";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import { APP_CONSTANTS } from "@/lib/constants";
-
-type AtsKey = "greenhouse" | "lever";
-
-const EMPTY_ATS: AtsConfigValue = {
-  companies: [],
-  targetTitles: [],
-  keywords: [],
-  locations: [],
-  strictLocation: false,
-  topK: APP_CONSTANTS.MAX_JOBS_PER_RUN,
-  saveUnanalyzed: true,
-};
-
-function parseEditSourceConfig(
-  sc?: string | null,
-): CreateAutomationInput["sourceConfig"] | undefined {
-  if (!sc) return undefined;
-  try {
-    const parsed = JSON.parse(sc);
-    return parsed?.greenhouse || parsed?.lever ? parsed : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-interface Resume {
-  id: string;
-  title: string;
-}
+import { STEPS, type WizardResume } from "./automation-wizard/wizardConfig";
+import { useWizardForm } from "./automation-wizard/useWizardForm";
+import { StepBasics } from "./automation-wizard/StepBasics";
+import { StepResume } from "./automation-wizard/StepResume";
+import { StepMatching } from "./automation-wizard/StepMatching";
+import { StepSchedule } from "./automation-wizard/StepSchedule";
+import { StepReview } from "./automation-wizard/StepReview";
 
 interface AutomationWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  resumes: Resume[];
+  resumes: WizardResume[];
   automations: AutomationWithResume[];
   onSuccess: () => void;
   editAutomation?: AutomationWithResume | null;
 }
-
-const STEPS = [
-  { id: "basics", title: "Basics", description: "Name your automation" },
-  { id: "search", title: "Search", description: "Configure search criteria" },
-  { id: "resume", title: "Resume", description: "Select resume for matching" },
-  { id: "matching", title: "Matching", description: "Set match threshold" },
-  { id: "schedule", title: "Schedule", description: "When to run" },
-  { id: "review", title: "Review", description: "Confirm settings" },
-];
-
-const HOURS = Array.from({ length: 24 }, (_, i) => ({
-  value: i,
-  label: `${i.toString().padStart(2, "0")}:00`,
-}));
 
 export function AutomationWizard({
   open,
@@ -105,386 +40,28 @@ export function AutomationWizard({
   onSuccess,
   editAutomation,
 }: AutomationWizardProps) {
-  const [step, setStep] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const form = useForm<CreateAutomationInput>({
-    resolver: zodResolver(CreateAutomationSchema),
-    mode: "onChange",
-    defaultValues: {
-      name: editAutomation?.name ?? "",
-      jobBoard: (editAutomation?.jobBoard as JobBoard) ?? "greenhouse",
-      keywords: editAutomation?.keywords ?? "",
-      location: editAutomation?.location ?? "",
-      sourceConfig: parseEditSourceConfig(editAutomation?.sourceConfig),
-      resumeId: editAutomation?.resumeId ?? "",
-      matchThreshold: editAutomation?.matchThreshold ?? 80,
-      scheduleHour: editAutomation?.scheduleHour ?? 8,
-    },
+  const {
+    form,
+    formValues,
+    step,
+    isSubmitting,
+    atsKey,
+    atsConfig,
+    takenHours,
+    canGoNext,
+    nextStep,
+    prevStep,
+    handleClose,
+    onSubmit,
+  } = useWizardForm({
+    open,
+    onOpenChange,
+    automations,
+    onSuccess,
+    editAutomation,
   });
 
-  useEffect(() => {
-    if (open) {
-      form.reset({
-        name: editAutomation?.name ?? "",
-        jobBoard: (editAutomation?.jobBoard as JobBoard) ?? "greenhouse",
-        keywords: editAutomation?.keywords ?? "",
-        location: editAutomation?.location ?? "",
-        sourceConfig: parseEditSourceConfig(editAutomation?.sourceConfig),
-        resumeId: editAutomation?.resumeId ?? "",
-        matchThreshold: editAutomation?.matchThreshold ?? 80,
-        scheduleHour: editAutomation?.scheduleHour ?? 8,
-      });
-      setStep(0);
-    }
-  }, [open, editAutomation, form]);
-
-  const formValues = form.watch();
-
-  const onSubmit = async (data: CreateAutomationInput) => {
-    setIsSubmitting(true);
-    try {
-      const result = editAutomation
-        ? await updateAutomation(editAutomation.id, data)
-        : await createAutomation(data);
-
-      if (result.success) {
-        toastSuccess(
-          editAutomation
-            ? "Your automation has been updated successfully."
-            : "Your automation has been created and will run at the scheduled time.",
-          editAutomation ? "Automation updated" : "Automation created",
-        );
-        form.reset();
-        setStep(0);
-        onOpenChange(false);
-        onSuccess();
-      } else {
-        toastError(result.message || "Something went wrong");
-      }
-    } catch (error) {
-      toastError("Failed to save automation");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const atsKey: AtsKey = formValues.jobBoard;
-  const atsConfig: AtsConfigValue =
-    formValues.sourceConfig?.[atsKey] ?? EMPTY_ATS;
-
-  const canGoNext = () => {
-    switch (step) {
-      case 0:
-        return (formValues.name?.trim().length ?? 0) > 0;
-      case 1:
-        return (atsConfig.companies?.length ?? 0) > 0;
-      case 2:
-        return (formValues.resumeId?.length ?? 0) > 0;
-      case 3:
-      case 4:
-        return true;
-      default:
-        return false;
-    }
-  };
-
-  // Hours already claimed by the user's other automations. Only one automation
-  // may run per hourly slot, so the schedule step rejects a taken hour.
-  const takenHours = new Set(
-    automations
-      .filter((a) => a.id !== editAutomation?.id)
-      .map((a) => a.scheduleHour),
-  );
-
-  const nextStep = () => {
-    if (step === 4 && takenHours.has(formValues.scheduleHour)) {
-      form.setError("scheduleHour", {
-        message: `Another automation already runs at ${(
-          formValues.scheduleHour ?? 8
-        )
-          .toString()
-          .padStart(2, "0")}:00. Please choose a different time.`,
-      });
-      return;
-    }
-    if (step < STEPS.length - 1) {
-      setStep(step + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (step > 0) {
-      setStep(step - 1);
-    }
-  };
-
-  const handleClose = () => {
-    form.reset();
-    setStep(0);
-    onOpenChange(false);
-  };
-
   const selectedResume = resumes.find((r) => r.id === formValues.resumeId);
-
-  const renderStepContent = () => {
-    return (
-      <>
-        {/* Step 0: Basics */}
-        <div className={step === 0 ? "space-y-4" : "hidden"}>
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Automation Name</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="e.g., Full Stack Jobs Calgary"
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>
-                  A descriptive name to identify this automation
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="jobBoard"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Job Board</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a job board" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="greenhouse">
-                      Greenhouse (company boards)
-                    </SelectItem>
-                    <SelectItem value="lever">
-                      Lever (company boards)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  Track specific companies&apos; job boards
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Step 1: Search */}
-        <div className={step === 1 ? "space-y-4" : "hidden"}>
-          <AtsSearchStep
-            provider={formValues.jobBoard}
-            value={atsConfig}
-            onChange={(next) =>
-              form.setValue(
-                "sourceConfig",
-                { [atsKey]: next } as CreateAutomationInput["sourceConfig"],
-                { shouldValidate: true },
-              )
-            }
-          />
-        </div>
-
-        {/* Step 2: Resume */}
-        <div className={step === 2 ? "space-y-4" : "hidden"}>
-          <FormField
-            control={form.control}
-            name="resumeId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Resume for Matching</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a resume" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {resumes.map((resume) => (
-                      <SelectItem key={resume.id} value={resume.id}>
-                        {resume.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  Jobs will be matched against this resume
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          {resumes.length === 0 && (
-            <p className="text-sm text-orange-600 dark:text-orange-500">
-              No resumes found. Please create a resume with enough content in
-              your profile first.
-            </p>
-          )}
-        </div>
-
-        {/* Step 3: Matching */}
-        <div className={step === 3 ? "space-y-4" : "hidden"}>
-          <FormField
-            control={form.control}
-            name="matchThreshold"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Match Threshold: {field.value}%</FormLabel>
-                <FormControl>
-                  <Slider
-                    min={0}
-                    max={100}
-                    step={5}
-                    value={[field.value]}
-                    onValueChange={(value) => field.onChange(value[0])}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Highlight listings whose AI match score exceeds this
-                  threshold. Relevant listings are saved regardless — this only
-                  flags strong matches.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Step 4: Schedule */}
-        <div className={step === 4 ? "space-y-4" : "hidden"}>
-          <FormField
-            control={form.control}
-            name="scheduleHour"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Daily Run Time</FormLabel>
-                <Select
-                  onValueChange={(val) => {
-                    field.onChange(parseInt(val));
-                    form.clearErrors("scheduleHour");
-                  }}
-                  value={field.value.toString()}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select time" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {HOURS.map((hour) => (
-                      <SelectItem
-                        key={hour.value}
-                        value={hour.value.toString()}
-                      >
-                        {hour.label}
-                        {takenHours.has(hour.value) && (
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            In use
-                          </span>
-                        )}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  The automation will run daily at this time (server timezone)
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Step 5: Review */}
-        <div className={step === 5 ? "space-y-4" : "hidden"}>
-          <div className="rounded-lg border p-4 space-y-3">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Name</span>
-              <span className="font-medium">{formValues.name || "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Job Board</span>
-              <span className="font-medium capitalize">
-                {formValues.jobBoard || "-"}
-              </span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Companies</span>
-              <span className="font-medium text-right">
-                {atsConfig.companies?.length
-                  ? atsConfig.companies.map((c) => c.name).join(", ")
-                  : "-"}
-              </span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Target titles</span>
-              <span className="font-medium text-right">
-                {atsConfig.targetTitles?.length
-                  ? atsConfig.targetTitles.join(", ")
-                  : "Any"}
-              </span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Locations</span>
-              <span className="font-medium text-right">
-                {atsConfig.locations?.length
-                  ? `${atsConfig.locations.join(", ")}${
-                      atsConfig.strictLocation ? " (strict)" : ""
-                    }`
-                  : "Any location"}
-              </span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">
-                Jobs analyzed per run
-              </span>
-              <span className="font-medium text-right">
-                {atsConfig.topK ?? APP_CONSTANTS.MAX_JOBS_PER_RUN}
-              </span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">
-                Save additional listings
-              </span>
-              <span className="font-medium text-right">
-                {atsConfig.saveUnanalyzed !== false ? "Yes" : "No"}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Resume</span>
-              <span className="font-medium">
-                {selectedResume?.title || "Not selected"}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Match Threshold</span>
-              <span className="font-medium">
-                {formValues.matchThreshold ?? 80}%
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Schedule</span>
-              <span className="font-medium">
-                Daily at{" "}
-                {(formValues.scheduleHour ?? 8).toString().padStart(2, "0")}:00
-              </span>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -518,7 +95,47 @@ export function AutomationWizard({
               }
             })}
           >
-            <div className="py-4">{renderStepContent()}</div>
+            {/* Every step stays mounted — hiding rather than unmounting keeps
+                each step's field state alive while navigating. */}
+            <div className="py-4">
+              <div className={step === 0 ? "space-y-4" : "hidden"}>
+                <StepBasics form={form} />
+              </div>
+
+              <div className={step === 1 ? "space-y-4" : "hidden"}>
+                <AtsSearchStep
+                  provider={formValues.jobBoard}
+                  value={atsConfig}
+                  onChange={(next) =>
+                    form.setValue(
+                      "sourceConfig",
+                      { [atsKey]: next } as CreateAutomationInput["sourceConfig"],
+                      { shouldValidate: true },
+                    )
+                  }
+                />
+              </div>
+
+              <div className={step === 2 ? "space-y-4" : "hidden"}>
+                <StepResume form={form} resumes={resumes} />
+              </div>
+
+              <div className={step === 3 ? "space-y-4" : "hidden"}>
+                <StepMatching form={form} />
+              </div>
+
+              <div className={step === 4 ? "space-y-4" : "hidden"}>
+                <StepSchedule form={form} takenHours={takenHours} />
+              </div>
+
+              <div className={step === 5 ? "space-y-4" : "hidden"}>
+                <StepReview
+                  formValues={formValues}
+                  atsConfig={atsConfig}
+                  selectedResume={selectedResume}
+                />
+              </div>
+            </div>
 
             <DialogFooter className="gap-2">
               {step > 0 && (

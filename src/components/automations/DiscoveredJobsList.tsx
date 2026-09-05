@@ -1,85 +1,22 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
-import { format } from "date-fns";
-import { APP_CONSTANTS, DISCOVERY_STATUSES } from "@/lib/constants";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { StatusBadge } from "@/components/StatusBadge";
-import { CircularScore } from "@/components/CircularScore";
-import { getDiscoveryStatusBadgeColor } from "@/lib/badge-colors";
+import { useState, useMemo } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { toastSuccess, toastError } from "@/lib/toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { buttonVariants } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Check,
-  X,
-  ExternalLink,
-  Briefcase,
-  Building2,
-  MapPin,
-  ListFilter,
-  Loader2,
-  Sparkles,
-  Trash2,
-} from "lucide-react";
+import { Briefcase, Loader2 } from "lucide-react";
 import type { DiscoveredJob, DiscoveryStatus } from "@/models/automation.model";
-import { getWorkplaceTypeLabel } from "@/models/job.model";
-import {
-  acceptDiscoveredJob,
-  dismissDiscoveredJob,
-  analyzeDiscoveredJob,
-  clearDiscoveredJobs,
-} from "@/actions/automation.actions";
-import { RecordsCount } from "@/components/RecordsCount";
-
-// A job is "un-analyzed" only when matchData explicitly marks it so (Greenhouse
-// floor survivors). Legacy jobs have no flag but carry a real AI score, so they
-// count as analyzed.
-function isAnalyzed(job: DiscoveredJob): boolean {
-  try {
-    return JSON.parse(job.matchData ?? "{}").analyzed !== false;
-  } catch {
-    return true;
-  }
-}
-
-// Lexical pre-rank as a percentage (weights sum to ~1, so raw × 100). Only
-// Greenhouse jobs carry it; null for legacy jobs.
-function getPrerankPercent(job: DiscoveredJob): number | null {
-  try {
-    const raw = JSON.parse(job.matchData ?? "{}").prerankScore;
-    return typeof raw === "number" ? Math.round(raw * 100) : null;
-  } catch {
-    return null;
-  }
-}
+import { isAnalyzed } from "./discovered-jobs-list/matchData";
+import { useDiscoveredJobActions } from "./discovered-jobs-list/useDiscoveredJobActions";
+import { useJobsInfiniteScroll } from "./discovered-jobs-list/useJobsInfiniteScroll";
+import { DiscoveredJobsHeader } from "./discovered-jobs-list/DiscoveredJobsHeader";
+import { DiscoveredJobRow } from "./discovered-jobs-list/DiscoveredJobRow";
+import { ClearJobsDialog } from "./discovered-jobs-list/ClearJobsDialog";
 
 interface DiscoveredJobsListProps {
   jobs: DiscoveredJob[];
@@ -121,37 +58,18 @@ export function DiscoveredJobsList({
   runInProgress = false,
   onBusyChange,
 }: DiscoveredJobsListProps) {
-  const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [clearOpen, setClearOpen] = useState(false);
   const [clearIncludeNew, setClearIncludeNew] = useState(false);
-  const [clearing, setClearing] = useState(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    onBusyChange?.(loadingAction !== null);
-  }, [loadingAction, onBusyChange]);
+  const { loadingAction, handleAnalyze, handleAccept, handleDismiss } =
+    useDiscoveredJobActions(onRefresh, onBusyChange);
 
-  // Infinite scroll: auto-load next page when sentinel is visible
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (
-          entries[0].isIntersecting &&
-          !loadingMore &&
-          jobs.length < totalJobs
-        ) {
-          onLoadMore();
-        }
-      },
-      { threshold: APP_CONSTANTS.INTERSECTION_OBSERVER_THRESHOLD },
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [jobs.length, totalJobs, loadingMore, onLoadMore]);
+  const sentinelRef = useJobsInfiniteScroll(
+    jobs.length,
+    totalJobs,
+    loadingMore,
+    onLoadMore,
+  );
 
   // Analyzed-first, then by matchScore desc (un-analyzed sort by their lexical
   // matchScore value). The analyzed flag lives in matchData JSON, so sort in JS.
@@ -163,74 +81,6 @@ export function DiscoveredJobsList({
       return b.matchScore - a.matchScore;
     });
   }, [jobs]);
-
-  const handleAnalyze = async (jobId: string) => {
-    setLoadingAction(jobId);
-    try {
-      const result = await analyzeDiscoveredJob(jobId);
-      if (result.success) {
-        toastSuccess("AI match score is ready.", "Match analyzed");
-        onRefresh();
-      } else {
-        toastError(result.message);
-      }
-    } catch {
-      toastError("Failed to analyze job");
-    } finally {
-      setLoadingAction(null);
-    }
-  };
-
-  const handleAccept = async (job: DiscoveredJob) => {
-    setLoadingAction(job.id);
-    try {
-      const result = await acceptDiscoveredJob(job.id);
-      if (result.success) {
-        toastSuccess("The job has been added to your tracked jobs.", "Job accepted");
-        onRefresh();
-      } else {
-        toastError(result.message);
-      }
-    } catch {
-      toastError("Failed to accept job");
-    } finally {
-      setLoadingAction(null);
-    }
-  };
-
-  const handleDismiss = async (jobId: string) => {
-    setLoadingAction(jobId);
-    try {
-      const result = await dismissDiscoveredJob(jobId);
-      if (result.success) {
-        toastSuccess("Job dismissed");
-        onRefresh();
-      } else {
-        toastError(result.message);
-      }
-    } catch {
-      toastError("Failed to dismiss job");
-    } finally {
-      setLoadingAction(null);
-    }
-  };
-
-  const handleClear = async () => {
-    setClearing(true);
-    const result = await clearDiscoveredJobs({
-      automationId,
-      includeNew: clearIncludeNew,
-    });
-    setClearing(false);
-    setClearOpen(false);
-
-    if (result.success) {
-      toastSuccess(`Removed ${result.deleted ?? 0} job(s).`, "Discovered jobs cleared");
-      onRefresh();
-    } else {
-      toastError(result.message);
-    }
-  };
 
   const hasAnyJobs = dismissedCount + newCount + acceptedCount > 0;
 
@@ -248,69 +98,19 @@ export function DiscoveredJobsList({
     );
   }
 
-  const toggleStatusFilter = (status: DiscoveryStatus, checked: boolean) => {
-    onStatusFilterChange(
-      checked
-        ? [...statusFilter, status]
-        : statusFilter.filter((s) => s !== status),
-    );
-  };
-
   return (
     <Card>
-      <CardHeader>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1.5">
-            <CardTitle>Discovered Jobs</CardTitle>
-            {totalJobs > 0 && (
-              <RecordsCount
-                count={jobs.length}
-                total={totalJobs}
-                label="jobs"
-              />
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {dismissedCount + newCount > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setClearIncludeNew(false);
-                  setClearOpen(true);
-                }}
-              >
-                <Trash2 className="h-4 w-4 mr-1.5" />
-                Clear
-              </Button>
-            )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <ListFilter className="h-4 w-4 mr-1.5" />
-                  Status
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Filter by status</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {DISCOVERY_STATUSES.map((status) => (
-                  <DropdownMenuCheckboxItem
-                    key={status.value}
-                    checked={statusFilter.includes(status.value)}
-                    onSelect={(e) => e.preventDefault()}
-                    onCheckedChange={(checked) =>
-                      toggleStatusFilter(status.value, checked)
-                    }
-                  >
-                    {status.label}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </CardHeader>
+      <DiscoveredJobsHeader
+        loadedCount={jobs.length}
+        totalJobs={totalJobs}
+        showClear={dismissedCount + newCount > 0}
+        onClear={() => {
+          setClearIncludeNew(false);
+          setClearOpen(true);
+        }}
+        statusFilter={statusFilter}
+        onStatusFilterChange={onStatusFilterChange}
+      />
       <CardContent>
         {jobs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -336,141 +136,18 @@ export function DiscoveredJobsList({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedJobs.map((job) => {
-                  const isLoading = loadingAction === job.id;
-                  const analyzed = isAnalyzed(job);
-                  const prerankPercent = getPrerankPercent(job);
-
-                  return (
-                    <TableRow key={job.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="font-medium hover:underline cursor-pointer"
-                            onClick={() => onViewDetails?.(job)}
-                          >
-                            {job.JobTitle.label}
-                          </span>
-                          {job.jobUrl && (
-                            <a
-                              href={job.jobUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-muted-foreground hover:text-foreground"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </a>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4 text-muted-foreground" />
-                          {job.Company.label}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          {job.Location?.label || "N/A"}
-                          {job.workplaceType && (
-                            <Badge variant="outline" className="text-xs">
-                              {getWorkplaceTypeLabel(job.workplaceType, job.workplaceType)}
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {prerankPercent != null ? (
-                          <span
-                            className="font-mono text-sm text-muted-foreground"
-                            title="Internal lexical relevance score (not an AI match)"
-                          >
-                            {prerankPercent}%
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {analyzed ? (
-                          <CircularScore
-                            score={job.matchScore}
-                            size="sm"
-                            animate={false}
-                            className="mx-auto"
-                          />
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleAnalyze(job.id)}
-                            disabled={isLoading || runInProgress}
-                            title={
-                              runInProgress
-                                ? "A run is in progress. Wait until it completes."
-                                : undefined
-                            }
-                          >
-                            {isLoading ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <>
-                                <Sparkles className="h-3.5 w-3.5 mr-1" />
-                                Analyze
-                              </>
-                            )}
-                          </Button>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge
-                          label={
-                            DISCOVERY_STATUSES.find(
-                              (s) => s.value === job.discoveryStatus,
-                            )?.label ?? job.discoveryStatus
-                          }
-                          color={getDiscoveryStatusBadgeColor(
-                            job.discoveryStatus,
-                          )}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(job.discoveredAt), "MMM d, yyyy")}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {job.discoveryStatus === "new" && (
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleAccept(job)}
-                              disabled={isLoading}
-                            >
-                              {isLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Check className="h-4 w-4" />
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleDismiss(job.id)}
-                              disabled={isLoading}
-                            >
-                              {isLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <X className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {sortedJobs.map((job) => (
+                  <DiscoveredJobRow
+                    key={job.id}
+                    job={job}
+                    isLoading={loadingAction === job.id}
+                    runInProgress={runInProgress}
+                    onViewDetails={onViewDetails}
+                    onAnalyze={handleAnalyze}
+                    onAccept={handleAccept}
+                    onDismiss={handleDismiss}
+                  />
+                ))}
               </TableBody>
             </Table>
             {jobs.length < totalJobs && (
@@ -491,49 +168,15 @@ export function DiscoveredJobsList({
         )}
       </CardContent>
 
-      <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Clear discovered jobs?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Accepted jobs are always kept. This permanently deletes all
-              dismissed jobs
-              {clearIncludeNew && newCount > 0
-                ? " and all unreviewed new jobs"
-                : ""}
-              . This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {newCount > 0 && (
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="h-4 w-4"
-                checked={clearIncludeNew}
-                onChange={(e) => setClearIncludeNew(e.target.checked)}
-              />
-              Also delete {newCount} unreviewed new job(s)
-            </label>
-          )}
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={clearing}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className={buttonVariants({ variant: "destructive" })}
-              disabled={clearing}
-              onClick={(e) => {
-                e.preventDefault();
-                handleClear();
-              }}
-            >
-              {clearing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Delete"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ClearJobsDialog
+        open={clearOpen}
+        onOpenChange={setClearOpen}
+        includeNew={clearIncludeNew}
+        onIncludeNewChange={setClearIncludeNew}
+        newCount={newCount}
+        automationId={automationId}
+        onRefresh={onRefresh}
+      />
     </Card>
   );
 }
