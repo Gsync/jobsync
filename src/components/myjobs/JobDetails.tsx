@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { Badge } from "../ui/badge";
 import { StatusBadge } from "../StatusBadge";
 import { getJobStatusBadgeColor } from "@/lib/badge-colors";
+import { JobStatusMenuItems } from "./JobStatusMenuItems";
 import { formatUrl } from "@/lib/utils";
 import {
   Company,
@@ -254,16 +255,11 @@ function JobDetails({
                   </DropdownMenuSubTrigger>
                   <DropdownMenuPortal>
                     <DropdownMenuSubContent className="p-0">
-                      {jobStatuses.map((status) => (
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          key={status.id}
-                          onSelect={() => onChangeStatus(status)}
-                          disabled={status.id === currentStatus.id}
-                        >
-                          <span>{status.label}</span>
-                        </DropdownMenuItem>
-                      ))}
+                      <JobStatusMenuItems
+                        jobStatuses={jobStatuses}
+                        currentStatusId={currentStatus.id}
+                        onSelectStatus={onChangeStatus}
+                      />
                     </DropdownMenuSubContent>
                   </DropdownMenuPortal>
                 </DropdownMenuSub>
@@ -354,13 +350,13 @@ function JobDetails({
               <StatusBadge
                 label="Expired"
                 color="amber"
-                className="w-[70px] justify-center"
+                className="w-[110px] whitespace-nowrap justify-center"
               />
             ) : (
               <StatusBadge
                 label={currentStatus?.label ?? ""}
                 color={getJobStatusBadgeColor(currentStatus?.value ?? "")}
-                className="w-[70px] justify-center"
+                className="w-[110px] whitespace-nowrap justify-center"
               />
             )}
             {job?.appliedDate && (

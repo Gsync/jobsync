@@ -271,6 +271,8 @@ export const JOB_STATUSES = [
   { label: "Applied", value: "applied" },
   { label: "Interview", value: "interview" },
   { label: "Offer", value: "offer" },
+  { label: "Offer Accepted", value: "offer-accepted" },
+  { label: "Offer Declined", value: "offer-declined" },
   { label: "Rejected", value: "rejected" },
   { label: "Expired", value: "expired" },
   { label: "Archived", value: "archived" },

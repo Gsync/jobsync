@@ -214,4 +214,48 @@ describe("MyJobsTable", () => {
       });
     });
   });
+
+  describe("status badge menu", () => {
+    const user = userEvent.setup();
+
+    it("opens a status menu when the badge is clicked", async () => {
+      renderTable([makeJob()]);
+
+      await user.click(
+        screen.getByRole("button", { name: "Change status, currently Applied" }),
+      );
+
+      expect(await screen.findByText("Interview")).toBeInTheDocument();
+    });
+
+    it("calls onChangeJobStatus with the job id and selected status", async () => {
+      const { onChangeJobStatus } = renderTable([makeJob()]);
+
+      await user.click(
+        screen.getByRole("button", { name: "Change status, currently Applied" }),
+      );
+      await user.click(await screen.findByText("Interview"));
+
+      expect(onChangeJobStatus).toHaveBeenCalledWith("job-1", {
+        id: "2",
+        label: "Interview",
+        value: "interview",
+      });
+    });
+
+    it("checks and disables the current status", async () => {
+      renderTable([makeJob()]);
+
+      await user.click(
+        screen.getByRole("button", { name: "Change status, currently Applied" }),
+      );
+
+      const appliedOption = (await screen.findAllByText("Applied")).find((el) =>
+        el.closest('[role="menuitem"]'),
+      );
+      expect(appliedOption?.closest('[role="menuitem"]')).toHaveAttribute(
+        "data-disabled",
+      );
+    });
+  });
 });

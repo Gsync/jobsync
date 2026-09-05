@@ -24,6 +24,8 @@ export const JOB_STATUS_BADGE_COLORS: Record<JobStatusValue, BadgeColor> = {
   applied: "blue",
   interview: "violet",
   offer: "emerald",
+  "offer-accepted": "emerald",
+  "offer-declined": "slate",
   rejected: "red",
   expired: "amber",
   archived: "slate",

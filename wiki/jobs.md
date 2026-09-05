@@ -3,7 +3,7 @@ type: how-to
 title: Jobs
 description: Adding jobs by hand or by pasting a posting into AI chat, moving them through the status workflow, and finding, editing, exporting or deleting them.
 feature: jobs
-tags: [jobs, applications, add a job, status, applied, interview, offer, rejected, csv, export, paste, filter, search]
+tags: [jobs, applications, add a job, status, applied, interview, offer, offer accepted, offer declined, rejected, csv, export, paste, filter, search]
 aliases: [job tracker, application tracker, my jobs, job board, track an application, job list]
 status: stable
 stale_after: 2027-08-31
@@ -27,13 +27,11 @@ This requires an AI provider and model to be set under **Settings → AI Provide
 
 ## What do the job statuses mean?
 
-A job carries exactly one status from: **New**, **Draft**, **Applied**, **Interview**, **Offer**, **Rejected**, **Expired** and **Archived**. They are labels you move by hand, not a state machine — nothing stops you going from Interview back to Draft, and nothing changes a status on your behalf.
-
-*New* is where a job discovered by an automation starts. *Draft* is a job you have entered but not applied to. *Applied* through *Offer* track a live application. *Expired* is for a posting that closed before you acted; *Archived* is for anything you want out of the way without deleting it.
+A job carries exactly one status from: **New**, **Draft**, **Applied**, **Interview**, **Offer**, **Offer Accepted**, **Offer Declined**, **Rejected**, **Expired** and **Archived** — *Offer Declined* for an offer you turned down, *Rejected* for one the company turned down. They are labels you move by hand, not a state machine — nothing stops you going from Interview back to Draft, and nothing changes a status on your behalf.
 
 ## How do I change a job's status?
 
-Open the job from the Jobs list, click the **⋮** menu at the top-right of the job details, and choose **Change status** — the submenu lists every status, with the current one greyed out. The change saves immediately; there is no separate save step.
+There are two ways. In the Jobs list, click a row's status badge and pick the new status from the menu. Or open the job and use the **⋮** menu at the top-right of the job details, choosing **Change status**. Either menu lists every status with the current one greyed out, and the change saves immediately — there is no separate save step.
 
 The Add Job dialog also has a Status field, so a status can be set when you first create the job or from **Edit Job** later.
 

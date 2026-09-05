@@ -20,6 +20,16 @@ export const JOB_STATUSES = [
     value: "offer",
   },
   {
+    id: "ed067643-9887-467d-b870-a5bad64de662",
+    label: "Offer Accepted",
+    value: "offer-accepted",
+  },
+  {
+    id: "ef09b767-29bb-4800-8713-daebe4600b41",
+    label: "Offer Declined",
+    value: "offer-declined",
+  },
+  {
     id: "2ff7fed9-82ed-43f5-89ff-e8a676c1c4fe",
     label: "Rejected",
     value: "rejected",

@@ -16,6 +16,7 @@ import {
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
 import { JobResponse, JobStatus } from "@/models/job.model";
+import { JobStatusMenuItems } from "./JobStatusMenuItems";
 
 type JobActionsMenuProps = {
   job: JobResponse;
@@ -81,18 +82,11 @@ export function JobActionsMenu({
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent className="p-0">
-                {jobStatuses.map((status) => (
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    key={status.id}
-                    onSelect={(_) => {
-                      onChangeJobStatus(job.id, status);
-                    }}
-                    disabled={status.id === job.Status.id}
-                  >
-                    <span>{status.label}</span>
-                  </DropdownMenuItem>
-                ))}
+                <JobStatusMenuItems
+                  jobStatuses={jobStatuses}
+                  currentStatusId={job.Status.id}
+                  onSelectStatus={(status) => onChangeJobStatus(job.id, status)}
+                />
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
           </DropdownMenuSub>
