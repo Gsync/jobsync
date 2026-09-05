@@ -290,6 +290,7 @@ function JobDetails({
                 {job?.Location?.label && `${job.Location.label} - `}
                 {getJobType(job?.jobType)}
                 {job?.workplaceType && ` · ${getWorkplaceTypeLabel(job.workplaceType)}`}
+                {job?.salaryRange && ` · ${job.salaryRange}`}
               </CardDescription>
             </div>
             <div className="flex flex-col items-end gap-2">

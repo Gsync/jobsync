@@ -15,7 +15,7 @@ stale_after: 2027-08-31
 
 Open **Jobs** in the sidebar and click **Add Job** at the top-right of the Jobs card. Job Title, Company, Job Location and Job Source are the fields you must fill in — each is a combo box that either picks an existing entry or creates a new one as you type, and Location and Source come pre-selected with whatever you used on your last job.
 
-Job Type, Workplace Type, Status, Due Date, Salary Range and Job Description are required too, but the form opens with them already set — Job Type on its first option, Workplace Type on Onsite, Status on Draft, Due Date three days from today, Salary Range `1` and Job Description the placeholder `N/A`. You can change any of them; you cannot clear them. Genuinely optional are Job URL, the Applied switch, Date Applied, a resume and cover letter to attach, and skills.
+Job Type, Workplace Type, Status, Due Date and Job Description are required too, but the form opens with them already set — Job Type on its first option, Workplace Type on Onsite, Status on Draft, Due Date three days from today and Job Description the placeholder `N/A`. You can change any of them; you cannot clear them. Genuinely optional are Job URL, Salary Range, the Applied switch, Date Applied, a resume and cover letter to attach, and skills. Salary Range is free text: pick one of the 10,000-wide suggestions from `Under 50,000` to `300,000+`, or type your own — `$120k – $150k`, `Negotiable` — and it is saved exactly as typed and shown on the job's details page.
 
 Paste the full posting text into Job Description if you have it. The AI features — resume review, job match and cover letter generation — read that field, and a job saved with only a title and a salary gives them almost nothing to work from.
 

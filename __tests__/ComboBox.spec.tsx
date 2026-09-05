@@ -49,11 +49,15 @@ function Harness({
   creatable = true,
   name = "company",
   options = companies,
+  freeText = false,
+  label,
 }: {
   onChange: (v: string) => void;
   creatable?: boolean;
   name?: string;
   options?: { id: string; value: string; label: string }[];
+  freeText?: boolean;
+  label?: string;
 }) {
   const form = useForm({ defaultValues: { [name]: "" } });
   return (
@@ -73,6 +77,8 @@ function Harness({
                 },
               }}
               creatable={creatable}
+              freeText={freeText}
+              label={label}
             />
           </FormItem>
         )}
@@ -341,5 +347,129 @@ describe("Combobox Enter key", () => {
       await waitFor(() => expect(toastError).toHaveBeenCalled());
       expect(onChange).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe("Combobox freeText", () => {
+  const salaries = [
+    { id: "Under 50,000", value: "Under 50,000", label: "Under 50,000" },
+    {
+      id: "100,000 - 110,000",
+      value: "100,000 - 110,000",
+      label: "100,000 - 110,000",
+    },
+  ];
+
+  it("stores typed text as the value and calls no create action", async () => {
+    const { user, input, onChange } = await openCombobox({
+      name: "salaryRange",
+      options: salaries,
+      freeText: true,
+    });
+
+    await user.type(input, "$120k - $150k CAD{Enter}");
+
+    await waitFor(() =>
+      expect(onChange).toHaveBeenCalledWith("$120k - $150k CAD")
+    );
+    expect(addCompany).not.toHaveBeenCalled();
+    expect(createJobTitle).not.toHaveBeenCalled();
+    expect(createLocation).not.toHaveBeenCalled();
+    expect(createJobSource).not.toHaveBeenCalled();
+    expect(createActivityType).not.toHaveBeenCalled();
+  });
+
+  it("stores the preset text when a suggestion is picked", async () => {
+    const { user, onChange } = await openCombobox({
+      name: "salaryRange",
+      options: salaries,
+      freeText: true,
+    });
+
+    await user.click(screen.getByRole("option", { name: "100,000 - 110,000" }));
+
+    await waitFor(() =>
+      expect(onChange).toHaveBeenCalledWith("100,000 - 110,000")
+    );
+  });
+
+  it("displays a value that matches no option", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <Harness
+        onChange={onChange}
+        name="salaryRange"
+        options={salaries}
+        freeText
+      />
+    );
+
+    await user.click(screen.getByRole("combobox"));
+    const input = screen.getByPlaceholderText(/Search salaryRange/i);
+    await user.type(input, "$190k - $220k{Enter}");
+
+    await waitFor(() =>
+      expect(screen.getByRole("combobox")).toHaveTextContent("$190k - $220k")
+    );
+  });
+
+  it("trims typed text before storing it", async () => {
+    const { user, input, onChange } = await openCombobox({
+      name: "salaryRange",
+      options: salaries,
+      freeText: true,
+    });
+
+    // CommandEmpty's onClick passes the raw input, unlike the Enter path
+    await user.type(input, "  Negotiable  ");
+    await user.click(screen.getByText("Negotiable", { selector: "p" }));
+
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith("Negotiable"));
+  });
+
+  it("still renders blank for an unknown value without freeText", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<Harness onChange={onChange} options={companies} />);
+
+    await user.click(screen.getByRole("combobox"));
+    const input = screen.getByPlaceholderText(/Search company/i);
+    await user.type(input, "Zebra{Enter}");
+
+    // options.unshift doesn't survive the re-render, so the created entry has
+    // no label to find — the trigger must stay blank, never show the raw id.
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith("new-id"));
+    expect(screen.getByRole("combobox")).not.toHaveTextContent("new-id");
+  });
+});
+
+describe("Combobox label", () => {
+  it("uses the label prop in both placeholders", async () => {
+    const user = userEvent.setup();
+    render(
+      <Harness onChange={vi.fn()} name="salaryRange" label="Salary Range" />
+    );
+
+    const trigger = screen.getByRole("combobox");
+    expect(trigger).toHaveTextContent("Select Salary Range");
+
+    await user.click(trigger);
+    expect(
+      screen.getByPlaceholderText("Create or Search Salary Range")
+    ).toBeInTheDocument();
+  });
+
+  it("falls back to the field name when no label is given", async () => {
+    const user = userEvent.setup();
+    render(<Harness onChange={vi.fn()} />);
+
+    const trigger = screen.getByRole("combobox");
+    expect(trigger).toHaveTextContent("Select company");
+
+    await user.click(trigger);
+    expect(
+      screen.getByPlaceholderText("Create or Search company")
+    ).toBeInTheDocument();
   });
 });

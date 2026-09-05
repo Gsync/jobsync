@@ -104,17 +104,22 @@ test.describe("Add New Job", () => {
     );
   });
 
-  test("should persist selected salary range after saving", async ({
+  test("should persist a typed salary range after saving", async ({
     page,
     cleanup,
   }) => {
     const jobText = uniqueName("developer test title salary");
+    const salary = "$185k - $210k";
     await createNewJob(page, jobText, cleanup, {
       beforeSave: async (page) => {
-        await page.getByLabel("Select Salary Range").click();
-        await page
-          .getByRole("option", { name: "40,000 - 50,000", exact: true })
-          .click();
+        await page.getByLabel("Salary Range").click();
+        const input = page.getByPlaceholder("Create or Search Salary Range");
+        await input.fill(salary);
+        // Same target as the shared selectOrCreate helper: CommandEmpty splits
+        // "Create: " and the typed text across two <p>s, so match the wrapper
+        // by text rather than by an option role it does not have.
+        await page.getByText(`Create: ${salary}`).click();
+        await expect(input).not.toBeVisible({ timeout: 15000 });
       },
     });
     await expect(page.getByRole("row", { name: jobText }).first()).toBeVisible();
@@ -125,9 +130,7 @@ test.describe("Add New Job", () => {
       .first()
       .click();
     await page.getByRole("menuitem", { name: "Edit Job" }).click();
-    await expect(page.getByLabel("Select Salary Range")).toContainText(
-      "40,000 - 50,000",
-    );
+    await expect(page.getByLabel("Salary Range")).toContainText(salary);
   });
 
   test("should persist selected workplace type after saving", async ({

@@ -23,7 +23,7 @@ Nothing AI-powered works until a provider *and* a model are both set — resume 
 
 ## How do I add my first job?
 
-Click **Jobs** in the sidebar, then the **Add Job** button in the top-right of the Jobs card. Job Title, Company, Job Location and Job Source are the fields you have to fill in yourself. Job Type, Workplace Type, Status, Due Date, Salary Range and Job Description are also required, but the form arrives with them already filled — Due Date three days out and Job Description the placeholder `N/A` — so you can change them but not leave them empty. Job URL, Date Applied, a resume, a cover letter and skills are the genuinely optional ones, and you can add them later.
+Click **Jobs** in the sidebar, then the **Add Job** button in the top-right of the Jobs card. Job Title, Company, Job Location and Job Source are the fields you have to fill in yourself. Job Type, Workplace Type, Status, Due Date and Job Description are also required, but the form arrives with them already filled — Due Date three days out and Job Description the placeholder `N/A` — so you can change them but not leave them empty. Job URL, Salary Range, Date Applied, a resume, a cover letter and skills are the genuinely optional ones, and you can add them later.
 
 There is a faster route once an AI provider is set: click **Chat AI** in the header, paste the full text of a job posting into the chat, and the assistant extracts the details and shows you exactly what it found before anything is saved. Nothing is written until you approve it.
 

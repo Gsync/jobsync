@@ -187,12 +187,26 @@ describe("AddJob Component", () => {
     expect(options.length).toBeGreaterThan(0);
     expect(options[0].textContent).toBe("Indeed");
   });
-  it("should load and show the salary range select list", async () => {
-    const salaryRangeSelect = screen.getByLabelText("Salary Range");
-    await user.click(salaryRangeSelect);
+  it("should load and show the salary range suggestions", async () => {
+    const salaryRangeCombobox = screen.getByLabelText("Salary Range");
+    await user.click(salaryRangeCombobox);
     const options = screen.getAllByRole("option");
     expect(options.length).toBeGreaterThan(0);
-    expect(options[0].textContent).toBe("0 - 10,000");
+    expect(options[0].textContent).toBe("Under 50,000");
+    expect(options.at(-1)!.textContent).toBe("300,000+");
+  });
+
+  it("should accept a typed salary that is not in the suggestions", async () => {
+    const salaryRangeCombobox = screen.getByLabelText("Salary Range");
+    await user.click(salaryRangeCombobox);
+    const input = screen.getByPlaceholderText("Create or Search Salary Range");
+    await user.type(input, "$185k - $210k{Enter}");
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Salary Range")).toHaveTextContent(
+        "$185k - $210k",
+      ),
+    );
   });
   it("should load and show the status select list", async () => {
     const statusSelect = screen.getByLabelText("Status");
@@ -259,7 +273,7 @@ describe("AddJob Component", () => {
         status: "d7ba200a-6dc1-4ea8-acff-29ebb0d4676a",
         dueDate: expect.any(Date),
         dateApplied: undefined,
-        salaryRange: "1",
+        salaryRange: "",
         jobDescription: "<p>New Job Description</p>",
         jobUrl: "",
         applied: false,
@@ -387,13 +401,13 @@ describe("AddJob Component - Edit Mode", () => {
     createdAt: new Date("2024-06-01"),
     appliedDate: new Date("2024-06-05"),
     dueDate: new Date("2024-06-20"),
-    salaryRange: "2",
+    salaryRange: "100,000 - 110,000",
     description: "<p>Existing job description</p>",
     jobUrl: "https://example.com/job",
     applied: true,
   } as unknown as JobResponse;
 
-  async function renderEditMode() {
+  async function renderEditMode(overrides: Partial<JobResponse> = {}) {
     const mockCompanies = (await getMockList(1, 10, "companies")).data;
     const mockJobTitles = (await getMockList(1, 10, "jobTitles")).data;
     const mockLocations = (await getMockList(1, 10, "locations")).data;
@@ -406,7 +420,7 @@ describe("AddJob Component - Edit Mode", () => {
         locations={mockLocations}
         jobSources={mockJobSources}
         tags={[]}
-        editJob={editJob}
+        editJob={{ ...editJob, ...overrides }}
         resetEditJob={mockResetEditJob}
       />,
     );
@@ -428,9 +442,20 @@ describe("AddJob Component - Edit Mode", () => {
     expect(screen.getByLabelText("Job URL")).toHaveValue(
       "https://example.com/job",
     );
+    expect(screen.getByLabelText("Salary Range")).toHaveTextContent(
+      "100,000 - 110,000",
+    );
 
     const appliedSwitch = screen.getByRole("switch");
     expect(appliedSwitch).toBeChecked();
+  });
+
+  it("pre-fills a free-text salary that matches no suggestion", async () => {
+    await renderEditMode({ salaryRange: "$190k – $220k" } as Partial<JobResponse>);
+
+    expect(screen.getByLabelText("Salary Range")).toHaveTextContent(
+      "$190k – $220k",
+    );
   });
 
   it("leaves workplace type unselected when editing a job with no workplaceType", async () => {

@@ -33,9 +33,19 @@ interface ComboboxProps {
   options: any[];
   field: ControllerRenderProps<any, any>;
   creatable?: boolean;
+  freeText?: boolean;
+  label?: string;
 }
 
-export function Combobox({ options, field, creatable }: ComboboxProps) {
+export function Combobox({
+  options,
+  field,
+  creatable,
+  freeText,
+  label,
+}: ComboboxProps) {
+  // Placeholder text only; the accessible name comes from FormLabel/FormControl
+  const displayName = label ?? field.name;
   const [newOption, setNewOption] = useState<string>("");
   const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
 
@@ -61,6 +71,14 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
   };
   const onCreateOption = (label: string) => {
     if (!label) return;
+    // A free-text field has no reference record behind it — the typed text is
+    // itself the stored value, so there is nothing to create server-side.
+    if (freeText) {
+      // CommandEmpty's onClick passes the raw input; only Enter pre-trims
+      field.onChange(label.trim());
+      setIsPopoverOpen(false);
+      return;
+    }
     startTransition(async () => {
       let response;
       switch (field.name) {
@@ -113,8 +131,9 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
           >
             <span className="min-w-0 truncate">
               {field.value
-                ? options.find((option) => option.id === field.value)?.label
-                : `Select ${field.name}`}
+                ? (options.find((option) => option.id === field.value)?.label ??
+                  (freeText ? field.value : null))
+                : `Select ${displayName}`}
             </span>
 
             {isPending ? (
@@ -134,7 +153,7 @@ export function Combobox({ options, field, creatable }: ComboboxProps) {
           <CommandInput
             value={newOption}
             onValueChange={(val: string) => setNewOption(val)}
-            placeholder={`${creatable ? "Create or " : ""}Search ${field.name}`}
+            placeholder={`${creatable ? "Create or " : ""}Search ${displayName}`}
             onKeyDown={(e) => handleEnterKey(e)}
           />
           <CommandList>

@@ -120,7 +120,7 @@ export function AddJob({
     workplaceType: "ONSITE",
     dueDate: addDays(new Date(), 3),
     status: jobStatuses[0]?.id,
-    salaryRange: "1",
+    salaryRange: "",
     jobUrl: "",
     jobDescription: "N/A",
     location: locations.find((l) => l.id === lastLocationId)?.id,
@@ -171,7 +171,7 @@ export function AddJob({
         source: editJob.JobSource?.id,
         status: editJob.Status.id,
         dueDate: editJob.dueDate,
-        salaryRange: editJob.salaryRange,
+        salaryRange: editJob.salaryRange ?? "",
         jobDescription: editJob.description,
         applied: editJob.applied,
         jobUrl: editJob.jobUrl ?? "",
@@ -547,13 +547,13 @@ export function AddJob({
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel>Salary Range</FormLabel>
-                        <FormControl>
-                          <SelectFormCtrl
-                            label="Salary Range"
-                            options={SALARY_RANGES}
-                            field={field}
-                          />
-                        </FormControl>
+                        <Combobox
+                          options={SALARY_RANGES}
+                          field={field}
+                          creatable
+                          freeText
+                          label="Salary Range"
+                        />
                         <FormMessage />
                       </FormItem>
                     )}

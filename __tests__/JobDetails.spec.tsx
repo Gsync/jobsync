@@ -79,7 +79,7 @@ const makeJob = (overrides: Partial<JobResponse> = {}): JobResponse => ({
   createdAt: new Date("2025-01-01"),
   appliedDate: new Date("2025-01-15"),
   dueDate: new Date("2099-12-31"), // far future — not expired
-  salaryRange: "3",
+  salaryRange: "100,000 - 110,000",
   description: "<p>Job description</p>",
   jobUrl: "",
   applied: true,
@@ -142,6 +142,31 @@ describe("JobDetails – skill badges", () => {
     // getAllByText returns an array; each label should appear exactly once in the badge area
     expect(screen.getAllByText("React")).toHaveLength(1);
     expect(screen.getAllByText("Vue")).toHaveLength(1);
+  });
+});
+
+describe("JobDetails – salary range", () => {
+  it("renders the salary range in the header line", () => {
+    render(<JobDetails {...baseProps} job={makeJob()} />);
+
+    expect(screen.getByText(/100,000 - 110,000/)).toBeInTheDocument();
+  });
+
+  it("renders a free-text salary verbatim", () => {
+    render(
+      <JobDetails {...baseProps} job={makeJob({ salaryRange: "$190k – $220k" })} />
+    );
+
+    expect(screen.getByText(/\$190k – \$220k/)).toBeInTheDocument();
+  });
+
+  it("renders no salary segment when the job has none", () => {
+    const { container } = render(
+      <JobDetails {...baseProps} job={makeJob({ salaryRange: null })} />
+    );
+
+    expect(container.textContent).not.toContain("100,000 - 110,000");
+    expect(screen.getByText("Frontend Developer")).toBeInTheDocument();
   });
 });
 

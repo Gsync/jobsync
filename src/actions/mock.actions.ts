@@ -542,7 +542,7 @@ export const generateMockJobsAction = async (): Promise<any> => {
       const description =
         mockJobDescriptions[getRandomInt(0, mockJobDescriptions.length - 1)];
       const salaryRange =
-        SALARY_RANGES[getRandomInt(0, SALARY_RANGES.length - 1)].id;
+        SALARY_RANGES[getRandomInt(0, SALARY_RANGES.length - 1)].value;
       const dueDate = subDays(now, daysAgo - getRandomInt(7, 21));
       const jobType = mockJobTypes[getRandomInt(0, mockJobTypes.length - 1)];
       const workplaceType =
