@@ -1,5 +1,45 @@
 # Changelog
 
+## [1.1.19](https://github.com/Gsync/jobsync/compare/v1.1.18...v1.1.19) (2026-09-06)
+
+
+### Features
+
+* seed the Ashby company directory, resolve Ashby board tokens and offer Ashby in the wizard
+* add the Ashby fetch adapter and mapper, and register Ashby across the model, schema, ATS registry and board URLs
+* remove the JSearch job board and the RapidAPI provider it powered
+* add Offer Accepted/Declined statuses and make the status badge a picker
+* make Salary Range optional free text, surface it on job details, widen the preset bands
+* cap the weekly Activities chart to top-3 + Other, matching the donut
+* add the OKF help bundle, its CI guard and GitHub wiki publishing
+* wire OTEL_* passthroughs into the Jenkins deploy path
+* trace automation runs end to end and move server logs to log.*
+* add GenAI spans at the five LLM call sites and fix float encoding
+* add log records and fan automation-logger entries out to OTLP
+* add zero-dependency OTLP span exporter and context propagation
+* log measured prompt-prefix sizes per turn
+
+### Bug Fixes
+
+* focus the search input when the ATS company and targeting pickers open
+* drop the Greenhouse keyword floor to 1, log true floor counts, relabel unset titles
+* conditionally render caution message for editing company name
+* stop the activity donut overlapping its total and flickering on panel toggle
+* keep the chip-only user turn, stop swallowing stream errors, and route chat logs to OTLP
+* change filter option label from "None" to "All (Except Dismissed)"
+
+### Other Changes
+
+* add Ashby to automated job discovery and link the help wiki
+* patch the app's fast-uri, qs, xmldom and humanfs, and bump evals' brace-expansion overrides
+* add the automations help page, link it from the index and drop Remote from the locations placeholder
+* move the shared ranking pipeline, HTML helpers and ATS_* constants out of greenhouse/, updating components and specs
+* split the detail page, wizard, ATS step, jobs list and scraper runner into modules
+* add the MCP Access help page, its index entry and an "mcp" feature
+* spike span parenting through the agent chat stream boundary
+* replace hand-rolled auth guards with requireUser() across 12 action files
+
+
 ## [1.1.18](https://github.com/Gsync/jobsync/compare/v1.1.17...v1.1.18) (2026-08-23)
 
 
