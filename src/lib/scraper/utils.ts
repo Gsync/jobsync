@@ -1,7 +1,7 @@
 import type { ScraperError } from "./types";
 import { canonicalizeEntityValue } from "@/lib/jobs/canonicalize";
 
-// Allowlist for ATS board tokens (shared by Greenhouse + Lever). Rejects
+// Allowlist for ATS board tokens (shared by every ATS provider). Rejects
 // path/query injection before the token is interpolated into a fetch URL.
 export const ATS_TOKEN_REGEX = /^[a-z0-9][a-z0-9_-]{1,79}$/;
 
@@ -95,7 +95,7 @@ export function jobDedupeKey(job: DedupableJob): string {
 }
 
 // Removes jobs already saved (existingKeys) and collapses duplicates within the
-// batch itself. Both ATS source paths (Greenhouse, Lever) run through here.
+// batch itself. Every ATS source path runs through here.
 // Accepts any key lookup with `.has` so callers can pass a Set or the
 // getExistingJobDedupeMap Map directly.
 export function dedupeJobs<T extends DedupableJob>(

@@ -15,5 +15,8 @@ export function companyBoardUrl(
         : APP_CONSTANTS.LEVER_JOB_URL;
     return `${base}/${company.token}`;
   }
+  if (jobBoard === "ashby") {
+    return `${APP_CONSTANTS.ASHBY_JOB_URL}/${company.token}`;
+  }
   return `${APP_CONSTANTS.GREENHOUSE_BOARD_URL}/${company.token}`;
 }

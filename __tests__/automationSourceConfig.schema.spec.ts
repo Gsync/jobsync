@@ -83,4 +83,24 @@ describe("CreateAutomationSchema conditional validation", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("ashby requires at least one company", () => {
+    const result = CreateAutomationSchema.safeParse({
+      ...base,
+      jobBoard: "ashby",
+      sourceConfig: { ashby: { companies: [] } },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("ashby passes with one company", () => {
+    const result = CreateAutomationSchema.safeParse({
+      ...base,
+      jobBoard: "ashby",
+      sourceConfig: {
+        ashby: { companies: [{ name: "Ramp", token: "ramp" }] },
+      },
+    });
+    expect(result.success).toBe(true);
+  });
 });

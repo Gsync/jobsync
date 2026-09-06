@@ -2,7 +2,7 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import type { CreateAutomationInput } from "@/models/automation.schema";
 import type { AtsConfigValue } from "../AtsSearchStep";
 
-export type AtsKey = "greenhouse" | "lever";
+export type AtsKey = "greenhouse" | "lever" | "ashby";
 
 export const EMPTY_ATS: AtsConfigValue = {
   companies: [],

@@ -6,8 +6,8 @@ import type { JobDetails } from "../types";
 export type AtsHost = "default" | "eu";
 
 export interface AtsProvider {
-  id: JobBoard; // "greenhouse" | "lever"
-  label: string; // "Greenhouse" | "Lever"
+  id: JobBoard;
+  label: string; // display name shown in the wizard/detail UI
   // Fetch a watchlist with bounded concurrency + per-token isolation.
   search(
     companies: { name: string; token: string; host?: AtsHost }[],

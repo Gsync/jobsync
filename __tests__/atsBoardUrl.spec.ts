@@ -32,4 +32,16 @@ describe("companyBoardUrl", () => {
       companyBoardUrl("greenhouse", { token: "acme", host: "eu" }),
     ).toBe(`${APP_CONSTANTS.GREENHOUSE_BOARD_URL}/acme`);
   });
+
+  it("builds an Ashby board URL from the token", () => {
+    expect(companyBoardUrl("ashby", { token: "ramp" })).toBe(
+      `${APP_CONSTANTS.ASHBY_JOB_URL}/ramp`,
+    );
+  });
+
+  it("ignores host for Ashby boards (single global host)", () => {
+    expect(companyBoardUrl("ashby", { token: "ramp", host: "eu" })).toBe(
+      `${APP_CONSTANTS.ASHBY_JOB_URL}/ramp`,
+    );
+  });
 });

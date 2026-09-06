@@ -4,7 +4,7 @@ import { APP_CONSTANTS } from "@/lib/constants";
 // network code into the client bundle via this file's client consumers.
 import { ATS_TOKEN_REGEX } from "@/lib/scraper/utils";
 
-export const JobBoardSchema = z.enum(["greenhouse", "lever"]);
+export const JobBoardSchema = z.enum(["greenhouse", "lever", "ashby"]);
 
 export const AutomationStatusSchema = z.enum(["active", "paused"]);
 
@@ -50,9 +50,22 @@ export const LeverSourceConfigSchema = GreenhouseSourceConfigSchema.extend({
     .max(APP_CONSTANTS.ATS_MAX_COMPANIES),
 });
 
+// Same token allowlist as Lever (rejects path/query injection at the save
+// boundary); no `host` — Ashby is single-host.
+export const AshbyCompanySchema = GreenhouseCompanySchema.extend({
+  token: z.string().regex(ATS_TOKEN_REGEX),
+});
+
+export const AshbySourceConfigSchema = GreenhouseSourceConfigSchema.extend({
+  companies: z
+    .array(AshbyCompanySchema)
+    .max(APP_CONSTANTS.ATS_MAX_COMPANIES),
+});
+
 export const SourceConfigSchema = z.object({
   greenhouse: GreenhouseSourceConfigSchema.optional(),
   lever: LeverSourceConfigSchema.optional(),
+  ashby: AshbySourceConfigSchema.optional(),
 });
 
 export const CreateAutomationSchema = z

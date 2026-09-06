@@ -11,7 +11,7 @@ export type AutomationRunStatus =
   | "rate_limited"
   | "cancelled";
 export type DiscoveryStatus = "new" | "accepted" | "dismissed";
-export type JobBoard = "greenhouse" | "lever";
+export type JobBoard = "greenhouse" | "lever" | "ashby";
 
 export interface GreenhouseCompany {
   name: string;
@@ -42,15 +42,28 @@ export interface LeverSourceConfig
   companies: LeverCompany[];
 }
 
+// Ashby has a single global host, so its company entries are the plain
+// {name, token} shape — no `host`, unlike Lever.
+export interface AshbyCompany {
+  name: string;
+  token: string;
+}
+
+export interface AshbySourceConfig
+  extends Omit<GreenhouseSourceConfig, "companies"> {
+  companies: AshbyCompany[];
+}
+
 export interface SourceConfig {
   greenhouse?: GreenhouseSourceConfig;
   lever?: LeverSourceConfig;
+  ashby?: AshbySourceConfig;
 }
 
 // Plain, dependency-free board list. Do NOT import this from ats/registry.ts
 // (that pulls the network-calling search fns into client bundles). Both the
 // client-imported schema and the scheduler import it here.
-export const ATS_BOARDS: JobBoard[] = ["greenhouse", "lever"];
+export const ATS_BOARDS: JobBoard[] = ["greenhouse", "lever", "ashby"];
 
 // Boards that used to exist and were removed. Their Automation rows stay in
 // the database; the UI marks them retired and only offers pause/delete.

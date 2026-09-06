@@ -123,6 +123,12 @@ export const APP_CONSTANTS = {
   LEVER_FETCH_TIMEOUT_MS: 25_000, // wraps the WHOLE paginated loop per board
   LEVER_FETCH_CONCURRENCY: 5,
 
+  // Ashby (public posting API — unauthenticated, whole board in one call)
+  ASHBY_BASE_URL: "https://api.ashbyhq.com/posting-api/job-board",
+  ASHBY_JOB_URL: "https://jobs.ashbyhq.com", // public board page (not API)
+  ASHBY_FETCH_TIMEOUT_MS: 25_000, // per-board AbortController timeout
+  ASHBY_FETCH_CONCURRENCY: 5,
+
   // MCP server settings
   MCP_DUPLICATE_WINDOW_DAYS: 30,
   MCP_TOKEN_EXPIRY_PRESETS: [30, 90, 365] as const,
