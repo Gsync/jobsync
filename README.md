@@ -6,7 +6,8 @@
   <a href="https://demo.jobsync.ca">Live Demo</a> ·
   <a href="#quick-start">Quick Start</a> ·
   <a href="#ai-assistant-in-app-chat">AI Assistant</a> ·
-  <a href="#mcp-server-ai-agent-integration">MCP Setup</a>
+  <a href="#mcp-server-ai-agent-integration">MCP Setup</a> ·
+  <a href="https://github.com/Gsync/jobsync/wiki">Help</a>
 </p>
 
 <p align="center">
@@ -117,6 +118,8 @@ Set up automations that search for new jobs on a schedule and AI-match them agai
 
 - **Lever** — same company-tracking workflow as Greenhouse, backed by a built-in directory of 1,160+ companies (or paste a board URL). Automatically resolves the right regional API (`lever.co` or `eu.lever.co`) per company and carries full remote/hybrid/onsite signal from the listing. No API key required.
 
+- **Ashby** — same company-tracking workflow, backed by a built-in directory of 1,860+ companies (or paste a board URL). No API key required.
+
 More job board sources are on the way. Discovered jobs are surfaced for review — accept the ones you like to promote them into your job tracker, or dismiss the rest.
 
 ### MCP Server (AI Agent Integration)
@@ -191,6 +194,10 @@ Clients that support `streamable-http` natively can connect directly without `mc
 
 > **Self-hosting on a home network?** If your JobSync URL is a plain `http://` LAN address (not `localhost` or HTTPS), add `--allow-http` to the `mcp-remote` args — it refuses non-HTTPS URLs by default. The Settings page adds this flag automatically when it detects a non-localhost HTTP URL.
 
+
+## Help
+
+In-app usage guides — getting started, jobs, automations, and MCP access — live in the [GitHub Wiki](https://github.com/Gsync/jobsync/wiki).
 
 ## Contributing
 
