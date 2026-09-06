@@ -100,7 +100,6 @@ export function CompanyPicker({
         <PopoverContent
           className="p-0 w-(--radix-popover-trigger-width)"
           align="start"
-          onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <Command shouldFilter={false}>
             <CommandInput
