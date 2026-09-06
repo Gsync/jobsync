@@ -21,4 +21,9 @@ export const PROVIDER_META: Record<
     urlHint: "Or paste a jobs.lever.co link or token",
     searchExample: "Netflix",
   },
+  ashby: {
+    label: "Ashby",
+    urlHint: "Or paste a jobs.ashbyhq.com link or token",
+    searchExample: "Ramp",
+  },
 };

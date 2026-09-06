@@ -5,6 +5,7 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import { ATS_TOKEN_REGEX } from "@/lib/scraper/utils";
 import greenhouseSeed from "@/lib/scraper/greenhouse/companies.json";
 import leverSeed from "@/lib/scraper/lever/companies.json";
+import ashbySeed from "@/lib/scraper/ashby/companies.json";
 import type { JobBoard, LeverHost } from "@/models/automation.model";
 
 // `host` is present (optional) on Lever entries only; Greenhouse entries omit it.
@@ -13,6 +14,7 @@ type SeedCompany = { name: string; token: string; host?: LeverHost };
 const SEEDS: Record<string, SeedCompany[]> = {
   greenhouse: greenhouseSeed,
   lever: leverSeed as SeedCompany[],
+  ashby: ashbySeed as SeedCompany[],
 };
 
 type ResolveResult =
@@ -67,6 +69,7 @@ export async function resolveAtsBoard(
 
   if (provider === "greenhouse") return resolveGreenhouse(input);
   if (provider === "lever") return resolveLever(input);
+  if (provider === "ashby") return resolveAshby(input);
   return { success: false, message: "Unsupported provider" };
 }
 
@@ -210,5 +213,60 @@ async function resolveLever(input: string): Promise<ResolveResult> {
     return { success: true, name, token, host };
   } catch {
     return { success: false, message: "Could not reach Lever" };
+  }
+}
+
+// Ashby: extract the token from a jobs.ashbyhq.com URL (board or deep posting
+// link) or a bare token; validate with a single call — an unknown board 404s,
+// so there is nothing to probe. The payload carries no company name, so the
+// display name comes from the seed or a humanized token, as with Lever.
+function extractAshbyToken(input: string): string | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  const urlMatch = trimmed.match(/jobs\.ashbyhq\.com\/([a-z0-9_-]+)/i);
+  if (urlMatch) return urlMatch[1].toLowerCase();
+
+  if (!trimmed.includes("/") && !trimmed.includes(".")) {
+    return trimmed.toLowerCase();
+  }
+
+  return null;
+}
+
+async function resolveAshby(input: string): Promise<ResolveResult> {
+  const token = extractAshbyToken(input);
+  if (!token) {
+    return {
+      success: false,
+      message: "Paste a jobs.ashbyhq.com link or a token",
+    };
+  }
+
+  // Defense-in-depth: reject a malformed token before any fetch.
+  if (!ATS_TOKEN_REGEX.test(token)) {
+    return { success: false, message: `Invalid Ashby token '${token}'` };
+  }
+
+  try {
+    const res = await fetch(
+      `${APP_CONSTANTS.ASHBY_BASE_URL}/${encodeURIComponent(token)}`,
+    );
+    res.body?.cancel(); // status is all we need; skip the full board payload
+
+    if (res.status === 404) {
+      return { success: false, message: `No Ashby board found for '${token}'` };
+    }
+    if (!res.ok) {
+      return {
+        success: false,
+        message: `Could not validate board (${res.status})`,
+      };
+    }
+
+    const seeded = (ashbySeed as SeedCompany[]).find((c) => c.token === token);
+    return { success: true, name: seeded?.name ?? humanizeToken(token), token };
+  } catch {
+    return { success: false, message: "Could not reach Ashby" };
   }
 }

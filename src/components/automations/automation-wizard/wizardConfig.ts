@@ -34,7 +34,9 @@ export function parseEditSourceConfig(
   if (!sc) return undefined;
   try {
     const parsed = JSON.parse(sc);
-    return parsed?.greenhouse || parsed?.lever ? parsed : undefined;
+    return parsed?.greenhouse || parsed?.lever || parsed?.ashby
+      ? parsed
+      : undefined;
   } catch {
     return undefined;
   }

@@ -193,3 +193,90 @@ describe("searchAtsCompanies / getAtsCompanyCount", () => {
     expect(second.companies.every((c) => !firstTokens.has(c.token))).toBe(true);
   });
 });
+
+describe("resolveAtsBoard (ashby branch)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (getCurrentUser as any).mockResolvedValue(user);
+  });
+
+  afterEach(() => vi.restoreAllMocks());
+
+  it("extracts the token from a jobs.ashbyhq.com board URL", async () => {
+    const spy = vi.spyOn(global, "fetch").mockResolvedValue(okResponse(200));
+
+    const result = await resolveAtsBoard("ashby", "https://jobs.ashbyhq.com/ramp");
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.token).toBe("ramp");
+    expect(String(spy.mock.calls[0][0])).toContain(APP_CONSTANTS.ASHBY_BASE_URL);
+  });
+
+  it("extracts the token from a deep posting URL", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue(okResponse(200));
+
+    const result = await resolveAtsBoard(
+      "ashby",
+      "https://jobs.ashbyhq.com/ramp/34413f8d-26bf-4bbc-8ade-eb309a0e2245",
+    );
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.token).toBe("ramp");
+  });
+
+  it("accepts a bare token and lowercases it", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue(okResponse(200));
+
+    const result = await resolveAtsBoard("ashby", "Ramp");
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.token).toBe("ramp");
+  });
+
+  it("never returns a host (Ashby is single-host)", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue(okResponse(200));
+
+    const result = await resolveAtsBoard("ashby", "ramp");
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.host).toBeUndefined();
+  });
+
+  it("rejects an unknown board on 404 without a second probe", async () => {
+    const spy = vi.spyOn(global, "fetch").mockResolvedValue(okResponse(404));
+
+    const result = await resolveAtsBoard("ashby", "nope");
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.message).toContain("nope");
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a malformed token before any fetch", async () => {
+    const spy = vi.spyOn(global, "fetch");
+
+    const result = await resolveAtsBoard("ashby", "../etc/passwd");
+
+    expect(result.success).toBe(false);
+    expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+describe("searchAtsCompanies (ashby)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (getCurrentUser as any).mockResolvedValue(user);
+  });
+
+  it("serves the Ashby seed, not an empty list", async () => {
+    expect(await getAtsCompanyCount("ashby")).toBeGreaterThan(0);
+    const { companies } = await searchAtsCompanies("ashby", "");
+    expect(companies.length).toBeGreaterThan(0);
+    expect(companies[0]).toHaveProperty("token");
+  });
+});
