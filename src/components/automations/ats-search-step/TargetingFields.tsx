@@ -71,7 +71,7 @@ export function TargetingFields({ value, onChange }: TargetingFieldsProps) {
 
       <EntityStringChipInput
         label="Locations"
-        placeholder="e.g., Canada, Remote"
+        placeholder="e.g., Calgary, Seattle"
         noun="location"
         description="Optional. Used only to filter results when the toggle below is on (not part of ranking)."
         values={value.locations ?? []}
