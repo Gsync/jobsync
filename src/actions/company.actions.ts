@@ -13,3 +13,9 @@ export {
   updateCompany,
   deleteCompanyById,
 } from "./company/mutations";
+
+export {
+  watchBoardCompany,
+  setCompanyWatched,
+  getWatchedBoards,
+} from "./company/watch";
