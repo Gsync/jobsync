@@ -7,21 +7,21 @@ import { Button } from "@/components/ui/button";
 import { resolveAtsBoard } from "@/actions/atsCompany.actions";
 import type { JobBoard, LeverCompany } from "@/models/automation.model";
 
-interface CompanyUrlAddProps {
+interface JobBoardUrlAddProps {
   provider: JobBoard;
   placeholder: string;
   disabled: boolean;
   onResolved: (company: LeverCompany) => void;
 }
 
-// Adds a company by pasting its board URL or token, for boards the indexed
-// company search doesn't cover.
-export function CompanyUrlAdd({
+// Adds a board by pasting its ATS board URL or token, for boards the seeded
+// directory doesn't cover.
+export function JobBoardUrlAdd({
   provider,
   placeholder,
   disabled,
   onResolved,
-}: CompanyUrlAddProps) {
+}: JobBoardUrlAddProps) {
   const [urlInput, setUrlInput] = useState("");
   const [isResolving, setIsResolving] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);

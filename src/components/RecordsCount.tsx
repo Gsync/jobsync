@@ -2,7 +2,7 @@
 
 type RecordsCountProps = {
   count: number;
-  total: number;
+  total?: number;
   label?: string;
 };
 
@@ -13,12 +13,14 @@ export function RecordsCount({
 }: RecordsCountProps) {
   return (
     <div className="text-xs text-muted-foreground whitespace-nowrap">
-      Showing{" "}
-      <strong>
-        1 to {count}
-      </strong>{" "}
-      of
-      <strong> {total}</strong> {label}
+      Showing <strong>1 to {count}</strong>
+      {total !== undefined && (
+        <>
+          {" "}
+          of<strong> {total}</strong>
+        </>
+      )}{" "}
+      {label}
     </div>
   );
 }

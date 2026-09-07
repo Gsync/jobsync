@@ -12,6 +12,9 @@ import {
 
 export const APP_CONSTANTS = {
   RECORDS_PER_PAGE: 25,
+  // Page size for the ATS board directory (browse + typeahead). Kept here so
+  // the pager and searchAtsCompanies can never disagree.
+  ATS_COMPANY_PAGE_SIZE: 50,
   MAX_AUTOMATIONS_PER_USER: 10,
   MAX_JOB_TAGS: 10,
   MIN_QUESTION_LENGTH: 5,

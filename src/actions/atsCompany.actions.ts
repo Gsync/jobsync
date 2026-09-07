@@ -21,10 +21,6 @@ type ResolveResult =
   | { success: true; name: string; token: string; host?: LeverHost }
   | { success: false; message: string };
 
-// Page size for the company typeahead/browse (infinite scroll loads a page at
-// a time so the popover never mounts the whole 1000+ seed at once).
-const ATS_COMPANY_PAGE_SIZE = 50;
-
 // Typeahead over the seeded companies.json (server-side filter, paginated).
 // An empty query browses the full list (alphabetical); `offset` drives the
 // infinite-scroll load-more. Returns a page plus whether more remain.
@@ -47,7 +43,10 @@ export async function searchAtsCompanies(
             c.token.toLowerCase().includes(q),
         );
 
-  const companies = matches.slice(offset, offset + ATS_COMPANY_PAGE_SIZE);
+  const companies = matches.slice(
+    offset,
+    offset + APP_CONSTANTS.ATS_COMPANY_PAGE_SIZE,
+  );
   return { companies, hasMore: offset + companies.length < matches.length };
 }
 

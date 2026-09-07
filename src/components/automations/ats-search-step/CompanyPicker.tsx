@@ -23,7 +23,7 @@ import type { JobBoard, LeverCompany } from "@/models/automation.model";
 import { companyBoardUrl } from "@/lib/atsBoardUrl";
 import { PROVIDER_META } from "./types";
 import { useAtsCompanySearch } from "./useAtsCompanySearch";
-import { CompanyUrlAdd } from "./CompanyUrlAdd";
+import { JobBoardUrlAdd } from "@/components/JobBoardUrlAdd";
 
 interface CompanyPickerProps {
   provider: JobBoard;
@@ -181,7 +181,7 @@ export function CompanyPicker({
         </div>
       )}
 
-      <CompanyUrlAdd
+      <JobBoardUrlAdd
         provider={provider}
         placeholder={meta.urlHint}
         disabled={atLimit}
