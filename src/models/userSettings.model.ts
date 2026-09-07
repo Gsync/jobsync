@@ -5,8 +5,11 @@ export interface AiSettings {
   model: string | undefined;
 }
 
+export type ClockFormat = "12h" | "24h";
+
 export interface DisplaySettings {
   theme: "light" | "dark" | "system";
+  clockFormat?: ClockFormat;
 }
 
 export interface UserSettingsData {
@@ -26,5 +29,7 @@ export const defaultUserSettings: UserSettingsData = {
   },
   display: {
     theme: "system",
+    clockFormat: "12h",
   },
 };
+

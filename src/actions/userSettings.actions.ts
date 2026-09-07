@@ -36,6 +36,14 @@ export const getUserSettings = async (): Promise<any | undefined> => {
         settings: {
           ...defaultUserSettings,
           ...settings,
+          ai: {
+            ...defaultUserSettings.ai,
+            ...settings?.ai,
+          },
+          display: {
+            ...defaultUserSettings.display,
+            ...settings?.display,
+          },
         },
       },
     };

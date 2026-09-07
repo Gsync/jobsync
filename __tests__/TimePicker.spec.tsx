@@ -3,6 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useForm } from "react-hook-form";
 import { Form, FormField, FormItem } from "@/components/ui/form";
+import { ClockFormat } from "@/models/userSettings.model";
 
 // jsdom lacks scrollIntoView; the columns also read layout boxes on open
 Element.prototype.scrollIntoView = vi.fn();
@@ -13,9 +14,11 @@ const user = userEvent.setup({ skipHover: true });
 // the same way it is used in ActivityForm.
 function Harness({
   initialValue = "09:05 AM",
+  clockFormat = "12h",
   onChange = vi.fn(),
 }: {
   initialValue?: string;
+  clockFormat?: ClockFormat;
   onChange?: (value: string) => void;
 }) {
   const form = useForm({
@@ -32,6 +35,7 @@ function Harness({
         render={({ field }) => (
           <FormItem>
             <TimePicker
+              clockFormat={clockFormat}
               field={{
                 ...field,
                 onChange: (value: string) => {
@@ -50,142 +54,225 @@ function Harness({
 
 const column = (name: string) => within(screen.getByRole("group", { name }));
 
-async function openPicker(initialValue?: string) {
+async function openPicker(
+  initialValue = "09:05 AM",
+  clockFormat: ClockFormat = "12h"
+) {
   const onChange = vi.fn();
-  render(<Harness initialValue={initialValue} onChange={onChange} />);
+  render(
+    <Harness
+      initialValue={initialValue}
+      clockFormat={clockFormat}
+      onChange={onChange}
+    />
+  );
   await user.click(
-    screen.getByRole("button", { name: initialValue === "" ? "Pick a time" : "09:05 AM" })
+    screen.getByRole("button", {
+      name: initialValue === "" ? "Pick a time" : initialValue,
+    })
   );
   return { onChange };
 }
 
 describe("TimePicker", () => {
-  it("shows the current value on the trigger", () => {
-    render(<Harness />);
+  describe("12-hour mode", () => {
+    it("shows the current value on the trigger", () => {
+      render(<Harness />);
 
-    expect(
-      screen.getByRole("button", { name: "09:05 AM" })
-    ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "09:05 AM" })
+      ).toBeInTheDocument();
+    });
+
+    it("prompts when there is no value yet", () => {
+      render(<Harness initialValue="" />);
+
+      expect(
+        screen.getByRole("button", { name: "Pick a time" })
+      ).toBeInTheDocument();
+    });
+
+    it("marks the current parts as pressed when opened", async () => {
+      await openPicker();
+
+      expect(column("Hour").getByRole("button", { name: "09" })).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      );
+      expect(column("Minute").getByRole("button", { name: "05" })).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      );
+      expect(column("AM/PM").getByRole("button", { name: "AM" })).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      );
+    });
+
+    it("keeps the minute and meridiem when the hour changes", async () => {
+      const { onChange } = await openPicker();
+
+      await user.click(column("Hour").getByRole("button", { name: "11" }));
+
+      expect(onChange).toHaveBeenCalledWith("11:05 AM");
+    });
+
+    it("keeps the hour and meridiem when the minute changes", async () => {
+      const { onChange } = await openPicker();
+
+      await user.click(column("Minute").getByRole("button", { name: "42" }));
+
+      expect(onChange).toHaveBeenCalledWith("09:42 AM");
+    });
+
+    it("keeps the hour and minute when the meridiem changes", async () => {
+      const { onChange } = await openPicker();
+
+      await user.click(column("AM/PM").getByRole("button", { name: "PM" }));
+
+      expect(onChange).toHaveBeenCalledWith("09:05 PM");
+    });
+
+    it("emits a padded value the schema regex accepts", async () => {
+      const { onChange } = await openPicker("");
+
+      await user.click(column("Hour").getByRole("button", { name: "03" }));
+
+      // Unset parts fall back to 12:00 AM rather than emitting a partial string
+      expect(onChange).toHaveBeenCalledWith("03:00 AM");
+      expect(onChange.mock.calls[0][0]).toMatch(
+        /^(?:(0[1-9]|1[0-2]):[0-5][0-9] (AM|PM)|([01][0-9]|2[0-3]):[0-5][0-9])$/
+      );
+    });
+
+    it("reflects the new value on the trigger", async () => {
+      await openPicker();
+
+      await user.click(column("AM/PM").getByRole("button", { name: "PM" }));
+      // The popover is modal, so the trigger stays aria-hidden until it closes
+      await user.keyboard("{Escape}");
+
+      expect(
+        screen.getByRole("button", { name: "09:05 PM" })
+      ).toBeInTheDocument();
+    });
+
+    it("steps the time forward and back by five minutes", async () => {
+      const onChange = vi.fn();
+      render(<Harness onChange={onChange} />);
+
+      await user.click(screen.getByRole("button", { name: "5 minutes later" }));
+      expect(onChange).toHaveBeenLastCalledWith("09:10 AM");
+
+      await user.click(screen.getByRole("button", { name: "5 minutes earlier" }));
+      expect(onChange).toHaveBeenLastCalledWith("09:05 AM");
+    });
+
+    it("wraps the clock when a step crosses midnight", async () => {
+      const onChange = vi.fn();
+      render(<Harness initialValue="11:58 PM" onChange={onChange} />);
+
+      await user.click(screen.getByRole("button", { name: "5 minutes later" }));
+
+      expect(onChange).toHaveBeenLastCalledWith("12:03 AM");
+    });
+
+    it("wraps backwards across midnight too", async () => {
+      const onChange = vi.fn();
+      render(<Harness initialValue="12:02 AM" onChange={onChange} />);
+
+      await user.click(screen.getByRole("button", { name: "5 minutes earlier" }));
+
+      expect(onChange).toHaveBeenLastCalledWith("11:57 PM");
+    });
+
+    it("steps from midnight when there is no value yet", async () => {
+      const onChange = vi.fn();
+      render(<Harness initialValue="" onChange={onChange} />);
+
+      await user.click(screen.getByRole("button", { name: "5 minutes later" }));
+
+      expect(onChange).toHaveBeenLastCalledWith("12:05 AM");
+    });
+
+    it("marks the field touched once the trigger loses focus", async () => {
+      render(<Harness />);
+      expect(screen.getByTestId("touched")).toHaveTextContent("false");
+
+      await user.click(screen.getByRole("button", { name: "09:05 AM" }));
+
+      expect(screen.getByTestId("touched")).toHaveTextContent("true");
+    });
   });
 
-  it("prompts when there is no value yet", () => {
-    render(<Harness initialValue="" />);
+  describe("24-hour mode", () => {
+    it("shows the 24h value on the trigger", () => {
+      render(<Harness initialValue="14:30" clockFormat="24h" />);
 
-    expect(
-      screen.getByRole("button", { name: "Pick a time" })
-    ).toBeInTheDocument();
-  });
+      expect(
+        screen.getByRole("button", { name: "14:30" })
+      ).toBeInTheDocument();
+    });
 
-  it("marks the current parts as pressed when opened", async () => {
-    await openPicker();
+    it("renders 00-23 hours and hides the AM/PM column", async () => {
+      await openPicker("14:30", "24h");
 
-    expect(column("Hour").getByRole("button", { name: "09" })).toHaveAttribute(
-      "aria-pressed",
-      "true"
-    );
-    expect(column("Minute").getByRole("button", { name: "05" })).toHaveAttribute(
-      "aria-pressed",
-      "true"
-    );
-    expect(column("AM/PM").getByRole("button", { name: "AM" })).toHaveAttribute(
-      "aria-pressed",
-      "true"
-    );
-  });
+      expect(column("Hour").getByRole("button", { name: "00" })).toBeInTheDocument();
+      expect(column("Hour").getByRole("button", { name: "14" })).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      );
+      expect(column("Hour").getByRole("button", { name: "23" })).toBeInTheDocument();
+      expect(column("Minute").getByRole("button", { name: "30" })).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      );
+      expect(screen.queryByRole("group", { name: "AM/PM" })).not.toBeInTheDocument();
+    });
 
-  it("keeps the minute and meridiem when the hour changes", async () => {
-    const { onChange } = await openPicker();
+    it("updates hour in 24h format", async () => {
+      const { onChange } = await openPicker("14:30", "24h");
 
-    await user.click(column("Hour").getByRole("button", { name: "11" }));
+      await user.click(column("Hour").getByRole("button", { name: "08" }));
 
-    expect(onChange).toHaveBeenCalledWith("11:05 AM");
-  });
+      expect(onChange).toHaveBeenCalledWith("08:30");
+    });
 
-  it("keeps the hour and meridiem when the minute changes", async () => {
-    const { onChange } = await openPicker();
+    it("updates minute in 24h format", async () => {
+      const { onChange } = await openPicker("14:30", "24h");
 
-    await user.click(column("Minute").getByRole("button", { name: "42" }));
+      await user.click(column("Minute").getByRole("button", { name: "45" }));
 
-    expect(onChange).toHaveBeenCalledWith("09:42 AM");
-  });
+      expect(onChange).toHaveBeenCalledWith("14:45");
+    });
 
-  it("keeps the hour and minute when the meridiem changes", async () => {
-    const { onChange } = await openPicker();
+    it("steps 24h time forward and backwards by 5 minutes", async () => {
+      const onChange = vi.fn();
+      render(<Harness initialValue="14:30" clockFormat="24h" onChange={onChange} />);
 
-    await user.click(column("AM/PM").getByRole("button", { name: "PM" }));
+      await user.click(screen.getByRole("button", { name: "5 minutes later" }));
+      expect(onChange).toHaveBeenLastCalledWith("14:35");
 
-    expect(onChange).toHaveBeenCalledWith("09:05 PM");
-  });
+      await user.click(screen.getByRole("button", { name: "5 minutes earlier" }));
+      expect(onChange).toHaveBeenLastCalledWith("14:30");
+    });
 
-  it("emits a padded value the schema regex accepts", async () => {
-    const { onChange } = await openPicker("");
+    it("wraps forward across midnight in 24h mode", async () => {
+      const onChange = vi.fn();
+      render(<Harness initialValue="23:58" clockFormat="24h" onChange={onChange} />);
 
-    await user.click(column("Hour").getByRole("button", { name: "03" }));
+      await user.click(screen.getByRole("button", { name: "5 minutes later" }));
 
-    // Unset parts fall back to 12:00 AM rather than emitting a partial string
-    expect(onChange).toHaveBeenCalledWith("03:00 AM");
-    expect(onChange.mock.calls[0][0]).toMatch(
-      /^(0[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/
-    );
-  });
+      expect(onChange).toHaveBeenLastCalledWith("00:03");
+    });
 
-  it("reflects the new value on the trigger", async () => {
-    await openPicker();
+    it("wraps backward across midnight in 24h mode", async () => {
+      const onChange = vi.fn();
+      render(<Harness initialValue="00:02" clockFormat="24h" onChange={onChange} />);
 
-    await user.click(column("AM/PM").getByRole("button", { name: "PM" }));
-    // The popover is modal, so the trigger stays aria-hidden until it closes
-    await user.keyboard("{Escape}");
+      await user.click(screen.getByRole("button", { name: "5 minutes earlier" }));
 
-    expect(
-      screen.getByRole("button", { name: "09:05 PM" })
-    ).toBeInTheDocument();
-  });
-
-  it("steps the time forward and back by five minutes", async () => {
-    const onChange = vi.fn();
-    render(<Harness onChange={onChange} />);
-
-    await user.click(screen.getByRole("button", { name: "5 minutes later" }));
-    expect(onChange).toHaveBeenLastCalledWith("09:10 AM");
-
-    await user.click(screen.getByRole("button", { name: "5 minutes earlier" }));
-    expect(onChange).toHaveBeenLastCalledWith("09:05 AM");
-  });
-
-  it("wraps the clock when a step crosses midnight", async () => {
-    const onChange = vi.fn();
-    render(<Harness initialValue="11:58 PM" onChange={onChange} />);
-
-    await user.click(screen.getByRole("button", { name: "5 minutes later" }));
-
-    expect(onChange).toHaveBeenLastCalledWith("12:03 AM");
-  });
-
-  it("wraps backwards across midnight too", async () => {
-    const onChange = vi.fn();
-    render(<Harness initialValue="12:02 AM" onChange={onChange} />);
-
-    await user.click(screen.getByRole("button", { name: "5 minutes earlier" }));
-
-    expect(onChange).toHaveBeenLastCalledWith("11:57 PM");
-  });
-
-  it("steps from midnight when there is no value yet", async () => {
-    const onChange = vi.fn();
-    render(<Harness initialValue="" onChange={onChange} />);
-
-    await user.click(screen.getByRole("button", { name: "5 minutes later" }));
-
-    expect(onChange).toHaveBeenLastCalledWith("12:05 AM");
-  });
-
-  // The onTouched validation mode never arms unless the trigger forwards blur
-  it("marks the field touched once the trigger loses focus", async () => {
-    render(<Harness />);
-    expect(screen.getByTestId("touched")).toHaveTextContent("false");
-
-    await user.click(screen.getByRole("button", { name: "09:05 AM" }));
-
-    expect(screen.getByTestId("touched")).toHaveTextContent("true");
+      expect(onChange).toHaveBeenLastCalledWith("23:57");
+    });
   });
 });

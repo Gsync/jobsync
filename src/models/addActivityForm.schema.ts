@@ -21,15 +21,15 @@ export const AddActivityFormSchema = z
     startTime: z
       .string()
       .regex(
-        /^(0[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/,
-        "Start time must be in hh:mm AM/PM format"
+        /^(?:(0[1-9]|1[0-2]):[0-5][0-9] (AM|PM)|([01][0-9]|2[0-3]):[0-5][0-9])$/,
+        "Start time must be in valid 12-hour (hh:mm AM/PM) or 24-hour (HH:mm) format"
       ),
     endDate: z.date().optional(),
     endTime: z
       .string()
       .regex(
-        /^(0[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/,
-        "End time must be in hh:mm AM/PM format"
+        /^(?:(0[1-9]|1[0-2]):[0-5][0-9] (AM|PM)|([01][0-9]|2[0-3]):[0-5][0-9])$/,
+        "End time must be in valid 12-hour (hh:mm AM/PM) or 24-hour (HH:mm) format"
       )
       .optional(),
     duration: z
