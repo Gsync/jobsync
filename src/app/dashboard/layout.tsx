@@ -14,6 +14,9 @@ import { getCurrentUser } from "@/utils/user.utils";
 import StaleSessionSignOut from "@/components/StaleSessionSignOut";
 import { signOut } from "@/auth";
 
+import { getUserSettings } from "@/actions/userSettings.actions";
+import { UserSettingsProvider } from "@/context/UserSettingsContext";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -27,6 +30,7 @@ export default async function RootLayout({
   // is merged against an empty transcript and then persisted.
   const conversation = await getChatConversation();
   const user = await getCurrentUser();
+  const userSettingsResult = await getUserSettings();
 
   const signOutAction = async () => {
     "use server";
@@ -41,10 +45,11 @@ export default async function RootLayout({
   }
 
   return (
-    <ActivityProvider>
-      <SidebarProvider initialExpanded={initialExpanded}>
-        <RightRailProvider>
-          <AgentChatProvider initialMessages={conversation.data ?? []}>
+    <UserSettingsProvider initialSettings={userSettingsResult?.data?.settings}>
+      <ActivityProvider>
+        <SidebarProvider initialExpanded={initialExpanded}>
+          <RightRailProvider>
+            <AgentChatProvider initialMessages={conversation.data ?? []}>
             <div className="flex min-h-screen w-full flex-col bg-muted/40">
               <Sidebar user={user} signOutAction={signOutAction} />
               <SidebarInset>
@@ -66,5 +71,6 @@ export default async function RootLayout({
         </RightRailProvider>
       </SidebarProvider>
     </ActivityProvider>
+    </UserSettingsProvider>
   );
 }

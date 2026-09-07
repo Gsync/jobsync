@@ -133,7 +133,7 @@ export function PdfPreviewPane({
 
     let cancelled = false;
     let renderTask: { cancel: () => void } | null = null;
-    let document_: { destroy: () => Promise<void> } | null = null;
+    let document_: { destroy?: () => Promise<void> } | null = null;
 
     // A stale failure must not suppress this attempt's spinner.
     setRenderFailed(false);
@@ -147,7 +147,7 @@ export function PdfPreviewPane({
 
         const pdf = await getDocumentProxy(bytes);
         if (cancelled) {
-          void pdf.destroy().catch(() => {});
+          void (pdf as { destroy?: () => Promise<void> }).destroy?.()?.catch(() => {});
           return;
         }
         document_ = pdf;
@@ -210,7 +210,7 @@ export function PdfPreviewPane({
       renderTask?.cancel();
       // destroy() rejects any page work still in flight; that is the point of
       // the call, so the rejection is swallowed rather than left floating.
-      void document_?.destroy().catch(() => {});
+      void document_?.destroy?.()?.catch(() => {});
     };
   }, [blob, size, fitMode]);
 
