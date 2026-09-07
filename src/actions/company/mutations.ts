@@ -21,19 +21,37 @@ const isValidImageUrl = (url: string): boolean => {
   }
 };
 
+// Absolute http(s) only — an employer URL is never a bundled asset path.
+const isValidHttpUrl = (url: string): boolean => {
+  if (!url) return true;
+  try {
+    const urlObj = new URL(url);
+    return ["http:", "https:"].includes(urlObj.protocol);
+  } catch {
+    return false;
+  }
+};
+
 export const addCompany = async (
   data: z.infer<typeof AddCompanyFormSchema>,
 ): Promise<any | undefined> => {
   try {
     const user = await requireUser();
 
-    const { company, logoUrl } = data;
+    const { company, logoUrl, websiteUrl, careersUrl, industry } = data;
 
     // Validate image URL
     if (logoUrl && !isValidImageUrl(logoUrl)) {
       throw new Error(
         "Invalid logo URL. Only http and https protocols are allowed.",
       );
+    }
+
+    if (websiteUrl && !isValidHttpUrl(websiteUrl)) {
+      throw new Error("Website must be a full http or https URL.");
+    }
+    if (careersUrl && !isValidHttpUrl(careersUrl)) {
+      throw new Error("Careers page must be a full http or https URL.");
     }
 
     const value = canonicalizeEntityValue(company.trim(), { stripLegalSuffix: true });
@@ -55,6 +73,9 @@ export const addCompany = async (
         value,
         label: company,
         logoUrl,
+        websiteUrl,
+        careersUrl,
+        industry,
       },
     });
     revalidatePath("/dashboard/myjobs", "page");
@@ -71,7 +92,8 @@ export const updateCompany = async (
   try {
     const user = await requireUser();
 
-    const { id, company, logoUrl, createdBy } = data;
+    const { id, company, logoUrl, createdBy, websiteUrl, careersUrl, industry } =
+      data;
 
     if (!id) {
       throw new Error("Company id is required");
@@ -82,6 +104,13 @@ export const updateCompany = async (
       throw new Error(
         "Invalid logo URL. Only http and https protocols are allowed.",
       );
+    }
+
+    if (websiteUrl && !isValidHttpUrl(websiteUrl)) {
+      throw new Error("Website must be a full http or https URL.");
+    }
+    if (careersUrl && !isValidHttpUrl(careersUrl)) {
+      throw new Error("Careers page must be a full http or https URL.");
     }
 
     const existingCompany = await prisma.company.findFirst({
@@ -126,6 +155,9 @@ export const updateCompany = async (
         value,
         label: company,
         logoUrl,
+        websiteUrl,
+        careersUrl,
+        industry,
       },
     });
 
@@ -142,9 +174,16 @@ export const deleteCompanyById = async (
   try {
     const user = await requireUser();
 
+    // WorkExperience has no userId, so ownership runs through the resume
+    // chain. The null-section arm keeps unsectioned rows blocking deletion
+    // rather than letting it fail later on the foreign key.
     const experiences = await prisma.workExperience.count({
       where: {
         companyId,
+        OR: [
+          { ResumeSection: { Resume: { profile: { userId: user.id } } } },
+          { resumeSectionId: null },
+        ],
       },
     });
     if (experiences > 0) {

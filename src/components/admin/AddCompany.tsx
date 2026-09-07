@@ -51,6 +51,9 @@ function AddCompany({
     defaultValues: {
       company: "",
       logoUrl: "",
+      websiteUrl: "",
+      careersUrl: "",
+      industry: "",
       id: undefined,
       createdBy: undefined,
     },
@@ -66,6 +69,9 @@ function AddCompany({
           company: editCompany?.label ?? "",
           createdBy: editCompany?.createdBy,
           logoUrl: editCompany?.logoUrl ?? "",
+          websiteUrl: editCompany?.websiteUrl ?? "",
+          careersUrl: editCompany?.careersUrl ?? "",
+          industry: editCompany?.industry ?? "",
         },
         { keepDefaultValues: true },
       );
@@ -161,6 +167,56 @@ function AddCompany({
                   )}
                 />
               </div>
+              {/* COMPANY WEBSITE */}
+              <FormField
+                control={form.control}
+                name="websiteUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Website</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* CAREERS PAGE */}
+              <FormField
+                control={form.control}
+                name="careersUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Careers Page</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="https://example.com/careers"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* INDUSTRY */}
+              <div className="md:col-span-2">
+                <FormField
+                  control={form.control}
+                  name="industry"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Industry</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Financial Services" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <div className="md:col-span-2 mt-4">
                 <DialogFooter
                 // className="md:col-span

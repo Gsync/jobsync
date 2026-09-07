@@ -116,6 +116,63 @@ describe("AddCompanyFormSchema", () => {
     });
   });
 
+  describe("websiteUrl and careersUrl fields", () => {
+    it("accepts an absolute https URL", () => {
+      const result = AddCompanyFormSchema.parse({
+        company: "Tech Company",
+        websiteUrl: "https://example.com",
+        careersUrl: "https://example.com/careers",
+      });
+      expect(result.websiteUrl).toBe("https://example.com");
+      expect(result.careersUrl).toBe("https://example.com/careers");
+    });
+
+    it("accepts empty values", () => {
+      const result = AddCompanyFormSchema.parse({
+        company: "Tech Company",
+        websiteUrl: "",
+        careersUrl: "",
+      });
+      expect(result.websiteUrl).toBe("");
+    });
+
+    it("rejects a site-relative path as a website", () => {
+      expect(() =>
+        AddCompanyFormSchema.parse({
+          company: "Tech Company",
+          websiteUrl: "/careers",
+        }),
+      ).toThrow();
+    });
+
+    it("rejects a non-http protocol", () => {
+      expect(() =>
+        AddCompanyFormSchema.parse({
+          company: "Tech Company",
+          careersUrl: "ftp://example.com/jobs",
+        }),
+      ).toThrow();
+    });
+
+    it("still accepts a site-relative logo path", () => {
+      const result = AddCompanyFormSchema.parse({
+        company: "Tech Company",
+        logoUrl: "/icons/logo.svg",
+      });
+      expect(result.logoUrl).toBe("/icons/logo.svg");
+    });
+  });
+
+  describe("industry field", () => {
+    it("accepts free text", () => {
+      const result = AddCompanyFormSchema.parse({
+        company: "Tech Company",
+        industry: "Financial Services",
+      });
+      expect(result.industry).toBe("Financial Services");
+    });
+  });
+
   describe("optional fields", () => {
     it("should accept id field", () => {
       const validData = {
@@ -146,7 +203,12 @@ describe("AddCompanyFormSchema", () => {
       };
 
       const result = AddCompanyFormSchema.parse(validData);
-      expect(result).toEqual(validData);
+      expect(result).toEqual({
+        ...validData,
+        websiteUrl: "",
+        careersUrl: "",
+        industry: "",
+      });
     });
   });
 });

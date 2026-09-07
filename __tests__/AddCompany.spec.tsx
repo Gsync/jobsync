@@ -77,6 +77,21 @@ describe("AddCompany Component", () => {
     );
   });
 
+  it("renders the website, careers page and industry fields", async () => {
+    render(
+      <AddCompany
+        reloadCompanies={mockReloadCompanies}
+        resetEditCompany={mockResetEditCompany}
+        dialogOpen={true}
+        setDialogOpen={mockSetDialogOpen}
+      />,
+    );
+
+    expect(await screen.findByLabelText(/website/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/careers page/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/industry/i)).toBeInTheDocument();
+  });
+
   it("should call addCompany function when submitting the form for new company", async () => {
     render(
       <AddCompany
@@ -106,6 +121,9 @@ describe("AddCompany Component", () => {
       expect(addCompany).toHaveBeenCalledWith({
         company: "New Test Company",
         logoUrl: "http://example.com/new-logo.png",
+        websiteUrl: "",
+        careersUrl: "",
+        industry: "",
       });
     });
   });
@@ -153,6 +171,9 @@ describe("AddCompany Component", () => {
         company: "Edited Test Company",
         logoUrl: "http://example.com/edited-logo.png",
         createdBy: "user-id",
+        websiteUrl: "",
+        careersUrl: "",
+        industry: "",
       });
     });
   });
