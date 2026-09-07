@@ -50,7 +50,19 @@ afterAll(async () => {
 
 async function seedFullAccount() {
   const company = await prisma.company.create({
-    data: { label: "Acme", value: "acme", createdBy: userId },
+    data: {
+      label: "Acme",
+      value: "acme",
+      createdBy: userId,
+      watched: true,
+      watchedAt: new Date("2026-09-01T10:00:00.000Z"),
+      atsProvider: "greenhouse",
+      atsToken: "acme",
+      atsHost: null,
+      websiteUrl: "https://acme.example.com",
+      careersUrl: "https://acme.example.com/careers",
+      industry: "Widgets",
+    },
   });
   const title = await prisma.jobTitle.create({
     data: { label: "Engineer", value: "engineer", createdBy: userId },
@@ -271,6 +283,22 @@ describe("backup round trip", () => {
     expect(fs.existsSync(file.filePath)).toBe(true);
     expect(fs.readFileSync(file.filePath).toString()).toContain("seed");
   }, 120_000);
+
+  it("restores every watchlist column on Company, watchedAt as a Date", async () => {
+    const [restored] = await prisma.company.findMany({
+      where: { createdBy: userId, value: "acme" },
+    });
+
+    expect(restored.watched).toBe(true);
+    expect(restored.watchedAt).toBeInstanceOf(Date);
+    expect(restored.watchedAt?.toISOString()).toBe("2026-09-01T10:00:00.000Z");
+    expect(restored.atsProvider).toBe("greenhouse");
+    expect(restored.atsToken).toBe("acme");
+    expect(restored.atsHost).toBeNull();
+    expect(restored.websiteUrl).toBe("https://acme.example.com");
+    expect(restored.careersUrl).toBe("https://acme.example.com/careers");
+    expect(restored.industry).toBe("Widgets");
+  });
 
   it("does not demand confirmWipe on a freshly signed-up account", async () => {
     const freshUserId = await seedAccount(prisma, "fresh@example.com");

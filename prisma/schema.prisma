@@ -261,7 +261,23 @@ model Company {
   user            User             @relation(fields: [createdBy], references: [id])
   workExperiences WorkExperience[]
 
+  // Watch intent — independent of whether a board is linked
+  watched         Boolean          @default(false)
+  watchedAt       DateTime?
+
+  // Board coordinates; atsHost is Lever-only
+  atsProvider     String?
+  atsToken        String?
+  atsHost         String?
+
+  // Company attributes, unrelated to boards
+  websiteUrl      String?
+  careersUrl      String?
+  industry        String?
+
   @@unique([value, createdBy])
+  @@unique([createdBy, atsProvider, atsToken])
+  @@index([createdBy, watched])
 }
 
 model JobSource {

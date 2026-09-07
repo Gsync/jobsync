@@ -21,7 +21,22 @@ const optDt = z.coerce.date().nullable();
 const int = z.number().int();
 const optInt = z.number().int().nullable();
 
-const Company = z.object({ id, label: str, value: str, logoUrl: optStr });
+// The watchlist columns are optional, not just nullable: a backup taken before
+// they existed has no such key, and undefined leaves Prisma on the default.
+const Company = z.object({
+  id,
+  label: str,
+  value: str,
+  logoUrl: optStr,
+  watched: z.boolean().optional(),
+  watchedAt: optDt.optional(),
+  atsProvider: optStr.optional(),
+  atsToken: optStr.optional(),
+  atsHost: optStr.optional(),
+  websiteUrl: optStr.optional(),
+  careersUrl: optStr.optional(),
+  industry: optStr.optional(),
+});
 const JobTitle = z.object({ id, label: str, value: str });
 const Location = z.object({
   id,

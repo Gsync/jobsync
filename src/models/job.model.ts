@@ -1,3 +1,4 @@
+import type { JobBoard, LeverHost } from "@/models/automation.model";
 import { CoverLetter, Resume } from "./profile.model";
 
 export interface JobForm {
@@ -79,6 +80,14 @@ export interface Company {
   value: string;
   createdBy: string;
   logoUrl?: string;
+  watched?: boolean;
+  watchedAt?: Date | null;
+  atsProvider?: JobBoard | null;
+  atsToken?: string | null;
+  atsHost?: LeverHost | null;
+  websiteUrl?: string | null;
+  careersUrl?: string | null;
+  industry?: string | null;
   _count?: {
     jobsApplied: number;
     jobsRejected?: number;
