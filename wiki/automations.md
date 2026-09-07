@@ -3,7 +3,7 @@ type: how-to
 title: Automations
 description: Setting up a scheduled ATS search over company job boards, filling in the filters and resume skills that make it return good matches, and handling the jobs it discovers.
 feature: automations
-tags: [automations, job search, scheduled search, greenhouse, lever, ashby, ats, company boards, discovered jobs, match score, keywords, target titles, locations, resume skills, filters]
+tags: [automations, job search, scheduled search, greenhouse, lever, ashby, ats, company boards, watchlist, discovered jobs, match score, keywords, target titles, locations, resume skills, filters]
 aliases: [automated job search, job discovery, scheduled job search, job scraper, run a search, discovered jobs]
 status: stable
 stale_after: 2027-09-30
@@ -32,11 +32,17 @@ Open **Automations** in the sidebar and click **Create Automation**. The wizard 
 
 At least one company is required. Everything else has a working default, but defaults alone will not give you good results.
 
+If you have built a watchlist, the company picker in step 2 shows a **Watched** group at the top listing the companies you watch on that automation's job board, with an **Add all watched** button that selects them in one click. Only companies on the matching board appear — a watchlist spanning all three providers contributes a different subset to each automation.
+
 ## Which companies can I track, and how many?
 
 Up to **25 companies** per automation. In the Search step, open the company picker and type a name — JobSync searches an indexed directory of known Greenhouse, Lever and Ashby boards for that provider and you tick the ones you want. The count next to the label shows how many of your 25 slots are used.
 
 If a company is not in the directory, add it by hand: paste its board URL (for example `https://boards.greenhouse.io/acme` or `https://jobs.lever.co/acme`) or just its board token into the field below the picker, and press **+**. JobSync resolves it, checks the board really exists, and adds it as a chip. Remove any company with the **×** on its chip.
+
+You can also build a shortlist ahead of time. Open **Library → Companies**, switch the scope dropdown from **My Companies** to **Greenhouse**, **Lever** or **Ashby** under *Browse boards*, and you get the full directory of boards JobSync knows about for that provider — search it, and click **Watch** on any company you care about. Watched companies collect under the **Watchlist** scope, where each row links straight to the live board so you can check whether it is still posting.
+
+Watching a company adds it to your Library, so a company you already track just gains its board link — JobSync asks you to confirm that first. Unwatching only removes it from the watchlist; the company stays in your Library along with any jobs attached to it.
 
 ## How do I set up filters so the automation returns good results?
 

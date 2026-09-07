@@ -21,14 +21,17 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { JobBoard, LeverCompany } from "@/models/automation.model";
 import { companyBoardUrl } from "@/lib/atsBoardUrl";
+import { toastInfo } from "@/lib/toast";
 import { PROVIDER_META } from "./types";
 import { useAtsCompanySearch } from "./useAtsCompanySearch";
+import { useWatchedBoards } from "./useWatchedBoards";
 import { JobBoardUrlAdd } from "@/components/JobBoardUrlAdd";
 
 interface CompanyPickerProps {
   provider: JobBoard;
   companies: LeverCompany[];
   onAdd: (company: LeverCompany) => void;
+  onAddMany: (boards: LeverCompany[]) => number;
   onRemove: (token: string) => void;
 }
 
@@ -36,6 +39,7 @@ export function CompanyPicker({
   provider,
   companies,
   onAdd,
+  onAddMany,
   onRemove,
 }: CompanyPickerProps) {
   const meta = PROVIDER_META[provider] ?? PROVIDER_META.greenhouse;
@@ -51,6 +55,19 @@ export function CompanyPicker({
   } = useAtsCompanySearch(provider);
 
   const atLimit = companies.length >= APP_CONSTANTS.ATS_MAX_COMPANIES;
+
+  const { watched } = useWatchedBoards(provider, open);
+  const resultTokens = new Set(results.map((r) => r.token));
+  const watchedOnly = watched.filter((w) => !resultTokens.has(w.token));
+
+  const addAllWatched = () => {
+    const skipped = onAddMany(watched);
+    if (skipped > 0) {
+      toastInfo(
+        `Added what fits — ${skipped} skipped at the ${APP_CONSTANTS.ATS_MAX_COMPANIES}-company limit.`,
+      );
+    }
+  };
 
   const toggleCompany = (company: LeverCompany) => {
     if (companies.some((c) => c.token === company.token)) {
@@ -107,6 +124,23 @@ export function CompanyPicker({
               value={query}
               onValueChange={handleQueryChange}
             />
+            {/* Outside the group heading: cmdk marks headings aria-hidden, */}
+            {/* which would hide this button from keyboard and screen readers. */}
+            {watched.length > 0 && (
+              <div className="flex items-center justify-between border-b px-3 py-1.5">
+                <span className="text-xs text-muted-foreground">
+                  {watched.length} watched on this board
+                </span>
+                <button
+                  type="button"
+                  disabled={atLimit}
+                  onClick={addAllWatched}
+                  className="text-xs text-primary hover:underline disabled:opacity-50"
+                >
+                  Add all watched
+                </button>
+              </div>
+            )}
             <CommandList onScroll={handleListScroll}>
               {isSearching && results.length === 0 && (
                 <div className="flex items-center gap-2 p-3 text-sm text-muted-foreground">
@@ -118,6 +152,34 @@ export function CompanyPicker({
                 <CommandEmpty>
                   No matches. Try &quot;Add by URL&quot; below.
                 </CommandEmpty>
+              )}
+              {watched.length > 0 && (
+                <CommandGroup heading={`Watched (${watched.length})`}>
+                  {watchedOnly.map((c) => {
+                    const selected = companies.some(
+                      (sel) => sel.token === c.token,
+                    );
+                    return (
+                      <CommandItem
+                        key={`watched-${c.token}`}
+                        value={`watched-${c.token}`}
+                        disabled={!selected && atLimit}
+                        onSelect={() => toggleCompany(c)}
+                      >
+                        <Check
+                          className={cn(
+                            "h-4 w-4 shrink-0",
+                            selected ? "opacity-100" : "opacity-0",
+                          )}
+                        />
+                        <span>{c.name}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          {c.token}
+                        </span>
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
               )}
               <CommandGroup>
                 {results.map((c) => {
