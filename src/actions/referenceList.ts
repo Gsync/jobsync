@@ -20,6 +20,9 @@ export type ReferenceListParams = {
   appliedRelation: string;
   extraSelect?: Record<string, true>;
   extraCounts?: ReferenceExtraCount[];
+  extraWhere?: Record<string, any>;
+  searchFields?: string[];
+  orderBy?: any;
   page: number;
   limit: number;
   countBy?: string;
@@ -33,6 +36,9 @@ export const getReferenceEntityList = async ({
   appliedRelation,
   extraSelect,
   extraCounts,
+  extraWhere,
+  searchFields,
+  orderBy,
   page,
   limit,
   countBy,
@@ -42,10 +48,14 @@ export const getReferenceEntityList = async ({
 
   const whereClause: any = {
     createdBy: userId,
+    ...extraWhere,
   };
 
   if (search) {
-    whereClause.label = { contains: search };
+    const fields = searchFields ?? ["label"];
+    whereClause.OR = fields.map((field) => ({
+      [field]: { contains: search },
+    }));
   }
 
   // Prisma can only count the applied relation inline, so every other tally
@@ -84,11 +94,12 @@ export const getReferenceEntityList = async ({
             },
           }
         : {}),
-      orderBy: {
-        [appliedRelation]: {
-          _count: "desc",
-        },
-      },
+      // Two keys, not one: the applied-count sort alone has no tiebreak, so
+      // equal-count rows page unstably under infinite scroll.
+      orderBy: orderBy ?? [
+        { [appliedRelation]: { _count: "desc" } },
+        { label: "asc" },
+      ],
     }),
     model.count({
       where: whereClause,

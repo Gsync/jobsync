@@ -57,7 +57,7 @@ describe("Job Source Actions", () => {
         where: { createdBy: mockUser.id },
         skip: 0,
         take: 10,
-        orderBy: { jobsApplied: { _count: "desc" } },
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
       });
       expect(prisma.jobSource.count).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
@@ -95,7 +95,7 @@ describe("Job Source Actions", () => {
             },
           },
         },
-        orderBy: { jobsApplied: { _count: "desc" } },
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
       });
       expect(prisma.job.groupBy).toHaveBeenCalledWith({
         by: ["jobSourceId"],
@@ -143,13 +143,13 @@ describe("Job Source Actions", () => {
 
       expect(result).toEqual({ data: mockData, total: 1 });
       expect(prisma.jobSource.findMany).toHaveBeenCalledWith({
-        where: { createdBy: mockUser.id, label: { contains: "Link" } },
+        where: { createdBy: mockUser.id, OR: [{ label: { contains: "Link" } }] },
         skip: 0,
         take: 10,
-        orderBy: { jobsApplied: { _count: "desc" } },
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
       });
       expect(prisma.jobSource.count).toHaveBeenCalledWith({
-        where: { createdBy: mockUser.id, label: { contains: "Link" } },
+        where: { createdBy: mockUser.id, OR: [{ label: { contains: "Link" } }] },
       });
     });
 
@@ -164,7 +164,7 @@ describe("Job Source Actions", () => {
         where: { createdBy: mockUser.id },
         skip: 0,
         take: 10,
-        orderBy: { jobsApplied: { _count: "desc" } },
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
       });
     });
   });

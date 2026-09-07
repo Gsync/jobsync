@@ -10,19 +10,38 @@ export const getCompanyList = async (
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
   countBy?: string,
   search?: string,
+  scope: "mine" | "watchlist" = "mine",
 ): Promise<any | undefined> => {
   try {
     const user = await requireUser();
+
+    const watchlist = scope === "watchlist";
 
     return await getReferenceEntityList({
       model: prisma.company,
       userId: user.id,
       fkField: "companyId",
       appliedRelation: "jobsApplied",
-      extraSelect: { logoUrl: true },
+      extraSelect: {
+        logoUrl: true,
+        watched: true,
+        watchedAt: true,
+        atsProvider: true,
+        atsToken: true,
+        atsHost: true,
+      },
       extraCounts: [
         { key: "jobsRejected", where: { Status: { value: "rejected" } } },
       ],
+      // A watched row sits at applied-count 0, so the default sort would bury
+      // whatever was just watched; most-recent-first is what the scope is for.
+      ...(watchlist
+        ? {
+            extraWhere: { watched: true },
+            orderBy: [{ watchedAt: "desc" }, { label: "asc" }],
+          }
+        : {}),
+      searchFields: ["label", "atsToken"],
       page,
       limit,
       countBy,

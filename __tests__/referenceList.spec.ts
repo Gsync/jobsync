@@ -46,7 +46,7 @@ describe("getReferenceEntityList", () => {
       where: { createdBy: userId },
       skip: 0,
       take: 10,
-      orderBy: { jobsApplied: { _count: "desc" } },
+      orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
     });
     expect(model.count).toHaveBeenCalledWith({ where: { createdBy: userId } });
     expect(prisma.job.groupBy).not.toHaveBeenCalled();
@@ -80,7 +80,7 @@ describe("getReferenceEntityList", () => {
           },
         },
       },
-      orderBy: { jobs: { _count: "desc" } },
+      orderBy: [{ jobs: { _count: "desc" } }, { label: "asc" }],
     });
   });
 
@@ -206,11 +206,11 @@ describe("getReferenceEntityList", () => {
 
     expect(model.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { createdBy: userId, label: { contains: "Ama" } },
+        where: { createdBy: userId, OR: [{ label: { contains: "Ama" } }] },
       })
     );
     expect(model.count).toHaveBeenCalledWith({
-      where: { createdBy: userId, label: { contains: "Ama" } },
+      where: { createdBy: userId, OR: [{ label: { contains: "Ama" } }] },
     });
   });
 
@@ -279,5 +279,71 @@ describe("getReferenceEntityList", () => {
         limit: 10,
       })
     ).rejects.toThrow("Database error");
+  });
+
+  it("merges extraWhere into the where clause for both findMany and count", async () => {
+    const model = makeModel([], 0);
+
+    await getReferenceEntityList({
+      model,
+      userId,
+      fkField: "companyId",
+      appliedRelation: "jobsApplied",
+      extraWhere: { watched: true },
+      page: 1,
+      limit: 10,
+    });
+
+    const expected = { createdBy: userId, watched: true };
+    expect(model.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expected })
+    );
+    expect(model.count).toHaveBeenCalledWith({ where: expected });
+  });
+
+  it("builds an OR clause across every searchField", async () => {
+    const model = makeModel([], 0);
+
+    await getReferenceEntityList({
+      model,
+      userId,
+      fkField: "companyId",
+      appliedRelation: "jobsApplied",
+      searchFields: ["label", "atsToken"],
+      search: "acme",
+      page: 1,
+      limit: 10,
+    });
+
+    expect(model.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          createdBy: userId,
+          OR: [
+            { label: { contains: "acme" } },
+            { atsToken: { contains: "acme" } },
+          ],
+        },
+      })
+    );
+  });
+
+  it("uses the supplied orderBy over the default tiebreak", async () => {
+    const model = makeModel([], 0);
+    const orderBy = [{ watchedAt: "desc" }, { label: "asc" }];
+
+    await getReferenceEntityList({
+      model,
+      userId,
+      fkField: "companyId",
+      appliedRelation: "jobsApplied",
+      orderBy,
+      page: 1,
+      limit: 10,
+    });
+
+    expect(model.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy })
+    );
   });
 });

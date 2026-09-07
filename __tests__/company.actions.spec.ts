@@ -76,7 +76,7 @@ describe("Company Actions", () => {
         where: { createdBy: mockUser.id },
         skip: 0,
         take: 10,
-        orderBy: { jobsApplied: { _count: "desc" } },
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
       });
       expect(prisma.company.count).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
@@ -127,6 +127,11 @@ describe("Company Actions", () => {
           label: true,
           value: true,
           logoUrl: true,
+          watched: true,
+          watchedAt: true,
+          atsProvider: true,
+          atsToken: true,
+          atsHost: true,
           _count: {
             select: {
               jobsApplied: {
@@ -137,7 +142,7 @@ describe("Company Actions", () => {
             },
           },
         },
-        orderBy: { jobsApplied: { _count: "desc" } },
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
       });
       expect(prisma.company.count).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
@@ -175,13 +180,25 @@ describe("Company Actions", () => {
 
       expect(result).toEqual({ data: mockData, total: mockTotal });
       expect(prisma.company.findMany).toHaveBeenCalledWith({
-        where: { createdBy: mockUser.id, label: { contains: "Ama" } },
+        where: {
+          createdBy: mockUser.id,
+          OR: [
+            { label: { contains: "Ama" } },
+            { atsToken: { contains: "Ama" } },
+          ],
+        },
         skip: 0,
         take: 10,
-        orderBy: { jobsApplied: { _count: "desc" } },
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
       });
       expect(prisma.company.count).toHaveBeenCalledWith({
-        where: { createdBy: mockUser.id, label: { contains: "Ama" } },
+        where: {
+          createdBy: mockUser.id,
+          OR: [
+            { label: { contains: "Ama" } },
+            { atsToken: { contains: "Ama" } },
+          ],
+        },
       });
     });
 
@@ -209,7 +226,13 @@ describe("Company Actions", () => {
       }));
       expect(result).toEqual({ data: expectedData, total: mockTotal });
       expect(prisma.company.findMany).toHaveBeenCalledWith({
-        where: { createdBy: mockUser.id, label: { contains: "Ama" } },
+        where: {
+          createdBy: mockUser.id,
+          OR: [
+            { label: { contains: "Ama" } },
+            { atsToken: { contains: "Ama" } },
+          ],
+        },
         skip: 0,
         take: 10,
         select: {
@@ -217,6 +240,11 @@ describe("Company Actions", () => {
           label: true,
           value: true,
           logoUrl: true,
+          watched: true,
+          watchedAt: true,
+          atsProvider: true,
+          atsToken: true,
+          atsHost: true,
           _count: {
             select: {
               jobsApplied: {
@@ -227,11 +255,32 @@ describe("Company Actions", () => {
             },
           },
         },
-        orderBy: { jobsApplied: { _count: "desc" } },
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
       });
       expect(prisma.company.count).toHaveBeenCalledWith({
-        where: { createdBy: mockUser.id, label: { contains: "Ama" } },
+        where: {
+          createdBy: mockUser.id,
+          OR: [
+            { label: { contains: "Ama" } },
+            { atsToken: { contains: "Ama" } },
+          ],
+        },
       });
+    });
+
+    it("filters and sorts by watch state in the watchlist scope", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findMany as any).mockResolvedValue([]);
+      (prisma.company.count as any).mockResolvedValue(0);
+
+      await getCompanyList(1, 10, undefined, undefined, "watchlist");
+
+      expect(prisma.company.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { createdBy: mockUser.id, watched: true },
+          orderBy: [{ watchedAt: "desc" }, { label: "asc" }],
+        })
+      );
     });
 
     it("should not apply a label filter when search is empty", async () => {
@@ -245,7 +294,7 @@ describe("Company Actions", () => {
         where: { createdBy: mockUser.id },
         skip: 0,
         take: 10,
-        orderBy: { jobsApplied: { _count: "desc" } },
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
       });
     });
   });
