@@ -169,4 +169,12 @@ export function getWorkplaceTypeLabel(
   return (WORKPLACE_TYPES as Record<string, string>)[code] ?? fallback;
 }
 
+export function getJobTypeLabel(
+  code?: string | null,
+  fallback: string = "Not specified",
+): string {
+  if (!code) return fallback;
+  return (JOB_TYPES as Record<string, string>)[code] ?? fallback;
+}
+
 export type DescriptionCompleteness = "title-only" | "partial" | "full";

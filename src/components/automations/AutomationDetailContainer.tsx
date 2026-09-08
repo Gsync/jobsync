@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTabQueryParam } from "@/hooks/useTabQueryParam";
 import { Badge } from "@/components/ui/badge";
 import { isRetiredBoard } from "@/models/automation.model";
 import { DiscoveredJobsList } from "@/components/automations/DiscoveredJobsList";
@@ -20,6 +20,8 @@ import { AutomationDetailDialogs } from "./automation-detail-container/Automatio
 import { useAutomationWizardData } from "./automation-detail-container/useAutomationWizardData";
 import { useDiscoveredJobDetail } from "./automation-detail-container/useDiscoveredJobDetail";
 
+const AUTOMATION_DETAIL_TABS = ["logs", "jobs", "history"] as const;
+
 interface AutomationDetailContainerProps {
   automationId: string;
 }
@@ -27,13 +29,10 @@ interface AutomationDetailContainerProps {
 export function AutomationDetailContainer({
   automationId,
 }: AutomationDetailContainerProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const activeTab = searchParams.get("tab") ?? "logs";
-
-  const handleTabChange = (tab: string) => {
-    router.replace(`?tab=${tab}`, { scroll: false });
-  };
+  const [activeTab, handleTabChange] = useTabQueryParam(
+    AUTOMATION_DETAIL_TABS,
+    "logs",
+  );
 
   const {
     automation,

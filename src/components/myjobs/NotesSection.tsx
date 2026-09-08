@@ -6,23 +6,21 @@ import { NoteCard } from "./NoteCard";
 import { NoteDialog } from "./NoteDialog";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
-import { ChevronDown, PlusCircle, StickyNote } from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "../ui/collapsible";
+import { PlusCircle } from "lucide-react";
 import { toastActionResult } from "@/lib/toast";
 
 type NotesSectionProps = {
   jobId: string;
   openTrigger?: number;
+  onCountChange?: (count: number) => void;
 };
 
-export function NotesSection({ jobId, openTrigger }: NotesSectionProps) {
+export function NotesSection({
+  jobId,
+  openTrigger,
+  onCountChange,
+}: NotesSectionProps) {
   const [notes, setNotes] = useState<NoteResponse[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editNote, setEditNote] = useState<NoteResponse | null>(null);
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
@@ -32,9 +30,9 @@ export function NotesSection({ jobId, openTrigger }: NotesSectionProps) {
     const result = await getNotesByJobId(jobId);
     if (result.success) {
       setNotes(result.data);
-      if (result.data.length > 0) setIsOpen(true);
+      onCountChange?.(result.data.length);
     }
-  }, [jobId]);
+  }, [jobId, onCountChange]);
 
   useEffect(() => {
     loadNotes();
@@ -79,20 +77,15 @@ export function NotesSection({ jobId, openTrigger }: NotesSectionProps) {
 
   return (
     <>
-      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mx-4 mb-4">
+      <div>
         <div className="flex items-center justify-between">
-          <CollapsibleTrigger className="flex items-center gap-2 hover:opacity-80">
-            <StickyNote className="h-4 w-4" />
-            <span className="font-medium">Notes</span>
-            {notes.length > 0 && (
-              <Badge variant="secondary" className="text-xs">
-                {notes.length}
-              </Badge>
-            )}
-            <ChevronDown
-              className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
-            />
-          </CollapsibleTrigger>
+          <span className="text-sm text-muted-foreground">
+            {notes.length === 0
+              ? "Notes"
+              : notes.length === 1
+                ? "1 note on this job"
+                : `${notes.length} notes on this job`}
+          </span>
           <Button
             variant="outline"
             size="sm"
@@ -103,7 +96,7 @@ export function NotesSection({ jobId, openTrigger }: NotesSectionProps) {
             New Note
           </Button>
         </div>
-        <CollapsibleContent className="mt-3 space-y-3">
+        <div className="mt-3 space-y-3">
           {notes.length === 0 ? (
             <p className="text-sm text-muted-foreground">No notes yet.</p>
           ) : (
@@ -116,8 +109,8 @@ export function NotesSection({ jobId, openTrigger }: NotesSectionProps) {
               />
             ))
           )}
-        </CollapsibleContent>
-      </Collapsible>
+        </div>
+      </div>
 
       <NoteDialog
         open={dialogOpen}

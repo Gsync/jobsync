@@ -4,10 +4,18 @@ import { JobResponse, Tag } from "@/models/job.model";
 import { render, screen, act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+// The active tab lives in the URL, so a click only calls router.replace —
+// what the user sees next comes from the re-render with the new params.
+const router = { back: vi.fn(), push: vi.fn(), replace: vi.fn() };
+let searchParams = new URLSearchParams();
+const onTab = (tab: string) => {
+  searchParams = new URLSearchParams(`tab=${tab}`);
+};
+
 vi.mock("next/navigation", () => ({
-  useRouter: vi.fn(() => ({ back: vi.fn(), push: vi.fn(), replace: vi.fn() })),
-  useSearchParams: vi.fn(() => new URLSearchParams()),
-  usePathname: vi.fn(() => "/dashboard/myjobs/job-1"),
+  useRouter: () => router,
+  useSearchParams: () => searchParams,
+  usePathname: () => "/dashboard/myjobs/job-1",
 }));
 
 const chat = {
@@ -22,7 +30,7 @@ vi.mock("@/components/agent/AgentChatProvider", () => ({
 }));
 
 vi.mock("@/components/myjobs/NotesSection", () => ({
-  NotesSection: () => null,
+  NotesSection: () => <div data-testid="notes-section" />,
 }));
 
 vi.mock("@/components/TipTapContentViewer", () => ({
@@ -146,7 +154,7 @@ describe("JobDetails – skill badges", () => {
 });
 
 describe("JobDetails – salary range", () => {
-  it("renders the salary range in the header line", () => {
+  it("renders the salary range in the summary card", () => {
     render(<JobDetails {...baseProps} job={makeJob()} />);
 
     expect(screen.getByText(/100,000 - 110,000/)).toBeInTheDocument();
@@ -174,28 +182,32 @@ describe("JobDetails – match data display", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     chat.clear.mockResolvedValue(undefined);
+    searchParams = new URLSearchParams();
   });
 
-  it("shows inline match analysis when job has matchData", () => {
+  // The score sits in the summary card, the analysis behind the AI Match tab.
+  it("shows the match analysis on the AI Match tab when the job has matchData", () => {
+    onTab("match");
     const matchData = JSON.stringify({
       matchScore: 85,
       summary: "Good match",
     });
     render(<JobDetails {...baseProps} job={makeJob({ matchScore: 85, matchData })} />);
 
-    expect(screen.getByText("AI Match Analysis")).toBeInTheDocument();
     expect(screen.getByText("85%")).toBeInTheDocument();
     expect(screen.getByTestId("match-details")).toBeInTheDocument();
   });
 
-  it("does not show inline match section when job has no matchData", () => {
+  it("shows the empty state on the AI Match tab when the job has no matchData", () => {
+    onTab("match");
     render(<JobDetails {...baseProps} job={makeJob()} />);
 
-    expect(screen.queryByText("AI Match Analysis")).not.toBeInTheDocument();
+    expect(screen.getByText(/no match analysis yet/i)).toBeInTheDocument();
     expect(screen.queryByTestId("match-details")).not.toBeInTheDocument();
   });
 
   it("shows the saved match score from the job prop", () => {
+    onTab("match");
     render(
       <JobDetails
         job={makeJob({
@@ -214,10 +226,85 @@ describe("JobDetails – match data display", () => {
   });
 });
 
+describe("JobDetails – tabs", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    chat.approvalPending = false;
+    searchParams = new URLSearchParams();
+  });
+
+  // The bar must not shift between jobs, so all four are always present.
+  it("renders all four tabs regardless of what the job has", () => {
+    render(<JobDetails {...baseProps} job={makeJob()} />);
+
+    expect(screen.getByRole("tab", { name: /description/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /ai match/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /cover letter/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /notes/i })).toBeInTheDocument();
+  });
+
+  it("opens on the Description tab", () => {
+    render(<JobDetails {...baseProps} job={makeJob()} />);
+
+    expect(screen.getByRole("tab", { name: /description/i })).toHaveAttribute(
+      "data-state",
+      "active",
+    );
+  });
+
+  it("puts the picked tab in the URL so a refresh lands on it", async () => {
+    render(<JobDetails {...baseProps} job={makeJob()} />);
+
+    await userEvent.click(screen.getByRole("tab", { name: /ai match/i }));
+    expect(router.replace).toHaveBeenCalledWith("?tab=match", { scroll: false });
+  });
+
+  // It stays mounted on every tab so the ⋮ → Add a Note trigger and the count
+  // badge keep working; the panel's own inactive state is what hides it.
+  it("keeps the notes section mounted while another tab is showing", () => {
+    render(<JobDetails {...baseProps} job={makeJob()} />);
+
+    expect(screen.getByTestId("notes-section")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("notes-section").closest("[data-state]"),
+    ).toHaveAttribute("data-state", "inactive");
+  });
+
+  it("shows the cover letter empty state when the job has no letter", () => {
+    onTab("letter");
+    render(<JobDetails {...baseProps} job={makeJob()} />);
+
+    expect(screen.getByText(/no cover letter yet/i)).toBeInTheDocument();
+  });
+
+  it("renders the linked letter on the Cover Letter tab", () => {
+    onTab("letter");
+    render(
+      <JobDetails
+        {...baseProps}
+        job={makeJob({
+          coverLetterId: "cl-1",
+          CoverLetter: {
+            id: "cl-1",
+            title: "Frontend Developer – Acme Corp",
+            content: "<p>Dear Hiring Team,</p>",
+          },
+        })}
+      />,
+    );
+
+    expect(
+      screen.getByText("Frontend Developer – Acme Corp", { exact: false }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/no cover letter yet/i)).not.toBeInTheDocument();
+  });
+});
+
 describe("JobDetails – Match with AI", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     chat.clear.mockResolvedValue(undefined);
+    searchParams = new URLSearchParams();
   });
 
   it("opens the chat and asks for a match when Match with AI is clicked", async () => {
@@ -258,6 +345,7 @@ describe("JobDetails cover letter action", () => {
   beforeEach(() => {
     chat.approvalPending = false;
     vi.clearAllMocks();
+    searchParams = new URLSearchParams();
   });
 
   it("stays enabled when no resume is linked", () => {

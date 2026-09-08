@@ -1,10 +1,4 @@
 "use client";
-import { format } from "date-fns";
-import { Badge } from "../ui/badge";
-import { StatusBadge } from "../StatusBadge";
-import { getJobStatusBadgeColor } from "@/lib/badge-colors";
-import { JobStatusMenuItems } from "./JobStatusMenuItems";
-import { formatUrl } from "@/lib/utils";
 import {
   Company,
   JobLocation,
@@ -13,29 +7,14 @@ import {
   JobStatus,
   JobTitle,
   Tag,
-  getWorkplaceTypeLabel,
 } from "@/models/job.model";
 import { TipTapContentViewer } from "../TipTapContentViewer";
-import {
-  Card,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
-import { Button } from "../ui/button";
-import {
-  ArrowLeft,
-  FileText,
-  MoreVertical,
-  Pencil,
-  Sparkles,
-  StickyNote,
-  Tags,
-  Trash,
-  Trash2,
-} from "lucide-react";
+import { Badge } from "../ui/badge";
+import { Card } from "../ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTabQueryParam } from "@/hooks/useTabQueryParam";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
 import {
   AlertDialog,
@@ -49,27 +28,18 @@ import {
 } from "../ui/alert-dialog";
 import { NotesSection } from "./NotesSection";
 import { useState, useMemo } from "react";
-import { DownloadFileButton } from "../profile/DownloadFileButton";
 import { MatchDetails } from "../automations/MatchDetails";
 import type { JobMatchData } from "@/models/ai.schemas";
-import { CircularScore } from "@/components/CircularScore";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { AddJob } from "./AddJob";
 import { deleteJobById, updateJobStatus } from "@/actions/job.actions";
 import { toastError, toastSuccess } from "@/lib/toast";
+import { JobDetailsHeader } from "./job-details/JobDetailsHeader";
+import { JobSummaryCard } from "./job-details/JobSummaryCard";
+import { JobTabEmptyState } from "./job-details/JobTabEmptyState";
+import { CoverLetterTab } from "./job-details/CoverLetterTab";
+
+const JOB_DETAIL_TABS = ["description", "match", "letter", "notes"] as const;
 
 type JobDetailsProps = {
   job: JobResponse;
@@ -104,7 +74,12 @@ function JobDetails({
   );
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [noteOpenTrigger, setNoteOpenTrigger] = useState(0);
+  const [notesCount, setNotesCount] = useState(0);
   const router = useRouter();
+  const [activeTab, handleTabChange] = useTabQueryParam(
+    JOB_DETAIL_TABS,
+    "description",
+  );
   const goBack = () => router.back();
 
   // Derived from the server prop, not local state: the chat saves the match
@@ -144,6 +119,10 @@ function JobDetails({
     void startChat(text);
   };
 
+  const onMatch = () => requestChat(`Match my resume to ${jobLabel}`);
+  const onCoverLetter = () =>
+    requestChat(`Write a cover letter for ${jobLabel}`);
+
   const coverLetterBlockedReason =
     job.descriptionCompleteness === "title-only"
       ? "Add a job description first"
@@ -156,6 +135,7 @@ function JobDetails({
   const resetEditJob = () => setEditJobTarget(null);
 
   const onAddNote = () => {
+    handleTabChange("notes");
     setNoteOpenTrigger((prev) => prev + 1);
   };
 
@@ -179,221 +159,88 @@ function JobDetails({
     }
   };
 
-  const getJobType = (code: string) => {
-    switch (code) {
-      case "FT":
-        return "Full-time";
-      case "PT":
-        return "Part-time";
-      case "C":
-        return "Contract";
-      default:
-        return "Unknown";
-    }
-  };
-
   return (
     <>
-      <div className="flex justify-between">
-        <Button title="Go Back" size="sm" variant="outline" onClick={goBack}>
-          <ArrowLeft />
-        </Button>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 gap-1 cursor-pointer"
-            onClick={() => requestChat(`Match my resume to ${jobLabel}`)}
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-              Match with AI
-            </span>
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 gap-1 cursor-pointer"
-            data-testid="generate-cover-letter-btn"
-            disabled={!!coverLetterBlockedReason}
-            title={coverLetterBlockedReason}
-            onClick={() => requestChat(`Write a cover letter for ${jobLabel}`)}
-          >
-            <FileText className="h-3.5 w-3.5" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-              {job.coverLetterId ? "Regenerate Letter" : "Cover Letter"}
-            </span>
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                aria-haspopup="true"
-                size="icon"
-                variant="ghost"
-                data-testid="job-details-actions-menu-btn"
-              >
-                <MoreVertical className="h-4 w-4" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[200px]">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuGroup>
-                <DropdownMenuItem className="cursor-pointer" onClick={onEditJob}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Edit Job
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer" onClick={onAddNote}>
-                  <StickyNote className="mr-2 h-4 w-4" />
-                  Add a Note
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <Tags className="mr-2 h-4 w-4" />
-                    Change status
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuPortal>
-                    <DropdownMenuSubContent className="p-0">
-                      <JobStatusMenuItems
-                        jobStatuses={jobStatuses}
-                        currentStatusId={currentStatus.id}
-                        onSelectStatus={onChangeStatus}
-                      />
-                    </DropdownMenuSubContent>
-                  </DropdownMenuPortal>
-                </DropdownMenuSub>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-red-600 cursor-pointer"
-                  onClick={() => setDeleteAlertOpen(true)}
-                >
-                  <Trash className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-      {job?.id && (
-        <Card className="col-span-3">
-          <CardHeader className="flex-row items-center justify-between relative">
-            <div>
-              {job?.Company?.label}
-              <CardTitle>{job?.JobTitle?.label}</CardTitle>
-              <CardDescription>
-                {job?.Location?.label && `${job.Location.label} - `}
-                {getJobType(job?.jobType)}
-                {job?.workplaceType && ` · ${getWorkplaceTypeLabel(job.workplaceType)}`}
-                {job?.salaryRange && ` · ${job.salaryRange}`}
-              </CardDescription>
-            </div>
-            <div className="flex flex-col items-end gap-2">
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2"
-                  onClick={onEditJob}
-                  data-testid="job-details-edit-btn"
-                >
-                  <Pencil className="h-4 w-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Edit</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2 text-destructive hover:text-destructive"
-                  onClick={() => setDeleteAlertOpen(true)}
-                  data-testid="job-details-delete-btn"
-                >
-                  <Trash2 className="h-4 w-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Delete</span>
-                </Button>
-              </div>
-              {job.matchScore != null && (
-                <div className="flex flex-col items-center gap-1">
-                  <CircularScore score={job.matchScore} size="md" />
-                  {parsedMatchData?.recommendation ? (
-                    <Badge variant="outline" className="capitalize">
-                      {parsedMatchData.recommendation}
-                    </Badge>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">AI Match</span>
-                  )}
-                </div>
-              )}
-              {job?.Resume && job?.Resume?.File && job.Resume?.File?.filePath
-                ? DownloadFileButton(
-                    job?.Resume?.File?.filePath,
-                    job?.Resume?.title,
-                    job?.Resume?.File?.fileName,
-                  )
-                : null}
-            </div>
-          </CardHeader>
-          {job.jobUrl && (
-            <div className="my-3 ml-4">
-              <span className="font-semibold mr-2">Job URL:</span>
-              <a
-                href={formatUrl(job.jobUrl)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {job.jobUrl}
-              </a>
-            </div>
-          )}
-          <h3 className="ml-4 flex flex-wrap items-center gap-2">
-            {job.dueDate && new Date() > job.dueDate && currentStatus?.value === "draft" ? (
-              <StatusBadge
-                label="Expired"
-                color="amber"
-                className="w-[110px] whitespace-nowrap justify-center"
-              />
-            ) : (
-              <StatusBadge
-                label={currentStatus?.label ?? ""}
-                color={getJobStatusBadgeColor(currentStatus?.value ?? "")}
-                className="w-[110px] whitespace-nowrap justify-center"
-              />
-            )}
-            {job?.appliedDate && (
-              <span>{format(new Date(job.appliedDate), "PP")}</span>
-            )}
-            {job.createdVia && (
-              <Badge className="gap-1 bg-violet-500 dark:bg-violet-400">
-                <Sparkles className="h-3.5 w-3.5" />
-                via {job.createdVia}
-              </Badge>
-            )}
-          </h3>
-          {job.tags && job.tags.length > 0 && (
-            <div className="my-3 ml-4 flex flex-wrap gap-1">
-              {job.tags.map((tag) => (
-                <Badge key={tag.id} variant="secondary">
-                  {tag.label}
+      <div className="py-6 space-y-6">
+        <JobDetailsHeader
+          job={job}
+          jobStatuses={jobStatuses}
+          currentStatus={currentStatus}
+          coverLetterBlockedReason={coverLetterBlockedReason}
+          onBack={goBack}
+          onMatch={onMatch}
+          onCoverLetter={onCoverLetter}
+          onEdit={onEditJob}
+          onDelete={() => setDeleteAlertOpen(true)}
+          onAddNote={onAddNote}
+          onChangeStatus={onChangeStatus}
+        />
+
+        <JobSummaryCard
+          job={job}
+          currentStatus={currentStatus}
+          matchData={parsedMatchData}
+        />
+
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
+          <TabsList>
+            <TabsTrigger value="description">Description</TabsTrigger>
+            <TabsTrigger value="match">AI Match</TabsTrigger>
+            <TabsTrigger value="letter">Cover Letter</TabsTrigger>
+            <TabsTrigger value="notes">
+              Notes
+              {notesCount > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {notesCount}
                 </Badge>
-              ))}
-            </div>
-          )}
-          <div className="my-4 ml-4">
-            <TipTapContentViewer content={job?.description} />
-          </div>
-          {parsedMatchData && (
-            <div className="mx-4 mb-4">
-              <h4 className="font-medium mb-2 flex items-center gap-2">
-                <Sparkles className="h-4 w-4" />
-                AI Match Analysis
-              </h4>
-              <MatchDetails matchData={parsedMatchData} />
-            </div>
-          )}
-          <NotesSection jobId={job.id} openTrigger={noteOpenTrigger} />
-          <CardFooter></CardFooter>
-        </Card>
-      )}
+              )}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="description" className="mt-4">
+            <Card className="p-6">
+              <TipTapContentViewer content={job?.description} />
+            </Card>
+          </TabsContent>
+          <TabsContent value="match" className="mt-4">
+            <Card className="p-6">
+              {parsedMatchData ? (
+                <MatchDetails matchData={parsedMatchData} />
+              ) : (
+                <JobTabEmptyState
+                  icon={Sparkles}
+                  title="No match analysis yet"
+                  description="Run an AI match to see how your resume lines up with this posting, and where the gaps are."
+                  actionLabel="Match with AI"
+                  onAction={onMatch}
+                />
+              )}
+            </Card>
+          </TabsContent>
+          <TabsContent value="letter" className="mt-4">
+            <Card className="p-6">
+              <CoverLetterTab
+                letter={job.CoverLetter}
+                blockedReason={coverLetterBlockedReason}
+                onGenerate={onCoverLetter}
+              />
+            </Card>
+          </TabsContent>
+          {/* forceMount keeps ⋮ → Add a Note and the count badge working off-tab. */}
+          <TabsContent
+            value="notes"
+            className="mt-4 data-[state=inactive]:hidden"
+            forceMount
+          >
+            <Card className="p-6">
+              <NotesSection
+                jobId={job.id}
+                openTrigger={noteOpenTrigger}
+                onCountChange={setNotesCount}
+              />
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
       <AddJob
         jobStatuses={jobStatuses}
         companies={companies}
@@ -404,7 +251,7 @@ function JobDetails({
         editJob={editJobTarget}
         resetEditJob={resetEditJob}
         hideTrigger
-        redirectPath={`/dashboard/myjobs/${job.id}`}
+        redirectPath={`/dashboard/myjobs/${job.id}?tab=${activeTab}`}
       />
       <DeleteAlertDialog
         pageTitle="job"
