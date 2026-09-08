@@ -32,6 +32,16 @@ describe("locationMatches", () => {
     expect(locationMatches("SF | NYC", ["nyc"])).toBe(true);
     expect(locationMatches("San Francisco, CA", ["new york"])).toBe(false);
   });
+
+  it("matches whole terms only, never a substring of a longer word", () => {
+    const binance =
+      "Asia, Hong Kong, Taiwan, Taipei, Australia, Brisbane, Australia, Sydney";
+    expect(locationMatches(binance, ["Canada", "US"])).toBe(false);
+    expect(locationMatches("Minsk, Belarus", ["US"])).toBe(false);
+    expect(locationMatches("Houston, TX", ["US"])).toBe(false);
+    expect(locationMatches("New York, US", ["Canada", "US"])).toBe(true);
+    expect(locationMatches("Remote - US", ["US"])).toBe(true);
+  });
 });
 
 describe("scoreJob", () => {

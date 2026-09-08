@@ -63,13 +63,11 @@ export function buildIdf(corpus: JobDetails[]): (term: string) => number {
 
 // Empty preference = no constraint (gate passes all). "Remote" is not special:
 // it only matches when the user explicitly lists it as a wanted location.
+// Whole-term, so "US" does not match "aUStralia" / "Belarus" / "Houston".
 export function locationMatches(jobLocation: string, wanted: string[]): boolean {
   const loc = (jobLocation || "").toLowerCase();
   if (!wanted || wanted.length === 0) return true;
-  return wanted.some((w) => {
-    const ww = w.trim().toLowerCase();
-    return ww.length > 0 && loc.includes(ww);
-  });
+  return wanted.some((w) => termInText(loc, w));
 }
 
 function recencyTiebreak(postedDate?: string): number {
