@@ -419,8 +419,8 @@ describe("runAutomation (greenhouse)", () => {
       expect(result.status).toBe("completed");
       expect((generateText as any).mock.calls.length).toBe(5);
       expect(result.jobsProcessed).toBe(5); // analyzed
-      expect(result.jobsMatched).toBe(3); // highlighted: 90, 85, 95
-      expect(result.jobsSaved).toBe(5);
+      expect(result.jobsMatched).toBe(3); // met threshold: 90, 85, 95
+      expect(result.jobsSaved).toBe(3); // 50 and 60 are analyzed but dropped
     });
   });
 });

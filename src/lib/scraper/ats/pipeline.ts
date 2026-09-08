@@ -25,7 +25,8 @@ export interface PipelineResult {
     deduped: number; // jobs handed in (already deduped by the runner)
     located: number | null; // survivors after strict location gate (null if off)
     floorSurvivors: number; // jobs clearing the floor, before the cap ceiling
-    relevant: number; // floor survivors after the cap ceiling (== total saved)
+    scoreCut: number; // floor survivors dropped by the minimum-score gate
+    relevant: number; // survivors after the score gate and cap (the LLM budget)
   };
 }
 
@@ -71,7 +72,17 @@ export function runAtsPipeline(
     .filter((s) => passesFloor(s.components))
     .sort((a, b) => b.score - a.score);
 
-  const capped = floorSurvivors.slice(0, cap);
+  // Term presence is not enough to be worth an LLM call — a single generic hit
+  // clears the floor. Cut the weak tail by weighted score too. Fails open: idf
+  // is corpus-relative, so a board where every job shares the user's terms
+  // scores everything near zero, and dropping that whole run would be worse
+  // than analyzing it.
+  const strong = floorSurvivors.filter(
+    (s) => s.score >= APP_CONSTANTS.ATS_MIN_PRERANK_SCORE,
+  );
+  const ranked = strong.length > 0 ? strong : floorSurvivors;
+
+  const capped = ranked.slice(0, cap);
 
   return {
     toAnalyze: capped.slice(0, k),
@@ -80,6 +91,7 @@ export function runAtsPipeline(
       deduped,
       located: located ? located.length : null,
       floorSurvivors: floorSurvivors.length,
+      scoreCut: floorSurvivors.length - ranked.length,
       relevant: capped.length,
     },
   };

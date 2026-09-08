@@ -142,6 +142,24 @@ describe("runAutomation (lever)", () => {
     expect(result.jobsSaved).toBe(1);
   });
 
+  it("does not save an analyzed job scoring below the match threshold", async () => {
+    (searchLeverJobs as any).mockResolvedValue({
+      jobs: [makeJob("Frontend Engineer", "React")],
+      errors: [],
+    });
+    (generateText as any).mockResolvedValue({
+      text: "SCORES: match=40 recommendation=weak match\n\n## Summary\nThin fit",
+    });
+
+    const result = await runAutomation(leverAutomation);
+
+    expect(result.status).toBe("completed");
+    expect(result.jobsProcessed).toBe(1); // analyzed
+    expect(result.jobsMatched).toBe(0);
+    expect(result.jobsSaved).toBe(0);
+    expect((prisma.job.create as any).mock.calls.length).toBe(0);
+  });
+
   it("persists Lever's workplaceType through to the job record", async () => {
     (searchLeverJobs as any).mockResolvedValue({
       jobs: [makeJob("Frontend Engineer", "React", { workplaceType: "HYBRID" })],

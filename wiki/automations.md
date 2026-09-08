@@ -26,7 +26,7 @@ Open **Automations** in the sidebar and click **Create Automation**. The wizard 
 1. **Basics** — a name, and which job board (Greenhouse, Lever or Ashby) the companies live on.
 2. **Search** — the companies to track, then your filters: target job titles, keywords/skills, locations, and how many listings get full AI analysis per run. This is the step that decides how useful the automation is; see the next two sections.
 3. **Resume** — the resume every discovered job is scored against.
-4. **Matching** — a match threshold. Listings scoring above it are flagged as strong matches; nothing is thrown away because of it.
+4. **Matching** — a match threshold. Only listings whose AI match score reaches it are saved; anything analyzed and scored below it is discarded.
 5. **Schedule** — the hour of the day the automation runs (server time). Only one automation may occupy an hour, so hours already taken are marked **In use** and rejected.
 6. **Review** — confirm and save.
 
@@ -71,6 +71,8 @@ A resume with no skills section still works, but the automation then has only yo
 Two tiers. **Jobs analyzed per run** (the slider in the Search step, default 10, maximum 50) is how many top-ranked listings get a full AI match score. Higher means more coverage but slower and, on a paid provider, costlier runs.
 
 **Save additional relevant listings** is on by default. With it on, relevant listings that did not make the cut are still saved, ranked but not yet AI-scored — they show a lexical relevance percentage and an **Analyze** button so you can score one on demand. Turn it off if you only want the scored shortlist.
+
+Listings only reach AI analysis if they are related to your search strongly enough to be worth the call — clearing the relevance floor on a single generic word is not enough. Of the ones that are analyzed, only those meeting your match threshold are saved. So a run can fetch hundreds of listings and save none: the run log shows how many were skipped as too weakly related and how many were analyzed but fell below the threshold.
 
 ## When does it run, and can I run one now?
 

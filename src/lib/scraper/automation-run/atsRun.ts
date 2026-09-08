@@ -140,6 +140,13 @@ export async function runAtsRun(
       "info",
       `${label} ${pipeline.funnel.floorSurvivors} jobs cleared the relevance floor${capped}`,
     );
+    if (pipeline.funnel.scoreCut > 0) {
+      automationLogger.log(
+        automation.id,
+        "info",
+        `${label} ${pipeline.funnel.scoreCut} of them too weakly related to analyze — skipped`,
+      );
+    }
 
     const buildFunnel = (analyzed: number, highlighted: number): string => {
       const stages: FunnelStage[] = [
@@ -209,6 +216,7 @@ export async function runAtsRun(
     let jobsSaved = 0;
     let analyzed = 0;
     let highlighted = 0;
+    let belowThreshold = 0;
     let aiError: string | null = null;
 
     // Save the un-analyzed tier (floor survivors beyond the top-K).
@@ -326,13 +334,16 @@ export async function runAtsRun(
       analyzed++;
       const isStrong = matchResult.score >= automation.matchThreshold;
       if (isStrong) highlighted++;
+      else belowThreshold++;
 
       automationLogger.log(
         automation.id,
         isStrong ? "success" : "info",
-        `${label} Analyzed ${analyzed}/${totalToAnalyze}: ${scored.job.title} — ${matchResult.score}%`,
+        `${label} Analyzed ${analyzed}/${totalToAnalyze}: ${scored.job.title} — ${matchResult.score}%${isStrong ? "" : ` (below ${automation.matchThreshold}% threshold — not saved)`}`,
         { score: matchResult.score, threshold: automation.matchThreshold },
       );
+
+      if (!isStrong) return;
 
       try {
         const saved = await persistDiscoveredJob(
@@ -378,6 +389,14 @@ export async function runAtsRun(
       "success",
       `${label} LLM analysis complete (${analyzed}/${pipeline.toAnalyze.length} succeeded)`,
     );
+
+    if (belowThreshold > 0) {
+      automationLogger.log(
+        automation.id,
+        "info",
+        `${label} ${belowThreshold} analyzed job(s) scored below your ${automation.matchThreshold}% threshold and were not saved`,
+      );
+    }
 
     automationLogger.endRun(automation.id);
 

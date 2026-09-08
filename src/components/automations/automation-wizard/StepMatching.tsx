@@ -34,9 +34,9 @@ export function StepMatching({
             />
           </FormControl>
           <FormDescription>
-            Highlight listings whose AI match score exceeds this threshold.
-            Relevant listings are saved regardless — this only flags strong
-            matches.
+            Only save listings whose AI match score reaches this threshold.
+            Analyzed listings that score below it are discarded — set it lower
+            to keep more.
           </FormDescription>
           <FormMessage />
         </FormItem>

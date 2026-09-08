@@ -106,6 +106,9 @@ export const APP_CONSTANTS = {
   ATS_LISTING_CAP: 50, // safety ceiling applied after the relevance floor
   ATS_FLOOR_MIN_TITLE_HITS: 1,
   ATS_FLOOR_MIN_KEYWORD_HITS: 1,
+  // Minimum weighted prerank score to spend an LLM call on. Measured against
+  // real runs: nothing scoring below this ever exceeded a 6% AI match.
+  ATS_MIN_PRERANK_SCORE: 0.1,
   ATS_TITLE_WEIGHT: 0.6,
   ATS_SKILL_WEIGHT: 0.4,
 
