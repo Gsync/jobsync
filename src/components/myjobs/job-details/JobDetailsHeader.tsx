@@ -32,6 +32,7 @@ import {
   getJobTypeLabel,
   getWorkplaceTypeLabel,
 } from "@/models/job.model";
+import { CompanyLogo } from "../CompanyLogo";
 
 type JobDetailsHeaderProps = {
   job: JobResponse;
@@ -75,6 +76,10 @@ export function JobDetailsHeader({
         <Button title="Go Back" variant="ghost" size="icon" onClick={onBack}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
+        <CompanyLogo
+          logoUrl={job.Company?.logoUrl}
+          className="h-10 w-10 min-w-10"
+        />
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-bold">{job.JobTitle?.label}</h1>
           <p className="text-muted-foreground">{subtitle}</p>

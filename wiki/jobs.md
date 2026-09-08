@@ -53,6 +53,12 @@ The Jobs card header has three tools. The **search box** matches on job text. Th
 
 The list also has a view toggle for table or card layout, and a reload button that refetches without a full page refresh.
 
+## How do I run an AI match from the jobs list?
+
+A job that has no AI match score shows a **Match** button where its score would be — in the Match column in table view, and in the top-right corner of the card in card view. Clicking it opens that job's details page on the **AI Match** tab and starts the match straight away, so you do not have to open the job and click again. The match itself runs in the assistant panel exactly as it does from the job's own **Match with AI** button; when it finishes, the analysis is already on the tab in front of you.
+
+Jobs that already have a score show the score instead. To re-run a match on one of those, open the job and use **Match with AI** in its header.
+
 ## How do I export my jobs to CSV?
 
 Click **Export** in the Jobs card header. Your jobs download as a CSV file named `jobsync-YYYY-MM-DD.csv`. The export covers your jobs, not the reference lists behind them — for a complete, restorable copy of everything including resumes, tasks and activities, use **Settings → Data** instead.

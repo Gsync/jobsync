@@ -97,7 +97,7 @@ describe("MyJobsTable", () => {
     expect(screen.getByText("Applied")).toBeInTheDocument();
   });
 
-  it("renders a match score when present, and a dash otherwise", () => {
+  it("renders a match score when present, and a Match button otherwise", () => {
     const { rerender } = renderTable([makeJob({ matchScore: 87 })]);
     expect(screen.getByText("87%")).toBeInTheDocument();
 
@@ -111,7 +111,10 @@ describe("MyJobsTable", () => {
         onAddNote={vi.fn()}
       />,
     );
-    expect(screen.getByText("-")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /match/i })).toHaveAttribute(
+      "href",
+      "/dashboard/myjobs/job-1?tab=match&match=1",
+    );
   });
 
   it("shows a notes count badge only when the job has notes", () => {

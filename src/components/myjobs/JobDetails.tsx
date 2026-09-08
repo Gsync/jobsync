@@ -38,6 +38,7 @@ import { JobDetailsHeader } from "./job-details/JobDetailsHeader";
 import { JobSummaryCard } from "./job-details/JobSummaryCard";
 import { JobTabEmptyState } from "./job-details/JobTabEmptyState";
 import { CoverLetterTab } from "./job-details/CoverLetterTab";
+import { useAutoMatch } from "./job-details/useAutoMatch";
 
 const JOB_DETAIL_TABS = ["description", "match", "letter", "notes"] as const;
 
@@ -122,6 +123,8 @@ function JobDetails({
   const onMatch = () => requestChat(`Match my resume to ${jobLabel}`);
   const onCoverLetter = () =>
     requestChat(`Write a cover letter for ${jobLabel}`);
+
+  useAutoMatch(onMatch);
 
   const coverLetterBlockedReason =
     job.descriptionCompleteness === "title-only"

@@ -66,13 +66,16 @@ describe("JobCard", () => {
     expect(screen.getByText("Not applied")).toBeInTheDocument();
   });
 
-  it("renders the match score, or an empty ring when there is none", () => {
+  it("renders the match score, or a Match button when there is none", () => {
     const { unmount } = renderCard(makeJob({ matchScore: 87 }));
     expect(screen.getByText("87%")).toBeInTheDocument();
     unmount();
 
     renderCard(makeJob({ matchScore: null }));
-    expect(screen.getByTitle("No match score")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /match/i })).toHaveAttribute(
+      "href",
+      "/dashboard/myjobs/job-1?tab=match&match=1",
+    );
   });
 
   it("shows a Dismissed badge for dismissed discovered jobs", () => {

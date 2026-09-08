@@ -18,6 +18,8 @@ import { CircularScore } from "@/components/CircularScore";
 import { JobStatusBadgeMenu } from "./JobStatusBadgeMenu";
 import { TooltipProvider } from "../ui/tooltip";
 import { JobActionsMenu } from "./JobActionsMenu";
+import { MatchJobButton } from "./MatchJobButton";
+import { CompanyLogo } from "./CompanyLogo";
 
 type MyJobsTableProps = {
   jobs: JobResponse[];
@@ -57,7 +59,7 @@ function MyJobsTable({
             <TableHead>Company</TableHead>
             <TableHead className="hidden md:table-cell">Location</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="hidden md:table-cell">Match</TableHead>
+            <TableHead className="hidden md:table-cell text-center">Match</TableHead>
             <TableHead className="hidden md:table-cell">Source</TableHead>
             <TableHead>
               <span className="sr-only">Actions</span>
@@ -69,15 +71,9 @@ function MyJobsTable({
             return (
               <TableRow key={job.id}>
                 <TableCell className="hidden sm:table-cell">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    alt="Company logo"
-                    className="rounded-md object-cover h-8 w-8 min-w-8"
-                    src={job.Company?.logoUrl || "/images/jobsync-logo.svg"}
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = "/images/jobsync-logo.svg";
-                    }}
+                  <CompanyLogo
+                    logoUrl={job.Company?.logoUrl}
+                    className="h-8 w-8 min-w-8"
                   />
                 </TableCell>
                 <TableCell className="hidden md:table-cell w-[120px] whitespace-nowrap">
@@ -112,11 +108,16 @@ function MyJobsTable({
                     className="w-[110px] whitespace-nowrap justify-center"
                   />
                 </TableCell>
-                <TableCell className="hidden md:table-cell">
+                <TableCell className="hidden md:table-cell text-center">
                   {job.matchScore != null ? (
-                    <CircularScore score={job.matchScore} size="sm" animate={false} />
+                    <CircularScore
+                      score={job.matchScore}
+                      size="sm"
+                      animate={false}
+                      className="mx-auto"
+                    />
                   ) : (
-                    <span className="text-muted-foreground">-</span>
+                    <MatchJobButton jobId={job.id} />
                   )}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">

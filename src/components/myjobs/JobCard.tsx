@@ -7,6 +7,8 @@ import { CircularScore } from "@/components/CircularScore";
 import { JobResponse, JobStatus } from "@/models/job.model";
 import { JobStatusBadge } from "./JobStatusBadge";
 import { JobActionsMenu } from "./JobActionsMenu";
+import { MatchJobButton } from "./MatchJobButton";
+import { CompanyLogo } from "./CompanyLogo";
 
 type JobCardProps = {
   job: JobResponse;
@@ -30,15 +32,9 @@ export function JobCard({
   return (
     <div className="flex flex-col gap-3 rounded-lg border bg-card p-4">
       <div className="flex items-start gap-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          alt="Company logo"
-          className="h-10 w-10 min-w-10 rounded-md object-cover"
-          src={job.Company?.logoUrl || "/images/jobsync-logo.svg"}
-          onError={(e) => {
-            e.currentTarget.onerror = null;
-            e.currentTarget.src = "/images/jobsync-logo.svg";
-          }}
+        <CompanyLogo
+          logoUrl={job.Company?.logoUrl}
+          className="h-10 w-10 min-w-10"
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
@@ -65,12 +61,7 @@ export function JobCard({
         {job.matchScore != null ? (
           <CircularScore score={job.matchScore} size="sm" animate={false} />
         ) : (
-          <div
-            title="No match score"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-4 border-muted text-xs text-muted-foreground"
-          >
-            &ndash;
-          </div>
+          <MatchJobButton jobId={job.id} />
         )}
       </div>
 

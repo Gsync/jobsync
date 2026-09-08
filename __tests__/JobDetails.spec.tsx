@@ -412,3 +412,55 @@ describe("JobDetails cover letter action", () => {
     );
   });
 });
+
+describe("JobDetails – auto-match from the jobs list", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    chat.approvalPending = false;
+    chat.clear.mockResolvedValue(undefined);
+    searchParams = new URLSearchParams();
+  });
+
+  it("runs the match and drops the flag when arriving with ?match=1", async () => {
+    searchParams = new URLSearchParams("tab=match&match=1");
+    render(<JobDetails {...baseProps} job={makeJob()} />);
+    await act(async () => {});
+
+    expect(chat.open).toHaveBeenCalled();
+    const sent = chat.sendMessage.mock.calls[0][0];
+    expect(sent.parts[0].text).toMatch(/match/i);
+    expect(router.replace).toHaveBeenCalledWith("?tab=match", { scroll: false });
+  });
+
+  it("runs no match when the flag is absent", async () => {
+    searchParams = new URLSearchParams("tab=match");
+    render(<JobDetails {...baseProps} job={makeJob()} />);
+    await act(async () => {});
+
+    expect(chat.sendMessage).not.toHaveBeenCalled();
+  });
+
+  // The chat refreshes the route once the match is saved; a second run would
+  // burn another LLM call and overwrite the result.
+  it("runs the match only once across re-renders", async () => {
+    searchParams = new URLSearchParams("tab=match&match=1");
+    const { rerender } = render(<JobDetails {...baseProps} job={makeJob()} />);
+    await act(async () => {});
+    rerender(<JobDetails {...baseProps} job={makeJob({ matchScore: 80 })} />);
+    await act(async () => {});
+
+    expect(chat.sendMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it("asks before clearing a conversation with a pending approval", async () => {
+    chat.approvalPending = true;
+    searchParams = new URLSearchParams("tab=match&match=1");
+    render(<JobDetails {...baseProps} job={makeJob()} />);
+    await act(async () => {});
+
+    expect(
+      screen.getByText(/clear the assistant conversation/i),
+    ).toBeInTheDocument();
+    expect(chat.sendMessage).not.toHaveBeenCalled();
+  });
+});
