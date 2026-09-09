@@ -6,6 +6,11 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
+const chat = { busy: false };
+vi.mock("@/components/agent/AgentChatProvider", () => ({
+  useAgentChat: () => chat,
+}));
+
 const mockStatuses: JobStatus[] = [
   { id: "1", label: "Applied", value: "applied" },
   { id: "2", label: "Interview", value: "interview" },

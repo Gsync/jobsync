@@ -17,6 +17,7 @@ import {
   getToolName,
   isToolUIPart,
   lastAssistantMessageIsCompleteWithApprovalResponses,
+  type ToolUIPart,
   type UIMessage,
 } from "ai";
 import { hasPendingApproval, stubConsumedPastes } from "@/lib/agent/paste";
@@ -120,8 +121,9 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
   // keyed by toolCallId so two nested calls cannot collide.
   const [toolStreams, setToolStreams] = useState<Record<string, string>>({});
 
-  // The jobs list is client state loaded by a server action, so router.refresh
-  // cannot reach it — pages that hold their own rows subscribe to this counter.
+  // Job rows changed server-side. The jobs list is client state loaded by a
+  // server action, so router.refresh cannot reach it — pages that hold their
+  // own rows subscribe to this counter.
   const [jobWrites, setJobWrites] = useState(0);
 
   // Which writes have already been announced. Seeded from the persisted
@@ -156,13 +158,18 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
 
       const finishedParts = message?.parts ?? [];
       const wrote = createdJobToolCallIds(message ? [message] : []).length > 0;
+      const finishedTools = finishedParts
+        .filter((part) => isToolUIPart(part) && part.state === "output-available")
+        .map((part) => getToolName(part as ToolUIPart));
       // Any nested tool that saves server-side leaves the page behind the
       // panel stale — the saved review card, the job's match score, or the
       // job's cover-letter button flipping to "Regenerate Letter".
-      const generated = finishedParts.some((part) => {
-        if (!isToolUIPart(part) || part.state !== "output-available") return false;
-        return isNestedTool(getToolName(part));
-      });
+      const generated = finishedTools.some(isNestedTool);
+      // The score it just saved sits in a JOB row, which a jobs list holding
+      // its own rows can only pick up from the counter. review_resume writes
+      // to the resume and the list renders no cover-letter state, so neither
+      // of the other two nested tools belongs here.
+      const scored = finishedTools.includes("match_job");
 
       // The route stubs the paste on its way into the DB, but that copy is
       // not the one the client POSTs next turn — so without this the browser
@@ -179,6 +186,7 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
       // is a wasted request, not a bug; a stale saved review or match score
       // right after watching one land reads as one.
       if (generated) router.refresh();
+      if (scored) setJobWrites((n) => n + 1);
     },
   });
 
@@ -370,10 +378,16 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
 
   const dismissInterrupted = useCallback(() => setInterruptedTurn(false), []);
 
+  // A turn in flight, or one parked on an approval. Read by every surface
+  // that starts a chat from outside the panel, so a second one cannot clear
+  // the conversation the first is still streaming into.
+  const busy = streamingRef.current || approvalPending;
+
   return {
     isOpen,
     open,
     close,
+    busy,
     messages: chat.messages,
     toolStreams,
     jobWrites,

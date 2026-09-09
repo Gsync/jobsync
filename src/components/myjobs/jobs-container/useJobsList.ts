@@ -11,7 +11,7 @@ import {
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
 
 // Owns the job list itself: pagination, search, view mode, infinite scroll,
-// and the reload triggered when the agent chat writes a new job.
+// and the reload triggered when the agent chat writes job data.
 export function useJobsList({
   companyFilter,
   appliedFilter,
@@ -100,9 +100,9 @@ export function useJobsList({
     (async () => await loadJobs(1))();
   }, [loadJobs]);
 
-  // The agent saves the job server-side, so only this counter tells us a row
-  // appeared. Deps are the counter alone: reloadJobs changes with every filter
-  // and keystroke, and the effects above already cover those.
+  // The agent saves server-side, so only this counter tells us a row appeared
+  // or a match score landed. Deps are the counter alone: reloadJobs changes
+  // with every filter and keystroke, and the effects above already cover those.
   useEffect(() => {
     if (jobWrites === 0) return;
     void reloadJobs();

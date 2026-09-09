@@ -8,6 +8,11 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
+const chat = { busy: false };
+vi.mock("@/components/agent/AgentChatProvider", () => ({
+  useAgentChat: () => chat,
+}));
+
 window.HTMLElement.prototype.scrollIntoView = vi.fn();
 window.HTMLElement.prototype.hasPointerCapture = vi.fn();
 window.HTMLElement.prototype.releasePointerCapture = vi.fn();
@@ -115,6 +120,19 @@ describe("MyJobsTable", () => {
       "href",
       "/dashboard/myjobs/job-1?tab=match&match=1",
     );
+  });
+
+  it("disables the Match button while the assistant is busy", () => {
+    chat.busy = true;
+    try {
+      renderTable([makeJob({ matchScore: null })]);
+      expect(
+        screen.queryByRole("link", { name: /match/i }),
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /match/i })).toBeDisabled();
+    } finally {
+      chat.busy = false;
+    }
   });
 
   it("shows a notes count badge only when the job has notes", () => {

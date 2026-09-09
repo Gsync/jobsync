@@ -39,6 +39,7 @@ type JobDetailsHeaderProps = {
   jobStatuses: JobStatus[];
   currentStatus: JobStatus;
   coverLetterBlockedReason?: string;
+  chatBusy: boolean;
   onBack: () => void;
   onMatch: () => void;
   onCoverLetter: () => void;
@@ -53,6 +54,7 @@ export function JobDetailsHeader({
   jobStatuses,
   currentStatus,
   coverLetterBlockedReason,
+  chatBusy,
   onBack,
   onMatch,
   onCoverLetter,
@@ -86,7 +88,13 @@ export function JobDetailsHeader({
         </div>
       </div>
       <div className="flex flex-wrap justify-end gap-2">
-        <Button variant="outline" className="cursor-pointer" onClick={onMatch}>
+        <Button
+          variant="outline"
+          className="cursor-pointer"
+          disabled={chatBusy}
+          title={chatBusy ? "The assistant is busy" : undefined}
+          onClick={onMatch}
+        >
           <Sparkles className="h-4 w-4 sm:mr-2" />
           <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
             Match with AI

@@ -66,6 +66,7 @@ function JobDetails({
     clear: clearChat,
     sendMessage,
     approvalPending,
+    busy: chatBusy,
   } = useAgentChat();
   const [showClearChatConfirm, setShowClearChatConfirm] = useState(false);
   const [pendingChatMessage, setPendingChatMessage] = useState("");
@@ -126,10 +127,14 @@ function JobDetails({
 
   useAutoMatch(onMatch);
 
+  // Doubles as the busy gate: the header button, the empty state and
+  // Regenerate all key on this one reason.
   const coverLetterBlockedReason =
     job.descriptionCompleteness === "title-only"
       ? "Add a job description first"
-      : undefined;
+      : chatBusy
+        ? "The assistant is busy"
+        : undefined;
 
   const onEditJob = () => {
     setEditJobTarget({ ...job, Status: currentStatus });
@@ -170,6 +175,7 @@ function JobDetails({
           jobStatuses={jobStatuses}
           currentStatus={currentStatus}
           coverLetterBlockedReason={coverLetterBlockedReason}
+          chatBusy={chatBusy}
           onBack={goBack}
           onMatch={onMatch}
           onCoverLetter={onCoverLetter}
@@ -215,6 +221,8 @@ function JobDetails({
                   description="Run an AI match to see how your resume lines up with this posting, and where the gaps are."
                   actionLabel="Match with AI"
                   onAction={onMatch}
+                  actionDisabled={chatBusy}
+                  actionTitle={chatBusy ? "The assistant is busy" : undefined}
                 />
               )}
             </Card>
