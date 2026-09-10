@@ -17,6 +17,7 @@ import {
 } from "./aiSettings";
 import { parseAtsConfig } from "./config";
 import { extractResumeSkills } from "./resumeText";
+import { buildSkillTerms } from "./skillTags";
 import { persistDiscoveredJob, scalePrerank } from "./persist";
 import { matchJobToResume } from "./match";
 import { finalizeRun } from "./finalize";
@@ -104,6 +105,7 @@ export async function runAtsRun(
     }
 
     const resumeSkills = extractResumeSkills(resume);
+    const skillTerms = buildSkillTerms(resume);
 
     // The distinct pool scoreJob actually ranks against. Surfacing it makes a
     // thin search visible instead of showing up only as an unexplained zero.
@@ -214,6 +216,7 @@ export async function runAtsRun(
     const limit = getAutomationMatchLimit(aiSettings.provider);
 
     let jobsSaved = 0;
+    let jobsTagged = 0;
     let analyzed = 0;
     let highlighted = 0;
     let belowThreshold = 0;
@@ -231,7 +234,7 @@ export async function runAtsRun(
       for (const scored of pipeline.toSaveUnanalyzed) {
         if (signal?.aborted) break;
         try {
-          const saved = await persistDiscoveredJob(
+          const { saved, tagsApplied } = await persistDiscoveredJob(
             automation,
             scored.job,
             scalePrerank(scored.score),
@@ -240,8 +243,12 @@ export async function runAtsRun(
               prerankComponents: scored.components,
               analyzed: false,
             },
+            skillTerms,
           );
-          if (saved) jobsSaved++;
+          if (saved) {
+            jobsSaved++;
+            if (tagsApplied > 0) jobsTagged++;
+          }
         } catch (err) {
           log.error("[ATS] Failed to save listing", {
             "automation.id": automation.id,
@@ -267,7 +274,7 @@ export async function runAtsRun(
 
       const saveUnanalyzed = async () => {
         try {
-          const saved = await persistDiscoveredJob(
+          const { saved, tagsApplied } = await persistDiscoveredJob(
             automation,
             scored.job,
             scalePrerank(scored.score),
@@ -276,8 +283,12 @@ export async function runAtsRun(
               prerankComponents: scored.components,
               analyzed: false,
             },
+            skillTerms,
           );
-          if (saved) jobsSaved++;
+          if (saved) {
+            jobsSaved++;
+            if (tagsApplied > 0) jobsTagged++;
+          }
         } catch (err) {
           log.error("[ATS] Failed to save listing", {
             "automation.id": automation.id,
@@ -346,7 +357,7 @@ export async function runAtsRun(
       if (!isStrong) return;
 
       try {
-        const saved = await persistDiscoveredJob(
+        const { saved, tagsApplied } = await persistDiscoveredJob(
           automation,
           scored.job,
           matchResult.score,
@@ -361,8 +372,12 @@ export async function runAtsRun(
             prerankComponents: scored.components,
             analyzed: true,
           },
+          skillTerms,
         );
-        if (saved) jobsSaved++;
+        if (saved) {
+          jobsSaved++;
+          if (tagsApplied > 0) jobsTagged++;
+        }
       } catch (err) {
         log.error("[ATS] Failed to save analyzed job", {
           "automation.id": automation.id,
@@ -395,6 +410,14 @@ export async function runAtsRun(
         automation.id,
         "info",
         `${label} ${belowThreshold} analyzed job(s) scored below your ${automation.matchThreshold}% threshold and were not saved`,
+      );
+    }
+
+    if (jobsSaved > 0) {
+      automationLogger.log(
+        automation.id,
+        "info",
+        `${label} Tagged ${jobsTagged} of ${jobsSaved} saved job(s) with skills from your resume`,
       );
     }
 

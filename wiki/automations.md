@@ -62,6 +62,10 @@ Because the skills on your resume are used as extra keywords when listings are r
 
 The skills section also goes into the text handed to the AI for the match score, so it improves the scoring as well as the shortlisting.
 
+Your skills are also used to tag the jobs a run discovers. When a saved listing's title or description mentions one of your resume skills, that skill is added to the job as a tag, so the job's detail page shows at a glance which of your skills the posting asks for. Only skills already on your resume are used — a run never invents a new tag — and each job gets at most ten.
+
+For a skill to be tagged, the posting has to mention it by name, so write your skills the way a job ad would. A note in brackets is ignored, so **Angular (v10–14)** still matches a posting that just says "Angular". But a skill written as two things at once — **C# / .NET**, **Agile/Scrum** — matches nothing, because no posting spells it that way. List those as separate skills instead. This helps the ranking too, which reads the same skill names.
+
 To add one, open **Profile**, open the resume you use for matching, and click **Add Skills**. Group your skills into categories (up to 8, with up to 20 skills each) — for example *Languages*, *Frameworks*, *Cloud* — and list the real technology names you would want a posting to mention.
 
 A resume with no skills section still works, but the automation then has only your typed keywords to go on. Pair a filled-in skills section with a good set of target titles and keywords for the best results.

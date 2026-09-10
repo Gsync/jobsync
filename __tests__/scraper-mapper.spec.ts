@@ -7,6 +7,8 @@ import {
   resolveJobSource,
 } from "@/lib/jobs/resolve";
 import type { ScrapedJobData } from "@/models/automation.model";
+import { buildSkillTerms } from "@/lib/scraper/automation-run/skillTags";
+import type { ResumeWithSections } from "@/lib/scraper/automation-run/types";
 
 vi.mock("@/lib/db", () => {
   const mockPrisma = {
@@ -45,6 +47,7 @@ const baseInput = {
   automationId: "automation-1",
   matchScore: 88,
   matchData: "{}",
+  skillTerms: [],
 };
 
 beforeEach(() => {
@@ -134,5 +137,50 @@ describe("mapScrapedJobToJobRecord - entity delegation", () => {
 
     expect(resolveLocation).not.toHaveBeenCalled();
     expect(result.locationId).toBeNull();
+  });
+});
+
+describe("mapScrapedJobToJobRecord - skill tags", () => {
+  const terms = buildSkillTerms({
+    ResumeSections: [
+      {
+        sectionType: "skills",
+        skills: [
+          { category: null, order: 0, Tag: { id: "t-react", label: "React" } },
+          { category: null, order: 1, Tag: { id: "t-go", label: "Go" } },
+        ],
+      },
+    ],
+  } as unknown as ResumeWithSections);
+
+  it("connects the tags whose skills the posting mentions", async () => {
+    const result = await mapScrapedJobToJobRecord({
+      ...baseInput,
+      scrapedJob: { ...scrapedJob, description: "<p>React and more React</p>" },
+      skillTerms: terms,
+    });
+
+    expect(result.tags).toEqual({ connect: [{ id: "t-react" }] });
+  });
+
+  it("omits the tags key entirely when nothing matches", async () => {
+    const result = await mapScrapedJobToJobRecord({
+      ...baseInput,
+      scrapedJob: { ...scrapedJob, description: "<p>Nothing relevant here</p>" },
+      skillTerms: terms,
+    });
+
+    expect(result.tags).toBeUndefined();
+    expect("tags" in result).toBe(false);
+  });
+
+  it("omits the tags key when the vocabulary is empty", async () => {
+    const result = await mapScrapedJobToJobRecord({
+      ...baseInput,
+      scrapedJob: { ...scrapedJob, description: "<p>React</p>" },
+      skillTerms: [],
+    });
+
+    expect("tags" in result).toBe(false);
   });
 });

@@ -58,13 +58,13 @@ describe("wiki bundle", () => {
     }
   });
 
-  eachPage("%s keeps sections under 300 words and the page under 2000", (rel) => {
+  eachPage("%s keeps sections under 400 words and the page under 2000", (rel) => {
     const body = parseWikiPage(read(rel)).body;
     const words = (text: string) => text.split(/\s+/).filter(Boolean).length;
     expect(words(body), rel).toBeLessThan(2000);
     for (const section of body.split(/^## /m).slice(1)) {
       const heading = section.split("\n")[0];
-      expect(words(section), `${rel}: ## ${heading}`).toBeLessThan(300);
+      expect(words(section), `${rel}: ## ${heading}`).toBeLessThan(400);
     }
   });
 

@@ -52,7 +52,7 @@ export interface ResumeWithSections extends PrismaResume {
     skills: Array<{
       category: string | null;
       order: number;
-      Tag: { label: string };
+      Tag: { id: string; label: string };
     }>;
   }>;
 }

@@ -217,4 +217,42 @@ describe("runAutomation (lever)", () => {
     expect(prompt).not.toContain("&amp;");
     expect(prompt).not.toContain("<p>");
   });
+
+  it("tags a saved job with the resume skills its posting mentions", async () => {
+    (prisma.resume.findUnique as any).mockResolvedValue({
+      id: "resume1",
+      title: "My Resume",
+      ContactInfo: null,
+      ResumeSections: [
+        {
+          sectionType: "skills",
+          skills: [
+            { category: null, order: 0, Tag: { id: "tag-react", label: "React" } },
+            { category: null, order: 1, Tag: { id: "tag-rust", label: "Rust" } },
+          ],
+        },
+      ],
+    });
+    (searchLeverJobs as any).mockResolvedValue({
+      jobs: [makeJob("Frontend Engineer", "We build with React every day")],
+      errors: [],
+    });
+
+    await runAutomation(leverAutomation);
+
+    const createArg = (prisma.job.create as any).mock.calls[0][0];
+    expect(createArg.data.tags).toEqual({ connect: [{ id: "tag-react" }] });
+  });
+
+  it("omits tags when the resume has no skills section", async () => {
+    (searchLeverJobs as any).mockResolvedValue({
+      jobs: [makeJob("Frontend Engineer", "We build with React every day")],
+      errors: [],
+    });
+
+    await runAutomation(leverAutomation);
+
+    const createArg = (prisma.job.create as any).mock.calls[0][0];
+    expect("tags" in createArg.data).toBe(false);
+  });
 });

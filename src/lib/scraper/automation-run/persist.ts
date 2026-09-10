@@ -4,6 +4,7 @@ import type { Automation, ScrapedJobData } from "@/models/automation.model";
 import type { JobDetails } from "../types";
 import { mapScrapedJobToJobRecord } from "../mapper";
 import { normalizeJobUrl } from "../utils";
+import type { SkillTerm } from "./skillTags";
 
 // Raw lexical score is ~0..PRERANK_MAX; scale into 0..99 so it fits the Int
 // matchScore column and stays below a perfect LLM score (100). Internal sort
@@ -17,7 +18,7 @@ export function scalePrerank(raw: number): number {
   return Math.min(99, Math.max(0, Math.round((raw / PRERANK_MAX) * 99)));
 }
 
-// Returns false (instead of throwing) when a concurrent run already saved
+// Returns saved: false (instead of throwing) when a concurrent run already saved
 // this exact URL first — the Job_userId_jobUrl_automation_key partial unique
 // index (migrations/20260710000002_job_automation_url_unique) is the
 // backstop for that race, since app-level dedup only sees a point-in-time
@@ -27,7 +28,8 @@ export async function persistDiscoveredJob(
   job: JobDetails,
   matchScore: number,
   matchData: object,
-): Promise<boolean> {
+  skillTerms: SkillTerm[],
+): Promise<{ saved: boolean; tagsApplied: number }> {
   const scrapedJob: ScrapedJobData = {
     title: job.title,
     company: job.company,
@@ -46,13 +48,14 @@ export async function persistDiscoveredJob(
     automationId: automation.id,
     matchScore,
     matchData: JSON.stringify(matchData),
+    skillTerms,
   });
 
   try {
     await db.job.create({ data: jobRecord });
-    return true;
+    return { saved: true, tagsApplied: jobRecord.tags?.connect.length ?? 0 };
   } catch (err: any) {
-    if (err?.code === "P2002") return false;
+    if (err?.code === "P2002") return { saved: false, tagsApplied: 0 };
     throw err;
   }
 }

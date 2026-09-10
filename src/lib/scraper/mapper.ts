@@ -7,6 +7,7 @@ import {
   resolveLocation,
   resolveJobSource,
 } from "@/lib/jobs/resolve";
+import { matchSkillTags, type SkillTerm } from "./automation-run/skillTags";
 
 // Maps source employment-type strings ("FULLTIME"/"CONTRACTOR", Greenhouse's
 // absence of the field, etc.) to JOB_TYPES enum keys. Defaults to full-time
@@ -37,6 +38,7 @@ interface MapperInput {
   automationId: string;
   matchScore: number;
   matchData: string;
+  skillTerms: SkillTerm[];
 }
 
 interface MapperOutput {
@@ -57,12 +59,14 @@ interface MapperOutput {
   matchData: string;
   discoveryStatus: DiscoveryStatus;
   discoveredAt: Date;
+  tags?: { connect: Array<{ id: string }> };
 }
 
 export async function mapScrapedJobToJobRecord(
   input: MapperInput
 ): Promise<MapperOutput> {
-  const { scrapedJob, userId, automationId, matchScore, matchData } = input;
+  const { scrapedJob, userId, automationId, matchScore, matchData, skillTerms } =
+    input;
 
   // Shares the same resolve-or-create helpers (and canonical match key) as the
   // add_job path, so a company/title discovered here resolves to the same
@@ -78,6 +82,14 @@ export async function mapScrapedJobToJobRecord(
     resolveJobSource(capitalize(scrapedJob.sourceBoard), userId),
   ]);
   const statusId = await getDefaultJobStatus();
+
+  // Connects tags that already exist (every resume skill is a Tag row) — an
+  // unattended run must never create one, or it pollutes the shared picker.
+  const tagIds = matchSkillTags(
+    scrapedJob.title,
+    scrapedJob.description,
+    skillTerms,
+  );
 
   return {
     userId,
@@ -98,6 +110,9 @@ export async function mapScrapedJobToJobRecord(
     matchData,
     discoveryStatus: "new",
     discoveredAt: new Date(),
+    ...(tagIds.length > 0
+      ? { tags: { connect: tagIds.map((id) => ({ id })) } }
+      : {}),
   };
 }
 
