@@ -157,7 +157,7 @@ export default function RecentCardToggle({
                     <div
                       key={activity.id}
                       data-testid="recent-activity-row"
-                      className="group relative flex items-center gap-2"
+                      className="relative flex items-center gap-2"
                     >
                       <Button
                         title="Start Activity"
@@ -165,7 +165,7 @@ export default function RecentCardToggle({
                         size="icon"
                         variant="ghost"
                         onClick={() => requestStart(() => startActivity(activity.id))}
-                        className="h-9 w-9 shrink-0 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300"
+                        className="h-9 w-9 shrink-0"
                       >
                         <span>
                           <CirclePlay className="text-green-600 h-6 w-6" />

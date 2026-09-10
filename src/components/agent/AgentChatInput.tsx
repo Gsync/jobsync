@@ -216,6 +216,7 @@ export function AgentChatInput() {
         {/* Uncontrolled: PromptInput reads the textarea through FormData and
             resets it on submit. `text` mirrors it only to enable send. */}
         <PromptInputTextarea
+          className="min-h-9"
           key={composerNonce}
           onChange={(event) => setText(event.currentTarget.value)}
           onPaste={onPaste}
@@ -228,7 +229,9 @@ export function AgentChatInput() {
           <PromptInputSubmit
             aria-label={isGenerating ? "Stop response" : "Send"}
             disabled={!isGenerating && !canSend}
+            className="[&_svg]:size-3.5"
             onStop={onStop}
+            size="icon-xs"
             status={status}
           />
         </PromptInputFooter>
