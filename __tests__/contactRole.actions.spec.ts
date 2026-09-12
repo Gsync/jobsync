@@ -16,6 +16,7 @@ vi.mock("@/lib/db", () => ({
       delete: vi.fn(),
     },
     jobContact: { count: vi.fn() },
+    contact: { count: vi.fn() },
   },
 }));
 
@@ -42,7 +43,7 @@ describe("contactRole actions", () => {
         where: { createdBy: user.id },
         skip: 0,
         take: 10,
-        include: { _count: { select: { jobContacts: true } } },
+        include: { _count: { select: { jobContacts: true, contacts: true } } },
         orderBy: [{ label: "asc" }],
       }),
     );
@@ -89,6 +90,7 @@ describe("contactRole actions", () => {
 
   it("counts only links on this user's jobs when guarding a delete", async () => {
     db.jobContact.count.mockResolvedValue(0);
+    db.contact.count.mockResolvedValue(0);
     db.contactRole.delete.mockResolvedValue({ id: "r1" });
 
     await deleteContactRoleById("r1");
@@ -99,6 +101,20 @@ describe("contactRole actions", () => {
     expect(db.contactRole.delete).toHaveBeenCalledWith({
       where: { id: "r1", createdBy: user.id },
     });
+  });
+
+  it("refuses to delete a role that contacts hold as their standing role", async () => {
+    db.jobContact.count.mockResolvedValue(0);
+    db.contact.count.mockResolvedValue(2);
+
+    const res = await deleteContactRoleById("r1");
+
+    expect(res.success).toBe(false);
+    expect(res.message).toContain("2");
+    expect(db.contact.count).toHaveBeenCalledWith({
+      where: { roleId: "r1", createdBy: user.id },
+    });
+    expect(db.contactRole.delete).not.toHaveBeenCalled();
   });
 
   it("returns all roles for the picker, scoped to the user", async () => {

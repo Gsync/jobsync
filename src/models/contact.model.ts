@@ -6,7 +6,7 @@ export interface ContactRole {
   label: string;
   value: string;
   createdBy: string;
-  _count?: { jobContacts: number };
+  _count?: { jobContacts: number; contacts: number };
 }
 
 export interface EntityRef {
@@ -57,6 +57,8 @@ export interface Contact {
   WorkedAtCompany: EntityRef | null;
   workedFrom: Date | null;
   workedTo: Date | null;
+  roleId: string | null;
+  Role: ContactRole | null;
   notes: string | null;
   lastContactedAt: Date | null;
   createdAt: Date;

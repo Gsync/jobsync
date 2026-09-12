@@ -21,6 +21,7 @@ const toContactData = (values: ContactFormValues) => ({
   workedAtCompanyId: nullable(values.workedAtCompany),
   workedFrom: values.workedFrom ?? null,
   workedTo: values.workedTo ?? null,
+  roleId: nullable(values.contactRole),
   notes: nullable(values.notes),
   lastContactedAt: values.lastContactedAt ?? null,
 });

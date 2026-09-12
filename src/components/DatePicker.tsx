@@ -28,6 +28,8 @@ interface DatePickerProps {
   presets: boolean;
   isEnabled: boolean;
   captionLayout?: boolean;
+  // Opt out of the default fixed trigger width when the field sits in a grid
+  fullWidth?: boolean;
 }
 
 export function DatePicker({
@@ -35,6 +37,7 @@ export function DatePicker({
   presets,
   isEnabled,
   captionLayout,
+  fullWidth,
 }: DatePickerProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
 
@@ -45,7 +48,8 @@ export function DatePicker({
           <Button
             variant={"outline"}
             className={cn(
-              "md:w-[240px] lg:w-[280px] justify-start text-left font-normal",
+              "justify-start text-left font-normal",
+              fullWidth ? "w-full" : "md:w-[240px] lg:w-[280px]",
               !field.value && "text-muted-foreground"
             )}
             disabled={!isEnabled}

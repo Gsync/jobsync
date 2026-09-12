@@ -70,6 +70,7 @@ describe("backup ordering", () => {
       companyId: "Company",
       locationId: "Location",
       workedAtCompanyId: "Company",
+      roleId: "ContactRole",
     });
   });
 

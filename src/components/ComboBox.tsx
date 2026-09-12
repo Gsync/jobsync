@@ -37,6 +37,8 @@ interface ComboboxProps {
   freeText?: boolean;
   label?: string;
   onSearchChange?: (search: string) => void;
+  // Opt out of the default fixed trigger width when the field sits in a grid
+  fullWidth?: boolean;
 }
 
 export function Combobox({
@@ -46,6 +48,7 @@ export function Combobox({
   freeText,
   label,
   onSearchChange,
+  fullWidth,
 }: ComboboxProps) {
   // Placeholder text only; the accessible name comes from FormLabel/FormControl
   const displayName = label ?? field.name;
@@ -140,7 +143,8 @@ export function Combobox({
             variant="outline"
             role="combobox"
             className={cn(
-              "md:w-[240px] lg:w-[280px] justify-between",
+              "justify-between",
+              fullWidth ? "w-full" : "md:w-[240px] lg:w-[280px]",
               !field.value && "text-muted-foreground"
             )}
           >
@@ -159,7 +163,14 @@ export function Combobox({
           </Button>
         </FormControl>
       </PopoverTrigger>
-      <PopoverContent className="md:w-[240px] lg:w-[280px] p-0">
+      <PopoverContent
+        className={cn(
+          "p-0",
+          fullWidth
+            ? "w-(--radix-popover-trigger-width)"
+            : "md:w-[240px] lg:w-[280px]"
+        )}
+      >
         <Command
           filter={(value, search) =>
             value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0

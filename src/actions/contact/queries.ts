@@ -7,6 +7,7 @@ import { APP_CONSTANTS } from "@/lib/constants";
 // Narrowed to what the table row and the expanded row render. Not shared: only
 // this module reads it.
 const CONTACT_LIST_INCLUDE = {
+  Role: true,
   Company: { select: { id: true, label: true } },
   Location: { select: { id: true, label: true } },
   WorkedAtCompany: { select: { id: true, label: true } },
@@ -46,8 +47,11 @@ export const getContactList = async (
         { title: { contains: search } },
       ];
     }
+    // Either the standing role on the person or a role they hold on some job,
+    // so a reference never linked to a job still answers the filter. Nested in
+    // AND because the search above already owns the top-level OR.
     if (roleId) {
-      where.jobLinks = { some: { roleId } };
+      where.AND = [{ OR: [{ roleId }, { jobLinks: { some: { roleId } } }] }];
     }
 
     const [data, total] = await Promise.all([

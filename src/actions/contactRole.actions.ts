@@ -36,7 +36,7 @@ export const getContactRoleList = async (
         where: whereClause,
         skip: (page - 1) * limit,
         take: limit,
-        include: { _count: { select: { jobContacts: true } } },
+        include: { _count: { select: { jobContacts: true, contacts: true } } },
         orderBy: [{ label: "asc" }],
       }),
       prisma.contactRole.count({ where: whereClause }),
@@ -74,6 +74,17 @@ export const deleteContactRoleById = async (
     if (links > 0) {
       throw new Error(
         `Role cannot be deleted due to ${links} contact${links === 1 ? "" : "s"} linked to jobs with this role! `,
+      );
+    }
+
+    // Contact.roleId is SetNull, so without this guard deleting a role would
+    // silently clear it on every contact that holds it.
+    const holders = await prisma.contact.count({
+      where: { roleId, createdBy: user.id },
+    });
+    if (holders > 0) {
+      throw new Error(
+        `Role cannot be deleted due to ${holders} contact${holders === 1 ? "" : "s"} having it as their role! `,
       );
     }
 

@@ -148,6 +148,7 @@ export const MODEL_SPECS: Record<BackupModel, ModelSpec> = {
       companyId: "Company",
       locationId: "Location",
       workedAtCompanyId: "Company",
+      roleId: "ContactRole",
     },
     scope: byCreatedBy,
   },

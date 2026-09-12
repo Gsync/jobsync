@@ -37,13 +37,18 @@ function ContactRolesTable({ roles, reloadRoles }: ContactRolesTableProps) {
 
   const onDeleteRole = (role: ContactRole) => {
     const links = role._count?.jobContacts ?? 0;
-    if (links > 0) {
+    const holders = role._count?.contacts ?? 0;
+    if (links > 0 || holders > 0) {
       setAlert({
         openState: true,
         title: "Associated contacts exist!",
-        description: `This role is used by ${links} contact link${
-          links === 1 ? "" : "s"
-        }. Remove those links before deleting the role.`,
+        description: links
+          ? `This role is used by ${links} contact link${
+              links === 1 ? "" : "s"
+            }. Remove those links before deleting the role.`
+          : `This role is set on ${holders} contact${
+              holders === 1 ? "" : "s"
+            }. Change their role before deleting it.`,
         deleteAction: false,
       });
     } else {

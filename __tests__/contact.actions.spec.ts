@@ -51,11 +51,16 @@ describe("contact actions", () => {
       ]);
     });
 
-    it("filters on a role held through any job link", async () => {
+    it("filters on the standing role or one held through any job link", async () => {
       await getContactList(1, 10, undefined, "role-1");
-      expect(db.contact.findMany.mock.calls[0][0].where.jobLinks).toEqual({
-        some: { roleId: "role-1" },
-      });
+      expect(db.contact.findMany.mock.calls[0][0].where.AND).toEqual([
+        {
+          OR: [
+            { roleId: "role-1" },
+            { jobLinks: { some: { roleId: "role-1" } } },
+          ],
+        },
+      ]);
     });
 
     it("pages with skip and take", async () => {

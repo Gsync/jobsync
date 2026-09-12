@@ -228,6 +228,11 @@ model Contact {
   workedFrom        DateTime?
   workedTo          DateTime?
 
+  // What this person generally is to you. The per-job role on JobContact wins
+  // for a specific job; this is the standing answer and the Phase 5 prefill.
+  roleId            String?
+  Role              ContactRole? @relation(fields: [roleId], references: [id])
+
   notes             String?
   lastContactedAt   DateTime?
 
@@ -244,6 +249,7 @@ model Contact {
   @@index([createdBy])
   @@index([companyId])
   @@index([workedAtCompanyId])
+  @@index([roleId])
 }
 
 model ContactRole {
@@ -253,6 +259,7 @@ model ContactRole {
   createdBy   String // userId
   user        User         @relation(fields: [createdBy], references: [id])
   jobContacts JobContact[]
+  contacts    Contact[]
 
   @@unique([value, createdBy])
 }

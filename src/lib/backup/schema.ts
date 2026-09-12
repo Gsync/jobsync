@@ -243,6 +243,7 @@ const Contact = z.object({
   workedAtCompanyId: optId.optional(),
   workedFrom: optDt.optional(),
   workedTo: optDt.optional(),
+  roleId: optId.optional(),
   notes: optStr.optional(),
   lastContactedAt: optDt.optional(),
   updatedAt: dt.optional(),

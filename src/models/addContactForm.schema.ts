@@ -41,6 +41,8 @@ export const AddContactFormSchema = z
     workedAtCompany: z.string().optional(),
     workedFrom: z.date().nullable().optional(),
     workedTo: z.date().nullable().optional(),
+    // Named for ComboBox's `case "contactRole"` create path, not for the column
+    contactRole: z.string().optional(),
     notes: optionalText(2000),
     lastContactedAt: z.date().nullable().optional(),
   })
