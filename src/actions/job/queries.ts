@@ -52,6 +52,23 @@ const JOB_DETAILS_INCLUDE = {
   },
   CoverLetter: true,
   tags: true,
+  contactLinks: {
+    include: {
+      Role: true,
+      Contact: {
+        select: {
+          id: true,
+          name: true,
+          title: true,
+          email: true,
+          phone: true,
+          linkedinUrl: true,
+          Company: { select: { id: true, label: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "asc" as const },
+  },
 };
 
 type JobsListFilters = {

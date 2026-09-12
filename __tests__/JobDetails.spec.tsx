@@ -45,6 +45,20 @@ vi.mock("@/components/profile/DownloadFileButton", () => ({
   DownloadFileButton: () => null,
 }));
 
+vi.mock("@/actions/contact.actions", () => ({
+  getAllContacts: vi.fn().mockResolvedValue([]),
+  getJobContacts: vi.fn().mockResolvedValue([]),
+  addJobContact: vi.fn(),
+  removeJobContact: vi.fn(),
+  createContact: vi.fn(),
+  updateContact: vi.fn(),
+}));
+
+vi.mock("@/actions/contactRole.actions", () => ({
+  getAllContactRoles: vi.fn().mockResolvedValue([]),
+  createContactRole: vi.fn(),
+}));
+
 vi.mock("@/components/CircularScore", () => ({
   CircularScore: ({ score }: { score: number }) => (
     <div data-testid="circular-score">{score}%</div>
@@ -233,14 +247,15 @@ describe("JobDetails – tabs", () => {
     searchParams = new URLSearchParams();
   });
 
-  // The bar must not shift between jobs, so all four are always present.
-  it("renders all four tabs regardless of what the job has", () => {
+  // The bar must not shift between jobs, so all five are always present.
+  it("renders all five tabs regardless of what the job has", () => {
     render(<JobDetails {...baseProps} job={makeJob()} />);
 
     expect(screen.getByRole("tab", { name: /description/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /ai match/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /cover letter/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /notes/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Contacts" })).toBeInTheDocument();
   });
 
   it("opens on the Description tab", () => {
