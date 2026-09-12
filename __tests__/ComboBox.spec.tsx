@@ -5,6 +5,7 @@ import { addCompany } from "@/actions/company.actions";
 import { createLocation, createJobSource } from "@/actions/job.actions";
 import { createJobTitle } from "@/actions/jobtitle.actions";
 import { createActivityType } from "@/actions/activity.actions";
+import { createContactRole } from "@/actions/contactRole.actions";
 import { toastError } from "@/lib/toast";
 import { useForm } from "react-hook-form";
 import { Form, FormField, FormItem } from "@/components/ui/form";
@@ -32,6 +33,10 @@ vi.mock("@/actions/activity.actions", () => ({
   createActivityType: vi.fn(),
 }));
 
+vi.mock("@/actions/contactRole.actions", () => ({
+  createContactRole: vi.fn(),
+}));
+
 vi.mock("@/lib/toast", () => ({
   toastError: vi.fn(),
 }));
@@ -51,6 +56,7 @@ function Harness({
   options = companies,
   freeText = false,
   label,
+  onSearchChange,
 }: {
   onChange: (v: string) => void;
   creatable?: boolean;
@@ -58,6 +64,7 @@ function Harness({
   options?: { id: string; value: string; label: string }[];
   freeText?: boolean;
   label?: string;
+  onSearchChange?: (search: string) => void;
 }) {
   const form = useForm({ defaultValues: { [name]: "" } });
   return (
@@ -79,6 +86,7 @@ function Harness({
               creatable={creatable}
               freeText={freeText}
               label={label}
+              onSearchChange={onSearchChange}
             />
           </FormItem>
         )}
@@ -169,6 +177,38 @@ describe("Combobox Enter key", () => {
       await waitFor(() =>
         expect(createActivityType).toHaveBeenCalledWith("Networking")
       );
+    });
+
+    it("creates a contact role from the typed label", async () => {
+      vi.mocked(createContactRole).mockResolvedValue({
+        success: true,
+        data: { id: "r9", label: "Panel Lead", created: true },
+      } as never);
+      const { user, input, onChange } = await openCombobox({
+        name: "contactRole",
+        options: [],
+      });
+
+      await user.type(input, "Panel Lead{Enter}");
+
+      await waitFor(() =>
+        expect(createContactRole).toHaveBeenCalledWith("Panel Lead")
+      );
+      expect(onChange).toHaveBeenCalledWith("r9");
+    });
+
+    it("creates a company from the worked-together picker", async () => {
+      const { user, input, onChange } = await openCombobox({
+        name: "workedAtCompany",
+        options: [],
+      });
+
+      await user.type(input, "Shopify{Enter}");
+
+      await waitFor(() =>
+        expect(addCompany).toHaveBeenCalledWith({ company: "Shopify" })
+      );
+      await waitFor(() => expect(onChange).toHaveBeenCalledWith("new-id"));
     });
   });
 
@@ -331,6 +371,22 @@ describe("Combobox Enter key", () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
+    it("does not select anything when the role create fails", async () => {
+      vi.mocked(createContactRole).mockResolvedValue({
+        success: false,
+        message: "Failed to create contact role.",
+      } as never);
+      const { user, input, onChange } = await openCombobox({
+        name: "contactRole",
+        options: [],
+      });
+
+      await user.type(input, "Oops{Enter}");
+
+      await waitFor(() => expect(toastError).toHaveBeenCalled());
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
     it("surfaces an error toast when source creation fails", async () => {
       vi.mocked(createJobSource).mockResolvedValue({
         success: false,
@@ -471,5 +527,20 @@ describe("Combobox label", () => {
     expect(
       screen.getByPlaceholderText("Create or Search company")
     ).toBeInTheDocument();
+  });
+});
+
+describe("Combobox onSearchChange", () => {
+  it("reports what the user types to the caller", async () => {
+    const user = userEvent.setup();
+    const onSearchChange = vi.fn();
+    render(
+      <Harness onChange={vi.fn()} options={[]} onSearchChange={onSearchChange} />
+    );
+
+    await user.click(screen.getByRole("combobox"));
+    await user.type(screen.getByPlaceholderText(/Search company/i), "Ada");
+
+    await waitFor(() => expect(onSearchChange).toHaveBeenCalledWith("Ada"));
   });
 });

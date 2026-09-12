@@ -94,6 +94,13 @@ export function resolveJobSource(
   return resolveEntity(prisma.jobSource, label, userId);
 }
 
+export function resolveContactRole(
+  label: string,
+  userId: string,
+): Promise<ResolvedEntity> {
+  return resolveEntity(prisma.contactRole, label, userId);
+}
+
 export async function resolveTag(
   label: string,
   userId: string,

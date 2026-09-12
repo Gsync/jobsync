@@ -28,6 +28,7 @@ import { createJobTitle } from "@/actions/jobtitle.actions";
 import { toastError } from "@/lib/toast";
 import { createActivityType } from "@/actions/activity.actions";
 import { createJobSource } from "@/actions/job.actions";
+import { createContactRole } from "@/actions/contactRole.actions";
 
 interface ComboboxProps {
   options: any[];
@@ -35,6 +36,7 @@ interface ComboboxProps {
   creatable?: boolean;
   freeText?: boolean;
   label?: string;
+  onSearchChange?: (search: string) => void;
 }
 
 export function Combobox({
@@ -43,6 +45,7 @@ export function Combobox({
   creatable,
   freeText,
   label,
+  onSearchChange,
 }: ComboboxProps) {
   // Placeholder text only; the accessible name comes from FormLabel/FormControl
   const displayName = label ?? field.name;
@@ -104,6 +107,18 @@ export function Combobox({
           response = sourceRes.data;
           if (!sourceRes.success) return;
           break;
+        case "workedAtCompany":
+          const workedRes = await addCompany({ company: label });
+          response = workedRes.data;
+          break;
+        case "contactRole":
+          const roleRes = await createContactRole(label);
+          if (!roleRes.success) {
+            toastError(roleRes.message);
+            return;
+          }
+          response = roleRes.data;
+          break;
         case "activityType":
           response = await createActivityType(label);
           break;
@@ -152,7 +167,10 @@ export function Combobox({
         >
           <CommandInput
             value={newOption}
-            onValueChange={(val: string) => setNewOption(val)}
+            onValueChange={(val: string) => {
+              setNewOption(val);
+              onSearchChange?.(val);
+            }}
             placeholder={`${creatable ? "Create or " : ""}Search ${displayName}`}
             onKeyDown={(e) => handleEnterKey(e)}
           />

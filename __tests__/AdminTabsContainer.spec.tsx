@@ -28,6 +28,12 @@ vi.mock("@/actions/activity.actions", () => ({
   createActivityType: vi.fn(),
 }));
 
+vi.mock("@/actions/contactRole.actions", () => ({
+  getContactRoleList: vi.fn().mockResolvedValue({ data: [], total: 0 }),
+  createContactRole: vi.fn(),
+  deleteContactRoleById: vi.fn(),
+}));
+
 describe("AdminTabsContainer", () => {
   const user = userEvent.setup({ skipHover: true });
 
@@ -48,6 +54,7 @@ describe("AdminTabsContainer", () => {
     expect(
       screen.getByRole("tab", { name: "Activity Types" })
     ).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Roles" })).toBeInTheDocument();
   });
 
   it("should default to companies tab", () => {
