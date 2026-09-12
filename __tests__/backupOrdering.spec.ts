@@ -47,10 +47,37 @@ describe("backup ordering", () => {
     expect(MODEL_SPECS.ContactInfo.fks).not.toHaveProperty("resumeSectionId");
   });
 
-  it("marks exactly the six lookup models, all owned by createdBy", () => {
+  it("inserts ContactRole before JobContact, and Contact after Company and Location", () => {
+    const at = (m: BackupModel) => INSERT_ORDER.indexOf(m);
+    expect(at("ContactRole")).toBeLessThan(at("JobContact"));
+    expect(at("Contact")).toBeLessThan(at("JobContact"));
+    expect(at("Company")).toBeLessThan(at("Contact"));
+    expect(at("Location")).toBeLessThan(at("Contact"));
+  });
+
+  it("scopes JobContact through the job, which is the only chain it has", () => {
+    expect(MODEL_SPECS.JobContact.scope("u1")).toEqual({ Job: { userId: "u1" } });
+    expect(MODEL_SPECS.JobContact.fks).toEqual({
+      jobId: "Job",
+      contactId: "Contact",
+      roleId: "ContactRole",
+    });
+  });
+
+  it("remaps both of Contact's company FKs, not just the current employer", () => {
+    expect(MODEL_SPECS.Contact.fks).toEqual({
+      interviewId: "Interview",
+      companyId: "Company",
+      locationId: "Location",
+      workedAtCompanyId: "Company",
+    });
+  });
+
+  it("marks exactly the seven lookup models, all owned by createdBy", () => {
     expect([...LOOKUP_MODELS].sort()).toEqual([
       "ActivityType",
       "Company",
+      "ContactRole",
       "JobSource",
       "JobTitle",
       "Location",

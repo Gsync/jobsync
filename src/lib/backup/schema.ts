@@ -225,12 +225,37 @@ const Note = z.object({
 
 const Interview = z.object({ id, createdAt: dt, jobId: id });
 
+// Everything past `interviewId` is `.optional()` as well as nullable: a backup
+// taken before the contacts feature has no such key, and undefined leaves
+// Prisma on the column default.
 const Contact = z.object({
   id,
   name: str,
-  email: str,
+  email: optStr,
   createdAt: dt,
   interviewId: optId,
+  title: optStr.optional(),
+  phone: optStr.optional(),
+  linkedinUrl: optStr.optional(),
+  companyId: optId.optional(),
+  locationId: optId.optional(),
+  relationship: optStr.optional(),
+  workedAtCompanyId: optId.optional(),
+  workedFrom: optDt.optional(),
+  workedTo: optDt.optional(),
+  notes: optStr.optional(),
+  lastContactedAt: optDt.optional(),
+  updatedAt: dt.optional(),
+});
+
+const ContactRole = z.object({ id, label: str, value: str });
+
+const JobContact = z.object({
+  id,
+  jobId: id,
+  contactId: id,
+  roleId: id,
+  createdAt: dt,
 });
 
 const Task = z.object({
@@ -304,6 +329,7 @@ export const BackupDataSchema = z.object({
   JobSource: group(JobSource),
   Tag: group(Tag),
   ActivityType: group(ActivityType),
+  ContactRole: group(ContactRole),
   Profile: group(Profile),
   File: group(File),
   Resume: group(Resume),
@@ -321,6 +347,7 @@ export const BackupDataSchema = z.object({
   Note: group(Note),
   Interview: group(Interview),
   Contact: group(Contact),
+  JobContact: group(JobContact),
   Task: group(Task),
   Activity: group(Activity),
   Question: group(Question),

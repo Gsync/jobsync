@@ -279,6 +279,17 @@ export const JOB_SOURCES = [
   { label: "Other", value: "other" },
 ] as const;
 
+// Seeded per user at signup and backfilled by the contacts migration. `value`
+// must equal canonicalizeEntityValue(label) or the creatable role picker will
+// mint a duplicate instead of matching the seeded row.
+export const CONTACT_ROLES = [
+  { label: "Recruiter", value: "recruiter" },
+  { label: "Hiring Manager", value: "hiring manager" },
+  { label: "Interviewer", value: "interviewer" },
+  { label: "Referrer", value: "referrer" },
+  { label: "Reference", value: "reference" },
+] as const;
+
 export const JOB_STATUSES = [
   { label: "New", value: "new" },
   { label: "Draft", value: "draft" },

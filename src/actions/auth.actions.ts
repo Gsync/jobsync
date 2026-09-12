@@ -5,7 +5,7 @@ import { delay } from "@/utils/delay";
 import prisma from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { SignupFormSchema } from "@/models/signupForm.schema";
-import { JOB_SOURCES, JOB_STATUSES } from "@/lib/constants";
+import { CONTACT_ROLES, JOB_SOURCES, JOB_STATUSES } from "@/lib/constants";
 
 export async function signup(formData: {
   name: string;
@@ -37,6 +37,14 @@ export async function signup(formData: {
     data: JOB_SOURCES.map((source) => ({
       label: source.label,
       value: source.value,
+      createdBy: newUser.id,
+    })),
+  });
+
+  await prisma.contactRole.createMany({
+    data: CONTACT_ROLES.map((role) => ({
+      label: role.label,
+      value: role.value,
       createdBy: newUser.id,
     })),
   });

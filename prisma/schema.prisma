@@ -24,6 +24,7 @@ model User {
   Company        Company[]
   JobSource      JobSource[]
   Contact        Contact[]
+  ContactRole    ContactRole[]
   Profile        Profile[]
   Activity       Activity[]
   ActivityType   ActivityType[]
@@ -207,14 +208,67 @@ model OtherSection {
 }
 
 model Contact {
-  id          String     @id @default(uuid())
-  name        String
-  email       String
-  createdAt   DateTime
+  id                String     @id @default(uuid())
+  name              String
+  title             String?
+  email             String?
+  phone             String?
+  linkedinUrl       String?
+
+  // Where they work now
+  companyId         String?
+  Company           Company?   @relation("ContactCompany", fields: [companyId], references: [id])
+  locationId        String?
+  Location          Location?  @relation(fields: [locationId], references: [id])
+
+  // Shared history — how you know them
+  relationship      String?
+  workedAtCompanyId String?
+  WorkedAtCompany   Company?   @relation("ContactWorkedAt", fields: [workedAtCompanyId], references: [id])
+  workedFrom        DateTime?
+  workedTo          DateTime?
+
+  notes             String?
+  lastContactedAt   DateTime?
+
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  createdBy         String // userId
+  user              User       @relation(fields: [createdBy], references: [id])
+
+  Interview         Interview? @relation(fields: [interviewId], references: [id])
+  interviewId       String?
+
+  jobLinks          JobContact[]
+
+  @@index([createdBy])
+  @@index([companyId])
+  @@index([workedAtCompanyId])
+}
+
+model ContactRole {
+  id          String       @id @default(uuid())
+  label       String
+  value       String
   createdBy   String // userId
-  user        User       @relation(fields: [createdBy], references: [id])
-  Interview   Interview? @relation(fields: [interviewId], references: [id])
-  interviewId String?
+  user        User         @relation(fields: [createdBy], references: [id])
+  jobContacts JobContact[]
+
+  @@unique([value, createdBy])
+}
+
+model JobContact {
+  id        String      @id @default(uuid())
+  jobId     String
+  Job       Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  contactId String
+  Contact   Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  roleId    String
+  Role      ContactRole @relation(fields: [roleId], references: [id])
+  createdAt DateTime    @default(now())
+
+  @@unique([jobId, contactId, roleId])
+  @@index([contactId])
 }
 
 model JobTitle {
@@ -247,6 +301,7 @@ model Location {
   user           User             @relation(fields: [createdBy], references: [id])
   educations     Education[]
   workExperience WorkExperience[]
+  contacts       Contact[]
 
   @@unique([value, createdBy])
 }
@@ -260,6 +315,9 @@ model Company {
   createdBy       String // userId
   user            User             @relation(fields: [createdBy], references: [id])
   workExperiences WorkExperience[]
+
+  contacts         Contact[]        @relation("ContactCompany")
+  formerColleagues Contact[]        @relation("ContactWorkedAt")
 
   // Watch intent — independent of whether a board is linked
   watched         Boolean          @default(false)
@@ -329,6 +387,7 @@ model Job {
   coverLetterId String?
   Notes         Note[]
   tags        Tag[]
+  contactLinks  JobContact[]
 
   // Automation discovery fields
   automationId    String?

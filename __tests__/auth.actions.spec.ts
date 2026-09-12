@@ -2,7 +2,8 @@ import { signup, authenticate } from "@/actions/auth.actions";
 import { signIn } from "@/auth";
 import prisma from "@/lib/db";
 import bcrypt from "bcryptjs";
-import { JOB_SOURCES, JOB_STATUSES } from "@/lib/constants";
+import { CONTACT_ROLES, JOB_SOURCES, JOB_STATUSES } from "@/lib/constants";
+import { canonicalizeEntityValue } from "@/lib/jobs/canonicalize";
 import { delay } from "@/utils/delay";
 import { AuthError } from "next-auth";
 
@@ -14,6 +15,9 @@ vi.mock("@/lib/db", () => {
       create: vi.fn(),
     },
     jobSource: {
+      createMany: vi.fn(),
+    },
+    contactRole: {
       createMany: vi.fn(),
     },
     jobStatus: {
@@ -191,6 +195,32 @@ describe("Auth Actions", () => {
           createdBy: mockNewUser.id,
         })),
       });
+    });
+
+    it("seeds the default contact roles for the new user", async () => {
+      (prisma.user.findUnique as any).mockResolvedValue(null);
+      (bcrypt.hash as any).mockResolvedValue("hashed");
+      (prisma.user.create as any).mockResolvedValue({ id: "new-user-id" });
+
+      await signup({
+        name: "Test",
+        email: "test@example.com",
+        password: "Password1!",
+      });
+
+      expect(prisma.contactRole.createMany).toHaveBeenCalledWith({
+        data: CONTACT_ROLES.map((role) => ({
+          label: role.label,
+          value: role.value,
+          createdBy: "new-user-id",
+        })),
+      });
+    });
+
+    it("uses the canonical form of each label as the role value", () => {
+      for (const role of CONTACT_ROLES) {
+        expect(role.value).toBe(canonicalizeEntityValue(role.label));
+      }
     });
 
     it("should create job sources with correct structure", async () => {
