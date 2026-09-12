@@ -86,6 +86,17 @@ export const deleteJobLocationById = async (
       );
     }
 
+    // Optional relation, so the Prisma default is SetNull; same reasoning as
+    // the company guard — nothing at the database level blocks this.
+    const contacts = await prisma.contact.count({
+      where: { locationId, createdBy: user.id },
+    });
+    if (contacts > 0) {
+      throw new Error(
+        `Location cannot be deleted due to ${contacts} associated contact${contacts === 1 ? "" : "s"}! `
+      );
+    }
+
     const res = await prisma.location.delete({
       where: {
         id: locationId,

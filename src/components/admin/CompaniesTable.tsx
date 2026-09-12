@@ -151,6 +151,7 @@ function CompaniesTable({
                 <TableHead>Total Jobs</TableHead>
                 <TableHead>Jobs Applied</TableHead>
                 <TableHead>Rejected</TableHead>
+                <TableHead>Contacts</TableHead>
               </>
             )}
             <TableHead>Actions</TableHead>
@@ -238,6 +239,9 @@ function CompaniesTable({
                     </TableCell>
                     <TableCell className="font-medium">
                       {company._count?.jobsRejected ?? 0}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {company._count?.contacts ?? 0}
                     </TableCell>
                   </>
                 )}

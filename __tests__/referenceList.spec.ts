@@ -346,4 +346,76 @@ describe("getReferenceEntityList", () => {
       expect.objectContaining({ orderBy })
     );
   });
+  describe("relationCounts", () => {
+    const base = {
+      userId,
+      fkField: "companyId",
+      appliedRelation: "jobsApplied",
+      page: 1,
+      limit: 10,
+      countBy: "applied",
+    };
+
+    it("merges a relation count into the same _count.select, costing no extra query", async () => {
+      const model = makeModel([]);
+
+      await getReferenceEntityList({
+        ...base,
+        model,
+        relationCounts: [
+          { key: "contacts", relation: "contacts", where: { createdBy: "u1" } },
+        ],
+      });
+
+      const select = model.findMany.mock.calls[0][0].select;
+      expect(select._count.select).toEqual({
+        jobsApplied: { where: { applied: true } },
+        contacts: { where: { createdBy: "u1" } },
+      });
+    });
+
+    it("counts the whole relation when no where is given", async () => {
+      const model = makeModel([]);
+
+      await getReferenceEntityList({
+        ...base,
+        model,
+        relationCounts: [{ key: "contacts", relation: "contacts" }],
+      });
+
+      expect(
+        model.findMany.mock.calls[0][0].select._count.select.contacts
+      ).toBe(true);
+    });
+
+    it("renames the relation to the requested key on the returned rows", async () => {
+      const model = makeModel([
+        {
+          id: "c1",
+          label: "Shopify",
+          value: "shopify",
+          _count: { jobsApplied: 2, formerColleagues: 4 },
+        },
+      ]);
+
+      const { data } = await getReferenceEntityList({
+        ...base,
+        model,
+        relationCounts: [{ key: "exColleagues", relation: "formerColleagues" }],
+      });
+
+      expect(data[0]._count.exColleagues).toBe(4);
+      expect(data[0]._count).not.toHaveProperty("formerColleagues");
+    });
+
+    it("leaves the query untouched when no relationCounts are given", async () => {
+      const model = makeModel([]);
+
+      await getReferenceEntityList({ ...base, model });
+
+      expect(model.findMany.mock.calls[0][0].select._count.select).toEqual({
+        jobsApplied: { where: { applied: true } },
+      });
+    });
+  });
 });

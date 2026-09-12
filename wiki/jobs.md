@@ -37,9 +37,9 @@ The Add Job dialog also has a Status field, so a status can be set when you firs
 
 ## What is on a job's details page?
 
-Three parts, top to bottom. A **header row** with the job title, a `Company · Location · Job Type · Workplace` line, and the actions: Match with AI, Cover Letter, Edit, Delete and a **⋮** menu. Below it a **summary card** of eight facts — Status, Job Type, Salary Range, Source, Applied, AI Match, Resume and Added — with the job URL and any skill badges on a divider row underneath. Below that, four **tabs**.
+Three parts, top to bottom. A **header row** with the job title, a `Company · Location · Job Type · Workplace` line, and the actions: Match with AI, Cover Letter, Edit, Delete and a **⋮** menu. Below it a **summary card** of eight facts — Status, Job Type, Salary Range, Source, Applied, AI Match, Resume and Added — with the job URL and any skill badges on a divider row underneath. Below that, five **tabs**.
 
-The tabs are **Description**, **AI Match**, **Cover Letter** and **Notes**, and all four are always there. AI Match and Cover Letter stay in the bar even when the job has neither, showing a short explanation and a button to run it — so the tab set never shifts between jobs. Notes carries a count badge once the job has notes. The tab you are on is kept in the address bar, so a refresh, a bookmark or the browser Back button lands you back on the same one.
+The tabs are **Description**, **AI Match**, **Cover Letter**, **Notes** and **[Contacts](./contacts.md)**, and all five are always there. AI Match and Cover Letter stay in the bar even when the job has neither, showing a short explanation and a button to run it — so the tab set never shifts between jobs. Notes and Contacts each carry a count badge once the job has any. Contacts lists the people linked to this job with the role each played. The tab you are on is kept in the address bar, so a refresh, a bookmark or the browser Back button lands you back on the same one.
 
 ## How do I edit, annotate or delete a job?
 

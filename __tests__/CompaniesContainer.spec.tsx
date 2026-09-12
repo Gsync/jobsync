@@ -1,5 +1,5 @@
 import CompaniesContainer from "@/components/admin/CompaniesContainer";
-import { screen, render, waitFor, act } from "@testing-library/react";
+import { screen, render, waitFor, act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { getCompanyList, getCompanyById } from "@/actions/company.actions";
 import { searchAtsCompanies } from "@/actions/atsCompany.actions";
@@ -45,7 +45,15 @@ global.IntersectionObserver = class IntersectionObserver {
 
 describe("CompaniesContainer Search Functionality", () => {
   const mockCompanies = [
-    { id: "1", label: "Amazon", value: "amazon", createdBy: "user-1" },
+    {
+      id: "1",
+      label: "Amazon",
+      value: "amazon",
+      createdBy: "user-1",
+      // Job tallies are left out on purpose: a non-zero one renders next/link,
+      // whose own IntersectionObserver would shadow the sentinel's here.
+      _count: { contacts: 3 },
+    },
     { id: "2", label: "Google", value: "google", createdBy: "user-1" },
   ];
 
@@ -405,6 +413,24 @@ describe("CompaniesContainer Search Functionality", () => {
           "watchlist",
         ),
       );
+    });
+  });
+  describe("Contacts count", () => {
+    it("shows how many contacts work at each company", async () => {
+      (getCompanyList as any).mockResolvedValue({
+        data: mockCompanies,
+        total: 2,
+      });
+
+      render(<CompaniesContainer />);
+
+      await waitFor(() =>
+        expect(
+          screen.getByRole("columnheader", { name: "Contacts" })
+        ).toBeInTheDocument()
+      );
+      const row = screen.getByRole("row", { name: /Amazon/ });
+      expect(within(row).getByText("3")).toBeInTheDocument();
     });
   });
 });

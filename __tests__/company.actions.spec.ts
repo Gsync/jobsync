@@ -27,6 +27,9 @@ vi.mock("@prisma/client", () => {
     workExperience: {
       count: vi.fn(),
     },
+    contact: {
+      count: vi.fn(),
+    },
     job: {
       count: vi.fn(),
       groupBy: vi.fn(),
@@ -137,6 +140,11 @@ describe("Company Actions", () => {
               jobsApplied: {
                 where: {
                   applied: true,
+                },
+              },
+              contacts: {
+                where: {
+                  createdBy: mockUser.id,
                 },
               },
             },
@@ -250,6 +258,11 @@ describe("Company Actions", () => {
               jobsApplied: {
                 where: {
                   applied: true,
+                },
+              },
+              contacts: {
+                where: {
+                  createdBy: mockUser.id,
                 },
               },
             },
@@ -868,6 +881,10 @@ describe("Company Actions", () => {
   });
 
   describe("deleteCompanyById", () => {
+    beforeEach(() => {
+      (prisma.contact.count as any).mockResolvedValue(0);
+    });
+
     it("should delete a company successfully", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
       (prisma.workExperience.count as any).mockResolvedValue(0);
@@ -938,6 +955,25 @@ describe("Company Actions", () => {
         message:
           "Company cannot be deleted due to 3 number of associated jobs! ",
       });
+      expect(prisma.company.delete).not.toHaveBeenCalled();
+    });
+
+    it("refuses to delete a company that a contact points at, either way", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(0);
+      (prisma.job.count as any).mockResolvedValue(0);
+      (prisma.contact.count as any).mockResolvedValue(2);
+
+      const result = await deleteCompanyById("co1");
+
+      expect(prisma.contact.count).toHaveBeenCalledWith({
+        where: {
+          createdBy: mockUser.id,
+          OR: [{ companyId: "co1" }, { workedAtCompanyId: "co1" }],
+        },
+      });
+      expect(result.success).toBe(false);
+      expect(result.message).toContain("2");
       expect(prisma.company.delete).not.toHaveBeenCalled();
     });
 

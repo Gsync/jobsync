@@ -33,6 +33,9 @@ export const getCompanyList = async (
       extraCounts: [
         { key: "jobsRejected", where: { Status: { value: "rejected" } } },
       ],
+      relationCounts: [
+        { key: "contacts", relation: "contacts", where: { createdBy: user.id } },
+      ],
       // A watched row sits at applied-count 0, so the default sort would bury
       // whatever was just watched; most-recent-first is what the scope is for.
       ...(watchlist

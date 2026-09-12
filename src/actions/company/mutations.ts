@@ -204,6 +204,21 @@ export const deleteCompanyById = async (
       );
     }
 
+    // Contact.companyId and .workedAtCompanyId are optional relations, whose
+    // Prisma default is SetNull — deleting would silently blank the employer
+    // rather than fail. This guard is the only thing stopping it.
+    const contacts = await prisma.contact.count({
+      where: {
+        createdBy: user.id,
+        OR: [{ companyId }, { workedAtCompanyId: companyId }],
+      },
+    });
+    if (contacts > 0) {
+      throw new Error(
+        `Company cannot be deleted due to ${contacts} associated contact${contacts === 1 ? "" : "s"}! `,
+      );
+    }
+
     const res = await prisma.company.delete({
       where: {
         id: companyId,
