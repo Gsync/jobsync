@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -8,24 +7,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getAllContactRoles } from "@/actions/contactRole.actions";
 import type { ContactRole } from "@/models/contact.model";
 
 // Select cannot hold an empty-string value, so all-roles gets a sentinel
 const ALL = "all";
 
 type Props = {
+  roles: ContactRole[];
   roleId?: string;
   onRoleChange: (roleId?: string) => void;
 };
 
-export function ContactRoleFilter({ roleId, onRoleChange }: Props) {
-  const [roles, setRoles] = useState<ContactRole[]>([]);
-
-  useEffect(() => {
-    getAllContactRoles().then((res) => Array.isArray(res) && setRoles(res));
-  }, []);
-
+export function ContactRoleFilter({ roles, roleId, onRoleChange }: Props) {
   return (
     <Select
       value={roleId ?? ALL}

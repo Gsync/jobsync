@@ -23,6 +23,7 @@ import { Textarea } from "./ui/textarea";
 import { Combobox } from "./ComboBox";
 import { DatePicker } from "./DatePicker";
 import { FormDialogFooter } from "./FormDialogFooter";
+import Loading from "./Loading";
 import { toastActionResult } from "@/lib/toast";
 import { createContact, updateContact } from "@/actions/contact.actions";
 import {
@@ -43,6 +44,7 @@ type AddContactProps = {
   roles: ContactRole[];
   prefillName?: string;
   hideTrigger?: boolean;
+  pickersLoading?: boolean;
   onSaved?: (contact: ContactRef) => void;
 };
 
@@ -88,6 +90,7 @@ function AddContact({
   roles,
   prefillName,
   hideTrigger,
+  pickersLoading,
   onSaved,
 }: AddContactProps) {
   const [isPending, startTransition] = useTransition();
@@ -203,6 +206,8 @@ function AddContact({
           <DialogHeader>
             <DialogTitle>{pageTitle}</DialogTitle>
           </DialogHeader>
+          {pickersLoading && <Loading />}
+          {!pickersLoading && (
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
@@ -457,6 +462,7 @@ function AddContact({
               />
             </form>
           </Form>
+          )}
         </DialogContent>
       </Dialog>
     </>

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader } from "lucide-react";
 import { Card, CardContent, CardTitle } from "../ui/card";
 import { ResponsiveCardHeader } from "../ResponsiveCardHeader";
@@ -25,27 +25,35 @@ function ContactsContainer() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [locations, setLocations] = useState<JobLocation[]>([]);
   const [roles, setRoles] = useState<ContactRole[]>([]);
+  const [pickersLoading, setPickersLoading] = useState(false);
+  const pickersRequested = useRef(false);
 
   const list = useContactsList(searchTerm, roleId);
 
-  // The tab is a client component with no server parent to pass these down,
-  // and the Library's other tabs should not pay for this one's pickers.
+  // Roles feed the role filter beside the search box, so the tab needs them
   useEffect(() => {
-    Promise.all([
-      getAllCompanies(),
-      getAllJobLocations(),
-      getAllContactRoles(),
-    ]).then(([companyList, locationList, roleList]) => {
-      if (Array.isArray(companyList)) setCompanies(companyList);
-      if (Array.isArray(locationList)) setLocations(locationList);
-      if (Array.isArray(roleList)) setRoles(roleList);
-    });
+    getAllContactRoles().then((res) => Array.isArray(res) && setRoles(res));
+  }, []);
+
+  // Company and location options are only ever seen inside the dialog, so
+  // switching to this tab should not pay for them
+  const openDialog = useCallback((open: boolean) => {
+    setDialogOpen(open);
+    if (!open || pickersRequested.current) return;
+    pickersRequested.current = true;
+    setPickersLoading(true);
+    Promise.all([getAllCompanies(), getAllJobLocations()])
+      .then(([companyList, locationList]) => {
+        if (Array.isArray(companyList)) setCompanies(companyList);
+        if (Array.isArray(locationList)) setLocations(locationList);
+      })
+      .finally(() => setPickersLoading(false));
   }, []);
 
   const onEditContact = async (contactId: string) => {
     const contact = await getContactById(contactId);
     setEditContact(contact);
-    setDialogOpen(true);
+    openDialog(true);
   };
 
   return (
@@ -63,7 +71,11 @@ function ContactsContainer() {
             )}
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto">
-            <ContactRoleFilter roleId={roleId} onRoleChange={setRoleId} />
+            <ContactRoleFilter
+              roles={roles}
+              roleId={roleId}
+              onRoleChange={setRoleId}
+            />
             <SearchInput
               value={searchTerm}
               onChange={setSearchTerm}
@@ -74,7 +86,8 @@ function ContactsContainer() {
               reloadContacts={list.reload}
               resetEditContact={() => setEditContact(null)}
               dialogOpen={dialogOpen}
-              setDialogOpen={setDialogOpen}
+              setDialogOpen={openDialog}
+              pickersLoading={pickersLoading}
               companies={companies}
               locations={locations}
               roles={roles}
