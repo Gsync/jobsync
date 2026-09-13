@@ -94,6 +94,7 @@ export function JobSummaryCard({
             <div className="mt-1 font-medium">
               {job.Resume?.File?.filePath ? (
                 DownloadFileButton(
+                  job.Resume.id!,
                   job.Resume.File.filePath,
                   job.Resume.title,
                   job.Resume.File.fileName,

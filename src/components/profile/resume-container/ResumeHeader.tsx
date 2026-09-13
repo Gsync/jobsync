@@ -46,6 +46,7 @@ export function ResumeHeader({
         <CardTitle>
           {resume.FileId && resume.File?.filePath
             ? DownloadFileButton(
+                resume.id!,
                 resume.File?.filePath,
                 title,
                 resume.File?.fileName,

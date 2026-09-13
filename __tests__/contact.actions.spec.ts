@@ -18,6 +18,9 @@ vi.mock("@/lib/db", () => ({
       updateMany: vi.fn(),
       deleteMany: vi.fn(),
     },
+    company: { count: vi.fn() },
+    location: { count: vi.fn() },
+    contactRole: { count: vi.fn() },
   },
 }));
 
@@ -32,6 +35,9 @@ describe("contact actions", () => {
     (getCurrentUser as any).mockResolvedValue(user);
     db.contact.findMany.mockResolvedValue([]);
     db.contact.count.mockResolvedValue(0);
+    db.company.count.mockResolvedValue(1);
+    db.location.count.mockResolvedValue(1);
+    db.contactRole.count.mockResolvedValue(1);
   });
 
   describe("getContactList", () => {
@@ -119,6 +125,79 @@ describe("contact actions", () => {
       );
       expect(res.success).toBe(false);
     });
+  });
+
+  describe("reference ownership", () => {
+    const values = {
+      name: "Dave",
+      company: "co-1",
+      workedAtCompany: "co-2",
+      location: "loc-1",
+      contactRole: "role-1",
+    } as any;
+
+    it("counts each referenced id against the caller", async () => {
+      db.company.count.mockResolvedValue(2);
+      db.contact.create.mockResolvedValue({ id: "c1" });
+
+      const res = await createContact(values);
+
+      expect(res.success).toBe(true);
+      expect(db.company.count).toHaveBeenCalledWith({
+        where: { id: { in: ["co-1", "co-2"] }, createdBy: user.id },
+      });
+      expect(db.location.count).toHaveBeenCalledWith({
+        where: { id: "loc-1", createdBy: user.id },
+      });
+      expect(db.contactRole.count).toHaveBeenCalledWith({
+        where: { id: "role-1", createdBy: user.id },
+      });
+    });
+
+    it("counts a company used for both fields once", async () => {
+      db.contact.create.mockResolvedValue({ id: "c1" });
+
+      const res = await createContact({ ...values, workedAtCompany: "co-1" });
+
+      expect(res.success).toBe(true);
+      expect(db.company.count.mock.calls[0][0].where.id).toEqual({
+        in: ["co-1"],
+      });
+    });
+
+    it.each([
+      ["company", "company", 1, "Company not found"],
+      ["location", "location", 0, "Location not found"],
+      ["role", "contactRole", 0, "Role not found"],
+    ])(
+      "create rejects another user's %s",
+      async (_label, model, count, message) => {
+        db.company.count.mockResolvedValue(2);
+        db[model].count.mockResolvedValue(count);
+
+        const res = await createContact(values);
+
+        expect(res).toEqual({ success: false, message });
+        expect(db.contact.create).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([
+      ["company", "company", 1, "Company not found"],
+      ["location", "location", 0, "Location not found"],
+      ["role", "contactRole", 0, "Role not found"],
+    ])(
+      "update rejects another user's %s before writing",
+      async (_label, model, count, message) => {
+        db.company.count.mockResolvedValue(2);
+        db[model].count.mockResolvedValue(count);
+
+        const res = await updateContact({ ...values, id: "c1" });
+
+        expect(res).toEqual({ success: false, message });
+        expect(db.contact.updateMany).not.toHaveBeenCalled();
+      },
+    );
   });
 
   describe("deleteContactById", () => {

@@ -26,13 +26,53 @@ const toContactData = (values: ContactFormValues) => ({
   lastContactedAt: values.lastContactedAt ?? null,
 });
 
+// Foreign keys prove a row exists, not that the caller owns it, so every
+// referenced id is counted against the caller before it is written.
+const assertContactRefsOwned = async (
+  userId: string,
+  data: ReturnType<typeof toContactData>,
+) => {
+  const companyIds = [
+    ...new Set(
+      [data.companyId, data.workedAtCompanyId].filter(
+        (id): id is string => !!id,
+      ),
+    ),
+  ];
+
+  const [companies, location, role] = await Promise.all([
+    companyIds.length > 0
+      ? prisma.company.count({
+          where: { id: { in: companyIds }, createdBy: userId },
+        })
+      : 0,
+    data.locationId
+      ? prisma.location.count({
+          where: { id: data.locationId, createdBy: userId },
+        })
+      : 1,
+    data.roleId
+      ? prisma.contactRole.count({
+          where: { id: data.roleId, createdBy: userId },
+        })
+      : 1,
+  ]);
+
+  if (companies !== companyIds.length) throw new Error("Company not found");
+  if (location === 0) throw new Error("Location not found");
+  if (role === 0) throw new Error("Role not found");
+};
+
 export const createContact = async (
   values: ContactFormValues,
 ): Promise<any | undefined> => {
   try {
     const user = await requireUser();
+    const contactData = toContactData(values);
+    await assertContactRefsOwned(user.id, contactData);
+
     const data = await prisma.contact.create({
-      data: { ...toContactData(values), createdBy: user.id },
+      data: { ...contactData, createdBy: user.id },
     });
     return { success: true, data };
   } catch (error) {
@@ -47,11 +87,14 @@ export const updateContact = async (
     const user = await requireUser();
     if (!values.id) throw new Error("Please provide a contact id");
 
+    const contactData = toContactData(values);
+    await assertContactRefsOwned(user.id, contactData);
+
     // updateMany, not update: a unique-where cannot carry createdBy, and a
     // count of 0 is how a contact belonging to someone else surfaces.
     const res = await prisma.contact.updateMany({
       where: { id: values.id, createdBy: user.id },
-      data: toContactData(values),
+      data: contactData,
     });
     if (res.count === 0) throw new Error("Contact not found");
 

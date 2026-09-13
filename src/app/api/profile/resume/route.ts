@@ -12,6 +12,7 @@ import { getTimestampedFileName } from "@/lib/utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { PDF_MAGIC, ZIP_MAGIC } from "@/lib/ai/import/extract-text";
 import { log } from "@/lib/telemetry";
+import prisma from "@/lib/db";
 
 const ALLOWED_MIME = new Set<string>(APP_CONSTANTS.RESUME_ALLOWED_MIME_TYPES);
 
@@ -107,7 +108,7 @@ export const GET = async (req: NextRequest) => {
   const userId = session?.user?.id;
 
   try {
-    if (!session || !session.user) {
+    if (!session || !session.user || !userId) {
       return NextResponse.json(
         {
           error: "Not Authenticated",
@@ -119,17 +120,35 @@ export const GET = async (req: NextRequest) => {
     }
 
     const { searchParams } = new URL(req.url);
-    const filePath = searchParams.get("filePath");
+    const resumeId = searchParams.get("resumeId");
 
-    if (!filePath) {
+    if (!resumeId) {
       return NextResponse.json(
-        { error: "File path is required" },
+        { error: "Resume id is required" },
         { status: 400 }
       );
     }
 
-    const fullFilePath = path.join(filePath);
-    if (!fs.existsSync(fullFilePath)) {
+    // The path comes from the caller's own resume row, never from the client
+    const resume = await prisma.resume.findUnique({
+      where: { id: resumeId, profile: { userId } },
+      select: { File: { select: { filePath: true } } },
+    });
+
+    // Not UPLOADS_DIR itself: it also holds backup snapshots and the database
+    const resumesDir = path.resolve(
+      APP_CONSTANTS.UPLOADS_DIR,
+      "files",
+      "resumes"
+    );
+    const fullFilePath = resume?.File?.filePath
+      ? path.resolve(resume.File.filePath)
+      : null;
+    if (
+      !fullFilePath ||
+      !fullFilePath.startsWith(resumesDir + path.sep) ||
+      !fs.existsSync(fullFilePath)
+    ) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
