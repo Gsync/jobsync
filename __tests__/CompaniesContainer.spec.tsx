@@ -33,6 +33,16 @@ vi.mock("@/actions/atsCompany.actions", () => ({
   resolveAtsBoard: vi.fn(),
 }));
 
+// A real next/link builds its own IntersectionObserver for prefetching, which
+// would replace the sentinel callback captured below
+vi.mock("next/link", () => ({
+  default: ({ href, children, prefetch: _prefetch, ...rest }: any) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
+
 let intersectionCallback: IntersectionObserverCallback | undefined;
 global.IntersectionObserver = class IntersectionObserver {
   constructor(callback: IntersectionObserverCallback) {
@@ -50,8 +60,6 @@ describe("CompaniesContainer Search Functionality", () => {
       label: "Amazon",
       value: "amazon",
       createdBy: "user-1",
-      // Job tallies are left out on purpose: a non-zero one renders next/link,
-      // whose own IntersectionObserver would shadow the sentinel's here.
       _count: { contacts: 3 },
     },
     { id: "2", label: "Google", value: "google", createdBy: "user-1" },
@@ -431,6 +439,41 @@ describe("CompaniesContainer Search Functionality", () => {
       );
       const row = screen.getByRole("row", { name: /Amazon/ });
       expect(within(row).getByText("3")).toBeInTheDocument();
+    });
+  });
+  describe("Details links", () => {
+    it("links each company name to its details page", async () => {
+      (getCompanyList as any).mockResolvedValue({ data: mockCompanies, total: 2 });
+
+      render(<CompaniesContainer />);
+
+      expect(
+        await screen.findByRole("link", { name: "Amazon" }),
+      ).toHaveAttribute("href", "/dashboard/admin/companies/1");
+    });
+
+    it("carries the watchlist scope into the details link", async () => {
+      mockParams = new URLSearchParams("scope=watchlist");
+      (getCompanyList as any).mockResolvedValue({ data: mockCompanies, total: 2 });
+
+      render(<CompaniesContainer />);
+
+      expect(
+        await screen.findByRole("link", { name: "Amazon" }),
+      ).toHaveAttribute("href", "/dashboard/admin/companies/1?scope=watchlist");
+    });
+
+    it("offers View details first in the row menu", async () => {
+      (getCompanyList as any).mockResolvedValue({ data: mockCompanies, total: 2 });
+
+      render(<CompaniesContainer />);
+
+      const row = await screen.findByRole("row", { name: /Amazon/ });
+      await user.click(within(row).getByRole("button", { name: /toggle menu/i }));
+
+      const items = await screen.findAllByRole("menuitem");
+      expect(items[0]).toHaveTextContent("View details");
+      expect(items[0]).toHaveAttribute("href", "/dashboard/admin/companies/1");
     });
   });
 });

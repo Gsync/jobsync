@@ -14,6 +14,7 @@ export const WIKI_FEATURES = [
   "setup",
   "jobs",
   "contacts",
+  "companies",
   "automations",
   "profile",
   "ai",

@@ -11,6 +11,7 @@ import {
   Trash,
   Trash2,
 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -63,8 +64,7 @@ export function JobDetailsHeader({
   onAddNote,
   onChangeStatus,
 }: JobDetailsHeaderProps) {
-  const subtitle = [
-    job.Company?.label,
+  const details = [
     job.Location?.label,
     getJobTypeLabel(job.jobType),
     job.workplaceType ? getWorkplaceTypeLabel(job.workplaceType) : null,
@@ -84,7 +84,18 @@ export function JobDetailsHeader({
         />
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-bold">{job.JobTitle?.label}</h1>
-          <p className="text-muted-foreground">{subtitle}</p>
+          <p className="text-muted-foreground">
+            {job.Company?.label && (
+              <Link
+                href={`/dashboard/admin/companies/${job.Company.id}`}
+                className="hover:text-foreground hover:underline underline-offset-4"
+              >
+                {job.Company.label}
+              </Link>
+            )}
+            {job.Company?.label && details && " · "}
+            {details}
+          </p>
         </div>
       </div>
       <div className="flex flex-wrap justify-end gap-2">

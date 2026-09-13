@@ -18,6 +18,7 @@ import {
 import { Company } from "@/models/job.model";
 import {
   Briefcase,
+  Building2,
   Eye,
   EyeOff,
   MoreVertical,
@@ -70,6 +71,9 @@ function CompaniesTable({
       });
     }
   };
+
+  const detailsHref = (id: string) =>
+    `/dashboard/admin/companies/${id}${scope === "watchlist" ? "?scope=watchlist" : ""}`;
 
   const toggleWatch = async (company: Company) => {
     const next = !company.watched;
@@ -146,7 +150,12 @@ function CompaniesTable({
                 </TableCell>
                 <TableCell className="font-medium">
                   <span className="flex items-center gap-1.5">
-                    {company.label}
+                    <Link
+                      href={detailsHref(company.id)}
+                      className="hover:underline underline-offset-4"
+                    >
+                      {company.label}
+                    </Link>
                     {company.watched && (
                       <span
                         title="On your watchlist"
@@ -223,6 +232,12 @@ function CompaniesTable({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuItem className="cursor-pointer" asChild>
+                        <Link href={detailsHref(company.id)}>
+                          <Building2 className="mr-2 h-4 w-4" />
+                          View details
+                        </Link>
+                      </DropdownMenuItem>
                       {company._count?.jobsApplied ? (
                         <DropdownMenuItem className="cursor-pointer" asChild>
                           <Link

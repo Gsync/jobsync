@@ -498,3 +498,28 @@ describe("JobDetails – auto-match from the jobs list", () => {
     expect(chat.sendMessage).not.toHaveBeenCalled();
   });
 });
+
+describe("JobDetails – company link", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    chat.approvalPending = false;
+    searchParams = new URLSearchParams();
+  });
+
+  it("links the company in the header to its details page", () => {
+    render(<JobDetails {...baseProps} job={makeJob()} />);
+
+    expect(screen.getByRole("link", { name: "Acme Corp" })).toHaveAttribute(
+      "href",
+      "/dashboard/admin/companies/c1",
+    );
+  });
+
+  it("keeps the dot-separated subtitle reading the same", () => {
+    render(<JobDetails {...baseProps} job={makeJob()} />);
+
+    expect(
+      screen.getByRole("link", { name: "Acme Corp" }).parentElement,
+    ).toHaveTextContent("Acme Corp · Remote · Full-time");
+  });
+});
