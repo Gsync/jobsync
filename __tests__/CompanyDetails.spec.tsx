@@ -4,7 +4,9 @@ import userEvent from "@testing-library/user-event";
 import {
   deleteCompanyById,
   setCompanyWatched,
+  getAllCompanies,
 } from "@/actions/company.actions";
+import { deleteContactById, getContactById } from "@/actions/contact.actions";
 import { toastError } from "@/lib/toast";
 
 const router = { push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), back: vi.fn() };
@@ -35,6 +37,25 @@ vi.mock("@/components/CircularScore", () => ({
     <div data-testid="circular-score">{score}%</div>
   ),
 }));
+
+vi.mock("@/actions/contact.actions", () => ({
+  getContactById: vi.fn(),
+  deleteContactById: vi.fn(),
+  createContact: vi.fn(),
+  updateContact: vi.fn(),
+}));
+
+vi.mock("@/actions/contactRole.actions", () => ({
+  getAllContactRoles: vi.fn().mockResolvedValue([]),
+  createContactRole: vi.fn(),
+}));
+
+vi.mock("@/actions/jobLocation.actions", () => ({
+  getAllJobLocations: vi.fn().mockResolvedValue([]),
+}));
+
+// jsdom lacks scrollIntoView, which cmdk calls when selecting an item
+Element.prototype.scrollIntoView = vi.fn();
 
 const makeDetails = (overrides: Record<string, unknown> = {}) =>
   ({
@@ -378,5 +399,118 @@ describe("CompanyDetails – Jobs tab", () => {
     expect(within(panel).getByText("No jobs at this company yet")).toBeInTheDocument();
     expect(within(panel).queryByRole("button")).not.toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /jobs/i })).toHaveTextContent(/^Jobs$/);
+  });
+});
+
+describe("CompanyDetails – Contacts tab", () => {
+  const user = userEvent.setup({ skipHover: true });
+
+  const person = (id: string, name: string, overrides: Record<string, unknown> = {}) => ({
+    id,
+    name,
+    title: null,
+    email: null,
+    phone: null,
+    linkedinUrl: null,
+    companyId: null,
+    Company: null,
+    locationId: null,
+    Location: null,
+    relationship: null,
+    workedAtCompanyId: null,
+    WorkedAtCompany: null,
+    workedFrom: null,
+    workedTo: null,
+    roleId: null,
+    Role: null,
+    notes: null,
+    lastContactedAt: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    createdBy: "u1",
+    jobLinks: [],
+    _count: { jobLinks: 0 },
+    ...overrides,
+  });
+
+  const dave = person("c1", "Dave Patel", { companyId: "co1", Company: { id: "co1", label: "Stripe" } });
+  const priya = person("c2", "Priya Nair", { workedAtCompanyId: "co1", WorkedAtCompany: { id: "co1", label: "Stripe" } });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    searchParams = new URLSearchParams("tab=contacts");
+    (getAllCompanies as any).mockResolvedValue([
+      { id: "co1", label: "Stripe", value: "stripe", createdBy: "u1" },
+    ]);
+  });
+
+  it("shows only the sections that have people", () => {
+    render(<CompanyDetails details={makeDetails({ currentContacts: [dave] })} />);
+
+    expect(screen.getByRole("heading", { name: "Works here" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Worked with you here" })).not.toBeInTheDocument();
+  });
+
+  it("drops the Company column only in Works here", () => {
+    render(
+      <CompanyDetails
+        details={makeDetails({ currentContacts: [dave], formerContacts: [priya] })}
+      />,
+    );
+
+    expect(screen.getAllByRole("columnheader", { name: "Company" })).toHaveLength(1);
+  });
+
+  it("lists someone in both groups twice but counts them once", () => {
+    render(
+      <CompanyDetails
+        details={makeDetails({ currentContacts: [dave], formerContacts: [dave] })}
+      />,
+    );
+
+    expect(screen.getAllByText("Dave Patel")).toHaveLength(2);
+    expect(screen.getByRole("tab", { name: /contacts/i })).toHaveTextContent("1");
+    expect(fact("Contacts")).toHaveTextContent("1");
+  });
+
+  it("offers Add Contact from the empty state and loads the pickers once", async () => {
+    render(<CompanyDetails details={makeDetails()} />);
+
+    const panel = screen.getByRole("tabpanel");
+    expect(within(panel).getByText("No contacts at this company yet")).toBeInTheDocument();
+
+    await user.click(within(panel).getByRole("button", { name: "Add Contact" }));
+    expect(
+      await screen.findByRole("combobox", { name: /^company$/i }),
+    ).toHaveTextContent("Stripe");
+
+    await user.keyboard("{Escape}");
+    await user.click(within(panel).getByRole("button", { name: "Add Contact" }));
+    await screen.findByRole("combobox", { name: /^company$/i });
+
+    expect(getAllCompanies).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens the dialog in edit mode from a row", async () => {
+    (getContactById as any).mockResolvedValue(dave);
+    render(<CompanyDetails details={makeDetails({ currentContacts: [dave] })} />);
+
+    await user.click(screen.getByRole("button", { name: /toggle menu/i }));
+    await user.click(await screen.findByRole("menuitem", { name: /edit contact/i }));
+
+    expect(getContactById).toHaveBeenCalledWith("c1");
+    expect(await screen.findByRole("heading", { name: "Edit Contact" })).toBeInTheDocument();
+  });
+
+  it("refreshes the page after deleting a contact", async () => {
+    (deleteContactById as any).mockResolvedValue({ success: true });
+    render(<CompanyDetails details={makeDetails({ currentContacts: [dave] })} />);
+
+    await user.click(screen.getByRole("button", { name: /toggle menu/i }));
+    await user.click(await screen.findByRole("menuitem", { name: /delete/i }));
+    const dialog = await screen.findByRole("alertdialog");
+    await user.click(within(dialog).getByRole("button", { name: /delete/i }));
+
+    await waitFor(() => expect(router.refresh).toHaveBeenCalled());
   });
 });

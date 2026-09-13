@@ -18,9 +18,10 @@ import { Card } from "../ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { useTabQueryParam } from "@/hooks/useTabQueryParam";
 import { CompanyJobsTab } from "./company-details/CompanyJobsTab";
+import { CompanyContactsTab } from "./company-details/CompanyContactsTab";
 
 const LIBRARY_COMPANIES = "/dashboard/admin?tab=companies";
-const COMPANY_DETAIL_TABS = ["jobs"] as const;
+const COMPANY_DETAIL_TABS = ["jobs", "contacts"] as const;
 
 type CompanyDetailsProps = {
   details: CompanyDetailsData;
@@ -134,10 +135,27 @@ function CompanyDetails({ details }: CompanyDetailsProps) {
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="contacts">
+              Contacts
+              {contactsCount > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {contactsCount}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="jobs" className="mt-4">
             <Card className="p-6">
               <CompanyJobsTab jobs={jobs} />
+            </Card>
+          </TabsContent>
+          <TabsContent value="contacts" className="mt-4">
+            <Card className="p-6">
+              <CompanyContactsTab
+                companyId={details.id}
+                currentContacts={currentContacts}
+                formerContacts={formerContacts}
+              />
             </Card>
           </TabsContent>
         </Tabs>

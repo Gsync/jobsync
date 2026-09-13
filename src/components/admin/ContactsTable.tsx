@@ -18,12 +18,14 @@ type ContactsTableProps = {
   contacts: Contact[];
   reloadContacts: () => void;
   editContact: (id: string) => void;
+  hideCompanyColumn?: boolean;
 };
 
 function ContactsTable({
   contacts,
   reloadContacts,
   editContact,
+  hideCompanyColumn,
 }: ContactsTableProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [alert, setAlert] = useState<AlertDialog>({
@@ -69,7 +71,7 @@ function ContactsTable({
             </TableHead>
             <TableHead>Name</TableHead>
             <TableHead className="hidden sm:table-cell">Title</TableHead>
-            <TableHead>Company</TableHead>
+            {!hideCompanyColumn && <TableHead>Company</TableHead>}
             <TableHead>Roles</TableHead>
             <TableHead>Jobs</TableHead>
             <TableHead>Last contacted</TableHead>
@@ -91,6 +93,7 @@ function ContactsTable({
               }
               onEdit={() => editContact(contact.id)}
               onDelete={() => onDeleteContact(contact)}
+              hideCompanyColumn={hideCompanyColumn}
             />
           ))}
         </TableBody>

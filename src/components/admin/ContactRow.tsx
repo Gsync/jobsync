@@ -26,6 +26,7 @@ type ContactRowProps = {
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  hideCompanyColumn?: boolean;
 };
 
 function overlapLabel(contact: Contact) {
@@ -40,6 +41,7 @@ function ContactRow({
   onToggle,
   onEdit,
   onDelete,
+  hideCompanyColumn,
 }: ContactRowProps) {
   const links = contact.jobLinks ?? [];
   // The standing role first, then any per-job role it does not already cover
@@ -76,7 +78,9 @@ function ContactRow({
         <TableCell className="hidden sm:table-cell">
           {contact.title ?? "—"}
         </TableCell>
-        <TableCell>{contact.Company?.label ?? "—"}</TableCell>
+        {!hideCompanyColumn && (
+          <TableCell>{contact.Company?.label ?? "—"}</TableCell>
+        )}
         <TableCell>
           {roles.length > 0 ? (
             <span className="flex flex-wrap gap-1">
@@ -126,7 +130,7 @@ function ContactRow({
       </TableRow>
       {expanded && (
         <TableRow>
-          <TableCell colSpan={8} className="bg-muted/40">
+          <TableCell colSpan={hideCompanyColumn ? 7 : 8} className="bg-muted/40">
             <div className="grid gap-4 sm:grid-cols-2 text-sm">
               {hasContactBlock && (
                 <div className="space-y-1">

@@ -61,6 +61,55 @@ describe("AddContact", () => {
     expect(screen.getByLabelText(/^name$/i)).toHaveValue("Priya");
   });
 
+  it("prefills the company when asked", () => {
+    render(<AddContact {...props} prefillCompanyId="co1" />);
+    expect(
+      screen.getByRole("combobox", { name: /^company$/i }),
+    ).toHaveTextContent("Shopify");
+  });
+
+  it("saves the prefilled company with the new contact", async () => {
+    (createContact as any).mockResolvedValue({ success: true, data: { id: "c1" } });
+
+    render(<AddContact {...props} prefillCompanyId="co1" />);
+    await user.type(screen.getByLabelText(/^name$/i), "Dave Patel");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() =>
+      expect(createContact).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "Dave Patel", company: "co1" }),
+      ),
+    );
+  });
+
+  it("ignores the company prefill when editing", () => {
+    render(
+      <AddContact
+        {...props}
+        prefillCompanyId="co1"
+        editContact={{ id: "c1", name: "Dave Patel", companyId: null } as any}
+      />,
+    );
+    expect(
+      screen.getByRole("combobox", { name: /^company$/i }),
+    ).toHaveTextContent(/select company/i);
+  });
+
+  it("starts from the prefill again each time the dialog reopens", async () => {
+    const { rerender } = render(
+      <AddContact {...props} hideTrigger prefillCompanyId="co1" />,
+    );
+    await user.type(screen.getByLabelText(/^name$/i), "Half typed");
+
+    rerender(<AddContact {...props} hideTrigger prefillCompanyId="co1" dialogOpen={false} />);
+    rerender(<AddContact {...props} hideTrigger prefillCompanyId="co1" dialogOpen />);
+
+    expect(screen.getByLabelText(/^name$/i)).toHaveValue("");
+    expect(
+      screen.getByRole("combobox", { name: /^company$/i }),
+    ).toHaveTextContent("Shopify");
+  });
+
   it("updates instead of creating when editing", async () => {
     (updateContact as any).mockResolvedValue({ success: true, data: { id: "c1" } });
 

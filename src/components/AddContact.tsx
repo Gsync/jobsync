@@ -43,6 +43,7 @@ type AddContactProps = {
   locations: JobLocation[];
   roles: ContactRole[];
   prefillName?: string;
+  prefillCompanyId?: string;
   hideTrigger?: boolean;
   pickersLoading?: boolean;
   onSaved?: (contact: ContactRef) => void;
@@ -89,6 +90,7 @@ function AddContact({
   locations,
   roles,
   prefillName,
+  prefillCompanyId,
   hideTrigger,
   pickersLoading,
   onSaved,
@@ -97,11 +99,15 @@ function AddContact({
 
   const pageTitle = editContact ? "Edit Contact" : "Add Contact";
 
+  const prefilled: ContactFormValues = {
+    ...EMPTY_CONTACT,
+    ...(prefillName ? { name: prefillName } : {}),
+    ...(prefillCompanyId ? { company: prefillCompanyId } : {}),
+  };
+
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(AddContactFormSchema),
-    defaultValues: prefillName
-      ? { ...EMPTY_CONTACT, name: prefillName }
-      : EMPTY_CONTACT,
+    defaultValues: prefilled,
   });
 
   const { reset } = form;
@@ -151,10 +157,17 @@ function AddContact({
         },
         { keepDefaultValues: true },
       );
-    } else if (prefillName) {
-      reset({ ...EMPTY_CONTACT, name: prefillName }, { keepDefaultValues: true });
+    } else if (dialogOpen && (prefillName || prefillCompanyId)) {
+      reset(
+        {
+          ...EMPTY_CONTACT,
+          ...(prefillName ? { name: prefillName } : {}),
+          ...(prefillCompanyId ? { company: prefillCompanyId } : {}),
+        },
+        { keepDefaultValues: true },
+      );
     }
-  }, [editContact, prefillName, reset]);
+  }, [editContact, prefillName, prefillCompanyId, dialogOpen, reset]);
 
   const openDialog = () => {
     if (!editContact) {
