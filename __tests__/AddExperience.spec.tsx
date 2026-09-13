@@ -491,6 +491,65 @@ describe("AddExperience Component", () => {
     });
   });
 
+  it("should clear the end date when an ended job is switched to current", async () => {
+    const mockExperienceToEdit: ResumeSection = {
+      id: "section-1",
+      resumeId: mockResumeId,
+      sectionTitle: "Work Experience",
+      sectionType: "experience" as any,
+      workExperiences: [
+        {
+          id: "exp-1",
+          Company: mockCompanies[0] as any,
+          jobTitle: mockJobTitles[0] as any,
+          location: mockLocations[0] as any,
+          startDate: new Date("2020-01-01"),
+          endDate: new Date("2022-12-31"),
+          currentJob: false,
+          description: "Worked on various projects",
+        },
+      ],
+    };
+
+    (updateExperience as any).mockResolvedValue({
+      success: true,
+      message: "Experience updated successfully",
+    });
+
+    render(
+      <AddExperience
+        resumeId={mockResumeId}
+        sectionId={mockSectionId}
+        dialogOpen={true}
+        setDialogOpen={mockSetDialogOpen}
+        experienceToEdit={mockExperienceToEdit}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/job ended/i)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("switch"));
+
+    await waitFor(() => {
+      const saveButton = screen.getByRole("button", { name: /save/i });
+      expect(saveButton).not.toBeDisabled();
+    });
+
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => {
+      expect(updateExperience).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "exp-1",
+          currentJob: true,
+          endDate: null,
+        })
+      );
+    });
+  });
+
   it("should close dialog and show success toast on successful submission", async () => {
     (addExperience as any).mockResolvedValue({
       success: true,

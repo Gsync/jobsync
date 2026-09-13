@@ -76,7 +76,7 @@ function AddExperience({
     },
   });
 
-  const { watch, reset, formState, resetField } = form;
+  const { watch, reset, formState, setValue } = form;
 
   const currentJobValue = watch("currentJob");
 
@@ -134,7 +134,7 @@ function AddExperience({
 
   const onCurrentJob = (current: boolean) => {
     if (current) {
-      resetField("endDate");
+      setValue("endDate", null, { shouldDirty: true });
     }
   };
 
