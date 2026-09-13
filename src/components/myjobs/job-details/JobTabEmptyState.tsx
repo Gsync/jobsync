@@ -7,8 +7,8 @@ type JobTabEmptyStateProps = {
   icon: LucideIcon;
   title: string;
   description: string;
-  actionLabel: string;
-  onAction: () => void;
+  actionLabel?: string;
+  onAction?: () => void;
   actionDisabled?: boolean;
   actionTitle?: string;
 };
@@ -31,15 +31,17 @@ export function JobTabEmptyState({
       <p className="max-w-[40ch] text-sm text-muted-foreground">
         {description}
       </p>
-      <Button
-        className="mt-1 cursor-pointer"
-        onClick={onAction}
-        disabled={actionDisabled}
-        title={actionTitle}
-      >
-        <Icon className="h-4 w-4 mr-2" />
-        {actionLabel}
-      </Button>
+      {actionLabel && onAction && (
+        <Button
+          className="mt-1 cursor-pointer"
+          onClick={onAction}
+          disabled={actionDisabled}
+          title={actionTitle}
+        >
+          <Icon className="h-4 w-4 mr-2" />
+          {actionLabel}
+        </Button>
+      )}
     </div>
   );
 }

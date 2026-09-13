@@ -33,6 +33,7 @@ type AddCompanyProps = {
   resetEditCompany: () => void;
   dialogOpen: boolean;
   setDialogOpen: (e: boolean) => void;
+  hideTrigger?: boolean;
 };
 
 function AddCompany({
@@ -41,6 +42,7 @@ function AddCompany({
   resetEditCompany,
   dialogOpen,
   setDialogOpen,
+  hideTrigger,
 }: AddCompanyProps) {
   const [isPending, startTransition] = useTransition();
 
@@ -106,18 +108,20 @@ function AddCompany({
 
   return (
     <>
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-8 gap-1"
-        onClick={addCompanyForm}
-        data-testid="add-company-btn"
-      >
-        <PlusCircle className="h-3.5 w-3.5" />
-        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-          New Company
-        </span>
-      </Button>
+      {!hideTrigger && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 gap-1"
+          onClick={addCompanyForm}
+          data-testid="add-company-btn"
+        >
+          <PlusCircle className="h-3.5 w-3.5" />
+          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+            New Company
+          </span>
+        </Button>
+      )}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="lg:max-h-screen overflow-y-scroll">
           <DialogHeader>

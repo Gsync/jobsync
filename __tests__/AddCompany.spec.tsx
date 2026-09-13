@@ -30,6 +30,21 @@ describe("AddCompany Component", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders no New Company button when the trigger is hidden", () => {
+    render(
+      <AddCompany
+        reloadCompanies={mockReloadCompanies}
+        resetEditCompany={mockResetEditCompany}
+        dialogOpen={false}
+        setDialogOpen={mockSetDialogOpen}
+        hideTrigger
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: /new company/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it("should open dialog when Add Company button is clicked", async () => {
     render(
       <AddCompany

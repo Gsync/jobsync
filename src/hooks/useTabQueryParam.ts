@@ -10,7 +10,9 @@ export function useTabQueryParam(
   const activeTab = raw && validTabs.includes(raw) ? raw : defaultTab;
 
   const setTab = (tab: string) => {
-    router.replace(`?tab=${tab}`, { scroll: false });
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    router.replace(`?${params.toString()}`, { scroll: false });
   };
 
   return [activeTab, setTab] as const;
