@@ -222,6 +222,19 @@ export function BreakModal({ open, onClose }: BreakModalProps) {
               <Button
                 variant="outline"
                 className="flex-1"
+                disabled={pending}
+                onClick={isOnBreak ? handleResume : handleStart}
+              >
+                {isOnBreak ? (
+                  <Pause className="mr-2 size-4" />
+                ) : (
+                  <Play className="mr-2 size-4" />
+                )}
+                {isOnBreak ? "Resume Activity" : "Start Break"}
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
                 onClick={() => setConfirmStopOpen(true)}
               >
                 <CircleStop className="mr-2 size-4 text-red-500 dark:text-red-400" />

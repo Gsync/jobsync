@@ -164,6 +164,33 @@ describe("BreakModal", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it("ends a running break from the Resume Activity button", async () => {
+    const value = contextValue();
+    const onClose = vi.fn();
+    (useActivity as any).mockReturnValue(value);
+
+    renderModal({ onClose });
+    await user.click(screen.getByRole("button", { name: "Resume Activity" }));
+
+    expect(value.endBreak).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("starts the break from the Start Break button", async () => {
+    const value = notStartedValue();
+    const onClose = vi.fn();
+    (useActivity as any).mockReturnValue(value);
+
+    renderModal({ onClose });
+    expect(
+      screen.queryByRole("button", { name: "Resume Activity" }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Start Break" }));
+
+    expect(value.startBreak).toHaveBeenCalledWith(15);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it("stops the activity only after the confirmation is accepted", async () => {
     const value = contextValue();
     const onClose = vi.fn();

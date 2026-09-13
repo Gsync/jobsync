@@ -176,12 +176,15 @@ test.describe.serial("Activities Management", () => {
     await expect(breakDialog.getByText("Break", { exact: true })).toBeVisible();
     await expect(breakDialog.getByText("15:00")).toBeVisible();
 
-    await breakDialog.getByRole("button", { name: "Start break" }).click();
+    await breakDialog
+      .getByRole("button", { name: "Start break", exact: true })
+      .click();
 
     // The centre control flipping to Resume proves the server opened the
     // break: the context only re-renders from the action's returned activity.
     const resumeButton = breakDialog.getByRole("button", {
       name: "Resume activity",
+      exact: true,
     });
     await expect(resumeButton).toBeVisible({ timeout: 10000 });
     // A running break drops the close X — Resume and Stop are the only exits.
