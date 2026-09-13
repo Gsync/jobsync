@@ -6,6 +6,9 @@ import { HtmlStyleSet } from "./types";
 const TEXT_NODE = 3;
 const ELEMENT_NODE = 1;
 
+// The standard-14 fonts only encode WinAnsi; unicode hyphens/minus vanish
+const UNENCODABLE_HYPHENS = /[‐-‒−]/g;
+
 type InheritedStyle = {
   bold?: boolean;
   italic?: boolean;
@@ -25,7 +28,7 @@ function walkNode(
   s: HtmlStyleSet,
 ): React.ReactElement | string | null {
   if (node.nodeType === TEXT_NODE) {
-    const text = node.textContent ?? "";
+    const text = (node.textContent ?? "").replace(UNENCODABLE_HYPHENS, "-");
     if (!text) return null;
     const style = inlineStyle(inherited, s);
     return style ? (

@@ -129,7 +129,7 @@ describe("buildProfessionalStyles at the defaults", () => {
 
   it("returns an html style set with the professional bullet char", () => {
     const { htmlStyles } = buildProfessionalStyles(defaultResumeExportSettings);
-    expect(htmlStyles.bulletChar).toBe("▪");
+    expect(htmlStyles.bulletChar).toBe("•");
   });
 
   // Guards the regression the settings work introduced once: Professional

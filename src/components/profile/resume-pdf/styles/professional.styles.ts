@@ -175,7 +175,7 @@ export function buildProfessionalStyles(settings: ResumeExportSettings) {
     listRow: styles.listRow,
     bullet: styles.bullet,
     listText: styles.listText,
-    bulletChar: "▪",
+    bulletChar: "•",
   };
 
   return { styles, htmlStyles };

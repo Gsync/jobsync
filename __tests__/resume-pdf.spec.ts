@@ -19,9 +19,9 @@ const simpleStyleSet: HtmlStyleSet = {
   bulletChar: "•",
 };
 
-const professionalStyleSet: HtmlStyleSet = {
+const customBulletStyleSet: HtmlStyleSet = {
   ...simpleStyleSet,
-  bulletChar: "▪",
+  bulletChar: "»",
 };
 
 describe("sanitizeFilename", () => {
@@ -125,10 +125,20 @@ describe("htmlToPdfNodes — layout style sets", () => {
     expect(JSON.stringify(nodes)).toContain("•");
   });
 
-  it("uses the professional bullet char (▪) for list items", () => {
-    const nodes = htmlToPdfNodes("<ul><li>Foo</li></ul>", professionalStyleSet);
-    expect(JSON.stringify(nodes)).toContain("▪");
+  it("uses the style set's own bullet char for list items", () => {
+    const nodes = htmlToPdfNodes("<ul><li>Foo</li></ul>", customBulletStyleSet);
+    expect(JSON.stringify(nodes)).toContain("»");
     expect(JSON.stringify(nodes)).not.toContain("•");
+  });
+
+  it("replaces unicode minus and hyphens the PDF font cannot encode", () => {
+    const nodes = htmlToPdfNodes(
+      "<p>− Observe ‐ ‑ ‒ done</p>",
+      simpleStyleSet,
+    );
+    const serialized = JSON.stringify(nodes);
+    expect(serialized).toContain("- Observe - - - done");
+    expect(serialized).not.toMatch(/[‐-‒−]/);
   });
 
   it("renders <h2> and includes its text content", () => {
