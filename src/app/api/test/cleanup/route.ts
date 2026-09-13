@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
     tags = [],
     mcpTokens = [],
     automations = [],
+    contacts = [],
+    contactRoles = [],
   }: {
     jobIds?: string[];
     resumes?: string[];
@@ -44,6 +46,8 @@ export async function POST(req: NextRequest) {
     tags?: string[];
     mcpTokens?: string[];
     automations?: string[];
+    contacts?: string[];
+    contactRoles?: string[];
   } = await req.json();
 
   // Delete automations before resumes: Automation.resumeId is a required FK, so
@@ -102,12 +106,21 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // Delete contacts before the Library teardown: they reference companies,
+  // locations and roles. Their job links cascade with them.
+  if (contacts.length > 0) {
+    await prisma.contact.deleteMany({
+      where: { name: { in: contacts }, createdBy: userId },
+    });
+  }
+
   // Sources are never created by the tests (they select the seeded "Indeed"),
   // so they are intentionally not cleaned up here.
   await deleteLibraryByName("jobTitle", titles, userId);
   await deleteLibraryByName("company", companies, userId);
   await deleteLibraryByName("location", locations, userId);
   await deleteLibraryByName("activityType", activityTypes, userId);
+  await deleteLibraryByName("contactRole", contactRoles, userId);
   await deleteTagsByName(tags, userId);
   if (mcpTokens.length > 0) {
     await prisma.mcpAccessToken.deleteMany({
@@ -138,7 +151,12 @@ async function deleteTagsByName(names: string[], userId: string) {
   }
 }
 
-type RefModel = "jobTitle" | "company" | "location" | "activityType";
+type RefModel =
+  | "jobTitle"
+  | "company"
+  | "location"
+  | "activityType"
+  | "contactRole";
 
 // Count every place a Library row can still be referenced from, so we never
 // delete one that another job or resume section still uses.
@@ -155,7 +173,10 @@ async function referenceCount(
   if (model === "company") {
     return (
       (await prisma.job.count({ where: { companyId: refId } })) +
-      (await prisma.workExperience.count({ where: { companyId: refId } }))
+      (await prisma.workExperience.count({ where: { companyId: refId } })) +
+      (await prisma.contact.count({
+        where: { OR: [{ companyId: refId }, { workedAtCompanyId: refId }] },
+      }))
     );
   }
   if (model === "activityType") {
@@ -164,10 +185,17 @@ async function referenceCount(
       (await prisma.task.count({ where: { activityTypeId: refId } }))
     );
   }
+  if (model === "contactRole") {
+    return (
+      (await prisma.jobContact.count({ where: { roleId: refId } })) +
+      (await prisma.contact.count({ where: { roleId: refId } }))
+    );
+  }
   return (
     (await prisma.job.count({ where: { locationId: refId } })) +
     (await prisma.workExperience.count({ where: { locationId: refId } })) +
-    (await prisma.education.count({ where: { locationId: refId } }))
+    (await prisma.education.count({ where: { locationId: refId } })) +
+    (await prisma.contact.count({ where: { locationId: refId } }))
   );
 }
 
