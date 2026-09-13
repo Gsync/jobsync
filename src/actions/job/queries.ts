@@ -20,9 +20,23 @@ const JOB_LIST_SELECT = {
   Resume: true,
   CoverLetter: true,
   matchScore: true,
+  matchData: true,
   discoveryStatus: true,
   _count: { select: { Notes: true } },
 };
+
+// An automation job saved without LLM analysis carries only its keyword
+// pre-rank in matchScore, which the list must not show as an AI match. The
+// matchData body is dropped so the list payload stays small.
+function hideUnanalyzedScore<
+  T extends { matchScore: number | null; matchData: string | null },
+>({ matchData, ...job }: T) {
+  let analyzed = true;
+  try {
+    analyzed = JSON.parse(matchData ?? "{}").analyzed !== false;
+  } catch {}
+  return analyzed ? job : { ...job, matchScore: null };
+}
 
 const JOB_EXPORT_SELECT = {
   id: true,
@@ -208,7 +222,7 @@ export const getJobsList = async (
         where: whereClause,
       }),
     ]);
-    return { success: true, data, total };
+    return { success: true, data: data.map(hideUnanalyzedScore), total };
   } catch (error) {
     const msg = "Failed to fetch jobs list. ";
     return handleError(error, msg);

@@ -157,6 +157,31 @@ describe("jobActions", () => {
       expect(prisma.job.findMany).toHaveBeenCalledTimes(1);
       expect(prisma.job.count).toHaveBeenCalledTimes(1);
     });
+    it("should hide the pre-rank score of un-analyzed jobs and drop matchData", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.findMany as any).mockResolvedValue([
+        {
+          id: "unanalyzed",
+          matchScore: 28,
+          matchData: JSON.stringify({ prerankScore: 0.29, analyzed: false }),
+        },
+        {
+          id: "analyzed",
+          matchScore: 71,
+          matchData: JSON.stringify({ matchScore: 71, body: "## Summary" }),
+        },
+        { id: "unmatched", matchScore: null, matchData: null },
+      ]);
+      (prisma.job.count as any).mockResolvedValue(3);
+
+      const result = await getJobsList();
+
+      expect(result.data).toStrictEqual([
+        { id: "unanalyzed", matchScore: null },
+        { id: "analyzed", matchScore: 71 },
+        { id: "unmatched", matchScore: null },
+      ]);
+    });
     it("should return error when fetching data fails", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
 

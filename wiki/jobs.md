@@ -55,7 +55,7 @@ The list also has a view toggle for table or card layout, and a reload button th
 
 ## How do I run an AI match from the jobs list?
 
-A job that has no AI match score shows a **Match** button where its score would be — in the Match column in table view, and in the top-right corner of the card in card view. Clicking it opens that job's details page on the **AI Match** tab and starts the match straight away, so you do not have to open the job and click again. The match itself runs in the assistant panel exactly as it does from the job's own **Match with AI** button; when it finishes, the analysis is already on the tab in front of you.
+A job that has no AI match score shows a **Match** button where its score would be — in the Match column in table view, and in the top-right corner of the card in card view. That includes a listing an [automation](./automations.md) saved without AI-scoring it: its relevance percentage stays on the automation page and is never shown here as a match score. Clicking it opens that job's details page on the **AI Match** tab and starts the match straight away, so you do not have to open the job and click again. The match itself runs in the assistant panel exactly as it does from the job's own **Match with AI** button; when it finishes, the analysis is already on the tab in front of you.
 
 Jobs that already have a score show the score instead. To re-run a match on one of those, open the job and use **Match with AI** in its header.
 

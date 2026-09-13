@@ -76,7 +76,7 @@ export function JobSummaryCard({
           </div>
           <div>
             <p className="text-sm text-muted-foreground">AI Match</p>
-            {job.matchScore != null ? (
+            {job.matchScore != null && matchData?.analyzed !== false ? (
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <CircularScore score={job.matchScore} size="sm" />
                 {matchData?.recommendation && (
