@@ -3,29 +3,7 @@ import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { requireUser } from "../shared";
 import { APP_CONSTANTS } from "@/lib/constants";
-
-// Narrowed to what the table row and the expanded row render. Not shared: only
-// this module reads it.
-const CONTACT_LIST_INCLUDE = {
-  Role: true,
-  Company: { select: { id: true, label: true } },
-  Location: { select: { id: true, label: true } },
-  WorkedAtCompany: { select: { id: true, label: true } },
-  jobLinks: {
-    include: {
-      Role: true,
-      Job: {
-        select: {
-          id: true,
-          JobTitle: { select: { label: true } },
-          Company: { select: { label: true } },
-        },
-      },
-    },
-    orderBy: { createdAt: "asc" as const },
-  },
-  _count: { select: { jobLinks: true } },
-};
+import { CONTACT_LIST_INCLUDE } from "./shared";
 
 // Contacts get their own query rather than getReferenceEntityList: that helper
 // counts jobs grouped by an FK on Job, and a contact reaches Job only through

@@ -4,6 +4,7 @@ import { handleError } from "@/lib/utils";
 import { JOB_TYPES } from "@/models/job.model";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { requireUser } from "../shared";
+import { hideUnanalyzedScore } from "./shared";
 
 const JOB_LIST_SELECT = {
   id: true,
@@ -24,19 +25,6 @@ const JOB_LIST_SELECT = {
   discoveryStatus: true,
   _count: { select: { Notes: true } },
 };
-
-// An automation job saved without LLM analysis carries only its keyword
-// pre-rank in matchScore, which the list must not show as an AI match. The
-// matchData body is dropped so the list payload stays small.
-function hideUnanalyzedScore<
-  T extends { matchScore: number | null; matchData: string | null },
->({ matchData, ...job }: T) {
-  let analyzed = true;
-  try {
-    analyzed = JSON.parse(matchData ?? "{}").analyzed !== false;
-  } catch {}
-  return analyzed ? job : { ...job, matchScore: null };
-}
 
 const JOB_EXPORT_SELECT = {
   id: true,

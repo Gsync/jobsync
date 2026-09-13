@@ -6,6 +6,7 @@ export {
   getCompanyList,
   getAllCompanies,
   getCompanyById,
+  getCompanyDetails,
 } from "./company/queries";
 
 export {
