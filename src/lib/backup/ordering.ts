@@ -236,6 +236,7 @@ export const EMPTINESS_MODELS: BackupModel[] = [
   "CoverLetter",
   "Job",
   "Note",
+  "Contact",
   "Task",
   "Activity",
   "Question",

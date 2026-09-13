@@ -2,7 +2,7 @@
 import fs from "fs";
 import path from "path";
 import { PrismaClient } from "@prisma/client";
-import { APP_CONSTANTS } from "@/lib/constants";
+import { APP_CONSTANTS, CONTACT_ROLES } from "@/lib/constants";
 import { buildBackupZip } from "@/lib/backup/export";
 import { importBackup } from "@/lib/backup/import";
 import { listSnapshots, readSnapshot } from "@/lib/backup/snapshot";
@@ -127,6 +127,23 @@ async function seedFullAccount() {
   });
   await prisma.note.create({
     data: { jobId: job.id, userId, content: "a note" },
+  });
+
+  const recruiter = await prisma.contactRole.findFirstOrThrow({
+    where: { createdBy: userId, value: "recruiter" },
+  });
+  const contact = await prisma.contact.create({
+    data: {
+      name: "Pat Lee",
+      email: "pat@acme.example.com",
+      companyId: company.id,
+      workedAtCompanyId: company.id,
+      roleId: recruiter.id,
+      createdBy: userId,
+    },
+  });
+  await prisma.jobContact.create({
+    data: { jobId: job.id, contactId: contact.id, roleId: recruiter.id },
   });
 
   const question = await prisma.question.create({
@@ -300,6 +317,52 @@ describe("backup round trip", () => {
     expect(restored.industry).toBe("Widgets");
   });
 
+  it("restores a contact with its company, standing role and job link remapped", async () => {
+    const contact = await prisma.contact.findFirstOrThrow({
+      where: { createdBy: userId },
+      include: {
+        Company: true,
+        WorkedAtCompany: true,
+        Role: true,
+        jobLinks: { include: { Job: true, Role: true } },
+      },
+    });
+
+    expect(contact.Company?.value).toBe("acme");
+    expect(contact.WorkedAtCompany?.value).toBe("acme");
+    expect(contact.Role?.value).toBe("recruiter");
+    expect(contact.jobLinks).toHaveLength(1);
+    expect(contact.jobLinks[0].Job.userId).toBe(userId);
+    expect(contact.jobLinks[0].Role.id).toBe(contact.Role?.id);
+
+    // The roles came back once, not doubled on top of anything.
+    expect(await prisma.contactRole.count({ where: { createdBy: userId } })).toBe(5);
+  });
+
+  it("reseeds the default contact roles when restoring a pre-contacts backup", async () => {
+    const { buffer } = await buildBackupZip(userId, "owner@example.com");
+
+    // Reshape into what v1.1.19 wrote: no contact groups, no counts for them.
+    const JSZip = (await import("jszip")).default;
+    const zip = await JSZip.loadAsync(buffer);
+    const data = JSON.parse(await zip.file("data.json")!.async("string"));
+    const manifest = JSON.parse(await zip.file("manifest.json")!.async("string"));
+    for (const group of ["Contact", "ContactRole", "JobContact"]) {
+      delete data[group];
+      delete manifest.counts[group];
+    }
+    zip.file("data.json", JSON.stringify(data));
+    zip.file("manifest.json", JSON.stringify(manifest));
+    const legacy = await zip.generateAsync({ type: "nodebuffer" });
+
+    await importBackup(legacy, userId, "owner@example.com", true);
+
+    const roles = await prisma.contactRole.findMany({ where: { createdBy: userId } });
+    expect(roles.map((r) => r.value).sort()).toEqual(
+      CONTACT_ROLES.map((r) => r.value).sort(),
+    );
+  }, 120_000);
+
   it("does not demand confirmWipe on a freshly signed-up account", async () => {
     const freshUserId = await seedAccount(prisma, "fresh@example.com");
     const { buffer } = await buildBackupZip(userId, "owner@example.com");
@@ -313,6 +376,19 @@ describe("backup round trip", () => {
     );
     // Nothing to snapshot on an empty account.
     expect(result.snapshotPath).toBeNull();
+  }, 120_000);
+
+  it("treats an account holding only contacts as data worth confirming", async () => {
+    const contactsOnlyId = await seedAccount(prisma, "contacts@example.com");
+    await prisma.contact.create({
+      data: { name: "Only Contact", createdBy: contactsOnlyId },
+    });
+    const { buffer } = await buildBackupZip(userId, "owner@example.com");
+
+    await expect(
+      importBackup(buffer, contactsOnlyId, "contacts@example.com", false),
+    ).rejects.toThrow(/already holds data/);
+    expect(await prisma.contact.count({ where: { createdBy: contactsOnlyId } })).toBe(1);
   }, 120_000);
 
   it("rolls back to the snapshot an import took", async () => {

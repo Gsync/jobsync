@@ -14,6 +14,7 @@ vi.mock("@/lib/db", () => {
       coverLetter: counted(),
       job: counted(),
       note: counted(),
+      contact: counted(),
       task: counted(),
       activity: counted(),
       question: counted(),

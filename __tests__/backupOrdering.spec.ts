@@ -119,6 +119,7 @@ describe("emptiness models", () => {
     expect([...EMPTINESS_MODELS].sort()).toEqual([
       "Activity",
       "Automation",
+      "Contact",
       "CoverLetter",
       "Job",
       "Note",

@@ -108,6 +108,27 @@ describe("buildCreateData", () => {
     expect(data.coverLetterId).toBeNull();
   });
 
+  it("nulls every dangling optional contact reference instead of aborting", () => {
+    const map = mapWith({ "old-contact": "new-contact" });
+    const data = buildCreateData(
+      "Contact",
+      {
+        id: "old-contact",
+        name: "Pat",
+        companyId: "ghost-co",
+        locationId: "ghost-loc",
+        workedAtCompanyId: "ghost-co",
+        roleId: "ghost-role",
+      },
+      map,
+      "u",
+    );
+    expect(data.companyId).toBeNull();
+    expect(data.locationId).toBeNull();
+    expect(data.workedAtCompanyId).toBeNull();
+    expect(data.roleId).toBeNull();
+  });
+
   it("throws when a required foreign key is dangling", () => {
     const map = mapWith({ "old-skill": "new-skill", "old-section": "new-section" });
     expect(() =>

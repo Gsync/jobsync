@@ -17,6 +17,10 @@ const OPTIONAL_FKS = new Set<string>([
   "Job.coverLetterId",
   "Job.automationId",
   "Contact.interviewId",
+  "Contact.companyId",
+  "Contact.locationId",
+  "Contact.workedAtCompanyId",
+  "Contact.roleId",
   "Task.activityTypeId",
   "Activity.taskId",
 ]);
@@ -78,7 +82,7 @@ export function buildCreateData(
 
   // The client supplies the payload, the server supplies the owner — and no
   // model keeps an ownership column it does not declare. Both keys go
-  // unconditionally: 13 of the 28 models own through a relation chain and have
+  // unconditionally: 14 of the 30 models own through a relation chain and have
   // neither column, so a stray userId riding in on a hand-edited data.json
   // would reach Prisma as an unknown argument and abort the whole import.
   delete data.userId;

@@ -4,7 +4,7 @@ import path from "path";
 import { execFileSync } from "child_process";
 import { randomUUID } from "crypto";
 import type { PrismaClient } from "@prisma/client";
-import { JOB_SOURCES, JOB_STATUSES } from "@/lib/constants";
+import { CONTACT_ROLES, JOB_SOURCES, JOB_STATUSES } from "@/lib/constants";
 
 export function makeTestDbUrl(): { url: string; dir: string } {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "jobsync-backup-"));
@@ -44,6 +44,14 @@ export async function seedAccount(
       data: { label: source.label, value: source.value, createdBy: user.id },
     });
   }
+
+  await prisma.contactRole.createMany({
+    data: CONTACT_ROLES.map((role) => ({
+      label: role.label,
+      value: role.value,
+      createdBy: user.id,
+    })),
+  });
 
   return user.id;
 }
