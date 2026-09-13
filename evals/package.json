@@ -3,14 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "eval:resume-review": "promptfoo eval --env-file ../.env --config resume-review/promptfooconfig.yaml",
-    "eval:job-match": "promptfoo eval --env-file ../.env --config job-match/promptfooconfig.yaml",
-    "eval:automation-match": "promptfoo eval --env-file ../.env --config job-match/automation.promptfooconfig.yaml",
-    "eval:cover-letter": "promptfoo eval --env-file ../.env --config cover-letter/promptfooconfig.yaml",
-    "eval:resume-import": "promptfoo eval --env-file ../.env --config resume-import/promptfooconfig.yaml",
-    "eval:mcp-tools": "tsx mcp-tools/generate-tools.ts && promptfoo eval --env-file ../.env --config mcp-tools/promptfooconfig.yaml",
-    "eval:agent-chat": "tsx agent-chat/generate-tools.ts && promptfoo eval --env-file ../.env --config agent-chat/promptfooconfig.yaml",
-    "eval:all": "promptfoo eval --env-file ../.env --config promptfooconfig.yaml",
+    "eval:resume-review": "promptfoo eval --no-cache --env-file ../.env --config resume-review/promptfooconfig.yaml",
+    "eval:job-match": "promptfoo eval --no-cache --env-file ../.env --config job-match/promptfooconfig.yaml",
+    "eval:automation-match": "promptfoo eval --no-cache --env-file ../.env --config job-match/automation.promptfooconfig.yaml",
+    "eval:cover-letter": "promptfoo eval --no-cache --env-file ../.env --config cover-letter/promptfooconfig.yaml",
+    "eval:resume-import": "promptfoo eval --no-cache --env-file ../.env --config resume-import/promptfooconfig.yaml",
+    "eval:mcp-tools": "tsx mcp-tools/generate-tools.ts && promptfoo eval --no-cache --env-file ../.env --config mcp-tools/promptfooconfig.yaml",
+    "eval:agent-chat": "tsx agent-chat/generate-tools.ts && promptfoo eval --no-cache --env-file ../.env --config agent-chat/promptfooconfig.yaml",
+    "eval:all": "promptfoo eval --no-cache --env-file ../.env --config promptfooconfig.yaml",
     "eval:view": "promptfoo view"
   },
   "devDependencies": {
@@ -18,18 +18,12 @@
     "tsx": "^4.22.4"
   },
   "overrides": {
-    "handlebars": ">=4.7.9",
-    "lodash": ">=4.18.0",
     "picomatch": ">=2.3.2",
-    "defu": ">=6.1.5",
-    "effect": ">=3.20.0",
-    "vite": ">=8.0.16",
-    "linkify-it": ">=5.0.1",
-    "sharp": ">=0.35.0 <0.36",
+    "sharp": ">=0.35.4 <0.36",
     "fast-uri": ">=3.1.4 <4",
-    "markdown-it": "^14.3.0",
-    "hono": ">=4.12.27 <5",
+    "hono": ">=4.13.5 <5",
     "body-parser": ">=2.3.0 <3",
+    "js-yaml@4": ">=4.3.2 <5",
     "js-yaml@5": ">=5.2.2 <6",
     "fast-xml-parser": ">=5.10.1 <6",
     "brace-expansion@^1": "1.1.16",
@@ -38,6 +32,7 @@
     "ws": ">=8.21.0 <9",
     "esbuild": ">=0.28.1 <0.29",
     "mongoose": ">=9.7.2 <10",
-    "adm-zip": ">=0.6.0 <0.7"
+    "adm-zip": ">=0.6.1 <0.7",
+    "csv-parse": ">=7.0.2 <8"
   }
 }
