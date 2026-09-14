@@ -33,6 +33,14 @@ JobSync is a free, open-source companion for your job search: track applications
 
 - **Task & Activity Management:** Manage tasks, track activities linked with tasks including time tracking.
 
+- **Contacts:** Keep the people behind your job hunt — recruiters, hiring managers, interviewers, referrers and references — with how you know them and when you last spoke. Link a contact to any number of jobs with a role on each link, so the same recruiter can sit on three applications, and filter by role to find your references in one click.
+
+- **Company Pages:** Every company gets a details page with its jobs, the people who work there or worked with you there, and links to its website, careers page and job board. Watch a company to put it on your watchlist; watched companies with a job board appear in their own Watched group when you pick companies for an automation.
+
+- **Question Bank:** Build a library of interview questions with your answers, tagged by skill, so your preparation is in one place when the next interview comes up.
+
+- **Data Backup & Restore:** Download every job, resume, task, activity, contact and question — plus your uploaded resume files — as one zip from **Settings > Data**, and import it back on any JobSync instance. Backups never contain API keys, MCP tokens or passwords, and every import first saves a snapshot so you can undo it.
+
 - **AI Assistant:** A chat panel that stays docked beside whatever page you're on. Ask it to review a resume, score how well it matches the job you're viewing, write a tailored cover letter, or add a job straight from a posting you paste in — it asks for your confirmation before saving anything. See [Features in Detail](#ai-assistant-in-app-chat) below.
 
 - **AI Agent Integration (MCP):** Connect AI agents like Claude Desktop via a built-in MCP server to add job applications and Question Bank entries directly from your chat, with your approval. When a job description is substantial enough, the agent can also analyze it against your default resume and save a job match score right from the chat.
@@ -61,6 +69,9 @@ Environment variables can be set in `docker-compose.yml`:
 |---|---|
 | `TZ` | Your timezone (e.g. `America/Edmonton`). **Set this on remote servers** to avoid activity time shifts. |
 | `AUTH_SECRET` | Auto-generated if not set. To set manually: `openssl rand -base64 32` |
+| `ENCRYPTION_KEY` | Encrypts the API keys you save in Settings. **Set your own** (`openssl rand -base64 32`) before adding any keys, and never change it afterwards — a new value makes every stored API key unrecoverable. |
+| `NEXTAUTH_URL` | The address you open JobSync at. Defaults to `http://localhost:3737`; on a homelab server, use the server's IP or hostname. |
+| `MCP_ENABLED` | Set to `false` to turn off the [MCP server](#mcp-server-ai-agent-integration). Enabled by default in `docker-compose.yml`. |
 
 ### Updating
 
@@ -99,7 +110,6 @@ The assistant is deliberately narrow about what it can see: it reads your resume
 
 Pick a model under **Settings > AI Settings** before using the panel — it needs one that supports tool calling, and it will tell you rather than guessing if none is set. See [known-good models](#supported-ai-model-providers) for the ones that have been tested, including a fully local option.
 
-![AI Resume Review](./screenshots/jobsync-ai.gif)
 ![AI Job Match](./screenshots/jobsync-ai-jobmatch.gif)
 
 ### PDF Resume Export
@@ -283,8 +293,6 @@ Access a wide range of AI models from multiple providers through a single API.
 ## Support the Project
 
 If JobSync has been helpful in your job search, consider giving it a star on GitHub! It helps others discover the project and motivates continued development.
-
-[![GitHub Stars](https://img.shields.io/github/stars/Gsync/jobsync?style=social)](https://github.com/Gsync/jobsync)
 
 Every star means a lot — thank you for your support!
 
