@@ -22,7 +22,8 @@ export function DownloadFileButton(
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = filePath.split("/").pop(); // Get the file name
+      // Stored basename carries a timestamp and, after a restore, a file id
+      link.download = fileName || filePath.split("/").pop();
       link.target = "_blank";
       link.click();
       window.URL.revokeObjectURL(url); // Clean up
