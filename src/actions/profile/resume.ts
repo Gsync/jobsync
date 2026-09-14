@@ -3,7 +3,8 @@ import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { resumeDetailInclude } from "@/lib/jobs/resumeDetailInclude";
-import { createFileEntry, requireUser, resumeListSelect } from "./shared";
+import { requireUser, resumeListSelect } from "./shared";
+import { createResume } from "./resumeUpload";
 import { deleteFile } from "./files";
 
 export const getResumeList = async (
@@ -134,120 +135,22 @@ export const saveResumeReviewResult = async (
   }
 };
 
+// No file here: a create with a file goes through the upload route only
 export const createResumeProfile = async (
   title: string,
-  fileName: string,
-  filePath?: string,
-): Promise<any | undefined> => {
-  try {
-    const user = await requireUser();
+): Promise<any | undefined> => createResume(title);
 
-    // Build a unique title: if base title is taken, append (2), (3), …
-    const existingTitles = await prisma.resume.findMany({
-      where: { profile: { userId: user.id } },
-      select: { title: true },
-    });
-    const taken = new Set(existingTitles.map((r) => r.title.toLowerCase()));
-    const base = title.trim();
-    let uniqueTitle = base;
-    let counter = 2;
-    while (taken.has(uniqueTitle.toLowerCase())) {
-      uniqueTitle = `${base} (${counter++})`;
-    }
-
-    // Count before creating so we can auto-default the user's first resume.
-    const resumeCount = await prisma.resume.count({
-      where: { profile: { userId: user.id } },
-    });
-
-    const profile = await prisma.profile.findFirst({
-      where: {
-        userId: user.id,
-      },
-    });
-
-    let res: any;
-    let createdResumeId: string;
-    if (profile && profile.id) {
-      res = await prisma.resume.create({
-        data: {
-          profileId: profile!.id,
-          title: uniqueTitle,
-          FileId: fileName ? await createFileEntry(fileName, filePath) : null,
-        },
-      });
-      createdResumeId = res.id;
-    } else {
-      // No profile yet: profile.create returns the profile, so pull the
-      // created resume's id from the nested include.
-      res = await prisma.profile.create({
-        data: {
-          userId: user.id,
-          resumes: {
-            create: [
-              {
-                title: uniqueTitle,
-                FileId: fileName
-                  ? await createFileEntry(fileName, filePath)
-                  : null,
-              },
-            ],
-          },
-        },
-        include: { resumes: { select: { id: true } } },
-      });
-      createdResumeId = res.resumes[0].id;
-    }
-
-    // Auto-default only the user's very first resume (decision #4/#5).
-    if (resumeCount === 0) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { defaultResumeId: createdResumeId },
-      });
-    }
-    // revalidatePath("/dashboard/myjobs", "page");
-    return { success: true, data: res };
-  } catch (error) {
-    const msg = "Failed to create resume.";
-    return handleError(error, msg);
-  }
-};
-
+// Title only: the file is replaced through the upload route, never from here
 export const editResume = async (
   id: string,
   title: string,
-  fileId?: string,
-  fileName?: string,
-  filePath?: string,
 ): Promise<any | undefined> => {
   try {
-    let resolvedFileId = fileId;
-
-    if (!fileId && fileName && filePath) {
-      resolvedFileId = await createFileEntry(fileName, filePath);
-    }
-
-    if (resolvedFileId) {
-      const isValidFileId = await prisma.file.findFirst({
-        where: { id: resolvedFileId },
-      });
-
-      if (!isValidFileId) {
-        throw new Error(
-          `The provided FileId "${resolvedFileId}" does not exist.`,
-        );
-      }
-    }
-
     const user = await requireUser();
 
     const res = await prisma.resume.update({
       where: { id, profile: { userId: user.id } },
-      data: {
-        title,
-        FileId: resolvedFileId || null,
-      },
+      data: { title },
     });
     return { success: true, data: res };
   } catch (error) {

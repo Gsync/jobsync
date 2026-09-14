@@ -1,18 +1,21 @@
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
+import { editResume } from "@/actions/profile.actions";
 import {
-  createResumeProfile,
-  deleteFile,
-  editResume,
-  uploadFile,
-} from "@/actions/profile.actions";
+  createResume,
+  replaceResumeFile,
+} from "@/actions/profile/resumeUpload";
 import path from "path";
 import fs from "fs";
-import { getTimestampedFileName } from "@/lib/utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { PDF_MAGIC, ZIP_MAGIC } from "@/lib/ai/import/extract-text";
 import { log } from "@/lib/telemetry";
 import prisma from "@/lib/db";
+import {
+  isResumeFilePath,
+  saveResumeUpload,
+  type ResumeUpload,
+} from "@/lib/resumeFiles";
 
 const ALLOWED_MIME = new Set<string>(APP_CONSTANTS.RESUME_ALLOWED_MIME_TYPES);
 
@@ -27,7 +30,6 @@ function validateFileBytes(buf: Buffer, mimeType: string): boolean {
 export const POST = async (req: NextRequest) => {
   const session = await auth();
   const userId = session?.user?.id;
-  let filePath;
 
   try {
     if (!session || !session.user) {
@@ -44,8 +46,8 @@ export const POST = async (req: NextRequest) => {
     const title = formData.get("title") as string;
     const file = formData.get("file") as File;
     const resumeId = (formData.get("id") as string) ?? null;
-    let fileId: string | undefined =
-      (formData.get("fileId") as string) ?? undefined;
+    // fileId is not read: the replaced file comes from the owned resume row
+    let upload: ResumeUpload | undefined;
 
     if (file && file.name && file.size > 0) {
       // Server-side validation: size, MIME type, and magic bytes
@@ -60,33 +62,17 @@ export const POST = async (req: NextRequest) => {
         return NextResponse.json({ error: "File content does not match declared type" }, { status: 400 });
       }
 
-      const uploadDir = path.join(APP_CONSTANTS.UPLOADS_DIR, "files", "resumes");
-      const timestampedFileName = getTimestampedFileName(file.name);
-      filePath = path.join(uploadDir, timestampedFileName);
-      await uploadFile(file, uploadDir, filePath);
+      upload = await saveResumeUpload(file.name, fileBytes);
     }
 
     if (resumeId && title) {
-      if (fileId && file?.name) {
-        await deleteFile(fileId);
-        fileId = undefined;
-      }
-
-      const res = await editResume(
-        resumeId,
-        title,
-        fileId,
-        file?.name,
-        filePath
-      );
+      const res = upload
+        ? await replaceResumeFile(resumeId, title, upload)
+        : await editResume(resumeId, title);
       return NextResponse.json(res, { status: 200 });
     }
 
-    const response = await createResumeProfile(
-      title,
-      file.name ?? null,
-      filePath
-    );
+    const response = await createResume(title, upload);
     return NextResponse.json(response, { status: 201 });
   } catch (error) {
     log.error("[Resume] Upload failed", { error: String(error) });
@@ -135,22 +121,15 @@ export const GET = async (req: NextRequest) => {
       select: { File: { select: { filePath: true } } },
     });
 
-    // Not UPLOADS_DIR itself: it also holds backup snapshots and the database
-    const resumesDir = path.resolve(
-      APP_CONSTANTS.UPLOADS_DIR,
-      "files",
-      "resumes"
-    );
-    const fullFilePath = resume?.File?.filePath
-      ? path.resolve(resume.File.filePath)
-      : null;
+    const storedPath = resume?.File?.filePath;
     if (
-      !fullFilePath ||
-      !fullFilePath.startsWith(resumesDir + path.sep) ||
-      !fs.existsSync(fullFilePath)
+      !storedPath ||
+      !isResumeFilePath(storedPath) ||
+      !fs.existsSync(path.resolve(storedPath))
     ) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
+    const fullFilePath = path.resolve(storedPath);
 
     const fileType = path.extname(fullFilePath).toLowerCase();
     const fileName = path.basename(fullFilePath);

@@ -18,7 +18,7 @@ export {
   copyResume,
 } from "./profile/resumeCopy";
 
-export { uploadFile, deleteFile } from "./profile/files";
+export { deleteFile } from "./profile/files";
 
 export {
   addContactInfo,

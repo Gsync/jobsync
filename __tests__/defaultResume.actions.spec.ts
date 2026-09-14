@@ -149,7 +149,7 @@ describe("Default Resume Actions", () => {
       (prisma.resume.create as any).mockResolvedValue({ id: "resume-new" });
       (prisma.user.update as any).mockResolvedValue({});
 
-      const result = await createResumeProfile("My Resume", "");
+      const result = await createResumeProfile("My Resume");
 
       expect(result.success).toBe(true);
       expect(prisma.user.update).toHaveBeenCalledWith({
@@ -167,7 +167,7 @@ describe("Default Resume Actions", () => {
       });
       (prisma.user.update as any).mockResolvedValue({});
 
-      const result = await createResumeProfile("My Resume", "");
+      const result = await createResumeProfile("My Resume");
 
       expect(result.success).toBe(true);
       expect(prisma.user.update).toHaveBeenCalledWith({
@@ -181,7 +181,7 @@ describe("Default Resume Actions", () => {
       (prisma.profile.findFirst as any).mockResolvedValue({ id: "profile-1" });
       (prisma.resume.create as any).mockResolvedValue({ id: "resume-new" });
 
-      const result = await createResumeProfile("Another Resume", "");
+      const result = await createResumeProfile("Another Resume");
 
       expect(result.success).toBe(true);
       expect(prisma.user.update).not.toHaveBeenCalled();

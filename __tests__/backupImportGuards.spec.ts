@@ -1,4 +1,8 @@
+import fs from "fs";
+import os from "os";
+import path from "path";
 import JSZip from "jszip";
+import { APP_CONSTANTS } from "@/lib/constants";
 import db from "@/lib/db";
 import { importBackup } from "@/lib/backup/import";
 import { BackupError, buildManifest } from "@/lib/backup/manifest";
@@ -124,5 +128,30 @@ describe("importBackup guards", () => {
     const result = await importBackup(await emptyBackup(), "user-1", EMAIL, true);
     expect(writeSnapshot).not.toHaveBeenCalled();
     expect(result.snapshotPath).toBeNull();
+  });
+
+  it("never unlinks a replaced file outside the resumes directory", async () => {
+    const originalUploads = APP_CONSTANTS.UPLOADS_DIR;
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "jobsync-cleanup-"));
+    (APP_CONSTANTS as { UPLOADS_DIR: string }).UPLOADS_DIR = tmp;
+    try {
+      const inside = path.join(tmp, "files", "resumes", "old.pdf");
+      const outside = path.join(tmp, "dev.db");
+      fs.mkdirSync(path.dirname(inside), { recursive: true });
+      fs.writeFileSync(inside, "%PDF-1.4 old");
+      fs.writeFileSync(outside, "db");
+      mockDb.file.findMany.mockResolvedValueOnce([
+        { filePath: inside },
+        { filePath: outside },
+      ]);
+
+      await importBackup(await emptyBackup(), "user-1", EMAIL, true);
+
+      expect(fs.existsSync(inside)).toBe(false);
+      expect(fs.existsSync(outside)).toBe(true);
+    } finally {
+      (APP_CONSTANTS as { UPLOADS_DIR: string }).UPLOADS_DIR = originalUploads;
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
   });
 });

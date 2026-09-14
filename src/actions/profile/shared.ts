@@ -1,4 +1,5 @@
 import prisma from "@/lib/db";
+import { isResumeFilePath } from "@/lib/resumeFiles";
 
 // Not a "use server" module: it exports selects, so it stays internal to
 // src/actions/profile/ and is never imported by a client component.
@@ -19,14 +20,20 @@ export const assertResumeOwnership = async (
   if (!owned) throw new Error("Resume not found or access denied");
 };
 
+// db is the transaction client when the caller swaps a resume's file
 export const createFileEntry = async (
   fileName: string | undefined,
   filePath: string | undefined,
+  db: Pick<typeof prisma, "file"> = prisma,
 ) => {
-  const newFileEntry = await prisma.file.create({
+  // Only paths built by saveResumeUpload belong here
+  if (!filePath || !isResumeFilePath(filePath)) {
+    throw new Error("File path is outside the resumes directory");
+  }
+  const newFileEntry = await db.file.create({
     data: {
       fileName: fileName!,
-      filePath: filePath!,
+      filePath,
       fileType: "resume",
     },
   });

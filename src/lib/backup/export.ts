@@ -5,6 +5,7 @@ import db from "@/lib/db";
 import { INSERT_ORDER, MODEL_SPECS, type BackupModel } from "./ordering";
 import { BackupDataSchema, type BackupData } from "./schema";
 import { buildManifest } from "./manifest";
+import { isResumeFilePath } from "@/lib/resumeFiles";
 
 type Row = Record<string, unknown>;
 
@@ -105,6 +106,11 @@ export async function buildBackupZip(
   // the snapshot whose bytes land later is covered by the fileMissing marker.
   const zip = new JSZip();
   for (const file of data.File) {
+    // A stored path outside the resumes directory is never read into the zip
+    if (!isResumeFilePath(file.filePath)) {
+      file.fileMissing = true;
+      continue;
+    }
     try {
       const bytes = await fs.readFile(file.filePath);
       zip.file(`files/${file.id}/${path.basename(file.filePath)}`, bytes);

@@ -1,5 +1,10 @@
+import fs from "fs";
+import os from "os";
+import path from "path";
+import JSZip from "jszip";
 import db from "@/lib/db";
-import { collectBackupData } from "@/lib/backup/export";
+import { APP_CONSTANTS } from "@/lib/constants";
+import { buildBackupZip, collectBackupData } from "@/lib/backup/export";
 import { MODEL_SPECS, INSERT_ORDER } from "@/lib/backup/ordering";
 
 vi.mock("@/lib/db", () => {
@@ -124,5 +129,43 @@ describe("collectBackupData", () => {
       .user.findUnique.mockResolvedValueOnce({ defaultResumeId: "r1" });
     const data = await collectBackupData("user-1");
     expect(data.user).toEqual({ defaultResumeId: "r1" });
+  });
+});
+
+describe("buildBackupZip", () => {
+  const originalUploads = APP_CONSTANTS.UPLOADS_DIR;
+  let tmp: string;
+
+  beforeEach(() => {
+    tmp = fs.mkdtempSync(path.join(os.tmpdir(), "jobsync-export-"));
+    (APP_CONSTANTS as { UPLOADS_DIR: string }).UPLOADS_DIR = tmp;
+  });
+
+  afterEach(() => {
+    (APP_CONSTANTS as { UPLOADS_DIR: string }).UPLOADS_DIR = originalUploads;
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it("never reads a stored path outside the resumes directory", async () => {
+    const inside = path.join(tmp, "files", "resumes", "cv.pdf");
+    const outside = path.join(tmp, "dev.db");
+    fs.mkdirSync(path.dirname(inside), { recursive: true });
+    fs.writeFileSync(inside, "%PDF-1.4 cv");
+    fs.writeFileSync(outside, "every user's data");
+    const uploadedAt = new Date("2026-01-01");
+    mockDb.file.findMany.mockResolvedValueOnce([
+      { id: "f1", fileName: "cv.pdf", filePath: inside, fileType: "application/pdf", uploadedAt },
+      { id: "f2", fileName: "dev.db", filePath: outside, fileType: "resume", uploadedAt },
+    ]);
+
+    const { buffer } = await buildBackupZip("user-1", "owner@example.com");
+
+    const zip = await JSZip.loadAsync(buffer);
+    const data = JSON.parse(await zip.file("data.json")!.async("string"));
+    const byId = (id: string) => data.File.find((f: { id: string }) => f.id === id);
+    expect(zip.file("files/f1/cv.pdf")).not.toBeNull();
+    expect(Object.keys(zip.files).some((n) => n.startsWith("files/f2/"))).toBe(false);
+    expect(byId("f1").fileMissing).toBeUndefined();
+    expect(byId("f2").fileMissing).toBe(true);
   });
 });

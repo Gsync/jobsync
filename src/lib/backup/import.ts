@@ -22,6 +22,7 @@ import {
 } from "./ordering";
 import { writeSnapshot } from "./snapshot";
 import { log } from "@/lib/telemetry";
+import { isResumeFilePath } from "@/lib/resumeFiles";
 import { BackupDataSchema, type BackupData, type BackupManifest } from "./schema";
 
 export interface PreflightResult {
@@ -395,6 +396,12 @@ export async function importBackup(
   // resume files in UPLOADS_DIR forever with no row pointing at them.
   for (const filePath of oldFilePaths) {
     if (writtenPaths.includes(filePath)) continue;
+    if (!isResumeFilePath(filePath)) {
+      log.warn("[Backup] Skipped removing a file outside the resumes directory", {
+        "file.path": filePath,
+      });
+      continue;
+    }
     await fs.unlink(filePath).catch((error) => {
       log.warn("[Backup] Could not remove replaced file", {
         "file.path": filePath,

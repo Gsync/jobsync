@@ -1,19 +1,9 @@
 "use server";
 import prisma from "@/lib/db";
 import fs from "fs";
-import { writeFile } from "fs/promises";
+import { isResumeFilePath } from "@/lib/resumeFiles";
+import { log } from "@/lib/telemetry";
 import { requireUser } from "./shared";
-
-export const uploadFile = async (file: File, dir: string, path: string) => {
-  const bytes = await file.arrayBuffer();
-  const buffer = new Uint8Array(bytes);
-
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-
-  await writeFile(path, buffer);
-};
 
 export const deleteFile = async (fileId: string) => {
   const user = await requireUser();
@@ -29,7 +19,12 @@ export const deleteFile = async (fileId: string) => {
     throw new Error("File not found or access denied");
   }
 
-  if (fs.existsSync(file.filePath)) {
+  // A row may predate path confinement; drop it without touching the disk
+  if (!isResumeFilePath(file.filePath)) {
+    log.warn("[Resume] Skipped unlinking a path outside the resumes directory", {
+      "file.path": file.filePath,
+    });
+  } else if (fs.existsSync(file.filePath)) {
     fs.unlinkSync(file.filePath);
   }
 

@@ -14,6 +14,7 @@ import { ResumeImportSchema } from "@/models/resumeImport.schema";
 import { AiModel } from "@/models/ai.model";
 import prisma from "@/lib/db";
 import { APP_CONSTANTS } from "@/lib/constants";
+import { isResumeFilePath } from "@/lib/resumeFiles";
 import {
   RESUME_IMPORT_SYSTEM_PROMPT,
   buildResumeImportPrompt,
@@ -77,15 +78,11 @@ export const POST = async (req: NextRequest) => {
     );
   }
 
-  // Assert path stays inside the uploads dir (no traversal)
-  const resolvedPath = path.resolve(resume.File.filePath);
-  const uploadsDir = path.resolve(APP_CONSTANTS.UPLOADS_DIR);
-  if (
-    !resolvedPath.startsWith(uploadsDir + path.sep) &&
-    resolvedPath !== uploadsDir
-  ) {
+  // UPLOADS_DIR also holds the database and backup snapshots
+  if (!isResumeFilePath(resume.File.filePath)) {
     return NextResponse.json({ error: "Invalid file path" }, { status: 400 });
   }
+  const resolvedPath = path.resolve(resume.File.filePath);
 
   if (!fs.existsSync(resolvedPath)) {
     return NextResponse.json(
