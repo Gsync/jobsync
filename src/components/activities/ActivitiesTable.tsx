@@ -23,6 +23,8 @@ import { deleteActivityById } from "@/actions/activity.actions";
 import { toastSuccess, toastError } from "@/lib/toast";
 import { useMemo, useState } from "react";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
+import { useClockFormat } from "@/context/UserSettingsContext";
+import { formatTime } from "@/lib/utils";
 
 interface ActivitiesTableProps {
   activities: Activity[];
@@ -35,6 +37,7 @@ function ActivitiesTable({
   reloadActivities,
   onStartActivity,
 }: ActivitiesTableProps) {
+  const clockFormat = useClockFormat();
   const [alertOpen, setAlertOpen] = useState(false);
   const [activityIdToDelete, setActivityIdToDelete] = useState<string>();
   const calculateDuration = (totalMinutes: number) => {
@@ -103,10 +106,14 @@ function ActivitiesTable({
                   {(activity.activityType as ActivityType)?.label}
                 </TableCell>
                 <TableCell className="hidden md:table-cell whitespace-nowrap">
-                  {format(activity.startTime, "p")}
+                  {activity.startTime
+                    ? formatTime(activity.startTime, clockFormat)
+                    : "N/A"}
                 </TableCell>
                 <TableCell className="hidden md:table-cell whitespace-nowrap">
-                  {format(activity.endTime!, "p")}
+                  {activity.endTime
+                    ? formatTime(activity.endTime, clockFormat)
+                    : "N/A"}
                 </TableCell>
                 <TableCell>
                   {activity.startTime &&

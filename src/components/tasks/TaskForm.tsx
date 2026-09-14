@@ -34,6 +34,8 @@ import { Input } from "../ui/input";
 import { Combobox } from "../ComboBox";
 import { Slider } from "../ui/slider";
 import { ActivityType } from "@/models/activity.model";
+import { useClockFormat } from "@/context/UserSettingsContext";
+import { formatDateTime } from "@/lib/utils";
 
 type TaskFormProps = {
   activityTypes: ActivityType[];
@@ -60,6 +62,7 @@ export function TaskForm({
   setDialogOpen,
   onSaveAndStart,
 }: TaskFormProps) {
+  const clockFormat = useClockFormat();
   const [isPending, startTransition] = useTransition();
   const form = useForm<z.infer<typeof AddTaskFormSchema>>({
     resolver: zodResolver(AddTaskFormSchema),
@@ -299,10 +302,7 @@ export function TaskForm({
                     <p className="text-sm font-medium">Created</p>
                     <p className="text-sm text-muted-foreground">
                       {editTask.createdAt
-                        ? format(
-                            new Date(editTask.createdAt),
-                            "MMM d, yyyy h:mm a",
-                          )
+                        ? formatDateTime(editTask.createdAt, clockFormat)
                         : "N/A"}
                     </p>
                   </div>
@@ -310,10 +310,7 @@ export function TaskForm({
                     <p className="text-sm font-medium">Updated</p>
                     <p className="text-sm text-muted-foreground">
                       {editTask.updatedAt
-                        ? format(
-                            new Date(editTask.updatedAt),
-                            "MMM d, yyyy h:mm a",
-                          )
+                        ? formatDateTime(editTask.updatedAt, clockFormat)
                         : "N/A"}
                     </p>
                   </div>

@@ -34,6 +34,8 @@ import {
 import { combineDateAndTime } from "@/lib/utils";
 import { toastActionResult, toastError } from "@/lib/toast";
 
+import { useClockFormat } from "@/context/UserSettingsContext";
+
 interface ActivityFormProps {
   onClose: () => void;
   reloadActivities: () => void;
@@ -48,13 +50,15 @@ const ActivityFormComponent = ({
   onClose,
   reloadActivities,
 }: ActivityFormProps) => {
+  const clockFormat = useClockFormat();
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [duration, setDuration] = useState<Duration | null>(null);
   const defaultValues = useMemo(() => {
     const now = new Date();
-    const currentTime = format(now, "hh:mm a");
+    const timePattern = clockFormat === "24h" ? "HH:mm" : "hh:mm a";
+    const currentTime = format(now, timePattern);
     const nowPlus5mins = addMinutes(now, 5);
-    const estimatedEndTime = format(nowPlus5mins, "hh:mm a");
+    const estimatedEndTime = format(nowPlus5mins, timePattern);
 
     return {
       activityName: "",
@@ -64,7 +68,7 @@ const ActivityFormComponent = ({
       endDate: now,
       endTime: estimatedEndTime,
     };
-  }, []);
+  }, [clockFormat]);
   const form = useForm<z.infer<typeof AddActivityFormSchema>>({
     resolver: zodResolver(AddActivityFormSchema),
     defaultValues,
@@ -224,7 +228,7 @@ const ActivityFormComponent = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Start Time</FormLabel>
-                <TimePicker field={field} />
+                <TimePicker field={field} clockFormat={clockFormat} />
                 <FormMessage>
                   {errors.startTime && (
                     <span className="text-red-500">
@@ -276,7 +280,7 @@ const ActivityFormComponent = ({
                     )}
                   </span>
                 </FormLabel>
-                <TimePicker field={field} />
+                <TimePicker field={field} clockFormat={clockFormat} />
                 <FormMessage>
                   {errors.endTime && (
                     <span className="text-red-500">

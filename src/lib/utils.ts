@@ -2,6 +2,7 @@ import { type ClassValue, clsx } from "clsx";
 import { format, parse } from "date-fns";
 import { NextApiRequest } from "next";
 import { twMerge } from "tailwind-merge";
+import { ClockFormat } from "@/models/userSettings.model";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -81,8 +82,13 @@ export function getTimestampedFileName(originalName: string): string {
 
 export const combineDateAndTime = (date: Date, time: string): Date => {
   // Parse the time string into a `Date` object using a reference date
-  const parsedTime = parse(time, "hh:mm a", new Date());
-  // if (isNaN(parsedTime.getTime())) throw new Error("Invalid time format");
+  let parsedTime = parse(time, "hh:mm a", new Date());
+  if (isNaN(parsedTime.getTime())) {
+    parsedTime = parse(time, "HH:mm", new Date());
+  }
+  if (isNaN(parsedTime.getTime())) {
+    parsedTime = parse(time, "h:mm a", new Date());
+  }
 
   return new Date(
     date.getFullYear(),
@@ -90,6 +96,29 @@ export const combineDateAndTime = (date: Date, time: string): Date => {
     date.getDate(),
     parsedTime.getHours(),
     parsedTime.getMinutes()
+  );
+};
+
+export const formatTime = (
+  date: Date | string | number,
+  clockFormat: ClockFormat = "12h"
+): string => {
+  const d =
+    typeof date === "string" || typeof date === "number" ? new Date(date) : date;
+  if (!d || isNaN(d.getTime())) return "";
+  return format(d, clockFormat === "24h" ? "HH:mm" : "hh:mm a");
+};
+
+export const formatDateTime = (
+  date: Date | string | number,
+  clockFormat: ClockFormat = "12h"
+): string => {
+  const d =
+    typeof date === "string" || typeof date === "number" ? new Date(date) : date;
+  if (!d || isNaN(d.getTime())) return "";
+  return format(
+    d,
+    clockFormat === "24h" ? "MMM d, yyyy HH:mm" : "MMM d, yyyy h:mm a"
   );
 };
 

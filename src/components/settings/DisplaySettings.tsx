@@ -22,9 +22,15 @@ import {
   updateDisplaySettings,
 } from "@/actions/userSettings.actions";
 
+import { useUserSettings } from "@/context/UserSettingsContext";
+import { Clock } from "lucide-react";
+
 const appearanceFormSchema = z.object({
   theme: z.enum(["light", "dark", "system"], {
     error: "Please select a theme.",
+  }),
+  clockFormat: z.enum(["12h", "24h"], {
+    error: "Please select a clock format.",
   }),
 });
 
@@ -32,6 +38,7 @@ type AppearanceFormValues = z.infer<typeof appearanceFormSchema>;
 
 function DisplaySettings() {
   const { setTheme, theme, systemTheme } = useTheme();
+  const { updateDisplay } = useUserSettings();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -39,6 +46,7 @@ function DisplaySettings() {
     resolver: zodResolver(appearanceFormSchema),
     defaultValues: {
       theme: "system",
+      clockFormat: "12h",
     },
   });
 
@@ -47,17 +55,25 @@ function DisplaySettings() {
       setIsLoading(true);
       try {
         const result = await getUserSettings();
-        if (result.success && result.data?.settings?.display?.theme) {
-          const savedTheme = result.data.settings.display.theme;
-          form.reset({ theme: savedTheme });
+        const display = result.data?.settings?.display;
+        if (result.success && display) {
+          const savedTheme = display.theme || "system";
+          const savedClock = display.clockFormat || "12h";
+          form.reset({ theme: savedTheme, clockFormat: savedClock });
           setTheme(savedTheme);
         } else if (theme) {
-          form.reset({ theme: theme as "light" | "dark" | "system" });
+          form.reset({
+            theme: theme as "light" | "dark" | "system",
+            clockFormat: "12h",
+          });
         }
       } catch (error) {
         console.error("Error fetching display settings:", error);
         if (theme) {
-          form.reset({ theme: theme as "light" | "dark" | "system" });
+          form.reset({
+            theme: theme as "light" | "dark" | "system",
+            clockFormat: "12h",
+          });
         }
       } finally {
         setIsLoading(false);
@@ -70,10 +86,17 @@ function DisplaySettings() {
   async function onSubmit(data: AppearanceFormValues) {
     setIsSaving(true);
     try {
-      const result = await updateDisplaySettings({ theme: data.theme });
+      const result = await updateDisplaySettings({
+        theme: data.theme,
+        clockFormat: data.clockFormat,
+      });
       if (result.success) {
         setTheme(data.theme);
-        toastSuccess("Your selected theme has been saved.");
+        updateDisplay({
+          theme: data.theme,
+          clockFormat: data.clockFormat,
+        });
+        toastSuccess("Display settings have been saved.");
       } else {
         toastError(result.message || "Failed to save display settings.");
       }
@@ -89,9 +112,9 @@ function DisplaySettings() {
     return (
       <div className="space-y-4">
         <div>
-          <h3 className="text-lg font-medium">Appearance</h3>
+          <h3 className="text-lg font-medium">Appearance & Display</h3>
           <p className="text-sm text-muted-foreground">
-            Customize the look and feel of the application.
+            Customize the look and feel and time preferences of the application.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -105,9 +128,9 @@ function DisplaySettings() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-medium">Appearance</h3>
+        <h3 className="text-lg font-medium">Appearance & Display</h3>
         <p className="text-sm text-muted-foreground">
-          Customize the look and feel of the application.
+          Customize the look and feel and time preferences of the application.
         </p>
       </div>
       <div className="@container">
@@ -163,6 +186,58 @@ function DisplaySettings() {
                         <span className="block w-full p-2 text-center font-normal">
                           System
                         </span>
+                      </FormLabel>
+                    </FormItem>
+                  </RadioGroup>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="clockFormat"
+              render={({ field }) => (
+                <FormItem className="space-y-1">
+                  <FormLabel>Clock Format</FormLabel>
+                  <FormDescription>
+                    Choose between 12-hour (AM/PM) and 24-hour time format.
+                  </FormDescription>
+                  <FormMessage />
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    className="grid max-w-lg @md:grid-cols-2 gap-4 pt-2"
+                  >
+                    <FormItem>
+                      <FormLabel className="[&:has([data-state=checked])>div]:border-primary block cursor-pointer">
+                        <FormControl>
+                          <RadioGroupItem value="12h" className="sr-only" />
+                        </FormControl>
+                        <div className="flex items-center gap-3 rounded-md border-2 border-muted p-4 hover:border-accent">
+                          <Clock className="h-5 w-5 text-muted-foreground shrink-0" />
+                          <div>
+                            <span className="block font-medium">12-hour</span>
+                            <span className="block text-xs text-muted-foreground">
+                              e.g. 02:30 PM
+                            </span>
+                          </div>
+                        </div>
+                      </FormLabel>
+                    </FormItem>
+                    <FormItem>
+                      <FormLabel className="[&:has([data-state=checked])>div]:border-primary block cursor-pointer">
+                        <FormControl>
+                          <RadioGroupItem value="24h" className="sr-only" />
+                        </FormControl>
+                        <div className="flex items-center gap-3 rounded-md border-2 border-muted p-4 hover:border-accent">
+                          <Clock className="h-5 w-5 text-muted-foreground shrink-0" />
+                          <div>
+                            <span className="block font-medium">24-hour</span>
+                            <span className="block text-xs text-muted-foreground">
+                              e.g. 14:30
+                            </span>
+                          </div>
+                        </div>
                       </FormLabel>
                     </FormItem>
                   </RadioGroup>
