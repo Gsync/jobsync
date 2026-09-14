@@ -7,7 +7,7 @@ import { log } from "@/lib/telemetry";
 
 let scheduledTask: ScheduledTask | null = null;
 
-async function runDueAutomations() {
+export async function runDueAutomations() {
   const now = new Date();
   log.info("[Scheduler] Checking for due automations", {
     "scheduler.checked_at": now.toISOString(),
