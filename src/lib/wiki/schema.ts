@@ -19,6 +19,7 @@ export const WIKI_FEATURES = [
   "profile",
   "ai",
   "tasks",
+  "activities",
   "questions",
   "mcp",
 ] as const;

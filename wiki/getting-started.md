@@ -32,8 +32,8 @@ There is a faster route once an AI provider is set: click **Chat AI** in the hea
 - **Dashboard** — summary cards: application counts, recent jobs and activities, and weekly charts.
 - **Jobs** — every job you are tracking, plus jobs discovered by automations.
 - **Automations** — scheduled searches that pull new postings in and score them against your resume.
-- **Tasks** — to-dos with a due date, priority and percent complete, optionally linked to a job.
-- **Activities** — time logged against jobs and tasks, with a calendar view.
+- **Tasks** — to-dos with a due date, priority and percent complete, and a timed activity you can start from each one.
+- **Activities** — time you spend on your job hunt, timed with a start/stop timer or logged afterwards, optionally started from a task.
 - **Questions** — a question bank for interview preparation.
 - **Profile** — your resumes, contact information and the profile the AI features read from.
 - **Library** — the shared reference lists behind the dropdowns: Companies, Job Titles, Locations, Sources, Skills and Activity Types.
