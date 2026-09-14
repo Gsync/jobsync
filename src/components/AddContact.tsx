@@ -442,6 +442,7 @@ function AddContact({
                       isEnabled
                       captionLayout
                       fullWidth
+                      disableFuture
                     />
                     <FormMessage />
                   </FormItem>

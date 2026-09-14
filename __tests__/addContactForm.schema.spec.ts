@@ -39,6 +39,22 @@ describe("AddContactFormSchema", () => {
     expect(res.success).toBe(false);
   });
 
+  it("rejects a last-contacted date in the future", () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    expect(
+      AddContactFormSchema.safeParse({ ...valid, lastContactedAt: tomorrow })
+        .success,
+    ).toBe(false);
+  });
+
+  it("accepts a last-contacted date of today", () => {
+    expect(
+      AddContactFormSchema.safeParse({ ...valid, lastContactedAt: new Date() })
+        .success,
+    ).toBe(true);
+  });
+
   it("accepts an open-ended overlap", () => {
     expect(
       AddContactFormSchema.safeParse({

@@ -30,6 +30,7 @@ interface DatePickerProps {
   captionLayout?: boolean;
   // Opt out of the default fixed trigger width when the field sits in a grid
   fullWidth?: boolean;
+  disableFuture?: boolean;
 }
 
 export function DatePicker({
@@ -38,6 +39,7 @@ export function DatePicker({
   isEnabled,
   captionLayout,
   fullWidth,
+  disableFuture,
 }: DatePickerProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
 
@@ -84,6 +86,7 @@ export function DatePicker({
           startMonth={captionLayout ? new Date(1970, 0) : undefined}
           endMonth={captionLayout ? new Date() : undefined}
           selected={field.value}
+          disabled={disableFuture ? { after: new Date() } : undefined}
           onSelect={(value) => {
             field.onChange(value);
             setIsPopoverOpen(false);

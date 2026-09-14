@@ -44,7 +44,19 @@ export const AddContactFormSchema = z
     // Named for ComboBox's `case "contactRole"` create path, not for the column
     contactRole: z.string().optional(),
     notes: optionalText(2000),
-    lastContactedAt: z.date().nullable().optional(),
+    lastContactedAt: z
+      .date()
+      .nullable()
+      .optional()
+      .refine(
+        (date) => {
+          if (!date) return true;
+          const endOfToday = new Date();
+          endOfToday.setHours(23, 59, 59, 999);
+          return date <= endOfToday;
+        },
+        { message: "Last contacted date cannot be in the future." },
+      ),
   })
   .refine(
     (v) => !v.workedFrom || !v.workedTo || v.workedTo >= v.workedFrom,

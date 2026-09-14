@@ -43,7 +43,7 @@ Anywhere a Role combo box appears, typing a name that does not exist yet offers 
 
 The **How you know them** fields on the contact form: **Relationship** in your own words (`my manager`, `peer on the platform team`), **Worked together at** for the company where your paths crossed, and **From** / **To** for the stint. Leave **To** empty for a stint that has not ended — the expanded row then reads `Mar 2021 – present`.
 
-*Worked together at* is deliberately separate from **Company**: Company is where they are now, and the company you overlapped at is often somewhere neither of you still works. **Last contacted** is a plain date you set yourself; nothing updates it for you.
+*Worked together at* is deliberately separate from **Company**: Company is where they are now, and the company you overlapped at is often somewhere neither of you still works. **Last contacted** is a plain date you set yourself, and it can't be in the future; nothing updates it for you.
 
 ## How do I find my references?
 
