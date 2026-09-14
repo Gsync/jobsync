@@ -1,7 +1,8 @@
 "use client";
 
 import { format } from "date-fns";
-import { ExternalLink, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { ExternalLink, FileText, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { CircularScore } from "@/components/CircularScore";
@@ -99,6 +100,14 @@ export function JobSummaryCard({
                   job.Resume.title,
                   job.Resume.File.fileName,
                 )
+              ) : job.Resume?.id ? (
+                <Link
+                  href={`/dashboard/profile/resume/${job.Resume.id}`}
+                  className="flex items-center gap-1 hover:underline"
+                >
+                  <FileText className="h-4 w-4" />
+                  {job.Resume.title}
+                </Link>
               ) : (
                 <p>-</p>
               )}

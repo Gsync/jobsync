@@ -192,6 +192,24 @@ describe("JobDetails – salary range", () => {
   });
 });
 
+describe("JobDetails – linked resume", () => {
+  it("links to a built resume that has no uploaded file", () => {
+    render(
+      <JobDetails
+        {...baseProps}
+        job={makeJob({
+          resumeId: "resume-1",
+          Resume: { id: "resume-1", title: "Senior Engineer Resume" },
+        })}
+      />
+    );
+
+    expect(
+      screen.getByRole("link", { name: /Senior Engineer Resume/ })
+    ).toHaveAttribute("href", "/dashboard/profile/resume/resume-1");
+  });
+});
+
 describe("JobDetails – match data display", () => {
   beforeEach(() => {
     vi.clearAllMocks();
