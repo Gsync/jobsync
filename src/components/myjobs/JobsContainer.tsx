@@ -71,6 +71,7 @@ function JobsContainer({
     onChangeViewMode,
     totalJobs,
     filterKey,
+    sortKey,
     searchTerm,
     setSearchTerm,
     initialLoading,
@@ -78,6 +79,7 @@ function JobsContainer({
     loadJobs,
     reloadJobs,
     onFilterChange,
+    onSortChange,
     sentinelRef,
   } = useJobsList({
     companyFilter,
@@ -148,6 +150,8 @@ function JobsContainer({
           onSearchTermChange={setSearchTerm}
           filterKey={filterKey}
           onFilterChange={onFilterChange}
+          sortKey={sortKey}
+          onSortChange={onSortChange}
           onDownload={downloadJobsList}
           statuses={statuses}
           companies={companies}

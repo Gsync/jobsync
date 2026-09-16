@@ -1,5 +1,6 @@
 # JobSync
 
+> **Note:** This is a modified deployment version of the original [JobSync](https://github.com/Gsync/jobsync) project.
 <p align="center"><strong>The self-hosted job search assistant with AI-powered resume review, job matching, and automated discovery</strong></p>
 
 <p align="center">

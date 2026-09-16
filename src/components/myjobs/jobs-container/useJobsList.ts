@@ -31,6 +31,7 @@ export function useJobsList({
   const [page, setPage] = useState(1);
   const [totalJobs, setTotalJobs] = useState(0);
   const [filterKey, setFilterKey] = useState<string>("none");
+  const [sortKey, setSortKey] = useState<string>("date-desc");
   const [searchTerm, setSearchTerm] = useState("");
   const [initialLoading, setInitialLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -55,7 +56,7 @@ export function useJobsList({
   const jobsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
 
   const loadJobs = useCallback(
-    async (page: number, filter?: string, search?: string) => {
+    async (page: number, filter?: string, search?: string, sort?: string) => {
       if (page === 1) setInitialLoading(true);
       else setLoadingMore(true);
       const { success, data, total, message } = await getJobsList(
@@ -68,6 +69,7 @@ export function useJobsList({
         titleFilter || undefined,
         locationFilter || undefined,
         sourceFilter || undefined,
+        sort || "date-desc"
       );
       if (success && data) {
         setJobs((prev) => (page === 1 ? data : [...prev, ...data]));
@@ -90,14 +92,15 @@ export function useJobsList({
   );
 
   const reloadJobs = useCallback(async () => {
-    await loadJobs(1, undefined, searchTerm || undefined);
+    await loadJobs(1, undefined, searchTerm || undefined, sortKey);
     if (filterKey !== "none") {
       setFilterKey("none");
     }
-  }, [loadJobs, filterKey, searchTerm]);
+  }, [loadJobs, filterKey, searchTerm, sortKey]);
 
   useEffect(() => {
-    (async () => await loadJobs(1))();
+    (async () => await loadJobs(1, filterKey, searchTerm || undefined, sortKey))();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadJobs]);
 
   // The agent saves the job server-side, so only this counter tells us a row
@@ -117,7 +120,7 @@ export function useJobsList({
     if (searchTerm === "" && !hasSearched.current) return;
 
     const timer = setTimeout(() => {
-      loadJobs(1, filterKey, searchTerm || undefined);
+      loadJobs(1, filterKey, searchTerm || undefined, sortKey);
     }, 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -136,7 +139,7 @@ export function useJobsList({
           !loadingMore &&
           jobs.length < totalJobs
         ) {
-          loadJobs(page + 1, filterKey, searchTerm || undefined);
+          loadJobs(page + 1, filterKey, searchTerm || undefined, sortKey);
         }
       },
       { threshold: APP_CONSTANTS.INTERSECTION_OBSERVER_THRESHOLD },
@@ -153,11 +156,17 @@ export function useJobsList({
     initialLoading,
     loadingMore,
     loadJobs,
+    sortKey,
   ]);
 
   const onFilterChange = (filterBy: string) => {
     setFilterKey(filterBy);
-    loadJobs(1, filterBy, searchTerm || undefined);
+    loadJobs(1, filterBy, searchTerm || undefined, sortKey);
+  };
+
+  const onSortChange = (sortBy: string) => {
+    setSortKey(sortBy);
+    loadJobs(1, filterKey, searchTerm || undefined, sortBy);
   };
 
   return {
@@ -167,6 +176,7 @@ export function useJobsList({
     page,
     totalJobs,
     filterKey,
+    sortKey,
     searchTerm,
     setSearchTerm,
     initialLoading,
@@ -174,6 +184,7 @@ export function useJobsList({
     loadJobs,
     reloadJobs,
     onFilterChange,
+    onSortChange,
     sentinelRef,
   };
 }

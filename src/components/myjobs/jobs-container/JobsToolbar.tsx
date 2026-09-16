@@ -1,5 +1,5 @@
 "use client";
-import { File, ListFilter, RefreshCw, X } from "lucide-react";
+import { File, ListFilter, RefreshCw, X, ArrowDownAZ } from "lucide-react";
 import { CardHeader, CardTitle } from "../../ui/card";
 import { Button } from "../../ui/button";
 import { SearchInput } from "../../SearchInput";
@@ -48,6 +48,8 @@ export function JobsToolbar({
   onSearchTermChange,
   filterKey,
   onFilterChange,
+  sortKey,
+  onSortChange,
   onDownload,
   statuses,
   companies,
@@ -77,6 +79,8 @@ export function JobsToolbar({
   onSearchTermChange: (value: string) => void;
   filterKey: string;
   onFilterChange: (filterBy: string) => void;
+  sortKey: string;
+  onSortChange: (sortBy: string) => void;
   onDownload: () => void;
   statuses: JobStatus[];
   companies: Company[];
@@ -172,6 +176,24 @@ export function JobsToolbar({
               <SelectItem value="PT">Part-time</SelectItem>
               <SelectItem value="accepted">Accepted (discovered)</SelectItem>
               <SelectItem value="dismissed">Dismissed (discovered)</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        <Select value={sortKey} onValueChange={onSortChange}>
+          <SelectTrigger className="w-[140px] h-8" data-testid="job-sort-select">
+            <ArrowDownAZ className="h-3.5 w-3.5" />
+            <SelectValue placeholder="Sort" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Sort by</SelectLabel>
+              <SelectSeparator />
+              <SelectItem value="date-desc">Newest First</SelectItem>
+              <SelectItem value="date-asc">Oldest First</SelectItem>
+              <SelectItem value="company-asc">Company (A-Z)</SelectItem>
+              <SelectItem value="company-desc">Company (Z-A)</SelectItem>
+              <SelectItem value="title-asc">Job Title (A-Z)</SelectItem>
+              <SelectItem value="title-desc">Job Title (Z-A)</SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>

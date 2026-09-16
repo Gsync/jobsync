@@ -161,6 +161,7 @@ export const getJobsList = async (
   titleValue?: string,
   locationValue?: string,
   sourceValue?: string,
+  sortKey: string = "date-desc"
 ): Promise<any | undefined> => {
   try {
     const user = await requireUser();
@@ -176,16 +177,36 @@ export const getJobsList = async (
       sourceValue,
     });
 
+    let orderBy: any = { createdAt: "desc" };
+    switch (sortKey) {
+      case "date-asc":
+        orderBy = { createdAt: "asc" };
+        break;
+      case "company-asc":
+        orderBy = { Company: { label: "asc" } };
+        break;
+      case "company-desc":
+        orderBy = { Company: { label: "desc" } };
+        break;
+      case "title-asc":
+        orderBy = { JobTitle: { label: "asc" } };
+        break;
+      case "title-desc":
+        orderBy = { JobTitle: { label: "desc" } };
+        break;
+      case "date-desc":
+      default:
+        orderBy = { createdAt: "desc" };
+        break;
+    }
+
     const [data, total] = await Promise.all([
       prisma.job.findMany({
         where: whereClause,
         skip,
         take: limit,
         select: JOB_LIST_SELECT,
-        orderBy: {
-          createdAt: "desc",
-          // appliedDate: "desc",
-        },
+        orderBy,
       }),
       prisma.job.count({
         where: whereClause,
