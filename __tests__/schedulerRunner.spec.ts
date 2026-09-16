@@ -42,6 +42,17 @@ describe("runDueAutomations", () => {
   it("returns early if no automations are due", async () => {
     (prisma.automation.findMany as any).mockResolvedValue([]);
     await runDueAutomations();
+    
+    expect(prisma.automation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: "active",
+          nextRunAt: expect.objectContaining({
+            lte: expect.any(Date)
+          })
+        })
+      })
+    );
     expect(runAutomation).not.toHaveBeenCalled();
     expect(prisma.automationRun.create).not.toHaveBeenCalled();
   });
@@ -76,35 +87,72 @@ describe("runDueAutomations", () => {
   it("handles concurrent automation by catching AutomationAlreadyRunningError", async () => {
     (prisma.automation.findMany as any).mockResolvedValue([
       { id: "auto-3", name: "Concurrent", resume: { id: "res-1" } },
+      { id: "auto-4", name: "Next", resume: { id: "res-1" } }
     ]);
     (prisma.automationRun.findFirst as any).mockResolvedValue(null);
     
-    // @ts-ignore
-    (runAutomation as any).mockRejectedValue(new AutomationAlreadyRunningError("auto-3"));
+    (runAutomation as any)
+      .mockRejectedValueOnce(new AutomationAlreadyRunningError("auto-3"))
+      .mockResolvedValueOnce({ status: "success", jobsSaved: 0 });
 
     await runDueAutomations();
-    expect(runAutomation).toHaveBeenCalled();
+    expect(runAutomation).toHaveBeenCalledTimes(2);
+    expect(prisma.automationRun.create).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          automationId: "auto-3",
+          status: "failed",
+        }),
+      })
+    );
   });
 
   it("processes successful run", async () => {
     (prisma.automation.findMany as any).mockResolvedValue([
-      { id: "auto-4", name: "Success", resume: { id: "res-1" } },
+      { 
+        id: "auto-4", 
+        userId: "user-1",
+        jobBoard: "greenhouse",
+        matchThreshold: 80,
+        resume: { id: "res-1" } 
+      },
     ]);
     (prisma.automationRun.findFirst as any).mockResolvedValue(null);
     (runAutomation as any).mockResolvedValue({ status: "success", jobsSaved: 2 });
 
     await runDueAutomations();
-    expect(runAutomation).toHaveBeenCalled();
+    
+    expect(runAutomation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "auto-4",
+        userId: "user-1",
+        resumeId: "res-1",
+        jobBoard: "greenhouse",
+        matchThreshold: 80,
+      })
+    );
   });
 
   it("handles failed run by catching generic error and continuing", async () => {
     (prisma.automation.findMany as any).mockResolvedValue([
       { id: "auto-5", name: "Failed", resume: { id: "res-1" } },
+      { id: "auto-6", name: "Continuing", resume: { id: "res-1" } },
     ]);
     (prisma.automationRun.findFirst as any).mockResolvedValue(null);
-    (runAutomation as any).mockRejectedValue(new Error("Network Error"));
+    (runAutomation as any)
+      .mockRejectedValueOnce(new Error("Network Error"))
+      .mockResolvedValueOnce({ status: "success", jobsSaved: 0 });
 
     await runDueAutomations();
-    expect(runAutomation).toHaveBeenCalled();
+    expect(runAutomation).toHaveBeenCalledTimes(2);
+    
+    expect(prisma.automationRun.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          automationId: "auto-5",
+          status: "failed",
+        }),
+      })
+    );
   });
 });
