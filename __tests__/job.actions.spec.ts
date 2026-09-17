@@ -826,6 +826,11 @@ describe("jobActions", () => {
           },
           orderBy: { createdAt: "asc" },
         },
+        workspace: { select: { id: true, name: true, type: true } },
+        outreach: {
+          include: { contact: { select: { id: true, name: true } } },
+          orderBy: { createdAt: "desc" },
+        },
       },
     });
   });
@@ -999,6 +1004,8 @@ describe("jobActions", () => {
           statusId: jobData.status,
           jobSourceId: jobData.source,
           salaryRange: jobData.salaryRange,
+          fundingStatus: null,
+          workspaceId: null,
           createdAt: jobData.createdAt,
           dueDate: jobData.dueDate,
           appliedDate: jobData.dateApplied,
@@ -1030,6 +1037,8 @@ describe("jobActions", () => {
           statusId: jobData.status,
           jobSourceId: jobData.source,
           salaryRange: jobData.salaryRange,
+          fundingStatus: null,
+          workspaceId: null,
           createdAt: jobData.createdAt,
           dueDate: jobData.dueDate,
           description: jobData.jobDescription,

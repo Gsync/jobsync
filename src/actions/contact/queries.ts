@@ -52,6 +52,32 @@ export const getContactList = async (
   }
 };
 
+// Directory for the osui contact cards: people + their outreach history.
+export const getContactsDirectory = async () => {
+  try {
+    const user = await requireUser();
+    return await prisma.contact.findMany({
+      where: { createdBy: user.id },
+      select: {
+        id: true,
+        name: true,
+        title: true,
+        email: true,
+        phone: true,
+        linkedinUrl: true,
+        relationship: true,
+        notes: true,
+        Company: { select: { label: true } },
+        _count: { select: { outreach: true } },
+      },
+      orderBy: { name: "asc" },
+      take: 200,
+    });
+  } catch (error) {
+    return handleError(error, "Failed to fetch directory. ");
+  }
+};
+
 // The job-tab picker filters a preloaded array, so `value` carries everything
 // worth searching on — name, email and employer.
 export const getAllContacts = async (): Promise<any | undefined> => {

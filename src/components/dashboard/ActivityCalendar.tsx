@@ -1,21 +1,36 @@
 "use client";
-import { useState } from "react";
-import { ResponsiveCalendar } from "@nivo/calendar";
+import { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { useTheme } from "next-themes";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-// make sure parent container have a defined height when using
-// responsive component, otherwise height will be 0 and
-// no chart will be rendered.
-// website examples showcase many properties,
-// you'll often use just a few of them.
+import { cn } from "@/lib/utils";
+import { SelectFieldInput } from "../osui/inputs/select-field-input";
+
+// GitHub-style heatmap, hand-rolled (no chart lib): Sunday-start columns,
+// neutral-ink intensity scale on paper.
+function cellFill(value: number) {
+  if (value <= 0) return "bg-neutral-100";
+  if (value === 1) return "bg-neutral-300";
+  if (value === 2) return "bg-neutral-500";
+  if (value === 3) return "bg-neutral-700";
+  return "bg-neutral-900";
+}
+
+type Day = { date: Date; iso: string; inYear: boolean };
+
+function yearGrid(year: string): Day[] {
+  const y = Number(year);
+  const jan1 = new Date(y, 0, 1);
+  const days: Day[] = [];
+  // Leading blanks so Jan 1 lands on its weekday column (Sunday start).
+  for (let i = 0; i < jan1.getDay(); i++) {
+    days.push({ date: new Date(NaN), iso: "", inYear: false });
+  }
+  for (let d = new Date(y, 0, 1); d.getFullYear() === y; d.setDate(d.getDate() + 1)) {
+    const iso = `${y}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    days.push({ date: new Date(d), iso, inYear: true });
+  }
+  return days;
+}
+
 export default function ActivityCalendar({
   years,
   dataByYear,
@@ -23,89 +38,60 @@ export default function ActivityCalendar({
   years: string[];
   dataByYear: Record<string, any[]>;
 }) {
-  const { resolvedTheme } = useTheme();
   const [year, setYear] = useState(years.at(-1));
-  const borderColor = resolvedTheme === "light" ? "#ffffff" : "#0e1117";
   const data = dataByYear[year ?? ""] ?? [];
-  const hoursMap = Object.fromEntries(
-    data.map((d) => [d.day, d.hours ?? 0]),
-  );
+  const byDay = useMemo(() => {
+    const map = new Map<string, { value: number; hours: number }>();
+    for (const d of data) map.set(d.day, { value: d.value ?? 0, hours: d.hours ?? 0 });
+    return map;
+  }, [dataByYear, year]);
+  const days = useMemo(() => yearGrid(year ?? String(new Date().getFullYear())), [year]);
+
   return (
-    <Card className="w-[100%]">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg text-green-600">Activity Calendar</CardTitle>
-          <Select value={year} onValueChange={setYear}>
-            <SelectTrigger className="w-[100px]" aria-label="Select year">
-              <SelectValue placeholder="Select year" />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((y) => (
-                <SelectItem key={y} value={y}>
-                  {y}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </CardHeader>
-      <CardContent className="h-[200px]">
-        <ResponsiveCalendar
-          data={data}
-          from={`${year}-04-02`}
-          to={`${year}-04-02`}
-          emptyColor={resolvedTheme === "light" ? "#eeeeee" : "#30363d"}
-          colors={["#90e0ef", "#48cae4", "#00b4d8", "#0096c7", "#0077b6"]}
-          minValue={2}
-          margin={{ top: 20, right: 0, bottom: 20, left: 0 }}
-          yearSpacing={40}
-          monthBorderColor={borderColor}
-          dayBorderWidth={2}
-          dayBorderColor={borderColor}
-          tooltip={(day) => {
-            const hours = hoursMap[day.day] ?? 0;
-            return (
-              <div
-                style={{
-                  background: "#1e293b",
-                  color: "#fff",
-                  padding: "6px 12px",
-                  borderRadius: "4px",
-                  fontSize: "12px",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                <div><strong>{format(parseISO(day.day), "EEE MMM d, yyyy")}</strong></div>
-                <div>{day.value} job{Number(day.value) === 1 ? "" : "s"} applied</div>
-                <div>{hours} hr{hours === 1 ? "" : "s"} activity</div>
-              </div>
-            );
-          }}
-          theme={{
-            text: {
-              fill: "#9ca3af",
-            },
-            tooltip: {
-              container: {
-                background: "#1e293b",
-                color: "#fff",
-              },
-            },
-          }}
-          legends={[
-            {
-              anchor: "bottom-right",
-              direction: "row",
-              translateY: 36,
-              itemCount: 4,
-              itemWidth: 42,
-              itemHeight: 36,
-              itemsSpacing: 14,
-              itemDirection: "right-to-left",
-            },
-          ]}
+    <div className="w-full overflow-hidden rounded-xl border border-neutral-200 bg-white font-sans">
+      <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-1">
+        <h3 className="text-sm font-semibold text-neutral-900">Activity Calendar</h3>
+        <SelectFieldInput
+          label="Select year"
+          value={year ?? ""}
+          onValueChange={setYear}
+          options={years.map((y) => ({ value: y, label: y }))}
+          containerClassName="w-[130px]"
         />
-      </CardContent>
-    </Card>
+      </div>
+      <div className="overflow-x-auto px-4 pt-2 pb-4">
+        <div
+          className="grid auto-cols-[11px] grid-flow-col grid-rows-7 gap-[3px]"
+          role="img"
+          aria-label={`Activity in ${year}`}
+        >
+          {days.map((d, i) =>
+            !d.inYear ? (
+              <span key={`blank-${i}`} className="size-[11px]" />
+            ) : (
+              (() => {
+                const entry = byDay.get(d.iso) ?? { value: 0, hours: 0 };
+                const tip = `${format(d.date, "EEE MMM d, yyyy")} — ${entry.value} job${entry.value === 1 ? "" : "s"} applied, ${entry.hours} hr${entry.hours === 1 ? "" : "s"} activity`;
+                return (
+                  <span
+                    key={d.iso}
+                    data-testid={`day-${d.iso}`}
+                    title={tip}
+                    className={cn("size-[11px] rounded-[2px]", cellFill(entry.value))}
+                  >
+                    <span className="sr-only">{tip}</span>
+                  </span>
+                );
+              })()
+            ),
+          )}
+        </div>
+      </div>
+    </div>
   );
+}
+
+// Re-exported for tests that import the tooltip wording indirectly.
+export function dayTooltip(dayIso: string, value: number, hours: number) {
+  return `${format(parseISO(dayIso), "EEE MMM d, yyyy")} — ${value} job${value === 1 ? "" : "s"} applied, ${hours} hr${hours === 1 ? "" : "s"} activity`;
 }

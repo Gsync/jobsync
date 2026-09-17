@@ -7,6 +7,8 @@ export async function createJobRecord(fields: {
   statusId: string;
   jobSourceId?: string | null;
   salaryRange?: string | null;
+  fundingStatus?: string | null;
+  workspaceId?: string | null;
   dueDate?: Date | null;
   appliedDate?: Date | null;
   description: string;

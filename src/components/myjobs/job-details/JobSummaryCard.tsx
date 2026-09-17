@@ -64,6 +64,12 @@ export function JobSummaryCard({
             <p className="mt-1 font-medium">{job.salaryRange || "-"}</p>
           </div>
           <div>
+            <p className="text-sm text-muted-foreground">Funding</p>
+            <p className="mt-1 font-medium">
+              {(job as { fundingStatus?: string | null }).fundingStatus || "-"}
+            </p>
+          </div>
+          <div>
             <p className="text-sm text-muted-foreground">Source</p>
             <p className="mt-1 font-medium">{job.JobSource?.label ?? "-"}</p>
           </div>

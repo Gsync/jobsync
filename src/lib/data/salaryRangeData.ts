@@ -10,3 +10,8 @@ const MID_BANDS = Array.from(
 export const SALARY_RANGES = ["Under 50,000", ...MID_BANDS, "300,000+"].map(
   (range) => ({ id: range, value: range, label: range }),
 );
+
+// School workspace: how the position is financed.
+export const FUNDING_STATUSES = ["funded", "self-funded", "scholarship", "unknown"].map(
+  (s) => ({ id: s, value: s, label: s }),
+);

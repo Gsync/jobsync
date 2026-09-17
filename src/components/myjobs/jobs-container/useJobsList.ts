@@ -18,12 +18,14 @@ export function useJobsList({
   titleFilter,
   locationFilter,
   sourceFilter,
+  workspaceId,
 }: {
   companyFilter: string | null;
   appliedFilter: boolean;
   titleFilter: string | null;
   locationFilter: string | null;
   sourceFilter: string | null;
+  workspaceId?: string | null;
 }) {
   const { jobWrites } = useAgentChat();
   const [jobs, setJobs] = useState<JobResponse[]>([]);
@@ -68,6 +70,7 @@ export function useJobsList({
         titleFilter || undefined,
         locationFilter || undefined,
         sourceFilter || undefined,
+        workspaceId || undefined,
       );
       if (success && data) {
         setJobs((prev) => (page === 1 ? data : [...prev, ...data]));
@@ -86,6 +89,7 @@ export function useJobsList({
       titleFilter,
       locationFilter,
       sourceFilter,
+      workspaceId,
     ],
   );
 

@@ -50,6 +50,8 @@ export const AddJobFormSchema = z.object({
   //
   dateApplied: z.date().optional(),
   salaryRange: z.string().optional(),
+  fundingStatus: z.string().optional(),
+  workspaceId: z.string().optional(),
   jobDescription: z
     .string({
       error: "Job description is required.",

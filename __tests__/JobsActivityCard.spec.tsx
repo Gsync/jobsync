@@ -14,23 +14,6 @@ vi.mock("next-themes", () => ({
   useTheme: () => ({ resolvedTheme: "light" }),
 }));
 
-vi.mock("@nivo/pie", () => ({
-  Pie: (props: any) => (
-    <div data-testid="donut">
-      {props.data.map((slice: any) => (
-        <div key={slice.id} data-testid={`slice-${slice.id}`}>
-          {slice.label}:{slice.value}:{slice.color}
-          {slice.breakdown?.length
-            ? `:${slice.breakdown
-                .map((a: any) => `${a.label}=${a.hours}`)
-                .join(",")}`
-            : ""}
-        </div>
-      ))}
-    </div>
-  ),
-}));
-
 describe("JobsActivityCard", () => {
   const user = userEvent.setup();
 
@@ -83,16 +66,14 @@ describe("JobsActivityCard", () => {
     expect(within(total).getByText("16 jobs")).toBeInTheDocument();
   });
 
-  it("labels the slices on the chart instead of in a legend", () => {
+  it("lists the slices in a legend under the donut", () => {
     render(<JobsActivityCard data={data} />);
 
-    expect(
-      screen.queryByTestId("jobs-activity-legend"),
-    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("jobs-activity-legend")).toBeInTheDocument();
     expect(screen.getByTestId("donut")).toBeInTheDocument();
   });
 
-  it("feeds the same slices to the donut", () => {
+  it("feeds the same slices to the legend", () => {
     render(<JobsActivityCard data={data} />);
 
     expect(screen.getByTestId("slice-Jobsync")).toHaveTextContent(

@@ -11,8 +11,10 @@ export const metadata: Metadata = {
   title: "My Jobs | JobSync",
 };
 
+import { getActiveWorkspace } from "@/lib/workspaces/active";
+
 async function MyJobs() {
-  const [statuses, companies, titles, locations, sources, tags] =
+  const [statuses, companies, titles, locations, sources, tags, { active }] =
     await Promise.all([
       getStatusList(),
       getAllCompanies(),
@@ -20,6 +22,7 @@ async function MyJobs() {
       getAllJobLocations(),
       getJobSourceList(),
       getAllTags(),
+      getActiveWorkspace().catch(() => ({ workspaces: [], active: null })),
     ]);
   return (
     <div className="col-span-3">
@@ -30,6 +33,7 @@ async function MyJobs() {
         sources={sources}
         statuses={statuses}
         tags={tags ?? []}
+        activeWorkspaceId={active?.id ?? null}
       />
     </div>
   );

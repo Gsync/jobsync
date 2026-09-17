@@ -23,6 +23,9 @@ const JOB_LIST_SELECT = {
   matchScore: true,
   matchData: true,
   discoveryStatus: true,
+  workspaceId: true,
+  fundingStatus: true,
+  workspace: { select: { id: true, name: true, type: true } },
   _count: { select: { Notes: true } },
 };
 
@@ -71,6 +74,11 @@ const JOB_DETAILS_INCLUDE = {
     },
     orderBy: { createdAt: "asc" as const },
   },
+  workspace: { select: { id: true, name: true, type: true } },
+  outreach: {
+    include: { contact: { select: { id: true, name: true } } },
+    orderBy: { createdAt: "desc" as const },
+  },
 };
 
 type JobsListFilters = {
@@ -81,6 +89,7 @@ type JobsListFilters = {
   titleValue?: string;
   locationValue?: string;
   sourceValue?: string;
+  workspaceId?: string;
 };
 
 const buildJobsWhereClause = (userId: string, filters: JobsListFilters) => {
@@ -92,6 +101,7 @@ const buildJobsWhereClause = (userId: string, filters: JobsListFilters) => {
     titleValue,
     locationValue,
     sourceValue,
+    workspaceId,
   } = filters;
 
   const filterBy = filter
@@ -127,6 +137,10 @@ const buildJobsWhereClause = (userId: string, filters: JobsListFilters) => {
 
   if (companyValue) {
     whereClause.Company = { value: companyValue };
+  }
+
+  if (workspaceId) {
+    whereClause.workspaceId = workspaceId;
   }
 
   if (titleValue) {
@@ -180,6 +194,7 @@ export const getJobsList = async (
   titleValue?: string,
   locationValue?: string,
   sourceValue?: string,
+  workspaceId?: string,
 ): Promise<any | undefined> => {
   try {
     const user = await requireUser();
@@ -193,6 +208,7 @@ export const getJobsList = async (
       titleValue,
       locationValue,
       sourceValue,
+      workspaceId,
     });
 
     const [data, total] = await Promise.all([

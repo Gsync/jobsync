@@ -1,20 +1,10 @@
 "use client";
-import { File, ListFilter, RefreshCw, X } from "lucide-react";
-import { CardHeader, CardTitle } from "../../ui/card";
-import { Button } from "../../ui/button";
-import { SearchInput } from "../../SearchInput";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-} from "../../ui/select";
+import { File, RefreshCw, X } from "lucide-react";
+import { SearchInput as OsuiSearchInput } from "../../osui/inputs/search-input";
+import { SelectFieldInput } from "../../osui/inputs/select-field-input";
+import { SegmentedToggleButton } from "../../osui/buttons/segmented-toggle-button";
+import { SoftPillButton } from "../../osui/buttons/soft-pill-button";
 import { RecordsCount } from "../../RecordsCount";
-import { JobsViewToggle } from "../JobsViewToggle";
 import { AddJob } from "../AddJob";
 import {
   Company,
@@ -27,8 +17,9 @@ import {
   Tag,
 } from "@/models/job.model";
 
-// Presentational: the Jobs card header — title/count, active filter chips,
-// view toggle, search, filter select, export and Add Job.
+// Presentational: the Applications card header on osui components —
+///title/count, filter chips, segmented view toggle, search, filter,
+// export and Add Job.
 export function JobsToolbar({
   jobsCount,
   totalJobs,
@@ -58,6 +49,7 @@ export function JobsToolbar({
   editJob,
   resetEditJob,
   addJobInitialOpen,
+  activeWorkspaceId,
 }: {
   jobsCount: number;
   totalJobs: number;
@@ -87,106 +79,77 @@ export function JobsToolbar({
   editJob: JobResponse | null;
   resetEditJob: () => void;
   addJobInitialOpen: boolean;
+  activeWorkspaceId?: string | null;
 }) {
+  const chip = (label: string, onClear: () => void) => (
+    <button
+      key={label}
+      onClick={onClear}
+      className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+    >
+      {label}
+      <X className="h-3.5 w-3.5 text-neutral-400" />
+    </button>
+  );
   return (
-    <CardHeader className="flex-row flex-wrap justify-between items-center gap-3">
+    <div className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-4 py-3">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <CardTitle>Jobs</CardTitle>
+        <p className="text-sm font-semibold text-neutral-900">Applications</p>
         {!initialLoading && totalJobs > 0 && (
           <RecordsCount count={jobsCount} total={totalJobs} label="jobs" />
         )}
       </div>
-      <div className="flex flex-wrap items-center justify-end gap-2 ml-auto">
-        <JobsViewToggle value={viewMode} onChange={onChangeViewMode} />
-        {companyLabel && (
-          <button
-            onClick={onClearCompanyFilter}
-            className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
-          >
-            {companyLabel}
-            <X className="h-3.5 w-3.5" />
-          </button>
-        )}
-        {titleLabel && (
-          <button
-            onClick={onClearTitleFilter}
-            className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
-          >
-            {titleLabel}
-            <X className="h-3.5 w-3.5" />
-          </button>
-        )}
-        {locationLabel && (
-          <button
-            onClick={onClearLocationFilter}
-            className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
-          >
-            {locationLabel}
-            <X className="h-3.5 w-3.5" />
-          </button>
-        )}
-        {sourceLabel && (
-          <button
-            onClick={onClearSourceFilter}
-            className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
-          >
-            {sourceLabel}
-            <X className="h-3.5 w-3.5" />
-          </button>
-        )}
-        <Button
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+        <SegmentedToggleButton
+          key={viewMode}
+          options={["Table", "Cards"]}
+          defaultIndex={viewMode === "cards" ? 1 : 0}
+          // osui types onChange as an intersection with the div handler; the
+          // (index, value) form is the documented usage.
+          onChange={((_: number, value: string) =>
+            onChangeViewMode(value === "Cards" ? "cards" : "table")) as never}
+        />
+        {companyLabel && chip(companyLabel, onClearCompanyFilter)}
+        {titleLabel && chip(titleLabel, onClearTitleFilter)}
+        {locationLabel && chip(locationLabel, onClearLocationFilter)}
+        {sourceLabel && chip(sourceLabel, onClearSourceFilter)}
+        <SoftPillButton
           size="sm"
-          variant="outline"
-          className="h-8 w-8 p-0"
+          variant="light"
           disabled={initialLoading}
           title="Reload jobs"
           onClick={onReload}
         >
-          <RefreshCw
-            className={`h-3.5 w-3.5 ${initialLoading ? "animate-spin" : ""}`}
-          />
+          <RefreshCw className={`h-3.5 w-3.5 ${initialLoading ? "animate-spin" : ""}`} />
           <span className="sr-only">Reload jobs</span>
-        </Button>
-        <SearchInput
+        </SoftPillButton>
+        <OsuiSearchInput
           value={searchTerm}
-          onChange={onSearchTermChange}
+          onChange={(v) => onSearchTermChange(v)}
+          onClear={() => onSearchTermChange("")}
           placeholder="Search jobs..."
+          label=""
         />
-        <Select value={filterKey} onValueChange={onFilterChange}>
-          <SelectTrigger
-            className="w-[120px] h-8"
-            data-testid="job-filter-select"
-          >
-            <ListFilter className="h-3.5 w-3.5" />
-            <SelectValue placeholder="Filter" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Filter by</SelectLabel>
-              <SelectSeparator />
-              <SelectItem value="none">All (Except Dismissed)</SelectItem>
-              <SelectItem value="applied">Applied</SelectItem>
-              <SelectItem value="interview">Interview</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
-              <SelectItem value="PT">Part-time</SelectItem>
-              <SelectItem value="accepted">Accepted (discovered)</SelectItem>
-              <SelectItem value="dismissed">Dismissed (discovered)</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-8 gap-1"
-          disabled={initialLoading}
-          onClick={onDownload}
-        >
+        <SelectFieldInput
+          label=""
+          placeholder="Filter"
+          value={filterKey}
+          onValueChange={onFilterChange}
+          options={[
+            { value: "none", label: "All (Except Dismissed)" },
+            { value: "applied", label: "Applied" },
+            { value: "interview", label: "Interview" },
+            { value: "draft", label: "Draft" },
+            { value: "rejected", label: "Rejected" },
+            { value: "PT", label: "Part-time" },
+            { value: "accepted", label: "Accepted (discovered)" },
+            { value: "dismissed", label: "Dismissed (discovered)" },
+          ]}
+        />
+        <SoftPillButton size="sm" variant="light" disabled={initialLoading} onClick={onDownload}>
           <File className="h-3.5 w-3.5" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Export
-          </span>
-        </Button>
+          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Export</span>
+        </SoftPillButton>
         <AddJob
           jobStatuses={statuses}
           companies={companies}
@@ -197,8 +160,9 @@ export function JobsToolbar({
           editJob={editJob}
           resetEditJob={resetEditJob}
           initialOpen={addJobInitialOpen}
+          defaultWorkspaceId={activeWorkspaceId}
         />
       </div>
-    </CardHeader>
+    </div>
   );
 }

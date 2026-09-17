@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Card, CardContent, CardFooter } from "../ui/card";
+import { useRouter } from "next/navigation";
 import { Loader } from "lucide-react";
 import {
   deleteJobById,
@@ -17,7 +17,6 @@ import {
   Tag,
 } from "@/models/job.model";
 import Loading from "../Loading";
-import { useRouter } from "next/navigation";
 import MyJobsTable from "./MyJobsTable";
 import MyJobsGrid from "./MyJobsGrid";
 import { NoteDialog } from "./NoteDialog";
@@ -33,6 +32,7 @@ type MyJobsProps = {
   locations: JobLocation[];
   sources: JobSource[];
   tags: Tag[];
+  activeWorkspaceId?: string | null;
 };
 
 function JobsContainer({
@@ -42,6 +42,7 @@ function JobsContainer({
   locations,
   sources,
   tags,
+  activeWorkspaceId,
 }: MyJobsProps) {
   const router = useRouter();
   const [editJob, setEditJob] = useState(null);
@@ -85,6 +86,7 @@ function JobsContainer({
     titleFilter,
     locationFilter,
     sourceFilter,
+    workspaceId: activeWorkspaceId,
   });
 
   const onDeleteJob = async (jobId: string) => {
@@ -128,7 +130,7 @@ function JobsContainer({
 
   return (
     <>
-      <Card x-chunk="dashboard-06-chunk-0">
+      <div className="w-full overflow-hidden rounded-xl border border-neutral-200 bg-white font-sans">
         <JobsToolbar
           jobsCount={jobs.length}
           totalJobs={totalJobs}
@@ -158,8 +160,9 @@ function JobsContainer({
           editJob={editJob}
           resetEditJob={resetEditJob}
           addJobInitialOpen={queryParams.get("add-job") === "true"}
+          activeWorkspaceId={activeWorkspaceId}
         />
-        <CardContent>
+        <div className="px-0 py-0">
           {initialLoading && <Loading />}
           {jobs.length > 0 &&
             (viewMode === "cards" ? (
@@ -184,13 +187,12 @@ function JobsContainer({
           {jobs.length < totalJobs && (
             <div ref={sentinelRef} className="flex justify-center p-4">
               {loadingMore && (
-                <Loader className="h-5 w-5 animate-spin text-blue-500" />
+                <Loader className="h-5 w-5 animate-spin text-neutral-400" />
               )}
             </div>
           )}
-        </CardContent>
-        <CardFooter></CardFooter>
-      </Card>
+        </div>
+      </div>
       <NoteDialog
         open={noteDialogOpen}
         onOpenChange={setNoteDialogOpen}

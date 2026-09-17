@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import SigninForm from "./SigninForm";
 import SignupForm from "./SignupForm";
+import { SegmentedToggleButton } from "../osui/buttons/segmented-toggle-button";
 
 type AuthMode = "signin" | "signup";
 
@@ -10,67 +11,32 @@ interface AuthCardProps {
   mode: AuthMode;
 }
 
+// osui shell (segmented toggle) around the osui auth forms.
 export default function AuthCard({ mode }: AuthCardProps) {
   const router = useRouter();
 
   return (
-    <div className="mx-auto w-full max-w-md px-4">
-      {/* App branding */}
+    <div className="mx-auto w-full max-w-md px-4 font-sans">
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold tracking-tight">JobSync</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Track your job search, powered by AI
+        <h1 className="text-3xl font-bold tracking-tight text-neutral-900">JobSync</h1>
+        <p className="mt-1 text-sm text-neutral-500">
+          School + job applications, one tracker
         </p>
       </div>
 
-      {/* Tab toggle */}
-      <div className="mb-6 flex rounded-xl border bg-muted p-1">
-        <button
-          onClick={() => router.push("/signin")}
-          className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all duration-200 ${
-            mode === "signin"
-              ? "bg-background text-foreground shadow-xs"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Sign In
-        </button>
-        <button
-          onClick={() => router.push("/signup")}
-          className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all duration-200 ${
-            mode === "signup"
-              ? "bg-background text-foreground shadow-xs"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Create Account
-        </button>
+      <div className="mb-6 flex justify-center">
+        <SegmentedToggleButton
+          key={mode}
+          options={["Sign In", "Create Account"]}
+          defaultIndex={mode === "signup" ? 1 : 0}
+          // osui types onChange as an intersection with the div handler; the
+          // (index, value) form is the documented usage.
+          onChange={((_: number, value: string) =>
+            router.push(value === "Create Account" ? "/signup" : "/signin")) as never}
+        />
       </div>
 
-      {/* Form card */}
-      <div className="rounded-xl border bg-card p-6 shadow-xs">
-        {mode === "signin" ? (
-          <>
-            <div className="mb-5">
-              <h2 className="text-xl font-semibold">Welcome back</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Enter your credentials to access your account
-              </p>
-            </div>
-            <SigninForm />
-          </>
-        ) : (
-          <>
-            <div className="mb-5">
-              <h2 className="text-xl font-semibold">Get started</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Create a free account to start tracking your applications
-              </p>
-            </div>
-            <SignupForm />
-          </>
-        )}
-      </div>
+      {mode === "signin" ? <SigninForm /> : <SignupForm />}
     </div>
   );
 }

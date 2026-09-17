@@ -38,11 +38,13 @@ RUN addgroup --system --gid 1001 nodejs && \
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
-# Set up /data directory with the right permissions
+# /data is ephemeral local disk — durability comes from the Railway Bucket
+# (see scripts/sync-db-bucket.mjs). No volume mount required.
 RUN mkdir -p /data/files/resumes && chown -R nextjs:nodejs /data/files/resumes
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/scripts ./scripts
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 

@@ -11,6 +11,7 @@ import JobsActivityCard from "@/components/dashboard/JobsActivityCard";
 import JobsApplied from "@/components/dashboard/JobsAppliedCard";
 import RecentCardToggle from "@/components/dashboard/RecentCardToggle";
 import WeeklyBarChartToggle from "@/components/dashboard/WeeklyBarChartToggle";
+import { FollowUpsCard, DeadlinesCard } from "@/components/dashboard/OutreachCards";
 
 import { Metadata } from "next";
 
@@ -48,6 +49,8 @@ export default async function Dashboard() {
               { label: "30d", summary: summary30Days },
             ]}
           />
+          <FollowUpsCard />
+          <DeadlinesCard />
         </div>
         <WeeklyBarChartToggle
           charts={[

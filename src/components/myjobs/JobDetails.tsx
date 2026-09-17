@@ -40,6 +40,7 @@ import { JobTabEmptyState } from "./job-details/JobTabEmptyState";
 import { CoverLetterTab } from "./job-details/CoverLetterTab";
 import { useAutoMatch } from "./job-details/useAutoMatch";
 import { JobContactsTab } from "./job-details/JobContactsTab";
+import { JobOutreachTab } from "./job-details/JobOutreachTab";
 
 const JOB_DETAIL_TABS = [
   "description",
@@ -219,6 +220,14 @@ function JobDetails({
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="outreach">
+              Outreach
+              {((job as unknown as { outreach?: unknown[] }).outreach?.length ?? 0) > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {(job as unknown as { outreach: unknown[] }).outreach.length}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="description" className="mt-4">
             <Card className="p-6">
@@ -274,6 +283,9 @@ function JobDetails({
                 locations={locations}
               />
             </Card>
+          </TabsContent>
+          <TabsContent value="outreach" className="mt-4">
+            <JobOutreachTab outreach={(job as unknown as { outreach?: never[] }).outreach ?? []} />
           </TabsContent>
         </Tabs>
       </div>
