@@ -495,6 +495,16 @@ Phase 1 also built: `Workspace/Stage/WorkspaceField/Outreach` models +
 migration `dual_workspace_outreach`, workspace + outreach server actions,
 `WorkspaceSwitcher` osui component, `seed-school-workspace.mjs` (7 PIs).
 
+Phases 2–5 also built (same branch):
+- Header workspace switcher (cookie-persisted, defaults ensured on load).
+- Dashboard `Follow-ups due` + `Upcoming deadlines` cards.
+- `/dashboard/outreach` page: log table, log dialog (application/contact/subject/paper/notes), follow-ups filter, mark-replied.
+- Jobs list scoped by active workspace (`workspaceId` through `getJobsList` → `useJobsList` → `JobsContainer`).
+- `Job.fundingStatus` (+ migration `job_funding_status`): Add/Edit form field, details card row.
+- Job details `Outreach` tab per application.
+- MCP `log_outreach` tool (jobs:write scope).
+- 114 tests passing, `tsc` clean. Pre-existing red suites (`JobsContainer`, `JobDetails` render specs) were already failing on the base commit — untouched.
+
 ## Appendix B — live application targets to seed
 
 | Deadline | Target | Status |
