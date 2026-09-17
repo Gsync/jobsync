@@ -1,5 +1,7 @@
 import type { WorkspaceType } from "@prisma/client";
 
+export const ACTIVE_WORKSPACE_COOKIE = "activeWorkspaceId";
+
 // Default pipeline stages per workspace type (PRD §4). Editable in Settings later.
 export const DEFAULT_STAGES: Record<WorkspaceType, { name: string; isTerminal?: boolean; color?: string }[]> = {
   SCHOOL: [

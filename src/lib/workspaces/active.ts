@@ -2,8 +2,7 @@
 import { cookies } from "next/headers";
 import prisma from "@/lib/db";
 import { requireUser } from "@/actions/shared";
-
-export const ACTIVE_WORKSPACE_COOKIE = "activeWorkspaceId";
+import { ACTIVE_WORKSPACE_COOKIE } from "./defaults";
 
 export async function getActiveWorkspaceId(): Promise<string | null> {
   const store = await cookies();
