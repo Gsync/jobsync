@@ -31,6 +31,7 @@ import { handleFindJob } from "@/lib/mcp/tools/findJob";
 import { handleUpdateJob } from "@/lib/mcp/tools/updateJob";
 import { handleAddJobsBatch } from "@/lib/mcp/tools/addJobsBatch";
 import { handleSaveMatchResultsBatch } from "@/lib/mcp/tools/saveMatchResultsBatch";
+import { handleLogOutreach, McpLogOutreachInputShape, McpLogOutreachSchema } from "@/lib/mcp/tools/logOutreach";
 
 function isMcpEnabled(): boolean {
   const env = process.env.MCP_ENABLED;
@@ -262,6 +263,31 @@ async function handler(req: Request): Promise<Response> {
         };
       }
       return handleSaveResumeReview(parsed.data, userId, tokenName);
+    },
+  );
+
+  server.tool(
+    "log_outreach",
+    MCP_TOOL_DESCRIPTIONS.log_outreach,
+    McpLogOutreachInputShape,
+    async (rawInput) => {
+      if (!auth.scopes.includes("jobs:write")) {
+        return {
+          content: [
+            { type: "text" as const, text: "Insufficient scope. Required: jobs:write" },
+          ],
+        };
+      }
+      const parsed = McpLogOutreachSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => i.message).join("; ");
+        return {
+          content: [
+            { type: "text" as const, text: `Validation error: ${issues}` },
+          ],
+        };
+      }
+      return handleLogOutreach(parsed.data, userId);
     },
   );
 

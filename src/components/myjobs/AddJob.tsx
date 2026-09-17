@@ -40,7 +40,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import SelectFormCtrl from "../Select";
 import { DatePicker } from "../DatePicker";
-import { SALARY_RANGES } from "@/lib/data/salaryRangeData";
+import { SALARY_RANGES, FUNDING_STATUSES } from "@/lib/data/salaryRangeData";
 import TiptapEditor from "../TiptapEditor";
 import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
@@ -121,6 +121,7 @@ export function AddJob({
     dueDate: addDays(new Date(), 3),
     status: jobStatuses[0]?.id,
     salaryRange: "",
+    fundingStatus: "",
     jobUrl: "",
     jobDescription: "N/A",
     location: locations.find((l) => l.id === lastLocationId)?.id,
@@ -172,6 +173,7 @@ export function AddJob({
         status: editJob.Status.id,
         dueDate: editJob.dueDate,
         salaryRange: editJob.salaryRange ?? "",
+        fundingStatus: (editJob as { fundingStatus?: string | null }).fundingStatus ?? "",
         jobDescription: editJob.description,
         applied: editJob.applied,
         jobUrl: editJob.jobUrl ?? "",
@@ -553,6 +555,27 @@ export function AddJob({
                           creatable
                           freeText
                           label="Salary Range"
+                        />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Funding Status (School workspace) */}
+                <div>
+                  <FormField
+                    control={form.control}
+                    name="fundingStatus"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Funding Status</FormLabel>
+                        <Combobox
+                          options={FUNDING_STATUSES}
+                          field={field}
+                          creatable
+                          freeText
+                          label="Funding Status"
                         />
                         <FormMessage />
                       </FormItem>

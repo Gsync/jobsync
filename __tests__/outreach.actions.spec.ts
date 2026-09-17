@@ -1,18 +1,19 @@
-import { logOutreach, getFollowUpsDue, markOutreachReplied } from "@/actions/outreach/outreach.actions";
+import { logOutreach, getFollowUpsDue, markOutreachReplied, getUpcomingDeadlines, getOutreachList } from "@/actions/outreach/outreach.actions";
 import { getCurrentUser } from "@/utils/user.utils";
 import { PrismaClient } from "@prisma/client";
 
 vi.mock("@prisma/client", () => {
   const mPrismaClient = {
-    job: { count: vi.fn() },
+    job: { count: vi.fn(), findMany: vi.fn() },
     outreach: { create: vi.fn(), findMany: vi.fn(), update: vi.fn() },
+    contact: { findMany: vi.fn() },
   };
   return { PrismaClient: vi.fn(function () { return mPrismaClient; }) };
 });
 vi.mock("@/utils/user.utils", () => ({ getCurrentUser: vi.fn() }));
 
 const prisma = new PrismaClient() as unknown as {
-  job: { count: ReturnType<typeof vi.fn> };
+  job: { count: ReturnType<typeof vi.fn>; findMany: ReturnType<typeof vi.fn> };
   outreach: {
     create: ReturnType<typeof vi.fn>;
     findMany: ReturnType<typeof vi.fn>;
@@ -58,5 +59,21 @@ describe("outreach actions", () => {
     expect(res.success).toBe(true);
     expect(prisma.outreach.update.mock.calls[0][0].data).toMatchObject({ outcome: "meeting" });
     expect(prisma.outreach.update.mock.calls[0][0].data.repliedAt).toBeInstanceOf(Date);
+  });
+
+  it("getUpcomingDeadlines merges and sorts deadlines + follow-ups", async () => {
+    prisma.job.findMany.mockResolvedValue([
+      { id: "j1", dueDate: new Date("2026-10-15"), JobTitle: { label: "PhD" }, Company: { label: "VU" } },
+    ]);
+    prisma.outreach.findMany.mockResolvedValue([
+      { id: "o1", followUpDue: new Date("2026-09-29"), contact: { name: "Prof. X" } },
+    ]);
+    const items = (await getUpcomingDeadlines(10, new Date("2026-09-17"))) as {
+      kind: string;
+      refId: string;
+    }[];
+    expect(items).toHaveLength(2);
+    expect(items[0]).toMatchObject({ kind: "follow-up", refId: "o1" });
+    expect(items[1]).toMatchObject({ kind: "deadline", refId: "j1" });
   });
 });

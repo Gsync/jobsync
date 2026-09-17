@@ -21,6 +21,8 @@ export const MCP_TOOL_DESCRIPTIONS = {
     "Fetch the user's default resume so you can review it. Returns the normalized resume text plus a directive — produce the review yourself, then call save_resume_review with the result.",
   save_resume_review:
     "Persist a resume review (produced by you, the agent) against the resume previously handed to you by review_resume. Call this after review_resume hands you a review directive.",
+  log_outreach:
+    "Log a cold outreach email (to a professor or recruiter) against an application. Creates the contact if new. A follow-up date (~12 days out) is set automatically.",
 } as const;
 
 export type McpToolName = keyof typeof MCP_TOOL_DESCRIPTIONS;

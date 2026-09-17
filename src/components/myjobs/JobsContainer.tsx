@@ -33,6 +33,7 @@ type MyJobsProps = {
   locations: JobLocation[];
   sources: JobSource[];
   tags: Tag[];
+  activeWorkspaceId?: string | null;
 };
 
 function JobsContainer({
@@ -42,6 +43,7 @@ function JobsContainer({
   locations,
   sources,
   tags,
+  activeWorkspaceId,
 }: MyJobsProps) {
   const router = useRouter();
   const [editJob, setEditJob] = useState(null);
@@ -85,6 +87,7 @@ function JobsContainer({
     titleFilter,
     locationFilter,
     sourceFilter,
+    workspaceId: activeWorkspaceId,
   });
 
   const onDeleteJob = async (jobId: string) => {

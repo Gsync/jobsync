@@ -70,3 +70,20 @@ export const deleteWorkspaceById = async (workspaceId: string) => {
     return handleError(error, "Failed to delete workspace. ");
   }
 };
+
+export const setJobWorkspace = async (jobId: string, workspaceId: string | null) => {
+  try {
+    const user = await requireUser();
+    if (workspaceId) {
+      const ws = await prisma.workspace.findFirst({ where: { id: workspaceId, userId: user.id } });
+      if (!ws) throw new Error("Workspace not found.");
+    }
+    const job = await prisma.job.update({
+      where: { id: jobId, userId: user.id },
+      data: { workspaceId },
+    });
+    return { data: job, success: true };
+  } catch (error) {
+    return handleError(error, "Failed to move application. ");
+  }
+};
