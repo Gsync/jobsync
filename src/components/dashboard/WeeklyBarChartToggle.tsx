@@ -1,18 +1,26 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useTheme } from "next-themes";
-import { ResponsiveBar } from "@nivo/bar";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
 import { cn } from "@/lib/utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { usePersistedTabIndex } from "@/hooks/usePersistedTabIndex";
+import { SoftPillButton } from "../osui/buttons/soft-pill-button";
 import {
-  SERIES_COLORS,
-  OTHER_COLOR,
   OTHER_SLICE_ID,
   otherBucketLabel,
 } from "./jobsActivityChart";
+
+// osui ink scale for series (light-first, paper background).
+const INK_SERIES = ["#262626", "#525252", "#737373", "#a3a3a3", "#d4d4d4"];
+const OTHER_INK = "#e5e5e5";
 
 type ChartConfig = {
   label: string;
@@ -27,6 +35,29 @@ type WeeklyBarChartToggleProps = {
   charts: ChartConfig[];
 };
 
+function TipLabel({
+  id,
+  current,
+}: {
+  id: string;
+  current: ChartConfig;
+}) {
+  if (current.tooltipLabel) return <>{current.tooltipLabel(id)}</>;
+  if (id === "value")
+    return (
+      <>
+        {current.axisLeftLegend
+          .toLowerCase()
+          .replace(/\(.*\)/, "")
+          .trim()
+          .replace(/\b\w/g, (c) => c.toUpperCase())}
+      </>
+    );
+  if (id === OTHER_SLICE_ID)
+    return <>{otherBucketLabel(current.keys.filter((key) => key !== OTHER_SLICE_ID))}</>;
+  return <>{id}</>;
+}
+
 export default function WeeklyBarChartToggle({
   charts,
 }: WeeklyBarChartToggleProps) {
@@ -35,20 +66,17 @@ export default function WeeklyBarChartToggle({
     charts.map((chart) => chart.label),
   );
   const [isSmallScreen, setIsSmallScreen] = useState(false);
-  const { resolvedTheme } = useTheme();
-  const theme = resolvedTheme === "light" ? "light" : "dark";
   const current = charts[activeIndex];
-  const activityColors = useMemo(
+  const stacked = current.groupMode === "stacked";
+  const barColors = useMemo(
     () =>
       new Map(
         current.keys.map((key, index) => [
           key,
-          key === OTHER_SLICE_ID
-            ? OTHER_COLOR[theme]
-            : SERIES_COLORS[theme][index],
+          key === OTHER_SLICE_ID ? OTHER_INK : INK_SERIES[index % INK_SERIES.length],
         ]),
       ),
-    [current.keys, theme],
+    [current.keys],
   );
 
   useEffect(() => {
@@ -69,21 +97,6 @@ export default function WeeklyBarChartToggle({
     return newItem;
   });
 
-  const isJobsChart = current.label !== "Activities";
-  const maxValue = isJobsChart
-    ? Math.max(
-        0,
-        ...roundedData.flatMap((item) =>
-          current.keys.map((key) =>
-            typeof item[key] === "number" ? item[key] : 0,
-          ),
-        ),
-      )
-    : undefined;
-  const intTickValues = isJobsChart
-    ? Array.from({ length: (maxValue as number) + 1 }, (_, i) => i)
-    : undefined;
-
   const totalHours =
     current.label === "Activities"
       ? roundedData.reduce(
@@ -99,166 +112,91 @@ export default function WeeklyBarChartToggle({
       : null;
 
   return (
-    <Card className="mb-2 @3xl/main:mb-0">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between gap-2 mb-1 mt-3">
-          <div className="flex items-baseline gap-2 min-w-0">
-            <CardTitle className="text-lg text-green-600 truncate">
-              Weekly {current.label}
-            </CardTitle>
-            {totalHours !== null && (
-              <span className="text-sm text-muted-foreground whitespace-nowrap">
-                {totalHours.toFixed(1)} hrs
-              </span>
-            )}
-          </div>
-          <div
-            className="flex shrink-0 rounded-md border text-xs"
-            data-testid="weekly-chart-toggle-group"
-          >
-            {charts.map((chart, index) => (
-              <button
-                key={chart.label}
-                onClick={() => selectTab(index)}
-                className={cn(
-                  "px-2 py-1 transition-colors",
-                  index === 0 && "rounded-l-md",
-                  index === charts.length - 1 && "rounded-r-md",
-                  activeIndex === index
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted",
-                )}
-              >
-                {chart.label}
-              </button>
-            ))}
-          </div>
+    <div className="mb-2 w-full overflow-hidden rounded-xl border border-neutral-200 bg-white font-sans @3xl/main:mb-0">
+      <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-1">
+        <div className="flex min-w-0 items-baseline gap-2">
+          <h3 className="truncate text-sm font-semibold text-neutral-900">
+            Weekly {current.label}
+          </h3>
+          {totalHours !== null && (
+            <span className="whitespace-nowrap text-xs text-neutral-500">
+              {totalHours.toFixed(1)} hrs
+            </span>
+          )}
         </div>
-      </CardHeader>
+        <div className="flex shrink-0 gap-1.5" data-testid="weekly-chart-toggle-group">
+          {charts.map((chart, index) => (
+            <SoftPillButton
+              key={chart.label}
+              size="sm"
+              variant={activeIndex === index ? "dark" : "light"}
+              onClick={() => selectTab(index)}
+            >
+              {chart.label}
+            </SoftPillButton>
+          ))}
+        </div>
+      </div>
 
-      <CardContent className="h-[240px] p-3 pt-1">
-        <div className="h-[200px]">
-          <ResponsiveBar
-            data={roundedData}
-            keys={current.keys}
-            indexBy="day"
-            margin={{
-              top: 20,
-              right: 10,
-              bottom: 40,
-              left: 45,
-            }}
-            padding={0.6}
-            groupMode={current.groupMode}
-            colors={
-              current.groupMode === "stacked"
-                ? (bar) => activityColors.get(String(bar.id)) ?? "#94a3b8"
-                : "#2a7ef0"
-            }
-            enableTotals={current.groupMode === "stacked" ? true : false}
-            valueFormat={(value) =>
-              current.label === "Activities"
-                ? value.toFixed(1)
-                : value.toFixed(0)
-            }
-            theme={{
-              text: {
-                fill: "#9ca3af",
-              },
-              tooltip: {
-                container: {
-                  background: "#1e293b",
-                  color: "#fff",
-                },
-              },
-            }}
-            axisTop={null}
-            axisRight={null}
-            enableGridX={false}
-            enableGridY={false}
-            enableLabel={true}
-            labelSkipHeight={1}
-            labelTextColor={{
-              from: "color",
-              modifiers: [["darker", 1.6]],
-            }}
-            axisBottom={{
-              tickSize: 5,
-              tickPadding: 5,
-              tickRotation: 0,
-              legendPosition: "middle",
-              legendOffset: 32,
-              truncateTickAt: 0,
-              format: isSmallScreen
-                ? (value: string) => value.split(", ")[1] ?? value
-                : undefined,
-            }}
-            axisLeft={{
-              tickSize: 5,
-              tickPadding: 5,
-              tickRotation: 0,
-              legend: current.axisLeftLegend,
-              legendPosition: "middle",
-              legendOffset: -40,
-              truncateTickAt: 0,
-              tickValues: intTickValues,
-            }}
-            motionConfig="gentle"
-            tooltip={({ id, value, indexValue, color, data }) => (
-              <div
-                style={{
-                  background: "#1e293b",
-                  color: "#fff",
-                  padding: "6px 10px",
-                  borderRadius: 4,
-                  fontSize: 13,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                <div style={{ marginBottom: 4 }}>{indexValue}</div>
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: 10,
-                    height: 10,
-                    background: color,
-                    borderRadius: 2,
-                    marginRight: 6,
-                  }}
-                />
-                {current.tooltipLabel
-                  ? current.tooltipLabel(String(id))
-                  : String(id) === "value"
-                    ? current.axisLeftLegend
-                        .toLowerCase()
-                        .replace(/\(.*\)/, "")
-                        .trim()
-                        .replace(/\b\w/g, (c) => c.toUpperCase())
-                    : String(id) === OTHER_SLICE_ID
-                      ? otherBucketLabel(
-                          current.keys.filter((key) => key !== OTHER_SLICE_ID),
-                        )
-                      : String(id)}
-                :{" "}
-                <strong>
-                  {current.label === "Activities"
-                    ? Number(value).toFixed(1)
-                    : value}
-                </strong>
-                {String(id) === OTHER_SLICE_ID &&
-                  (data as any).otherBreakdown?.length > 0 &&
-                  (data as any).otherBreakdown.map(
-                    (activity: { label: string; hours: number }) => (
-                      <div key={activity.label}>
-                        {activity.label} – {activity.hours}h
+      <div className="h-[200px] px-2 pb-2">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={roundedData} margin={{ top: 16, right: 12, bottom: 0, left: 0 }} barCategoryGap="35%">
+            <XAxis
+              dataKey="day"
+              tickLine={false}
+              axisLine={false}
+              tick={{ fontSize: 11, fill: "#a3a3a3" }}
+              interval={isSmallScreen ? 1 : 0}
+              tickFormatter={(value: string) => {
+                const part = String(value).split(", ")[1];
+                return isSmallScreen ? (part ?? value) : value;
+              }}
+            />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tick={{ fontSize: 11, fill: "#a3a3a3" }}
+              allowDecimals={false}
+              width={32}
+            />
+            <Tooltip
+              cursor={{ fill: "#f5f5f5" }}
+              content={({ active, payload, label }) => {
+                if (!active || !payload?.length) return null;
+                return (
+                  <div className="rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-xs whitespace-nowrap text-neutral-800 shadow-sm">
+                    <div className="mb-1 font-medium">{label}</div>
+                    {payload.map((p) => (
+                      <div key={String(p.dataKey)} className="flex items-center gap-1.5">
+                        <span
+                          className="inline-block h-2.5 w-2.5 rounded-[2px]"
+                          style={{ background: barColors.get(String(p.dataKey)) }}
+                        />
+                        <TipLabel id={String(p.dataKey)} current={current} />:{" "}
+                        <strong>
+                          {current.label === "Activities"
+                            ? Number(p.value).toFixed(1)
+                            : p.value}
+                        </strong>
                       </div>
-                    ),
-                  )}
-              </div>
-            )}
-          />
-        </div>
-      </CardContent>
-    </Card>
+                    ))}
+                  </div>
+                );
+              }}
+            />
+            {current.keys.map((key) => (
+              <Bar
+                key={key}
+                dataKey={key}
+                stackId={stacked ? "total" : undefined}
+                fill={barColors.get(key)}
+                radius={[3, 3, 0, 0]}
+                className={cn(stacked && "stroke-white stroke-1")}
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   );
 }
