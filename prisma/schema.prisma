@@ -39,6 +39,7 @@ model User {
   ChatConversation ChatConversation?
   defaultResumeId String?
   defaultResume   Resume?          @relation("UserDefaultResume", fields: [defaultResumeId], references: [id], onDelete: SetNull)
+  workspaces      Workspace[]
 }
 
 model ApiKey {
@@ -246,6 +247,8 @@ model Contact {
 
   jobLinks          JobContact[]
 
+  outreach          Outreach[]
+
   @@index([createdBy])
   @@index([companyId])
   @@index([workedAtCompanyId])
@@ -395,6 +398,11 @@ model Job {
   Notes         Note[]
   tags        Tag[]
   contactLinks  JobContact[]
+
+  // Dual-workspace (PRD Phase 1): optional link into a SCHOOL/JOB workspace.
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  outreach    Outreach[]
 
   // Automation discovery fields
   automationId    String?
@@ -619,4 +627,73 @@ model ChatConversation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ---------- Dual-workspace (School + Job) — PRD Phase 1 ----------
+
+enum WorkspaceType {
+  SCHOOL
+  JOB
+}
+
+model Workspace {
+  id        String        @id @default(uuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  type      WorkspaceType
+  createdAt DateTime      @default(now())
+  stages    Stage[]
+  jobs      Job[]
+  fields    WorkspaceField[]
+
+  @@index([userId])
+  @@index([userId, type])
+}
+
+model Stage {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  order       Int
+  isTerminal  Boolean   @default(false)
+  color       String?
+
+  @@index([workspaceId, order])
+}
+
+model WorkspaceField {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  key         String
+  label       String
+  type        String // text | number | date | select | url
+  options     String? // JSON for select
+
+  @@unique([workspaceId, key])
+}
+
+// Cold-email lifecycle: one row per professor/recruiter contacted.
+// Follow-up rule: sentAt + 10–14 days.
+model Outreach {
+  id            String    @id @default(uuid())
+  jobId         String?
+  job           Job?      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  contactId     String?
+  contact       Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  channel       String    @default("email")
+  subject       String?
+  body          String?
+  paperCited    String?
+  sentAt        DateTime?
+  followUpDue   DateTime?
+  repliedAt     DateTime?
+  outcome       String? // no_reply | positive | negative | meeting | offer
+  createdAt     DateTime  @default(now())
+
+  @@index([jobId])
+  @@index([contactId])
+  @@index([followUpDue])
 }
