@@ -150,6 +150,13 @@ export async function s3Put(cfg, key, srcPath) {
   return true;
 }
 
+export async function s3Delete(cfg, key) {
+  const res = await s3Fetch(cfg, "DELETE", key);
+  if (res.status === 404) return false;
+  if (!res.ok) throw new Error(`S3 DELETE ${key} -> HTTP ${res.status}`);
+  return true;
+}
+
 export async function downloadDb(cfg, dbPath) {
   mkdirSync(dirname(dbPath), { recursive: true });
   let restored = false;
@@ -180,14 +187,18 @@ if (isMain) {
     console.log("bucket-sync: S3 bucket not configured — skipping.");
     process.exit(0);
   }
-  if (mode !== "download" && mode !== "upload") {
-    console.error("usage: node scripts/sync-db-bucket.mjs download|upload [dbPath]");
+  if (mode !== "download" && mode !== "upload" && mode !== "delete") {
+    console.error("usage: node scripts/sync-db-bucket.mjs download|upload|delete [dbPath|key]");
     process.exit(2);
   }
   try {
     if (mode === "download") {
       const restored = await downloadDb(cfg, dbPath);
       console.log(restored ? `bucket-sync: restored ${dbPath} from bucket.` : "bucket-sync: no object in bucket — fresh database.");
+    } else if (mode === "delete") {
+      const key = process.argv[3] ?? dbObjectKey(dbPath);
+      const ok = await s3Delete(cfg, key);
+      console.log(ok ? `bucket-sync: deleted ${key}.` : `bucket-sync: ${key} not found.`);
     } else {
       const ok = await uploadDb(cfg, dbPath);
       console.log(ok ? `bucket-sync: uploaded ${dbPath} to bucket.` : "bucket-sync: no local db file — nothing uploaded.");

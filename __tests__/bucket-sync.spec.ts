@@ -13,6 +13,7 @@ import {
   s3Head,
   s3Get,
   s3Put,
+  s3Delete,
   downloadDb,
   uploadDb,
 } from "../scripts/sync-db-bucket.mjs";
@@ -170,6 +171,14 @@ describe("s3 operations (mocked fetch)", () => {
     expect(calls[0].method).toBe("PUT");
     expect(calls[0].url).toBe("https://jobsync-db-xyz.t3.storageapi.dev/db/dev.db");
     expect(calls[0].headers.Authorization).toMatch(/^AWS4-HMAC-SHA256 /);
+  });
+
+  it("s3Delete issues DELETE and reports missing keys", async () => {
+    const calls = mockFetchOnce(204);
+    expect(await s3Delete(CFG, "db/old.db")).toBe(true);
+    expect(calls[0].method).toBe("DELETE");
+    mockFetchOnce(404);
+    expect(await s3Delete(CFG, "db/old.db")).toBe(false);
   });
 
   it("downloadDb restores main file; uploadDb skips missing sidecars", async () => {
