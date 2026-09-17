@@ -4,15 +4,20 @@ import { PrismaClient } from "@prisma/client";
 
 vi.mock("@prisma/client", () => {
   const mPrismaClient = {
-    workspace: { findMany: vi.fn(), create: vi.fn(), delete: vi.fn() },
-    job: { count: vi.fn() },
+    workspace: { findMany: vi.fn(), create: vi.fn(), delete: vi.fn(), findFirst: vi.fn() },
+    job: { count: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
   };
   return { PrismaClient: vi.fn(function () { return mPrismaClient; }) };
 });
 vi.mock("@/utils/user.utils", () => ({ getCurrentUser: vi.fn() }));
 
 const prisma = new PrismaClient() as unknown as {
-  workspace: { findMany: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn> };
+  workspace: {
+    findMany: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
+    findFirst: ReturnType<typeof vi.fn>;
+  };
+  job: { updateMany: ReturnType<typeof vi.fn> };
 };
 const mockUser = vi.mocked(getCurrentUser);
 
@@ -33,16 +38,22 @@ describe("workspace actions", () => {
     expect((await createWorkspace("X", "PHD" as never)).success).not.toBe(true);
   });
 
-  it("ensureDefaultWorkspaces only creates what is missing", async () => {
+  it("ensureDefaultWorkspaces only creates what is missing + backfills orphans", async () => {
     prisma.workspace.findMany.mockResolvedValue([{ id: "w0", type: "JOB" }]);
     prisma.workspace.create.mockResolvedValue({ id: "w1", type: "SCHOOL" });
+    prisma.job.updateMany.mockResolvedValue({ count: 3 });
     const res = (await ensureDefaultWorkspaces()) as {
       success: boolean;
       data: { id: string; type: string }[];
+      backfilled: number;
     };
     expect(prisma.workspace.create).toHaveBeenCalledTimes(1);
     expect(prisma.workspace.create.mock.calls[0][0].data.type).toBe("SCHOOL");
     expect(res.data).toHaveLength(2);
+    expect(prisma.job.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { workspaceId: "w0" } })
+    );
+    expect(res.backfilled).toBe(3);
   });
 
   it("getWorkspaces scopes to the user", async () => {

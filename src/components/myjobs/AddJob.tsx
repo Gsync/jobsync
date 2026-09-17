@@ -46,6 +46,8 @@ import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
 import { redirect, useRouter, useSearchParams } from "next/navigation";
 import { Combobox } from "../ComboBox";
+import { SelectFieldInput } from "../osui/inputs/select-field-input";
+import { getWorkspaces } from "@/actions/workspace/workspace.actions";
 import { NotesCollapsibleSection } from "./NotesCollapsibleSection";
 import { CoverLetter, Resume } from "@/models/profile.model";
 import CreateResume from "../profile/CreateResume";
@@ -70,6 +72,7 @@ type AddJobProps = {
   initialOpen?: boolean;
   hideTrigger?: boolean;
   redirectPath?: string;
+  defaultWorkspaceId?: string | null;
 };
 
 export function AddJob({
@@ -84,6 +87,7 @@ export function AddJob({
   initialOpen,
   hideTrigger,
   redirectPath,
+  defaultWorkspaceId,
 }: AddJobProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -91,6 +95,7 @@ export function AddJob({
   const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [coverLetters, setCoverLetters] = useState<CoverLetter[]>([]);
+  const [workspaceOpts, setWorkspaceOpts] = useState<{ value: string; label: string }[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>(tags);
   const [isPending, startTransition] = useTransition();
 
@@ -122,6 +127,7 @@ export function AddJob({
     status: jobStatuses[0]?.id,
     salaryRange: "",
     fundingStatus: "",
+    workspaceId: defaultWorkspaceId ?? "",
     jobUrl: "",
     jobDescription: "N/A",
     location: locations.find((l) => l.id === lastLocationId)?.id,
@@ -174,6 +180,7 @@ export function AddJob({
         dueDate: editJob.dueDate,
         salaryRange: editJob.salaryRange ?? "",
         fundingStatus: (editJob as { fundingStatus?: string | null }).fundingStatus ?? "",
+        workspaceId: (editJob as { workspaceId?: string | null }).workspaceId ?? "",
         jobDescription: editJob.description,
         applied: editJob.applied,
         jobUrl: editJob.jobUrl ?? "",
@@ -198,6 +205,16 @@ export function AddJob({
     if (!dialogOpen) return;
     loadResumes();
     loadCoverLetters();
+    getWorkspaces()
+      .then((list) =>
+        setWorkspaceOpts(
+          ((list ?? []) as { id: string; name: string }[]).map((w) => ({
+            value: w.id,
+            label: w.name,
+          }))
+        )
+      )
+      .catch(() => null);
   }, [dialogOpen, loadResumes, loadCoverLetters]);
 
   const setNewResumeId = (id: string) => {
@@ -534,6 +551,26 @@ export function AddJob({
                           field={field}
                           presets={true}
                           isEnabled={true}
+                        />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Workspace (osui) */}
+                <div>
+                  <FormField
+                    control={form.control}
+                    name="workspaceId"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <SelectFieldInput
+                          label="Workspace"
+                          placeholder="Select workspace"
+                          options={workspaceOpts}
+                          value={field.value ?? ""}
+                          onValueChange={field.onChange}
                         />
                         <FormMessage />
                       </FormItem>

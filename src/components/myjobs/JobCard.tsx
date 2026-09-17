@@ -2,7 +2,6 @@
 import { Calendar, MapPin, PlusCircle, StickyNote } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
-import { Badge } from "../ui/badge";
 import { CircularScore } from "@/components/CircularScore";
 import { JobResponse, JobStatus } from "@/models/job.model";
 import { JobStatusBadge } from "./JobStatusBadge";
@@ -30,7 +29,7 @@ export function JobCard({
   const notesCount = job._count?.Notes ?? 0;
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border bg-card p-4">
+    <div className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-4 font-sans transition-colors hover:bg-neutral-50/50">
       <div className="flex items-start gap-3">
         <CompanyLogo
           logoUrl={job.Company?.logoUrl}
@@ -40,21 +39,18 @@ export function JobCard({
           <div className="flex items-center gap-1.5">
             <Link
               href={`/dashboard/myjobs/${job?.id}`}
-              className="truncate font-semibold"
+              className="truncate font-semibold text-neutral-900"
             >
               {job.JobTitle?.label}
             </Link>
             {notesCount > 0 && (
-              <Badge
-                variant="secondary"
-                className="h-5 shrink-0 px-1.5 py-0 text-xs"
-              >
+              <span className="inline-flex h-5 shrink-0 items-center rounded bg-neutral-100 px-1.5 py-0 text-xs text-neutral-600">
                 <StickyNote className="mr-0.5 h-3 w-3" />
                 {notesCount}
-              </Badge>
+              </span>
             )}
           </div>
-          <p className="truncate text-sm text-muted-foreground">
+          <p className="truncate text-sm text-neutral-500">
             {job.Company?.label}
           </p>
         </div>
@@ -65,7 +61,7 @@ export function JobCard({
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-500">
         {job.Location?.label && (
           <span className="flex min-w-0 items-center gap-1">
             <MapPin className="h-3.5 w-3.5 shrink-0" />
@@ -84,7 +80,7 @@ export function JobCard({
         )}
       </div>
 
-      <div className="mt-auto flex items-center justify-between border-t pt-3">
+      <div className="mt-auto flex items-center justify-between border-t border-neutral-100 pt-3">
         <JobStatusBadge job={job} />
         <JobActionsMenu
           job={job}

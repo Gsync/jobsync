@@ -1,22 +1,11 @@
 "use client";
-import { ListCollapse, MoreVertical, Pencil, StickyNote, Tags, Trash } from "lucide-react";
+import { ListCollapse, Pencil, StickyNote, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import { Button } from "../ui/button";
+  KebabActionsDropdown,
+  type KebabMenuItem,
+} from "../osui/dropdowns/kebab-actions-dropdown";
 import { JobResponse, JobStatus } from "@/models/job.model";
-import { JobStatusMenuItems } from "./JobStatusMenuItems";
 
 type JobActionsMenuProps = {
   job: JobResponse;
@@ -27,79 +16,28 @@ type JobActionsMenuProps = {
   onDeleteJob: (jobId: string) => void;
 };
 
-export function JobActionsMenu({
-  job,
-  jobStatuses,
-  editJob,
-  onChangeJobStatus,
-  onAddNote,
-  onDeleteJob,
-}: JobActionsMenuProps) {
-  const router = useRouter();
+// osui kebab-actions-dropdown (status changes live in the table's Status pill).
+const ITEMS: readonly KebabMenuItem[] = [
+  { id: "details", label: "View details", icon: ListCollapse },
+  { id: "edit", label: "Edit", icon: Pencil },
+  { id: "note", label: "Add a note", icon: StickyNote },
+  { id: "separator-delete", separator: true },
+  { id: "delete", label: "Delete", icon: Trash, danger: true },
+];
 
+export function JobActionsMenu({ job, editJob, onAddNote, onDeleteJob }: JobActionsMenuProps) {
+  const router = useRouter();
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          aria-haspopup="true"
-          size="icon"
-          variant="ghost"
-          data-testid="job-actions-menu-btn"
-        >
-          <MoreVertical className="h-4 w-4" />
-          <span className="sr-only">Toggle menu</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[200px]">
-        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            className="cursor-pointer"
-            onClick={() => router.push(`/dashboard/myjobs/${job?.id}`)}
-          >
-            <ListCollapse className="mr-2 h-4 w-4" />
-            View Details
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="cursor-pointer"
-            onClick={() => editJob(job.id)}
-          >
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit Job
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="cursor-pointer"
-            onClick={() => onAddNote(job.id)}
-          >
-            <StickyNote className="mr-2 h-4 w-4" />
-            Add a Note
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              <Tags className="mr-2 h-4 w-4" />
-              Change status
-            </DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent className="p-0">
-                <JobStatusMenuItems
-                  jobStatuses={jobStatuses}
-                  currentStatusId={job.Status.id}
-                  onSelectStatus={(status) => onChangeJobStatus(job.id, status)}
-                />
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="text-red-600 cursor-pointer"
-            onClick={() => onDeleteJob(job.id)}
-          >
-            <Trash className="mr-2 h-4 w-4" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <KebabActionsDropdown
+      rowTitle={job.JobTitle?.label ?? "Application"}
+      triggerAriaLabel="Application actions"
+      items={ITEMS}
+      onItemClick={(item) => {
+        if (item.id === "details") router.push(`/dashboard/myjobs/${job?.id}`);
+        else if (item.id === "edit") editJob(job.id);
+        else if (item.id === "note") onAddNote(job.id);
+        else if (item.id === "delete") onDeleteJob(job.id);
+      }}
+    />
   );
 }

@@ -2,6 +2,7 @@ export {
   getContactList,
   getAllContacts,
   getContactById,
+  getContactsDirectory,
 } from "./contact/queries";
 
 export {

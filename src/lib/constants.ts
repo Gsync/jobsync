@@ -9,6 +9,7 @@ import {
   Zap,
   BookOpen,
   Mails,
+  Contact as ContactIcon,
 } from "lucide-react";
 
 export const APP_CONSTANTS = {
@@ -331,6 +332,11 @@ export const SIDEBAR_LINKS = [
     icon: Mails,
     route: "/dashboard/outreach",
     label: "Outreach",
+  },
+  {
+    icon: ContactIcon,
+    route: "/dashboard/contacts",
+    label: "Directory",
   },
   {
     icon: Zap,
