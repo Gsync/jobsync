@@ -11,6 +11,7 @@ type JobTabEmptyStateProps = {
   onAction?: () => void;
   actionDisabled?: boolean;
   actionTitle?: string;
+  actionTestId?: string;
 };
 
 export function JobTabEmptyState({
@@ -21,6 +22,7 @@ export function JobTabEmptyState({
   onAction,
   actionDisabled,
   actionTitle,
+  actionTestId,
 }: JobTabEmptyStateProps) {
   return (
     <div className="flex flex-col items-center gap-3 py-8 text-center">
@@ -37,6 +39,7 @@ export function JobTabEmptyState({
           onClick={onAction}
           disabled={actionDisabled}
           title={actionTitle}
+          data-testid={actionTestId}
         >
           <Icon className="h-4 w-4 mr-2" />
           {actionLabel}

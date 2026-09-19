@@ -65,6 +65,45 @@ vi.mock("@/components/CircularScore", () => ({
   ),
 }));
 
+vi.mock("@/actions/jobStage.actions", () => ({
+  getJobStages: vi.fn().mockResolvedValue([]),
+  setPrepQuestionAsked: vi.fn(),
+  removeStagePrepQuestion: vi.fn(),
+  unlinkStageInterviewer: vi.fn(),
+  setStageNotes: vi.fn(),
+}));
+
+const makeStage = (id: string, label: string, over: any = {}) => ({
+  id,
+  jobId: "job-1",
+  stageTypeId: `t-${id}`,
+  occurredAt: new Date(2026, 8, 3),
+  isCurrent: false,
+  outcome: null,
+  notes: null,
+  durationMins: null,
+  format: null,
+  location: null,
+  createdAt: new Date(2026, 8, 1),
+  updatedAt: new Date(2026, 8, 1),
+  StageType: {
+    id: `t-${id}`,
+    label,
+    value: label.toLowerCase(),
+    statusId: "s1",
+    sortOrder: 0,
+    Status: { id: "s1", label, value: "applied" },
+  },
+  interviewers: [],
+  prepQuestions: [],
+  ...over,
+});
+
+const stageA = makeStage("stage-a", "Applied", {
+  occurredAt: new Date(2026, 8, 1),
+});
+const stageB = makeStage("stage-b", "Interview", { isCurrent: true });
+
 const baseProps = {
   jobStatuses: [],
   companies: [],
@@ -72,6 +111,7 @@ const baseProps = {
   locations: [],
   sources: [],
   tags: [],
+  stageTypes: [],
 };
 
 const makeJob = (overrides: Partial<JobResponse> = {}): JobResponse => ({
@@ -284,15 +324,39 @@ describe("JobDetails – tabs", () => {
     searchParams = new URLSearchParams();
   });
 
-  // The bar must not shift between jobs, so all five are always present.
-  it("renders all five tabs regardless of what the job has", () => {
+  // The bar must not shift between jobs, so all six are always present.
+  it("renders all six tabs regardless of what the job has", () => {
     render(<JobDetails {...baseProps} job={makeJob()} />);
 
     expect(screen.getByRole("tab", { name: /description/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /ai match/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /timeline/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /cover letter/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /notes/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Contacts" })).toBeInTheDocument();
+  });
+
+  it("renders a Timeline tab between AI Match and Cover Letter, with a stage count", () => {
+    render(
+      <JobDetails {...baseProps} job={makeJob({ stages: [stageA, stageB] })} />,
+    );
+
+    const tabs = screen.getAllByRole("tab").map((t) => t.textContent);
+    const matchAt = tabs.findIndex((t) => t?.startsWith("AI Match"));
+    const timelineAt = tabs.findIndex((t) => t?.startsWith("Timeline"));
+    const letterAt = tabs.findIndex((t) => t?.startsWith("Cover Letter"));
+
+    expect(timelineAt).toBe(matchAt + 1);
+    expect(letterAt).toBe(timelineAt + 1);
+    expect(screen.getByRole("tab", { name: /Timeline/ })).toHaveTextContent("2");
+  });
+
+  it("shows an empty state for a job with no stages, keeping its status visible", () => {
+    onTab("timeline");
+    render(<JobDetails {...baseProps} job={makeJob({ stages: [] })} />);
+
+    expect(screen.getByText(/No stages recorded/i)).toBeInTheDocument();
+    expect(screen.getByTestId("timeline-add-stage-btn")).toBeInTheDocument();
   });
 
   it("opens on the Description tab", () => {

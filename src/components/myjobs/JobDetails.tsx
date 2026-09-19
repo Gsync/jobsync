@@ -40,10 +40,14 @@ import { JobTabEmptyState } from "./job-details/JobTabEmptyState";
 import { CoverLetterTab } from "./job-details/CoverLetterTab";
 import { useAutoMatch } from "./job-details/useAutoMatch";
 import { JobContactsTab } from "./job-details/JobContactsTab";
+import { JobTimelineTab } from "./job-details/timeline/JobTimelineTab";
+import { useJobStages } from "./job-details/timeline/useJobStages";
+import type { JobStage, JobStageTypeRef } from "@/models/jobStage.model";
 
 const JOB_DETAIL_TABS = [
   "description",
   "match",
+  "timeline",
   "letter",
   "notes",
   "contacts",
@@ -57,6 +61,7 @@ type JobDetailsProps = {
   locations: JobLocation[];
   sources: JobSource[];
   tags: Tag[];
+  stageTypes: JobStageTypeRef[];
 };
 
 function JobDetails({
@@ -67,6 +72,7 @@ function JobDetails({
   locations,
   sources,
   tags,
+  stageTypes,
 }: JobDetailsProps) {
   const {
     open: openChat,
@@ -84,6 +90,20 @@ function JobDetails({
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [noteOpenTrigger, setNoteOpenTrigger] = useState(0);
   const [notesCount, setNotesCount] = useState(0);
+  const {
+    stages,
+    currentStage,
+    selectedStageId,
+    selectStage,
+    reload: reloadStages,
+  } = useJobStages(job.id, job.stages ?? []);
+  // Phase 6 renders the three stage dialogs against this same state; until
+  // then the timeline's buttons are deliberately inert.
+  const [, setAddStageTarget] = useState<
+    { mode: "create" } | { mode: "edit"; stage: JobStage } | null
+  >(null);
+  const [, setLinkInterviewersOpen] = useState(false);
+  const [, setPrepQuestionsOpen] = useState(false);
   const router = useRouter();
   const [activeTab, handleTabChange] = useTabQueryParam(
     JOB_DETAIL_TABS,
@@ -158,6 +178,9 @@ function JobDetails({
     const { success, message } = await updateJobStatus(job.id, status);
     if (success) {
       setCurrentStatus(status);
+      // The status change appends a stage server-side, so the timeline has to
+      // catch up or the stepper keeps showing the previous current stage.
+      void reloadStages();
       toastSuccess(`Job has been updated successfully`);
     } else {
       toastError(message);
@@ -202,6 +225,14 @@ function JobDetails({
           <TabsList>
             <TabsTrigger value="description">Description</TabsTrigger>
             <TabsTrigger value="match">AI Match</TabsTrigger>
+            <TabsTrigger value="timeline">
+              Timeline
+              {stages.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {stages.length}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="letter">Cover Letter</TabsTrigger>
             <TabsTrigger value="notes">
               Notes
@@ -241,6 +272,20 @@ function JobDetails({
                 />
               )}
             </Card>
+          </TabsContent>
+          <TabsContent value="timeline" className="mt-4">
+            <JobTimelineTab
+              stages={stages}
+              stageTypes={stageTypes}
+              selectedStageId={selectedStageId}
+              currentStageId={currentStage?.id ?? null}
+              onSelect={selectStage}
+              onAddStage={() => setAddStageTarget({ mode: "create" })}
+              onEditStage={(stage) => setAddStageTarget({ mode: "edit", stage })}
+              onLinkInterviewers={() => setLinkInterviewersOpen(true)}
+              onAddPrepQuestions={() => setPrepQuestionsOpen(true)}
+              onChanged={reloadStages}
+            />
           </TabsContent>
           <TabsContent value="letter" className="mt-4">
             <Card className="p-6">
