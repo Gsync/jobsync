@@ -359,6 +359,21 @@ describe("JobDetails – tabs", () => {
     expect(screen.getByTestId("timeline-add-stage-btn")).toBeInTheDocument();
   });
 
+  // Escape first: an open Radix menu is modal, so the second trigger would
+  // sit under a pointer-events:none layer.
+  it("keeps only one status control, in the Update Status menu", async () => {
+    render(<JobDetails {...baseProps} job={makeJob()} />);
+
+    await userEvent.click(screen.getByTestId("job-details-actions-menu-btn"));
+    expect(screen.queryByRole("menuitem", { name: /Change status/ })).toBeNull();
+    await userEvent.keyboard("{Escape}");
+
+    await userEvent.click(screen.getByTestId("update-status-menu-btn"));
+    expect(
+      screen.getByRole("menuitem", { name: /Change status/ }),
+    ).toBeInTheDocument();
+  });
+
   it("opens on the Description tab", () => {
     render(<JobDetails {...baseProps} job={makeJob()} />);
 

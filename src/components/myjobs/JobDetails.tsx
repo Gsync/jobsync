@@ -42,6 +42,7 @@ import { useAutoMatch } from "./job-details/useAutoMatch";
 import { JobContactsTab } from "./job-details/JobContactsTab";
 import { JobTimelineTab } from "./job-details/timeline/JobTimelineTab";
 import { useJobStages } from "./job-details/timeline/useJobStages";
+import { UpdateStatusMenu } from "./job-details/timeline/UpdateStatusMenu";
 import type { JobStage, JobStageTypeRef } from "@/models/jobStage.model";
 
 const JOB_DETAIL_TABS = [
@@ -93,17 +94,16 @@ function JobDetails({
   const {
     stages,
     currentStage,
+    selectedStage,
     selectedStageId,
     selectStage,
     reload: reloadStages,
   } = useJobStages(job.id, job.stages ?? []);
-  // Phase 6 renders the three stage dialogs against this same state; until
-  // then the timeline's buttons are deliberately inert.
-  const [, setAddStageTarget] = useState<
+  const [addStageTarget, setAddStageTarget] = useState<
     { mode: "create" } | { mode: "edit"; stage: JobStage } | null
   >(null);
-  const [, setLinkInterviewersOpen] = useState(false);
-  const [, setPrepQuestionsOpen] = useState(false);
+  const [linkInterviewersOpen, setLinkInterviewersOpen] = useState(false);
+  const [prepQuestionsOpen, setPrepQuestionsOpen] = useState(false);
   const router = useRouter();
   const [activeTab, handleTabChange] = useTabQueryParam(
     JOB_DETAIL_TABS,
@@ -202,8 +202,6 @@ function JobDetails({
       <div className="py-6 space-y-6">
         <JobDetailsHeader
           job={job}
-          jobStatuses={jobStatuses}
-          currentStatus={currentStatus}
           coverLetterBlockedReason={coverLetterBlockedReason}
           chatBusy={chatBusy}
           onBack={goBack}
@@ -212,7 +210,17 @@ function JobDetails({
           onEdit={onEditJob}
           onDelete={() => setDeleteAlertOpen(true)}
           onAddNote={onAddNote}
-          onChangeStatus={onChangeStatus}
+          updateStatusMenu={
+            <UpdateStatusMenu
+              targetStage={selectedStage ?? currentStage}
+              jobStatuses={jobStatuses}
+              currentStatusId={currentStatus.id}
+              onChangeStatus={onChangeStatus}
+              onAddStage={() => setAddStageTarget({ mode: "create" })}
+              onLinkInterviewers={() => setLinkInterviewersOpen(true)}
+              onAddPrepQuestions={() => setPrepQuestionsOpen(true)}
+            />
+          }
         />
 
         <JobSummaryCard
