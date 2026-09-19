@@ -2,7 +2,7 @@
 import fs from "fs";
 import path from "path";
 import { PrismaClient } from "@prisma/client";
-import { APP_CONSTANTS, CONTACT_ROLES } from "@/lib/constants";
+import { APP_CONSTANTS, CONTACT_ROLES, JOB_STAGES } from "@/lib/constants";
 import { buildBackupZip } from "@/lib/backup/export";
 import { importBackup } from "@/lib/backup/import";
 import { listSnapshots, readSnapshot } from "@/lib/backup/snapshot";
@@ -149,7 +149,29 @@ async function seedFullAccount() {
   const question = await prisma.question.create({
     data: { question: "Why us?", createdBy: userId, tags: { connect: { id: tag.id } } },
   });
-  expect(question.id).toBeTruthy();
+
+  const onsiteType = await prisma.jobStageType.findFirstOrThrow({
+    where: { createdBy: userId, value: "final / onsite interview" },
+  });
+  const stage = await prisma.jobStage.create({
+    data: {
+      jobId: job.id,
+      stageTypeId: onsiteType.id,
+      occurredAt: new Date("2026-09-24T14:00:00.000Z"),
+      isCurrent: true,
+      outcome: "scheduled",
+      notes: "Bring laptop",
+      durationMins: 90,
+      format: "On-site",
+      location: "Acme HQ, Bldg 3",
+    },
+  });
+  await prisma.jobStageInterviewer.create({
+    data: { stageId: stage.id, contactId: contact.id },
+  });
+  await prisma.jobStagePrepQuestion.create({
+    data: { stageId: stage.id, questionId: question.id, asked: true, askedAt: new Date() },
+  });
 
   const activityType = await prisma.activityType.create({
     data: { label: "Applying", value: "applying", createdBy: userId },
@@ -339,15 +361,70 @@ describe("backup round trip", () => {
     expect(await prisma.contactRole.count({ where: { createdBy: userId } })).toBe(5);
   });
 
+  it("round-trips a job's timeline, its interviewer and its prep question", async () => {
+    const restored = await prisma.jobStage.findFirstOrThrow({
+      where: { Job: { userId } },
+      include: {
+        StageType: { include: { Status: true } },
+        interviewers: { include: { Contact: true } },
+        prepQuestions: { include: { Question: true } },
+        Job: true,
+      },
+    });
+
+    expect(restored.StageType.value).toBe("final / onsite interview");
+    expect(restored.StageType.Status.value).toBe("interview");
+    expect(restored.isCurrent).toBe(true);
+    expect(restored.durationMins).toBe(90);
+    expect(restored.location).toBe("Acme HQ, Bldg 3");
+    expect(restored.Job.userId).toBe(userId);
+    expect(restored.interviewers[0].Contact.name).toBe("Pat Lee");
+    expect(restored.prepQuestions[0].asked).toBe(true);
+    expect(restored.prepQuestions[0].Question.question).toBe("Why us?");
+
+    // Lookup, like ContactRole: the seeded types came back once, not doubled.
+    expect(
+      await prisma.jobStageType.count({ where: { createdBy: userId } }),
+    ).toBe(14);
+  });
+
+  // D3: the file carries no JobStatus ids, so every restored type has to have
+  // been re-pointed at this database's own status rows.
+  it("re-points every restored stage type at a real local status", async () => {
+    const types = await prisma.jobStageType.findMany({
+      where: { createdBy: userId },
+      include: { Status: true },
+    });
+    expect(types).toHaveLength(14);
+    for (const type of types) {
+      expect(type.Status).not.toBeNull();
+    }
+    const withdrawn = types.find((t) => t.value === "withdrawn")!;
+    // Withdrawn is the case the export's widened jobStatuses query exists for:
+    // no job holds it, so it would otherwise never reach the file.
+    expect(withdrawn.Status.value).toBe("withdrawn");
+  });
+
   it("reseeds the default contact roles when restoring a pre-contacts backup", async () => {
     const { buffer } = await buildBackupZip(userId, "owner@example.com");
 
     // Reshape into what v1.1.19 wrote: no contact groups, no counts for them.
+    // The stage groups go too — that release predates stages as well, and
+    // JobStageInterviewer.contactId is a required FK, so leaving it behind
+    // would abort the import on a contact the file no longer carries.
     const JSZip = (await import("jszip")).default;
     const zip = await JSZip.loadAsync(buffer);
     const data = JSON.parse(await zip.file("data.json")!.async("string"));
     const manifest = JSON.parse(await zip.file("manifest.json")!.async("string"));
-    for (const group of ["Contact", "ContactRole", "JobContact"]) {
+    for (const group of [
+      "Contact",
+      "ContactRole",
+      "JobContact",
+      "JobStageType",
+      "JobStage",
+      "JobStageInterviewer",
+      "JobStagePrepQuestion",
+    ]) {
       delete data[group];
       delete manifest.counts[group];
     }
@@ -361,6 +438,36 @@ describe("backup round trip", () => {
     expect(roles.map((r) => r.value).sort()).toEqual(
       CONTACT_ROLES.map((r) => r.value).sort(),
     );
+  }, 120_000);
+
+  it("reseeds the default stage types when restoring a pre-stages backup", async () => {
+    const { buffer } = await buildBackupZip(userId, "owner@example.com");
+
+    const JSZip = (await import("jszip")).default;
+    const zip = await JSZip.loadAsync(buffer);
+    const data = JSON.parse(await zip.file("data.json")!.async("string"));
+    const manifest = JSON.parse(await zip.file("manifest.json")!.async("string"));
+    for (const group of [
+      "JobStageType",
+      "JobStage",
+      "JobStageInterviewer",
+      "JobStagePrepQuestion",
+    ]) {
+      delete data[group];
+      delete manifest.counts[group];
+    }
+    zip.file("data.json", JSON.stringify(data));
+    zip.file("manifest.json", JSON.stringify(manifest));
+    const legacy = await zip.generateAsync({ type: "nodebuffer" });
+
+    await importBackup(legacy, userId, "owner@example.com", true);
+
+    const types = await prisma.jobStageType.findMany({ where: { createdBy: userId } });
+    expect(types.map((t) => t.value).sort()).toEqual(
+      JOB_STAGES.map((s) => s.value).sort(),
+    );
+    // Decision 22: restored jobs come back stageless, and stay that way.
+    expect(await prisma.jobStage.count({ where: { Job: { userId } } })).toBe(0);
   }, 120_000);
 
   it("does not demand confirmWipe on a freshly signed-up account", async () => {
