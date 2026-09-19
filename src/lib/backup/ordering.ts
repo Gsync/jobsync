@@ -24,10 +24,13 @@ export type BackupModel =
   | "Automation"
   | "Job"
   | "Note"
-  | "Interview"
   | "Contact"
   | "ContactRole"
   | "JobContact"
+  | "JobStageType"
+  | "JobStage"
+  | "JobStageInterviewer"
+  | "JobStagePrepQuestion"
   | "Task"
   | "Activity"
   | "Question"
@@ -139,12 +142,10 @@ export const MODEL_SPECS: Record<BackupModel, ModelSpec> = {
     scope: byUser,
   },
   Note: { delegate: "note", owner: "userId", fks: { jobId: "Job" }, scope: byUser },
-  Interview: { delegate: "interview", fks: { jobId: "Job" }, scope: (userId) => ({ job: { userId } }) },
   Contact: {
     delegate: "contact",
     owner: "createdBy",
     fks: {
-      interviewId: "Interview",
       companyId: "Company",
       locationId: "Location",
       workedAtCompanyId: "Company",
@@ -165,6 +166,32 @@ export const MODEL_SPECS: Record<BackupModel, ModelSpec> = {
     delegate: "jobContact",
     fks: { jobId: "Job", contactId: "Contact", roleId: "ContactRole" },
     scope: (userId) => ({ Job: { userId } }),
+  },
+  // A lookup like ContactRole, so a restore into an account that already holds
+  // the seeded stage types does not double them. `fks` is empty on purpose:
+  // JobStatus is global and never a BackupModel, so statusId crosses as a
+  // natural key (D3), exactly as Job.statusId does.
+  JobStageType: {
+    delegate: "jobStageType",
+    owner: "createdBy",
+    lookup: true,
+    fks: {},
+    scope: byCreatedBy,
+  },
+  JobStage: {
+    delegate: "jobStage",
+    fks: { jobId: "Job", stageTypeId: "JobStageType" },
+    scope: (userId) => ({ Job: { userId } }),
+  },
+  JobStageInterviewer: {
+    delegate: "jobStageInterviewer",
+    fks: { stageId: "JobStage", contactId: "Contact" },
+    scope: (userId) => ({ Stage: { Job: { userId } } }),
+  },
+  JobStagePrepQuestion: {
+    delegate: "jobStagePrepQuestion",
+    fks: { stageId: "JobStage", questionId: "Question" },
+    scope: (userId) => ({ Stage: { Job: { userId } } }),
   },
   Task: {
     delegate: "task",
@@ -210,12 +237,18 @@ export const INSERT_ORDER: BackupModel[] = [
   "Automation",
   "Job",
   "Note",
-  "Interview",
   "Contact",
   "JobContact",
+  // Ahead of the stage models: JobStagePrepQuestion.questionId points here, and
+  // its Restrict also means the reversed DELETE_ORDER has to clear prep rows
+  // before questions.
+  "Question",
+  "JobStageType",
+  "JobStage",
+  "JobStageInterviewer",
+  "JobStagePrepQuestion",
   "Task",
   "Activity",
-  "Question",
   "AutomationRun",
   "UserSettings",
 ];

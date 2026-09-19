@@ -102,3 +102,80 @@ describe("data schema", () => {
     expect(parsed.jobStatuses[0].value).toBe("new");
   });
 });
+
+describe("stage groups", () => {
+  // Zod strips unknown keys, so an older file carrying Interview and
+  // interviewId still imports — which is right for a model with zero reads.
+  it("silently drops a legacy Interview group and Contact.interviewId", () => {
+    const parsed = BackupDataSchema.parse({
+      Interview: [{ id: "i1", createdAt: "2026-01-01T00:00:00.000Z", jobId: "j1" }],
+      Contact: [
+        {
+          id: "c1",
+          name: "Pat",
+          email: null,
+          createdAt: "2026-01-01T00:00:00.000Z",
+          interviewId: "i1",
+        },
+      ],
+    });
+    expect(parsed).not.toHaveProperty("Interview");
+    expect(parsed.Contact[0]).not.toHaveProperty("interviewId");
+  });
+
+  it("defaults every stage group to an empty array", () => {
+    const parsed = BackupDataSchema.parse({});
+    expect(parsed.JobStageType).toEqual([]);
+    expect(parsed.JobStage).toEqual([]);
+    expect(parsed.JobStageInterviewer).toEqual([]);
+    expect(parsed.JobStagePrepQuestion).toEqual([]);
+  });
+
+  // D3: JobStatus ids differ between installs, so the status crosses by name.
+  it("carries a stage type's parent status by value, not by id", () => {
+    const parsed = BackupDataSchema.parse({
+      JobStageType: [
+        {
+          id: "t1",
+          label: "Final / Onsite Interview",
+          value: "final / onsite interview",
+          statusValue: "interview",
+          sortOrder: 6,
+        },
+      ],
+    });
+    expect(parsed.JobStageType[0].statusValue).toBe("interview");
+    expect(parsed.JobStageType[0]).not.toHaveProperty("statusId");
+  });
+
+  it("rejects a stage type that carries no statusValue", () => {
+    expect(() =>
+      BackupDataSchema.parse({
+        JobStageType: [{ id: "t1", label: "X", value: "x", sortOrder: 0 }],
+      }),
+    ).toThrow();
+  });
+
+  it("accepts a stage with a null occurredAt and a full stage alike", () => {
+    const parsed = BackupDataSchema.parse({
+      JobStage: [
+        {
+          id: "s1",
+          jobId: "j1",
+          stageTypeId: "t1",
+          occurredAt: null,
+          isCurrent: true,
+          outcome: null,
+          notes: null,
+          durationMins: null,
+          format: null,
+          location: null,
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+    });
+    expect(parsed.JobStage[0].occurredAt).toBeNull();
+    expect(parsed.JobStage[0].isCurrent).toBe(true);
+  });
+});

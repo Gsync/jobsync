@@ -20,6 +20,7 @@ const dt = z.coerce.date();
 const optDt = z.coerce.date().nullable();
 const int = z.number().int();
 const optInt = z.number().int().nullable();
+const bool = z.boolean();
 
 // The watchlist columns are optional, not just nullable: a backup taken before
 // they existed has no such key, and undefined leaves Prisma on the default.
@@ -223,9 +224,7 @@ const Note = z.object({
   updatedAt: dt,
 });
 
-const Interview = z.object({ id, createdAt: dt, jobId: id });
-
-// Everything past `interviewId` is `.optional()` as well as nullable: a backup
+// Everything past `createdAt` is `.optional()` as well as nullable: a backup
 // taken before the contacts feature has no such key, and undefined leaves
 // Prisma on the column default.
 const Contact = z.object({
@@ -233,7 +232,6 @@ const Contact = z.object({
   name: str,
   email: optStr,
   createdAt: dt,
-  interviewId: optId,
   title: optStr.optional(),
   phone: optStr.optional(),
   linkedinUrl: optStr.optional(),
@@ -256,6 +254,47 @@ const JobContact = z.object({
   jobId: id,
   contactId: id,
   roleId: id,
+  createdAt: dt,
+});
+
+// statusValue, not statusId: JobStatus is global, never a BackupModel, and its
+// ids differ between installs. Mirrors how Job crosses (D3).
+const JobStageType = z.object({
+  id,
+  label: str,
+  value: str,
+  statusValue: str,
+  sortOrder: int,
+});
+
+const JobStage = z.object({
+  id,
+  jobId: id,
+  stageTypeId: id,
+  occurredAt: optDt,
+  isCurrent: bool,
+  outcome: optStr,
+  notes: optStr,
+  durationMins: optInt,
+  format: optStr,
+  location: optStr,
+  createdAt: dt,
+  updatedAt: dt,
+});
+
+const JobStageInterviewer = z.object({
+  id,
+  stageId: id,
+  contactId: id,
+  createdAt: dt,
+});
+
+const JobStagePrepQuestion = z.object({
+  id,
+  stageId: id,
+  questionId: id,
+  asked: bool,
+  askedAt: optDt,
   createdAt: dt,
 });
 
@@ -346,9 +385,12 @@ export const BackupDataSchema = z.object({
   Automation: group(Automation),
   Job: group(Job),
   Note: group(Note),
-  Interview: group(Interview),
   Contact: group(Contact),
   JobContact: group(JobContact),
+  JobStageType: group(JobStageType),
+  JobStage: group(JobStage),
+  JobStageInterviewer: group(JobStageInterviewer),
+  JobStagePrepQuestion: group(JobStagePrepQuestion),
   Task: group(Task),
   Activity: group(Activity),
   Question: group(Question),
