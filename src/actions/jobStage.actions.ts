@@ -12,3 +12,8 @@ export {
   linkStageInterviewer,
   unlinkStageInterviewer,
 } from "./jobStage/interviewers";
+export {
+  addStagePrepQuestions,
+  removeStagePrepQuestion,
+  setPrepQuestionAsked,
+} from "./jobStage/prep";

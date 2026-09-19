@@ -24,6 +24,9 @@ vi.mock("@prisma/client", () => {
     tag: {
       findMany: vi.fn(),
     },
+    jobStagePrepQuestion: {
+      count: vi.fn(),
+    },
   };
   return { PrismaClient: vi.fn(function() { return mPrismaClient; }) };
 });
@@ -47,6 +50,7 @@ describe("Question Actions", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    (prisma.jobStagePrepQuestion.count as any).mockResolvedValue(0);
   });
 
   // getQuestionsList
@@ -450,6 +454,28 @@ describe("Question Actions", () => {
       const result = await deleteQuestion("q-1");
 
       expect(result).toEqual({ success: false, message: "DB error" });
+    });
+
+    it("blocks deleting a question that sits on a prep list, naming the count", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.jobStagePrepQuestion.count as any).mockResolvedValue(3);
+
+      const result = await deleteQuestion("q-1");
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain("3");
+      expect(prisma.question.delete).not.toHaveBeenCalled();
+    });
+
+    it("deletes a question that is on no prep list", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.jobStagePrepQuestion.count as any).mockResolvedValue(0);
+      (prisma.question.delete as any).mockResolvedValue(mockQuestion);
+
+      const result = await deleteQuestion("q-1");
+
+      expect(result.success).toBe(true);
+      expect(prisma.question.delete).toHaveBeenCalled();
     });
   });
 

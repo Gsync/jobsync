@@ -132,6 +132,17 @@ export const deleteQuestion = async (
   try {
     const user = await requireUser();
 
+    // Silently erasing the record that a question was asked in a real
+    // interview is worse than a delete that fails with a reason.
+    const prepRows = await prisma.jobStagePrepQuestion.count({
+      where: { questionId, Question: { createdBy: user.id } },
+    });
+    if (prepRows > 0) {
+      throw new Error(
+        `Question cannot be deleted: it is on the prep list of ${prepRows} interview stage${prepRows === 1 ? "" : "s"}. Remove it from those stages first.`,
+      );
+    }
+
     await prisma.question.delete({
       where: { id: questionId, createdBy: user.id },
     });
