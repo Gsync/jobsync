@@ -8,3 +8,7 @@ export {
   setCurrentJobStage,
   setStageNotes,
 } from "./jobStage/mutations";
+export {
+  linkStageInterviewer,
+  unlinkStageInterviewer,
+} from "./jobStage/interviewers";
