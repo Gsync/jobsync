@@ -2,6 +2,39 @@ import { z } from "zod";
 import { APP_CONSTANTS, JOB_STATUS_VALUES } from "@/lib/constants";
 import { WORKPLACE_TYPES, matchEnumEntry } from "@/models/job.model";
 
+const MCP_TASK_STATUS_VALUES = [
+  "in-progress",
+  "complete",
+  "needs-attention",
+  "cancelled",
+] as const;
+
+export const McpListTasksInputShape = {
+  statuses: z
+    .array(z.enum(MCP_TASK_STATUS_VALUES))
+    .optional()
+    .describe("Task statuses to include. Defaults to in-progress and needs-attention."),
+  search: z.string().trim().min(1).max(200).optional().describe("Text to match in the task title, description, or activity type."),
+  activityType: z.string().trim().min(1).max(100).optional().describe("Activity-type label to match case-insensitively."),
+  page: z.number().int().min(1).optional().describe("One-based page number. Defaults to 1."),
+  limit: z.number().int().min(1).max(50).optional().describe("Tasks per page. Defaults to 25; maximum 50."),
+};
+
+export const McpListTasksSchema = z.object(McpListTasksInputShape).transform((input) => ({
+  ...input,
+  statuses: input.statuses ?? ["in-progress", "needs-attention"],
+  page: input.page ?? 1,
+  limit: input.limit ?? 25,
+}));
+export type McpListTasksInput = z.infer<typeof McpListTasksSchema>;
+
+export const McpGetTaskInputShape = {
+  taskId: z.string().min(1).describe("The task id returned by list_tasks or another task tool."),
+};
+
+export const McpGetTaskSchema = z.object(McpGetTaskInputShape);
+export type McpGetTaskInput = z.infer<typeof McpGetTaskSchema>;
+
 // An enum rather than a described string, for the same reason status is one:
 // a small local model fills an enum-constrained slot and ignores prose hints.
 // It sent "On-site" — the posting's own spelling — and when that was rejected

@@ -178,3 +178,8 @@ export function assertRoutesToReviewResume(output: unknown): AssertionResult {
   const { pass, score, reason } = expectSingle(output, 'review_resume');
   return { pass, score, reason };
 }
+
+export function assertRoutesToListTasks(output: unknown): AssertionResult {
+  const { pass, score, reason } = expectSingle(output, 'list_tasks');
+  return { pass, score, reason };
+}

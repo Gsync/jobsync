@@ -13,7 +13,7 @@ stale_after: 2027-09-02
 
 ## What can an AI agent do with JobSync over MCP?
 
-It can add and correct jobs, add Question Bank entries, and save a job-match or resume review that it produced itself. JobSync runs a built-in MCP (Model Context Protocol) server, so a chat client such as Claude Desktop can write to your tracker without you switching to the app — paste a posting into your agent and ask it to add the job, and the company, title, location, source and tags resolve against your existing lists.
+It can list and inspect tasks, add and correct jobs, add Question Bank entries, and save a job-match or resume review that it produced itself. JobSync runs a built-in MCP (Model Context Protocol) server, so a chat client such as Claude Desktop can work with your tracker without you switching to the app.
 
 Two things stay in your control. Every connection needs a personal access token you generate yourself, and each token is named — jobs it creates carry that name as their source, and an agent can only edit jobs that were created through MCP in the first place. Nothing an agent does can overwrite a job you curated in the app.
 
@@ -71,17 +71,19 @@ Both snippets are shown in the token dialog with your real URL and token already
 
 ## Which tools does a connected agent get?
 
-Nine, all of them writes to your own data:
+Eleven. Read tools can inspect your own tasks, and write tools change only your own data:
 
 - **add_job** — adds a job, resolving or creating company, title, location, source and tags by name, and reporting back what it matched versus created.
 - **add_jobs_batch** — the same thing for up to 10 jobs in one call, for a scheduled run.
 - **find_job** — checks by URL whether a posting is already saved, before adding it again.
 - **update_job** — corrects or enriches a job that was added through MCP. Only the fields supplied change.
+- **list_tasks** — lists tasks with pagination and optional status, text, and activity-type filters. With no filters it returns active tasks that are in progress or need attention.
+- **get_task** — returns one task by id with its description, status, priority, completion, due date, activity type and timestamps.
 - **add_question** — adds an entry to your Question Bank, with tags resolved the same way.
 - **review_resume** / **save_resume_review** — hands the agent your default resume and reviewing instructions, then stores the review it writes.
 - **save_match_result** / **save_match_results_batch** — stores a job-fit analysis the agent produced after adding a job.
 
-Tokens are issued with the scopes needed for all of these, so there is nothing to configure per tool.
+New tokens are issued with the scopes needed for all of these, including `tasks:read` and `tasks:write`. Tokens generated before task tools were added keep their original authority and do not receive task access automatically; revoke and regenerate an older token if it needs the task tools.
 
 ## How do I get a job match or resume review from my agent?
 
