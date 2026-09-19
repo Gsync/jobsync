@@ -44,6 +44,7 @@ import { JobTimelineTab } from "./job-details/timeline/JobTimelineTab";
 import { useJobStages } from "./job-details/timeline/useJobStages";
 import { UpdateStatusMenu } from "./job-details/timeline/UpdateStatusMenu";
 import { AddStageDialog } from "./job-details/timeline/AddStageDialog";
+import { LinkInterviewersDialog } from "./job-details/timeline/LinkInterviewersDialog";
 import type { JobStage, JobStageTypeRef } from "@/models/jobStage.model";
 
 const JOB_DETAIL_TABS = [
@@ -354,6 +355,15 @@ function JobDetails({
         jobStatuses={jobStatuses}
         onOpenChange={(open) => !open && setAddStageTarget(null)}
         onSaved={() => {
+          void reloadStages();
+          router.refresh();
+        }}
+      />
+      <LinkInterviewersDialog
+        open={linkInterviewersOpen}
+        stage={selectedStage ?? currentStage}
+        onOpenChange={setLinkInterviewersOpen}
+        onLinked={() => {
           void reloadStages();
           router.refresh();
         }}

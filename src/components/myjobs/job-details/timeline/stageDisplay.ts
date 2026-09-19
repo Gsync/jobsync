@@ -22,6 +22,14 @@ export function formatStageDateTime(
     : withDuration;
 }
 
+// The subtitle both stage dialogs put under their title.
+export function stageHeading(stage: JobStage): string {
+  const label = stage.StageType?.label ?? "Stage";
+  return stage.occurredAt
+    ? `${label} · ${format(stage.occurredAt, "MMM d, yyyy")}`
+    : label;
+}
+
 export function stageInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
