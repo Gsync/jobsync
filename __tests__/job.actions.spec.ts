@@ -850,6 +850,33 @@ describe("jobActions", () => {
           },
           orderBy: { createdAt: "asc" },
         },
+        stages: {
+          include: {
+            StageType: { include: { Status: true } },
+            interviewers: {
+              include: {
+                Contact: {
+                  select: {
+                    id: true,
+                    name: true,
+                    title: true,
+                    email: true,
+                    phone: true,
+                    linkedinUrl: true,
+                    Company: { select: { id: true, label: true } },
+                  },
+                },
+              },
+              orderBy: { createdAt: "asc" },
+            },
+            prepQuestions: {
+              include: {
+                Question: { select: { id: true, question: true, tags: true } },
+              },
+              orderBy: { createdAt: "asc" },
+            },
+          },
+        },
       },
     });
   });
