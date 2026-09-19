@@ -6,6 +6,8 @@ import { AddJobFormSchema } from "@/models/addJobForm.schema";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "../shared";
+import { appendStatusStage } from "./shared";
+import { resolveStageTypeForStatusId } from "@/lib/jobs/resolve";
 
 type JobRefs = {
   jobTitleId?: string | null;
@@ -184,30 +186,38 @@ export const updateJob = async (
       tagIds: tagIds.filter((tagId) => !currentTagIds.has(tagId)),
     });
 
-    const job = await prisma.job.update({
-      where: {
-        id,
-        userId: user.id,
-      },
-      data: {
-        jobTitleId: title,
-        companyId: company,
-        locationId: location,
-        statusId: status,
-        jobSourceId: source,
-        salaryRange: salaryRange || null,
-        createdAt: new Date(),
-        dueDate: dueDate,
-        appliedDate: dateApplied,
-        description: jobDescription,
-        jobType: type,
-        workplaceType,
-        jobUrl,
-        applied,
-        resumeId: resume,
-        coverLetterId: coverLetter,
-        tags: { set: tagIds.map((id) => ({ id })) },
-      },
+    // Same D4 rule: resolve before the transaction opens.
+    const stageTypeId = await resolveStageTypeForStatusId(status, user.id);
+
+    const job = await prisma.$transaction(async (tx: any) => {
+      // The Edit Job dialog's Status field is the fourth entry point into the
+      // timeline; without this a job and its stages go permanently out of step.
+      await appendStatusStage(tx, id, status, stageTypeId, user.id);
+      return tx.job.update({
+        where: {
+          id,
+          userId: user.id,
+        },
+        data: {
+          jobTitleId: title,
+          companyId: company,
+          locationId: location,
+          statusId: status,
+          jobSourceId: source,
+          salaryRange: salaryRange || null,
+          createdAt: new Date(),
+          dueDate: dueDate,
+          appliedDate: dateApplied,
+          description: jobDescription,
+          jobType: type,
+          workplaceType,
+          jobUrl,
+          applied,
+          resumeId: resume,
+          coverLetterId: coverLetter,
+          tags: { set: tagIds.map((id) => ({ id })) },
+        },
+      });
     });
     revalidatePath("/dashboard");
     return { success: true, data: job };
