@@ -37,6 +37,10 @@ vi.mock("@/actions/contactRole.actions", () => ({
   createContactRole: vi.fn(),
 }));
 
+vi.mock("@/actions/tag.actions", () => ({
+  createTag: vi.fn(),
+}));
+
 vi.mock("@/lib/toast", () => ({
   toastError: vi.fn(),
 }));

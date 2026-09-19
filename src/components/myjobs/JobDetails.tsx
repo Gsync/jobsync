@@ -45,6 +45,7 @@ import { useJobStages } from "./job-details/timeline/useJobStages";
 import { UpdateStatusMenu } from "./job-details/timeline/UpdateStatusMenu";
 import { AddStageDialog } from "./job-details/timeline/AddStageDialog";
 import { LinkInterviewersDialog } from "./job-details/timeline/LinkInterviewersDialog";
+import { AddPrepQuestionsDialog } from "./job-details/timeline/AddPrepQuestionsDialog";
 import type { JobStage, JobStageTypeRef } from "@/models/jobStage.model";
 
 const JOB_DETAIL_TABS = [
@@ -367,6 +368,12 @@ function JobDetails({
           void reloadStages();
           router.refresh();
         }}
+      />
+      <AddPrepQuestionsDialog
+        open={prepQuestionsOpen}
+        stage={selectedStage ?? currentStage}
+        onOpenChange={setPrepQuestionsOpen}
+        onAdded={() => void reloadStages()}
       />
       <DeleteAlertDialog
         pageTitle="job"
