@@ -2,6 +2,7 @@
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { requireUser } from "./shared";
+import { createFirstStage } from "@/lib/jobs/createJobRecord";
 import { generateMockActivities } from "@/lib/mock.utils";
 import {
   mockActivityTypes,
@@ -573,11 +574,18 @@ export const generateMockJobsAction = async (): Promise<any> => {
       };
     });
 
-    const created = await prisma.job.createMany({ data: jobsData });
+    // A loop rather than createMany: createMany returns only a count, so it
+    // cannot feed createFirstStage the new ids. Dev-only, tens of rows.
+    let count = 0;
+    for (const data of jobsData) {
+      const job = await prisma.job.create({ data });
+      await createFirstStage(prisma, job.id, data.statusId, user.id, data.createdAt);
+      count += 1;
+    }
 
     return {
       success: true,
-      message: `Generated ${created.count} mock jobs across the last 30 days.`,
+      message: `Generated ${count} mock jobs across the last 30 days.`,
     };
   } catch (error) {
     return handleError(error, "Failed to generate mock jobs");

@@ -71,6 +71,33 @@ const JOB_DETAILS_INCLUDE = {
     },
     orderBy: { createdAt: "asc" as const },
   },
+  // Duplicates STAGE_DETAIL_INCLUDE rather than importing it: this is a
+  // "use server" module and that const lives in another action directory.
+  stages: {
+    include: {
+      StageType: { include: { Status: true } },
+      interviewers: {
+        include: {
+          Contact: {
+            select: {
+              id: true,
+              name: true,
+              title: true,
+              email: true,
+              phone: true,
+              linkedinUrl: true,
+              Company: { select: { id: true, label: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: "asc" as const },
+      },
+      prepQuestions: {
+        include: { Question: { select: { id: true, question: true, tags: true } } },
+        orderBy: { createdAt: "asc" as const },
+      },
+    },
+  },
 };
 
 type JobsListFilters = {
