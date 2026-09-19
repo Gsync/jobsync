@@ -611,7 +611,6 @@ export const clearMockJobsAction = async (): Promise<any> => {
 
     // Delete related records first (FK constraints)
     await prisma.note.deleteMany({ where: { jobId: { in: jobIds } } });
-    await prisma.interview.deleteMany({ where: { jobId: { in: jobIds } } });
 
     // Disconnect tags (M2M)
     await Promise.all(

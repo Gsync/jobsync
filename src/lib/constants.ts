@@ -301,6 +301,44 @@ export const JOB_STATUSES = [
   { label: "Rejected", value: "rejected" },
   { label: "Expired", value: "expired" },
   { label: "Archived", value: "archived" },
+  { label: "Withdrawn", value: "withdrawn" },
+] as const;
+
+// Seeded per user at signup and backfilled by the stages migration. `value`
+// must equal canonicalizeEntityValue(label): the status -> stage-type reverse
+// lookup keys on the status LABEL's canonical form, not on status.value, so
+// "Offer Accepted" cannot mint a second type beside "offer-accepted".
+export const JOB_STAGES = [
+  { label: "New", value: "new", status: "new", sortOrder: 0 },
+  { label: "Draft", value: "draft", status: "draft", sortOrder: 1 },
+  { label: "Applied", value: "applied", status: "applied", sortOrder: 2 },
+  { label: "Interview", value: "interview", status: "interview", sortOrder: 3 },
+  { label: "1st Screening Interview", value: "1st screening interview", status: "interview", sortOrder: 4 },
+  { label: "2nd Technical Interview", value: "2nd technical interview", status: "interview", sortOrder: 5 },
+  { label: "Final / Onsite Interview", value: "final / onsite interview", status: "interview", sortOrder: 6 },
+  { label: "Offer", value: "offer", status: "offer", sortOrder: 7 },
+  { label: "Offer Accepted", value: "offer accepted", status: "offer-accepted", sortOrder: 8 },
+  { label: "Offer Declined", value: "offer declined", status: "offer-declined", sortOrder: 9 },
+  { label: "Rejected", value: "rejected", status: "rejected", sortOrder: 10 },
+  { label: "Expired", value: "expired", status: "expired", sortOrder: 11 },
+  { label: "Archived", value: "archived", status: "archived", sortOrder: 12 },
+  { label: "Withdrawn", value: "withdrawn", status: "withdrawn", sortOrder: 13 },
+] as const;
+
+// Statuses whose stage types render greyed at the tail of the stepper when the
+// job has not reached them (D6). Offer alone: the greyed tail reads as what a
+// job is working toward, and rejected/withdrawn are alternative endings, not
+// next steps. Both stay one click away in Add Stage.
+export const TERMINAL_STAGE_STATUSES = ["offer"] as const;
+
+// The fixed outcome set a stage may carry (spec's JobStage.outcome).
+export const STAGE_OUTCOMES = [
+  { label: "Scheduled", value: "scheduled" },
+  { label: "Completed", value: "completed" },
+  { label: "Passed", value: "passed" },
+  { label: "Failed", value: "failed" },
+  { label: "No-show", value: "no-show" },
+  { label: "Cancelled", value: "cancelled" },
 ] as const;
 
 // Zod's z.enum needs a non-empty tuple; JOB_STATUSES is the source of truth.

@@ -5,7 +5,12 @@ import { delay } from "@/utils/delay";
 import prisma from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { SignupFormSchema } from "@/models/signupForm.schema";
-import { CONTACT_ROLES, JOB_SOURCES, JOB_STATUSES } from "@/lib/constants";
+import {
+  CONTACT_ROLES,
+  JOB_SOURCES,
+  JOB_STAGES,
+  JOB_STATUSES,
+} from "@/lib/constants";
 
 export async function signup(formData: {
   name: string;
@@ -56,6 +61,21 @@ export async function signup(formData: {
       create: status,
     });
   }
+
+  // Stage types point at JobStatus, so this must follow the upsert loop.
+  const statusRows = await prisma.jobStatus.findMany({
+    select: { id: true, value: true },
+  });
+  const statusIdByValue = new Map(statusRows.map((s) => [s.value, s.id]));
+  await prisma.jobStageType.createMany({
+    data: JOB_STAGES.map((stage) => ({
+      label: stage.label,
+      value: stage.value,
+      statusId: statusIdByValue.get(stage.status)!,
+      sortOrder: stage.sortOrder,
+      createdBy: newUser.id,
+    })),
+  });
 
   return { success: true };
 }

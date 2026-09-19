@@ -29,6 +29,7 @@ export const JOB_STATUS_BADGE_COLORS: Record<JobStatusValue, BadgeColor> = {
   rejected: "red",
   expired: "amber",
   archived: "slate",
+  withdrawn: "slate",
 };
 
 // job.Status.value is a plain string from the DB, not the literal union,
