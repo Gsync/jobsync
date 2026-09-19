@@ -142,3 +142,31 @@ tests:
     assert:
       - type: javascript
         value: file://./assertions.ts:assertRoutesToListTasks
+
+  - description: Follow-up task request - routes to create_task
+    vars:
+      userMessage: Create a follow-up task called "Email the recruiter" with priority 8.
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertRoutesToCreateTask
+
+  - description: Task priority change - routes to update_task
+    vars:
+      userMessage: Change task task-123's priority to 9.
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertRoutesToUpdateTask
+
+  - description: Task completion without an id - discovers the task first
+    vars:
+      userMessage: Mark my recruiter follow-up task done.
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertDiscoversTaskBeforeCompleting
+
+  - description: Task completion with an id - routes to complete_task
+    vars:
+      userMessage: Mark task task-123 done.
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertRoutesToCompleteTask

@@ -12,6 +12,9 @@ import {
   McpSaveResumeReviewInputShape,
   McpListTasksInputShape,
   McpGetTaskInputShape,
+  McpCreateTaskInputShape,
+  McpUpdateTaskInputShape,
+  McpCompleteTaskInputShape,
 } from '../../src/models/mcp.schema';
 
 // Same raw shapes route.ts hands the MCP SDK, so the model sees the parameter
@@ -29,6 +32,9 @@ const SHAPES: Record<string, z.ZodRawShape> = {
   save_resume_review: McpSaveResumeReviewInputShape,
   list_tasks: McpListTasksInputShape,
   get_task: McpGetTaskInputShape,
+  create_task: McpCreateTaskInputShape,
+  update_task: McpUpdateTaskInputShape,
+  complete_task: McpCompleteTaskInputShape,
 };
 
 export function getTools() {

@@ -13,6 +13,12 @@ export const MCP_TOOL_DESCRIPTIONS = {
     "List the user's tasks with pagination and optional status, search-text, and activity-type filters. Defaults to active tasks that are in progress or need attention. Use this to discover task ids before another task operation.",
   get_task:
     "Retrieve one task by id, including its plain-text description, status, priority, completion, due date, activity type, and timestamps.",
+  create_task:
+    "Create an actionable todo for the user. Supply a title and optionally a plain-text description, status, priority, completion percentage, future due date, or activity-type label. Do not use this to save interview questions or reference notes; use add_question for Question Bank entries.",
+  update_task:
+    "Update selected fields on a task by id. Omitted fields stay unchanged; null clears the description, due date, or activity type. Setting status to complete without a percentage also sets completion to 100%.",
+  complete_task:
+    "Mark a task complete by id, setting its status to complete and completion percentage to 100% together. Discover the task with list_tasks first when its id is unknown.",
   add_question:
     "Add an entry to the Question Bank. Resolves or creates tags by name. Returns a transparency report of what was matched vs. created.",
   save_match_result:
