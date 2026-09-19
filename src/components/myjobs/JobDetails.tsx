@@ -43,6 +43,7 @@ import { JobContactsTab } from "./job-details/JobContactsTab";
 import { JobTimelineTab } from "./job-details/timeline/JobTimelineTab";
 import { useJobStages } from "./job-details/timeline/useJobStages";
 import { UpdateStatusMenu } from "./job-details/timeline/UpdateStatusMenu";
+import { AddStageDialog } from "./job-details/timeline/AddStageDialog";
 import type { JobStage, JobStageTypeRef } from "@/models/jobStage.model";
 
 const JOB_DETAIL_TABS = [
@@ -341,6 +342,21 @@ function JobDetails({
         resetEditJob={resetEditJob}
         hideTrigger
         redirectPath={`/dashboard/myjobs/${job.id}?tab=${activeTab}`}
+      />
+      <AddStageDialog
+        open={!!addStageTarget}
+        jobId={job.id}
+        jobLabel={`${job.JobTitle?.label ?? ""}${
+          job.Company?.label ? ` · ${job.Company.label}` : ""
+        }`}
+        stage={addStageTarget?.mode === "edit" ? addStageTarget.stage : null}
+        stageTypes={stageTypes}
+        jobStatuses={jobStatuses}
+        onOpenChange={(open) => !open && setAddStageTarget(null)}
+        onSaved={() => {
+          void reloadStages();
+          router.refresh();
+        }}
       />
       <DeleteAlertDialog
         pageTitle="job"

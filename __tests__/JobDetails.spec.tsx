@@ -6,7 +6,12 @@ import userEvent from "@testing-library/user-event";
 
 // The active tab lives in the URL, so a click only calls router.replace —
 // what the user sees next comes from the re-render with the new params.
-const router = { back: vi.fn(), push: vi.fn(), replace: vi.fn() };
+const router = {
+  back: vi.fn(),
+  push: vi.fn(),
+  replace: vi.fn(),
+  refresh: vi.fn(),
+};
 let searchParams = new URLSearchParams();
 const onTab = (tab: string) => {
   searchParams = new URLSearchParams(`tab=${tab}`);
@@ -71,6 +76,8 @@ vi.mock("@/actions/jobStage.actions", () => ({
   removeStagePrepQuestion: vi.fn(),
   unlinkStageInterviewer: vi.fn(),
   setStageNotes: vi.fn(),
+  addJobStage: vi.fn(),
+  updateJobStage: vi.fn(),
 }));
 
 const makeStage = (id: string, label: string, over: any = {}) => ({
