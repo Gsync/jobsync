@@ -31,7 +31,7 @@ function StageMarker({
         className={cn(
           "flex h-5 w-5 items-center justify-center rounded-full",
           state === "current"
-            ? "bg-primary ring-4 ring-primary/20"
+            ? "bg-emerald-500 ring-4 ring-emerald-500/20 dark:bg-emerald-400 dark:ring-emerald-400/20"
             : state === "complete"
               ? "bg-emerald-500 dark:bg-emerald-400"
               : "border-2 border-border bg-card",
@@ -96,7 +96,7 @@ export function StageHistoryList({
                 <span
                   className={cn(
                     "flex-1 truncate text-[13px] font-semibold",
-                    isCurrent && "font-extrabold text-primary",
+                    isCurrent && "font-extrabold text-emerald-600 dark:text-emerald-400",
                   )}
                 >
                   {stage.StageType.label}
@@ -104,7 +104,9 @@ export function StageHistoryList({
                 <span
                   className={cn(
                     "text-xs",
-                    isCurrent ? "font-bold text-primary" : "text-muted-foreground",
+                    isCurrent
+                      ? "font-bold text-emerald-600 dark:text-emerald-400"
+                      : "text-muted-foreground",
                   )}
                 >
                   {formatStageDate(stage.occurredAt)}

@@ -1,23 +1,25 @@
 "use client";
-import { useState, useTransition } from "react";
-import { CalendarDays, Monitor, Pencil, Trash2, UserPlus, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { useEffect, useState, useTransition } from "react";
+import { CalendarDays, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DeleteAlertDialog } from "@/components/DeleteAlertDialog";
 import { toastActionResult } from "@/lib/toast";
-import {
-  deleteJobStage,
-  unlinkStageInterviewer,
-} from "@/actions/jobStage.actions";
-import { STAGE_OUTCOMES } from "@/lib/constants";
+import { deleteJobStage } from "@/actions/jobStage.actions";
 import type { JobStage } from "@/models/jobStage.model";
 import {
+  askedTally,
   formatStageDateTime,
   isInterviewStage,
-  stageInitials,
 } from "./stageDisplay";
+import { StageOverviewTab } from "./StageOverviewTab";
+import { StageInterviewersTab } from "./StageInterviewersTab";
 import { StagePrepList } from "./StagePrepList";
-import { StageNotes } from "./StageNotes";
+
+// Underline tabs rather than the app's filled pills: this row sits inside the
+// job's own pill tab bar, and two nested pill bars read as competing controls.
+const TAB_TRIGGER =
+  "cursor-pointer rounded-none border-b-2 border-transparent px-0 pb-2.5 text-sm font-semibold text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none";
 
 type StageDetailPanelProps = {
   stage: JobStage;
@@ -38,18 +40,16 @@ export function StageDetailPanel({
 }: StageDetailPanelProps) {
   const [, startTransition] = useTransition();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [tab, setTab] = useState("overview");
   const interview = isInterviewStage(stage);
-  const outcomeLabel = STAGE_OUTCOMES.find((o) => o.value === stage.outcome)?.label;
+  const { asked, total } = askedTally(stage);
 
-  const unlink = (linkId: string) => {
-    startTransition(async () => {
-      const res = await unlinkStageInterviewer(linkId);
-      toastActionResult(res, {
-        success: "Interviewer unlinked from this stage",
-        onSuccess: onChanged,
-      });
-    });
-  };
+  // Selecting another stage re-renders this component rather than remounting
+  // it, so the tab has to follow the id or an interview tab survives onto a
+  // stage that has none.
+  useEffect(() => {
+    setTab("overview");
+  }, [stage.id]);
 
   const onDelete = () => {
     setDeleteOpen(false);
@@ -68,7 +68,7 @@ export function StageDetailPanel({
         <div className="flex flex-wrap items-center gap-2.5">
           <h3 className="text-lg font-bold">{stage.StageType.label}</h3>
           {isCurrent && (
-            <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-bold text-primary-foreground">
+            <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[11px] font-bold text-white dark:bg-emerald-400 dark:text-emerald-950">
               CURRENT STAGE
             </span>
           )}
@@ -100,97 +100,50 @@ export function StageDetailPanel({
         {formatStageDateTime(stage.occurredAt, stage.durationMins)}
       </p>
 
-      {interview && (
+      {/* A one-tab bar is a control that does nothing, so a non-interview
+          stage gets the overview on its own. */}
+      {interview ? (
+        <Tabs value={tab} onValueChange={setTab} className="mt-4">
+          <TabsList className="h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0">
+            <TabsTrigger value="overview" className={TAB_TRIGGER}>
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="interviewer" className={TAB_TRIGGER}>
+              Interviewer
+            </TabsTrigger>
+            <TabsTrigger value="prep" className={TAB_TRIGGER}>
+              Prep List
+              {total > 0 && (
+                <span className="ml-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+                  {asked} of {total}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="overview" className="mt-4">
+            <StageOverviewTab stage={stage} onChanged={onChanged} />
+          </TabsContent>
+          <TabsContent value="interviewer" className="mt-4">
+            <StageInterviewersTab
+              stage={stage}
+              onLinkInterviewers={onLinkInterviewers}
+              onChanged={onChanged}
+            />
+          </TabsContent>
+          <TabsContent value="prep" className="mt-4">
+            <StagePrepList
+              stage={stage}
+              onAddPrepQuestions={onAddPrepQuestions}
+              onChanged={onChanged}
+            />
+          </TabsContent>
+        </Tabs>
+      ) : (
         <>
           <hr className="my-4" />
-          <div className="grid gap-5 @lg/timeline:grid-cols-2">
-            <div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] font-bold tracking-wide text-muted-foreground">
-                  INTERVIEWERS
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 cursor-pointer gap-1 px-2 text-xs"
-                  onClick={onLinkInterviewers}
-                >
-                  <UserPlus className="h-3 w-3" />
-                  Link
-                </Button>
-              </div>
-              {stage.interviewers.length === 0 ? (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  No interviewers linked yet.
-                </p>
-              ) : (
-                <ul className="mt-2 space-y-2">
-                  {stage.interviewers.map((link) => (
-                    <li key={link.id} className="flex items-center gap-2.5">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-[13px] font-bold text-primary-foreground">
-                        {stageInitials(link.Contact.name)}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-bold">
-                          {link.Contact.name}
-                        </span>
-                        {link.Contact.title && (
-                          <span className="block truncate text-xs text-muted-foreground">
-                            {link.Contact.title}
-                          </span>
-                        )}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 cursor-pointer"
-                        aria-label={`Unlink ${link.Contact.name}`}
-                        onClick={() => unlink(link.id)}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div>
-              <span className="text-[11px] font-bold tracking-wide text-muted-foreground">
-                FORMAT
-              </span>
-              <p className="mt-2 flex items-center gap-2 text-sm">
-                <Monitor className="h-3.5 w-3.5 shrink-0" />
-                {[stage.format, stage.location].filter(Boolean).join(" · ") || "Not set"}
-              </p>
-            </div>
-          </div>
-
-          <hr className="my-4" />
-          <StagePrepList
-            stage={stage}
-            onAddPrepQuestions={onAddPrepQuestions}
-            onChanged={onChanged}
-          />
+          <StageOverviewTab stage={stage} onChanged={onChanged} />
         </>
       )}
-
-      <hr className="my-4" />
-      <div className="space-y-3">
-        <div>
-          <span className="text-[11px] font-bold tracking-wide text-muted-foreground">
-            OUTCOME
-          </span>
-          <p className="mt-1.5 text-sm">
-            {outcomeLabel ? (
-              <Badge variant="secondary">{outcomeLabel}</Badge>
-            ) : (
-              <span className="text-muted-foreground">Not recorded</span>
-            )}
-          </p>
-        </div>
-        <StageNotes stage={stage} onChanged={onChanged} />
-      </div>
 
       <DeleteAlertDialog
         pageTitle="stage"

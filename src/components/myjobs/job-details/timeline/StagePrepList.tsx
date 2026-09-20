@@ -28,7 +28,7 @@ export function StagePrepList({
   // makes it durable.
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const rows = stage.prepQuestions ?? [];
-  const { asked, total } = askedTally(stage);
+  const { total } = askedTally(stage);
 
   const toggle = (linkId: string, next: boolean) => {
     setPending((prev) => ({ ...prev, [linkId]: next }));
@@ -54,16 +54,9 @@ export function StagePrepList({
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold tracking-wide text-muted-foreground">
-            PREP LIST · INTERVIEW QUESTIONS · {total}
-          </span>
-          {total > 0 && (
-            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
-              {asked} of {total} asked
-            </span>
-          )}
-        </div>
+        <p className="text-xs text-muted-foreground">
+          Check off a question once your interviewer actually asks it.
+        </p>
         <Button
           variant="outline"
           size="sm"
@@ -74,9 +67,6 @@ export function StagePrepList({
           Add to Prep List
         </Button>
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Check off a question once your interviewer actually asks it.
-      </p>
 
       {total === 0 ? (
         <p className="mt-2.5 rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">

@@ -15,7 +15,7 @@ stale_after: 2027-09-30
 
 The **Timeline** tab on a job's details page is that job's record of how the hiring process actually moved — one entry per stage, each with its own date, notes and outcome. A job's [status](./jobs.md) is a single label saying where the job is *now*; the timeline is the history behind that label, and the status is derived from it.
 
-The tab shows two things. A **Stage History** list down the left walks every stage in the order set by **Library → Stages**, joined top to bottom by a connecting line: a green tick marks each stage already behind you, a filled marker the current one, and a hollow marker the greyed **Offer** step at the end if the job has not reached an offer yet. Clicking a stage opens its **detail panel** on the right, where you edit the stage, record its outcome, write notes, and — on an interview stage — see the interviewers and the prep list.
+The tab shows two things. A **Stage History** list down the left walks every stage in the order set by **Library → Stages**, joined top to bottom by a connecting line: a green tick marks each stage already behind you, a filled marker the current one, and a hollow marker the greyed **Offer** step at the end if the job has not reached an offer yet. Clicking a stage opens its **detail panel** on the right. An interview stage splits that panel into three tabs — **Overview**, **Interviewer** and **Prep List** — and opens on Overview; any other stage shows the overview on its own, with no tabs, because the other two have nothing to say about it.
 
 A count badge on the tab tells you how many stages a job has. Every job created after this feature shipped starts with one.
 
@@ -27,7 +27,7 @@ Pick a **stage** from the list — *New*, *Draft*, *Applied*, *Interview*, *1st 
 
 **Date** and **Time** are optional, and **Notes** is free text. If the stage's parent status is *Interview*, three more fields appear: **Format**, **Duration** and **Location** — use Location for a meeting link as happily as for a street address. **Set as current stage** is ticked by default; leave it ticked when you are recording where the job is now, and untick it when you are backfilling something that already happened.
 
-Editing a stage later opens the same dialog with one extra field, **Outcome**: *Scheduled*, *Completed*, *Passed*, *Failed*, *No-show* or *Cancelled*.
+Editing a stage later opens the same dialog with one extra field, **Outcome**: *Scheduled*, *Completed*, *Passed*, *Failed*, *No-show* or *Cancelled*. Outcome, location, format and duration all read back on the stage's **Overview** tab, above the notes box.
 
 ## How do I delete a stage?
 
@@ -57,7 +57,7 @@ An undated stage reads `—` in the Stage History list, and **No date set** in i
 
 ## How do I record who is interviewing me?
 
-Select the interview stage, then use **Link** in its **Interviewers** panel, or **Update Status → Link Interviewers**. The dialog searches your existing [contacts](./contacts.md); the **Add a new contact** box at the bottom takes a name, role and email and creates the person on the spot.
+Select the interview stage, then use **Link** on its **Interviewer** tab, or **Update Status → Link Interviewers**. The dialog searches your existing [contacts](./contacts.md); the **Add a new contact** box at the bottom takes a name, role and email and creates the person on the spot.
 
 Linking someone also adds them to the job's **Contacts** tab with the **Interviewer** role, so that tab stays the single roster of everyone involved in the application. The reverse is not true: the **✕** beside an interviewer unlinks them from *that stage only* and leaves the job contact link alone, because the person may hold other roles on the job.
 
@@ -65,7 +65,7 @@ The same person can be linked to several stages of the same job, and a contact y
 
 ## How do I build a prep list for an interview?
 
-Select the interview stage and use **Add to Prep List**, either the button on its prep-list panel or the item in the **Update Status** menu. The dialog lists your question bank with an instant search over it; tick as many questions as you like and add them in one go.
+Select the interview stage and use **Add to Prep List**, either the button on its **Prep List** tab or the item in the **Update Status** menu. The dialog lists your question bank with an instant search over it; tick as many questions as you like and add them in one go.
 
 To add a question that is not in the bank yet, type it into the box at the bottom, optionally pick a **category**, and add it. It is saved to your question bank as well as to this stage's prep list, so every later job can reach it — the bank is shared, not per-job. A question added this way is banked with the placeholder answer `TBD`; fill in the real answer from the Questions page when you are ready.
 
@@ -73,7 +73,7 @@ A question can be on the prep lists of several stages at once, and **✕** besid
 
 ## What is the difference between a question on a prep list and one marked "asked"?
 
-A prep-list question is one you *expect*; the checkbox beside it records that it was *actually asked*. Tick it during or after the interview and it saves immediately — there is no separate save step — and the panel header keeps a running `2 of 5 asked` tally.
+A prep-list question is one you *expect*; the checkbox beside it records that it was *actually asked*. Tick it during or after the interview and it saves immediately — there is no separate save step — and the **Prep List** tab carries a running `2 of 5` tally, so you can read the progress without opening the tab.
 
 The distinction is what makes the list useful afterwards: which of the questions you prepared for came up, and which did not. Marking a question asked never changes the question itself or its answer in your bank.
 

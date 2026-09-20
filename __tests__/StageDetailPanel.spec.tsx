@@ -82,27 +82,71 @@ describe("StageDetailPanel", () => {
     expect(screen.getByText(/Sep 24, 2026 · 10:00 AM · 90 min/)).toBeInTheDocument();
   });
 
-  it("shows interviewers, format, location and the asked tally for an interview stage", () => {
+  // Overview is the landing tab, so format, location, duration and outcome are
+  // on screen without a click; interviewers and questions are one tab away.
+  it("opens on Overview with location, format, duration and outcome", () => {
     render(
       <StageDetailPanel stage={interviewStage} isCurrent onEdit={noop} onLinkInterviewers={noop} onAddPrepQuestions={noop} onChanged={noop} />,
     );
 
+    expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute("data-state", "active");
+    expect(screen.getByText("Acme HQ, Bldg 3")).toBeInTheDocument();
+    expect(screen.getByText("On-site")).toBeInTheDocument();
+    expect(screen.getByText("90 min")).toBeInTheDocument();
+    expect(screen.getByText("Scheduled")).toBeInTheDocument();
+    expect(screen.queryByText("Priya Nair")).toBeNull();
+  });
+
+  it("shows the linked interviewers on the Interviewer tab", async () => {
+    render(
+      <StageDetailPanel stage={interviewStage} isCurrent onEdit={noop} onLinkInterviewers={noop} onAddPrepQuestions={noop} onChanged={noop} />,
+    );
+
+    await userEvent.click(screen.getByRole("tab", { name: "Interviewer" }));
+
     expect(screen.getByText("Priya Nair")).toBeInTheDocument();
-    expect(screen.getByText(/On-site/)).toBeInTheDocument();
-    expect(screen.getByText(/Acme HQ, Bldg 3/)).toBeInTheDocument();
-    expect(screen.getByText("1 of 2 asked")).toBeInTheDocument();
+    expect(screen.getByText("VP Engineering")).toBeInTheDocument();
+  });
+
+  // The tally rides on the trigger, so the prep progress is readable from the
+  // Overview tab without opening the list.
+  it("carries the asked tally on the Prep List tab trigger", async () => {
+    render(
+      <StageDetailPanel stage={interviewStage} isCurrent onEdit={noop} onLinkInterviewers={noop} onAddPrepQuestions={noop} onChanged={noop} />,
+    );
+
+    expect(screen.getByRole("tab", { name: /Prep List 1 of 2/ })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("tab", { name: /Prep List/ }));
+
     expect(screen.getByText("System Design")).toBeInTheDocument();
   });
 
-  it("hides interviewers and the prep list on a non-interview stage", () => {
+  it("drops the tab row on a non-interview stage and shows the overview alone", () => {
     render(
       <StageDetailPanel stage={nonInterviewStage} isCurrent={false} onEdit={noop} onLinkInterviewers={noop} onAddPrepQuestions={noop} onChanged={noop} />,
     );
 
+    expect(screen.queryByRole("tablist")).toBeNull();
     expect(screen.queryByText(/INTERVIEWERS/)).toBeNull();
     expect(screen.queryByText(/PREP LIST/)).toBeNull();
     // Notes are a live textarea, so this is a value, not page text.
     expect(screen.getByLabelText("NOTES")).toHaveValue("Bring laptop");
+  });
+
+  // Nothing remounts when another stage is selected, so the tab has to be
+  // reset by hand or an interview tab survives onto a stage that has none.
+  it("returns to Overview when another stage is selected", async () => {
+    const { rerender } = render(
+      <StageDetailPanel stage={interviewStage} isCurrent onEdit={noop} onLinkInterviewers={noop} onAddPrepQuestions={noop} onChanged={noop} />,
+    );
+
+    await userEvent.click(screen.getByRole("tab", { name: "Interviewer" }));
+    rerender(
+      <StageDetailPanel stage={{ ...interviewStage, id: "st9" }} isCurrent onEdit={noop} onLinkInterviewers={noop} onAddPrepQuestions={noop} onChanged={noop} />,
+    );
+
+    expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute("data-state", "active");
   });
 
   it("marks a question asked inline, with no dialog and no save step", async () => {
@@ -110,6 +154,7 @@ describe("StageDetailPanel", () => {
       <StageDetailPanel stage={interviewStage} isCurrent onEdit={noop} onLinkInterviewers={noop} onAddPrepQuestions={noop} onChanged={noop} />,
     );
 
+    await userEvent.click(screen.getByRole("tab", { name: /Prep List/ }));
     await userEvent.click(
       screen.getByRole("checkbox", { name: /Tell me about a conflict with a teammate/ }),
     );
