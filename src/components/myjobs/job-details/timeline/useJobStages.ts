@@ -9,7 +9,7 @@ import type { JobStage } from "@/models/jobStage.model";
 export function useJobStages(jobId: string, initial: JobStage[]) {
   // The server prop comes from JOB_DETAILS_INCLUDE, which carries no orderBy
   // and could not usefully have one (D2) — without this every job opens with
-  // a scrambled stepper until the first write triggers a refetch.
+  // a scrambled Stage History list until the first write triggers a refetch.
   const [stages, setStages] = useState<JobStage[]>(() => sortStages(initial));
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
 

@@ -2,7 +2,6 @@
 import { CalendarClock } from "lucide-react";
 import type { JobStage, JobStageTypeRef } from "@/models/jobStage.model";
 import { JobTabEmptyState } from "../JobTabEmptyState";
-import { StageStepper } from "./StageStepper";
 import { StageHistoryList } from "./StageHistoryList";
 import { StageDetailPanel } from "./StageDetailPanel";
 import { terminalStagesFor } from "./stageDisplay";
@@ -51,15 +50,7 @@ export function JobTimelineTab({
   const terminalTypes = terminalStagesFor(stages, stageTypes);
 
   return (
-    <div className="@container/timeline space-y-6">
-      <StageStepper
-        stages={stages}
-        selectedStageId={selectedStageId}
-        currentStageId={currentStageId}
-        terminalTypes={terminalTypes}
-        onSelect={onSelect}
-      />
-
+    <div className="@container/timeline">
       <div className="flex flex-col gap-6 @3xl/timeline:flex-row @3xl/timeline:items-start">
         <div className="w-full shrink-0 @3xl/timeline:w-[340px]">
           <StageHistoryList

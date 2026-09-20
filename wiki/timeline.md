@@ -15,7 +15,7 @@ stale_after: 2027-09-30
 
 The **Timeline** tab on a job's details page is that job's record of how the hiring process actually moved — one entry per stage, each with its own date, notes and outcome. A job's [status](./jobs.md) is a single label saying where the job is *now*; the timeline is the history behind that label, and the status is derived from it.
 
-The tab shows three things. A **stepper** across the top walks the stages in the order set by **Library → Stages**, with the current one highlighted and one greyed **Offer** step at the end if the job has not reached an offer yet. A **Stage History** list down the left carries every stage in full, including any the stepper has scrolled off. Clicking either selects a stage and opens its **detail panel** on the right, where you edit the stage, record its outcome, write notes, and — on an interview stage — see the interviewers and the prep list.
+The tab shows two things. A **Stage History** list down the left walks every stage in the order set by **Library → Stages**, joined top to bottom by a connecting line: a green tick marks each stage already behind you, a filled marker the current one, and a hollow marker the greyed **Offer** step at the end if the job has not reached an offer yet. Clicking a stage opens its **detail panel** on the right, where you edit the stage, record its outcome, write notes, and — on an interview stage — see the interviewers and the prep list.
 
 A count badge on the tab tells you how many stages a job has. Every job created after this feature shipped starts with one.
 
@@ -53,7 +53,7 @@ That means a job added long after you applied can show its New stage with a late
 
 Because that stage has no date, which is allowed. Dates are optional on every stage: a stage appended by a status change never has one, and neither does a stage you added without filling the Date field.
 
-An undated stage reads `—` in the stepper and the history list, and **No date set** in its detail panel. Among stages of the same type it sorts to the end rather than to the start. Open the stage and use **Edit** to add the date whenever you learn it.
+An undated stage reads `—` in the Stage History list, and **No date set** in its detail panel. Among stages of the same type it sorts to the end rather than to the start. Open the stage and use **Edit** to add the date whenever you learn it.
 
 ## How do I record who is interviewing me?
 

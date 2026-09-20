@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { StageStepper } from "@/components/myjobs/job-details/timeline/StageStepper";
+import { StageHistoryList } from "@/components/myjobs/job-details/timeline/StageHistoryList";
 
 const stage = (id: string, label: string, over: any = {}) => ({
   id,
@@ -31,17 +31,22 @@ const terminalTypes = [
   { id: "t-off", label: "Offer", value: "offer", statusId: "s-off", sortOrder: 7, Status: { value: "offer" } },
 ] as any;
 
-describe("StageStepper", () => {
+const renderList = (props: any = {}) =>
+  render(
+    <StageHistoryList
+      stages={stages}
+      selectedStageId="c"
+      currentStageId="c"
+      terminalTypes={terminalTypes}
+      onSelect={() => {}}
+      onAddStage={() => {}}
+      {...props}
+    />,
+  );
+
+describe("StageHistoryList", () => {
   it("renders every stage with its date, then the unreached terminal step", () => {
-    render(
-      <StageStepper
-        stages={stages}
-        selectedStageId="c"
-        currentStageId="c"
-        terminalTypes={terminalTypes}
-        onSelect={() => {}}
-      />,
-    );
+    renderList();
 
     expect(screen.getByText("New")).toBeInTheDocument();
     expect(screen.getByText("Sep 1")).toBeInTheDocument();
@@ -51,32 +56,16 @@ describe("StageStepper", () => {
   });
 
   it("marks the current stage for assistive tech", () => {
-    render(
-      <StageStepper
-        stages={stages}
-        selectedStageId="c"
-        currentStageId="c"
-        terminalTypes={terminalTypes}
-        onSelect={() => {}}
-      />,
-    );
+    renderList();
 
     expect(
       screen.getByRole("button", { name: /Final \/ Onsite Interview/ }),
     ).toHaveAttribute("aria-current", "step");
   });
 
-  it("selects a step on click", async () => {
+  it("selects a stage on click", async () => {
     const onSelect = vi.fn();
-    render(
-      <StageStepper
-        stages={stages}
-        selectedStageId="c"
-        currentStageId="c"
-        terminalTypes={terminalTypes}
-        onSelect={onSelect}
-      />,
-    );
+    renderList({ onSelect });
 
     await userEvent.click(screen.getByRole("button", { name: /Applied/ }));
 
@@ -84,35 +73,19 @@ describe("StageStepper", () => {
   });
 
   it("renders the unreached terminal step as a non-interactive element", () => {
-    render(
-      <StageStepper
-        stages={stages}
-        selectedStageId="c"
-        currentStageId="c"
-        terminalTypes={terminalTypes}
-        onSelect={() => {}}
-      />,
-    );
+    renderList();
 
     expect(screen.queryByRole("button", { name: /Offer/ })).toBeNull();
   });
 
-  // The rail truncates to one line; the full name stays reachable on hover
-  // and in the history list. Without this a long label wraps and pushes its
-  // dot out of line with the connectors either side.
-  it("keeps a long label on one line with the full name in a title", () => {
-    render(
-      <StageStepper
-        stages={stages}
-        selectedStageId="c"
-        currentStageId="c"
-        terminalTypes={terminalTypes}
-        onSelect={() => {}}
-      />,
-    );
+  it("shows an em dash for an undated stage", () => {
+    renderList({
+      stages: [stage("a", "New")] as any,
+      selectedStageId: "a",
+      currentStageId: "a",
+      terminalTypes: [] as any,
+    });
 
-    const label = screen.getByText("Final / Onsite Interview");
-    expect(label).toHaveAttribute("title", "Final / Onsite Interview");
-    expect(label.className).toContain("truncate");
+    expect(screen.getByText("—")).toBeInTheDocument();
   });
 });

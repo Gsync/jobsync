@@ -1,5 +1,5 @@
 "use client";
-import { Plus } from "lucide-react";
+import { Check, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import type { JobStage, JobStageTypeRef } from "@/models/jobStage.model";
@@ -14,6 +14,45 @@ type StageHistoryListProps = {
   onAddStage: () => void;
 };
 
+// The connector spans the two rows' padding, so it only lines up while the
+// rows stay adjacent with no margin between them.
+function StageMarker({
+  state,
+  hasNext,
+  nextReached,
+}: {
+  state: "complete" | "current" | "upcoming";
+  hasNext: boolean;
+  nextReached: boolean;
+}) {
+  return (
+    <span aria-hidden className="relative flex h-5 w-5 shrink-0 items-center justify-center">
+      <span
+        className={cn(
+          "flex h-5 w-5 items-center justify-center rounded-full",
+          state === "current"
+            ? "bg-primary ring-4 ring-primary/20"
+            : state === "complete"
+              ? "bg-emerald-500 dark:bg-emerald-400"
+              : "border-2 border-border bg-card",
+        )}
+      >
+        {state === "complete" && (
+          <Check className="h-3 w-3 text-background" strokeWidth={3} />
+        )}
+      </span>
+      {hasNext && (
+        <span
+          className={cn(
+            "absolute left-1/2 top-full h-5 w-0.5 -translate-x-1/2",
+            nextReached ? "bg-emerald-500 dark:bg-emerald-400" : "bg-border",
+          )}
+        />
+      )}
+    </span>
+  );
+}
+
 export function StageHistoryList({
   stages,
   selectedStageId,
@@ -22,18 +61,21 @@ export function StageHistoryList({
   onSelect,
   onAddStage,
 }: StageHistoryListProps) {
+  const currentIndex = stages.findIndex((s) => s.id === currentStageId);
+
   return (
     <div className="rounded-lg border bg-card p-2.5">
       <h3 className="px-2.5 py-2 text-xs font-bold tracking-wide text-muted-foreground">
         STAGE HISTORY
       </h3>
 
-      {/* The complete history lives here, not in the stepper: nothing is
-          reachable only by scrolling the stepper sideways. */}
+      {/* The complete history lives here, and only here: every stage is
+          reachable without a sideways scroll. */}
       <ul>
-        {stages.map((stage) => {
+        {stages.map((stage, index) => {
           const isSelected = stage.id === selectedStageId;
           const isCurrent = stage.id === currentStageId;
+          const isComplete = currentIndex >= 0 && index < currentIndex;
           return (
             <li key={stage.id}>
               <button
@@ -46,12 +88,10 @@ export function StageHistoryList({
                   isSelected ? "bg-accent" : "hover:bg-accent/50",
                 )}
               >
-                <span
-                  aria-hidden
-                  className={cn(
-                    "h-2 w-2 shrink-0 rounded-full",
-                    isCurrent ? "bg-primary" : "bg-emerald-500 dark:bg-emerald-400",
-                  )}
+                <StageMarker
+                  state={isCurrent ? "current" : isComplete ? "complete" : "upcoming"}
+                  hasNext={index < stages.length - 1 || terminalTypes.length > 0}
+                  nextReached={currentIndex >= 0 && index < currentIndex}
                 />
                 <span
                   className={cn(
@@ -75,12 +115,16 @@ export function StageHistoryList({
           );
         })}
 
-        {terminalTypes.map((type) => (
+        {terminalTypes.map((type, index) => (
           <li
             key={type.id}
             className="flex items-center gap-2.5 p-2.5 text-muted-foreground"
           >
-            <span aria-hidden className="h-2 w-2 shrink-0 rounded-full border-2 border-border" />
+            <StageMarker
+              state="upcoming"
+              hasNext={index < terminalTypes.length - 1}
+              nextReached={false}
+            />
             <span className="flex-1 truncate text-[13px] font-semibold">
               {type.label}
             </span>

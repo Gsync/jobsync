@@ -1,7 +1,7 @@
 import React from "react";
 import JobDetails from "@/components/myjobs/JobDetails";
 import { JobResponse, Tag } from "@/models/job.model";
-import { render, screen, act, waitFor } from "@testing-library/react";
+import { render, screen, act, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 // The active tab lives in the URL, so a click only calls router.replace —
@@ -324,6 +324,33 @@ describe("JobDetails – match data display", () => {
   });
 });
 
+// The status is derived from the current stage, so it must be read from the
+// stage list the timeline already refetches — a mirrored copy went stale on
+// every stage add, edit and delete, and seeded Edit Job with the old status.
+describe("JobDetails – status from the current stage", () => {
+  const statusBadge = () =>
+    within(screen.getByText("Status").parentElement!).getAllByText(
+      /Applied|Interview/,
+    )[0];
+
+  it("shows the current stage's status, not the one on the job prop", () => {
+    render(
+      <JobDetails
+        {...baseProps}
+        job={makeJob({ stages: [stageA, stageB] })}
+      />,
+    );
+
+    expect(statusBadge()).toHaveTextContent("Interview");
+  });
+
+  it("keeps the job's own status when the job has no stages", () => {
+    render(<JobDetails {...baseProps} job={makeJob({ stages: [] })} />);
+
+    expect(statusBadge()).toHaveTextContent("Applied");
+  });
+});
+
 describe("JobDetails – tabs", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -438,17 +465,17 @@ describe("JobDetails – tabs", () => {
   });
 });
 
-describe("JobDetails – Match with AI", () => {
+describe("JobDetails – AI Match", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     chat.clear.mockResolvedValue(undefined);
     searchParams = new URLSearchParams();
   });
 
-  it("opens the chat and asks for a match when Match with AI is clicked", async () => {
+  it("opens the chat and asks for a match when AI Match is clicked", async () => {
     chat.approvalPending = false;
     render(<JobDetails job={makeJob()} {...baseProps} />);
-    await userEvent.click(screen.getByRole("button", { name: /match with ai/i }));
+    await userEvent.click(screen.getByRole("button", { name: /ai match/i }));
     await act(async () => {});
     expect(chat.open).toHaveBeenCalled();
     expect(chat.clear).toHaveBeenCalled();
@@ -462,7 +489,7 @@ describe("JobDetails – Match with AI", () => {
     chat.approvalPending = false;
     chat.clear.mockRejectedValueOnce(new Error("offline"));
     render(<JobDetails job={makeJob()} {...baseProps} />);
-    await userEvent.click(screen.getByRole("button", { name: /match with ai/i }));
+    await userEvent.click(screen.getByRole("button", { name: /ai match/i }));
     await act(async () => {});
     expect(chat.open).toHaveBeenCalled();
     expect(chat.sendMessage).toHaveBeenCalled();
@@ -471,7 +498,7 @@ describe("JobDetails – Match with AI", () => {
   it("asks before clearing a conversation with a pending approval", async () => {
     chat.approvalPending = true;
     render(<JobDetails job={makeJob()} {...baseProps} />);
-    await userEvent.click(screen.getByRole("button", { name: /match with ai/i }));
+    await userEvent.click(screen.getByRole("button", { name: /ai match/i }));
     expect(
       screen.getByText(/clear the assistant conversation/i),
     ).toBeInTheDocument();

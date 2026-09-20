@@ -87,7 +87,6 @@ function JobDetails({
   } = useAgentChat();
   const [showClearChatConfirm, setShowClearChatConfirm] = useState(false);
   const [pendingChatMessage, setPendingChatMessage] = useState("");
-  const [currentStatus, setCurrentStatus] = useState(job.Status);
   const [editJobTarget, setEditJobTarget] = useState<JobResponse | null>(
     null,
   );
@@ -102,6 +101,11 @@ function JobDetails({
     selectStage,
     reload: reloadStages,
   } = useJobStages(job.id, job.stages ?? []);
+  // Derived, never mirrored: the status is the current stage's parent status,
+  // and six server-side write paths keep Job.statusId equal to it. State here
+  // would go stale on every stage add, edit or delete that moves the status.
+  // job.Status covers the stageless job, which keeps whatever status it had.
+  const currentStatus = currentStage?.StageType.Status ?? job.Status;
   const [addStageTarget, setAddStageTarget] = useState<
     { mode: "create" } | { mode: "edit"; stage: JobStage } | null
   >(null);
@@ -180,10 +184,9 @@ function JobDetails({
   const onChangeStatus = async (status: JobStatus) => {
     const { success, message } = await updateJobStatus(job.id, status);
     if (success) {
-      setCurrentStatus(status);
-      // The status change appends a stage server-side, so the timeline has to
-      // catch up or the stepper keeps showing the previous current stage.
-      void reloadStages();
+      // The status change appends a stage server-side, and the badge reads
+      // that stage, so this is awaited rather than fired off.
+      await reloadStages();
       toastSuccess(`Job has been updated successfully`);
     } else {
       toastError(message);

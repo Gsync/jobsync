@@ -41,7 +41,7 @@ All three of those paths also append a stage to the job's [timeline](./timeline.
 
 ## What is on a job's details page?
 
-Three parts, top to bottom. A **header row** with the job title, a `Company · Location · Job Type · Workplace` line whose company name opens the company's [details page](./companies.md), and the actions: **Update Status**, Match with AI, Cover Letter, Edit, Delete and a **⋮** menu. Below it a **summary card** of eight facts — Status, Job Type, Salary Range, Source, Applied, AI Match, Resume and Added — with the job URL and any skill badges on a divider row underneath. Below that, six **tabs**.
+Three parts, top to bottom. A **header row** with the job title, a `Company · Location · Job Type · Workplace` line whose company name opens the company's [details page](./companies.md), and the actions: **Update Status**, AI Match, Cover Letter, Edit, Delete and a **⋮** menu. Below it a **summary card** of eight facts — Status, Job Type, Salary Range, Source, Applied, AI Match, Resume and Added — with the job URL and any skill badges on a divider row underneath. Below that, six **tabs**.
 
 The tabs are **Description**, **AI Match**, **[Timeline](./timeline.md)**, **Cover Letter**, **Notes** and **[Contacts](./contacts.md)**, and all six are always there. AI Match and Cover Letter stay in the bar even when the job has neither, showing a short explanation and a button to run it — so the tab set never shifts between jobs. Timeline, Notes and Contacts each carry a count badge once the job has any. Contacts lists the people linked to this job with the role each played. The tab you are on is kept in the address bar, so a refresh, a bookmark or the browser Back button lands you back on the same one.
 
@@ -59,9 +59,9 @@ The list also has a view toggle for table or card layout, and a reload button th
 
 ## How do I run an AI match from the jobs list?
 
-A job that has no AI match score shows a **Match** button where its score would be — in the Match column in table view, and in the top-right corner of the card in card view. That includes a listing an [automation](./automations.md) saved without AI-scoring it: its relevance percentage stays on the automation page and is never shown here as a match score. Clicking it opens that job's details page on the **AI Match** tab and starts the match straight away, so you do not have to open the job and click again. The match itself runs in the assistant panel exactly as it does from the job's own **Match with AI** button; when it finishes, the analysis is already on the tab in front of you.
+A job that has no AI match score shows a **Match** button where its score would be — in the Match column in table view, and in the top-right corner of the card in card view. That includes a listing an [automation](./automations.md) saved without AI-scoring it: its relevance percentage stays on the automation page and is never shown here as a match score. Clicking it opens that job's details page on the **AI Match** tab and starts the match straight away, so you do not have to open the job and click again. The match itself runs in the assistant panel exactly as it does from the job's own **AI Match** button; when it finishes, the analysis is already on the tab in front of you.
 
-Jobs that already have a score show the score instead. To re-run a match on one of those, open the job and use **Match with AI** in its header.
+Jobs that already have a score show the score instead. To re-run a match on one of those, open the job and use **AI Match** in its header.
 
 ## How do I export my jobs to CSV?
 

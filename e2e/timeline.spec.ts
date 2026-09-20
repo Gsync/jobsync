@@ -28,7 +28,7 @@ test("adding an Offer stage moves the job's status on the Jobs list", async ({
   ).toBeChecked();
   await page.getByRole("button", { name: "Add Stage", exact: true }).click();
 
-  // The stepper and the history list both reflect it without a reload.
+  // The Stage History list reflects it without a reload.
   await expect(page.getByRole("button", { name: /^Offer/ }).first()).toBeVisible();
   await expect(page.getByRole("tab", { name: /Timeline/ })).toContainText("2");
 

@@ -325,8 +325,8 @@ export const JOB_STAGES = [
   { label: "Withdrawn", value: "withdrawn", status: "withdrawn", sortOrder: 13 },
 ] as const;
 
-// Statuses whose stage types render greyed at the tail of the stepper when the
-// job has not reached them (D6). Offer alone: the greyed tail reads as what a
+// Statuses whose stage types render greyed at the foot of the Stage History
+// list when the job has not reached them (D6). Offer alone: it reads as what a
 // job is working toward, and rejected/withdrawn are alternative endings, not
 // next steps. Both stay one click away in Add Stage.
 export const TERMINAL_STAGE_STATUSES = ["offer"] as const;
