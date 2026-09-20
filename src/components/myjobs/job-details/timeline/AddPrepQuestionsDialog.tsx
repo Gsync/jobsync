@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
-import { useForm } from "react-hook-form";
 import { Search, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,9 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Form, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Combobox } from "@/components/ComboBox";
+import { TagInput } from "@/components/myjobs/TagInput";
 import { toastActionResult } from "@/lib/toast";
 import { addStagePrepQuestions } from "@/actions/jobStage.actions";
 import { createQuestion, getQuestionsList } from "@/actions/question.actions";
@@ -51,15 +49,10 @@ export function AddPrepQuestionsDialog({
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [newQuestion, setNewQuestion] = useState("");
+  const [newTagIds, setNewTagIds] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
   const loaded = useRef(false);
   const rowId = useId();
-
-  // The category picker is a creatable Combobox, so it needs a form field to
-  // hang off; nothing else in this dialog is form-driven.
-  const form = useForm<{ questionCategory: string }>({
-    defaultValues: { questionCategory: "" },
-  });
 
   useEffect(() => {
     if (!open || loaded.current) return;
@@ -79,8 +72,8 @@ export function AddPrepQuestionsDialog({
     setSearch("");
     setSelected([]);
     setNewQuestion("");
-    form.reset({ questionCategory: "" });
-  }, [open, stage, form]);
+    setNewTagIds([]);
+  }, [open, stage]);
 
   if (!stage) return null;
 
@@ -99,11 +92,10 @@ export function AddPrepQuestionsDialog({
 
   const addQuestion = () =>
     startTransition(async () => {
-      const category = form.getValues("questionCategory");
       const res = await createQuestion({
         question: newQuestion.trim(),
         answer: UNANSWERED,
-        tagIds: category ? [category] : [],
+        tagIds: newTagIds,
       });
       toastActionResult(res, {
         success: "Question has been added to your bank",
@@ -112,7 +104,7 @@ export function AddPrepQuestionsDialog({
           setBank((prev) => [res.data, ...prev]);
           setSelected((prev) => [...prev, res.data.id]);
           setNewQuestion("");
-          form.reset({ questionCategory: "" });
+          setNewTagIds([]);
         },
       });
     });
@@ -143,9 +135,9 @@ export function AddPrepQuestionsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[540px] max-h-[800px] overflow-hidden">
+      <DialogContent className="sm:max-w-[760px] max-h-[800px] overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Add to Prep List</DialogTitle>
+          <DialogTitle>Add Questions to Prep List</DialogTitle>
           <DialogDescription>{stageHeading(stage)}</DialogDescription>
         </DialogHeader>
 
@@ -201,31 +193,41 @@ export function AddPrepQuestionsDialog({
               return (
                 <li
                   key={q.id}
-                  className={`flex items-center gap-2.5 px-3.5 py-2.5 ${
+                  className={`flex items-start gap-2.5 px-3.5 py-2.5 ${
                     index > 0 ? "border-t" : ""
                   }`}
                 >
                   <input
                     id={`${rowId}-${q.id}`}
                     type="checkbox"
-                    className="h-4 w-4 shrink-0"
+                    className="mt-0.5 h-4 w-4 shrink-0"
                     checked={isLinked || selected.includes(q.id)}
                     disabled={isLinked}
                     onChange={(e) => toggle(q.id, e.target.checked)}
                   />
-                  <label
-                    htmlFor={`${rowId}-${q.id}`}
-                    className="flex-1 cursor-pointer text-[13px]"
-                  >
-                    {q.question}
-                  </label>
-                  {q.tags?.map((tag) => (
-                    <Badge key={tag.id} variant="secondary" className="text-[11px]">
-                      {tag.label}
-                    </Badge>
-                  ))}
+                  <div className="flex-1">
+                    <label
+                      htmlFor={`${rowId}-${q.id}`}
+                      className="block cursor-pointer text-[13px]"
+                    >
+                      {q.question}
+                    </label>
+                    {(q.tags?.length ?? 0) > 0 && (
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {q.tags?.map((tag) => (
+                          <Badge
+                            key={tag.id}
+                            variant="secondary"
+                            className="text-[11px]"
+                          >
+                            {tag.label}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   {isLinked && (
-                    <span className="text-[11px] text-muted-foreground">
+                    <span className="shrink-0 text-[11px] text-muted-foreground">
                       On prep list
                     </span>
                   )}
@@ -242,23 +244,15 @@ export function AddPrepQuestionsDialog({
               value={newQuestion}
               onChange={(e) => setNewQuestion(e.target.value)}
             />
-            <Form {...form}>
-              <FormField
-                control={form.control}
-                name="questionCategory"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <Combobox
-                      options={tags}
-                      field={field}
-                      creatable
-                      fullWidth
-                      label="category"
-                    />
-                  </FormItem>
-                )}
+            <div className="space-y-1.5">
+              <p className="text-[13px] font-medium">Skill Tags</p>
+              <TagInput
+                availableTags={tags}
+                selectedTagIds={newTagIds}
+                onChange={setNewTagIds}
+                onTagCreated={(tag) => setTags((prev) => [...prev, tag])}
               />
-            </Form>
+            </div>
             <Button
               size="sm"
               variant="outline"

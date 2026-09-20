@@ -26,7 +26,7 @@ export interface JobStagePrepQuestionLink {
   questionId: string;
   asked: boolean;
   askedAt: Date | null;
-  Question: { id: string; question: string; tags: Tag[] };
+  Question: { id: string; question: string; answer: string | null; tags: Tag[] };
 }
 
 export interface JobStage {

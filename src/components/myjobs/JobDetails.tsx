@@ -50,11 +50,11 @@ import type { JobStage, JobStageTypeRef } from "@/models/jobStage.model";
 
 const JOB_DETAIL_TABS = [
   "description",
-  "match",
   "timeline",
+  "match",
   "letter",
-  "notes",
   "contacts",
+  "notes",
 ] as const;
 
 type JobDetailsProps = {
@@ -238,7 +238,6 @@ function JobDetails({
         <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList>
             <TabsTrigger value="description">Description</TabsTrigger>
-            <TabsTrigger value="match">AI Match</TabsTrigger>
             <TabsTrigger value="timeline">
               Timeline
               {stages.length > 0 && (
@@ -247,20 +246,21 @@ function JobDetails({
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="match">AI Match</TabsTrigger>
             <TabsTrigger value="letter">Cover Letter</TabsTrigger>
-            <TabsTrigger value="notes">
-              Notes
-              {notesCount > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  {notesCount}
-                </Badge>
-              )}
-            </TabsTrigger>
             <TabsTrigger value="contacts">
               Contacts
               {(job.contactLinks?.length ?? 0) > 0 && (
                 <Badge variant="secondary" className="ml-2">
                   {job.contactLinks!.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="notes">
+              Notes
+              {notesCount > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {notesCount}
                 </Badge>
               )}
             </TabsTrigger>

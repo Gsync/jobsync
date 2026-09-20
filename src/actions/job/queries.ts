@@ -93,7 +93,11 @@ const JOB_DETAILS_INCLUDE = {
         orderBy: { createdAt: "asc" as const },
       },
       prepQuestions: {
-        include: { Question: { select: { id: true, question: true, tags: true } } },
+        include: {
+          Question: {
+            select: { id: true, question: true, answer: true, tags: true },
+          },
+        },
         orderBy: { createdAt: "asc" as const },
       },
     },

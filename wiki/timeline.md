@@ -65,9 +65,11 @@ The same person can be linked to several stages of the same job, and a contact y
 
 ## How do I build a prep list for an interview?
 
-Select the interview stage and use **Add to Prep List**, either the button on its **Prep List** tab or the item in the **Update Status** menu. The dialog lists your question bank with an instant search over it; tick as many questions as you like and add them in one go.
+Select the interview stage and use **Add Questions**, either the button on its **Prep List** tab or **Add to Prep List** in the **Update Status** menu. The dialog lists your question bank with an instant search over it; tick as many questions as you like and add them in one go.
 
-To add a question that is not in the bank yet, type it into the box at the bottom, optionally pick a **category**, and add it. It is saved to your question bank as well as to this stage's prep list, so every later job can reach it — the bank is shared, not per-job. A question added this way is banked with the placeholder answer `TBD`; fill in the real answer from the Questions page when you are ready.
+To add a question that is not in the bank yet, type it into the box at the bottom, optionally pick any number of **skill tags**, and add it. It is saved to your question bank as well as to this stage's prep list, so every later job can reach it — the bank is shared, not per-job. A question added this way is banked with the placeholder answer `TBD`; fill in the real answer from the Questions page when you are ready.
+
+A question whose answer is filled in shows a chevron; click the question or the chevron to read the answer without leaving the tab, or use **Expand all** to open every answered question at once. A question still holding the `TBD` placeholder reads **No answer yet** instead.
 
 A question can be on the prep lists of several stages at once, and **✕** beside one removes it from this stage's list without touching the bank.
 
