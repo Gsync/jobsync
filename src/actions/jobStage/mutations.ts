@@ -135,18 +135,25 @@ export const deleteJobStage = async (
       await tx.jobStage.delete({ where: { id: stageId } });
       if (!stage.isCurrent) return;
 
-      // Deleting the current stage promotes the most recent DATED stage; with
-      // no stages left the job keeps its status and has no current stage.
-      // Undated stages sort last (D2), so simply taking the tail would promote
-      // a dateless stage over a recent real one and set the wrong status.
+      // Deleting the current stage promotes the furthest-along DATED stage;
+      // with no stages left the job keeps its status and has no current stage.
+      // Undated stages sort last within a sortOrder (D2), so simply taking the
+      // tail would promote a dateless stage over a real one and set the wrong
+      // status.
       const remaining = sortStages<{
         id: string;
         occurredAt: Date | null;
         createdAt: Date;
+        StageType: { sortOrder: number };
       }>(
         await tx.jobStage.findMany({
           where: { jobId: stage.jobId },
-          select: { id: true, occurredAt: true, createdAt: true },
+          select: {
+            id: true,
+            occurredAt: true,
+            createdAt: true,
+            StageType: { select: { sortOrder: true } },
+          },
         }),
       );
       const dated = remaining.filter((s) => s.occurredAt);

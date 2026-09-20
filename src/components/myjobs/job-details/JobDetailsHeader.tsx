@@ -98,7 +98,7 @@ export function JobDetailsHeader({
         >
           <Sparkles className="h-4 w-4 sm:mr-2" />
           <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Match with AI
+            AI Match
           </span>
         </Button>
         <Button
@@ -115,25 +115,25 @@ export function JobDetailsHeader({
           </span>
         </Button>
         <Button
+          title="Edit"
           variant="outline"
+          size="icon"
           onClick={onEdit}
           data-testid="job-details-edit-btn"
         >
-          <Pencil className="h-4 w-4 sm:mr-2" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Edit
-          </span>
+          <Pencil className="h-4 w-4" />
+          <span className="sr-only">Edit</span>
         </Button>
         <Button
+          title="Delete"
           variant="outline"
+          size="icon"
           className="text-destructive hover:text-destructive"
           onClick={onDelete}
           data-testid="job-details-delete-btn"
         >
-          <Trash2 className="h-4 w-4 sm:mr-2" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Delete
-          </span>
+          <Trash2 className="h-4 w-4" />
+          <span className="sr-only">Delete</span>
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

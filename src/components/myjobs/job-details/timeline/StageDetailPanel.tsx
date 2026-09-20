@@ -1,10 +1,14 @@
 "use client";
-import { useTransition } from "react";
-import { CalendarDays, Monitor, Pencil, UserPlus, X } from "lucide-react";
+import { useState, useTransition } from "react";
+import { CalendarDays, Monitor, Pencil, Trash2, UserPlus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DeleteAlertDialog } from "@/components/DeleteAlertDialog";
 import { toastActionResult } from "@/lib/toast";
-import { unlinkStageInterviewer } from "@/actions/jobStage.actions";
+import {
+  deleteJobStage,
+  unlinkStageInterviewer,
+} from "@/actions/jobStage.actions";
 import { STAGE_OUTCOMES } from "@/lib/constants";
 import type { JobStage } from "@/models/jobStage.model";
 import {
@@ -33,6 +37,7 @@ export function StageDetailPanel({
   onChanged,
 }: StageDetailPanelProps) {
   const [, startTransition] = useTransition();
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const interview = isInterviewStage(stage);
   const outcomeLabel = STAGE_OUTCOMES.find((o) => o.value === stage.outcome)?.label;
 
@@ -41,6 +46,17 @@ export function StageDetailPanel({
       const res = await unlinkStageInterviewer(linkId);
       toastActionResult(res, {
         success: "Interviewer unlinked from this stage",
+        onSuccess: onChanged,
+      });
+    });
+  };
+
+  const onDelete = () => {
+    setDeleteOpen(false);
+    startTransition(async () => {
+      const res = await deleteJobStage(stage.id);
+      toastActionResult(res, {
+        success: "Stage has been deleted",
         onSuccess: onChanged,
       });
     });
@@ -57,15 +73,26 @@ export function StageDetailPanel({
             </span>
           )}
         </div>
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-8 w-8 cursor-pointer"
-          aria-label={`Edit ${stage.StageType.label}`}
-          onClick={onEdit}
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 cursor-pointer"
+            aria-label={`Edit ${stage.StageType.label}`}
+            onClick={onEdit}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 cursor-pointer text-destructive hover:text-destructive"
+            aria-label={`Delete ${stage.StageType.label}`}
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
 
       <p className="mt-1.5 flex items-center gap-1.5 text-[13px] text-muted-foreground">
@@ -164,6 +191,19 @@ export function StageDetailPanel({
         </div>
         <StageNotes stage={stage} onChanged={onChanged} />
       </div>
+
+      <DeleteAlertDialog
+        pageTitle="stage"
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        onDelete={onDelete}
+        alertTitle={`Delete the ${stage.StageType.label} stage?`}
+        alertDescription={
+          isCurrent
+            ? "This is the current stage. Deleting it makes the stage before it current, and the job's status follows that stage."
+            : undefined
+        }
+      />
     </div>
   );
 }

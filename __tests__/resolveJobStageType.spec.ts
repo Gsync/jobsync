@@ -10,6 +10,7 @@ vi.mock("@/lib/db", () => ({
       findUnique: vi.fn(),
       create: vi.fn(),
       aggregate: vi.fn(),
+      updateMany: vi.fn(),
     },
     jobStatus: { findUnique: vi.fn() },
   },
@@ -20,7 +21,10 @@ const db = prisma as any;
 describe("resolveJobStageType", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    db.jobStageType.aggregate.mockResolvedValue({ _max: { sortOrder: 13 } });
+    db.jobStageType.aggregate.mockImplementation(({ where }: any) =>
+      Promise.resolve({ _max: { sortOrder: where.statusId ? 6 : 13 } }),
+    );
+    db.jobStageType.updateMany.mockResolvedValue({ count: 0 });
   });
 
   it("matches an existing type on canonical value", async () => {
@@ -52,7 +56,7 @@ describe("resolveJobStageType", () => {
 
   // Only `value` collapses internal whitespace; the label is stored trimmed
   // but otherwise verbatim, exactly as resolveEntity does for the other five.
-  it("creates with the trimmed label, canonical value and the next sortOrder", async () => {
+  it("creates with the trimmed label, canonical value and the next sortOrder under its own status", async () => {
     db.jobStageType.findUnique.mockResolvedValue(null);
     db.jobStageType.create.mockResolvedValue({
       id: "t2",
@@ -66,11 +70,31 @@ describe("resolveJobStageType", () => {
         label: "Panel  Interview",
         value: "panel interview",
         statusId: "s9",
-        sortOrder: 14,
+        sortOrder: 7,
         createdBy: "u1",
       },
     });
+    // The freed slot is made by pushing everything from it down one, so the
+    // new type lands beside its siblings instead of after the terminal stages.
+    expect(db.jobStageType.updateMany).toHaveBeenCalledWith({
+      where: { createdBy: "u1", sortOrder: { gte: 7 } },
+      data: { sortOrder: { increment: 1 } },
+    });
     expect(res.created).toBe(true);
+  });
+
+  it("appends at the end when its parent status has no type yet", async () => {
+    db.jobStageType.findUnique.mockResolvedValue(null);
+    db.jobStageType.aggregate.mockImplementation(({ where }: any) =>
+      Promise.resolve({ _max: { sortOrder: where.statusId ? null : 13 } }),
+    );
+    db.jobStageType.create.mockResolvedValue({ id: "t8", label: "Take-home" });
+
+    await resolveJobStageType("Take-home", "u1", "s-new-status");
+
+    expect(db.jobStageType.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ sortOrder: 14 }) }),
+    );
   });
 
   it("returns the winner's row when a concurrent create wins the unique race", async () => {
@@ -94,7 +118,10 @@ describe("resolveJobStageType", () => {
 describe("resolveStageTypeForStatusId", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    db.jobStageType.aggregate.mockResolvedValue({ _max: { sortOrder: 13 } });
+    db.jobStageType.aggregate.mockImplementation(({ where }: any) =>
+      Promise.resolve({ _max: { sortOrder: where.statusId ? 6 : 13 } }),
+    );
+    db.jobStageType.updateMany.mockResolvedValue({ count: 0 });
   });
 
   // The two hyphenated offer statuses are why the key is the canonical LABEL

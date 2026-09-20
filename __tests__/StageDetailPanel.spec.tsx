@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StageDetailPanel } from "@/components/myjobs/job-details/timeline/StageDetailPanel";
 import {
+  deleteJobStage,
   setPrepQuestionAsked,
   setStageNotes,
 } from "@/actions/jobStage.actions";
@@ -11,6 +12,7 @@ vi.mock("@/actions/jobStage.actions", () => ({
   removeStagePrepQuestion: vi.fn().mockResolvedValue({ success: true }),
   unlinkStageInterviewer: vi.fn().mockResolvedValue({ success: true }),
   setStageNotes: vi.fn().mockResolvedValue({ success: true }),
+  deleteJobStage: vi.fn().mockResolvedValue({ success: true }),
 }));
 vi.mock("@/lib/toast", () => ({
   toastActionResult: vi.fn(),
@@ -131,6 +133,56 @@ describe("StageDetailPanel", () => {
       "st1",
       "Bring laptop Ask about on-call.",
     );
+  });
+
+  it("deletes the stage once the alert is confirmed", async () => {
+    render(
+      <StageDetailPanel stage={interviewStage} isCurrent onEdit={noop} onLinkInterviewers={noop} onAddPrepQuestions={noop} onChanged={noop} />,
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Delete Final / Onsite Interview" }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(deleteJobStage).toHaveBeenCalledWith("st1");
+  });
+
+  it("does not delete when the alert is dismissed", async () => {
+    render(
+      <StageDetailPanel stage={interviewStage} isCurrent onEdit={noop} onLinkInterviewers={noop} onAddPrepQuestions={noop} onChanged={noop} />,
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Delete Final / Onsite Interview" }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(deleteJobStage).not.toHaveBeenCalled();
+  });
+
+  // Deleting the current stage re-derives the job's status server-side, so
+  // the alert has to say so rather than use the generic warning.
+  it("warns that the status follows when the current stage is deleted", async () => {
+    render(
+      <StageDetailPanel stage={interviewStage} isCurrent onEdit={noop} onLinkInterviewers={noop} onAddPrepQuestions={noop} onChanged={noop} />,
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Delete Final / Onsite Interview" }),
+    );
+
+    expect(screen.getByText(/the job's status follows that stage/)).toBeInTheDocument();
+  });
+
+  it("uses the generic warning for a stage that is not current", async () => {
+    render(
+      <StageDetailPanel stage={nonInterviewStage} isCurrent={false} onEdit={noop} onLinkInterviewers={noop} onAddPrepQuestions={noop} onChanged={noop} />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Delete Applied" }));
+
+    expect(screen.getByText(/This action cannot be undone/)).toBeInTheDocument();
   });
 
   it("reverts the draft on Cancel without calling the action", async () => {

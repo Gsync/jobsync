@@ -170,9 +170,24 @@ export async function resolveJobStageType(
   });
   if (existing) return { id: existing.id, label: existing.label, created: false };
 
-  const max = await prisma.jobStageType.aggregate({
+  // A custom type slots in after the last type of its own parent status, not
+  // at the end of the vocabulary: sortStages orders the timeline by sortOrder,
+  // so an appended type would render after the terminal stages. Never wrap
+  // this in a transaction — it writes through the base client on purpose.
+  const siblings = await prisma.jobStageType.aggregate({
+    where: { createdBy: userId, statusId },
+    _max: { sortOrder: true },
+  });
+  const all = await prisma.jobStageType.aggregate({
     where: { createdBy: userId },
     _max: { sortOrder: true },
+  });
+  const sortOrder =
+    (siblings._max.sortOrder ?? all._max.sortOrder ?? -1) + 1;
+
+  await prisma.jobStageType.updateMany({
+    where: { createdBy: userId, sortOrder: { gte: sortOrder } },
+    data: { sortOrder: { increment: 1 } },
   });
 
   try {
@@ -181,7 +196,7 @@ export async function resolveJobStageType(
         label: trimmed,
         value,
         statusId,
-        sortOrder: (max._max.sortOrder ?? -1) + 1,
+        sortOrder,
         createdBy: userId,
       },
     });

@@ -58,8 +58,8 @@ beforeEach(() => {
 describe("getJobStages", () => {
   it("scopes the read through the job's owner and sorts undated stages last", async () => {
     db.jobStage.findMany.mockResolvedValue([
-      { id: "c", occurredAt: null, createdAt: at("2026-01-01T00:00:00Z") },
-      { id: "a", occurredAt: at("2026-09-01T00:00:00Z"), createdAt: at("2026-01-01T00:00:00Z") },
+      { id: "c", occurredAt: null, createdAt: at("2026-01-01T00:00:00Z"), StageType: { sortOrder: 3 } },
+      { id: "a", occurredAt: at("2026-09-01T00:00:00Z"), createdAt: at("2026-01-01T00:00:00Z"), StageType: { sortOrder: 3 } },
     ]);
 
     const stages = await getJobStages("j1");
@@ -240,7 +240,7 @@ describe("deleteJobStage", () => {
 
   // Undated stages sort last, so the tail of the sorted list is the wrong
   // successor whenever the job holds a dateless stage.
-  it("promotes the most recent dated stage, not a dateless one", async () => {
+  it("promotes the furthest-along dated stage, not a dateless one", async () => {
     db.jobStage.findFirst
       .mockResolvedValueOnce({
         id: "st-cur",
@@ -254,8 +254,8 @@ describe("deleteJobStage", () => {
         StageType: { statusId: "s-app", Status: { value: "applied" } },
       });
     db.jobStage.findMany.mockResolvedValue([
-      { id: "st-applied", occurredAt: at("2026-09-03T00:00:00Z"), createdAt: at("2026-09-03T00:00:00Z") },
-      { id: "st-undated", occurredAt: null, createdAt: at("2026-09-20T00:00:00Z") },
+      { id: "st-applied", occurredAt: at("2026-09-03T00:00:00Z"), createdAt: at("2026-09-03T00:00:00Z"), StageType: { sortOrder: 2 } },
+      { id: "st-undated", occurredAt: null, createdAt: at("2026-09-20T00:00:00Z"), StageType: { sortOrder: 3 } },
     ]);
 
     await deleteJobStage("st-cur");

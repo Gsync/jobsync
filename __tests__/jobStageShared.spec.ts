@@ -4,47 +4,81 @@ import { jobFieldsForStage } from "@/actions/jobStage/shared";
 const at = (iso: string) => new Date(iso);
 
 describe("sortStages", () => {
+  const stage = (
+    id: string,
+    sortOrder: number,
+    occurredAt: Date | null,
+    createdAt: Date,
+  ) => ({ id, occurredAt, createdAt, StageType: { sortOrder } });
+
+  // The Library -> Stages order wins over chronology: a job added days after
+  // it was applied to has a New stage dated later than its Applied stage.
+  it("orders by the stage type's sortOrder, not by date", () => {
+    const stages = [
+      stage("applied", 2, at("2026-09-14T18:00:49Z"), at("2026-09-19T00:00:00Z")),
+      stage("new", 1, at("2026-09-14T18:11:06Z"), at("2026-09-19T00:00:00Z")),
+    ];
+    expect(sortStages(stages).map((s) => s.id)).toEqual(["new", "applied"]);
+  });
+
+  it("keeps New first when the job was applied to weeks earlier", () => {
+    const stages = [
+      stage("applied", 2, at("2026-08-29T09:00:00Z"), at("2026-09-14T00:00:00Z")),
+      stage("new", 1, at("2026-09-14T18:11:06Z"), at("2026-09-14T00:00:00Z")),
+      stage("withdrawn", 13, null, at("2026-09-18T00:00:00Z")),
+    ];
+    expect(sortStages(stages).map((s) => s.id)).toEqual([
+      "new",
+      "applied",
+      "withdrawn",
+    ]);
+  });
+
   // SQLite sorts NULL first on ASC and Prisma's nulls:"last" is unsupported
   // there, so ordering lives here and must not migrate into the query.
-  it("orders by occurredAt ascending with undated stages last", () => {
+  it("sorts undated stages last within one sortOrder", () => {
     const stages = [
-      { id: "c", occurredAt: null, createdAt: at("2026-01-01T00:00:00Z") },
-      { id: "b", occurredAt: at("2026-09-10T00:00:00Z"), createdAt: at("2026-01-01T00:00:00Z") },
-      { id: "a", occurredAt: at("2026-09-01T00:00:00Z"), createdAt: at("2026-01-01T00:00:00Z") },
+      stage("c", 3, null, at("2026-01-01T00:00:00Z")),
+      stage("b", 3, at("2026-09-10T00:00:00Z"), at("2026-01-01T00:00:00Z")),
+      stage("a", 3, at("2026-09-01T00:00:00Z"), at("2026-01-01T00:00:00Z")),
     ];
     expect(sortStages(stages).map((s) => s.id)).toEqual(["a", "b", "c"]);
   });
 
-  it("breaks ties on createdAt", () => {
+  it("breaks ties on createdAt when sortOrder and date both match", () => {
     const same = at("2026-09-10T00:00:00Z");
     const stages = [
-      { id: "second", occurredAt: same, createdAt: at("2026-02-01T00:00:00Z") },
-      { id: "first", occurredAt: same, createdAt: at("2026-01-01T00:00:00Z") },
+      stage("second", 3, same, at("2026-02-01T00:00:00Z")),
+      stage("first", 3, same, at("2026-01-01T00:00:00Z")),
     ];
     expect(sortStages(stages).map((s) => s.id)).toEqual(["first", "second"]);
   });
 
-  it("orders several undated stages by createdAt", () => {
+  it("orders several undated stages of one type by createdAt", () => {
     const stages = [
-      { id: "later", occurredAt: null, createdAt: at("2026-03-01T00:00:00Z") },
-      { id: "earlier", occurredAt: null, createdAt: at("2026-01-01T00:00:00Z") },
+      stage("later", 3, null, at("2026-03-01T00:00:00Z")),
+      stage("earlier", 3, null, at("2026-01-01T00:00:00Z")),
     ];
     expect(sortStages(stages).map((s) => s.id)).toEqual(["earlier", "later"]);
   });
 
-  it("slots a backdated stage into the middle rather than rejecting it", () => {
+  it("slots a backdated stage by its type, not by when it was entered", () => {
     const stages = [
-      { id: "new", occurredAt: at("2026-09-01T00:00:00Z"), createdAt: at("2026-09-01T00:00:00Z") },
-      { id: "onsite", occurredAt: at("2026-09-24T00:00:00Z"), createdAt: at("2026-09-02T00:00:00Z") },
-      { id: "backdated", occurredAt: at("2026-09-10T00:00:00Z"), createdAt: at("2026-09-30T00:00:00Z") },
+      stage("new", 1, at("2026-09-01T00:00:00Z"), at("2026-09-01T00:00:00Z")),
+      stage("onsite", 6, at("2026-09-24T00:00:00Z"), at("2026-09-02T00:00:00Z")),
+      stage("screening", 4, at("2026-09-10T00:00:00Z"), at("2026-09-30T00:00:00Z")),
     ];
-    expect(sortStages(stages).map((s) => s.id)).toEqual(["new", "backdated", "onsite"]);
+    expect(sortStages(stages).map((s) => s.id)).toEqual([
+      "new",
+      "screening",
+      "onsite",
+    ]);
   });
 
   it("does not mutate its input", () => {
     const stages = [
-      { id: "b", occurredAt: at("2026-09-10T00:00:00Z"), createdAt: at("2026-01-01T00:00:00Z") },
-      { id: "a", occurredAt: at("2026-09-01T00:00:00Z"), createdAt: at("2026-01-01T00:00:00Z") },
+      stage("b", 3, at("2026-09-10T00:00:00Z"), at("2026-01-01T00:00:00Z")),
+      stage("a", 1, at("2026-09-01T00:00:00Z"), at("2026-01-01T00:00:00Z")),
     ];
     sortStages(stages);
     expect(stages.map((s) => s.id)).toEqual(["b", "a"]);
