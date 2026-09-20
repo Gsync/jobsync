@@ -25,9 +25,9 @@ Use **Add stage** at the bottom of the Stage History list, or the **Update Statu
 
 Pick a **stage** from the list — *New*, *Draft*, *Applied*, *Interview*, *1st Screening Interview*, *2nd Technical Interview*, *Final / Onsite Interview*, *Offer*, *Offer Accepted*, *Offer Declined*, *Rejected*, *Expired*, *Archived* and *Withdrawn* are set up for you — or type your own name into **Or enter a custom stage name** and choose the **parent status** it means. A custom name is saved to your Library, so the second job that reaches your *Panel Interview* just picks it from the list.
 
-**Date** and **Time** are optional, and **Notes** is free text. If the stage's parent status is *Interview*, three more fields appear: **Format**, **Duration** and **Location** — use Location for a meeting link as happily as for a street address. **Set as current stage** is ticked by default; leave it ticked when you are recording where the job is now, and untick it when you are backfilling something that already happened.
+**Date** and **Time** start on today and the current time, since a stage you add is usually one that just happened; click the selected day again to clear the date if you don't know it yet. **Notes** is free text. If the stage's parent status is *Interview*, three more fields appear: **Format**, **Duration** and **Location** — use Location for a meeting link as happily as for a street address. **Set as current stage** is ticked by default; leave it ticked when you are recording where the job is now, and untick it when you are backfilling something that already happened.
 
-Editing a stage later opens the same dialog with one extra field, **Outcome**: *Scheduled*, *Completed*, *Passed*, *Failed*, *No-show* or *Cancelled*. Outcome, location, format and duration all read back on the stage's **Overview** tab, above the notes box.
+Editing a stage later opens the same dialog with one extra field, **Outcome**: *Scheduled*, *Completed*, *Passed*, *Failed*, *No-show* or *Cancelled*. Outcome reads back on the stage's **Overview** tab, above the notes box, and location, format and duration join it there on an interview stage. Switching a stage away from *Interview* clears those three, since nothing shows them on a non-interview stage.
 
 ## How do I delete a stage?
 
@@ -39,7 +39,7 @@ Deleting the **current** stage moves the job back to the stage before it, and th
 
 The current stage sets the job's status: whatever parent status that stage's type carries becomes the job's status, everywhere the job is shown. Adding a stage with **Set as current stage** ticked moves the status; ticking the box on an older stage moves it back.
 
-It works the other way round too. Changing the status from **Update Status → Change status**, from a row's status badge in the Jobs list, or from the Status field in the **Edit Job** dialog appends a new stage for that status and makes it current — so a status change never leaves the timeline behind. The appended stage has no date, because none of those places asks you for one; open it from the Timeline tab and add the date if you know it.
+It works the other way round too. Changing the status from **Update Status → Change status**, from a row's status badge in the Jobs list, or from the Status field in the **Edit Job** dialog appends a new stage for that status and makes it current — so a status change never leaves the timeline behind. The appended stage is dated the moment you made the change; open it from the Timeline tab and edit the date if the step actually happened earlier.
 
 Re-picking a status the job already holds does nothing at all. If the current stage is *2nd Technical Interview* and you pick **Interview** from a dropdown, you already are at Interview, so no second stage is added.
 

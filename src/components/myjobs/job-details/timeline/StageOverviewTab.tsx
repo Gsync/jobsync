@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { STAGE_OUTCOMES } from "@/lib/constants";
 import type { JobStage } from "@/models/jobStage.model";
+import { isInterviewStage } from "./stageDisplay";
 import { StageNotes } from "./StageNotes";
 
 type StageOverviewTabProps = {
@@ -53,15 +54,17 @@ export function StageOverviewTab({ stage, onChanged }: StageOverviewTabProps) {
         </p>
       </div>
 
-      <div className="grid gap-4 @lg/timeline:grid-cols-3">
-        <StageFact label="LOCATION" value={stage.location} icon={MapPin} />
-        <StageFact label="FORMAT" value={stage.format} icon={Monitor} />
-        <StageFact
-          label="DURATION"
-          value={stage.durationMins ? `${stage.durationMins} min` : null}
-          icon={Clock}
-        />
-      </div>
+      {isInterviewStage(stage) && (
+        <div className="grid gap-4 @lg/timeline:grid-cols-3">
+          <StageFact label="LOCATION" value={stage.location} icon={MapPin} />
+          <StageFact label="FORMAT" value={stage.format} icon={Monitor} />
+          <StageFact
+            label="DURATION"
+            value={stage.durationMins ? `${stage.durationMins} min` : null}
+            icon={Clock}
+          />
+        </div>
+      )}
 
       <StageNotes stage={stage} onChanged={onChanged} />
     </div>

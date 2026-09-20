@@ -134,6 +134,20 @@ describe("StageDetailPanel", () => {
     expect(screen.getByLabelText("NOTES")).toHaveValue("Bring laptop");
   });
 
+  // Location, format and duration are interview-only in the Add Stage dialog,
+  // so a legacy row carrying them must not surface them here either.
+  it("hides location, format and duration on a non-interview stage", () => {
+    render(
+      <StageDetailPanel stage={nonInterviewStage} isCurrent={false} onEdit={noop} onLinkInterviewers={noop} onAddPrepQuestions={noop} onChanged={noop} />,
+    );
+
+    expect(screen.queryByText("LOCATION")).toBeNull();
+    expect(screen.queryByText("FORMAT")).toBeNull();
+    expect(screen.queryByText("DURATION")).toBeNull();
+    expect(screen.queryByText(/90 min/)).toBeNull();
+    expect(screen.getByText("OUTCOME")).toBeInTheDocument();
+  });
+
   // Nothing remounts when another stage is selected, so the tab has to be
   // reset by hand or an interview tab survives onto a stage that has none.
   it("returns to Overview when another stage is selected", async () => {

@@ -44,7 +44,7 @@ export async function appendStatusStage(
   if (current?.StageType.statusId === statusId) return;
 
   const stage = await tx.jobStage.create({
-    data: { jobId, stageTypeId, occurredAt: null, isCurrent: false },
+    data: { jobId, stageTypeId, occurredAt: new Date(), isCurrent: false },
   });
   await promoteStage(tx, jobId, stage.id, userId);
 }

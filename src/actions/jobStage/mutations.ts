@@ -17,28 +17,32 @@ import {
 } from "./shared";
 
 // Either the picked type (checked for ownership) or a resolved custom name.
-const resolveStageTypeId = async (
+// The parent status rides back out because format, duration and location are
+// interview-only.
+const resolveStageType = async (
   values: AddJobStageValues,
   userId: string,
-): Promise<string> => {
+): Promise<{ id: string; isInterview: boolean }> => {
   const custom = values.customLabel?.trim();
-  if (custom) {
-    const resolved = await resolveJobStageType(
-      custom,
-      userId,
-      values.customStatusId!,
-    );
-    return resolved.id;
-  }
+  const id = custom
+    ? (await resolveJobStageType(custom, userId, values.customStatusId!)).id
+    : values.stageTypeId!;
   const owned = await prisma.jobStageType.findFirst({
-    where: { id: values.stageTypeId!, createdBy: userId },
-    select: { id: true },
+    where: { id, createdBy: userId },
+    select: { id: true, Status: { select: { value: true } } },
   });
   if (!owned) throw new Error("Stage type not found");
-  return owned.id;
+  return { id: owned.id, isInterview: owned.Status.value === "interview" };
 };
 
-const stageDataFrom = (values: AddJobStageValues, stageTypeId: string) => ({
+// The dialog hides format, duration and location for a non-interview stage
+// and the detail panel never renders them, so a type change has to blank
+// them rather than leave values saved where nothing can show or clear them.
+const stageDataFrom = (
+  values: AddJobStageValues,
+  stageTypeId: string,
+  isInterview: boolean,
+) => ({
   stageTypeId,
   occurredAt: values.date
     ? values.time
@@ -47,9 +51,9 @@ const stageDataFrom = (values: AddJobStageValues, stageTypeId: string) => ({
     : null,
   outcome: values.outcome ?? null,
   notes: values.notes?.trim() || null,
-  durationMins: values.durationMins ?? null,
-  format: values.format?.trim() || null,
-  location: values.location?.trim() || null,
+  durationMins: isInterview ? (values.durationMins ?? null) : null,
+  format: isInterview ? values.format?.trim() || null : null,
+  location: isInterview ? values.location?.trim() || null : null,
 });
 
 export const addJobStage = async (
@@ -64,11 +68,14 @@ export const addJobStage = async (
     });
     if (job === 0) throw new Error("Job not found");
 
-    const stageTypeId = await resolveStageTypeId(parsed, user.id);
+    const stageType = await resolveStageType(parsed, user.id);
 
     const created = await prisma.$transaction(async (tx: any) => {
       const stage = await tx.jobStage.create({
-        data: { jobId: parsed.jobId, ...stageDataFrom(parsed, stageTypeId) },
+        data: {
+          jobId: parsed.jobId,
+          ...stageDataFrom(parsed, stageType.id, stageType.isInterview),
+        },
       });
       if (parsed.setAsCurrent) {
         await promoteStage(tx, parsed.jobId, stage.id, user.id);
@@ -96,12 +103,12 @@ export const updateJobStage = async (
     const parsed = AddJobStageFormSchema.parse(values);
 
     const existing = await assertStageOwned(values.id, user.id);
-    const stageTypeId = await resolveStageTypeId(parsed, user.id);
+    const stageType = await resolveStageType(parsed, user.id);
 
     const updated = await prisma.$transaction(async (tx: any) => {
       await tx.jobStage.update({
         where: { id: values.id },
-        data: stageDataFrom(parsed, stageTypeId),
+        data: stageDataFrom(parsed, stageType.id, stageType.isInterview),
       });
       if (parsed.setAsCurrent) {
         await promoteStage(tx, existing.jobId, values.id!, user.id);

@@ -105,6 +105,10 @@ describe("addJobStage", () => {
       label: "Panel Interview",
       created: true,
     });
+    db.jobStageType.findFirst.mockResolvedValue({
+      id: "t-new",
+      Status: { value: "interview" },
+    });
     db.jobStage.create.mockResolvedValue({ id: "st1" });
     db.jobStage.findFirst.mockResolvedValue({
       id: "st1",
@@ -126,6 +130,32 @@ describe("addJobStage", () => {
     );
     expect(res.success).toBe(true);
     expect(db.jobStage.create.mock.calls[0][0].data.stageTypeId).toBe("t-new");
+  });
+
+  // The dialog hides format/duration/location for a non-interview type, so a
+  // value typed before switching the type must not reach the row.
+  it("blanks the interview-only fields for a non-interview stage", async () => {
+    db.jobStageType.findFirst.mockResolvedValue({
+      id: "t-rej",
+      Status: { value: "rejected" },
+    });
+    db.jobStage.create.mockResolvedValue({ id: "st-rej" });
+    db.jobStage.findFirst.mockResolvedValue({ id: "st-rej" });
+
+    const res = await addJobStage({
+      jobId: "j1",
+      stageTypeId: "t-rej",
+      format: "Video",
+      durationMins: 45,
+      location: "Zoom",
+      setAsCurrent: false,
+    } as any);
+
+    expect(res.success).toBe(true);
+    const data = db.jobStage.create.mock.calls[0][0].data;
+    expect(data.format).toBeNull();
+    expect(data.durationMins).toBeNull();
+    expect(data.location).toBeNull();
   });
 
   it("clears the old current stage and rewrites the job status when set as current", async () => {

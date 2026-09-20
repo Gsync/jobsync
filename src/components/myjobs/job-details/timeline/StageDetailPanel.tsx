@@ -146,7 +146,10 @@ export function StageDetailPanel({
 
       <p className="mt-1.5 flex items-center gap-1.5 text-[13px] text-muted-foreground">
         <CalendarDays className="h-3.5 w-3.5" />
-        {formatStageDateTime(stage.occurredAt, stage.durationMins)}
+        {formatStageDateTime(
+          stage.occurredAt,
+          interview ? stage.durationMins : null,
+        )}
       </p>
 
       {/* A one-tab bar is a control that does nothing, so a non-interview

@@ -85,7 +85,9 @@ describe("AddStageDialog", () => {
     expect(screen.getByText(/PARENT STATUS/i)).toBeInTheDocument();
   });
 
-  it("saves with the picked type, no date, and set-as-current", async () => {
+  // Adding a stage records something that just happened, so the date and time
+  // open on now rather than empty.
+  it("saves with the picked type, today's date and time, and set-as-current", async () => {
     render(<AddStageDialog {...props} />);
 
     await openStageTypePicker();
@@ -97,6 +99,8 @@ describe("AddStageDialog", () => {
         jobId: "j1",
         stageTypeId: "t-off",
         setAsCurrent: true,
+        date: expect.any(Date),
+        time: expect.stringMatching(/^(0[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/),
       }),
     );
   });

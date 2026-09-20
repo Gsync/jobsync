@@ -62,7 +62,7 @@ describe("updateJobStatus", () => {
     });
   });
 
-  it("appends an undated current stage when the status genuinely changes", async () => {
+  it("appends a current stage dated now when the status genuinely changes", async () => {
     db.jobStage.findFirst.mockResolvedValue({
       id: "st-app",
       StageType: { statusId: "s-app", Status: { value: "applied" } },
@@ -75,7 +75,7 @@ describe("updateJobStatus", () => {
     expect(db.jobStage.create.mock.calls[0][0].data).toEqual({
       jobId: "j1",
       stageTypeId: "t-int",
-      occurredAt: null,
+      occurredAt: expect.any(Date),
       isCurrent: false,
     });
     // D8: the helper scopes its own writes rather than trusting the caller.

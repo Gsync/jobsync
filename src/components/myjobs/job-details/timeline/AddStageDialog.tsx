@@ -54,13 +54,16 @@ const OUTCOME_OPTIONS = STAGE_OUTCOMES.map((o) => ({
   label: o.label,
 }));
 
+// Adding a stage is almost always recording something that just happened, so
+// the pickers open on now. Clear the date (click the selected day again) for
+// a stage whose date isn't known yet.
 const emptyValues = (jobId: string): AddJobStageValues => ({
   jobId,
   stageTypeId: "",
   customLabel: "",
   customStatusId: "",
-  date: null,
-  time: "",
+  date: new Date(),
+  time: format(new Date(), "hh:mm a"),
   notes: "",
   outcome: null,
   durationMins: null,
@@ -224,7 +227,7 @@ export function AddStageDialog({
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>TIME</FormLabel>
-                    <TimePicker field={field} />
+                    <TimePicker field={field} fullWidth />
                     <FormMessage />
                   </FormItem>
                 )}

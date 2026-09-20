@@ -92,9 +92,10 @@ function TimeColumn({ label, options, selected, onSelect }: TimeColumnProps) {
 
 interface TimePickerProps {
   field: ControllerRenderProps<any, any>;
+  fullWidth?: boolean;
 }
 
-export function TimePicker({ field }: TimePickerProps) {
+export function TimePicker({ field, fullWidth }: TimePickerProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
   const { hour, minute, meridiem } = parseTime(field.value);
 
@@ -117,7 +118,12 @@ export function TimePicker({ field }: TimePickerProps) {
   };
 
   return (
-    <div className="flex md:w-[240px] lg:w-[280px]">
+    <div
+      className={cn(
+        "flex",
+        fullWidth ? "w-full" : "md:w-[240px] lg:w-[280px]",
+      )}
+    >
       <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen} modal>
         <PopoverTrigger asChild>
           <FormControl>
