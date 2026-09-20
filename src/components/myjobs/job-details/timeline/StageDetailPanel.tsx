@@ -162,6 +162,11 @@ export function StageDetailPanel({
             </TabsTrigger>
             <TabsTrigger value="interviewer" className={TAB_TRIGGER}>
               Interviewer
+              {stage.interviewers.length > 0 && (
+                <span className="ml-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+                  {stage.interviewers.length}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="prep" className={TAB_TRIGGER}>
               Prep List

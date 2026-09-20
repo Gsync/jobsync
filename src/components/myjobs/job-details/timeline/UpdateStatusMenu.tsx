@@ -54,7 +54,7 @@ export function UpdateStatusMenu({
     reason: string | null;
   }[] = [
     { key: "add", label: "Add Stage", icon: Plus, onSelect: onAddStage, reason: null },
-    { key: "link", label: "Link Interviewers", icon: Users, onSelect: onLinkInterviewers, reason },
+    { key: "link", label: "Add Interviewers", icon: Users, onSelect: onLinkInterviewers, reason },
     { key: "prep", label: "Add to Prep List", icon: HelpCircle, onSelect: onAddPrepQuestions, reason },
   ];
 

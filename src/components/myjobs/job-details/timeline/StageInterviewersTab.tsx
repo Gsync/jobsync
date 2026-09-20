@@ -43,7 +43,7 @@ export function StageInterviewersTab({
           onClick={onLinkInterviewers}
         >
           <UserPlus className="h-3 w-3" />
-          Link
+          Add Interviewers
         </Button>
       </div>
 

@@ -57,7 +57,7 @@ An undated stage reads `—` in the Stage History list, and **No date set** in i
 
 ## How do I record who is interviewing me?
 
-Select the interview stage, then use **Link** on its **Interviewer** tab, or **Update Status → Link Interviewers**. The dialog searches your existing [contacts](./contacts.md); the **Add a new contact** box at the bottom takes a name, role and email and creates the person on the spot.
+Select the interview stage, then use **Add** on its **Interviewer** tab, or **Update Status → Add Interviewers**. The dialog searches your existing [contacts](./contacts.md); the **Add a new contact** box at the bottom takes a name, role and email and creates the person on the spot.
 
 Linking someone also adds them to the job's **Contacts** tab with the **Interviewer** role, so that tab stays the single roster of everyone involved in the application. The reverse is not true: the **✕** beside an interviewer unlinks them from *that stage only* and leaves the job contact link alone, because the person may hold other roles on the job.
 
@@ -81,7 +81,7 @@ The distinction is what makes the list useful afterwards: which of the questions
 
 One knock-on effect: a question that is on any prep list cannot be deleted from the question bank. The Questions page refuses with a count of the interview stages using it. Remove it from those prep lists first, then delete.
 
-## Why are Link Interviewers and Add to Prep List greyed out?
+## Why are Add Interviewers and Add to Prep List greyed out?
 
 Because the stage they would act on is not an interview stage. Both items are gated on the *kind* of stage, never on its timing — an interview three weeks away is still an interview stage, and you can link its panel and prep for it from the day it is scheduled.
 

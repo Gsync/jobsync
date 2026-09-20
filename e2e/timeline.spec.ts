@@ -61,7 +61,7 @@ test("linking an interviewer to a stage puts them on the job's Contacts tab", as
     .click();
 
   await page.getByTestId("update-status-menu-btn").click();
-  await page.getByRole("menuitem", { name: "Link Interviewers" }).click();
+  await page.getByRole("menuitem", { name: "Add Interviewers" }).click();
 
   await page.getByPlaceholder("Full name").fill(contactName);
   cleanup.contact(contactName);

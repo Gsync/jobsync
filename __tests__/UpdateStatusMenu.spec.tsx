@@ -49,7 +49,7 @@ describe("UpdateStatusMenu", () => {
     await open();
 
     expect(screen.getByRole("menuitem", { name: /Add Stage/ })).not.toHaveAttribute("aria-disabled", "true");
-    expect(screen.getByRole("menuitem", { name: /Link Interviewers/ })).not.toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("menuitem", { name: /Add Interviewers/ })).not.toHaveAttribute("aria-disabled", "true");
     expect(screen.getByRole("menuitem", { name: /Add to Prep List/ })).not.toHaveAttribute("aria-disabled", "true");
   });
 
@@ -59,7 +59,7 @@ describe("UpdateStatusMenu", () => {
     render(<UpdateStatusMenu {...base} targetStage={stage("applied", "Applied")} />);
     await open();
 
-    expect(screen.getByRole("menuitem", { name: /Link Interviewers/ })).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("menuitem", { name: /Add Interviewers/ })).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByRole("menuitem", { name: /Add to Prep List/ })).toHaveAttribute("aria-disabled", "true");
     expect(screen.getAllByText(/Applied is not an interview stage/).length).toBeGreaterThan(0);
   });
@@ -69,7 +69,7 @@ describe("UpdateStatusMenu", () => {
     await open();
 
     expect(screen.getByRole("menuitem", { name: /Add Stage/ })).not.toHaveAttribute("aria-disabled", "true");
-    expect(screen.getByRole("menuitem", { name: /Link Interviewers/ })).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("menuitem", { name: /Add Interviewers/ })).toHaveAttribute("aria-disabled", "true");
   });
 
   it("fires the handler for the item clicked", async () => {
