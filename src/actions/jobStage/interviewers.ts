@@ -37,23 +37,29 @@ export const linkStageInterviewer = async (
     if (contact === 0) throw new Error("Contact not found");
     assertInterviewStage(stage);
 
-    const data = await prisma.jobStageInterviewer.create({
-      data: { stageId, contactId },
-      include: INTERVIEWER_INCLUDE,
-    });
-
     // The job's Contacts tab stays the single roster of everyone involved.
-    // Resolve-or-create: the seeded role is renameable and deletable.
+    // Resolve-or-create: the seeded role is renameable and deletable. Resolved
+    // outside the transaction, which it must never run inside (D4).
     const role = await resolveContactRole(INTERVIEWER_ROLE_LABEL, user.id);
-    const existing = await prisma.jobContact.findFirst({
-      where: { jobId: stage.jobId, contactId, roleId: role.id },
-      select: { id: true },
-    });
-    if (!existing) {
-      await prisma.jobContact.create({
-        data: { jobId: stage.jobId, contactId, roleId: role.id },
+
+    // Both writes together: a stage link without its roster entry leaves the
+    // Contacts tab disagreeing with the stage's interviewers for good.
+    const data = await prisma.$transaction(async (tx: any) => {
+      const link = await tx.jobStageInterviewer.create({
+        data: { stageId, contactId },
+        include: INTERVIEWER_INCLUDE,
       });
-    }
+      const existing = await tx.jobContact.findFirst({
+        where: { jobId: stage.jobId, contactId, roleId: role.id },
+        select: { id: true },
+      });
+      if (!existing) {
+        await tx.jobContact.create({
+          data: { jobId: stage.jobId, contactId, roleId: role.id },
+        });
+      }
+      return link;
+    });
 
     return { success: true, data };
   } catch (error: any) {

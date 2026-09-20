@@ -75,13 +75,20 @@ export function LinkInterviewersDialog({
     })();
   }, [open]);
 
+  // Transient state only, keyed on stage?.id: a link reloads the stages and
+  // hands back a new object, which would wipe the search and the draft.
   useEffect(() => {
     if (!open) return;
     setSearch("");
     setLinkedCount(0);
     setNewContact(EMPTY_NEW);
+  }, [open, stage?.id]);
+
+  // Re-seeded on every reload, so a link that failed server-side corrects
+  // itself rather than reading as linked until the page reloads.
+  useEffect(() => {
     setLinkedIds((stage?.interviewers ?? []).map((iv) => iv.contactId));
-  }, [open, stage]);
+  }, [stage]);
 
   if (!stage) return null;
 

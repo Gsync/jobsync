@@ -49,7 +49,15 @@ describe("createJobRecord", () => {
       userId: "u1",
     } as any);
 
-    expect(db.jobStage.create).toHaveBeenCalledTimes(1);
-    expect(db.jobStage.create.mock.calls[0][0].data.isCurrent).toBe(true);
+    // Nested in the job.create, never a second statement: a job must not be
+    // able to commit without its first stage.
+    expect(db.jobStage.create).not.toHaveBeenCalled();
+    expect(db.job.create.mock.calls[0][0].data.stages).toEqual({
+      create: {
+        stageTypeId: "t-draft",
+        occurredAt: expect.any(Date),
+        isCurrent: true,
+      },
+    });
   });
 });

@@ -27,7 +27,7 @@ Pick a **stage** from the list — *New*, *Draft*, *Applied*, *Interview*, *1st 
 
 **Date** and **Time** start on today and the current time, since a stage you add is usually one that just happened; click the selected day again to clear the date if you don't know it yet. **Notes** is free text. If the stage's parent status is *Interview*, three more fields appear: **Format**, **Duration** and **Location** — use Location for a meeting link as happily as for a street address. **Set as current stage** is ticked by default; leave it ticked when you are recording where the job is now, and untick it when you are backfilling something that already happened.
 
-Editing a stage later opens the same dialog with one extra field, **Outcome**: *Scheduled*, *Completed*, *Passed*, *Failed*, *No-show* or *Cancelled*. Outcome reads back on the stage's **Overview** tab, above the notes box, and location, format and duration join it there on an interview stage. Switching a stage away from *Interview* clears those three, since nothing shows them on a non-interview stage.
+Editing a stage later opens the same dialog with one extra field, **Outcome**: *Scheduled*, *Completed*, *Passed*, *Failed*, *No-show* or *Cancelled*. Outcome reads back on the stage's **Overview** tab, above the notes box, and location, format and duration join it there on an interview stage. Switching a stage away from *Interview* clears those three, since nothing shows them on a non-interview stage. The switch is refused while interviewers or prep questions remain.
 
 ## How do I delete a stage?
 
@@ -47,7 +47,7 @@ Marking a job *Applied* or *Interview* this way also sets its **Applied** flag, 
 
 Stages are laid out in the order **Library → Stages** gives their types, not by date, so a job you added weeks after applying to it still reads New then Applied. Dates decide the order only between stages of the same type — two interview rounds of the same kind, say.
 
-That means a job added long after you applied can show its New stage with a later date than its Applied stage. Nothing is wrong: the New date records when the job entered JobSync, which really was after you applied.
+So a job added long after you applied can show its New stage dated after its Applied stage — the New date records when it entered JobSync.
 
 ## Why does a stage show a dash instead of a date?
 
@@ -85,13 +85,15 @@ One knock-on effect: a question that is on any prep list cannot be deleted from 
 
 Because the stage they would act on is not an interview stage. Both items are gated on the *kind* of stage, never on its timing — an interview three weeks away is still an interview stage, and you can link its panel and prep for it from the day it is scheduled.
 
-The menu tells you which stage it is targeting and why: it reads **"Applied is not an interview stage"** when the selected stage is not one, and **"Add a stage first"** when the job has no stages at all. Both items act on the stage you have selected on the Timeline tab, falling back to the current stage — so if the job's current stage is *Applied* and you want to link an interviewer, add or select the interview stage first.
+The menu tells you which stage it is targeting and why: it reads **"Applied is not an interview stage"** when the selected stage is not one, and **"Add a stage first"** when the job has no stages at all. Both items act on the stage you have selected on the Timeline tab, falling back to the current stage, so select the interview stage first.
 
 A stage counts as an interview stage when its parent status is *Interview*. That is true of the three seeded interview rounds, and of any custom stage type you created under the Interview status.
 
 ## Can I rename or add my own stages?
 
 Yes — **Library → Stages** holds the full list, and the stage types there are yours. **New Stage** adds one, and the **⋮** menu on a row has **Edit** to rename it or change which status it means, plus **Move Up** and **Move Down** to reorder them — that order drives both the list the Add Stage dialog shows you and the order stages appear in on every job's timeline. A new stage type you type into the Add Stage dialog slots in after the last type of the same parent status, so it lands beside its siblings rather than at the bottom of the list. A **Stages** column tells you how many job stages currently use each type.
+
+A stage type named after a status can be renamed and reordered but not moved under another status — that name is how a status change finds it. Your own types move freely, jobs following along.
 
 A stage type that is in use cannot be deleted: the tab refuses and tells you how many job stages are using it. Change or remove those stages first, then delete the type.
 

@@ -1066,6 +1066,13 @@ describe("jobActions", () => {
           jobUrl: jobData.jobUrl,
           applied: jobData.applied,
           resumeId: jobData.resume,
+          stages: {
+            create: {
+              stageTypeId: "stage-type-id",
+              occurredAt: expect.any(Date),
+              isCurrent: true,
+            },
+          },
         },
       });
     });
@@ -1095,6 +1102,13 @@ describe("jobActions", () => {
           userId: mockUser.id,
           applied: jobData.applied,
           resumeId: jobData.resume,
+          stages: {
+            create: {
+              stageTypeId: "stage-type-id",
+              occurredAt: expect.any(Date),
+              isCurrent: true,
+            },
+          },
         },
       });
       expect(result).toEqual({ data: jobData, success: true });

@@ -2,6 +2,7 @@ import {
   getAllJobStageTypes,
   getJobStageTypeList,
   createJobStageType,
+  updateJobStageType,
   deleteJobStageTypeById,
 } from "@/actions/jobStageType.actions";
 import { getCurrentUser } from "@/utils/user.utils";
@@ -12,12 +13,14 @@ vi.mock("@/lib/db", () => ({
   default: {
     jobStageType: {
       findMany: vi.fn(),
+      findFirst: vi.fn(),
       count: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
     },
     jobStage: { count: vi.fn() },
-    jobStatus: { count: vi.fn() },
+    jobStatus: { findUnique: vi.fn(), findMany: vi.fn() },
+    job: { findMany: vi.fn(), update: vi.fn() },
   },
 }));
 vi.mock("@/utils/user.utils", () => ({ getCurrentUser: vi.fn() }));
@@ -30,7 +33,18 @@ beforeEach(() => {
   vi.clearAllMocks();
   (getCurrentUser as any).mockResolvedValue(user);
   db.jobStage.count.mockResolvedValue(0);
-  db.jobStatus.count.mockResolvedValue(1);
+  db.jobStatus.findUnique.mockResolvedValue({
+    id: "s-int",
+    label: "Interview",
+    value: "interview",
+  });
+  db.jobStatus.findMany.mockResolvedValue([
+    { label: "Draft" },
+    { label: "Applied" },
+    { label: "Interview" },
+  ]);
+  db.jobStageType.findFirst.mockResolvedValue(null);
+  db.job.findMany.mockResolvedValue([]);
 });
 
 describe("getAllJobStageTypes", () => {
@@ -62,7 +76,7 @@ describe("getJobStageTypeList", () => {
 
 describe("createJobStageType", () => {
   it("refuses a status that does not exist", async () => {
-    db.jobStatus.count.mockResolvedValue(0);
+    db.jobStatus.findUnique.mockResolvedValue(null);
 
     const res = await createJobStageType("Panel", "nope");
 
@@ -77,6 +91,68 @@ describe("createJobStageType", () => {
 
     expect(res.success).toBe(true);
     expect(resolveJobStageType).toHaveBeenCalledWith(" Panel ", user.id, "s-int");
+  });
+
+  // The resolver returns an existing type by name and ignores the requested
+  // status, so without this the call reports success having done nothing.
+  it("refuses a name already taken under a different status", async () => {
+    db.jobStageType.findFirst.mockResolvedValue({
+      label: "Applied",
+      Status: { label: "Applied" },
+    });
+
+    const res = await createJobStageType("Applied", "s-int");
+
+    expect(res.success).toBe(false);
+    expect(res.message).toContain("Applied");
+    expect(resolveJobStageType).not.toHaveBeenCalled();
+  });
+});
+
+describe("updateJobStageType", () => {
+  // The status menus resolve through these by name, so a retarget would make
+  // every later status change write a stage contradicting Job.statusId.
+  it("refuses to move a status-named type under another status", async () => {
+    db.jobStageType.findFirst.mockResolvedValue({
+      value: "interview",
+      statusId: "s-app",
+    });
+
+    const res = await updateJobStageType("t1", "Interview", "s-int", 3);
+
+    expect(res.success).toBe(false);
+    expect(db.jobStageType.update).not.toHaveBeenCalled();
+  });
+
+  it("re-derives the jobs sitting on a custom type it moves", async () => {
+    db.jobStageType.findFirst.mockResolvedValue({
+      value: "take-home",
+      statusId: "s-app",
+    });
+    db.job.findMany.mockResolvedValue([
+      {
+        id: "j1",
+        appliedDate: null,
+        stages: [{ occurredAt: new Date("2026-09-01T00:00:00Z") }],
+      },
+    ]);
+
+    const res = await updateJobStageType("t1", "Take-home", "s-int", 3);
+
+    expect(res.success).toBe(true);
+    expect(db.job.update.mock.calls[0][0].data.statusId).toBe("s-int");
+  });
+
+  it("leaves jobs alone when only the label and order change", async () => {
+    db.jobStageType.findFirst.mockResolvedValue({
+      value: "take-home",
+      statusId: "s-int",
+    });
+
+    const res = await updateJobStageType("t1", "Take-home Task", "s-int", 4);
+
+    expect(res.success).toBe(true);
+    expect(db.job.findMany).not.toHaveBeenCalled();
   });
 });
 

@@ -5,6 +5,7 @@ import { JOB_TYPES } from "@/models/job.model";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { requireUser } from "../shared";
 import { hideUnanalyzedScore } from "./shared";
+import { STAGE_DETAIL_INCLUDE } from "../jobStage/shared";
 
 const JOB_LIST_SELECT = {
   id: true,
@@ -71,37 +72,7 @@ const JOB_DETAILS_INCLUDE = {
     },
     orderBy: { createdAt: "asc" as const },
   },
-  // Duplicates STAGE_DETAIL_INCLUDE rather than importing it: this is a
-  // "use server" module and that const lives in another action directory.
-  stages: {
-    include: {
-      StageType: { include: { Status: true } },
-      interviewers: {
-        include: {
-          Contact: {
-            select: {
-              id: true,
-              name: true,
-              title: true,
-              email: true,
-              phone: true,
-              linkedinUrl: true,
-              Company: { select: { id: true, label: true } },
-            },
-          },
-        },
-        orderBy: { createdAt: "asc" as const },
-      },
-      prepQuestions: {
-        include: {
-          Question: {
-            select: { id: true, question: true, answer: true, tags: true },
-          },
-        },
-        orderBy: { createdAt: "asc" as const },
-      },
-    },
-  },
+  stages: { include: STAGE_DETAIL_INCLUDE },
 };
 
 type JobsListFilters = {

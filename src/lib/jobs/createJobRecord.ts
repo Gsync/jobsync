@@ -5,9 +5,20 @@ type StageClient = {
   jobStage: { create: (args: any) => Promise<any> };
 };
 
-// There is no single choke point for job creation: the scraper and the mock
-// generator write jobs directly. Each calls this so a job added after the
-// backfill is never left without the timeline a backfilled job has.
+// The nested payload that writes the job and its first stage as one statement,
+// so a job can never commit without its timeline. The stage type is resolved
+// BEFORE the create on purpose: a nested create is an implicit transaction,
+// and the resolver writes through the base client (D4).
+export async function firstStageCreate(
+  statusId: string,
+  userId: string,
+  occurredAt: Date,
+) {
+  const stageTypeId = await resolveStageTypeForStatusId(statusId, userId);
+  return { create: { stageTypeId, occurredAt, isCurrent: true } };
+}
+
+// The separate-statement form, still used by the dev-only mock generator.
 export async function createFirstStage(
   client: StageClient,
   jobId: string,
@@ -44,13 +55,13 @@ export async function createJobRecord(fields: {
 }) {
   const { tagIds = [], ...rest } = fields;
   const createdAt = new Date();
-  const job = await prisma.job.create({
+  const stages = await firstStageCreate(fields.statusId, fields.userId, createdAt);
+  return await prisma.job.create({
     data: {
       ...rest,
       createdAt,
       ...(tagIds.length > 0 ? { tags: { connect: tagIds.map((id) => ({ id })) } } : {}),
+      stages,
     },
   });
-  await createFirstStage(prisma, job.id, fields.statusId, fields.userId, createdAt);
-  return job;
 }

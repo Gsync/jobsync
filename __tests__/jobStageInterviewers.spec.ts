@@ -6,8 +6,8 @@ import { getCurrentUser } from "@/utils/user.utils";
 import prisma from "@/lib/db";
 import { resolveContactRole } from "@/lib/jobs/resolve";
 
-vi.mock("@/lib/db", () => ({
-  default: {
+vi.mock("@/lib/db", () => {
+  const mock: Record<string, unknown> = {
     jobStage: { findFirst: vi.fn() },
     contact: { count: vi.fn() },
     jobStageInterviewer: {
@@ -16,8 +16,10 @@ vi.mock("@/lib/db", () => ({
       deleteMany: vi.fn(),
     },
     jobContact: { findFirst: vi.fn(), create: vi.fn() },
-  },
-}));
+    $transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => fn(mock)),
+  };
+  return { default: mock };
+});
 vi.mock("@/utils/user.utils", () => ({ getCurrentUser: vi.fn() }));
 vi.mock("@/lib/jobs/resolve", () => ({ resolveContactRole: vi.fn() }));
 

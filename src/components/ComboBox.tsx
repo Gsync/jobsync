@@ -29,7 +29,6 @@ import { toastError } from "@/lib/toast";
 import { createActivityType } from "@/actions/activity.actions";
 import { createJobSource } from "@/actions/job.actions";
 import { createContactRole } from "@/actions/contactRole.actions";
-import { createTag } from "@/actions/tag.actions";
 
 interface ComboboxProps {
   options: any[];
@@ -122,14 +121,6 @@ export function Combobox({
             return;
           }
           response = roleRes.data;
-          break;
-        case "questionCategory":
-          const tagRes = await createTag(label);
-          if (!tagRes.success) {
-            toastError(tagRes.message);
-            return;
-          }
-          response = tagRes.data;
           break;
         case "activityType":
           response = await createActivityType(label);

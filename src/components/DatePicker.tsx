@@ -33,6 +33,9 @@ interface DatePickerProps {
   // Opt out of the default fixed trigger width when the field sits in a grid
   fullWidth?: boolean;
   disableFuture?: boolean;
+  // Years past today the dropdown reaches. Opt-in: the default cap is the
+  // current month, so a picker for a past-only field stays that way.
+  futureYears?: number;
 }
 
 export function DatePicker({
@@ -42,6 +45,7 @@ export function DatePicker({
   captionLayout,
   fullWidth,
   disableFuture,
+  futureYears,
 }: DatePickerProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
 
@@ -88,9 +92,9 @@ export function DatePicker({
           startMonth={captionLayout ? new Date(1970, 0) : undefined}
           endMonth={
             captionLayout
-              ? disableFuture
+              ? disableFuture || !futureYears
                 ? new Date()
-                : addYears(new Date(), 10)
+                : addYears(new Date(), futureYears)
               : undefined
           }
           selected={field.value}

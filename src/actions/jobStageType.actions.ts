@@ -4,6 +4,8 @@ import { handleError } from "@/lib/utils";
 import { requireUser } from "./shared";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { resolveJobStageType } from "@/lib/jobs/resolve";
+import { canonicalizeEntityValue } from "@/lib/jobs/canonicalize";
+import { jobFieldsForStage } from "./jobStage/shared";
 
 export const getAllJobStageTypes = async (): Promise<any | undefined> => {
   try {
@@ -50,8 +52,21 @@ export const getJobStageTypeList = async (
 };
 
 const assertStatusExists = async (statusId: string) => {
-  const status = await prisma.jobStatus.count({ where: { id: statusId } });
-  if (status === 0) throw new Error("Job status not found");
+  const status = await prisma.jobStatus.findUnique({
+    where: { id: statusId },
+    select: { id: true, label: true, value: true },
+  });
+  if (!status) throw new Error("Job status not found");
+  return status;
+};
+
+// The types named after a job status are the lookup table the status menus
+// resolve through (resolveStageTypeForStatusId keys on the status LABEL), so
+// moving one under a different status would make every later status change
+// write a stage whose status contradicts Job.statusId.
+const isStatusNamedType = async (value: string): Promise<boolean> => {
+  const statuses = await prisma.jobStatus.findMany({ select: { label: true } });
+  return statuses.some((s) => canonicalizeEntityValue(s.label) === value);
 };
 
 export const createJobStageType = async (
@@ -61,6 +76,23 @@ export const createJobStageType = async (
   try {
     const user = await requireUser();
     await assertStatusExists(statusId);
+
+    // resolveJobStageType returns an existing type by name and ignores the
+    // requested status, which would report success having done nothing.
+    const clash = await prisma.jobStageType.findFirst({
+      where: {
+        value: canonicalizeEntityValue(label.trim()),
+        createdBy: user.id,
+        NOT: { statusId },
+      },
+      select: { label: true, Status: { select: { label: true } } },
+    });
+    if (clash) {
+      throw new Error(
+        `"${clash.label}" already exists under the ${clash.Status.label} status.`,
+      );
+    }
+
     const data = await resolveJobStageType(label, user.id, statusId);
     return { success: true, data };
   } catch (error) {
@@ -76,13 +108,58 @@ export const updateJobStageType = async (
 ): Promise<any | undefined> => {
   try {
     const user = await requireUser();
-    await assertStatusExists(statusId);
+    const status = await assertStatusExists(statusId);
+
+    const existing = await prisma.jobStageType.findFirst({
+      where: { id, createdBy: user.id },
+      select: { value: true, statusId: true },
+    });
+    if (!existing) throw new Error("Stage type not found");
+
+    const statusChanged = existing.statusId !== statusId;
+    if (statusChanged && (await isStatusNamedType(existing.value))) {
+      throw new Error(
+        `"${label.trim()}" is the stage the status menus resolve to, so its status cannot be changed.`,
+      );
+    }
+
     // value is left alone on rename: it is the reverse-lookup key that a
     // status resolves through, and rewriting it would orphan the mapping.
     await prisma.jobStageType.update({
       where: { id, createdBy: user.id },
       data: { label: label.trim(), statusId, sortOrder },
     });
+
+    // A job's status is derived from its current stage's type, so retargeting
+    // a type in use has to re-derive every job now sitting on it.
+    if (statusChanged) {
+      const affected = await prisma.job.findMany({
+        where: {
+          userId: user.id,
+          stages: { some: { stageTypeId: id, isCurrent: true } },
+        },
+        select: {
+          id: true,
+          appliedDate: true,
+          stages: {
+            where: { stageTypeId: id, isCurrent: true },
+            select: { occurredAt: true },
+          },
+        },
+      });
+      for (const job of affected) {
+        await prisma.job.update({
+          where: { id: job.id, userId: user.id },
+          data: jobFieldsForStage(
+            status.value,
+            statusId,
+            job.stages[0]?.occurredAt ?? null,
+            job.appliedDate,
+          ),
+        });
+      }
+    }
+
     return { success: true };
   } catch (error) {
     return handleError(error, "Failed to update stage type.");

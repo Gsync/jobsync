@@ -40,21 +40,18 @@ describe("persistDiscoveredJob", () => {
 
     expect(res.saved).toBe(true);
     expect(resolveStageTypeForStatusId).toHaveBeenCalledWith("s-new", "u1");
-    expect(mockDb.jobStage.create.mock.calls[0][0].data).toEqual({
-      jobId: "j1",
-      stageTypeId: "t-new",
-      occurredAt: createdAt,
-      isCurrent: true,
+    expect(mockDb.job.create.mock.calls[0][0].data.stages).toEqual({
+      create: { stageTypeId: "t-new", occurredAt: createdAt, isCurrent: true },
     });
   });
 
-  // A concurrent run won the dedup race, so there is no job to stage.
-  it("writes no stage when the unique index refuses the job", async () => {
+  // A concurrent run won the dedup race. The stage rides on the same
+  // statement, so it goes down with the job rather than orphaning.
+  it("saves nothing when the unique index refuses the job", async () => {
     mockDb.job.create.mockRejectedValue({ code: "P2002" });
 
     const res = await persistDiscoveredJob(automation, job, 50, {}, []);
 
     expect(res.saved).toBe(false);
-    expect(mockDb.jobStage.create).not.toHaveBeenCalled();
   });
 });

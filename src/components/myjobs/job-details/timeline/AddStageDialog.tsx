@@ -215,6 +215,7 @@ export function AddStageDialog({
                       presets={false}
                       isEnabled
                       captionLayout
+                      futureYears={10}
                       fullWidth
                     />
                     <FormMessage />

@@ -41,7 +41,18 @@ export async function appendStatusStage(
       StageType: { select: { statusId: true, Status: { select: { value: true } } } },
     },
   });
-  if (current?.StageType.statusId === statusId) return;
+  // With no current stage the job's own status is the one it holds. A
+  // stage-less job (a pre-feature backup restore) must not collect a stage
+  // dated today every time Edit Job is saved with the status untouched.
+  const held = current
+    ? current.StageType.statusId
+    : (
+        await tx.job.findFirst({
+          where: { id: jobId, userId },
+          select: { statusId: true },
+        })
+      )?.statusId;
+  if (held === statusId) return;
 
   const stage = await tx.jobStage.create({
     data: { jobId, stageTypeId, occurredAt: new Date(), isCurrent: false },

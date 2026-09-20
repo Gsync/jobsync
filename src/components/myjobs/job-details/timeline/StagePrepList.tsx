@@ -49,6 +49,11 @@ export function StagePrepList({
         success: next ? "Marked as asked" : "Marked as not asked",
         onSuccess: onChanged,
       });
+      // Rolled back only on failure: on success the reload lands on the same
+      // value, so dropping it early would flash the old state.
+      if (!res?.success) {
+        setPending(({ [linkId]: _rolledBack, ...rest }) => rest);
+      }
     });
   };
 
