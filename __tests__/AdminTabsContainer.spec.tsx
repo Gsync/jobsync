@@ -46,6 +46,13 @@ vi.mock("@/actions/contactRole.actions", () => ({
   deleteContactRoleById: vi.fn(),
 }));
 
+vi.mock("@/actions/jobStageType.actions", () => ({
+  getJobStageTypeList: vi.fn().mockResolvedValue({ data: [], total: 0 }),
+  createJobStageType: vi.fn(),
+  updateJobStageType: vi.fn(),
+  deleteJobStageTypeById: vi.fn(),
+}));
+
 describe("AdminTabsContainer", () => {
   const user = userEvent.setup({ skipHover: true });
 
@@ -68,6 +75,12 @@ describe("AdminTabsContainer", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Contacts" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Roles" })).toBeInTheDocument();
+  });
+
+  it("offers a Stages tab", () => {
+    render(<AdminTabsContainer />);
+
+    expect(screen.getByRole("tab", { name: "Stages" })).toBeInTheDocument();
   });
 
   it("should default to companies tab", () => {
