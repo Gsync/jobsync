@@ -27,19 +27,23 @@ This requires an AI provider and model to be set under **Settings → AI Provide
 
 ## What do the job statuses mean?
 
-A job carries exactly one status from: **New**, **Draft**, **Applied**, **Interview**, **Offer**, **Offer Accepted**, **Offer Declined**, **Rejected**, **Expired** and **Archived** — *Offer Declined* for an offer you turned down, *Rejected* for one the company turned down. They are labels you move by hand, not a state machine — nothing stops you going from Interview back to Draft, and nothing changes a status on your behalf.
+A job carries exactly one status from: **New**, **Draft**, **Applied**, **Interview**, **Offer**, **Offer Accepted**, **Offer Declined**, **Rejected**, **Expired**, **Archived** and **Withdrawn** — *Offer Declined* for an offer you turned down, *Rejected* for one the company turned down, *Withdrawn* for one you pulled out of. They are labels you move by hand, not a state machine — nothing stops you going from Interview back to Draft.
+
+A job's status now follows its [timeline](./timeline.md): it is whatever the job's current stage means, so changing the status also records a stage, and moving which stage is current also moves the status.
 
 ## How do I change a job's status?
 
-There are two ways. In the Jobs list, click a row's status badge and pick the new status from the menu. Or open the job and use the **⋮** menu at the top-right of the job details, choosing **Change status**. Either menu lists every status with the current one greyed out, and the change saves immediately — there is no separate save step.
+There are two ways. In the Jobs list, click a row's status badge and pick the new status from the menu. Or open the job and use the **Update Status** button at the top-right of the job details, choosing **Change status**. Either menu lists every status with the current one greyed out, and the change saves immediately — there is no separate save step.
 
 The Add Job dialog also has a Status field, so a status can be set when you first create the job or from **Edit Job** later.
 
+All three of those paths also append a stage to the job's [timeline](./timeline.md), so the history stays in step with the label. Picking a status the job already holds adds nothing.
+
 ## What is on a job's details page?
 
-Three parts, top to bottom. A **header row** with the job title, a `Company · Location · Job Type · Workplace` line whose company name opens the company's [details page](./companies.md), and the actions: Match with AI, Cover Letter, Edit, Delete and a **⋮** menu. Below it a **summary card** of eight facts — Status, Job Type, Salary Range, Source, Applied, AI Match, Resume and Added — with the job URL and any skill badges on a divider row underneath. Below that, five **tabs**.
+Three parts, top to bottom. A **header row** with the job title, a `Company · Location · Job Type · Workplace` line whose company name opens the company's [details page](./companies.md), and the actions: **Update Status**, Match with AI, Cover Letter, Edit, Delete and a **⋮** menu. Below it a **summary card** of eight facts — Status, Job Type, Salary Range, Source, Applied, AI Match, Resume and Added — with the job URL and any skill badges on a divider row underneath. Below that, six **tabs**.
 
-The tabs are **Description**, **AI Match**, **Cover Letter**, **Notes** and **[Contacts](./contacts.md)**, and all five are always there. AI Match and Cover Letter stay in the bar even when the job has neither, showing a short explanation and a button to run it — so the tab set never shifts between jobs. Notes and Contacts each carry a count badge once the job has any. Contacts lists the people linked to this job with the role each played. The tab you are on is kept in the address bar, so a refresh, a bookmark or the browser Back button lands you back on the same one.
+The tabs are **Description**, **AI Match**, **[Timeline](./timeline.md)**, **Cover Letter**, **Notes** and **[Contacts](./contacts.md)**, and all six are always there. AI Match and Cover Letter stay in the bar even when the job has neither, showing a short explanation and a button to run it — so the tab set never shifts between jobs. Timeline, Notes and Contacts each carry a count badge once the job has any. Contacts lists the people linked to this job with the role each played. The tab you are on is kept in the address bar, so a refresh, a bookmark or the browser Back button lands you back on the same one.
 
 ## How do I edit, annotate or delete a job?
 

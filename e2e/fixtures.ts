@@ -152,6 +152,9 @@ export type CleanupRegistry = {
   automation: (name: string) => void;
   contact: (name: string) => void;
   contactRole: (name: string) => void;
+  // Unused today (both timeline flows pick seeded stage types), but a test
+  // that types a custom stage name would otherwise leave a permanent row.
+  jobStageType: (name: string) => void;
 };
 
 type Fixtures = {
@@ -181,6 +184,7 @@ export const test = base.extend<Fixtures>({
     const automations: string[] = [];
     const contacts: string[] = [];
     const contactRoles: string[] = [];
+    const jobStageTypes: string[] = [];
     await use({
       job: (id) => jobIds.push(id),
       resume: (title) => resumes.push(title),
@@ -196,6 +200,7 @@ export const test = base.extend<Fixtures>({
       automation: (name) => automations.push(name),
       contact: (name) => contacts.push(name),
       contactRole: (name) => contactRoles.push(name),
+      jobStageType: (name) => jobStageTypes.push(name),
     });
     // page.request carries the session cookie; page is still alive here
     // because cleanup tears down before the page fixture.
@@ -215,6 +220,7 @@ export const test = base.extend<Fixtures>({
         automations,
         contacts,
         contactRoles,
+        jobStageTypes,
       },
     });
     if (!res.ok()) {
