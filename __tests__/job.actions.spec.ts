@@ -871,7 +871,14 @@ describe("jobActions", () => {
             },
             prepQuestions: {
               include: {
-                Question: { select: { id: true, question: true, tags: true } },
+                Question: {
+                  select: {
+                    id: true,
+                    question: true,
+                    answer: true,
+                    tags: true,
+                  },
+                },
               },
               orderBy: { createdAt: "asc" },
             },

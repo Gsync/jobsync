@@ -190,7 +190,7 @@ describe("updateJobFromNames", () => {
     expect((prisma as any).jobStage.create.mock.calls[0][0].data).toMatchObject({
       jobId: "job-1",
       stageTypeId: "t-offer",
-      occurredAt: null,
+      occurredAt: expect.any(Date),
     });
   });
 

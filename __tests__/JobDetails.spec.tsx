@@ -370,18 +370,16 @@ describe("JobDetails – tabs", () => {
     expect(screen.getByRole("tab", { name: "Contacts" })).toBeInTheDocument();
   });
 
-  it("renders a Timeline tab between AI Match and Cover Letter, with a stage count", () => {
+  it("renders a Timeline tab right after Description, with a stage count", () => {
     render(
       <JobDetails {...baseProps} job={makeJob({ stages: [stageA, stageB] })} />,
     );
 
     const tabs = screen.getAllByRole("tab").map((t) => t.textContent);
-    const matchAt = tabs.findIndex((t) => t?.startsWith("AI Match"));
+    const descriptionAt = tabs.findIndex((t) => t?.startsWith("Description"));
     const timelineAt = tabs.findIndex((t) => t?.startsWith("Timeline"));
-    const letterAt = tabs.findIndex((t) => t?.startsWith("Cover Letter"));
 
-    expect(timelineAt).toBe(matchAt + 1);
-    expect(letterAt).toBe(timelineAt + 1);
+    expect(timelineAt).toBe(descriptionAt + 1);
     expect(screen.getByRole("tab", { name: /Timeline/ })).toHaveTextContent("2");
   });
 

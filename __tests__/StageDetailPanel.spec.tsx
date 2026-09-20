@@ -102,7 +102,7 @@ describe("StageDetailPanel", () => {
       <StageDetailPanel stage={interviewStage} isCurrent onEdit={noop} onLinkInterviewers={noop} onAddPrepQuestions={noop} onChanged={noop} />,
     );
 
-    await userEvent.click(screen.getByRole("tab", { name: "Interviewer" }));
+    await userEvent.click(screen.getByRole("tab", { name: /^Interviewer/ }));
 
     expect(screen.getByText("Priya Nair")).toBeInTheDocument();
     expect(screen.getByText("VP Engineering")).toBeInTheDocument();
@@ -155,7 +155,7 @@ describe("StageDetailPanel", () => {
       <StageDetailPanel stage={interviewStage} isCurrent onEdit={noop} onLinkInterviewers={noop} onAddPrepQuestions={noop} onChanged={noop} />,
     );
 
-    await userEvent.click(screen.getByRole("tab", { name: "Interviewer" }));
+    await userEvent.click(screen.getByRole("tab", { name: /^Interviewer/ }));
     rerender(
       <StageDetailPanel stage={{ ...interviewStage, id: "st9" }} isCurrent onEdit={noop} onLinkInterviewers={noop} onAddPrepQuestions={noop} onChanged={noop} />,
     );
