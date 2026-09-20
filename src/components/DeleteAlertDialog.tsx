@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +17,7 @@ interface DeleteAlertDialogProps {
   onOpenChange: (open: boolean) => void;
   onDelete: () => void;
   alertTitle?: string;
-  alertDescription?: string;
+  alertDescription?: ReactNode;
   deleteAction?: boolean;
   actionLabel?: string;
   actionVariant?: "destructive" | "default";
@@ -40,7 +41,10 @@ export function DeleteAlertDialog({
           <AlertDialogTitle>
             {alertTitle ?? `Are you sure you want to delete this ${pageTitle}?`}
           </AlertDialogTitle>
-          <AlertDialogDescription>{alertDescription}</AlertDialogDescription>
+          {/* asChild: a description may carry a list, which cannot nest in a p. */}
+          <AlertDialogDescription asChild>
+            <div>{alertDescription}</div>
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useTransition } from "react";
 import { CalendarDays, Pencil, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DeleteAlertDialog } from "@/components/DeleteAlertDialog";
@@ -50,6 +51,54 @@ export function StageDetailPanel({
   useEffect(() => {
     setTab("overview");
   }, [stage.id]);
+
+  // Both joins cascade with the stage, so the confirmation names what goes.
+  const interviewerCount = stage.interviewers?.length ?? 0;
+  const prepCount = stage.prepQuestions?.length ?? 0;
+  const hasLinks = interviewerCount > 0 || prepCount > 0;
+  const deleteDescription =
+    isCurrent || hasLinks ? (
+      <>
+        {isCurrent && (
+          <p>
+            This is the current stage. Deleting it makes the stage before it
+            current, and the job&apos;s status follows that stage.
+          </p>
+        )}
+        {hasLinks && (
+          <>
+            <p className={cn(isCurrent && "mt-2")}>Deleting it also removes:</p>
+            <ul className="mt-1.5 list-disc space-y-1 pl-5">
+              {interviewerCount > 0 && (
+                <li>
+                  <span className="font-semibold text-foreground">
+                    {interviewerCount} linked{" "}
+                    {interviewerCount === 1 ? "interviewer" : "interviewers"}
+                  </span>{" "}
+                  on this stage
+                </li>
+              )}
+              {prepCount > 0 && (
+                <li>
+                  <span className="font-semibold text-foreground">
+                    {prepCount} prep{" "}
+                    {prepCount === 1 ? "question" : "questions"}
+                  </span>{" "}
+                  on this stage, and which of them were asked
+                </li>
+              )}
+            </ul>
+            <p className="mt-2">
+              {interviewerCount > 0 && prepCount > 0
+                ? "Nothing is removed from the job's Contacts tab or your question bank."
+                : interviewerCount > 0
+                  ? "Nothing is removed from the job's Contacts tab."
+                  : "Nothing is removed from your question bank."}
+            </p>
+          </>
+        )}
+      </>
+    ) : undefined;
 
   const onDelete = () => {
     setDeleteOpen(false);
@@ -151,11 +200,7 @@ export function StageDetailPanel({
         onOpenChange={setDeleteOpen}
         onDelete={onDelete}
         alertTitle={`Delete the ${stage.StageType.label} stage?`}
-        alertDescription={
-          isCurrent
-            ? "This is the current stage. Deleting it makes the stage before it current, and the job's status follows that stage."
-            : undefined
-        }
+        alertDescription={deleteDescription}
       />
     </div>
   );
