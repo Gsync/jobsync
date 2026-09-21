@@ -87,7 +87,7 @@ Because the stage they would act on is not an interview stage. Both items are ga
 
 The menu tells you which stage it is targeting and why: it reads **"Applied is not an interview stage"** when the selected stage is not one, and **"Add a stage first"** when the job has no stages at all. Both items act on the stage you have selected on the Timeline tab, falling back to the current stage, so select the interview stage first.
 
-A stage counts as an interview stage when its parent status is *Interview*. That is true of the three seeded interview rounds, and of any custom stage type you created under the Interview status.
+A stage counts as an interview stage when its parent status is *Interview* — the three seeded rounds, or any type you created under it. Those stages are also what the [Interviews](./interviews.md) page lists.
 
 ## Can I rename or add my own stages?
 
