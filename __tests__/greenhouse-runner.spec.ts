@@ -17,7 +17,10 @@ vi.mock("@prisma/client", () => {
     location: { findUnique: vi.fn(), create: vi.fn() },
     company: { findUnique: vi.fn(), create: vi.fn() },
     jobSource: { findUnique: vi.fn(), create: vi.fn() },
-    jobStatus: { findFirst: vi.fn(), create: vi.fn() },
+    jobStatus: { findFirst: vi.fn(), findUnique: vi.fn(), create: vi.fn() },
+    // A saved job gets its first timeline stage here too (createFirstStage).
+    jobStageType: { findUnique: vi.fn(), aggregate: vi.fn(), create: vi.fn() },
+    jobStage: { create: vi.fn() },
   };
   return {
     PrismaClient: vi.fn(function () {
@@ -139,6 +142,17 @@ describe("runAutomation (greenhouse)", () => {
     (prisma.company.findUnique as any).mockResolvedValue({ id: "co" });
     (prisma.jobSource.findUnique as any).mockResolvedValue({ id: "src" });
     (prisma.jobStatus.findFirst as any).mockResolvedValue({ id: "st" });
+    // resolveStageTypeForStatusId looks the status up by id, then resolves the
+    // stage type from its LABEL — an existing type, so no create path here.
+    (prisma.jobStatus.findUnique as any).mockResolvedValue({
+      id: "st",
+      label: "New",
+    });
+    (prisma.jobStageType.findUnique as any).mockResolvedValue({
+      id: "stg",
+      label: "New",
+    });
+    (prisma.jobStage.create as any).mockResolvedValue({ id: "stage1" });
 
     (generateText as any).mockResolvedValue({
       text: "SCORES: match=90 recommendation=strong match\n\n## Summary\nGreat fit",

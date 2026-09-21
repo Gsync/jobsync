@@ -40,13 +40,21 @@ import { JobTabEmptyState } from "./job-details/JobTabEmptyState";
 import { CoverLetterTab } from "./job-details/CoverLetterTab";
 import { useAutoMatch } from "./job-details/useAutoMatch";
 import { JobContactsTab } from "./job-details/JobContactsTab";
+import { JobTimelineTab } from "./job-details/timeline/JobTimelineTab";
+import { useJobStages } from "./job-details/timeline/useJobStages";
+import { UpdateStatusMenu } from "./job-details/timeline/UpdateStatusMenu";
+import { AddStageDialog } from "./job-details/timeline/AddStageDialog";
+import { LinkInterviewersDialog } from "./job-details/timeline/LinkInterviewersDialog";
+import { AddPrepQuestionsDialog } from "./job-details/timeline/AddPrepQuestionsDialog";
+import type { JobStage, JobStageTypeRef } from "@/models/jobStage.model";
 
 const JOB_DETAIL_TABS = [
   "description",
+  "timeline",
   "match",
   "letter",
-  "notes",
   "contacts",
+  "notes",
 ] as const;
 
 type JobDetailsProps = {
@@ -57,6 +65,7 @@ type JobDetailsProps = {
   locations: JobLocation[];
   sources: JobSource[];
   tags: Tag[];
+  stageTypes: JobStageTypeRef[];
 };
 
 function JobDetails({
@@ -67,6 +76,7 @@ function JobDetails({
   locations,
   sources,
   tags,
+  stageTypes,
 }: JobDetailsProps) {
   const {
     open: openChat,
@@ -77,13 +87,30 @@ function JobDetails({
   } = useAgentChat();
   const [showClearChatConfirm, setShowClearChatConfirm] = useState(false);
   const [pendingChatMessage, setPendingChatMessage] = useState("");
-  const [currentStatus, setCurrentStatus] = useState(job.Status);
   const [editJobTarget, setEditJobTarget] = useState<JobResponse | null>(
     null,
   );
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [noteOpenTrigger, setNoteOpenTrigger] = useState(0);
   const [notesCount, setNotesCount] = useState(0);
+  const {
+    stages,
+    currentStage,
+    selectedStage,
+    selectedStageId,
+    selectStage,
+    reload: reloadStages,
+  } = useJobStages(job.id, job.stages ?? []);
+  // Derived, never mirrored: the status is the current stage's parent status,
+  // and six server-side write paths keep Job.statusId equal to it. State here
+  // would go stale on every stage add, edit or delete that moves the status.
+  // job.Status covers the stageless job, which keeps whatever status it had.
+  const currentStatus = currentStage?.StageType.Status ?? job.Status;
+  const [addStageTarget, setAddStageTarget] = useState<
+    { mode: "create" } | { mode: "edit"; stage: JobStage } | null
+  >(null);
+  const [linkInterviewersOpen, setLinkInterviewersOpen] = useState(false);
+  const [prepQuestionsOpen, setPrepQuestionsOpen] = useState(false);
   const router = useRouter();
   const [activeTab, handleTabChange] = useTabQueryParam(
     JOB_DETAIL_TABS,
@@ -157,7 +184,9 @@ function JobDetails({
   const onChangeStatus = async (status: JobStatus) => {
     const { success, message } = await updateJobStatus(job.id, status);
     if (success) {
-      setCurrentStatus(status);
+      // The status change appends a stage server-side, and the badge reads
+      // that stage, so this is awaited rather than fired off.
+      await reloadStages();
       toastSuccess(`Job has been updated successfully`);
     } else {
       toastError(message);
@@ -179,8 +208,6 @@ function JobDetails({
       <div className="py-6 space-y-6">
         <JobDetailsHeader
           job={job}
-          jobStatuses={jobStatuses}
-          currentStatus={currentStatus}
           coverLetterBlockedReason={coverLetterBlockedReason}
           chatBusy={chatBusy}
           onBack={goBack}
@@ -189,7 +216,17 @@ function JobDetails({
           onEdit={onEditJob}
           onDelete={() => setDeleteAlertOpen(true)}
           onAddNote={onAddNote}
-          onChangeStatus={onChangeStatus}
+          updateStatusMenu={
+            <UpdateStatusMenu
+              targetStage={selectedStage ?? currentStage}
+              jobStatuses={jobStatuses}
+              currentStatusId={currentStatus.id}
+              onChangeStatus={onChangeStatus}
+              onAddStage={() => setAddStageTarget({ mode: "create" })}
+              onLinkInterviewers={() => setLinkInterviewersOpen(true)}
+              onAddPrepQuestions={() => setPrepQuestionsOpen(true)}
+            />
+          }
         />
 
         <JobSummaryCard
@@ -201,21 +238,29 @@ function JobDetails({
         <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList>
             <TabsTrigger value="description">Description</TabsTrigger>
-            <TabsTrigger value="match">AI Match</TabsTrigger>
-            <TabsTrigger value="letter">Cover Letter</TabsTrigger>
-            <TabsTrigger value="notes">
-              Notes
-              {notesCount > 0 && (
+            <TabsTrigger value="timeline">
+              Timeline
+              {stages.length > 0 && (
                 <Badge variant="secondary" className="ml-2">
-                  {notesCount}
+                  {stages.length}
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="match">AI Match</TabsTrigger>
+            <TabsTrigger value="letter">Cover Letter</TabsTrigger>
             <TabsTrigger value="contacts">
               Contacts
               {(job.contactLinks?.length ?? 0) > 0 && (
                 <Badge variant="secondary" className="ml-2">
                   {job.contactLinks!.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="notes">
+              Notes
+              {notesCount > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {notesCount}
                 </Badge>
               )}
             </TabsTrigger>
@@ -241,6 +286,20 @@ function JobDetails({
                 />
               )}
             </Card>
+          </TabsContent>
+          <TabsContent value="timeline" className="mt-4">
+            <JobTimelineTab
+              stages={stages}
+              stageTypes={stageTypes}
+              selectedStageId={selectedStageId}
+              currentStageId={currentStage?.id ?? null}
+              onSelect={selectStage}
+              onAddStage={() => setAddStageTarget({ mode: "create" })}
+              onEditStage={(stage) => setAddStageTarget({ mode: "edit", stage })}
+              onLinkInterviewers={() => setLinkInterviewersOpen(true)}
+              onAddPrepQuestions={() => setPrepQuestionsOpen(true)}
+              onChanged={reloadStages}
+            />
           </TabsContent>
           <TabsContent value="letter" className="mt-4">
             <Card className="p-6">
@@ -288,6 +347,36 @@ function JobDetails({
         resetEditJob={resetEditJob}
         hideTrigger
         redirectPath={`/dashboard/myjobs/${job.id}?tab=${activeTab}`}
+      />
+      <AddStageDialog
+        open={!!addStageTarget}
+        jobId={job.id}
+        jobLabel={`${job.JobTitle?.label ?? ""}${
+          job.Company?.label ? ` · ${job.Company.label}` : ""
+        }`}
+        stage={addStageTarget?.mode === "edit" ? addStageTarget.stage : null}
+        stageTypes={stageTypes}
+        jobStatuses={jobStatuses}
+        onOpenChange={(open) => !open && setAddStageTarget(null)}
+        onSaved={() => {
+          void reloadStages();
+          router.refresh();
+        }}
+      />
+      <LinkInterviewersDialog
+        open={linkInterviewersOpen}
+        stage={selectedStage ?? currentStage}
+        onOpenChange={setLinkInterviewersOpen}
+        onLinked={() => {
+          void reloadStages();
+          router.refresh();
+        }}
+      />
+      <AddPrepQuestionsDialog
+        open={prepQuestionsOpen}
+        stage={selectedStage ?? currentStage}
+        onOpenChange={setPrepQuestionsOpen}
+        onAdded={() => void reloadStages()}
       />
       <DeleteAlertDialog
         pageTitle="job"

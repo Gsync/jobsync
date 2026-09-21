@@ -7,7 +7,6 @@ import {
   Pencil,
   Sparkles,
   StickyNote,
-  Tags,
   Trash,
   Trash2,
 } from "lucide-react";
@@ -19,17 +18,11 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuPortal,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { JobStatusMenuItems } from "@/components/myjobs/JobStatusMenuItems";
 import {
   JobResponse,
-  JobStatus,
   getJobTypeLabel,
   getWorkplaceTypeLabel,
 } from "@/models/job.model";
@@ -37,8 +30,7 @@ import { CompanyLogo } from "../CompanyLogo";
 
 type JobDetailsHeaderProps = {
   job: JobResponse;
-  jobStatuses: JobStatus[];
-  currentStatus: JobStatus;
+  updateStatusMenu?: React.ReactNode;
   coverLetterBlockedReason?: string;
   chatBusy: boolean;
   onBack: () => void;
@@ -47,13 +39,11 @@ type JobDetailsHeaderProps = {
   onEdit: () => void;
   onDelete: () => void;
   onAddNote: () => void;
-  onChangeStatus: (status: JobStatus) => void;
 };
 
 export function JobDetailsHeader({
   job,
-  jobStatuses,
-  currentStatus,
+  updateStatusMenu,
   coverLetterBlockedReason,
   chatBusy,
   onBack,
@@ -62,7 +52,6 @@ export function JobDetailsHeader({
   onEdit,
   onDelete,
   onAddNote,
-  onChangeStatus,
 }: JobDetailsHeaderProps) {
   const details = [
     job.Location?.label,
@@ -99,6 +88,7 @@ export function JobDetailsHeader({
         </div>
       </div>
       <div className="flex flex-wrap justify-end gap-2">
+        {updateStatusMenu}
         <Button
           variant="outline"
           className="cursor-pointer"
@@ -108,7 +98,7 @@ export function JobDetailsHeader({
         >
           <Sparkles className="h-4 w-4 sm:mr-2" />
           <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Match with AI
+            AI Match
           </span>
         </Button>
         <Button
@@ -125,25 +115,25 @@ export function JobDetailsHeader({
           </span>
         </Button>
         <Button
+          title="Edit"
           variant="outline"
+          size="icon"
           onClick={onEdit}
           data-testid="job-details-edit-btn"
         >
-          <Pencil className="h-4 w-4 sm:mr-2" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Edit
-          </span>
+          <Pencil className="h-4 w-4" />
+          <span className="sr-only">Edit</span>
         </Button>
         <Button
+          title="Delete"
           variant="outline"
+          size="icon"
           className="text-destructive hover:text-destructive"
           onClick={onDelete}
           data-testid="job-details-delete-btn"
         >
-          <Trash2 className="h-4 w-4 sm:mr-2" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Delete
-          </span>
+          <Trash2 className="h-4 w-4" />
+          <span className="sr-only">Delete</span>
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -168,22 +158,6 @@ export function JobDetailsHeader({
                 <StickyNote className="mr-2 h-4 w-4" />
                 Add a Note
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <Tags className="mr-2 h-4 w-4" />
-                  Change status
-                </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent className="p-0">
-                    <JobStatusMenuItems
-                      jobStatuses={jobStatuses}
-                      currentStatusId={currentStatus.id}
-                      onSelectStatus={onChangeStatus}
-                    />
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-red-600 cursor-pointer"

@@ -1,6 +1,9 @@
 import type { JobBoard, LeverHost } from "@/models/automation.model";
 import { CoverLetter, Resume } from "./profile.model";
 import type { JobContactLink } from "./contact.model";
+// Type-only: jobStage.model.ts imports Tag from here and has a runtime export,
+// so a value import back would make a real module cycle.
+import type { JobStage } from "./jobStage.model";
 
 export interface JobForm {
   id?: string;
@@ -57,6 +60,7 @@ export interface JobResponse {
   matchData?: string | null;
   tags?: Tag[];
   contactLinks?: JobContactLink[];
+  stages?: JobStage[];
   createdVia?: string | null;
   discoveryStatus?: string | null;
   descriptionCompleteness?: DescriptionCompleteness | null;

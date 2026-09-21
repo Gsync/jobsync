@@ -80,14 +80,33 @@ describe("contact actions", () => {
   describe("getAllContacts", () => {
     it("returns picker rows whose value carries the email, so search finds it", async () => {
       db.contact.findMany.mockResolvedValue([
-        { id: "c1", name: "Dave Patel", email: "dave@x.com", Company: { label: "Shopify" } },
+        { id: "c1", name: "Dave Patel", title: "CTO", email: "dave@x.com", Company: { label: "Shopify" } },
       ]);
 
       const res = await getAllContacts();
 
       expect(res).toEqual([
-        { id: "c1", label: "Dave Patel", value: "dave patel dave@x.com shopify" },
+        {
+          id: "c1",
+          label: "Dave Patel",
+          title: "CTO",
+          company: "Shopify",
+          value: "dave patel dave@x.com shopify",
+        },
       ]);
+    });
+
+    // The Link Interviewers dialog shows "<title> · <company>" beneath the
+    // name, which the search blob alone cannot be taken apart into.
+    it("carries the title and company as their own fields", async () => {
+      db.contact.findMany.mockResolvedValue([
+        { id: "c2", name: "Priya Nair", title: null, email: null, Company: null },
+      ]);
+
+      const res = await getAllContacts();
+
+      expect(res[0].title).toBeNull();
+      expect(res[0].company).toBeNull();
     });
   });
 

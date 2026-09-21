@@ -62,6 +62,7 @@ export const getAllContacts = async (): Promise<any | undefined> => {
       select: {
         id: true,
         name: true,
+        title: true,
         email: true,
         Company: { select: { label: true } },
       },
@@ -71,6 +72,9 @@ export const getAllContacts = async (): Promise<any | undefined> => {
     return rows.map((row) => ({
       id: row.id,
       label: row.name,
+      // For pickers that show more than a name (the Link Interviewers dialog).
+      title: row.title,
+      company: row.Company?.label ?? null,
       value: [row.name, row.email, row.Company?.label]
         .filter(Boolean)
         .join(" ")

@@ -2,7 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import type JSZip from "jszip";
 import db from "@/lib/db";
-import { APP_CONSTANTS, CONTACT_ROLES } from "@/lib/constants";
+import { APP_CONSTANTS, CONTACT_ROLES, JOB_STAGES } from "@/lib/constants";
 import { IdMap, buildCreateData } from "./idmap";
 import { BackupError, openBackupZip, readManifest } from "./manifest";
 import {
@@ -147,12 +147,32 @@ async function insertLookups(
   data: BackupData,
   idMap: IdMap,
   userId: string,
+  statusByValue: Map<string, string>,
 ): Promise<void> {
   for (const model of LOOKUP_MODELS) {
     const spec = MODEL_SPECS[model];
     for (const row of (data as unknown as Record<string, { id: string; value: string }[]>)[model]) {
       const newId = idMap.mint(row.id);
       const { id: _old, ...rest } = row;
+
+      // The only lookup model with a foreign key. JobStatus is global and its
+      // ids differ between installs, so the file carries the value (D3).
+      if (model === "JobStageType") {
+        const { statusValue, ...typeRest } = rest as typeof rest & { statusValue: string };
+        const statusId = statusByValue.get(statusValue);
+        // Refusing beats defaulting: a wrong parent status would put the
+        // derived-status invariant permanently out of step on every job.
+        if (!statusId) {
+          throw new BackupError(
+            `Stage type "${row.value}" names status "${statusValue}", which is not in the backup.`,
+          );
+        }
+        await tx[spec.delegate].create({
+          data: { ...typeRest, id: newId, statusId, createdBy: userId },
+        });
+        continue;
+      }
+
       await tx[spec.delegate].create({
         data: { ...rest, id: newId, createdBy: userId },
       });
@@ -306,7 +326,7 @@ export async function importBackup(
         const tx = transaction as unknown as Tx;
 
         await wipe(tx, userId);
-        await insertLookups(tx, data, idMap, userId);
+        await insertLookups(tx, data, idMap, userId, statusByValue);
 
         // A backup from before contacts carries no roles, and the wipe above
         // just deleted the seeded ones — reseed rather than leave none.
@@ -315,6 +335,25 @@ export async function importBackup(
             data: CONTACT_ROLES.map((role) => ({
               label: role.label,
               value: role.value,
+              createdBy: userId,
+            })),
+          });
+        }
+
+        // A backup from before stages carries no stage types, and the wipe
+        // above just deleted the seeded ones — reseed rather than leave none,
+        // or Add Stage and every status dropdown has nothing to resolve.
+        if (manifest.counts.JobStageType === undefined && data.JobStageType.length === 0) {
+          const stageStatuses = (await tx.jobStatus.findMany({
+            select: { id: true, value: true },
+          })) as unknown as { id: string; value: string }[];
+          const stageStatusIds = new Map(stageStatuses.map((s) => [s.value, s.id]));
+          await tx.jobStageType.createMany({
+            data: JOB_STAGES.map((stage) => ({
+              label: stage.label,
+              value: stage.value,
+              statusId: stageStatusIds.get(stage.status)!,
+              sortOrder: stage.sortOrder,
               createdBy: userId,
             })),
           });

@@ -32,6 +32,10 @@ vi.mock("@/actions/tag.actions", () => ({
   getAllTags: vi.fn(async () => []),
 }));
 
+vi.mock("@/actions/jobStageType.actions", () => ({
+  getAllJobStageTypes: vi.fn(async () => []),
+}));
+
 vi.mock("@/components/myjobs/JobDetails", () => ({
   default: () => <div data-testid="job-details" />,
 }));

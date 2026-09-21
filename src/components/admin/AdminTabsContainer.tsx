@@ -5,6 +5,7 @@ import ContactRolesContainer from "@/components/admin/ContactRolesContainer";
 import ContactsContainer from "@/components/admin/ContactsContainer";
 import JobLocationsContainer from "@/components/admin/JobLocationsContainer";
 import JobSourcesContainer from "@/components/admin/JobSourcesContainer";
+import JobStagesContainer from "@/components/admin/JobStagesContainer";
 import JobTitlesContainer from "@/components/admin/JobTitlesContainer";
 import TagsContainer from "@/components/admin/TagsContainer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -43,6 +44,7 @@ function AdminTabsContainer() {
         <TabsTrigger value="activity-types">Activity Types</TabsTrigger>
         <TabsTrigger value="contacts">Contacts</TabsTrigger>
         <TabsTrigger value="roles">Roles</TabsTrigger>
+        <TabsTrigger value="stages">Stages</TabsTrigger>
       </TabsList>
       <TabsContent value="companies">
         <CompaniesContainer />
@@ -67,6 +69,9 @@ function AdminTabsContainer() {
       </TabsContent>
       <TabsContent value="roles">
         <ContactRolesContainer />
+      </TabsContent>
+      <TabsContent value="stages">
+        <JobStagesContainer />
       </TabsContent>
     </Tabs>
   );

@@ -9,12 +9,13 @@ import { isResumeFilePath } from "@/lib/resumeFiles";
 
 type Row = Record<string, unknown>;
 
-// Job and Question need their tag ids, which are not columns; everything else
-// reads as-is. Prisma's implicit m2m tables are not models, so this include is
-// the only way the join rows reach the file at all.
-const TAG_INCLUDE: Partial<Record<BackupModel, Record<string, unknown>>> = {
+// Job and Question need their tag ids and JobStageType needs its status value;
+// none of the three is a plain column. Prisma's implicit m2m tables are not
+// models, so this include is the only way the join rows reach the file at all.
+const ROW_INCLUDE: Partial<Record<BackupModel, Record<string, unknown>>> = {
   Job: { Status: { select: { value: true } }, tags: { select: { id: true } } },
   Question: { tags: { select: { id: true } } },
+  JobStageType: { Status: { select: { value: true } } },
 };
 
 function stripOwnership(model: BackupModel, row: Row): Row {
@@ -32,7 +33,7 @@ export async function collectBackupData(userId: string): Promise<BackupData> {
     const delegate = (db as unknown as Record<string, { findMany: (a: unknown) => Promise<Row[]> }>)[
       spec.delegate
     ];
-    const include = TAG_INCLUDE[model];
+    const include = ROW_INCLUDE[model];
     return delegate.findMany(
       include ? { where: spec.scope(userId), include } : { where: spec.scope(userId) },
     );
@@ -49,7 +50,12 @@ export async function collectBackupData(userId: string): Promise<BackupData> {
       select: { defaultResumeId: true },
     }),
     db.jobStatus.findMany({
-      where: { jobs: { some: { userId } } },
+      // Statuses reached by a job OR by a stage type: a seeded Withdrawn stage
+      // type long predates any withdrawn job, and its statusValue has to
+      // resolve on import.
+      where: {
+        OR: [{ jobs: { some: { userId } } }, { stageTypes: { some: { createdBy: userId } } }],
+      },
       select: { label: true, value: true },
     }),
   ];
@@ -73,6 +79,13 @@ export async function collectBackupData(userId: string): Promise<BackupData> {
           tags: { id: string }[];
         };
         for (const tag of tags ?? []) jobToTag.push({ jobId: rest.id as string, tagId: tag.id });
+        return { ...rest, statusValue: Status.value };
+      }
+
+      if (model === "JobStageType") {
+        const { statusId, Status, ...rest } = clean as Row & {
+          Status: { value: string };
+        };
         return { ...rest, statusValue: Status.value };
       }
 

@@ -153,6 +153,81 @@ export async function resolveTags(
   return { resolved, dropped };
 }
 
+// Not resolveEntity: that delegate creates exactly { label, value, createdBy }
+// and cannot carry statusId and sortOrder, so the pattern is followed rather
+// than the function reused (spec decision 3).
+export async function resolveJobStageType(
+  label: string,
+  userId: string,
+  statusId: string,
+): Promise<ResolvedEntity> {
+  const trimmed = label.trim();
+  const value = canonicalizeEntityValue(trimmed);
+  if (!value) throw new Error("A non-empty label is required");
+
+  const existing = await prisma.jobStageType.findUnique({
+    where: { value_createdBy: { value, createdBy: userId } },
+  });
+  if (existing) return { id: existing.id, label: existing.label, created: false };
+
+  // A custom type slots in after the last type of its own parent status, not
+  // at the end of the vocabulary: sortStages orders the timeline by sortOrder,
+  // so an appended type would render after the terminal stages. Never wrap
+  // this in a transaction — it writes through the base client on purpose.
+  const siblings = await prisma.jobStageType.aggregate({
+    where: { createdBy: userId, statusId },
+    _max: { sortOrder: true },
+  });
+  const all = await prisma.jobStageType.aggregate({
+    where: { createdBy: userId },
+    _max: { sortOrder: true },
+  });
+  const sortOrder =
+    (siblings._max.sortOrder ?? all._max.sortOrder ?? -1) + 1;
+
+  await prisma.jobStageType.updateMany({
+    where: { createdBy: userId, sortOrder: { gte: sortOrder } },
+    data: { sortOrder: { increment: 1 } },
+  });
+
+  try {
+    const created = await prisma.jobStageType.create({
+      data: {
+        label: trimmed,
+        value,
+        statusId,
+        sortOrder,
+        createdBy: userId,
+      },
+    });
+    return { id: created.id, label: created.label, created: true };
+  } catch (err: any) {
+    if (err?.code === "P2002") {
+      const winner = await prisma.jobStageType.findUnique({
+        where: { value_createdBy: { value, createdBy: userId } },
+      });
+      if (winner) return { id: winner.id, label: winner.label, created: false };
+    }
+    throw err;
+  }
+}
+
+// The status -> stage-type reverse lookup. Keyed on the canonical form of the
+// status LABEL, not status.value: canonicalizeEntityValue("Offer Accepted") is
+// "offer accepted", so keying on "offer-accepted" would mint a duplicate.
+export async function resolveStageTypeForStatusId(
+  statusId: string,
+  userId: string,
+): Promise<string> {
+  const status = await prisma.jobStatus.findUnique({
+    where: { id: statusId },
+    select: { id: true, label: true },
+  });
+  if (!status) throw new Error("Job status not found");
+  const resolved = await resolveJobStageType(status.label, userId, status.id);
+  return resolved.id;
+}
+
 // Bucket B — resolve-ONLY, never create
 
 // A caller-correctable bad value, as opposed to a database or programming

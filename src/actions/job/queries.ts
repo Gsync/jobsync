@@ -5,6 +5,7 @@ import { JOB_TYPES } from "@/models/job.model";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { requireUser } from "../shared";
 import { hideUnanalyzedScore } from "./shared";
+import { STAGE_DETAIL_INCLUDE } from "../jobStage/shared";
 
 const JOB_LIST_SELECT = {
   id: true,
@@ -71,6 +72,7 @@ const JOB_DETAILS_INCLUDE = {
     },
     orderBy: { createdAt: "asc" as const },
   },
+  stages: { include: STAGE_DETAIL_INCLUDE },
 };
 
 type JobsListFilters = {

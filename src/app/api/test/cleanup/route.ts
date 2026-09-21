@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
     automations = [],
     contacts = [],
     contactRoles = [],
+    jobStageTypes = [],
   }: {
     jobIds?: string[];
     resumes?: string[];
@@ -48,6 +49,7 @@ export async function POST(req: NextRequest) {
     automations?: string[];
     contacts?: string[];
     contactRoles?: string[];
+    jobStageTypes?: string[];
   } = await req.json();
 
   // Delete automations before resumes: Automation.resumeId is a required FK, so
@@ -121,6 +123,9 @@ export async function POST(req: NextRequest) {
   await deleteLibraryByName("location", locations, userId);
   await deleteLibraryByName("activityType", activityTypes, userId);
   await deleteLibraryByName("contactRole", contactRoles, userId);
+  // After the jobs above: a job's stages cascade with it, which is what frees
+  // a custom stage type. Seeded types are never registered by a test.
+  await deleteLibraryByName("jobStageType", jobStageTypes, userId);
   await deleteTagsByName(tags, userId);
   if (mcpTokens.length > 0) {
     await prisma.mcpAccessToken.deleteMany({
@@ -156,7 +161,8 @@ type RefModel =
   | "company"
   | "location"
   | "activityType"
-  | "contactRole";
+  | "contactRole"
+  | "jobStageType";
 
 // Count every place a Library row can still be referenced from, so we never
 // delete one that another job or resume section still uses.
@@ -190,6 +196,9 @@ async function referenceCount(
       (await prisma.jobContact.count({ where: { roleId: refId } })) +
       (await prisma.contact.count({ where: { roleId: refId } }))
     );
+  }
+  if (model === "jobStageType") {
+    return prisma.jobStage.count({ where: { stageTypeId: refId } });
   }
   return (
     (await prisma.job.count({ where: { locationId: refId } })) +

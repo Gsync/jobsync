@@ -66,7 +66,6 @@ describe("backup ordering", () => {
 
   it("remaps both of Contact's company FKs, not just the current employer", () => {
     expect(MODEL_SPECS.Contact.fks).toEqual({
-      interviewId: "Interview",
       companyId: "Company",
       locationId: "Location",
       workedAtCompanyId: "Company",
@@ -74,12 +73,13 @@ describe("backup ordering", () => {
     });
   });
 
-  it("marks exactly the seven lookup models, all owned by createdBy", () => {
+  it("marks exactly the eight lookup models, all owned by createdBy", () => {
     expect([...LOOKUP_MODELS].sort()).toEqual([
       "ActivityType",
       "Company",
       "ContactRole",
       "JobSource",
+      "JobStageType",
       "JobTitle",
       "Location",
       "Tag",
@@ -107,10 +107,40 @@ describe("backup ordering", () => {
     expect(MODEL_SPECS.ContactInfo.scope("u1")).toEqual({
       resume: { profile: { userId: "u1" } },
     });
-    expect(MODEL_SPECS.Interview.scope("u1")).toEqual({ job: { userId: "u1" } });
     expect(MODEL_SPECS.AutomationRun.scope("u1")).toEqual({
       automation: { userId: "u1" },
     });
+  });
+
+  it("has dropped the vestigial Interview model entirely", () => {
+    expect(MODEL_SPECS).not.toHaveProperty("Interview");
+    expect(INSERT_ORDER).not.toContain("Interview" as BackupModel);
+    expect(MODEL_SPECS.Contact.fks).not.toHaveProperty("interviewId");
+  });
+
+  // JobStageType is a lookup like ContactRole: without that flag a restore
+  // into an account that already holds the seeded types would double them.
+  it("treats JobStageType as a lookup and the rest as owned-through-Job", () => {
+    expect(MODEL_SPECS.JobStageType.lookup).toBe(true);
+    expect(LOOKUP_MODELS).toContain("JobStageType" as BackupModel);
+    expect(MODEL_SPECS.JobStage.lookup).toBeUndefined();
+    expect(MODEL_SPECS.JobStage.scope("u1")).toEqual({ Job: { userId: "u1" } });
+    expect(MODEL_SPECS.JobStageInterviewer.scope("u1")).toEqual({
+      Stage: { Job: { userId: "u1" } },
+    });
+    expect(MODEL_SPECS.JobStagePrepQuestion.scope("u1")).toEqual({
+      Stage: { Job: { userId: "u1" } },
+    });
+  });
+
+  it("inserts the stage models after Job, Contact and Question", () => {
+    const at = (m: BackupModel) => INSERT_ORDER.indexOf(m);
+    expect(at("JobStageType")).toBeLessThan(at("JobStage"));
+    expect(at("Job")).toBeLessThan(at("JobStage"));
+    expect(at("Contact")).toBeLessThan(at("JobStageInterviewer"));
+    expect(at("Question")).toBeLessThan(at("JobStagePrepQuestion"));
+    expect(at("JobStage")).toBeLessThan(at("JobStageInterviewer"));
+    expect(at("JobStage")).toBeLessThan(at("JobStagePrepQuestion"));
   });
 });
 

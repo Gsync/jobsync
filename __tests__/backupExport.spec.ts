@@ -20,8 +20,10 @@ vi.mock("@/lib/db", () => {
     "company", "jobTitle", "location", "jobSource", "tag", "activityType",
     "profile", "file", "resume", "contactInfo", "summary", "resumeSection",
     "workExperience", "education", "licenseOrCertification", "otherSection",
-    "skill", "coverLetter", "automation", "job", "note", "interview",
-    "contact", "contactRole", "jobContact", "task", "activity", "question", "automationRun", "userSettings",
+    "skill", "coverLetter", "automation", "job", "note",
+    "contact", "contactRole", "jobContact", "jobStageType", "jobStage",
+    "jobStageInterviewer", "jobStagePrepQuestion",
+    "task", "activity", "question", "automationRun", "userSettings",
   ]) {
     mock[key] = delegate();
   }
@@ -113,6 +115,42 @@ describe("collectBackupData", () => {
     ]);
     expect(data._QuestionToTag).toEqual([{ questionId: "q1", tagId: "tag-2" }]);
     expect(data.Question[0]).not.toHaveProperty("tags");
+  });
+
+  // D3: a raw statusId points at nothing after a restore into a fresh database.
+  it("replaces JobStageType.statusId with the status value and drops createdBy", async () => {
+    mockDb.jobStageType.findMany.mockResolvedValueOnce([
+      {
+        id: "t1",
+        label: "Final / Onsite Interview",
+        value: "final / onsite interview",
+        statusId: "status-row-1",
+        Status: { value: "interview" },
+        sortOrder: 6,
+        createdBy: "user-1",
+      },
+    ]);
+
+    const data = await collectBackupData("user-1");
+
+    expect(data.JobStageType[0].statusValue).toBe("interview");
+    expect(data.JobStageType[0]).not.toHaveProperty("statusId");
+    expect(data.JobStageType[0]).not.toHaveProperty("Status");
+    expect(data.JobStageType[0]).not.toHaveProperty("createdBy");
+  });
+
+  // A seeded Withdrawn stage type predates any withdrawn job, so scoping this
+  // read to the user's jobs alone would leave its statusValue unresolvable.
+  it("reads the statuses reached by a stage type as well as by a job", async () => {
+    await collectBackupData("user-1");
+    const call = (db as unknown as { jobStatus: { findMany: ReturnType<typeof vi.fn> } })
+      .jobStatus.findMany.mock.calls[0][0];
+    expect(call.where).toEqual({
+      OR: [
+        { jobs: { some: { userId: "user-1" } } },
+        { stageTypes: { some: { createdBy: "user-1" } } },
+      ],
+    });
   });
 
   it("carries the referenced job statuses as label/value pairs", async () => {

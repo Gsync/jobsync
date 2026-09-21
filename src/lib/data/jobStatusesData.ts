@@ -44,4 +44,9 @@ export const JOB_STATUSES = [
     label: "Archived",
     value: "archived",
   },
+  {
+    id: "3f2b6c41-88d5-4a0e-9d0a-6a1c9f0b7e22",
+    label: "Withdrawn",
+    value: "withdrawn",
+  },
 ];

@@ -1,6 +1,6 @@
 "use client";
 
-import { addDays, format } from "date-fns";
+import { addDays, addYears, format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -27,10 +27,15 @@ interface DatePickerProps {
   field: ControllerRenderProps<any, any>;
   presets: boolean;
   isEnabled: boolean;
+  // Swaps the caption for month/year dropdowns, which need a bounded range:
+  // left to itself the year dropdown stops at the end of the current year.
   captionLayout?: boolean;
   // Opt out of the default fixed trigger width when the field sits in a grid
   fullWidth?: boolean;
   disableFuture?: boolean;
+  // Years past today the dropdown reaches. Opt-in: the default cap is the
+  // current month, so a picker for a past-only field stays that way.
+  futureYears?: number;
 }
 
 export function DatePicker({
@@ -40,6 +45,7 @@ export function DatePicker({
   captionLayout,
   fullWidth,
   disableFuture,
+  futureYears,
 }: DatePickerProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
 
@@ -84,7 +90,13 @@ export function DatePicker({
           mode="single"
           captionLayout={captionLayout ? "dropdown" : "label"}
           startMonth={captionLayout ? new Date(1970, 0) : undefined}
-          endMonth={captionLayout ? new Date() : undefined}
+          endMonth={
+            captionLayout
+              ? disableFuture || !futureYears
+                ? new Date()
+                : addYears(new Date(), futureYears)
+              : undefined
+          }
           selected={field.value}
           disabled={disableFuture ? { after: new Date() } : undefined}
           onSelect={(value) => {

@@ -22,6 +22,10 @@ vi.mock("@/lib/db", () => {
     },
     jobStatus: {
       upsert: vi.fn(),
+      findMany: vi.fn(),
+    },
+    jobStageType: {
+      createMany: vi.fn(),
     },
   };
   return { default: mockPrisma };
@@ -61,6 +65,10 @@ vi.mock("next-auth", () => {
 describe("Auth Actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Stage-type seeding reads the statuses back to map value -> id.
+    (prisma.jobStatus.findMany as any).mockResolvedValue(
+      JOB_STATUSES.map((s) => ({ id: `id-${s.value}`, value: s.value })),
+    );
   });
 
   describe("signup", () => {
@@ -215,6 +223,30 @@ describe("Auth Actions", () => {
           createdBy: "new-user-id",
         })),
       });
+    });
+
+    it("seeds the fourteen stage types after the statuses exist", async () => {
+      (prisma.user.findUnique as any).mockResolvedValue(null);
+      (bcrypt.hash as any).mockResolvedValue("hashed");
+      (prisma.user.create as any).mockResolvedValue({ id: "new-user-id" });
+
+      await signup({
+        name: "Test",
+        email: "test@example.com",
+        password: "Password1!",
+      });
+
+      const rows = (prisma.jobStageType.createMany as any).mock.calls[0][0].data;
+      expect(rows).toHaveLength(14);
+      expect(rows.every((r: any) => r.createdBy === "new-user-id")).toBe(true);
+      expect(rows.every((r: any) => typeof r.statusId === "string")).toBe(true);
+      expect(rows.find((r: any) => r.value === "offer accepted")).toBeTruthy();
+
+      const statusOrder = (prisma.jobStatus.upsert as any).mock
+        .invocationCallOrder[0];
+      const stageOrder = (prisma.jobStageType.createMany as any).mock
+        .invocationCallOrder[0];
+      expect(statusOrder).toBeLessThan(stageOrder);
     });
 
     it("uses the canonical form of each label as the role value", () => {

@@ -1,12 +1,17 @@
 import React from "react";
 import JobDetails from "@/components/myjobs/JobDetails";
 import { JobResponse, Tag } from "@/models/job.model";
-import { render, screen, act, waitFor } from "@testing-library/react";
+import { render, screen, act, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 // The active tab lives in the URL, so a click only calls router.replace —
 // what the user sees next comes from the re-render with the new params.
-const router = { back: vi.fn(), push: vi.fn(), replace: vi.fn() };
+const router = {
+  back: vi.fn(),
+  push: vi.fn(),
+  replace: vi.fn(),
+  refresh: vi.fn(),
+};
 let searchParams = new URLSearchParams();
 const onTab = (tab: string) => {
   searchParams = new URLSearchParams(`tab=${tab}`);
@@ -65,6 +70,47 @@ vi.mock("@/components/CircularScore", () => ({
   ),
 }));
 
+vi.mock("@/actions/jobStage.actions", () => ({
+  getJobStages: vi.fn().mockResolvedValue([]),
+  setPrepQuestionAsked: vi.fn(),
+  removeStagePrepQuestion: vi.fn(),
+  unlinkStageInterviewer: vi.fn(),
+  setStageNotes: vi.fn(),
+  addJobStage: vi.fn(),
+  updateJobStage: vi.fn(),
+}));
+
+const makeStage = (id: string, label: string, over: any = {}) => ({
+  id,
+  jobId: "job-1",
+  stageTypeId: `t-${id}`,
+  occurredAt: new Date(2026, 8, 3),
+  isCurrent: false,
+  outcome: null,
+  notes: null,
+  durationMins: null,
+  format: null,
+  location: null,
+  createdAt: new Date(2026, 8, 1),
+  updatedAt: new Date(2026, 8, 1),
+  StageType: {
+    id: `t-${id}`,
+    label,
+    value: label.toLowerCase(),
+    statusId: "s1",
+    sortOrder: 0,
+    Status: { id: "s1", label, value: "applied" },
+  },
+  interviewers: [],
+  prepQuestions: [],
+  ...over,
+});
+
+const stageA = makeStage("stage-a", "Applied", {
+  occurredAt: new Date(2026, 8, 1),
+});
+const stageB = makeStage("stage-b", "Interview", { isCurrent: true });
+
 const baseProps = {
   jobStatuses: [],
   companies: [],
@@ -72,6 +118,7 @@ const baseProps = {
   locations: [],
   sources: [],
   tags: [],
+  stageTypes: [],
 };
 
 const makeJob = (overrides: Partial<JobResponse> = {}): JobResponse => ({
@@ -277,6 +324,33 @@ describe("JobDetails – match data display", () => {
   });
 });
 
+// The status is derived from the current stage, so it must be read from the
+// stage list the timeline already refetches — a mirrored copy went stale on
+// every stage add, edit and delete, and seeded Edit Job with the old status.
+describe("JobDetails – status from the current stage", () => {
+  const statusBadge = () =>
+    within(screen.getByText("Status").parentElement!).getAllByText(
+      /Applied|Interview/,
+    )[0];
+
+  it("shows the current stage's status, not the one on the job prop", () => {
+    render(
+      <JobDetails
+        {...baseProps}
+        job={makeJob({ stages: [stageA, stageB] })}
+      />,
+    );
+
+    expect(statusBadge()).toHaveTextContent("Interview");
+  });
+
+  it("keeps the job's own status when the job has no stages", () => {
+    render(<JobDetails {...baseProps} job={makeJob({ stages: [] })} />);
+
+    expect(statusBadge()).toHaveTextContent("Applied");
+  });
+});
+
 describe("JobDetails – tabs", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -284,15 +358,52 @@ describe("JobDetails – tabs", () => {
     searchParams = new URLSearchParams();
   });
 
-  // The bar must not shift between jobs, so all five are always present.
-  it("renders all five tabs regardless of what the job has", () => {
+  // The bar must not shift between jobs, so all six are always present.
+  it("renders all six tabs regardless of what the job has", () => {
     render(<JobDetails {...baseProps} job={makeJob()} />);
 
     expect(screen.getByRole("tab", { name: /description/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /ai match/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /timeline/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /cover letter/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /notes/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Contacts" })).toBeInTheDocument();
+  });
+
+  it("renders a Timeline tab right after Description, with a stage count", () => {
+    render(
+      <JobDetails {...baseProps} job={makeJob({ stages: [stageA, stageB] })} />,
+    );
+
+    const tabs = screen.getAllByRole("tab").map((t) => t.textContent);
+    const descriptionAt = tabs.findIndex((t) => t?.startsWith("Description"));
+    const timelineAt = tabs.findIndex((t) => t?.startsWith("Timeline"));
+
+    expect(timelineAt).toBe(descriptionAt + 1);
+    expect(screen.getByRole("tab", { name: /Timeline/ })).toHaveTextContent("2");
+  });
+
+  it("shows an empty state for a job with no stages, keeping its status visible", () => {
+    onTab("timeline");
+    render(<JobDetails {...baseProps} job={makeJob({ stages: [] })} />);
+
+    expect(screen.getByText(/No stages recorded/i)).toBeInTheDocument();
+    expect(screen.getByTestId("timeline-add-stage-btn")).toBeInTheDocument();
+  });
+
+  // Escape first: an open Radix menu is modal, so the second trigger would
+  // sit under a pointer-events:none layer.
+  it("keeps only one status control, in the Update Status menu", async () => {
+    render(<JobDetails {...baseProps} job={makeJob()} />);
+
+    await userEvent.click(screen.getByTestId("job-details-actions-menu-btn"));
+    expect(screen.queryByRole("menuitem", { name: /Change status/ })).toBeNull();
+    await userEvent.keyboard("{Escape}");
+
+    await userEvent.click(screen.getByTestId("update-status-menu-btn"));
+    expect(
+      screen.getByRole("menuitem", { name: /Change status/ }),
+    ).toBeInTheDocument();
   });
 
   it("opens on the Description tab", () => {
@@ -352,17 +463,17 @@ describe("JobDetails – tabs", () => {
   });
 });
 
-describe("JobDetails – Match with AI", () => {
+describe("JobDetails – AI Match", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     chat.clear.mockResolvedValue(undefined);
     searchParams = new URLSearchParams();
   });
 
-  it("opens the chat and asks for a match when Match with AI is clicked", async () => {
+  it("opens the chat and asks for a match when AI Match is clicked", async () => {
     chat.approvalPending = false;
     render(<JobDetails job={makeJob()} {...baseProps} />);
-    await userEvent.click(screen.getByRole("button", { name: /match with ai/i }));
+    await userEvent.click(screen.getByRole("button", { name: /ai match/i }));
     await act(async () => {});
     expect(chat.open).toHaveBeenCalled();
     expect(chat.clear).toHaveBeenCalled();
@@ -376,7 +487,7 @@ describe("JobDetails – Match with AI", () => {
     chat.approvalPending = false;
     chat.clear.mockRejectedValueOnce(new Error("offline"));
     render(<JobDetails job={makeJob()} {...baseProps} />);
-    await userEvent.click(screen.getByRole("button", { name: /match with ai/i }));
+    await userEvent.click(screen.getByRole("button", { name: /ai match/i }));
     await act(async () => {});
     expect(chat.open).toHaveBeenCalled();
     expect(chat.sendMessage).toHaveBeenCalled();
@@ -385,7 +496,7 @@ describe("JobDetails – Match with AI", () => {
   it("asks before clearing a conversation with a pending approval", async () => {
     chat.approvalPending = true;
     render(<JobDetails job={makeJob()} {...baseProps} />);
-    await userEvent.click(screen.getByRole("button", { name: /match with ai/i }));
+    await userEvent.click(screen.getByRole("button", { name: /ai match/i }));
     expect(
       screen.getByText(/clear the assistant conversation/i),
     ).toBeInTheDocument();
