@@ -7,6 +7,7 @@ export {
   deleteJobStage,
   setCurrentJobStage,
   setStageNotes,
+  setStageOutcome,
 } from "./jobStage/mutations";
 export {
   linkStageInterviewer,

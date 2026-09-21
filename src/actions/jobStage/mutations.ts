@@ -4,6 +4,7 @@ import { handleError, combineDateAndTime } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "../shared";
 import { resolveJobStageType } from "@/lib/jobs/resolve";
+import { STAGE_OUTCOMES } from "@/lib/constants";
 import {
   AddJobStageFormSchema,
   type AddJobStageValues,
@@ -243,5 +244,32 @@ export const setStageNotes = async (
     return { success: true };
   } catch (error) {
     return handleError(error, "Failed to save the note.");
+  }
+};
+
+// The Interviews list sets an outcome from a row menu. Its own action for the
+// same reason setStageNotes has one: updateJobStage parses the whole Add Stage
+// form and would re-run promoteStage as a side effect of one field.
+export const setStageOutcome = async (
+  stageId: string,
+  outcome: string | null,
+): Promise<any | undefined> => {
+  try {
+    const user = await requireUser();
+    await assertStageOwned(stageId, user.id);
+
+    if (outcome && !STAGE_OUTCOMES.some((o) => o.value === outcome)) {
+      throw new Error(`"${outcome}" is not a known outcome.`);
+    }
+
+    const res = await prisma.jobStage.updateMany({
+      where: { id: stageId, Job: { userId: user.id } },
+      data: { outcome },
+    });
+    if (res.count === 0) throw new Error("Stage not found");
+
+    return { success: true };
+  } catch (error) {
+    return handleError(error, "Failed to save the outcome.");
   }
 };

@@ -4,6 +4,7 @@ import {
   deleteJobStage,
   setCurrentJobStage,
   setStageNotes,
+  setStageOutcome,
 } from "@/actions/jobStage.actions";
 import { getCurrentUser } from "@/utils/user.utils";
 import prisma from "@/lib/db";
@@ -404,5 +405,50 @@ describe("setStageNotes", () => {
     expect(db.jobStage.updateMany.mock.calls.at(-1)[0].data).toEqual({
       notes: null,
     });
+  });
+});
+
+describe("setStageOutcome", () => {
+  beforeEach(() => {
+    db.jobStage.findFirst.mockResolvedValue({
+      id: "s1",
+      jobId: "j1",
+      occurredAt: null,
+      isCurrent: true,
+      StageType: interviewType,
+    });
+  });
+
+  it("writes the outcome scoped through the job's owner", async () => {
+    const res = await setStageOutcome("s1", "passed");
+
+    expect(db.jobStage.updateMany).toHaveBeenCalledWith({
+      where: { id: "s1", Job: { userId: user.id } },
+      data: { outcome: "passed" },
+    });
+    expect(res.success).toBe(true);
+  });
+
+  it("clears the outcome when given null", async () => {
+    await setStageOutcome("s1", null);
+
+    expect(db.jobStage.updateMany.mock.calls[0][0].data).toEqual({
+      outcome: null,
+    });
+  });
+
+  it("rejects an outcome that is not in STAGE_OUTCOMES", async () => {
+    const res = await setStageOutcome("s1", "ghosted");
+
+    expect(res.success).toBe(false);
+    expect(db.jobStage.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("refuses a stage that is not the caller's", async () => {
+    db.jobStage.findFirst.mockResolvedValue(null);
+
+    const res = await setStageOutcome("s1", "passed");
+
+    expect(res).toEqual({ success: false, message: "Stage not found" });
   });
 });
