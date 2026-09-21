@@ -71,6 +71,13 @@ const MOCK_TAGS: Tag[] = [
   { id: "tag-3", label: "Node.js", value: "node.js", createdBy: "user-1" },
 ];
 
+// Badge labels in render order, read off each chip's remove button.
+function selectedLabels(): string[] {
+  return screen
+    .getAllByRole("button", { name: /^Remove / })
+    .map((btn) => btn.getAttribute("aria-label")!.replace(/^Remove /, ""));
+}
+
 describe("TagInput Component", () => {
   const user = userEvent.setup({ skipHover: true });
 
@@ -162,6 +169,38 @@ describe("TagInput Component", () => {
       expect(
         screen.getByRole("button", { name: /remove typescript/i }),
       ).toBeInTheDocument();
+    });
+  });
+
+  it("orders badges by selection order, not the available-tag pool order", async () => {
+    // getAllTags returns the pool sorted by label, so deriving the chips from
+    // the pool made them render alphabetically while the saved Skill.order
+    // followed the click order.
+    render(<ControlledTagInput availableTags={MOCK_TAGS} />);
+
+    await user.click(screen.getByRole("combobox"));
+    await user.click(await screen.findByRole("option", { name: "TypeScript" }));
+
+    await user.click(screen.getByRole("combobox"));
+    await user.click(await screen.findByRole("option", { name: "React" }));
+
+    await waitFor(() => {
+      expect(selectedLabels()).toEqual(["TypeScript", "React"]);
+    });
+  });
+
+  it("renders pre-selected badges in the given id order", async () => {
+    // The skills edit dialog passes tagIds sorted by Skill.order, so the chips
+    // must mirror what the resume view and PDF export show.
+    render(
+      <ControlledTagInput
+        availableTags={MOCK_TAGS}
+        initialIds={["tag-3", "tag-1", "tag-2"]}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(selectedLabels()).toEqual(["Node.js", "React", "TypeScript"]);
     });
   });
 

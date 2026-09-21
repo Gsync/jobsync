@@ -60,7 +60,13 @@ export function TagInput({
     });
   }, [availableTags]);
 
-  const selectedTags = localTags.filter((t) => selectedTagIds.includes(t.id));
+  // Map over the ids, not the pool: the pool arrives sorted by label, so
+  // filtering it would render chips alphabetically instead of in the order the
+  // user picked them — the order callers persist and render.
+  const tagsById = new Map(localTags.map((t) => [t.id, t]));
+  const selectedTags = selectedTagIds
+    .map((id) => tagsById.get(id))
+    .filter((t): t is Tag => !!t);
   const isMaxReached = selectedTagIds.length >= max;
 
   // Tags not yet selected, filtered by input
