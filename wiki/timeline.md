@@ -57,11 +57,11 @@ An undated stage reads `—` in the Stage History list, and **No date set** in i
 
 ## How do I record who is interviewing me?
 
-Select the interview stage, then use **Add** on its **Interviewer** tab, or **Update Status → Add Interviewers**. The dialog searches your existing [contacts](./contacts.md); the **Add a new contact** box at the bottom takes a name, role and email and creates the person on the spot.
+Select the interview stage, then use **Add** on its **Interviewer** tab, or **Update Status → Add Interviewers**. The dialog searches your existing [contacts](./contacts.md); the **Add a new contact** box at the bottom takes a name, role and email and creates the person on the spot. Each shows their title and company under their name.
 
-Linking someone also adds them to the job's **Contacts** tab with the **Interviewer** role, so that tab stays the single roster of everyone involved in the application. The reverse is not true: the **✕** beside an interviewer unlinks them from *that stage only* and leaves the job contact link alone, because the person may hold other roles on the job.
+Linking someone also adds them to the job's **Contacts** tab with the **Interviewer** role, so that tab stays the roster of everyone involved in the application. The reverse is not true: the **✕** beside an interviewer unlinks them from *that stage only* and leaves the job contact link alone, because the person may hold other roles on the job.
 
-The same person can be linked to several stages of the same job, and a contact you link here is an ordinary contact afterwards — editable and searchable under **Library → Contacts** like any other.
+The same person can be linked to several stages, and a contact you link here stays an ordinary contact — editable under **Library → Contacts**.
 
 ## How do I build a prep list for an interview?
 

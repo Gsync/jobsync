@@ -18,6 +18,7 @@ export const STAGE_DETAIL_INCLUDE = {
           email: true,
           phone: true,
           linkedinUrl: true,
+          lastContactedAt: true,
           Company: { select: { id: true, label: true } },
         },
       },

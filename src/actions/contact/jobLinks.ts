@@ -13,6 +13,7 @@ const JOB_CONTACT_INCLUDE = {
       email: true,
       phone: true,
       linkedinUrl: true,
+      lastContactedAt: true,
       Company: { select: { id: true, label: true } },
     },
   },

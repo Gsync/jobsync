@@ -31,6 +31,8 @@ Open the job, go to its **Contacts** tab and click **Add Contact**. Pick the per
 
 If the person is not in your contacts yet, the same tab's **New Contact** opens the full contact dialog with whatever you typed already in the Name field, so you can create the person and link them in one pass.
 
+Each linked contact shows their title, company, role, contact details and, when the person has one set, the date you last contacted them.
+
 The trash icon beside a linked contact unlinks them from that job only. The contact itself, and every other job they are linked to, is left alone.
 
 ## What is a role, and how do I add my own?

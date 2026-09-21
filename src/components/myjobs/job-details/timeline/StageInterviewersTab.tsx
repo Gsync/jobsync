@@ -62,9 +62,11 @@ export function StageInterviewersTab({
                 <span className="block truncate text-sm font-bold">
                   {link.Contact.name}
                 </span>
-                {link.Contact.title && (
+                {(link.Contact.title || link.Contact.Company) && (
                   <span className="block truncate text-xs text-muted-foreground">
-                    {link.Contact.title}
+                    {[link.Contact.title, link.Contact.Company?.label]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </span>
                 )}
               </span>

@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
+import { format } from "date-fns";
 import { PlusCircle, Trash, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -155,6 +156,11 @@ export function JobContactsTab({
                 >
                   LinkedIn
                 </a>
+              )}
+              {row.Contact?.lastContactedAt && (
+                <span className="text-muted-foreground">
+                  Last contacted {format(row.Contact.lastContactedAt, "PP")}
+                </span>
               )}
               <Button
                 variant="ghost"

@@ -24,6 +24,7 @@ export interface ContactSummary {
   phone: string | null;
   linkedinUrl: string | null;
   Company: EntityRef | null;
+  lastContactedAt: Date | null;
 }
 
 export interface JobContactLink {

@@ -50,6 +50,7 @@ const link = {
     email: "sarah@x.com",
     phone: null,
     linkedinUrl: null,
+    lastContactedAt: null,
     Company: { id: "co1", label: "Vercel" },
   },
 };
@@ -72,6 +73,20 @@ describe("JobContactsTab", () => {
     render(<JobContactsTab jobId="j1" links={[link] as any} />);
     expect(screen.getByText("Sarah Cole")).toBeInTheDocument();
     expect(screen.getByText("Recruiter")).toBeInTheDocument();
+  });
+
+  it("shows the last contacted date when the contact has one", () => {
+    const contacted = {
+      ...link,
+      Contact: { ...link.Contact, lastContactedAt: new Date(2026, 7, 1) },
+    };
+    render(<JobContactsTab jobId="j1" links={[contacted] as any} />);
+    expect(screen.getByText(/last contacted aug 1, 2026/i)).toBeInTheDocument();
+  });
+
+  it("omits the last contacted date when the contact has none", () => {
+    render(<JobContactsTab jobId="j1" links={[link] as any} />);
+    expect(screen.queryByText(/last contacted/i)).not.toBeInTheDocument();
   });
 
   it("shows an empty state with no links", () => {

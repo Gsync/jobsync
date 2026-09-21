@@ -46,7 +46,7 @@ const interviewStage = {
       id: "iv1",
       stageId: "st1",
       contactId: "c1",
-      Contact: { id: "c1", name: "Priya Nair", title: "VP Engineering", email: null, phone: null, linkedinUrl: null, Company: null },
+      Contact: { id: "c1", name: "Priya Nair", title: "VP Engineering", email: null, phone: null, linkedinUrl: null, lastContactedAt: null, Company: { id: "co1", label: "Anthropic" } },
     },
   ],
   prepQuestions: [
@@ -105,7 +105,9 @@ describe("StageDetailPanel", () => {
     await userEvent.click(screen.getByRole("tab", { name: /^Interviewer/ }));
 
     expect(screen.getByText("Priya Nair")).toBeInTheDocument();
-    expect(screen.getByText("VP Engineering")).toBeInTheDocument();
+    expect(
+      screen.getByText("VP Engineering \u00b7 Anthropic"),
+    ).toBeInTheDocument();
   });
 
   // The tally rides on the trigger, so the prep progress is readable from the
