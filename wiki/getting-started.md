@@ -3,7 +3,7 @@ type: tutorial
 title: Getting Started
 description: The first run through JobSync — creating an account, connecting an AI provider, adding a job, and what each sidebar area is for.
 feature: setup
-tags: [setup, first run, sign in, account, ai provider, ollama, sidebar, navigation]
+tags: [setup, first run, sign in, account, ai provider, ollama, sidebar, navigation, dashboard, quick add, shortcuts]
 aliases: [new user, onboarding, first steps, how do I start, set up jobsync]
 status: stable
 stale_after: 2027-08-31
@@ -27,9 +27,15 @@ Click **Jobs** in the sidebar, then the **Add Job** button in the top-right of t
 
 There is a faster route once an AI provider is set: click **Chat AI** in the header, paste the full text of a job posting into the chat, and the assistant extracts the details and shows you exactly what it found before anything is saved. Nothing is written until you approve it.
 
+## How do I add something quickly from the Dashboard?
+
+The card in the top-left of the Dashboard has six buttons — **Add Job**, **Add Automation**, **Add Task**, **Add Question**, **Add Activity** and **Add Contact** — each opening the same form you would reach by navigating to that area yourself.
+
+Five of them take you to the matching page with the form already open, so you land where the new record will appear. **Add Contact** is the exception: it opens the contact form over the Dashboard, and saving leaves you there rather than on **Library → Contacts**.
+
 ## What is each area of the sidebar for?
 
-- **Dashboard** — summary cards: application counts, recent jobs and activities, and weekly charts.
+- **Dashboard** — summary cards: application counts, recent jobs and activities, weekly charts, and a quick-add card for the six kinds of record you create most.
 - **Jobs** — every job you are tracking, plus jobs discovered by automations.
 - **Automations** — scheduled searches that pull new postings in and score them against your resume.
 - **Tasks** — to-dos with a due date, priority and percent complete, and a timed activity you can start from each one.

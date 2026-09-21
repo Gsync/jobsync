@@ -47,7 +47,7 @@ A running activity does not appear in the Activities list at all; it shows up th
 
 ## How do I log time I already spent?
 
-Click **New Activity** in the Activities card header. Fill in **Activity Name** (at least two characters) and **Activity Type** — both are required, and the type combo box creates a new type if you type a name that does not exist. Set **Start Date**, **Start Time**, **End Date** and **End Time**; the End Time label shows the duration as you change them.
+Click **New Activity** in the Activities card header, or **Add Activity** on the Dashboard, which opens the same form. Fill in **Activity Name** (at least two characters) and **Activity Type** — both are required, and the type combo box creates a new type if you type a name that does not exist. Set **Start Date**, **Start Time**, **End Date** and **End Time**; the End Time label shows the duration as you change them.
 
 The start cannot be in the future, the end must be after the start, and the duration must be between 2 minutes and 8 hours. **Description** holds up to 1000 characters. An activity added this way is not linked to a task.
 

@@ -6,6 +6,7 @@ import { Button } from "../ui/button";
 import { Loader, PlusCircle } from "lucide-react";
 import { SearchInput } from "../SearchInput";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,9 @@ import { useActivity } from "@/context/ActivityContext";
 import { useActivitySwitchConfirm } from "@/hooks/useActivitySwitchConfirm";
 
 function ActivitiesContainer() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const autoOpenHandled = useRef(false);
   const [activityFormOpen, setActivityFormOpen] = useState<boolean>(false);
   const [activitiesList, setActivitiesList] = useState<Activity[]>([]);
   const [page, setPage] = useState<number>(1);
@@ -81,6 +85,20 @@ function ActivitiesContainer() {
       return success;
     });
   };
+
+  useEffect(() => {
+    if (autoOpenHandled.current) return;
+    if (searchParams.get("add-activity") === "true") {
+      autoOpenHandled.current = true;
+      setActivityFormOpen(true);
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("add-activity");
+      const newPath = params.toString()
+        ? `?${params.toString()}`
+        : window.location.pathname;
+      router.replace(newPath);
+    }
+  }, [router, searchParams]);
 
   useEffect(() => {
     loadActivities(1, APP_CONSTANTS.RECORDS_PER_PAGE);

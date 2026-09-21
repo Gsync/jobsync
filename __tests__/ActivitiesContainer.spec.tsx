@@ -39,6 +39,11 @@ vi.mock("next-auth/providers/credentials", () => ({
   })),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(() => ({ replace: vi.fn() })),
+  useSearchParams: vi.fn(() => new URLSearchParams()),
+}));
+
 vi.mock("@/actions/activity.actions", () => ({
   getActivitiesList: vi.fn(),
   getCurrentActivity: vi.fn(),
