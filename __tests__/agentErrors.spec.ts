@@ -1,5 +1,18 @@
 import { mapAgentError } from "@/lib/agent/errors";
-import { NoSuchToolError, InvalidToolInputError } from "ai";
+import {
+  NoSuchToolError,
+  InvalidToolInputError,
+  APICallError,
+  RetryError,
+} from "ai";
+
+const apiCallError = (statusCode: number, message = "Provider returned error") =>
+  new APICallError({
+    message,
+    url: "https://openrouter.ai/api/v1/responses",
+    requestBodyValues: {},
+    statusCode,
+  });
 
 describe("mapAgentError", () => {
   it("never echoes an unmapped error's message", () => {
@@ -29,6 +42,55 @@ describe("mapAgentError", () => {
     });
     expect(mapped).toMatch(/llama3\.1/);
     expect(mapped).toMatch(/tool/i);
+    expect(mapped).toMatch(/settings/i);
+  });
+
+  it("names the rate limit and the model on a 429", () => {
+    const mapped = mapAgentError(apiCallError(429), {
+      provider: "openrouter",
+      model: "qwen/qwen3.8-27b:free",
+    });
+    expect(mapped).toMatch(/rate-limited/i);
+    expect(mapped).toMatch(/qwen\/qwen3\.8-27b:free/);
+  });
+
+  it("sees the status through the RetryError the SDK throws after retries", () => {
+    const wrapped = new RetryError({
+      message: "Failed after 3 attempts. Last error: Provider returned error",
+      reason: "maxRetriesExceeded",
+      errors: [apiCallError(429)],
+    });
+    expect(mapAgentError(wrapped, { provider: "openrouter" })).toMatch(
+      /rate-limited/i,
+    );
+  });
+
+  it("points a rejected key at Settings on a 401", () => {
+    const mapped = mapAgentError(apiCallError(401, "User not found."), {
+      provider: "openrouter",
+    });
+    expect(mapped).toMatch(/rejected the API key/i);
+    expect(mapped).toMatch(/settings/i);
+  });
+
+  it("does not echo the provider's body on a mapped status", () => {
+    const marker = "user_39CAXN1SLbb8LlFuJ4uyCKjcXWB";
+    const mapped = mapAgentError(apiCallError(429, `limit hit ${marker}`), {
+      provider: "openrouter",
+    });
+    expect(mapped).not.toContain(marker);
+  });
+
+  it("maps OpenRouter's tool-routing 404 to the tool-support message", () => {
+    const mapped = mapAgentError(
+      apiCallError(
+        404,
+        'No endpoints found that support tool use. Try disabling "add_job".',
+      ),
+      { provider: "openrouter", model: "nvidia/nemotron-3.5-content-safety" },
+    );
+    expect(mapped).toMatch(/cannot use tools/i);
+    expect(mapped).toMatch(/nemotron/);
     expect(mapped).toMatch(/settings/i);
   });
 

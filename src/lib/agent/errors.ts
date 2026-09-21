@@ -1,7 +1,9 @@
 import {
+  APICallError,
   InvalidToolApprovalError,
   InvalidToolInputError,
   NoSuchToolError,
+  RetryError,
   ToolCallNotFoundForApprovalError,
 } from "ai";
 import { AIUnavailableError } from "@/lib/ai";
@@ -19,6 +21,14 @@ function messageOf(error: unknown): string {
 
 function nameOf(error: unknown): string {
   return error instanceof Error ? error.name : "";
+}
+
+// A retryable status arrives wrapped: the SDK exhausts its retries and throws
+// a RetryError whose lastError carries the provider's status code.
+function statusOf(error: unknown): number | undefined {
+  if (RetryError.isInstance?.(error)) return statusOf(error.lastError);
+  if (APICallError.isInstance?.(error)) return error.statusCode;
+  return undefined;
 }
 
 /**
@@ -63,16 +73,27 @@ export function mapAgentError(
     return `Cannot reach ${provider}. Make sure the service is running, or switch provider in Settings.`;
   }
 
+  const status = statusOf(error);
+
+  if (status === 429) {
+    return `${provider}${model ? ` / ${model}` : ""} is rate-limited right now. Wait a moment and ask again, or pick another model in Settings.`;
+  }
+
+  if (status === 401) {
+    return `${provider} rejected the API key. Re-save it in Settings.`;
+  }
+
+  // OpenRouter phrases this as a 404 from its tool-compatibility routing step
   if (
-    /does not support tools|tool (use|calling) (is )?not supported|no tools support/i.test(
+    /does not support tools|no endpoints found that support tool|tool (use|calling) (is )?not supported|no tools support/i.test(
       message,
     )
   ) {
-    return `${provider}${model ? ` / ${model}` : ""} cannot use tools, so it cannot add a job. Pick a tool-capable model in Settings.`;
+    return `${provider}${model ? ` / ${model}` : ""} cannot use tools, so it cannot review a resume, match a job, write a cover letter or add a job. Pick a tool-capable model in Settings.`;
   }
 
   if (NoSuchToolError.isInstance?.(error) || /NoSuchTool/i.test(name)) {
-    return "The model asked for a tool that does not exist here. It only has one: adding a job.";
+    return "The model asked for a tool that does not exist here. Try rephrasing your request.";
   }
 
   if (

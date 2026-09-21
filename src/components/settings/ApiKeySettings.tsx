@@ -120,7 +120,11 @@ function ApiKeySettings() {
       const verifyData = await verifyRes.json();
 
       if (!verifyData.success) {
-        toastError(verifyData.error || "Could not verify the key", "Verification failed");
+        const title =
+          verifyData.reason === "unreachable"
+            ? `Cannot reach ${PROVIDERS.find((p) => p.id === provider)?.name ?? provider}`
+            : "Verification failed";
+        toastError(verifyData.error || "Could not verify the key", title);
         return;
       }
 

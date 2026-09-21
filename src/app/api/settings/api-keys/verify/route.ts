@@ -30,11 +30,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Verification failed";
-    return NextResponse.json({
-      success: false,
-      error: message.includes("fetch failed") || message.includes("ECONNREFUSED")
-        ? `Cannot connect to ${provider} service`
-        : message,
-    });
+    const unreachable =
+      (error instanceof Error && error.name === "TimeoutError") ||
+      /fetch failed|ECONNREFUSED|ENOTFOUND|EAI_AGAIN/.test(message);
+
+    // The request never reached the provider, so the key is still unchecked.
+    // Saying "verification failed" here reads as a rejected key instead.
+    if (unreachable) {
+      return NextResponse.json({
+        success: false,
+        reason: "unreachable",
+        error: `Could not reach ${provider} — the key was not checked. Check the server's network and DNS access; note that Node's fetch ignores HTTP_PROXY / HTTPS_PROXY.`,
+      });
+    }
+
+    return NextResponse.json({ success: false, error: message });
   }
 }

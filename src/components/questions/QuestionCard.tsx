@@ -132,7 +132,7 @@ export function QuestionCard({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => onDelete(question.id)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive-bg text-destructive-foreground hover:bg-destructive-bg/90"
             >
               Delete
             </AlertDialogAction>

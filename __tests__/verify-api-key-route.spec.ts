@@ -61,14 +61,39 @@ describe("POST /api/settings/api-keys/verify", () => {
     expect(mockVerifier).toHaveBeenCalledWith("sk-live");
   });
 
-  it("maps connection failures to a friendly message", async () => {
+  it("reports a connection failure as unreachable, not a bad key", async () => {
     mockVerifier.mockRejectedValue(new Error("fetch failed"));
 
     const res = await POST(req({ provider: "openai", key: "sk-live" }));
     const data = await res.json();
 
     expect(data.success).toBe(false);
-    expect(data.error).toBe("Cannot connect to openai service");
+    expect(data.reason).toBe("unreachable");
+    expect(data.error).toContain("Could not reach openai");
+    expect(data.error).toContain("not checked");
+  });
+
+  it.each(["ENOTFOUND openrouter.ai", "EAI_AGAIN", "connect ECONNREFUSED"])(
+    "treats %s as unreachable",
+    async (message) => {
+      mockVerifier.mockRejectedValue(new Error(message));
+
+      const res = await POST(req({ provider: "openai", key: "sk-live" }));
+
+      expect((await res.json()).reason).toBe("unreachable");
+    },
+  );
+
+  it("treats a verifier timeout as unreachable", async () => {
+    const timeout = new Error("The operation was aborted due to timeout");
+    timeout.name = "TimeoutError";
+    mockVerifier.mockRejectedValue(timeout);
+
+    const res = await POST(req({ provider: "openai", key: "sk-live" }));
+    const data = await res.json();
+
+    expect(data.success).toBe(false);
+    expect(data.reason).toBe("unreachable");
   });
 
   it("passes through other verifier error messages", async () => {
@@ -79,5 +104,6 @@ describe("POST /api/settings/api-keys/verify", () => {
 
     expect(data.success).toBe(false);
     expect(data.error).toBe("Invalid API key");
+    expect(data.reason).toBeUndefined();
   });
 });

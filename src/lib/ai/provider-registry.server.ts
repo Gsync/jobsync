@@ -26,6 +26,7 @@ export const PROVIDER_VERIFIERS: Record<
   openai: async (key) => {
     const res = await fetch("https://api.openai.com/v1/models", {
       headers: { Authorization: `Bearer ${key}` },
+      signal: AbortSignal.timeout(APP_CONSTANTS.AI_VERIFY_TIMEOUT_MS),
     });
     if (!res.ok)
       return {
@@ -38,9 +39,12 @@ export const PROVIDER_VERIFIERS: Record<
     return { success: true };
   },
 
+  // /api/v1/key is the authenticated endpoint. /models is public and answers
+  // 200 to any key, so verifying against it passes anything pasted in.
   openrouter: async (key) => {
-    const res = await fetch("https://openrouter.ai/api/v1/models", {
+    const res = await fetch("https://openrouter.ai/api/v1/key", {
       headers: { Authorization: `Bearer ${key}` },
+      signal: AbortSignal.timeout(APP_CONSTANTS.AI_VERIFY_TIMEOUT_MS),
     });
     if (!res.ok)
       return {
@@ -56,6 +60,7 @@ export const PROVIDER_VERIFIERS: Record<
   deepseek: async (key) => {
     const res = await fetch("https://api.deepseek.com/models", {
       headers: { Authorization: `Bearer ${key}` },
+      signal: AbortSignal.timeout(APP_CONSTANTS.AI_VERIFY_TIMEOUT_MS),
     });
     if (!res.ok)
       return {
@@ -106,6 +111,7 @@ export const PROVIDER_VERIFIERS: Record<
   gemini: async (key) => {
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`,
+      { signal: AbortSignal.timeout(APP_CONSTANTS.AI_VERIFY_TIMEOUT_MS) },
     );
     if (!res.ok)
       return {

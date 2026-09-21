@@ -78,7 +78,7 @@ export function AutomationDetailDialogs({
             <AlertDialogAction
               onClick={onDelete}
               disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive-bg text-destructive-foreground hover:bg-destructive-bg/90"
             >
               {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>

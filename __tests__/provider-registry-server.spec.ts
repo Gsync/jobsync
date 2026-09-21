@@ -21,9 +21,34 @@ describe("PROVIDER_VERIFIERS – openrouter", () => {
 
     expect(result).toEqual({ success: true });
     expect(global.fetch).toHaveBeenCalledWith(
-      "https://openrouter.ai/api/v1/models",
-      { headers: { Authorization: "Bearer sk-or-valid" } },
+      "https://openrouter.ai/api/v1/key",
+      {
+        headers: { Authorization: "Bearer sk-or-valid" },
+        signal: expect.any(AbortSignal),
+      },
     );
+  });
+
+  // /models is public, so verifying against it passed any string
+  it("verifies against the authenticated endpoint, not public /models", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+
+    await PROVIDER_VERIFIERS.openrouter("sk-or-valid");
+
+    expect(global.fetch).not.toHaveBeenCalledWith(
+      "https://openrouter.ai/api/v1/models",
+      expect.anything(),
+    );
+  });
+
+  it("aborts the request on a timeout signal", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+
+    await PROVIDER_VERIFIERS.openrouter("sk-or-key");
+
+    const { signal } = (global.fetch as any).mock.calls[0][1];
+    expect(signal).toBeInstanceOf(AbortSignal);
+    expect(signal.aborted).toBe(false);
   });
 
   it("returns 'Invalid API key' error on 401", async () => {
@@ -67,6 +92,17 @@ describe("PROVIDER_VERIFIERS – openrouter", () => {
         headers: { Authorization: "Bearer sk-or-my-secret-key" },
       }),
     );
+  });
+
+  it("blocks the save on a non-401 failure, surfacing the status", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 429 });
+
+    const result = await PROVIDER_VERIFIERS.openrouter("sk-or-key");
+
+    expect(result).toEqual({
+      success: false,
+      error: "OpenRouter returned 429",
+    });
   });
 });
 

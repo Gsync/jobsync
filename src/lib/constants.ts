@@ -57,6 +57,10 @@ export const APP_CONSTANTS = {
     collapsed: { rail: "w-14", contentOffset: "sm:pl-14" },
   },
 
+  // Cloud API-key verification timeout. Without it a black-holed TLS
+  // handshake (VPN MTU mismatch) leaves the Verify button spinning forever.
+  AI_VERIFY_TIMEOUT_MS: 10_000,
+
   // Ollama API timeouts
   AI_OLLAMA_LIST_TIMEOUT_MS: 5_000,
   AI_OLLAMA_GENERATE_TIMEOUT_MS: 10_000,
