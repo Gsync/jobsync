@@ -93,6 +93,7 @@ function JobDetails({
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [noteOpenTrigger, setNoteOpenTrigger] = useState(0);
   const [notesCount, setNotesCount] = useState(0);
+  const [contactLinks, setContactLinks] = useState(job.contactLinks ?? []);
   const {
     stages,
     currentStage,
@@ -250,9 +251,9 @@ function JobDetails({
             <TabsTrigger value="letter">Cover Letter</TabsTrigger>
             <TabsTrigger value="contacts">
               Contacts
-              {(job.contactLinks?.length ?? 0) > 0 && (
+              {contactLinks.length > 0 && (
                 <Badge variant="secondary" className="ml-2">
-                  {job.contactLinks!.length}
+                  {contactLinks.length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -328,7 +329,8 @@ function JobDetails({
             <Card className="p-6">
               <JobContactsTab
                 jobId={job.id}
-                links={job.contactLinks ?? []}
+                links={contactLinks}
+                onLinksChange={setContactLinks}
                 companies={companies}
                 locations={locations}
               />

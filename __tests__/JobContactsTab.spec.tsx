@@ -70,7 +70,13 @@ describe("JobContactsTab", () => {
   });
 
   it("lists the linked contacts with their role", () => {
-    render(<JobContactsTab jobId="j1" links={[link] as any} />);
+    render(
+      <JobContactsTab
+        jobId="j1"
+        links={[link] as any}
+        onLinksChange={vi.fn()}
+      />,
+    );
     expect(screen.getByText("Sarah Cole")).toBeInTheDocument();
     expect(screen.getByText("Recruiter")).toBeInTheDocument();
   });
@@ -80,28 +86,52 @@ describe("JobContactsTab", () => {
       ...link,
       Contact: { ...link.Contact, lastContactedAt: new Date(2026, 7, 1) },
     };
-    render(<JobContactsTab jobId="j1" links={[contacted] as any} />);
+    render(
+      <JobContactsTab
+        jobId="j1"
+        links={[contacted] as any}
+        onLinksChange={vi.fn()}
+      />,
+    );
     expect(screen.getByText(/last contacted aug 1, 2026/i)).toBeInTheDocument();
   });
 
   it("omits the last contacted date when the contact has none", () => {
-    render(<JobContactsTab jobId="j1" links={[link] as any} />);
+    render(
+      <JobContactsTab
+        jobId="j1"
+        links={[link] as any}
+        onLinksChange={vi.fn()}
+      />,
+    );
     expect(screen.queryByText(/last contacted/i)).not.toBeInTheDocument();
   });
 
   it("shows an empty state with no links", () => {
-    render(<JobContactsTab jobId="j1" links={[]} />);
+    render(<JobContactsTab jobId="j1" links={[]} onLinksChange={vi.fn()} />);
     expect(screen.getByText(/no contacts on this job/i)).toBeInTheDocument();
   });
 
   it("does not fetch the picker lists until the add form is opened", () => {
-    render(<JobContactsTab jobId="j1" links={[link] as any} />);
+    render(
+      <JobContactsTab
+        jobId="j1"
+        links={[link] as any}
+        onLinksChange={vi.fn()}
+      />,
+    );
     expect(getAllContacts).not.toHaveBeenCalled();
     expect(getAllContactRoles).not.toHaveBeenCalled();
   });
 
   it("fetches contacts and roles on first open of the add form", async () => {
-    render(<JobContactsTab jobId="j1" links={[link] as any} />);
+    render(
+      <JobContactsTab
+        jobId="j1"
+        links={[link] as any}
+        onLinksChange={vi.fn()}
+      />,
+    );
     await user.click(screen.getByRole("button", { name: /add contact/i }));
 
     await waitFor(() => expect(getAllContacts).toHaveBeenCalledTimes(1));
@@ -113,15 +143,23 @@ describe("JobContactsTab", () => {
     expect(getAllContacts).toHaveBeenCalledTimes(1);
   });
 
-  it("unlinks a contact and refreshes the list", async () => {
+  it("unlinks a contact and hands the refreshed list to the parent", async () => {
     (removeJobContact as any).mockResolvedValue({ success: true });
     (getJobContacts as any).mockResolvedValue([]);
+    const onLinksChange = vi.fn();
 
-    render(<JobContactsTab jobId="j1" links={[link] as any} />);
+    render(
+      <JobContactsTab
+        jobId="j1"
+        links={[link] as any}
+        onLinksChange={onLinksChange}
+      />,
+    );
     await user.click(screen.getByRole("button", { name: /remove sarah cole/i }));
     await user.click(await screen.findByRole("button", { name: "Delete" }));
 
     await waitFor(() => expect(removeJobContact).toHaveBeenCalledWith("jc1"));
     await waitFor(() => expect(getJobContacts).toHaveBeenCalledWith("j1"));
+    await waitFor(() => expect(onLinksChange).toHaveBeenCalledWith([]));
   });
 });

@@ -24,6 +24,7 @@ import { AddJobContactForm } from "./AddJobContactForm";
 type JobContactsTabProps = {
   jobId: string;
   links: JobContactLink[];
+  onLinksChange: (links: JobContactLink[]) => void;
   companies?: Company[];
   locations?: JobLocation[];
 };
@@ -31,10 +32,10 @@ type JobContactsTabProps = {
 export function JobContactsTab({
   jobId,
   links,
+  onLinksChange,
   companies = [],
   locations = [],
 }: JobContactsTabProps) {
-  const [rows, setRows] = useState<JobContactLink[]>(links);
   const [showForm, setShowForm] = useState(false);
   const [contacts, setContacts] = useState<ContactRef[]>([]);
   const [roles, setRoles] = useState<ContactRole[]>([]);
@@ -57,7 +58,7 @@ export function JobContactsTab({
 
   const reload = async () => {
     const fresh = await getJobContacts(jobId);
-    if (Array.isArray(fresh)) setRows(fresh);
+    if (Array.isArray(fresh)) onLinksChange(fresh);
   };
 
   const onRemove = async () => {
@@ -72,7 +73,7 @@ export function JobContactsTab({
 
   return (
     <div className="space-y-4">
-      {rows.length > 0 && !showForm && (
+      {links.length > 0 && !showForm && (
         <div className="flex justify-end">
           <Button
             variant="outline"
@@ -102,7 +103,7 @@ export function JobContactsTab({
         />
       )}
 
-      {rows.length === 0 && !showForm && (
+      {links.length === 0 && !showForm && (
         <JobTabEmptyState
           icon={Users}
           title="No contacts on this job"
@@ -112,9 +113,9 @@ export function JobContactsTab({
         />
       )}
 
-      {rows.length > 0 && (
+      {links.length > 0 && (
         <ul className="space-y-2">
-          {rows.map((row) => (
+          {links.map((row) => (
             <li
               key={row.id}
               className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border p-3 text-sm"
