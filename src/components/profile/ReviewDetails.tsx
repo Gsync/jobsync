@@ -6,6 +6,8 @@ import { format } from "date-fns";
 import { ChevronDown, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BADGE_COLORS } from "@/lib/badge-colors";
+import { cn } from "@/lib/utils";
 import {
   Collapsible,
   CollapsibleContent,
@@ -48,7 +50,10 @@ export function ReviewDetails({ reviewData }: ReviewDetailsProps) {
           ) : null}
           {reviewData.provider === "mcp"
             ? reviewData.model && (
-                <Badge className="gap-1 bg-violet-500 dark:bg-violet-400">
+                <Badge
+                  variant="outline"
+                  className={cn("gap-1", BADGE_COLORS.violet)}
+                >
                   <Sparkles className="h-3.5 w-3.5" />
                   via {reviewData.model}
                 </Badge>

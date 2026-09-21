@@ -8,8 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CircularScore } from "@/components/CircularScore";
 import { StatusBadge } from "@/components/StatusBadge";
 import { DownloadFileButton } from "@/components/profile/DownloadFileButton";
-import { getJobStatusBadgeColor } from "@/lib/badge-colors";
-import { formatUrl } from "@/lib/utils";
+import { BADGE_COLORS, getJobStatusBadgeColor } from "@/lib/badge-colors";
+import { cn, formatUrl } from "@/lib/utils";
 import type { JobMatchData } from "@/models/ai.schemas";
 import {
   JobResponse,
@@ -120,7 +120,10 @@ export function JobSummaryCard({
                 {job.createdAt ? format(new Date(job.createdAt), "PP") : "-"}
               </span>
               {job.createdVia && (
-                <Badge className="gap-1 bg-violet-500 dark:bg-violet-400">
+                <Badge
+                  variant="outline"
+                  className={cn("gap-1", BADGE_COLORS.violet)}
+                >
                   <Sparkles className="h-3.5 w-3.5" />
                   via {job.createdVia}
                 </Badge>

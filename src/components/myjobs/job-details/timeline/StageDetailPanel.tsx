@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DeleteAlertDialog } from "@/components/DeleteAlertDialog";
+import { StatusBadge } from "@/components/StatusBadge";
 import { toastActionResult } from "@/lib/toast";
 import { deleteJobStage } from "@/actions/jobStage.actions";
 import type { JobStage } from "@/models/jobStage.model";
@@ -117,9 +118,11 @@ export function StageDetailPanel({
         <div className="flex flex-wrap items-center gap-2.5">
           <h3 className="text-lg font-bold">{stage.StageType.label}</h3>
           {isCurrent && (
-            <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[11px] font-bold text-white dark:bg-emerald-400 dark:text-emerald-950">
-              CURRENT STAGE
-            </span>
+            <StatusBadge
+              label="CURRENT STAGE"
+              color="emerald"
+              className="text-[11px] font-bold"
+            />
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">

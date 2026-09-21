@@ -11,6 +11,8 @@ interface StatusBadgeProps {
 // Reusable colored badge; color values are centralized in @/lib/badge-colors
 export function StatusBadge({ label, color, className }: StatusBadgeProps) {
   return (
-    <Badge className={cn(BADGE_COLORS[color], className)}>{label}</Badge>
+    <Badge variant="outline" className={cn(BADGE_COLORS[color], className)}>
+      {label}
+    </Badge>
   );
 }
