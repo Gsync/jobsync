@@ -13,12 +13,16 @@ type InterviewsTableProps = {
   interviews: InterviewRowType[];
   expandedId: string | null;
   onToggle: (id: string) => void;
+  onEdit: (interview: InterviewRowType) => void;
+  onChanged: () => void;
 };
 
 function InterviewsTable({
   interviews,
   expandedId,
   onToggle,
+  onEdit,
+  onChanged,
 }: InterviewsTableProps) {
   return (
     <Table>
@@ -46,6 +50,8 @@ function InterviewsTable({
             interview={interview}
             expanded={expandedId === interview.id}
             onToggle={() => onToggle(interview.id)}
+            onEdit={() => onEdit(interview)}
+            onOutcomeSaved={onChanged}
           />
         ))}
       </TableBody>

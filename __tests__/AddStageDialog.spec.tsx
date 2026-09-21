@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { AddStageDialog } from "@/components/myjobs/job-details/timeline/AddStageDialog";
+import { AddStageDialog } from "@/components/AddStageDialog";
 import { addJobStage } from "@/actions/jobStage.actions";
 
 vi.mock("@/actions/jobStage.actions", () => ({
