@@ -84,9 +84,6 @@ function BoardsTable({
           <TableHead>Name</TableHead>
           <TableHead className="hidden sm:table-cell">Token</TableHead>
           <TableHead className="hidden sm:table-cell">Provider</TableHead>
-          <TableHead>
-            <span className="sr-only">Board link</span>
-          </TableHead>
           <TableHead className="text-right">Watch</TableHead>
         </TableRow>
       </TableHeader>
@@ -95,24 +92,26 @@ function BoardsTable({
           const watched = watchedMap.has(row.token);
           return (
             <TableRow key={row.token}>
-              <TableCell className="font-medium">{row.name}</TableCell>
+              <TableCell className="font-medium">
+                <span className="flex items-center gap-1.5">
+                  {row.name}
+                  <a
+                    href={companyBoardUrl(provider, row)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Open ${row.name} job board`}
+                    title="Open job board"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </span>
+              </TableCell>
               <TableCell className="hidden sm:table-cell text-muted-foreground">
                 {row.token}
               </TableCell>
               <TableCell className="hidden sm:table-cell text-muted-foreground">
                 {PROVIDER_META[provider].label}
-              </TableCell>
-              <TableCell>
-                <a
-                  href={companyBoardUrl(provider, row)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Open ${row.name} job board`}
-                  title="Open job board"
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
               </TableCell>
               <TableCell className="text-right">
                 {watched ? (
