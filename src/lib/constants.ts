@@ -8,6 +8,7 @@ import {
   Wrench,
   Zap,
   BookOpen,
+  CalendarCheck,
 } from "lucide-react";
 
 export const APP_CONSTANTS = {
@@ -382,6 +383,11 @@ export const SIDEBAR_LINKS = [
     icon: CalendarClock,
     route: "/dashboard/activities",
     label: "Activities",
+  },
+  {
+    icon: CalendarCheck,
+    route: "/dashboard/interviews",
+    label: "Interviews",
   },
   {
     icon: BookOpen,
