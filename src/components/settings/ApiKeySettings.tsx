@@ -38,6 +38,7 @@ import type {
 import { getAiProviders } from "@/lib/ai/provider-registry";
 import { AiProvider } from "@/models/ai.model";
 import { checkOllamaConnection } from "@/utils/ai.utils";
+import { getUserSettings } from "@/actions/userSettings.actions";
 
 interface ProviderConfig {
   id: ApiKeyProvider;
@@ -82,7 +83,13 @@ function ApiKeySettings() {
   useEffect(() => {
     fetchKeys();
     getDefaultOllamaBaseUrl().then(setDefaultOllamaUrl);
-    recheckOllamaConnection();
+    // Probing on mount for someone who picked another provider reads as the
+    // app overriding their choice, so only auto-check when Ollama is selected.
+    getUserSettings().then((result) => {
+      if (result?.success && result.data?.settings?.ai?.provider === AiProvider.OLLAMA) {
+        recheckOllamaConnection();
+      }
+    });
   }, []);
 
   const fetchKeys = async () => {
@@ -330,15 +337,36 @@ function ApiKeySettings() {
                             ) : (
                               <Trash2 className="h-3 w-3" />
                             )}
+                            {isBaseUrl && (
+                              <span className="ml-1">Reset to default</span>
+                            )}
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Delete API Key</AlertDialogTitle>
+                            <AlertDialogTitle>
+                              {isBaseUrl
+                                ? `Reset ${provider.name} Base URL`
+                                : "Delete API Key"}
+                            </AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete your{" "}
-                              {provider.name} key? The system will fall back to
-                              the server environment variable if available.
+                              {isBaseUrl ? (
+                                <>
+                                  Clear the saved {provider.name} base URL?
+                                  JobSync will use the server default,{" "}
+                                  {provider.id === "ollama"
+                                    ? defaultOllamaUrl
+                                    : provider.placeholder}
+                                  .
+                                </>
+                              ) : (
+                                <>
+                                  Are you sure you want to delete your{" "}
+                                  {provider.name} key? The system will fall back
+                                  to the server environment variable if
+                                  available.
+                                </>
+                              )}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -346,7 +374,7 @@ function ApiKeySettings() {
                             <AlertDialogAction
                               onClick={() => handleDelete(provider.id)}
                             >
-                              Delete
+                              {isBaseUrl ? "Reset" : "Delete"}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>

@@ -198,6 +198,14 @@ function AiSettings() {
     }
   };
 
+  // Radix reads an undefined value as uncontrolled and falls back to its own
+  // internal state, which still holds the previous provider's pick; a value
+  // matching no item renders neither item text nor placeholder.
+  const modelValue =
+    selectedModel.model && fetchedModels.includes(selectedModel.model)
+      ? selectedModel.model
+      : "";
+
   if (isLoadingSettings) {
     return (
       <div className="space-y-4">
@@ -258,7 +266,7 @@ function AiSettings() {
         </Label>
         <div className="flex flex-wrap items-start gap-2">
           <Select
-            value={isLoadingModels ? undefined : selectedModel.model}
+            value={isLoadingModels ? "" : modelValue}
             onValueChange={setSelectedProviderModel}
             disabled={isLoadingModels}
           >
@@ -267,9 +275,18 @@ function AiSettings() {
               aria-label="Select Model"
               className="w-[180px]"
             >
+              {/* a flex row here must nest inside SelectValue's span, which the
+                  trigger's [&>span]:line-clamp-1 outranks */}
               <SelectValue
                 placeholder={
-                  isLoadingModels ? "Loading models..." : "Select AI Model"
+                  isLoadingModels ? (
+                    <span className="flex items-center gap-2 whitespace-nowrap">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Loading models...
+                    </span>
+                  ) : (
+                    "Select Model"
+                  )
                 }
               />
             </SelectTrigger>
