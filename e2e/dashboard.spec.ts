@@ -131,10 +131,10 @@ test.describe("Dashboard page", () => {
     await navigateToDashboard(page);
 
     await expect(
-      page.getByRole("button", { name: "Job", exact: true }),
+      page.getByRole("button", { name: "Add Job", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Task", exact: true }),
+      page.getByRole("button", { name: "Add Task", exact: true }),
     ).toBeVisible();
 
     await expect(
@@ -174,21 +174,23 @@ test.describe("Dashboard page", () => {
   test("should navigate to create a new job, task, question, and automation from dashboard quick actions", async ({
     page,
   }) => {
-    await page.getByRole("button", { name: "Job", exact: true }).click();
+    await page.getByRole("button", { name: "Add Job", exact: true }).click();
     await expect(page).toHaveURL(/\/dashboard\/myjobs/);
     await expect(page.getByTestId("add-job-dialog-title")).toBeVisible();
     await page.getByRole("button", { name: "Cancel" }).click();
     await expect(page.getByTestId("add-job-dialog-title")).not.toBeVisible();
 
     await navigateToDashboard(page);
-    await page.getByRole("button", { name: "Task", exact: true }).click();
+    await page.getByRole("button", { name: "Add Task", exact: true }).click();
     await expect(page).toHaveURL(/\/dashboard\/tasks/);
     await expect(page.getByTestId("task-form-dialog-title")).toBeVisible();
     await page.getByRole("button", { name: "Cancel" }).click();
     await expect(page.getByTestId("task-form-dialog-title")).not.toBeVisible();
 
     await navigateToDashboard(page);
-    await page.getByRole("button", { name: "Question", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Add Question", exact: true })
+      .click();
     await expect(page).toHaveURL(/\/dashboard\/questions/);
     await expect(page.getByTestId("question-form-dialog-title")).toBeVisible();
     await page.getByRole("button", { name: "Cancel" }).click();
@@ -197,7 +199,9 @@ test.describe("Dashboard page", () => {
     ).not.toBeVisible();
 
     await navigateToDashboard(page);
-    await page.getByRole("button", { name: "Automation", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Add Automation", exact: true })
+      .click();
     await expect(page).toHaveURL(/\/dashboard\/automations/);
     const wizard = page.getByRole("dialog");
     await expect(wizard.getByText("Step 1 of 6")).toBeVisible();

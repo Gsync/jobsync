@@ -210,7 +210,7 @@ test.describe("Add New Job", () => {
     page,
   }) => {
     // No cleanup needed: submission fails validation, so nothing is created.
-    await page.getByRole("button", { name: "Job", exact: true }).click();
+    await page.getByRole("button", { name: "Add Job", exact: true }).click();
     await expect(page.getByTestId("add-job-dialog-title")).toBeVisible();
 
     await page.getByTestId("save-job-btn").click();
@@ -379,7 +379,7 @@ test.describe("Add New Job", () => {
     page,
   }) => {
     // No cleanup needed: nothing should be created by this test.
-    await page.getByRole("button", { name: "Job", exact: true }).click();
+    await page.getByRole("button", { name: "Add Job", exact: true }).click();
     await expect(page.getByTestId("add-job-dialog-title")).toBeVisible();
 
     await page.getByLabel("Job Title").click();
