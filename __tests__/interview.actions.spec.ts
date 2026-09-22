@@ -22,7 +22,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   (getCurrentUser as any).mockResolvedValue(user);
   db.jobStage.findMany.mockResolvedValue([]);
-  db.jobStage.count.mockResolvedValue(0);
+  // Non-zero, so the dated page is actually queried
+  db.jobStage.count.mockResolvedValue(1);
 });
 
 describe("getInterviewList", () => {
@@ -34,7 +35,7 @@ describe("getInterviewList", () => {
     expect(where.StageType).toEqual({ Status: { value: "interview" } });
   });
 
-  it("treats undated rounds as upcoming and orders them first", async () => {
+  it("treats undated rounds as upcoming and orders them last", async () => {
     await getInterviewList("upcoming");
 
     const args = db.jobStage.findMany.mock.calls[0][0];
@@ -42,48 +43,66 @@ describe("getInterviewList", () => {
       { occurredAt: { gte: expect.any(Date) } },
       { occurredAt: null },
     ]);
-    // SQLite sorts NULL first on ASC, which is what puts undated rounds on top
+    // The paged query is the dated half; soonest first
+    expect(args.where.AND).toContainEqual({ occurredAt: { not: null } });
     expect(args.orderBy[0]).toEqual({ occurredAt: "asc" });
   });
 
   it("orders past rounds newest first over a set with no undated rows", async () => {
+    db.jobStage.count.mockResolvedValue(1);
+
     await getInterviewList("past");
 
     const args = db.jobStage.findMany.mock.calls[0][0];
+    // The dated split is an AND, so the past window survives it
     expect(args.where.occurredAt).toEqual({ lt: expect.any(Date) });
     expect(args.where.OR).toBeUndefined();
     expect(args.orderBy[0]).toEqual({ occurredAt: "desc" });
+    // total === datedTotal, so no second query for undated rows
+    expect(db.jobStage.findMany).toHaveBeenCalledTimes(1);
   });
 
-  it("pins undated rounds to page 1 of the All view", async () => {
+  it("appends undated rounds after the dated ones", async () => {
     db.jobStage.findMany
       .mockResolvedValueOnce([{ id: "dated" }])
       .mockResolvedValueOnce([{ id: "undated" }]);
-    db.jobStage.count.mockResolvedValue(2);
+    // total 2, dated 1
+    db.jobStage.count.mockResolvedValueOnce(2).mockResolvedValueOnce(1);
 
     const res = await getInterviewList("all", 1);
 
-    // The paged query excludes NULLs; SQLite sorts them last on DESC, which
-    // would otherwise strand them on the final page.
-    expect(db.jobStage.findMany.mock.calls[0][0].where.occurredAt).toEqual({
-      not: null,
+    expect(db.jobStage.findMany.mock.calls[0][0].where.AND).toContainEqual({
+      occurredAt: { not: null },
     });
-    expect(db.jobStage.findMany.mock.calls[1][0].where.occurredAt).toBeNull();
-    expect(res.data.map((r: any) => r.id)).toEqual(["undated", "dated"]);
+    expect(db.jobStage.findMany.mock.calls[1][0].where.AND).toContainEqual({
+      occurredAt: null,
+    });
+    expect(res.data.map((r: any) => r.id)).toEqual(["dated", "undated"]);
     expect(res.total).toBe(2);
   });
 
-  it("does not re-fetch the pinned rows on later pages", async () => {
-    await getInterviewList("all", 2);
+  it("pages past the dated rows straight into the undated ones", async () => {
+    // 30 dated rows, 5 undated; page 2 of 25 is the tail of both
+    db.jobStage.count.mockResolvedValueOnce(35).mockResolvedValueOnce(30);
+    db.jobStage.findMany.mockResolvedValue([]);
 
-    expect(db.jobStage.findMany).toHaveBeenCalledTimes(1);
+    await getInterviewList("all", 2, 25);
+
+    expect(db.jobStage.findMany.mock.calls[0][0]).toMatchObject({
+      skip: 25,
+      take: 5,
+    });
+    expect(db.jobStage.findMany.mock.calls[1][0]).toMatchObject({
+      skip: 0,
+      take: 25,
+    });
   });
 
   it("filters by round, company and search together", async () => {
     await getInterviewList("all", 1, 25, "acme", "type-1", "co-1");
 
     const where = db.jobStage.findMany.mock.calls[0][0].where;
-    expect(where.AND).toEqual([
+    expect(where.AND.slice(0, 3)).toEqual([
       { stageTypeId: "type-1" },
       { Job: { companyId: "co-1" } },
       {

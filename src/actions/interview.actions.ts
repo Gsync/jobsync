@@ -57,9 +57,8 @@ const buildInterviewWhere = (
   return where;
 };
 
-// Ordering stays in the query because the list is server-paged. SQLite sorts
-// NULL first on ASC, which is exactly the undated-first rule the Upcoming view
-// wants, and the Past view's set holds no NULLs at all.
+// Ordering stays in the query because the list is server-paged. This orders
+// the dated rows only; undated rounds are paged separately after them.
 const interviewOrderBy = (view: InterviewView) =>
   view === "upcoming"
     ? [{ occurredAt: "asc" as const }, { createdAt: "asc" as const }]
@@ -85,32 +84,44 @@ export const getInterviewList = async (
       companyId,
     );
 
-    // On DESC, SQLite sorts NULL last, which would bury every unscheduled
-    // round on the final page. All pages dated rows and pins the rest to 1.
-    const pinUndated = view === "all";
-    const pagedWhere = pinUndated
-      ? { ...where, occurredAt: { not: null } }
-      : where;
+    // Undated rounds sort last in every view. SQLite has no NULLS LAST and
+    // Prisma's `nulls` option is unsupported there, so the dated rows are
+    // paged first and the undated ones continue the list once they run out.
+    const and = where.AND ?? [];
+    const datedWhere = { ...where, AND: [...and, { occurredAt: { not: null } }] };
+    const undatedWhere = { ...where, AND: [...and, { occurredAt: null }] };
+    const skip = (page - 1) * limit;
 
-    const [rows, total, pinned] = await Promise.all([
-      prisma.jobStage.findMany({
-        where: pagedWhere,
-        skip: (page - 1) * limit,
-        take: limit,
-        include: INTERVIEW_LIST_INCLUDE,
-        orderBy: interviewOrderBy(view),
-      }),
+    const [total, datedTotal] = await Promise.all([
       prisma.jobStage.count({ where }),
-      pinUndated && page === 1
-        ? prisma.jobStage.findMany({
-            where: { ...where, occurredAt: null },
+      prisma.jobStage.count({ where: datedWhere }),
+    ]);
+
+    const datedTake = Math.min(limit, Math.max(0, datedTotal - skip));
+    const dated =
+      datedTake > 0
+        ? await prisma.jobStage.findMany({
+            where: datedWhere,
+            skip,
+            take: datedTake,
+            include: INTERVIEW_LIST_INCLUDE,
+            orderBy: interviewOrderBy(view),
+          })
+        : [];
+
+    const undatedTake = limit - dated.length;
+    const undated =
+      undatedTake > 0 && total > datedTotal
+        ? await prisma.jobStage.findMany({
+            where: undatedWhere,
+            skip: Math.max(0, skip - datedTotal),
+            take: undatedTake,
             include: INTERVIEW_LIST_INCLUDE,
             orderBy: { createdAt: "desc" },
           })
-        : Promise.resolve([]),
-    ]);
+        : [];
 
-    return { data: [...pinned, ...rows], total };
+    return { data: [...dated, ...undated], total };
   } catch (error) {
     return handleError(error, "Failed to fetch interviews. ");
   }

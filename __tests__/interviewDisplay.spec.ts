@@ -1,6 +1,6 @@
 import {
   outcomeLabel,
-  outcomeTone,
+  outcomeColor,
   formatIconKind,
   formatText,
   durationLabel,
@@ -39,13 +39,18 @@ describe("outcomeLabel", () => {
   });
 });
 
-describe("outcomeTone", () => {
-  it("marks a bad ending destructive and a good one default", () => {
-    expect(outcomeTone("Failed")).toBe("destructive");
-    expect(outcomeTone("No-show")).toBe("destructive");
-    expect(outcomeTone("Passed")).toBe("default");
-    expect(outcomeTone("Scheduled")).toBe("outline");
-    expect(outcomeTone("Not scheduled")).toBe("secondary");
+describe("outcomeColor", () => {
+  it("colours a bad ending red and a good one emerald", () => {
+    expect(outcomeColor("Failed")).toBe("red");
+    expect(outcomeColor("No-show")).toBe("red");
+    expect(outcomeColor("Passed")).toBe("emerald");
+    expect(outcomeColor("Scheduled")).toBe("blue");
+    expect(outcomeColor("Awaiting outcome")).toBe("amber");
+    expect(outcomeColor("Not scheduled")).toBe("slate");
+  });
+
+  it("falls back to slate for an unrecognised label", () => {
+    expect(outcomeColor("Something else")).toBe("slate");
   });
 });
 

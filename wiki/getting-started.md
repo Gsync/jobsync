@@ -39,6 +39,7 @@ Five of them take you to the matching page with the form already open, so you la
 
 - **Dashboard** — summary cards: application counts, recent jobs and activities, weekly charts, and a quick-add card for the six kinds of record you create most.
 - **Jobs** — every job you are tracking, plus jobs discovered by automations.
+- **Interviews** — every interview round across your jobs in one list, with upcoming and past views, filters and outcomes.
 - **Automations** — scheduled searches that pull new postings in and score them against your resume.
 - **Tasks** — to-dos with a due date, priority and percent complete, and a timed activity you can start from each one.
 - **Activities** — time you spend on your job hunt, timed with a start/stop timer or logged afterwards, optionally started from a task.

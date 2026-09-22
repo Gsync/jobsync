@@ -19,7 +19,7 @@ Each row shows when the round is, the job and company, which round it is, the fo
 
 ## How do I switch between upcoming and past interviews?
 
-Use the **Upcoming**, **Past** and **All** buttons in the page header. **Upcoming** is where the page opens: it holds every round dated from now on, plus any round you have not put a date on yet — an unscheduled round is still work ahead of you, so it sits at the top rather than out of sight. **Past** holds rounds whose date has gone, most recent first. **All** shows everything, newest first, with unscheduled rounds at the top.
+Use the **Upcoming**, **Past** and **All** buttons in the page header. **Upcoming** is where the page opens: it holds every round dated from now on, soonest first, plus any round you have not put a date on yet — an unscheduled round is still work ahead of you, so it stays in the list rather than out of sight, below the scheduled ones. **Past** holds rounds whose date has gone, most recent first. **All** shows everything, newest first, with unscheduled rounds at the end.
 
 ## How do I find one interview among many?
 

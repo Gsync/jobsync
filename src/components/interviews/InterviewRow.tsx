@@ -12,7 +12,7 @@ import {
   Phone,
   Video,
 } from "lucide-react";
-import { Badge } from "../ui/badge";
+import { StatusBadge } from "../StatusBadge";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
@@ -31,7 +31,7 @@ import {
   formatText,
   interviewerSummary,
   outcomeLabel,
-  outcomeTone,
+  outcomeColor,
   prepSummary,
   whenParts,
 } from "./interviewDisplay";
@@ -88,7 +88,7 @@ function InterviewRow({
             )}
           </Button>
         </TableCell>
-        <TableCell>
+        <TableCell className="whitespace-nowrap">
           <div className="font-medium">{when.day}</div>
           {when.time && (
             <div className="text-xs text-muted-foreground">{when.time}</div>
@@ -106,9 +106,13 @@ function InterviewRow({
           </div>
         </TableCell>
         <TableCell>
-          <Badge variant="secondary">{interview.StageType.label}</Badge>
+          <StatusBadge
+            label={interview.StageType.label}
+            color="violet"
+            className="whitespace-nowrap"
+          />
         </TableCell>
-        <TableCell className="hidden md:table-cell">
+        <TableCell className="hidden md:table-cell whitespace-nowrap">
           <div className="flex items-center gap-1.5">
             <FormatIcon className="h-3.5 w-3.5 text-muted-foreground" />
             <span>{formatText(interview.format, interview.location)}</span>
@@ -124,7 +128,11 @@ function InterviewRow({
           {prepSummary(interview.prepQuestions)}
         </TableCell>
         <TableCell>
-          <Badge variant={outcomeTone(outcome)}>{outcome}</Badge>
+          <StatusBadge
+            label={outcome}
+            color={outcomeColor(outcome)}
+            className="whitespace-nowrap"
+          />
         </TableCell>
         <TableCell>
           <DropdownMenu>

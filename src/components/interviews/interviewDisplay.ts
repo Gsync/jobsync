@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { STAGE_OUTCOMES } from "@/lib/constants";
+import { BadgeColor } from "@/lib/badge-colors";
 
 // A round created through Add Stage has no outcome — the field only appears
 // when editing — so a null one is derived from the date rather than left as a
@@ -15,15 +16,21 @@ export function outcomeLabel(
   return occurredAt.getTime() >= now.getTime() ? "Scheduled" : "Awaiting outcome";
 }
 
-export type OutcomeTone = "default" | "secondary" | "destructive" | "outline";
+// Keyed on the label rather than the value, because three of the labels are
+// derived (outcomeLabel) and have no stored value to key on.
+const OUTCOME_BADGE_COLORS: Record<string, BadgeColor> = {
+  Scheduled: "blue",
+  Completed: "teal",
+  Passed: "emerald",
+  Failed: "red",
+  "No-show": "red",
+  Cancelled: "slate",
+  "Awaiting outcome": "amber",
+  "Not scheduled": "slate",
+};
 
-export function outcomeTone(label: string): OutcomeTone {
-  if (label === "Passed") return "default";
-  if (label === "Failed" || label === "No-show" || label === "Cancelled") {
-    return "destructive";
-  }
-  if (label === "Scheduled") return "outline";
-  return "secondary";
+export function outcomeColor(label: string): BadgeColor {
+  return OUTCOME_BADGE_COLORS[label] ?? "slate";
 }
 
 export type FormatIcon = "video" | "phone" | "location";

@@ -370,6 +370,11 @@ export const SIDEBAR_LINKS = [
     label: "Jobs",
   },
   {
+    icon: CalendarCheck,
+    route: "/dashboard/interviews",
+    label: "Interviews",
+  },
+  {
     icon: Zap,
     route: "/dashboard/automations",
     label: "Automations",
@@ -383,11 +388,6 @@ export const SIDEBAR_LINKS = [
     icon: CalendarClock,
     route: "/dashboard/activities",
     label: "Activities",
-  },
-  {
-    icon: CalendarCheck,
-    route: "/dashboard/interviews",
-    label: "Interviews",
   },
   {
     icon: BookOpen,
