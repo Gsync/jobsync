@@ -13,6 +13,7 @@ const JOB_LIST_SELECT = {
   JobTitle: true,
   jobType: true,
   workplaceType: true,
+  salaryRange: true,
   Company: true,
   Status: true,
   Location: true,

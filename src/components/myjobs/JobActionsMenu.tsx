@@ -1,5 +1,5 @@
 "use client";
-import { ListCollapse, MoreVertical, Pencil, StickyNote, Tags, Trash } from "lucide-react";
+import { ListCollapse, MoreVertical, StickyNote, Tags } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
@@ -21,19 +21,15 @@ import { JobStatusMenuItems } from "./JobStatusMenuItems";
 type JobActionsMenuProps = {
   job: JobResponse;
   jobStatuses: JobStatus[];
-  editJob: (id: string) => void;
   onChangeJobStatus: (id: string, status: JobStatus) => void;
   onAddNote: (jobId: string) => void;
-  onDeleteJob: (jobId: string) => void;
 };
 
 export function JobActionsMenu({
   job,
   jobStatuses,
-  editJob,
   onChangeJobStatus,
   onAddNote,
-  onDeleteJob,
 }: JobActionsMenuProps) {
   const router = useRouter();
 
@@ -62,13 +58,6 @@ export function JobActionsMenu({
           </DropdownMenuItem>
           <DropdownMenuItem
             className="cursor-pointer"
-            onClick={() => editJob(job.id)}
-          >
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit Job
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="cursor-pointer"
             onClick={() => onAddNote(job.id)}
           >
             <StickyNote className="mr-2 h-4 w-4" />
@@ -90,14 +79,6 @@ export function JobActionsMenu({
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
           </DropdownMenuSub>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="text-red-600 cursor-pointer"
-            onClick={() => onDeleteJob(job.id)}
-          >
-            <Trash className="mr-2 h-4 w-4" />
-            Delete
-          </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

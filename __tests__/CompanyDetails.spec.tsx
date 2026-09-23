@@ -111,21 +111,12 @@ describe("CompanyDetails – header", () => {
     expect(screen.getByRole("heading", { name: "Stripe" }).nextElementSibling).toBeNull();
   });
 
-  it("goes back to the Library companies tab", () => {
+  it("goes back using browser history", async () => {
     render(<CompanyDetails details={makeDetails()} />);
 
-    expect(
-      screen.getByRole("link", { name: /back to companies/i }),
-    ).toHaveAttribute("href", "/dashboard/admin?tab=companies");
-  });
+    await user.click(screen.getByRole("button", { name: /back to companies/i }));
 
-  it("returns to the watchlist scope it was opened from", () => {
-    searchParams = new URLSearchParams("scope=watchlist");
-    render(<CompanyDetails details={makeDetails()} />);
-
-    expect(
-      screen.getByRole("link", { name: /back to companies/i }),
-    ).toHaveAttribute("href", "/dashboard/admin?tab=companies&scope=watchlist");
+    expect(router.back).toHaveBeenCalled();
   });
 
   it("watches the company and refreshes the page", async () => {

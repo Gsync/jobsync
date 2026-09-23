@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   ArrowLeft,
   ExternalLink,
@@ -27,7 +26,7 @@ import { hostnameOf } from "./hostname";
 
 type CompanyDetailsHeaderProps = {
   company: Company;
-  backHref: string;
+  onBack: () => void;
   onToggleWatch: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -35,7 +34,7 @@ type CompanyDetailsHeaderProps = {
 
 export function CompanyDetailsHeader({
   company,
-  backHref,
+  onBack,
   onToggleWatch,
   onEdit,
   onDelete,
@@ -60,10 +59,14 @@ export function CompanyDetailsHeader({
   return (
     <div className="flex flex-col gap-4 @5xl/main:flex-row @5xl/main:items-center">
       <div className="flex flex-1 min-w-0 items-center gap-4">
-        <Button variant="ghost" size="icon" title="Go Back" asChild>
-          <Link href={backHref} aria-label="Back to Companies">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          title="Go Back"
+          aria-label="Back to Companies"
+          onClick={onBack}
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <CompanyLogo
           logoUrl={company.logoUrl}

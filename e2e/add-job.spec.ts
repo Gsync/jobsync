@@ -15,10 +15,9 @@ test.describe("Add New Job", () => {
 
     await page
       .getByRole("row", { name: jobText })
-      .getByTestId("job-actions-menu-btn")
+      .getByRole("button", { name: "Edit Job" })
       .first()
       .click();
-    await page.getByRole("menuitem", { name: "Edit Job" }).click();
     await expect(
       page.getByPlaceholder("Copy and paste job link here"),
     ).toHaveValue("www.google.com");
@@ -54,10 +53,9 @@ test.describe("Add New Job", () => {
 
     await page
       .getByRole("row", { name: jobText })
-      .getByTestId("job-actions-menu-btn")
+      .getByRole("button", { name: "Delete Job" })
       .first()
       .click();
-    await page.getByRole("menuitem", { name: "Delete" }).click();
     await page.getByRole("button", { name: "Delete" }).click();
 
     await expect(page.getByRole("row", { name: jobText })).not.toBeVisible();
@@ -70,10 +68,9 @@ test.describe("Add New Job", () => {
 
     await page
       .getByRole("row", { name: jobText })
-      .getByTestId("job-actions-menu-btn")
+      .getByRole("button", { name: "Edit Job" })
       .first()
       .click();
-    await page.getByRole("menuitem", { name: "Edit Job" }).click();
     await expect(
       page.getByPlaceholder("Copy and paste job link here"),
     ).toHaveValue("");
@@ -93,10 +90,9 @@ test.describe("Add New Job", () => {
 
     await page
       .getByRole("row", { name: jobText })
-      .getByTestId("job-actions-menu-btn")
+      .getByRole("button", { name: "Edit Job" })
       .first()
       .click();
-    await page.getByRole("menuitem", { name: "Edit Job" }).click();
     await expect(page.getByRole("switch")).toBeChecked();
     await expect(page.getByLabel("Select Job Status")).toContainText("Applied");
     await expect(page.getByLabel("Date Applied")).toContainText(
@@ -126,10 +122,9 @@ test.describe("Add New Job", () => {
 
     await page
       .getByRole("row", { name: jobText })
-      .getByTestId("job-actions-menu-btn")
+      .getByRole("button", { name: "Edit Job" })
       .first()
       .click();
-    await page.getByRole("menuitem", { name: "Edit Job" }).click();
     await expect(page.getByLabel("Salary Range")).toContainText(salary);
   });
 
@@ -147,10 +142,9 @@ test.describe("Add New Job", () => {
 
     await page
       .getByRole("row", { name: jobText })
-      .getByTestId("job-actions-menu-btn")
+      .getByRole("button", { name: "Edit Job" })
       .first()
       .click();
-    await page.getByRole("menuitem", { name: "Edit Job" }).click();
     await expect(page.getByRole("radio", { name: "Remote" })).toBeChecked();
   });
 
@@ -171,10 +165,9 @@ test.describe("Add New Job", () => {
 
     await page
       .getByRole("row", { name: jobText })
-      .getByTestId("job-actions-menu-btn")
+      .getByRole("button", { name: "Edit Job" })
       .first()
       .click();
-    await page.getByRole("menuitem", { name: "Edit Job" }).click();
     await expect(page.getByLabel("Due Date")).toContainText(expectedDueDate);
   });
 
@@ -188,10 +181,9 @@ test.describe("Add New Job", () => {
 
     await page
       .getByRole("row", { name: jobText })
-      .getByTestId("job-actions-menu-btn")
+      .getByRole("button", { name: "Edit Job" })
       .first()
       .click();
-    await page.getByRole("menuitem", { name: "Edit Job" }).click();
     await expect(page.getByTestId("add-job-dialog-title")).toBeVisible();
 
     await page.getByRole("button", { name: "New Note" }).click();
@@ -336,10 +328,9 @@ test.describe("Add New Job", () => {
 
     await page
       .getByRole("row", { name: jobText })
-      .getByTestId("job-actions-menu-btn")
+      .getByRole("button", { name: "Edit Job" })
       .first()
       .click();
-    await page.getByRole("menuitem", { name: "Edit Job" }).click();
     await expect(page.getByLabel("Job Title")).toContainText(jobText);
     await expect(page.getByLabel("Company")).toContainText(`company ${suffix}`);
     await expect(page.getByLabel("Job Location")).toContainText(
@@ -418,10 +409,9 @@ test.describe("Add New Job", () => {
 
     await page
       .getByRole("row", { name: jobText })
-      .getByTestId("job-actions-menu-btn")
+      .getByRole("button", { name: "Edit Job" })
       .first()
       .click();
-    await page.getByRole("menuitem", { name: "Edit Job" }).click();
     await expect(page.getByTestId("add-job-dialog-title")).toBeVisible();
     await expect(page.getByText(tagText, { exact: true })).toBeVisible();
   });

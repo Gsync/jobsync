@@ -84,8 +84,7 @@ describe("MyJobsGrid", () => {
       }),
     ]);
 
-    await user.click(screen.getAllByTestId("job-actions-menu-btn")[1]);
-    await user.click(screen.getByText("Delete"));
+    await user.click(screen.getAllByRole("button", { name: "Delete Job" })[1]);
 
     expect(
       screen.getByText("Are you sure you want to delete this job?"),

@@ -167,8 +167,7 @@ describe("MyJobsTable", () => {
     it("calls editJob with the job id when Edit Job is clicked", async () => {
       const { editJob } = renderTable([makeJob()]);
 
-      await user.click(screen.getByTestId("job-actions-menu-btn"));
-      await user.click(screen.getByText("Edit Job"));
+      await user.click(screen.getByRole("button", { name: "Edit Job" }));
 
       expect(editJob).toHaveBeenCalledWith("job-1");
     });
@@ -185,8 +184,7 @@ describe("MyJobsTable", () => {
     it("opens the delete confirmation dialog and calls deleteJob on confirm", async () => {
       const { deleteJob } = renderTable([makeJob()]);
 
-      await user.click(screen.getByTestId("job-actions-menu-btn"));
-      await user.click(screen.getByText("Delete"));
+      await user.click(screen.getByRole("button", { name: "Delete Job" }));
 
       expect(
         screen.getByText("Are you sure you want to delete this job?"),

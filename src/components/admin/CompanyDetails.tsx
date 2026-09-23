@@ -43,6 +43,7 @@ function CompanyDetails({ details }: CompanyDetailsProps) {
     searchParams.get("scope") === "watchlist"
       ? `${LIBRARY_COMPANIES}&scope=watchlist`
       : LIBRARY_COMPANIES;
+  const goBack = () => router.back();
   const [activeTab, handleTabChange] = useTabQueryParam(
     COMPANY_DETAIL_TABS,
     "jobs",
@@ -112,7 +113,7 @@ function CompanyDetails({ details }: CompanyDetailsProps) {
       <div className="py-6 space-y-6">
         <CompanyDetailsHeader
           company={details}
-          backHref={backHref}
+          onBack={goBack}
           onToggleWatch={toggleWatch}
           onEdit={openEdit}
           onDelete={onDelete}
