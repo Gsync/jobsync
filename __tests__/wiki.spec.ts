@@ -18,8 +18,7 @@ function listMarkdown(dir: string, prefix = ""): string[] {
 // sort(): readdirSync is unordered, so without it the it.each test names
 // shuffle between filesystems (Locked Decision #12).
 const files = fs.existsSync(WIKI_DIR) ? listMarkdown(WIKI_DIR).sort() : [];
-// log.md is OKF's reserved history file: prose, no frontmatter, not a page.
-const pages = files.filter((f) => f !== INDEX && f !== "log.md");
+const pages = files.filter((f) => f !== INDEX);
 const read = (rel: string) => fs.readFileSync(path.join(WIKI_DIR, rel), "utf8");
 
 // it.each throws on an empty array, which would mask the real problem. The
