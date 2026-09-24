@@ -33,11 +33,11 @@ A job's status now follows its [timeline](./timeline.md): it is whatever the job
 
 ## How do I change a job's status?
 
-There are two ways. In the Jobs list, click a row's status badge and pick the new status from the menu. Or open the job and use the **Update Status** button at the top-right of the job details, choosing **Change status**. Either menu lists every status with the current one greyed out, and the change saves immediately — there is no separate save step.
+There are three ways. In the Jobs list, click a row's status badge and pick the new status from the menu, or use the row's **⋮** menu and choose **Change status**. Or open the job and use the **Update Status** button at the top-right of the job details, choosing **Change status**. Every one of these menus lists every status with the current one greyed out, and the change saves immediately — there is no separate save step.
 
 The Add Job dialog also has a Status field, so a status can be set when you first create the job or from **Edit Job** later.
 
-All three of those paths also append a stage to the job's [timeline](./timeline.md), so the history stays in step with the label. Picking a status the job already holds adds nothing.
+All four of those paths also append a stage to the job's [timeline](./timeline.md), so the history stays in step with the label. Picking a status the job already holds adds nothing.
 
 ## What is on a job's details page?
 
@@ -51,9 +51,11 @@ The tabs are **Description**, **[Timeline](./timeline.md)**, **AI Match**, **Cov
 
 Notes live on the **Notes** tab: **New Note** there adds one, and each note can be edited or deleted from its own card. **Add a Note** in the **⋮** menu is a shortcut to the same thing from anywhere on the page — it switches to the Notes tab and opens the editor.
 
+You can also act from the Jobs list without opening the job: each row has **Edit** and **Delete** icons, and its **⋮** menu has **View Details** and **Add a Note**.
+
 ## How do I find a job in a long list?
 
-The Jobs card header has three tools. The **search box** matches on job text. The **filter dropdown** narrows to a preset: All (Except Dismissed), Applied, Interview, Draft, Rejected, Part-time, Accepted (discovered) or Dismissed (discovered). Clicking a company, title, location or source anywhere in the list adds it as a filter chip next to the search box — click the chip's **×** to clear it.
+The Jobs card header has three tools. The **search box** matches on job text. The **filter dropdown** narrows to a preset: All (Except Dismissed), Applied, Interview, Draft, Rejected, Part-time, Accepted (discovered) or Dismissed (discovered). Opening the list from a job count in **Library → Companies**, **Job Titles**, **Locations** or **Sources** narrows it to that entry and shows it as a filter chip next to the search box — click the chip's **×** to clear it.
 
 The list also has a view toggle for table or card layout, and a reload button that refetches without a full page refresh.
 

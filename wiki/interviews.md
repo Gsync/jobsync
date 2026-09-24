@@ -15,7 +15,7 @@ stale_after: 2027-09-30
 
 **Interviews** in the sidebar lists every interview round you have recorded, across every job, in one table. A round appears here as soon as you add a stage whose parent status is *Interview* on a job's [Timeline](./timeline.md) tab — there is nothing extra to fill in. Rounds on jobs that were rejected or withdrawn stay in the list, because the history is the point.
 
-Each row shows when the round is, the job and company, which round it is, the format and duration, who is interviewing you, how many prep questions the round has, and its outcome.
+Rounds are listed newest first, with rounds that have no date yet at the end. Each row shows when the round is, the job and company, which round it is, the format and duration, who is interviewing you, how many prep questions the round has, and its outcome.
 
 ## How do I find one interview among many?
 

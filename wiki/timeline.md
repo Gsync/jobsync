@@ -15,7 +15,7 @@ stale_after: 2027-09-30
 
 The **Timeline** tab on a job's details page is that job's record of how the hiring process actually moved — one entry per stage, each with its own date, notes and outcome. A job's [status](./jobs.md) is a single label saying where the job is *now*; the timeline is the history behind that label, and the status is derived from it.
 
-The tab shows two things. A **Stage History** list down the left walks every stage in the order set by **Library → Stages**, joined top to bottom by a connecting line: a green tick marks each stage already behind you, a filled marker the current one, and a hollow marker the greyed **Offer** step at the end if the job has not reached an offer yet. Clicking a stage opens its **detail panel** on the right. An interview stage splits that panel into three tabs — **Overview**, **Interviewer** and **Prep List** — and opens on Overview; any other stage shows the overview on its own, with no tabs, because the other two have nothing to say about it.
+The tab shows two things. A **Stage History** list down the left walks every stage in the order set by **Library → Stages**, joined top to bottom by a connecting line: a green tick marks each stage already behind you, a filled marker the current one, and a hollow marker anything not reached yet — a stage after the current one, or the greyed **Offer** step at the end. Clicking a stage opens its **detail panel** on the right. An interview stage splits that panel into three tabs — **Overview**, **Interviewer** and **Prep List** — and opens on Overview; any other stage shows the overview on its own, with no tabs, because the other two have nothing to say about it.
 
 A count badge on the tab tells you how many stages a job has. Every job created after this feature shipped starts with one.
 
@@ -33,13 +33,13 @@ Editing a stage later opens the same dialog with one extra field, **Outcome**: *
 
 Select the stage, then use the **bin button** at the top right of its detail panel, beside **Edit**. You are asked to confirm, and the stage goes along with its notes, its interviewer links and its prep list — the contacts and questions themselves stay in your Library.
 
-Deleting the **current** stage moves the job back to the stage before it, and the job's status follows that stage; the confirmation says so. Deleting the last stage a job has leaves it with no timeline at all, which is a supported state — the job simply keeps the status it had.
+Deleting the **current** stage makes the furthest-along dated stage current, and the job's status follows it; the confirmation says so. Deleting the last stage a job has leaves it with no timeline at all, which is a supported state — the job simply keeps the status it had.
 
 ## How does a stage change the job's status?
 
 The current stage sets the job's status: whatever parent status that stage's type carries becomes the job's status, everywhere the job is shown. Adding a stage with **Set as current stage** ticked moves the status; ticking the box on an older stage moves it back.
 
-It works the other way round too. Changing the status from **Update Status → Change status**, from a row's status badge in the Jobs list, or from the Status field in the **Edit Job** dialog appends a new stage for that status and makes it current — so a status change never leaves the timeline behind. The appended stage is dated the moment you made the change; open it from the Timeline tab and edit the date if the step actually happened earlier.
+It works the other way round too. Changing the status from **Update Status → Change status**, from a row's status badge or **⋮ → Change status** in the Jobs list, or from the Status field in the **Edit Job** dialog appends a new stage for that status and makes it current — so a status change never leaves the timeline behind. The appended stage is dated the moment you made the change; open it from the Timeline tab and edit the date if the step actually happened earlier.
 
 Re-picking a status the job already holds does nothing at all. If the current stage is *2nd Technical Interview* and you pick **Interview** from a dropdown, you already are at Interview, so no second stage is added.
 
@@ -51,13 +51,13 @@ So a job added long after you applied can show its New stage dated after its App
 
 ## Why does a stage show a dash instead of a date?
 
-Because that stage has no date, which is allowed. Dates are optional on every stage: a stage appended by a status change never has one, and neither does a stage you added without filling the Date field.
+Because that stage has no date, which is allowed. Dates are optional on every stage: a stage you added without filling the Date field has none.
 
 An undated stage reads `—` in the Stage History list, and **No date set** in its detail panel. Among stages of the same type it sorts to the end rather than to the start. Open the stage and use **Edit** to add the date whenever you learn it.
 
 ## How do I record who is interviewing me?
 
-Select the interview stage, then use **Add** on its **Interviewer** tab, or **Update Status → Add Interviewers**. The dialog searches your existing [contacts](./contacts.md); the **Add a new contact** box at the bottom takes a name, role and email and creates the person on the spot. Each shows their title and company under their name.
+Select the interview stage, then use **Add Interviewers** on its **Interviewer** tab, or **Update Status → Add Interviewers**. The dialog searches your existing [contacts](./contacts.md); the **Add a new contact** box at the bottom takes a name, job title and email and creates the person on the spot. Each shows their title and company under their name.
 
 Linking someone also adds them to the job's **Contacts** tab with the **Interviewer** role, so that tab stays the roster of everyone involved in the application. The reverse is not true: the **✕** beside an interviewer unlinks them from *that stage only* and leaves the job contact link alone, because the person may hold other roles on the job.
 

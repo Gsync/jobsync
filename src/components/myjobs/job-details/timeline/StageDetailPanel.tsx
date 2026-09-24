@@ -62,8 +62,8 @@ export function StageDetailPanel({
       <>
         {isCurrent && (
           <p>
-            This is the current stage. Deleting it makes the stage before it
-            current, and the job&apos;s status follows that stage.
+            This is the current stage. Deleting it makes the furthest-along
+            dated stage current, and the job&apos;s status follows that stage.
           </p>
         )}
         {hasLinks && (
