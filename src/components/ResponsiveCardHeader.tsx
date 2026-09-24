@@ -8,7 +8,7 @@ function ResponsiveCardHeader({
   return (
     <CardHeader
       className={cn(
-        "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between",
         className,
       )}
       {...props}
