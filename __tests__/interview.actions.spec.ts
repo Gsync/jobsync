@@ -28,35 +28,18 @@ beforeEach(() => {
 
 describe("getInterviewList", () => {
   it("reads only interview-status stages owned through the job", async () => {
-    await getInterviewList("all");
+    await getInterviewList();
 
     const where = db.jobStage.findMany.mock.calls[0][0].where;
     expect(where.Job).toEqual({ userId: user.id });
     expect(where.StageType).toEqual({ Status: { value: "interview" } });
   });
 
-  it("treats undated rounds as upcoming and orders them last", async () => {
-    await getInterviewList("upcoming");
+  it("orders dated rounds newest first over a set with no undated rows", async () => {
+    await getInterviewList();
 
     const args = db.jobStage.findMany.mock.calls[0][0];
-    expect(args.where.OR).toEqual([
-      { occurredAt: { gte: expect.any(Date) } },
-      { occurredAt: null },
-    ]);
-    // The paged query is the dated half; soonest first
     expect(args.where.AND).toContainEqual({ occurredAt: { not: null } });
-    expect(args.orderBy[0]).toEqual({ occurredAt: "asc" });
-  });
-
-  it("orders past rounds newest first over a set with no undated rows", async () => {
-    db.jobStage.count.mockResolvedValue(1);
-
-    await getInterviewList("past");
-
-    const args = db.jobStage.findMany.mock.calls[0][0];
-    // The dated split is an AND, so the past window survives it
-    expect(args.where.occurredAt).toEqual({ lt: expect.any(Date) });
-    expect(args.where.OR).toBeUndefined();
     expect(args.orderBy[0]).toEqual({ occurredAt: "desc" });
     // total === datedTotal, so no second query for undated rows
     expect(db.jobStage.findMany).toHaveBeenCalledTimes(1);
@@ -69,7 +52,7 @@ describe("getInterviewList", () => {
     // total 2, dated 1
     db.jobStage.count.mockResolvedValueOnce(2).mockResolvedValueOnce(1);
 
-    const res = await getInterviewList("all", 1);
+    const res = await getInterviewList(1);
 
     expect(db.jobStage.findMany.mock.calls[0][0].where.AND).toContainEqual({
       occurredAt: { not: null },
@@ -86,7 +69,7 @@ describe("getInterviewList", () => {
     db.jobStage.count.mockResolvedValueOnce(35).mockResolvedValueOnce(30);
     db.jobStage.findMany.mockResolvedValue([]);
 
-    await getInterviewList("all", 2, 25);
+    await getInterviewList(2, 25);
 
     expect(db.jobStage.findMany.mock.calls[0][0]).toMatchObject({
       skip: 25,
@@ -99,7 +82,7 @@ describe("getInterviewList", () => {
   });
 
   it("filters by round, company and search together", async () => {
-    await getInterviewList("all", 1, 25, "acme", "type-1", "co-1");
+    await getInterviewList(1, 25, "acme", "type-1", "co-1");
 
     const where = db.jobStage.findMany.mock.calls[0][0].where;
     expect(where.AND.slice(0, 3)).toEqual([
@@ -119,7 +102,7 @@ describe("getInterviewList", () => {
   it("returns the error envelope when there is no session", async () => {
     (getCurrentUser as any).mockResolvedValue(null);
 
-    const res = await getInterviewList("all");
+    const res = await getInterviewList();
 
     expect(res).toEqual({ success: false, message: "Not authenticated" });
   });

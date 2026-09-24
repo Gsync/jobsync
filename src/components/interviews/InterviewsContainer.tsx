@@ -10,12 +10,10 @@ import { RecordsCount } from "../RecordsCount";
 import { SearchInput } from "../SearchInput";
 import InterviewsTable from "./InterviewsTable";
 import { InterviewFilters } from "./interviews-container/InterviewFilters";
-import { InterviewViewTabs } from "./interviews-container/InterviewViewTabs";
 import { useInterviewsList } from "./interviews-container/useInterviewsList";
 import type {
   InterviewFilterOption,
   InterviewRow as InterviewRowType,
-  InterviewView,
 } from "@/models/interview.model";
 import type { JobStageTypeRef } from "@/models/jobStage.model";
 import type { JobStatus } from "@/models/job.model";
@@ -33,7 +31,6 @@ function InterviewsContainer({
   stageTypes,
   jobStatuses,
 }: InterviewsContainerProps) {
-  const [view, setView] = useState<InterviewView>("upcoming");
   const [searchTerm, setSearchTerm] = useState("");
   const [stageTypeId, setStageTypeId] = useState<string | undefined>(undefined);
   const [companyId, setCompanyId] = useState<string | undefined>(undefined);
@@ -41,7 +38,7 @@ function InterviewsContainer({
   const [editTarget, setEditTarget] = useState<InterviewRowType | null>(null);
   const router = useRouter();
 
-  const list = useInterviewsList(view, searchTerm, stageTypeId, companyId);
+  const list = useInterviewsList(searchTerm, stageTypeId, companyId);
 
   const filtered = !!searchTerm || !!stageTypeId || !!companyId;
 
@@ -67,7 +64,6 @@ function InterviewsContainer({
             )}
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto">
-            <InterviewViewTabs view={view} onViewChange={setView} />
             <InterviewFilters
               rounds={rounds}
               companies={companies}
@@ -90,9 +86,7 @@ function InterviewsContainer({
             <p className="py-10 text-center text-sm text-muted-foreground">
               {filtered
                 ? "No interviews match these filters."
-                : view === "past"
-                  ? "No interviews behind you yet."
-                  : "No interviews yet. Add an interview stage on a job's Timeline tab and it appears here."}
+                : "No interviews yet. Add an interview stage on a job's Timeline tab and it appears here."}
             </p>
           ) : (
             <>

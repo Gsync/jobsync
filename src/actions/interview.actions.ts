@@ -4,7 +4,6 @@ import { handleError } from "@/lib/utils";
 import { requireUser } from "./shared";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { STAGE_DETAIL_INCLUDE } from "./jobStage/shared";
-import type { InterviewView } from "@/models/interview.model";
 
 // The same include the Timeline tab uses, so a row from this list is a
 // complete JobStage and can be handed straight to AddStageDialog.
@@ -21,8 +20,6 @@ const INTERVIEW_LIST_INCLUDE = {
 
 const buildInterviewWhere = (
   userId: string,
-  view: InterviewView,
-  now: Date,
   search?: string,
   stageTypeId?: string,
   companyId?: string,
@@ -32,13 +29,6 @@ const buildInterviewWhere = (
     StageType: { Status: { value: "interview" } },
   };
 
-  if (view === "upcoming") {
-    where.OR = [{ occurredAt: { gte: now } }, { occurredAt: null }];
-  } else if (view === "past") {
-    where.occurredAt = { lt: now };
-  }
-
-  // AND, because the upcoming window already owns the top-level OR.
   const and: any[] = [];
   if (stageTypeId) and.push({ stageTypeId });
   if (companyId) and.push({ Job: { companyId } });
@@ -57,15 +47,7 @@ const buildInterviewWhere = (
   return where;
 };
 
-// Ordering stays in the query because the list is server-paged. This orders
-// the dated rows only; undated rounds are paged separately after them.
-const interviewOrderBy = (view: InterviewView) =>
-  view === "upcoming"
-    ? [{ occurredAt: "asc" as const }, { createdAt: "asc" as const }]
-    : [{ occurredAt: "desc" as const }, { createdAt: "desc" as const }];
-
 export const getInterviewList = async (
-  view: InterviewView = "upcoming",
   page: number = 1,
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
   search?: string,
@@ -74,17 +56,10 @@ export const getInterviewList = async (
 ): Promise<any | undefined> => {
   try {
     const user = await requireUser();
-    const now = new Date();
-    const where = buildInterviewWhere(
-      user.id,
-      view,
-      now,
-      search,
-      stageTypeId,
-      companyId,
-    );
+    const where = buildInterviewWhere(user.id, search, stageTypeId, companyId);
 
-    // Undated rounds sort last in every view. SQLite has no NULLS LAST and
+    // Ordering stays in the query because the list is server-paged.
+    // Undated rounds sort last. SQLite has no NULLS LAST and
     // Prisma's `nulls` option is unsupported there, so the dated rows are
     // paged first and the undated ones continue the list once they run out.
     const and = where.AND ?? [];
@@ -105,7 +80,7 @@ export const getInterviewList = async (
             skip,
             take: datedTake,
             include: INTERVIEW_LIST_INCLUDE,
-            orderBy: interviewOrderBy(view),
+            orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }],
           })
         : [];
 

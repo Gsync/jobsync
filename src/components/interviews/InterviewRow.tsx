@@ -94,14 +94,14 @@ function InterviewRow({
             <div className="text-xs text-muted-foreground">{when.time}</div>
           )}
         </TableCell>
-        <TableCell>
+        <TableCell className="max-w-[120px] md:max-w-[220px]">
           <Link
             href={`/dashboard/myjobs/${interview.Job.id}`}
-            className="font-medium text-primary underline-offset-4 hover:underline"
+            className="block truncate font-medium text-primary underline-offset-4 hover:underline"
           >
             {title}
           </Link>
-          <div className="text-xs text-muted-foreground">
+          <div className="truncate text-xs text-muted-foreground">
             {interview.Job.Company.label}
           </div>
         </TableCell>

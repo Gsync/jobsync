@@ -22,10 +22,6 @@ test("an interview stage added on a job appears on the Interviews page", async (
 
   await page.goto("/dashboard/interviews");
 
-  // The Add Stage dialog dated the round a moment ago, so Past holds it and
-  // the default Upcoming view does not. Switch before asserting anything.
-  await page.getByRole("tab", { name: "Past" }).click();
-
   const row = page.getByRole("row", { name: new RegExp(jobTitle) });
   await expect(row).toBeVisible();
   await expect(row).toContainText("Final / Onsite Interview");

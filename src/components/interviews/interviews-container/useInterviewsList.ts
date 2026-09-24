@@ -4,10 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getInterviewList } from "@/actions/interview.actions";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
-import type { InterviewRow, InterviewView } from "@/models/interview.model";
+import type { InterviewRow } from "@/models/interview.model";
 
 export function useInterviewsList(
-  view: InterviewView,
   searchTerm: string,
   stageTypeId?: string,
   companyId?: string,
@@ -25,7 +24,6 @@ export function useInterviewsList(
       if (nextPage === 1) setInitialLoading(true);
       else setLoadingMore(true);
       const { data, total: t } = await getInterviewList(
-        view,
         nextPage,
         APP_CONSTANTS.RECORDS_PER_PAGE,
         search,
@@ -42,7 +40,7 @@ export function useInterviewsList(
       setInitialLoading(false);
       setLoadingMore(false);
     },
-    [view, stageTypeId, companyId],
+    [stageTypeId, companyId],
   );
 
   const reload = useCallback(

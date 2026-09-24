@@ -3,7 +3,7 @@ type: how-to
 title: Interviews
 description: One list of every interview round across all your jobs — what is coming up, what is behind you, who you are meeting and what you planned to be asked.
 feature: interviews
-tags: [interviews, interview list, upcoming interviews, past interviews, rounds, outcome, scheduled, prep questions, interviewers, format, screening, onsite]
+tags: [interviews, interview list, rounds, outcome, scheduled, prep questions, interviewers, format, screening, onsite]
 aliases: [interview list, upcoming interviews, my interviews]
 status: stable
 stale_after: 2027-09-30
@@ -17,13 +17,9 @@ stale_after: 2027-09-30
 
 Each row shows when the round is, the job and company, which round it is, the format and duration, who is interviewing you, how many prep questions the round has, and its outcome.
 
-## How do I switch between upcoming and past interviews?
-
-Use the **Upcoming**, **Past** and **All** buttons in the page header. **Upcoming** is where the page opens: it holds every round dated from now on, soonest first, plus any round you have not put a date on yet — an unscheduled round is still work ahead of you, so it stays in the list rather than out of sight, below the scheduled ones. **Past** holds rounds whose date has gone, most recent first. **All** shows everything, newest first, with unscheduled rounds at the end.
-
 ## How do I find one interview among many?
 
-Three controls sit beside the view buttons. **All rounds** narrows to one kind of round — *1st Screening Interview*, *Final / Onsite Interview*, or any round name of your own. **All companies** narrows to one company. Both only offer rounds and companies you actually have interviews for, so a choice never gives you an empty table. The **search** box matches the job title, the company, the round name and the interviewers' names, so you can find "everyone I spoke to at Northwind" by typing a name.
+Three controls sit in the page header. **All rounds** narrows to one kind of round — *1st Screening Interview*, *Final / Onsite Interview*, or any round name of your own. **All companies** narrows to one company. Both only offer rounds and companies you actually have interviews for, so a choice never gives you an empty table. The **search** box matches the job title, the company, the round name and the interviewers' names, so you can find "everyone I spoke to at Northwind" by typing a name.
 
 ## What does the Outcome column mean?
 

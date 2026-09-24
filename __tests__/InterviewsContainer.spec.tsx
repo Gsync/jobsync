@@ -60,12 +60,11 @@ beforeEach(() => {
 });
 
 describe("InterviewsContainer", () => {
-  it("opens on the Upcoming view", async () => {
+  it("loads the first page on mount", async () => {
     render(<InterviewsContainer {...props} />);
 
     await waitFor(() =>
       expect(getInterviewList).toHaveBeenCalledWith(
-        "upcoming",
         1,
         expect.any(Number),
         undefined,
@@ -84,24 +83,6 @@ describe("InterviewsContainer", () => {
     expect(screen.getByText("Google Meet")).toBeInTheDocument();
     // occurredAt is in the future relative to nothing stored, so it derives
     expect(screen.getByText("Scheduled")).toBeInTheDocument();
-  });
-
-  it("refetches with the new view when a segment is picked", async () => {
-    render(<InterviewsContainer {...props} />);
-    await screen.findByText("Senior Full Stack Developer");
-
-    await userEvent.click(screen.getByRole("tab", { name: "Past" }));
-
-    await waitFor(() =>
-      expect(getInterviewList).toHaveBeenLastCalledWith(
-        "past",
-        1,
-        expect.any(Number),
-        undefined,
-        undefined,
-        undefined,
-      ),
-    );
   });
 
   it("expands one row at a time", async () => {
