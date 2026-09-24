@@ -52,6 +52,7 @@ import {
 } from "@/actions/agentChat.actions";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { checkOllamaConnection } from "@/utils/ai.utils";
+import { APP_CONSTANTS } from "@/lib/constants";
 
 function Probe() {
   const c = useAgentChat();
@@ -83,6 +84,7 @@ function Probe() {
       <span data-testid="state">{`${c.isOpen}|${c.approvalPending}|${c.interruptedTurn}|${holder}|${c.preflight.ok}`}</span>
       <span data-testid="composer-nonce">{c.composerNonce}</span>
       <span data-testid="panel-expanded">{String(c.isPanelExpanded)}</span>
+      <span data-testid="panel-width">{c.panelWidth}</span>
       <span data-testid="review-stream">{c.toolStreams["rv1"] ?? ""}</span>
       <span data-testid="job-writes">{c.jobWrites}</span>
     </div>
@@ -543,6 +545,19 @@ describe("AgentChatProvider", () => {
       chatInit().onData({ type: "data-paste", id: "rv1", data: { delta: "nope" } });
     });
     expect(screen.getByTestId("review-stream")).toHaveTextContent("SCORES:");
+  });
+
+  it("collapses a re-expanded sidebar when the panel is expanded", async () => {
+    setup();
+    await userEvent.click(screen.getByText("open"));
+    await userEvent.click(screen.getByText("toggleSidebar"));
+    await userEvent.click(screen.getByText("togglePanelExpand"));
+    expect(screen.getByTestId("panel-expanded").textContent).toBe("true");
+    expect(screen.getByTestId("sidebar").textContent).toBe("false");
+    // The rail is still open at click time; the width must not measure it.
+    expect(screen.getByTestId("panel-width").textContent).toBe(
+      String(window.innerWidth - APP_CONSTANTS.SIDEBAR_WIDTH.collapsed.px),
+    );
   });
 
   it("restores an expanded panel when the sidebar re-expands", async () => {

@@ -55,7 +55,7 @@ export const APP_CONSTANTS = {
   // Paired so the rail width and its matching content offset can't drift.
   SIDEBAR_WIDTH: {
     expanded: { rail: "w-56", contentOffset: "sm:pl-56" },
-    collapsed: { rail: "w-14", contentOffset: "sm:pl-14" },
+    collapsed: { rail: "w-14", contentOffset: "sm:pl-14", px: 56 },
   },
 
   // Cloud API-key verification timeout. Without it a black-holed TLS

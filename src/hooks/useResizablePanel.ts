@@ -41,9 +41,8 @@ export function useResizablePanel(storageKey: string) {
     if (isExpanded) {
       next = DEFAULT_WIDTH;
     } else {
-      const sidebarWidth =
-        document.getElementById(APP_CONSTANTS.SIDEBAR_DOM_ID)?.offsetWidth ?? 0;
-      next = window.innerWidth - sidebarWidth;
+      // Not measured: expanding collapses the rail, which hasn't rendered yet.
+      next = window.innerWidth - APP_CONSTANTS.SIDEBAR_WIDTH.collapsed.px;
     }
     widthRef.current = next;
     setWidth(next);

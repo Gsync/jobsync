@@ -105,6 +105,12 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     if (isPanelExpanded && (sidebarExpanded || navigated)) togglePanelExpand();
   }, [sidebarExpanded, isPanelExpanded, pathname, togglePanelExpand]);
 
+  // Collapse first, or the effect above sees an open sidebar and undoes it.
+  const toggleExpand = useCallback(() => {
+    if (!isPanelExpanded) collapseSidebar();
+    togglePanelExpand();
+  }, [isPanelExpanded, collapseSidebar, togglePanelExpand]);
+
   const [interruptedTurn, setInterruptedTurn] = useState(false);
   const [preflight, setPreflight] = useState<Preflight>({
     checked: false,
@@ -412,7 +418,7 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     startResize,
     isResizing,
     isPanelExpanded,
-    togglePanelExpand,
+    togglePanelExpand: toggleExpand,
   };
 }
 
