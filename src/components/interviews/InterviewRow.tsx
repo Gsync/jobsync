@@ -236,8 +236,18 @@ function InterviewRow({
                 )}
               </div>
               <div>
-                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Prep questions ({prepSummary(interview.prepQuestions)})
+                <div className="flex items-baseline gap-3">
+                  <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Prep questions ({prepSummary(interview.prepQuestions)})
+                  </div>
+                  {interview.prepQuestions.length > 0 && (
+                    <Link
+                      href={`/dashboard/questions?stage=${interview.id}`}
+                      className="whitespace-nowrap text-xs text-primary underline-offset-4 hover:underline"
+                    >
+                      View answers
+                    </Link>
+                  )}
                 </div>
                 {interview.prepQuestions.length === 0 ? (
                   <p className="mt-1 text-muted-foreground">

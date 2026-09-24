@@ -29,7 +29,7 @@ To record one, open the **⋮** menu at the end of a row and choose **Set outcom
 
 ## What is in the expanded row?
 
-Click the arrow at the start of a row to open it. The panel shows the full interviewer list with their titles and email addresses, your notes for the round, and the prep questions with a tick against the ones already asked. One row is open at a time — opening another closes the first.
+Click the arrow at the start of a row to open it. The panel shows the full interviewer list with their titles and email addresses, your notes for the round, and the prep questions with a tick against the ones already asked. **View answers**, beside the prep questions heading, opens the Questions page filtered to just that round's prep list so you can read your recorded answers, and narrows the skill tags in its sidebar to that round's questions; the ✕ on the banner there shows all questions again. One row is open at a time — opening another closes the first.
 
 Everything in the panel is read-only. Linking an interviewer, building a prep list and ticking a question as asked all happen on the job's [Timeline](./timeline.md) tab, where those tools live.
 

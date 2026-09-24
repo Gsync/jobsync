@@ -2,7 +2,8 @@
 import QuestionsContainer from "@/components/questions/QuestionsContainer";
 import QuestionsSidebar from "@/components/questions/QuestionsSidebar";
 import { Tag } from "@/models/job.model";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { getTagsWithQuestionCounts } from "@/actions/question.actions";
 
 type TagWithCount = {
@@ -27,18 +28,27 @@ function QuestionsPageClient({
   const [sidebarCounts, setSidebarCounts] =
     useState<TagWithCount[]>(tagsWithCounts);
   const [sidebarTotal, setSidebarTotal] = useState<number>(totalQuestions);
+  const stageId = useSearchParams().get("stage") ?? undefined;
+  const initialStage = useRef(stageId);
 
   const onFilterChange = (filter: string | undefined) => {
     setFilterKey(filter);
   };
 
   const refreshSidebarCounts = useCallback(async () => {
-    const result = await getTagsWithQuestionCounts();
+    const result = await getTagsWithQuestionCounts(stageId);
     if (result?.success) {
       setSidebarCounts(result.data);
       setSidebarTotal(result.totalQuestions);
     }
-  }, []);
+  }, [stageId]);
+
+  // The server rendered the first stage's counts; refetch only on change
+  useEffect(() => {
+    if (stageId === initialStage.current) return;
+    initialStage.current = stageId;
+    refreshSidebarCounts();
+  }, [stageId, refreshSidebarCounts]);
 
   return (
     <div className="col-span-3 flex h-full">

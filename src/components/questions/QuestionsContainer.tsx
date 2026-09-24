@@ -8,11 +8,12 @@ import {
   CardTitle,
 } from "../ui/card";
 import { Button } from "../ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, X } from "lucide-react";
 import { SearchInput } from "../SearchInput";
 import { ResponsiveCardHeader } from "../ResponsiveCardHeader";
 import {
   deleteQuestion,
+  getPrepStageLabel,
   getQuestionById,
   getQuestionsList,
 } from "@/actions/question.actions";
@@ -45,6 +46,8 @@ function QuestionsContainer({
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [stageLabel, setStageLabel] = useState<string | null>(null);
+  const stageId = searchParams.get("stage") ?? undefined;
   const hasSearched = useRef(false);
   const autoOpenHandled = useRef(false);
 
@@ -56,6 +59,7 @@ function QuestionsContainer({
         APP_CONSTANTS.RECORDS_PER_PAGE,
         filter,
         search,
+        stageId,
       );
       if (result?.success && result.data) {
         setQuestions((prev) =>
@@ -68,7 +72,7 @@ function QuestionsContainer({
       }
       setLoading(false);
     },
-    [],
+    [stageId],
   );
 
   const reloadQuestions = useCallback(async () => {
@@ -112,6 +116,28 @@ function QuestionsContainer({
       router.replace(newPath);
     }
   }, [router, searchParams]);
+
+  useEffect(() => {
+    if (!stageId) {
+      setStageLabel(null);
+      return;
+    }
+    getPrepStageLabel(stageId).then((result) => {
+      if (result?.success) {
+        const { jobTitle, company, round } = result.data;
+        setStageLabel(`${jobTitle} · ${company} — ${round}`);
+      }
+    });
+  }, [stageId]);
+
+  const clearStageFilter = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("stage");
+    const newPath = params.toString()
+      ? `?${params.toString()}`
+      : window.location.pathname;
+    router.replace(newPath);
+  };
 
   useEffect(() => {
     loadQuestions(1, filterKey, searchTerm || undefined);
@@ -166,6 +192,25 @@ function QuestionsContainer({
           </div>
         </ResponsiveCardHeader>
         <CardContent>
+          {stageId && (
+            <div className="mb-4 flex items-center justify-between gap-2 rounded-md border bg-muted/50 px-3 py-2 text-sm">
+              <span>
+                Prep questions for{" "}
+                <span className="font-medium">
+                  {stageLabel ?? "an interview round"}
+                </span>
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 shrink-0"
+                onClick={clearStageFilter}
+                aria-label="Show all questions"
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
           {loading && <Loading />}
           {!loading && (
             <>

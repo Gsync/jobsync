@@ -103,6 +103,25 @@ describe("Question Actions", () => {
       );
     });
 
+    it("should filter to one owned interview round when stageId is provided", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.question.findMany as any).mockResolvedValue([]);
+      (prisma.question.count as any).mockResolvedValue(0);
+
+      await getQuestionsList(1, 10, undefined, undefined, "stage-1");
+
+      const where = {
+        createdBy: mockUser.id,
+        prepLinks: {
+          some: { stageId: "stage-1", Stage: { Job: { userId: mockUser.id } } },
+        },
+      };
+      expect(prisma.question.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where }),
+      );
+      expect(prisma.question.count).toHaveBeenCalledWith({ where });
+    });
+
     it("should search by question and answer content", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
       (prisma.question.findMany as any).mockResolvedValue([]);
@@ -514,6 +533,28 @@ describe("Question Actions", () => {
           },
         ],
         totalQuestions: 8,
+      });
+    });
+
+    it("should count only one owned interview round's questions when stageId is provided", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.tag.findMany as any).mockResolvedValue([]);
+      (prisma.question.count as any).mockResolvedValue(0);
+
+      await getTagsWithQuestionCounts("stage-1");
+
+      const prepLinks = {
+        some: { stageId: "stage-1", Stage: { Job: { userId: mockUser.id } } },
+      };
+      expect(prisma.tag.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: {
+            _count: { select: { questions: { where: { prepLinks } } } },
+          },
+        }),
+      );
+      expect(prisma.question.count).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id, prepLinks },
       });
     });
 

@@ -58,9 +58,9 @@ export function QuestionCard({
                 onEdit(question);
               }}
               data-testid="question-edit-btn"
+              aria-label="Edit question"
             >
-              <Pencil className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Edit</span>
+              <Pencil className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
@@ -71,9 +71,9 @@ export function QuestionCard({
                 setShowDeleteDialog(true);
               }}
               data-testid="question-delete-btn"
+              aria-label="Delete question"
             >
-              <Trash2 className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Delete</span>
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>

@@ -6,11 +6,17 @@ import { requireUser } from "./shared";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { z } from "zod";
 
+// Questions on one interview round's prep list, owned through the job
+function stagePrepLinks(stageId: string, userId: string) {
+  return { some: { stageId, Stage: { Job: { userId } } } };
+}
+
 export const getQuestionsList = async (
   page: number = 1,
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
   filter?: string,
-  search?: string
+  search?: string,
+  stageId?: string
 ): Promise<any | undefined> => {
   try {
     const user = await requireUser();
@@ -23,6 +29,10 @@ export const getQuestionsList = async (
 
     if (filter) {
       whereClause.tags = { some: { id: filter } };
+    }
+
+    if (stageId) {
+      whereClause.prepLinks = stagePrepLinks(stageId, user.id);
     }
 
     if (search) {
@@ -48,6 +58,42 @@ export const getQuestionsList = async (
     return { success: true, data, total };
   } catch (error) {
     return handleError(error, "Failed to fetch questions list.");
+  }
+};
+
+export const getPrepStageLabel = async (
+  stageId: string
+): Promise<any | undefined> => {
+  try {
+    const user = await requireUser();
+
+    const stage = await prisma.jobStage.findFirst({
+      where: { id: stageId, Job: { userId: user.id } },
+      select: {
+        StageType: { select: { label: true } },
+        Job: {
+          select: {
+            JobTitle: { select: { label: true } },
+            Company: { select: { label: true } },
+          },
+        },
+      },
+    });
+
+    if (!stage) {
+      return { success: false, message: "Interview round not found" };
+    }
+
+    return {
+      success: true,
+      data: {
+        round: stage.StageType.label,
+        jobTitle: stage.Job.JobTitle.label,
+        company: stage.Job.Company.label,
+      },
+    };
+  } catch (error) {
+    return handleError(error, "Failed to fetch interview round.");
   }
 };
 
@@ -153,17 +199,18 @@ export const deleteQuestion = async (
   }
 };
 
-export const getTagsWithQuestionCounts = async (): Promise<
-  any | undefined
-> => {
+export const getTagsWithQuestionCounts = async (
+  stageId?: string
+): Promise<any | undefined> => {
   try {
     const user = await requireUser();
+    const prepLinks = stageId ? stagePrepLinks(stageId, user.id) : undefined;
 
     const tags = await prisma.tag.findMany({
       where: { createdBy: user.id },
       include: {
         _count: {
-          select: { questions: true },
+          select: { questions: prepLinks ? { where: { prepLinks } } : true },
         },
       },
       orderBy: { label: "asc" },
@@ -179,7 +226,7 @@ export const getTagsWithQuestionCounts = async (): Promise<
       }));
 
     const totalQuestions = await prisma.question.count({
-      where: { createdBy: user.id },
+      where: { createdBy: user.id, ...(prepLinks && { prepLinks }) },
     });
 
     return { success: true, data, totalQuestions };
