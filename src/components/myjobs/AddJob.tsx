@@ -115,11 +115,14 @@ export function AddJob({
     APP_CONSTANTS.LAST_JOB_SOURCE_STORAGE_KEY,
     null,
   );
+  // By value, not position: the list's order is not guaranteed.
+  const draftStatusId = jobStatuses.find((s) => s.value === "draft")?.id;
+  const appliedStatusId = jobStatuses.find((s) => s.value === "applied")?.id;
   const newJobDefaultValues = {
     type: Object.keys(JOB_TYPES)[0],
     workplaceType: "ONSITE",
     dueDate: addDays(new Date(), 3),
-    status: jobStatuses[0]?.id,
+    status: draftStatusId,
     salaryRange: "",
     jobUrl: "",
     jobDescription: "N/A",
@@ -239,12 +242,13 @@ export function AddJob({
 
   const jobAppliedChange = (applied: boolean) => {
     if (applied) {
-      form.getValues("status") === jobStatuses[0]?.id &&
-        setValue("status", jobStatuses[1]?.id);
+      appliedStatusId &&
+        form.getValues("status") === draftStatusId &&
+        setValue("status", appliedStatusId);
       setValue("dateApplied", new Date());
     } else {
       resetField("dateApplied");
-      setValue("status", jobStatuses[0]?.id);
+      draftStatusId && setValue("status", draftStatusId);
     }
   };
 

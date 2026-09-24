@@ -153,6 +153,23 @@ describe("jobActions", () => {
 
       await expect(getStatusList()).resolves.toStrictEqual(mockErrorResponse);
     });
+
+    it("returns statuses in JOB_STATUSES order, unknown values last", async () => {
+      (prisma.jobStatus.findMany as any).mockResolvedValue([
+        { id: "1", label: "Offer Accepted", value: "offer-accepted" },
+        { id: "2", label: "Legacy", value: "legacy" },
+        { id: "3", label: "Draft", value: "draft" },
+        { id: "4", label: "New", value: "new" },
+      ]);
+
+      const result = await getStatusList();
+      expect(result.map((s: any) => s.value)).toEqual([
+        "new",
+        "draft",
+        "offer-accepted",
+        "legacy",
+      ]);
+    });
   });
   describe("getJobSourceList", () => {
     it("should return job source list on successful query", async () => {

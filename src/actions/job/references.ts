@@ -2,14 +2,22 @@
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { canonicalizeEntityValue } from "@/lib/jobs/canonicalize";
+import { JOB_STATUSES } from "@/lib/constants";
 import { requireUser } from "../shared";
 
 // JobStatus is global reference data with no createdBy column, so unlike every
-// other list here it is not scoped to the current user.
+// other list here it is not scoped to the current user. Sorted in JS because
+// rows are in insertion order, and migrations insert some before signup.
+const STATUS_ORDER = new Map<string, number>(
+  JOB_STATUSES.map((s, i) => [s.value, i]),
+);
+
 export const getStatusList = async (): Promise<any | undefined> => {
   try {
     const statuses = await prisma.jobStatus.findMany();
-    return statuses;
+    const rank = (value: string) =>
+      STATUS_ORDER.get(value) ?? JOB_STATUSES.length;
+    return statuses.sort((a, b) => rank(a.value) - rank(b.value));
   } catch (error) {
     const msg = "Failed to fetch status list. ";
     return handleError(error, msg);

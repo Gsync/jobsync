@@ -574,3 +574,40 @@ describe("AddJob Component - Error Handling", () => {
     });
   }, 10000);
 });
+
+describe("AddJob Component - Status Order", () => {
+  const user = userEvent.setup({ skipHover: true });
+  window.HTMLElement.prototype.scrollIntoView = vi.fn();
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn();
+
+  // A fresh install's migrations insert these before signup seeds the rest,
+  // so an unordered status list starts with them.
+  const freshInstallStatuses = [
+    { id: "offer-accepted-id", label: "Offer Accepted", value: "offer-accepted" },
+    { id: "offer-declined-id", label: "Offer Declined", value: "offer-declined" },
+    ...JOB_STATUSES,
+  ];
+
+  it("defaults to Draft and toggles to Applied whatever order statuses arrive in", async () => {
+    render(
+      <AddJob
+        jobStatuses={freshInstallStatuses}
+        companies={[]}
+        jobTitles={[]}
+        locations={[]}
+        jobSources={JOB_SOURCES}
+        tags={[]}
+        editJob={null}
+        resetEditJob={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByTestId("add-job-btn"));
+
+    const status = screen.getByLabelText("Status");
+    expect(status).toHaveTextContent("Draft");
+    await user.click(screen.getByRole("switch"));
+    expect(status).toHaveTextContent("Applied");
+    await user.click(screen.getByRole("switch"));
+    expect(status).toHaveTextContent("Draft");
+  });
+});
