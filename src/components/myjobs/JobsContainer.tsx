@@ -10,12 +10,14 @@ import {
 import { toastError, toastSuccess } from "@/lib/toast";
 import {
   Company,
+  JOB_SORT_FIELDS,
   JobLocation,
   JobSource,
   JobStatus,
   JobTitle,
   Tag,
 } from "@/models/job.model";
+import { useSort } from "@/hooks/useSort";
 import Loading from "../Loading";
 import { useRouter } from "next/navigation";
 import MyJobsTable from "./MyJobsTable";
@@ -65,6 +67,8 @@ function JobsContainer({
     clearSourceFilter,
   } = useJobFilters({ companies, titles, locations, sources });
 
+  const { sort, toggleSort } = useSort(JOB_SORT_FIELDS);
+
   const {
     jobs,
     viewMode,
@@ -85,6 +89,7 @@ function JobsContainer({
     titleFilter,
     locationFilter,
     sourceFilter,
+    sort,
   });
 
   const onDeleteJob = async (jobId: string) => {
@@ -179,6 +184,8 @@ function JobsContainer({
                 editJob={onEditJob}
                 onChangeJobStatus={onChangeJobStatus}
                 onAddNote={onAddNote}
+                sort={sort}
+                onSort={toggleSort}
               />
             ))}
           {jobs.length < totalJobs && (

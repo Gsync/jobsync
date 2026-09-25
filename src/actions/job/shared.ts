@@ -3,6 +3,9 @@
 
 import { promoteStage } from "@/actions/jobStage/shared";
 
+// persist.ts writes matchData with JSON.stringify, so this substring is exact.
+export const UNANALYZED_MATCH_MARKER = '"analyzed":false';
+
 // An automation job saved without LLM analysis carries only its keyword
 // pre-rank in matchScore, which the list must not show as an AI match. The
 // matchData body is dropped so the list payload stays small.

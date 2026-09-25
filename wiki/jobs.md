@@ -3,7 +3,7 @@ type: how-to
 title: Jobs
 description: Adding jobs by hand or by pasting a posting into AI chat, moving them through the status workflow, and finding, editing, exporting or deleting them.
 feature: jobs
-tags: [jobs, applications, add a job, status, applied, interview, offer, offer accepted, offer declined, rejected, csv, export, paste, filter, search, job details, tabs, notes, ai match, cover letter]
+tags: [jobs, applications, add a job, status, applied, interview, offer, offer accepted, offer declined, rejected, csv, export, paste, filter, search, sort, job details, tabs, notes, ai match, cover letter]
 aliases: [job tracker, application tracker, my jobs, job board, track an application, job list]
 status: stable
 stale_after: 2027-08-31
@@ -56,6 +56,8 @@ You can also act from the Jobs list without opening the job: each row has **Edit
 ## How do I find a job in a long list?
 
 The Jobs card header has three tools. The **search box** matches on job text. The **filter dropdown** narrows to a preset: All (Except Dismissed), Applied, Interview, Draft, Rejected, Part-time, Accepted (discovered) or Dismissed (discovered). Opening the list from a job count in **Library → Companies**, **Job Titles**, **Locations** or **Sources** narrows it to that entry and shows it as a filter chip next to the search box — click the chip's **×** to clear it.
+
+In table view, click a column header — **Date Applied**, **Title**, **Company**, **Location**, **Match** or **Source** — to sort the whole list, not just the rows loaded so far. The first click puts the most useful end first (newest dates and highest match scores first; names A→Z), a second click reverses it, and a third returns to the default order, newest added first. Jobs with nothing in that column always stay at the bottom, and a discovered job that hasn't been AI-matched yet sorts with the unmatched ones. Status isn't sortable — use the filter dropdown instead. The sort resets when you leave the page; card view keeps whatever order the table is sorted in. On a narrow screen only the columns you can see can be clicked.
 
 The list also has a view toggle for table or card layout, and a reload button that refetches without a full page refresh.
 

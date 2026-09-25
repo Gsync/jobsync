@@ -56,6 +56,8 @@ function renderTable(jobs: JobResponse[], overrides: Partial<React.ComponentProp
     editJob,
     onChangeJobStatus,
     onAddNote,
+    sort: null,
+    onSort: vi.fn(),
     ...overrides,
   };
   const result = render(<MyJobsTable {...props} />);
@@ -114,6 +116,8 @@ describe("MyJobsTable", () => {
         editJob={vi.fn()}
         onChangeJobStatus={vi.fn()}
         onAddNote={vi.fn()}
+        sort={null}
+        onSort={vi.fn()}
       />,
     );
     expect(screen.getByRole("link", { name: /match/i })).toHaveAttribute(
@@ -129,7 +133,11 @@ describe("MyJobsTable", () => {
       expect(
         screen.queryByRole("link", { name: /match/i }),
       ).not.toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /match/i })).toBeDisabled();
+      // The sortable "Match" column header is also a button named /match/i now.
+      const matchButtons = screen.getAllByRole("button", { name: /match/i });
+      expect(matchButtons.some((b) => (b as HTMLButtonElement).disabled)).toBe(
+        true,
+      );
     } finally {
       chat.busy = false;
     }
@@ -147,6 +155,8 @@ describe("MyJobsTable", () => {
         editJob={vi.fn()}
         onChangeJobStatus={vi.fn()}
         onAddNote={vi.fn()}
+        sort={null}
+        onSort={vi.fn()}
       />,
     );
     expect(screen.queryByText("0")).not.toBeInTheDocument();

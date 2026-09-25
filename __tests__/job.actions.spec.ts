@@ -268,6 +268,64 @@ describe("jobActions", () => {
       });
     });
 
+    describe("sorting", () => {
+      const BASE = [{ createdAt: "desc" }, { id: "desc" }];
+      const sortArgs = (sort: any) =>
+        [1, 10, undefined, undefined, undefined, undefined, undefined, undefined, undefined, sort] as const;
+
+      beforeEach(() => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+      });
+
+      it("orders by newest added with an id tiebreaker by default", async () => {
+        await getJobsList();
+        expect(prisma.job.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({ orderBy: BASE }),
+        );
+      });
+
+      it("sorts text columns on the canonical value", async () => {
+        await getJobsList(...sortArgs({ field: "company", dir: "asc" }));
+        expect(prisma.job.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            orderBy: [{ Company: { value: "asc" } }, ...BASE],
+          }),
+        );
+        expect(prisma.job.count).toHaveBeenCalledTimes(1);
+      });
+
+      it("ignores a field outside the whitelist", async () => {
+        await getJobsList(...sortArgs({ field: "userId", dir: "asc" }));
+        expect(prisma.job.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({ orderBy: BASE }),
+        );
+      });
+
+      it("pages real match scores first, then unscored jobs by newest", async () => {
+        (prisma.job.count as any)
+          .mockResolvedValueOnce(1)
+          .mockResolvedValueOnce(1);
+        (prisma.job.findMany as any)
+          .mockResolvedValueOnce([{ id: "scored", matchScore: 80, matchData: "{}" }])
+          .mockResolvedValueOnce([{ id: "unmatched", matchScore: null, matchData: null }]);
+
+        const result = await getJobsList(...sortArgs({ field: "matchScore", dir: "desc" }));
+
+        expect(result.total).toBe(2);
+        expect(result.data.map((j: any) => j.id)).toEqual(["scored", "unmatched"]);
+        const [valuedCall, blankCall] = (prisma.job.findMany as any).mock.calls;
+        expect(valuedCall[0].orderBy).toEqual([{ matchScore: "desc" }, ...BASE]);
+        expect(blankCall[0].orderBy).toEqual(BASE);
+        // The dismissed-hiding AND survives, with the partition appended.
+        expect(valuedCall[0].where.AND).toHaveLength(2);
+        expect(valuedCall[0].where.AND[1]).toMatchObject({
+          matchScore: { not: null },
+        });
+      });
+    });
+
     describe("search functionality", () => {
       it("should build OR clause when search parameter is provided", async () => {
         (getCurrentUser as any).mockResolvedValue(mockUser);

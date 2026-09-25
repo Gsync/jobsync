@@ -14,10 +14,13 @@ import { format } from "date-fns";
 import { useState } from "react";
 import {
   JobResponse,
+  JobSortField,
   JobStatus,
   getJobTypeLabel,
   getWorkplaceTypeLabel,
 } from "@/models/job.model";
+import type { SortState } from "@/models/sort.model";
+import { SortableTableHead } from "../SortableTableHead";
 import Link from "next/link";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { CircularScore } from "@/components/CircularScore";
@@ -34,6 +37,8 @@ type MyJobsTableProps = {
   editJob: (id: string) => void;
   onChangeJobStatus: (id: string, status: JobStatus) => void;
   onAddNote: (jobId: string) => void;
+  sort: SortState<JobSortField> | null;
+  onSort: (field: JobSortField) => void;
 };
 
 function MyJobsTable({
@@ -43,6 +48,8 @@ function MyJobsTable({
   editJob,
   onChangeJobStatus,
   onAddNote,
+  sort,
+  onSort,
 }: MyJobsTableProps) {
   const [alertOpen, setAlertOpen] = useState(false);
   const [jobIdToDelete, setJobIdToDelete] = useState("");
@@ -60,13 +67,25 @@ function MyJobsTable({
             <TableHead className="hidden w-[100px] sm:table-cell">
               <span className="sr-only">Company Logo</span>
             </TableHead>
-            <TableHead className="hidden md:table-cell">Date Applied</TableHead>
-            <TableHead>Title</TableHead>
-            <TableHead>Company</TableHead>
-            <TableHead className="hidden md:table-cell">Location</TableHead>
+            <SortableTableHead field="appliedDate" sort={sort} onSort={onSort} className="hidden md:table-cell">
+              Date Applied
+            </SortableTableHead>
+            <SortableTableHead field="title" sort={sort} onSort={onSort}>
+              Title
+            </SortableTableHead>
+            <SortableTableHead field="company" sort={sort} onSort={onSort}>
+              Company
+            </SortableTableHead>
+            <SortableTableHead field="location" sort={sort} onSort={onSort} className="hidden md:table-cell">
+              Location
+            </SortableTableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="hidden md:table-cell text-center">Match</TableHead>
-            <TableHead className="hidden md:table-cell">Source</TableHead>
+            <SortableTableHead field="matchScore" sort={sort} onSort={onSort} className="hidden md:table-cell text-center">
+              Match
+            </SortableTableHead>
+            <SortableTableHead field="source" sort={sort} onSort={onSort} className="hidden md:table-cell">
+              Source
+            </SortableTableHead>
             <TableHead>
               <span className="sr-only">Actions</span>
             </TableHead>

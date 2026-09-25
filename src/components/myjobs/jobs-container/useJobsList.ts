@@ -2,7 +2,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getJobsList } from "@/actions/job.actions";
 import { toastError } from "@/lib/toast";
-import { JobResponse, JobsViewMode } from "@/models/job.model";
+import { JobResponse, JobSortField, JobsViewMode } from "@/models/job.model";
+import type { SortState } from "@/models/sort.model";
 import { APP_CONSTANTS } from "@/lib/constants";
 import {
   getFromLocalStorage,
@@ -18,12 +19,14 @@ export function useJobsList({
   titleFilter,
   locationFilter,
   sourceFilter,
+  sort,
 }: {
   companyFilter: string | null;
   appliedFilter: boolean;
   titleFilter: string | null;
   locationFilter: string | null;
   sourceFilter: string | null;
+  sort: SortState<JobSortField> | null;
 }) {
   const { jobWrites } = useAgentChat();
   const [jobs, setJobs] = useState<JobResponse[]>([]);
@@ -36,6 +39,9 @@ export function useJobsList({
   const [loadingMore, setLoadingMore] = useState(false);
   const hasSearched = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const requestSeq = useRef(0);
+  const sortRef = useRef(sort);
+  const lastSort = useRef(sort);
 
   // Read after mount: localStorage is unavailable during SSR, so seeding the
   // initial state from it would cause a hydration mismatch.
@@ -56,6 +62,9 @@ export function useJobsList({
 
   const loadJobs = useCallback(
     async (page: number, filter?: string, search?: string) => {
+      // Only the newest request may write: a slower response to an older
+      // sort, search or page must not replace or extend the newer list.
+      const request = ++requestSeq.current;
       if (page === 1) setInitialLoading(true);
       else setLoadingMore(true);
       const { success, data, total, message } = await getJobsList(
@@ -68,7 +77,9 @@ export function useJobsList({
         titleFilter || undefined,
         locationFilter || undefined,
         sourceFilter || undefined,
+        sortRef.current ?? undefined,
       );
+      if (request !== requestSeq.current) return;
       if (success && data) {
         setJobs((prev) => (page === 1 ? data : [...prev, ...data]));
         setTotalJobs(total);
@@ -122,6 +133,17 @@ export function useJobsList({
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm]);
+
+  // Reload page 1 on a real sort change, keeping the filter and search. The
+  // equality check skips mount (and StrictMode's re-run) — the mount effect
+  // already loads.
+  useEffect(() => {
+    sortRef.current = sort;
+    if (lastSort.current === sort) return;
+    lastSort.current = sort;
+    loadJobs(1, filterKey, searchTerm || undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sort]);
 
   // Infinite scroll: auto-load next page when sentinel is visible
   useEffect(() => {

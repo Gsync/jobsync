@@ -2,6 +2,7 @@ import { persistDiscoveredJob } from "@/lib/scraper/automation-run/persist";
 import { mapScrapedJobToJobRecord } from "@/lib/scraper/mapper";
 import db from "@/lib/db";
 import { resolveStageTypeForStatusId } from "@/lib/jobs/resolve";
+import { UNANALYZED_MATCH_MARKER } from "@/actions/job/shared";
 
 vi.mock("@/lib/db", () => ({
   default: { job: { create: vi.fn() }, jobStage: { create: vi.fn() } },
@@ -53,5 +54,16 @@ describe("persistDiscoveredJob", () => {
     const res = await persistDiscoveredJob(automation, job, 50, {}, []);
 
     expect(res.saved).toBe(false);
+  });
+
+  // The jobs list Match sort filters on this substring of matchData.
+  it("writes the unanalysed marker the jobs list sort filters on", async () => {
+    await persistDiscoveredJob(automation, job, 50, { analyzed: false }, []);
+
+    expect(mapScrapedJobToJobRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        matchData: expect.stringContaining(UNANALYZED_MATCH_MARKER),
+      }),
+    );
   });
 });

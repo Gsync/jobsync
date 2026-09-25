@@ -1,10 +1,12 @@
 "use server";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
-import { JOB_TYPES } from "@/models/job.model";
+import { JOB_TYPES, JobSortField } from "@/models/job.model";
+import type { SortState } from "@/models/sort.model";
+import { findManySorted, planListSort, SortFieldSpec } from "@/lib/listSort";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { requireUser } from "../shared";
-import { hideUnanalyzedScore } from "./shared";
+import { hideUnanalyzedScore, UNANALYZED_MATCH_MARKER } from "./shared";
 import { STAGE_DETAIL_INCLUDE } from "../jobStage/shared";
 
 const JOB_LIST_SELECT = {
@@ -174,6 +176,53 @@ const buildJobsWhereClause = (userId: string, filters: JobsListFilters) => {
   return whereClause;
 };
 
+// Text sorts use the canonical lowercase `value`, so order ignores case.
+const JOB_SORT_SPECS: Record<JobSortField, SortFieldSpec> = {
+  appliedDate: {
+    orderBy: (dir) => ({ appliedDate: dir }),
+    blanks: {
+      hasValue: { appliedDate: { not: null } },
+      noValue: { appliedDate: null },
+    },
+  },
+  title: { orderBy: (dir) => ({ JobTitle: { value: dir } }) },
+  company: { orderBy: (dir) => ({ Company: { value: dir } }) },
+  location: {
+    orderBy: (dir) => ({ Location: { value: dir } }),
+    blanks: {
+      hasValue: { locationId: { not: null } },
+      noValue: { locationId: null },
+    },
+  },
+  source: {
+    orderBy: (dir) => ({ JobSource: { value: dir } }),
+    blanks: {
+      hasValue: { jobSourceId: { not: null } },
+      noValue: { jobSourceId: null },
+    },
+  },
+  // A hidden pre-rank is not a score, so those jobs sort with the unmatched.
+  // The matchData: null branch keeps a scored row with no matchData visible.
+  matchScore: {
+    orderBy: (dir) => ({ matchScore: dir }),
+    blanks: {
+      hasValue: {
+        matchScore: { not: null },
+        OR: [
+          { matchData: null },
+          { NOT: { matchData: { contains: UNANALYZED_MATCH_MARKER } } },
+        ],
+      },
+      noValue: {
+        OR: [
+          { matchScore: null },
+          { matchData: { contains: UNANALYZED_MATCH_MARKER } },
+        ],
+      },
+    },
+  },
+};
+
 export const getJobsList = async (
   page: number = 1,
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
@@ -184,6 +233,7 @@ export const getJobsList = async (
   titleValue?: string,
   locationValue?: string,
   sourceValue?: string,
+  sort?: SortState,
 ): Promise<any | undefined> => {
   try {
     const user = await requireUser();
@@ -199,21 +249,11 @@ export const getJobsList = async (
       sourceValue,
     });
 
-    const [data, total] = await Promise.all([
-      prisma.job.findMany({
-        where: whereClause,
-        skip,
-        take: limit,
-        select: JOB_LIST_SELECT,
-        orderBy: {
-          createdAt: "desc",
-          // appliedDate: "desc",
-        },
-      }),
-      prisma.job.count({
-        where: whereClause,
-      }),
-    ]);
+    const { data, total } = await findManySorted(
+      prisma.job,
+      { where: whereClause, skip, take: limit, select: JOB_LIST_SELECT },
+      planListSort(sort, JOB_SORT_SPECS, [{ createdAt: "desc" }]),
+    );
     return { success: true, data: data.map(hideUnanalyzedScore), total };
   } catch (error) {
     const msg = "Failed to fetch jobs list. ";
