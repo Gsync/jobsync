@@ -108,7 +108,7 @@ export async function createNewJob(
   await pick(page, "Job Location", "Create or Search location", locationText);
   cleanup.location(locationText);
 
-  await page.getByText("Part-time").click();
+  await page.getByRole("dialog").getByText("Part-time", { exact: true }).click();
   await page.getByLabel("Job Source").click();
   await page.getByRole("option", { name: "Indeed" }).click();
   await expect(page.getByLabel("Job Source")).toContainText("Indeed");
