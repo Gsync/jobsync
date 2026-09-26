@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { PowerIcon, Settings, Info, ArrowUpCircle } from "lucide-react";
+import {
+  PowerIcon,
+  Settings,
+  Info,
+  ArrowUpCircle,
+  ExternalLink,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -83,6 +89,17 @@ export function ProfileDropdown({
           >
             <Info className="w-5 mr-2" />
             Support
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <a
+              href="https://github.com/Gsync/jobsync/wiki"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cursor-pointer"
+            >
+              <ExternalLink className="w-5 mr-2" />
+              Wiki
+            </a>
           </DropdownMenuItem>
           {version?.updateAvailable && (
             <DropdownMenuItem

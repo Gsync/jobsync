@@ -1144,7 +1144,7 @@ describe("JobsContainer Search Functionality", () => {
       renderComponent();
       await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
 
-      await user.click(screen.getByRole("button", { name: /^Date Applied/ }));
+      await user.click(screen.getByRole("button", { name: /^Applied/ }));
 
       await waitFor(() => {
         expect(getJobsList).toHaveBeenLastCalledWith(

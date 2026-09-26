@@ -68,7 +68,7 @@ function MyJobsTable({
               <span className="sr-only">Company Logo</span>
             </TableHead>
             <SortableTableHead field="appliedDate" sort={sort} onSort={onSort} className="hidden md:table-cell">
-              Date Applied
+              Applied
             </SortableTableHead>
             <SortableTableHead field="title" sort={sort} onSort={onSort}>
               Title

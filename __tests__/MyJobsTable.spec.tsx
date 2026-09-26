@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import MyJobsTable from "@/components/myjobs/MyJobsTable";
 import type { JobResponse, JobStatus } from "@/models/job.model";
@@ -71,14 +71,16 @@ describe("MyJobsTable", () => {
     expect(screen.getByText("Software Engineer")).toBeInTheDocument();
     expect(screen.getByText("Acme Corp")).toBeInTheDocument();
     expect(screen.getByText("Remote")).toBeInTheDocument();
-    expect(screen.getByText("Applied")).toBeInTheDocument();
+    const statusButton = screen.getByRole("button", { name: /Change status/ });
+    expect(within(statusButton).getByText("Applied")).toBeInTheDocument();
   });
 
   it("shows a Dismissed badge for discovered jobs regardless of status", () => {
     renderTable([makeJob({ discoveryStatus: "dismissed", Status: { id: "1", label: "Applied", value: "applied" } })]);
 
     expect(screen.getByText("Dismissed")).toBeInTheDocument();
-    expect(screen.queryByText("Applied")).not.toBeInTheDocument();
+    const statusButton = screen.getByRole("button", { name: /Change status/ });
+    expect(within(statusButton).queryByText("Applied")).not.toBeInTheDocument();
   });
 
   it("shows an Expired badge for past-due draft jobs", () => {
@@ -101,7 +103,8 @@ describe("MyJobsTable", () => {
     ]);
 
     expect(screen.queryByText("Expired")).not.toBeInTheDocument();
-    expect(screen.getByText("Applied")).toBeInTheDocument();
+    const statusButton = screen.getByRole("button", { name: /Change status/ });
+    expect(within(statusButton).getByText("Applied")).toBeInTheDocument();
   });
 
   it("renders a match score when present, and a Match button otherwise", () => {

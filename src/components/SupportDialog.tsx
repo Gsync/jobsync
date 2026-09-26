@@ -29,14 +29,22 @@ export function SupportDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Support</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="space-y-1">
             <a
               href="https://github.com/Gsync/jobsync/issues"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              className="block text-primary hover:underline"
             >
               https://github.com/Gsync/jobsync/issues
+            </a>
+            <a
+              href="https://github.com/Gsync/jobsync/discussions"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-primary hover:underline"
+            >
+              https://github.com/Gsync/jobsync/discussions
             </a>
           </DialogDescription>
         </DialogHeader>
