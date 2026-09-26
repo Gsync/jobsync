@@ -1,5 +1,6 @@
 description: Resume review prompt regression tests
 
+# temperature 0.3 matches TEMPERATURES.FEEDBACK, which review_resume sends.
 providers:
   - id: openai:chat:deepseek-v4-flash
     label: deepseek-v4-flash
@@ -7,7 +8,7 @@ providers:
       apiBaseUrl: https://api.deepseek.com
       apiKeyEnvar: DEEPSEEK_API_KEY
       showThinking: false
-      temperature: 0
+      temperature: 0.3
       max_tokens: 8192
 
   # Local Ollama via its OpenAI-compatible endpoint. reasoning_effort goes in
@@ -18,7 +19,7 @@ providers:
     config:
       apiBaseUrl: http://localhost:11434/v1
       apiKey: ollama
-      temperature: 0
+      temperature: 0.3
       max_tokens: 8192
       passthrough:
         reasoning_effort: "none"
@@ -65,3 +66,16 @@ tests:
         value:
           - "Responsible for"
           - "Helped with"
+
+  - description: Recent dates resume - past dates must not be called future (issue #123)
+    vars:
+      resumeText: file://./fixtures/recent-dates.ts
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNotJson
+      - type: javascript
+        value: file://./assertions.ts:assertScoresLine
+      - type: javascript
+        value: file://./assertions.ts:assertRequiredSections
+      - type: javascript
+        value: file://./assertions.ts:assertNoFutureDateClaim

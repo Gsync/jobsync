@@ -3,6 +3,8 @@
  * Functions to construct user prompts for job match analysis.
  */
 
+import { buildDateNote } from "../dateNote";
+
 /**
  * Build user prompt for comprehensive job match analysis
  */
@@ -11,6 +13,8 @@ export function buildJobMatchPrompt(
   jobDescription: string,
 ): string {
   return `Compare this resume against the job description.
+
+${buildDateNote()} Use it for any years-of-experience reasoning.
 
 RESUME:
 ${resumeText}

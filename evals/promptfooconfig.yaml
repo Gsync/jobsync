@@ -89,7 +89,22 @@ tests:
           - "Responsible for"
           - "Helped with"
 
+  - description: "[resume-review] recent dates resume - no future-date claim (#123)"
+    vars:
+      task: resume-review
+      resumeText: file://./resume-review/fixtures/recent-dates.ts
+    assert:
+      - type: javascript
+        value: file://./resume-review/assertions.ts:assertNotJson
+      - type: javascript
+        value: file://./resume-review/assertions.ts:assertScoresLine
+      - type: javascript
+        value: file://./resume-review/assertions.ts:assertRequiredSections
+      - type: javascript
+        value: file://./resume-review/assertions.ts:assertNoFutureDateClaim
+
   # Job match (interactive, full 7-section)
+
   - description: "[job-match] backend resume vs backend JD - strong fit"
     vars:
       task: job-match

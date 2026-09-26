@@ -1,4 +1,5 @@
 import { stripThinking } from '../../src/lib/ai/stripThinking';
+import { recentDates } from './fixtures/recent-dates';
 
 type AssertionResult = { pass: boolean; score: number; reason: string };
 
@@ -149,4 +150,23 @@ export function assertWeakScoresLow(output: string): AssertionResult {
       ? `weak resume scored low (overall=${scores.overall} impact=${scores.impact})`
       : `weak resume overall<=50/impact<=30 expected, got overall=${scores.overall} impact=${scores.impact}`,
   };
+}
+
+// Issue #123: without today's date the model called the fixture's recent
+// past dates future, or its back-to-back roles overlapping. A line needs one
+// of those years or "date" too, so "future-looking achievements" passes, and
+// a correct "no future dates" is not a claim.
+export function assertNoFutureDateClaim(output: string): AssertionResult {
+  const dateWord = new RegExp(`${recentDates().years.join('|')}|\\bdates?\\b`, 'i');
+  const hits = stripThinking(output)
+    .split('\n')
+    .filter(
+      (line) =>
+        (/future|not yet|impossible/i.test(line) && dateWord.test(line) && !/\bno future dates?\b/i.test(line)) ||
+        /overlap/i.test(line),
+    )
+    .map((line) => line.trim().slice(0, 160));
+  return hits.length === 0
+    ? { pass: true, score: 1, reason: 'No future-date or overlap claim' }
+    : { pass: false, score: 0, reason: `Past date flagged: ${hits.join(' || ')}` };
 }
