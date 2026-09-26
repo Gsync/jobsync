@@ -188,6 +188,8 @@ function JobDetails({
       // The status change appends a stage server-side, and the badge reads
       // that stage, so this is awaited rather than fired off.
       await reloadStages();
+      // applied/appliedDate may have changed too, and they come from the prop.
+      router.refresh();
       toastSuccess(`Job has been updated successfully`);
     } else {
       toastError(message);

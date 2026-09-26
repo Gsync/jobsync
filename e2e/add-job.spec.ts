@@ -83,7 +83,8 @@ test.describe("Add New Job", () => {
     const jobText = uniqueName("developer test title applied");
     await createNewJob(page, jobText, cleanup, {
       beforeSave: async (page) => {
-        await page.getByRole("switch").click();
+        await page.getByLabel("Select Job Status").click();
+        await page.getByRole("option", { name: "Applied", exact: true }).click();
       },
     });
     await expect(page.getByRole("row", { name: jobText }).first()).toBeVisible();
@@ -93,7 +94,6 @@ test.describe("Add New Job", () => {
       .getByRole("button", { name: "Edit Job" })
       .first()
       .click();
-    await expect(page.getByRole("switch")).toBeChecked();
     await expect(page.getByLabel("Select Job Status")).toContainText("Applied");
     await expect(page.getByLabel("Date Applied")).toContainText(
       format(new Date(), "PP"),

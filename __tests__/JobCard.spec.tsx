@@ -67,8 +67,13 @@ describe("JobCard", () => {
     expect(screen.getByText("Jun 1, 2024")).toBeInTheDocument();
     unmount();
 
-    renderCard(makeJob({ appliedDate: null as unknown as Date }));
+    renderCard(makeJob({ appliedDate: null as unknown as Date, applied: false }));
     expect(screen.getByText("Not applied")).toBeInTheDocument();
+  });
+
+  it("shows Applied for an applied job with no date", () => {
+    renderCard(makeJob({ appliedDate: null as unknown as Date, applied: true }));
+    expect(screen.queryByText("Not applied")).not.toBeInTheDocument();
   });
 
   it("renders the match score, or a Match button when there is none", () => {

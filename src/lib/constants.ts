@@ -348,6 +348,15 @@ export const STAGE_OUTCOMES = [
   { label: "Cancelled", value: "cancelled" },
 ] as const;
 
+// Statuses you can only reach by applying: setting one marks the job applied.
+export const APPLIED_STATUS_VALUES: readonly string[] = [
+  "applied",
+  "interview",
+  "offer",
+  "offer-accepted",
+  "offer-declined",
+];
+
 // Zod's z.enum needs a non-empty tuple; JOB_STATUSES is the source of truth.
 export const JOB_STATUS_VALUES = JOB_STATUSES.map((s) => s.value) as unknown as [
   string,

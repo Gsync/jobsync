@@ -23,6 +23,7 @@ vi.mock("@prisma/client", () => {
   const mPrismaClient = {
     jobStatus: {
       findMany: vi.fn(),
+      findUnique: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
     },
@@ -55,6 +56,7 @@ vi.mock("@prisma/client", () => {
     tag: { count: vi.fn() },
     jobStage: {
       findFirst: vi.fn(),
+      count: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       updateMany: vi.fn(),
@@ -127,6 +129,7 @@ describe("jobActions", () => {
     (prisma as any).jobStage.create.mockResolvedValue({ id: "stage-id" });
     (prisma as any).jobStage.updateMany.mockResolvedValue({ count: 1 });
     (resolveStageTypeForStatusId as any).mockResolvedValue("stage-type-id");
+    (prisma as any).jobStatus.findUnique.mockResolvedValue({ value: "draft" });
   });
   describe("getStatusList", () => {
     it("should return status list on successful query", async () => {
@@ -1177,7 +1180,6 @@ describe("jobActions", () => {
           description: jobData.jobDescription,
           jobType: jobData.type,
           userId: mockUser.id,
-          applied: jobData.applied,
           resumeId: jobData.resume,
           stages: {
             create: {
@@ -1189,6 +1191,28 @@ describe("jobActions", () => {
         },
       });
       expect(result).toEqual({ data: jobData, success: true });
+    });
+    it("marks the job applied when the chosen status is Applied", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma as any).jobStatus.findUnique.mockResolvedValue({ value: "applied" });
+      (prisma.job.create as any).mockResolvedValue(jobData);
+
+      await addJob({ ...jobData, dateApplied: undefined });
+
+      const data = (prisma.job.create as any).mock.calls[0][0].data;
+      expect(data.applied).toBe(true);
+      expect(data.appliedDate).toEqual(expect.any(Date));
+    });
+    it("marks an Offer job applied without inventing a date", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma as any).jobStatus.findUnique.mockResolvedValue({ value: "offer" });
+      (prisma.job.create as any).mockResolvedValue(jobData);
+
+      await addJob({ ...jobData, dateApplied: undefined });
+
+      const data = (prisma.job.create as any).mock.calls[0][0].data;
+      expect(data.applied).toBe(true);
+      expect(data.appliedDate).toBeUndefined();
     });
     it("should handle unexpected errors", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
@@ -1286,6 +1310,7 @@ describe("jobActions", () => {
       jobSourceId: "source-id",
       resumeId: null,
       coverLetterId: null,
+      statusId: "status-id",
       tags: [{ id: "tag-1" }],
     };
     beforeEach(() => {
@@ -1360,6 +1385,71 @@ describe("jobActions", () => {
 
       expect(result).toStrictEqual({ data: jobData, success: true });
       expect(prisma.job.update).toHaveBeenCalledTimes(1);
+    });
+    it("keeps an Interview job applied when it has no date", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma as any).jobStatus.findUnique.mockResolvedValue({
+        value: "interview",
+      });
+      (prisma.job.update as any).mockResolvedValue(jobData);
+
+      await updateJob({ ...jobData, dateApplied: undefined });
+
+      const data = (prisma.job.update as any).mock.calls[0][0].data;
+      expect(data.applied).toBe(true);
+      expect(data.appliedDate).toBeNull();
+    });
+    it("un-applies a job whose date is cleared and was never applied to", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma as any).jobStage.count.mockResolvedValue(0);
+      (prisma.job.update as any).mockResolvedValue(jobData);
+
+      await updateJob({ ...jobData, dateApplied: undefined });
+
+      expect((prisma as any).jobStage.count.mock.calls[0][0].where).toMatchObject(
+        { jobId: "job-id", Job: { userId: mockUser.id } },
+      );
+      const data = (prisma.job.update as any).mock.calls[0][0].data;
+      expect(data.applied).toBe(false);
+      expect(data.appliedDate).toBeNull();
+    });
+    it("keeps a job applied when an earlier stage was an applying one", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma as any).jobStatus.findUnique.mockResolvedValue({
+        value: "rejected",
+      });
+      (prisma as any).jobStage.count.mockResolvedValue(1);
+      (prisma.job.update as any).mockResolvedValue(jobData);
+
+      await updateJob({ ...jobData, dateApplied: undefined });
+
+      expect((prisma.job.update as any).mock.calls[0][0].data.applied).toBe(true);
+    });
+    it("does not date an Applied job on a save that keeps its status", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma as any).jobStatus.findUnique.mockResolvedValue({
+        value: "applied",
+      });
+      (prisma.job.update as any).mockResolvedValue(jobData);
+
+      await updateJob({ ...jobData, dateApplied: undefined });
+
+      const data = (prisma.job.update as any).mock.calls[0][0].data;
+      expect(data.applied).toBe(true);
+      expect(data.appliedDate).toBeNull();
+    });
+    it("dates a job when the save moves it to Applied without a date", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma as any).jobStatus.findUnique.mockResolvedValue({
+        value: "applied",
+      });
+      (prisma.job.update as any).mockResolvedValue(jobData);
+
+      await updateJob({ ...jobData, status: "s-new", dateApplied: undefined });
+
+      const data = (prisma.job.update as any).mock.calls[0][0].data;
+      expect(data.applied).toBe(true);
+      expect(data.appliedDate).toEqual(expect.any(Date));
     });
     it("appends a status stage when the Edit Job dialog changes the status", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);

@@ -68,7 +68,9 @@ export function CompanyJobsTab({ jobs }: CompanyJobsTabProps) {
             <TableCell className="hidden md:table-cell">
               {job.appliedDate
                 ? format(new Date(job.appliedDate), "PP")
-                : "Not applied"}
+                : job.applied
+                  ? "Applied"
+                  : "Not applied"}
             </TableCell>
             <TableCell>
               {job.matchScore != null ? (

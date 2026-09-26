@@ -97,7 +97,11 @@ export function JobCard({
         )}
         <span className="flex items-center gap-1 whitespace-nowrap">
           <Calendar className="h-3.5 w-3.5 shrink-0" />
-          {job.appliedDate ? format(job.appliedDate, "PP") : "Not applied"}
+          {job.appliedDate
+            ? format(job.appliedDate, "PP")
+            : job.applied
+              ? "Applied"
+              : "Not applied"}
         </span>
         {job.JobSource?.label && (
           <span className="flex min-w-0 items-center gap-1">

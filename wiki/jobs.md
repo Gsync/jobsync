@@ -15,7 +15,7 @@ stale_after: 2027-08-31
 
 Open **Jobs** in the sidebar and click **Add Job** at the top-right of the Jobs card. Job Title, Company, Job Location and Job Source are the fields you must fill in — each is a combo box that either picks an existing entry or creates a new one as you type, and Location and Source come pre-selected with whatever you used on your last job.
 
-Job Type, Workplace Type, Status, Due Date and Job Description are required too, but the form opens with them already set — Job Type on its first option, Workplace Type on Onsite, Status on Draft, Due Date three days from today and Job Description the placeholder `N/A`. You can change any of them; you cannot clear them. Genuinely optional are Job URL, Salary Range, the Applied switch, Date Applied, a resume and cover letter to attach, and skills. Salary Range is free text: pick one of the 10,000-wide suggestions from `Under 50,000` to `300,000+`, or type your own — `$120k – $150k`, `Negotiable` — and it is saved exactly as typed and shown on the job's details page.
+Job Type, Workplace Type, Status, Due Date and Job Description are required too, but the form opens with them already set — Job Type on its first option, Workplace Type on Onsite, Status on Draft, Due Date three days from today and Job Description the placeholder `N/A`. You can change any of them; you cannot clear them. Genuinely optional are Job URL, Salary Range, Date Applied, a resume and cover letter to attach, and skills. Salary Range is free text: pick one of the 10,000-wide suggestions from `Under 50,000` to `300,000+`, or type your own — `$120k – $150k`, `Negotiable` — and it is saved exactly as typed and shown on the job's details page.
 
 Paste the full posting text into Job Description if you have it. The AI features — resume review, job match and cover letter generation — read that field, and a job saved with only a title and a salary gives them almost nothing to work from.
 
@@ -30,6 +30,13 @@ This requires an AI provider and model to be set under **Settings → AI Provide
 A job carries exactly one status from: **New**, **Draft**, **Applied**, **Interview**, **Offer**, **Offer Accepted**, **Offer Declined**, **Rejected**, **Expired**, **Archived** and **Withdrawn** — *Offer Declined* for an offer you turned down, *Rejected* for one the company turned down, *Withdrawn* for one you pulled out of. They are labels you move by hand, not a state machine — nothing stops you going from Interview back to Draft.
 
 A job's status now follows its [timeline](./timeline.md): it is whatever the job's current stage means, so changing the status also records a stage, and moving which stage is current also moves the status.
+
+A job counts as applied — on the dashboard, in the Jobs list's applied filter and in the CSV export — once its status reaches **Applied**, **Interview**, **Offer**, **Offer Accepted** or **Offer Declined**, or once it has a Date Applied, whichever way you set it: a status menu, the Add or Edit Job form, a timeline stage or the MCP tools. It stays applied if the status later moves to Rejected, Withdrawn or anything else. Choosing **Applied** fills in today's Date Applied when the job has none; Interview and the Offer statuses leave the date for you, so an application you are logging late isn't counted as sent today. Until it has a date, such a job shows as *Applied* without one and is left out of the dashboard's dated counts and charts. An existing Date Applied is never overwritten. In the form, picking a Date Applied on a Draft or New job moves its status to Applied.
+
+To take back an application logged by mistake:
+
+1. On the job's **Timeline** tab, [delete](./timeline.md#how-do-i-delete-a-stage) every Applied, Interview or Offer stage. If one of them was the current stage, the status moves back to the stage before it, such as Draft.
+2. Open **Edit**, clear Date Applied (click the selected day again), check the status is one such as Draft and save.
 
 ## How do I change a job's status?
 

@@ -7,7 +7,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "../shared";
 import { appendStatusStage } from "./shared";
+import { jobFieldsForStage } from "../jobStage/shared";
 import { resolveStageTypeForStatusId } from "@/lib/jobs/resolve";
+import { APPLIED_STATUS_VALUES } from "@/lib/constants";
 
 type JobRefs = {
   jobTitleId?: string | null;
@@ -81,7 +83,6 @@ export const addJob = async (
       dateApplied,
       jobDescription,
       jobUrl,
-      applied,
       resume,
       coverLetter,
       tags,
@@ -111,7 +112,6 @@ export const addJob = async (
       workplaceType,
       userId: user.id,
       jobUrl,
-      applied,
       resumeId: resume,
       coverLetterId: coverLetter,
       tagIds: tags ?? [],
@@ -147,7 +147,6 @@ export const updateJob = async (
       dateApplied,
       jobDescription,
       jobUrl,
-      applied,
       resume,
       coverLetter,
       tags,
@@ -164,6 +163,7 @@ export const updateJob = async (
         jobSourceId: true,
         resumeId: true,
         coverLetterId: true,
+        statusId: true,
         tags: { select: { id: true } },
       },
     });
@@ -188,6 +188,22 @@ export const updateJob = async (
 
     // Same D4 rule: resolve before the transaction opens.
     const stageTypeId = await resolveStageTypeForStatusId(status, user.id);
+    const statusRow = await prisma.jobStatus.findUnique({
+      where: { id: status },
+      select: { value: true },
+    });
+    // Clearing the date un-applies the job, unless its status or an earlier
+    // stage says it was applied to (Offer then Rejected keeps it applied).
+    const applied =
+      !!dateApplied ||
+      APPLIED_STATUS_VALUES.includes(statusRow?.value ?? "") ||
+      (await prisma.jobStage.count({
+        where: {
+          jobId: id,
+          Job: { userId: user.id },
+          StageType: { Status: { value: { in: [...APPLIED_STATUS_VALUES] } } },
+        },
+      })) > 0;
 
     const job = await prisma.$transaction(async (tx: any) => {
       // The Edit Job dialog's Status field is the fourth entry point into the
@@ -207,15 +223,23 @@ export const updateJob = async (
           salaryRange: salaryRange || null,
           createdAt: new Date(),
           dueDate: dueDate,
-          appliedDate: dateApplied,
+          appliedDate: dateApplied ?? null,
           description: jobDescription,
           jobType: type,
           workplaceType,
           jobUrl,
-          applied,
           resumeId: resume,
           coverLetterId: coverLetter,
           tags: { set: tagIds.map((id) => ({ id })) },
+          // Stamp today only on a move to Applied, never on an unrelated save.
+          ...(status !== current.statusId &&
+            jobFieldsForStage(
+              statusRow?.value ?? "",
+              status,
+              null,
+              dateApplied ?? null,
+            )),
+          applied,
         },
       });
     });

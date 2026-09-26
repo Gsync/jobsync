@@ -12,7 +12,13 @@ import { addJob, updateJob } from "@/actions/job.actions";
 import { Loader, PlusCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { useForm } from "react-hook-form";
-import { useCallback, useEffect, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -43,7 +49,6 @@ import { DatePicker } from "../DatePicker";
 import { SALARY_RANGES } from "@/lib/data/salaryRangeData";
 import TiptapEditor from "../TiptapEditor";
 import { Input } from "../ui/input";
-import { Switch } from "../ui/switch";
 import { redirect, useRouter, useSearchParams } from "next/navigation";
 import { Combobox } from "../ComboBox";
 import { NotesCollapsibleSection } from "./NotesCollapsibleSection";
@@ -52,7 +57,7 @@ import CreateResume from "../profile/CreateResume";
 import { getResumeList } from "@/actions/profile.actions";
 import { getCoverLetterList } from "@/actions/coverLetter.actions";
 import { TagInput } from "./TagInput";
-import { APP_CONSTANTS } from "@/lib/constants";
+import { APP_CONSTANTS, APPLIED_STATUS_VALUES } from "@/lib/constants";
 import {
   getFromLocalStorage,
   saveToLocalStorage,
@@ -118,6 +123,7 @@ export function AddJob({
   // By value, not position: the list's order is not guaranteed.
   const draftStatusId = jobStatuses.find((s) => s.value === "draft")?.id;
   const appliedStatusId = jobStatuses.find((s) => s.value === "applied")?.id;
+  const newStatusId = jobStatuses.find((s) => s.value === "new")?.id;
   const newJobDefaultValues = {
     type: Object.keys(JOB_TYPES)[0],
     workplaceType: "ONSITE",
@@ -135,9 +141,10 @@ export function AddJob({
     defaultValues: newJobDefaultValues,
   });
 
-  const { setValue, reset, watch, resetField } = form;
+  const { setValue, reset } = form;
 
-  const appliedValue = watch("applied");
+  // The date the form filled in itself, so it can take it back again.
+  const autoFilledDate = useRef<Date | null>(null);
 
   const loadResumes = useCallback(async () => {
     try {
@@ -176,7 +183,6 @@ export function AddJob({
         dueDate: editJob.dueDate,
         salaryRange: editJob.salaryRange ?? "",
         jobDescription: editJob.description,
-        applied: editJob.applied,
         jobUrl: editJob.jobUrl ?? "",
         dateApplied: editJob.appliedDate ?? undefined,
         resume: editJob.Resume?.id ?? undefined,
@@ -191,6 +197,7 @@ export function AddJob({
           return incoming.length > 0 ? [...prev, ...incoming] : prev;
         });
       }
+      autoFilledDate.current = null;
       setDialogOpen(true);
     }
   }, [editJob, reset]);
@@ -236,19 +243,39 @@ export function AddJob({
 
   const addJobForm = () => {
     reset(newJobDefaultValues);
+    autoFilledDate.current = null;
     resetEditJob();
     setDialogOpen(true);
   };
 
-  const jobAppliedChange = (applied: boolean) => {
-    if (applied) {
+  // Mirrors jobFieldsForStage: only Applied stamps today's date.
+  const jobStatusChange = (statusId: string) => {
+    const value = jobStatuses.find((s) => s.id === statusId)?.value ?? "";
+    const date = form.getValues("dateApplied");
+    if (value === "applied" && !date) {
+      autoFilledDate.current = new Date();
+      setValue("dateApplied", autoFilledDate.current);
+    } else if (
+      !APPLIED_STATUS_VALUES.includes(value) &&
+      date &&
+      // react-hook-form stores a copy, so compare by time, not identity
+      date.getTime() === autoFilledDate.current?.getTime()
+    ) {
+      autoFilledDate.current = null;
+      setValue("dateApplied", undefined);
+    }
+  };
+
+  // A date the user picks means they applied, as the old toggle did.
+  const dateAppliedChange = (date?: Date) => {
+    autoFilledDate.current = null;
+    const status = form.getValues("status");
+    if (
+      date &&
       appliedStatusId &&
-        form.getValues("status") === draftStatusId &&
-        setValue("status", appliedStatusId);
-      setValue("dateApplied", new Date());
-    } else {
-      resetField("dateApplied");
-      draftStatusId && setValue("status", draftStatusId);
+      (status === draftStatusId || status === newStatusId)
+    ) {
+      setValue("status", appliedStatusId);
     }
   };
 
@@ -455,37 +482,6 @@ export function AddJob({
                   />
                 </div>
 
-                {/* Applied */}
-                <div
-                  className="flex items-center"
-                  data-testid="switch-container"
-                >
-                  <FormField
-                    control={form.control}
-                    name="applied"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row">
-                        <Switch
-                          id="applied-switch"
-                          checked={field.value ?? false}
-                          onCheckedChange={(a) => {
-                            field.onChange(a);
-                            jobAppliedChange(a);
-                          }}
-                        />
-                        <FormLabel
-                          htmlFor="applied-switch"
-                          className="flex items-center ml-4 mb-2"
-                        >
-                          {field.value ? "Applied" : "Not Applied"}
-                        </FormLabel>
-
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
                 {/* Status */}
                 <div>
                   <FormField
@@ -497,7 +493,13 @@ export function AddJob({
                         <SelectFormCtrl
                           label="Job Status"
                           options={jobStatuses}
-                          field={field}
+                          field={{
+                            ...field,
+                            onChange: (id: string) => {
+                              field.onChange(id);
+                              jobStatusChange(id);
+                            },
+                          }}
                         />
                         <FormMessage />
                       </FormItem>
@@ -514,9 +516,15 @@ export function AddJob({
                       <FormItem className="flex flex-col">
                         <FormLabel>Date Applied</FormLabel>
                         <DatePicker
-                          field={field}
+                          field={{
+                            ...field,
+                            onChange: (date?: Date) => {
+                              field.onChange(date);
+                              dateAppliedChange(date);
+                            },
+                          }}
                           presets={false}
-                          isEnabled={appliedValue}
+                          isEnabled={true}
                         />
                         <FormMessage />
                       </FormItem>
@@ -593,7 +601,7 @@ export function AddJob({
                 </div>
 
                 {/* Cover Letter */}
-                <div className="flex items-end">
+                <div className="flex items-end self-start">
                   <FormField
                     control={form.control}
                     name="coverLetter"
@@ -612,7 +620,7 @@ export function AddJob({
                 </div>
 
                 {/* Add Skill Tags */}
-                <div className="md:col-span-2">
+                <div>
                   <FormField
                     control={form.control}
                     name="tags"

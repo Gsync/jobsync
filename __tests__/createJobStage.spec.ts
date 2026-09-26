@@ -6,6 +6,7 @@ vi.mock("@/lib/db", () => ({
   default: {
     job: { create: vi.fn() },
     jobStage: { create: vi.fn() },
+    jobStatus: { findUnique: vi.fn() },
   },
 }));
 vi.mock("@/lib/jobs/resolve", () => ({
@@ -17,6 +18,7 @@ const db = prisma as any;
 beforeEach(() => {
   vi.clearAllMocks();
   (resolveStageTypeForStatusId as any).mockResolvedValue("t-draft");
+  db.jobStatus.findUnique.mockResolvedValue({ value: "draft" });
   db.job.create.mockResolvedValue({ id: "j1", createdAt: new Date("2026-09-19T00:00:00Z") });
 });
 

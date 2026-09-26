@@ -1,4 +1,5 @@
 import prisma from "@/lib/db";
+import { APPLIED_STATUS_VALUES } from "@/lib/constants";
 
 export { sortStages } from "@/lib/jobs/sortStages";
 
@@ -33,8 +34,9 @@ export const STAGE_DETAIL_INCLUDE = {
   },
 };
 
-// The applied/appliedDate rules updateJobStatus has always used, lifted out so
-// every stage write path keeps the dashboard and CSV export in agreement.
+// The applied/appliedDate rules, shared so every status write path keeps the
+// dashboard and CSV export in agreement. Only Applied stamps a date: an
+// Interview or Offer logged later would otherwise count as applied today.
 export function jobFieldsForStage(
   statusValue: string,
   statusId: string,
@@ -42,7 +44,7 @@ export function jobFieldsForStage(
   existingAppliedDate: Date | null,
 ): Record<string, unknown> {
   const data: Record<string, unknown> = { statusId };
-  if (statusValue === "applied" || statusValue === "interview") {
+  if (APPLIED_STATUS_VALUES.includes(statusValue) || existingAppliedDate) {
     data.applied = true;
   }
   if (statusValue === "applied" && !existingAppliedDate) {

@@ -1,5 +1,6 @@
 import prisma from "@/lib/db";
 import { resolveStageTypeForStatusId } from "@/lib/jobs/resolve";
+import { jobFieldsForStage } from "@/actions/jobStage/shared";
 
 type StageClient = {
   jobStage: { create: (args: any) => Promise<any> };
@@ -56,9 +57,19 @@ export async function createJobRecord(fields: {
   const { tagIds = [], ...rest } = fields;
   const createdAt = new Date();
   const stages = await firstStageCreate(fields.statusId, fields.userId, createdAt);
+  const status = await prisma.jobStatus.findUnique({
+    where: { id: fields.statusId },
+    select: { value: true },
+  });
   return await prisma.job.create({
     data: {
       ...rest,
+      ...jobFieldsForStage(
+        status?.value ?? "",
+        fields.statusId,
+        null,
+        fields.appliedDate ?? null,
+      ),
       createdAt,
       ...(tagIds.length > 0 ? { tags: { connect: tagIds.map((id) => ({ id })) } } : {}),
       stages,

@@ -104,21 +104,16 @@ describe("AddJob Component", () => {
     expect(dialogTitle).toBeInTheDocument();
     expect(dialogTitle).toHaveTextContent("Add Job");
   });
-  it("should reflect on status and date applied when applied switch toggles", async () => {
-    const appliedSwitch = screen.getByRole("switch");
-    expect(appliedSwitch).not.toBeChecked();
-    const dateApplied = screen.getByLabelText("Date Applied");
-    expect(dateApplied).toBeDisabled();
-    await user.click(appliedSwitch); // toggle applied switch
-    expect(appliedSwitch).toBeChecked();
-    expect(dateApplied).toBeEnabled(); // date applied is enabled
-    expect(dateApplied).toHaveTextContent(format(new Date(), "PP")); // to have today's date
+  it("moves a Draft job to Applied when a date applied is picked", async () => {
     const status = screen.getByLabelText("Status");
-    expect(status).toHaveTextContent("Applied");
-    await user.click(appliedSwitch);
     expect(status).toHaveTextContent("Draft");
-    expect(dateApplied).toBeDisabled();
-    expect(dateApplied).toHaveTextContent("Pick a date");
+    await user.click(screen.getByLabelText("Date Applied"));
+    const days = screen
+      .getAllByRole("gridcell")
+      .map((cell) => cell.querySelector("button"))
+      .filter((b): b is HTMLButtonElement => !!b && !b.disabled);
+    await user.click(days[0]);
+    expect(status).toHaveTextContent("Applied");
   });
   it("should open the dialog when clicked on add job button with title 'Edit Job'", async () => {
     // TODO: To be tested with job container and jobs table component
@@ -208,6 +203,29 @@ describe("AddJob Component", () => {
       ),
     );
   });
+  const pickStatus = async (label: string) => {
+    await user.click(screen.getByLabelText("Status"));
+    await user.click(screen.getByRole("option", { name: label }));
+  };
+  it("fills today's date on Applied and takes it back on a non-applying status", async () => {
+    const dateApplied = screen.getByLabelText("Date Applied");
+    expect(dateApplied).toBeEnabled();
+    await pickStatus("Applied");
+    expect(dateApplied).toHaveTextContent(format(new Date(), "PP"));
+    await pickStatus("Interview");
+    expect(dateApplied).toHaveTextContent(format(new Date(), "PP"));
+    await pickStatus("Draft");
+    expect(dateApplied).toHaveTextContent("Pick a date");
+  });
+  it.each(["Interview", "Offer"])(
+    "leaves the date empty when the status is set straight to %s",
+    async (label) => {
+      await pickStatus(label);
+      expect(screen.getByLabelText("Date Applied")).toHaveTextContent(
+        "Pick a date",
+      );
+    },
+  );
   it("should load and show the status select list", async () => {
     const statusSelect = screen.getByLabelText("Status");
     await user.click(statusSelect);
@@ -276,7 +294,6 @@ describe("AddJob Component", () => {
         salaryRange: "",
         jobDescription: "<p>New Job Description</p>",
         jobUrl: "",
-        applied: false,
         tags: [],
       });
     });
@@ -445,9 +462,6 @@ describe("AddJob Component - Edit Mode", () => {
     expect(screen.getByLabelText("Salary Range")).toHaveTextContent(
       "100,000 - 110,000",
     );
-
-    const appliedSwitch = screen.getByRole("switch");
-    expect(appliedSwitch).toBeChecked();
   });
 
   it("pre-fills a free-text salary that matches no suggestion", async () => {
@@ -588,7 +602,7 @@ describe("AddJob Component - Status Order", () => {
     ...JOB_STATUSES,
   ];
 
-  it("defaults to Draft and toggles to Applied whatever order statuses arrive in", async () => {
+  it("defaults to Draft and fills the date on Applied whatever order statuses arrive in", async () => {
     render(
       <AddJob
         jobStatuses={freshInstallStatuses}
@@ -605,9 +619,10 @@ describe("AddJob Component - Status Order", () => {
 
     const status = screen.getByLabelText("Status");
     expect(status).toHaveTextContent("Draft");
-    await user.click(screen.getByRole("switch"));
-    expect(status).toHaveTextContent("Applied");
-    await user.click(screen.getByRole("switch"));
-    expect(status).toHaveTextContent("Draft");
+    await user.click(status);
+    await user.click(screen.getByRole("option", { name: "Applied" }));
+    expect(screen.getByLabelText("Date Applied")).toHaveTextContent(
+      format(new Date(), "PP"),
+    );
   });
 });

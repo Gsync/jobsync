@@ -72,7 +72,9 @@ export function JobSummaryCard({
             <p className="mt-1 font-medium">
               {job.appliedDate
                 ? format(new Date(job.appliedDate), "PP")
-                : "Not applied"}
+                : job.applied
+                  ? "Yes, no date"
+                  : "Not applied"}
             </p>
           </div>
           <div>

@@ -17,6 +17,7 @@ import {
   type ResolvedEntity,
 } from "./resolve";
 import { appendStatusStage } from "@/actions/job/shared";
+import { jobFieldsForStage } from "@/actions/jobStage/shared";
 
 // Same renderer config as createJobFromNames — html:false escapes raw HTML.
 const md = new MarkdownIt({ html: false, linkify: false, breaks: true });
@@ -125,7 +126,10 @@ export async function updateJobFromNames(
   if (input.dueDate !== undefined) data.dueDate = input.dueDate;
   if (input.jobUrl !== undefined) data.jobUrl = normalizeJobUrl(input.jobUrl);
   if (input.applied !== undefined) data.applied = input.applied;
-  if (input.appliedDate !== undefined) data.appliedDate = input.appliedDate;
+  if (input.appliedDate !== undefined) {
+    data.appliedDate = input.appliedDate;
+    data.applied = true;
+  }
   // D5: an appliedDate already on the job is never overwritten, the same rule
   // updateJobStatus and every stage write path now follow.
   if (
@@ -134,6 +138,17 @@ export async function updateJobFromNames(
     !existing.appliedDate
   ) {
     data.appliedDate = new Date();
+  }
+  if (statusId && input.status !== undefined) {
+    Object.assign(
+      data,
+      jobFieldsForStage(
+        input.status.toLowerCase(),
+        statusId,
+        null,
+        (data.appliedDate as Date | undefined) ?? existing.appliedDate,
+      ),
+    );
   }
   if (resolvedTagsResult) {
     data.tags = { set: resolvedTagsResult.resolved.map((t) => ({ id: t.id })) };

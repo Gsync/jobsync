@@ -157,6 +157,30 @@ describe("updateJobFromNames", () => {
     expect(data.appliedDate).toBeInstanceOf(Date);
   });
 
+  it("marks the job applied when only an appliedDate is sent", async () => {
+    const appliedDate = new Date("2026-09-01T00:00:00Z");
+    await updateJobFromNames({ jobId: "job-1", appliedDate }, userId);
+
+    const data = (prisma.job.update as any).mock.calls[0][0].data;
+    expect(data).toEqual({ appliedDate, applied: true });
+  });
+
+  it("marks the job applied when the status moves to Applied", async () => {
+    await updateJobFromNames({ jobId: "job-1", status: "Applied" }, userId);
+
+    const data = (prisma.job.update as any).mock.calls[0][0].data;
+    expect(data.applied).toBe(true);
+    expect(data.appliedDate).toBeInstanceOf(Date);
+  });
+
+  it("leaves applied alone for a status that doesn't imply applying", async () => {
+    await updateJobFromNames({ jobId: "job-1", status: "archived" }, userId);
+
+    expect((prisma.job.update as any).mock.calls[0][0].data).not.toHaveProperty(
+      "applied",
+    );
+  });
+
   it("returns updated:false with a not-found message on P2025", async () => {
     (prisma.job.update as any).mockRejectedValue({ code: "P2025" });
 

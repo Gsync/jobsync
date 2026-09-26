@@ -373,7 +373,14 @@ describe("CompanyDetails – Jobs tab", () => {
     render(
       <CompanyDetails
         details={makeDetails({
-          jobs: [job({ appliedDate: null, matchScore: null, JobSource: null })],
+          jobs: [
+            job({
+              applied: false,
+              appliedDate: null,
+              matchScore: null,
+              JobSource: null,
+            }),
+          ],
         })}
       />,
     );
