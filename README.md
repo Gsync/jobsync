@@ -60,7 +60,8 @@ Environment variables can be set in `docker-compose.yml`:
 | Variable | Description |
 |---|---|
 | `TZ` | Your timezone (e.g. `America/Edmonton`). **Set this on remote servers** to avoid activity time shifts. |
-| `AUTH_SECRET` | Auto-generated if not set. To set manually: `openssl rand -base64 32` |
+| `AUTH_SECRET` | Auto-generated and persisted in the Docker data volume if not set. To set manually: `openssl rand -base64 32` |
+| `ENCRYPTION_KEY` | Used to encrypt provider API keys. Docker generates and persists it in the data volume if not set; when setting it manually, keep it stable across restarts. |
 
 ### Updating
 
@@ -287,4 +288,3 @@ If JobSync has been helpful in your job search, consider giving it a star on Git
 [![GitHub Stars](https://img.shields.io/github/stars/Gsync/jobsync?style=social)](https://github.com/Gsync/jobsync)
 
 Every star means a lot — thank you for your support!
-

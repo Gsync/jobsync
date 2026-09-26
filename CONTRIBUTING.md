@@ -253,16 +253,17 @@ Key conventions:
 
 ## Testing
 
-### Unit Tests (Jest)
+### Unit Tests (Vitest)
 
 ```bash
 npm run test               # Run all unit tests
 npm run test:watch         # Watch mode
 npm run test -- path/to/test.test.ts   # Single file
 npm run test -- --testNamePattern="test name"  # Single test
+npm run typecheck          # Run the TypeScript compiler without emitting files
 ```
 
-Tests live in `__tests__/` and should be co-located where possible. Mock external dependencies (AI providers, database). Focus on server actions and component behavior.
+Tests live in `__tests__/`. Mock external dependencies (AI providers, database). Focus on server actions and component behavior.
 
 ### E2E Tests (Playwright)
 
