@@ -229,7 +229,10 @@ export default function McpAccessSettings() {
         <CardHeader className="flex-row flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
             <CardTitle className="text-lg font-medium">Personal Access Tokens</CardTitle>
-            <CardDescription>Tokens authenticate external agents to call MCP tools.</CardDescription>
+            <CardDescription>
+              Tokens authenticate external agents to call MCP tools. Older tokens
+              without task scopes must be regenerated to access task tools.
+            </CardDescription>
           </div>
           <Button size="sm" className="shrink-0" onClick={() => setShowGenerateDialog(true)} disabled={isLoading}>
             <Plus className="h-4 w-4 mr-1" />

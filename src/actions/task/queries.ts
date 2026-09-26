@@ -3,45 +3,8 @@ import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { TaskGroupBy, TaskStatus } from "@/models/task.model";
 import { APP_CONSTANTS } from "@/lib/constants";
+import { getTaskForUser, listTasksForUser } from "@/lib/tasks/queries";
 import { requireUser } from "../shared";
-
-const TASK_WITH_ACTIVITIES_INCLUDE = {
-  activityType: true,
-  activities: {
-    select: { id: true },
-  },
-};
-
-function getTasksOrderBy(groupBy?: TaskGroupBy) {
-  switch (groupBy) {
-    case "dueDate":
-      return [
-        { dueDate: "asc" as const },
-        { priority: "desc" as const },
-        { createdAt: "desc" as const },
-      ];
-    case "createdDate":
-      return [{ createdAt: "desc" as const }, { priority: "desc" as const }];
-    case "updatedDate":
-      return [
-        { updatedAt: "desc" as const },
-        { priority: "desc" as const },
-        { createdAt: "desc" as const },
-      ];
-    case "activityType":
-      return [
-        { activityType: { label: "asc" as const } },
-        { priority: "desc" as const },
-        { createdAt: "desc" as const },
-      ];
-    default:
-      return [
-        { priority: "desc" as const },
-        { createdAt: "desc" as const },
-        { updatedAt: "desc" as const },
-      ];
-  }
-}
 
 export const getTasksList = async (
   page: number = 1,
@@ -54,40 +17,14 @@ export const getTasksList = async (
   try {
     const user = await requireUser();
 
-    const offset = (page - 1) * limit;
-
-    const whereClause: any = {
-      userId: user.id,
-    };
-
-    if (filter) {
-      whereClause.activityTypeId = filter;
-    }
-
-    if (statusFilter && statusFilter.length > 0) {
-      whereClause.status = { in: statusFilter };
-    }
-
-    if (search) {
-      whereClause.OR = [
-        { title: { contains: search } },
-        { description: { contains: search } },
-        { activityType: { label: { contains: search } } },
-      ];
-    }
-
-    const [data, total] = await Promise.all([
-      prisma.task.findMany({
-        where: whereClause,
-        include: TASK_WITH_ACTIVITIES_INCLUDE,
-        orderBy: getTasksOrderBy(groupBy),
-        skip: offset,
-        take: limit,
-      }),
-      prisma.task.count({
-        where: whereClause,
-      }),
-    ]);
+    const { data, total } = await listTasksForUser(user.id, {
+      page,
+      limit,
+      activityTypeId: filter,
+      statuses: statusFilter,
+      search,
+      groupBy,
+    });
 
     return {
       success: true,
@@ -106,13 +43,7 @@ export const getTaskById = async (
   try {
     const user = await requireUser();
 
-    const task = await prisma.task.findFirst({
-      where: {
-        id: taskId,
-        userId: user.id,
-      },
-      include: TASK_WITH_ACTIVITIES_INCLUDE,
-    });
+    const task = await getTaskForUser(user.id, taskId);
 
     if (!task) {
       return { success: false, message: "Task not found" };

@@ -9,6 +9,10 @@ export const MCP_TOOL_DESCRIPTIONS = {
     "Look up whether a job posting is already saved in JobSync, by URL. Call this before add_job when re-running a search. With no URL to look up, use add_job's upsert instead of skipping dedupe.",
   update_job:
     "Correct or enrich a job previously added through MCP. Only the fields you supply change. Supplying a fuller jobDescription re-classifies the posting and requests a fresh match analysis — use this instead of re-adding with allowDuplicate.",
+  list_tasks:
+    "List the user's tasks with pagination and optional status, search-text, and activity-type filters. Defaults to active tasks that are in progress or need attention. Use this to discover task ids before another task operation.",
+  get_task:
+    "Retrieve one task by id, including its plain-text description, status, priority, completion, due date, activity type, and timestamps.",
   add_question:
     "Add an entry to the Question Bank. Resolves or creates tags by name. Returns a transparency report of what was matched vs. created.",
   save_match_result:
