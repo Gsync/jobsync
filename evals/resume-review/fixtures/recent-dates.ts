@@ -60,6 +60,6 @@ C, C++, Python, STM32, FreeRTOS, CAN, I2C, SPI, LabVIEW, Git
 }
 
 // promptfoo var loader contract: default export returning { output }.
-export default function () {
+export default function loadRecentDatesResume() {
   return { output: buildResume() };
 }
