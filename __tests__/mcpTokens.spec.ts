@@ -1,5 +1,17 @@
 import { createHash } from "crypto";
-import { generateToken, hashToken } from "@/lib/mcp/tokens";
+import { generateToken, hashToken, MCP_DEFAULT_SCOPES } from "@/lib/mcp/tokens";
+
+describe("MCP_DEFAULT_SCOPES", () => {
+  it("grants task read and write access to newly created tokens", () => {
+    expect(MCP_DEFAULT_SCOPES).toEqual([
+      "jobs:write",
+      "questions:write",
+      "resume:write",
+      "tasks:read",
+      "tasks:write",
+    ]);
+  });
+});
 
 describe("hashToken", () => {
   it("returns the sha256 hex digest of the input", () => {

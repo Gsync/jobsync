@@ -178,3 +178,28 @@ export function assertRoutesToReviewResume(output: unknown): AssertionResult {
   const { pass, score, reason } = expectSingle(output, 'review_resume');
   return { pass, score, reason };
 }
+
+export function assertRoutesToListTasks(output: unknown): AssertionResult {
+  const { pass, score, reason } = expectSingle(output, 'list_tasks');
+  return { pass, score, reason };
+}
+
+export function assertRoutesToCreateTask(output: unknown): AssertionResult {
+  const { pass, score, reason } = expectSingle(output, 'create_task');
+  return { pass, score, reason };
+}
+
+export function assertRoutesToUpdateTask(output: unknown): AssertionResult {
+  const { pass, score, reason } = expectSingle(output, 'update_task');
+  return { pass, score, reason };
+}
+
+export function assertDiscoversTaskBeforeCompleting(output: unknown): AssertionResult {
+  const { pass, score, reason } = expectSingle(output, 'list_tasks');
+  return { pass, score, reason };
+}
+
+export function assertRoutesToCompleteTask(output: unknown): AssertionResult {
+  const { pass, score, reason } = expectSingle(output, 'complete_task');
+  return { pass, score, reason };
+}

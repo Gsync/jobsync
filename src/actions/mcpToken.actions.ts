@@ -3,7 +3,7 @@
 import prisma from "@/lib/db";
 import { requireUser } from "./shared";
 import { handleError } from "@/lib/utils";
-import { generateToken } from "@/lib/mcp/tokens";
+import { generateToken, MCP_DEFAULT_SCOPES } from "@/lib/mcp/tokens";
 import { APP_CONSTANTS } from "@/lib/constants";
 
 export interface PublicTokenMeta {
@@ -43,7 +43,7 @@ export async function createMcpToken(input: {
         name: input.name.trim(),
         tokenHash: hash,
         tokenPrefix: prefix,
-        scopes: JSON.stringify(["jobs:write", "questions:write", "resume:write"]),
+        scopes: JSON.stringify(MCP_DEFAULT_SCOPES),
         expiresAt,
       },
     });
