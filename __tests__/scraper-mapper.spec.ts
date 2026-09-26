@@ -116,6 +116,17 @@ describe("mapScrapedJobToJobRecord - entity delegation", () => {
     expect(result.statusId).toBe("status-1");
   });
 
+  it("sets dueDate to DEFAULT_JOB_DUE_DAYS from now", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2030-01-10T12:00:00Z"));
+    try {
+      const result = await mapScrapedJobToJobRecord(baseInput);
+      expect(result.dueDate).toEqual(new Date("2030-01-13T12:00:00Z"));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("resolves title/company by their raw labels for the user", async () => {
     await mapScrapedJobToJobRecord(baseInput);
 

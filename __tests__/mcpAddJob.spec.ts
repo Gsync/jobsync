@@ -84,6 +84,19 @@ describe("handleAddJob match gating", () => {
     expect(text).not.toContain("PARTIAL DESCRIPTION WARNING");
   });
 
+  it("passes dueDate to createJobFromNames unchanged, leaving an omitted one to its default", async () => {
+    mockCreated("full");
+    mockUsableResume();
+    const dueDate = new Date("2030-02-01T00:00:00Z");
+
+    await handleAddJob({ ...baseInput, dueDate } as any, "user-1", "my-token");
+    await handleAddJob(baseInput as any, "user-1", "my-token");
+
+    const calls = (createJobFromNames as any).mock.calls;
+    expect(calls[0][0].dueDate).toBe(dueDate);
+    expect(calls[1][0].dueDate).toBeUndefined();
+  });
+
   it("issues a directive WITH a provisional warning for a partial description", async () => {
     mockCreated("partial");
     mockUsableResume();

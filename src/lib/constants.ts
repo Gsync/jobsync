@@ -18,6 +18,8 @@ export const APP_CONSTANTS = {
   ATS_COMPANY_PAGE_SIZE: 50,
   MAX_AUTOMATIONS_PER_USER: 10,
   MAX_JOB_TAGS: 10,
+  // Due date given to a new job when none is supplied, on every creation path
+  DEFAULT_JOB_DUE_DAYS: 3,
   MIN_QUESTION_LENGTH: 5,
   MAX_QUESTION_LENGTH: 500,
   MIN_QUESTION_ANSWER_LENGTH: 10,

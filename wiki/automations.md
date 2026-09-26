@@ -86,7 +86,7 @@ The automation's page has three tabs: **Logs** (live output from the current or 
 
 ## What do I do with a discovered job?
 
-Every discovered job starts as **new**. Open the **Discovered Jobs** tab and, for each one, choose:
+Every discovered job starts as **new**, with a due date three days from the day it was found — the same default as a job you add by hand, and accepting it keeps that date. Open the **Discovered Jobs** tab and, for each one, choose:
 
 - **Accept** — copies it into your tracked jobs, where it behaves like any job you added by hand.
 - **Dismiss** — marks it dismissed so it stops cluttering the list. It is not deleted.

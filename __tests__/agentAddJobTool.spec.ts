@@ -68,6 +68,17 @@ describe("add_job agent tool", () => {
     expect((createJobFromNames as any).mock.calls[0][0].jobDescription).toBe(longDescription);
   });
 
+  // An omitted dueDate must arrive as undefined so createJobFromNames'
+  // 3-day default applies; a supplied one arrives parsed.
+  it("passes dueDate through, parsed, and leaves an omitted one to the default", async () => {
+    const tool = buildAddJobTool("user-1", "posting");
+    await execute(tool, { company: "Acme", jobTitle: "Engineer", dueDate: "2030-02-01T00:00:00Z" });
+    await execute(tool, { company: "Acme", jobTitle: "Engineer" });
+    const calls = (createJobFromNames as any).mock.calls;
+    expect(calls[0][0].dueDate).toEqual(new Date("2030-02-01T00:00:00Z"));
+    expect(calls[1][0].dueDate).toBeUndefined();
+  });
+
   it('sets createdVia to "chat"', async () => {
     await execute(buildAddJobTool("user-1", "posting"), { company: "Acme", jobTitle: "Engineer" });
     expect((createJobFromNames as any).mock.calls[0][0].createdVia).toBe("chat");

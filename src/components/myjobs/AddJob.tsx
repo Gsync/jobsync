@@ -121,7 +121,7 @@ export function AddJob({
   const newJobDefaultValues = {
     type: Object.keys(JOB_TYPES)[0],
     workplaceType: "ONSITE",
-    dueDate: addDays(new Date(), 3),
+    dueDate: addDays(new Date(), APP_CONSTANTS.DEFAULT_JOB_DUE_DAYS),
     status: draftStatusId,
     salaryRange: "",
     jobUrl: "",

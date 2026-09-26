@@ -1,4 +1,5 @@
 import MarkdownIt from "markdown-it";
+import { addDays } from "date-fns";
 import prisma from "@/lib/db";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { normalizeJobUrl } from "@/lib/scraper/utils";
@@ -63,7 +64,7 @@ export async function createJobFromNames(
     jobType,
     workplaceType,
     status,
-    dueDate = null,
+    dueDate = addDays(new Date(), APP_CONSTANTS.DEFAULT_JOB_DUE_DAYS),
     applied = false,
     appliedDate,
     jobUrl,

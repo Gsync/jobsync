@@ -60,6 +60,29 @@ describe("createJobFromNames", () => {
     (createJobRecord as any).mockResolvedValue({ id: "job-1" });
   });
 
+  it("defaults dueDate to 3 days from now when omitted", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2030-01-10T12:00:00Z"));
+    try {
+      await createJobFromNames(baseInput, userId);
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(createJobRecord).toHaveBeenCalledWith(
+      expect.objectContaining({ dueDate: new Date("2030-01-13T12:00:00Z") }),
+    );
+  });
+
+  it("keeps a supplied dueDate", async () => {
+    const dueDate = new Date("2030-02-01T00:00:00Z");
+    await createJobFromNames({ ...baseInput, dueDate }, userId);
+
+    expect(createJobRecord).toHaveBeenCalledWith(
+      expect.objectContaining({ dueDate }),
+    );
+  });
+
   it("creates a job and reports matched/created resolutions in the message", async () => {
     const result = await createJobFromNames(baseInput, userId);
 

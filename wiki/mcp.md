@@ -73,7 +73,7 @@ Both snippets are shown in the token dialog with your real URL and token already
 
 Nine, all of them writes to your own data:
 
-- **add_job** — adds a job, resolving or creating company, title, location, source and tags by name, and reporting back what it matched versus created.
+- **add_job** — adds a job, resolving or creating company, title, location, source and tags by name, and reporting back what it matched versus created. If the agent sends no due date, the job gets one three days from today, the same as the Add Job form.
 - **add_jobs_batch** — the same thing for up to 10 jobs in one call, for a scheduled run.
 - **find_job** — checks by URL whether a posting is already saved, before adding it again.
 - **update_job** — corrects or enriches a job that was added through MCP. Only the fields supplied change.

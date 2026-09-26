@@ -45,7 +45,7 @@ export const McpAddJobInputShape = {
     .describe(
       `Application status. One of: ${JOB_STATUS_VALUES.join(", ")}. Defaults to '${APP_CONSTANTS.MCP_DEFAULT_STATUS}'.`,
     ),
-  dueDate: z.string().datetime({ offset: true }).optional().describe("Application deadline as an ISO-8601 datetime string"),
+  dueDate: z.string().datetime({ offset: true }).optional().describe("Application deadline as an ISO-8601 datetime string. Defaults to 3 days from now if omitted."),
   applied: z.boolean().optional().describe("Set true if you have already submitted the application"),
   appliedDate: z.string().datetime({ offset: true }).optional().describe("Date the application was submitted as an ISO-8601 datetime string"),
   jobUrl: z.string().url().optional().describe("Direct URL to the job posting"),
