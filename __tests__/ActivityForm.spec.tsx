@@ -49,7 +49,19 @@ document.createRange = () => {
   return range;
 };
 
-const user = userEvent.setup({ skipHover: true });
+const user = userEvent.setup({ skipHover: true, delay: null });
+
+// The form defaults to now/now+5min and the stepper buttons only shift the
+// clock, not the date, so a run within minutes of midnight would wrap the
+// end time across days and produce a negative duration
+beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  vi.setSystemTime(new Date(2026, 7, 12, 9, 5, 30));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 async function renderForm() {
   const onClose = vi.fn();
