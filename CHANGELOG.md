@@ -1,5 +1,77 @@
 # Changelog
 
+## [1.1.21](https://github.com/Gsync/jobsync/compare/v1.1.20...v1.1.21) (2026-09-27)
+
+
+### Features
+
+* add Wiki link and Discussions link to help menus; rename jobs table Date Applied column to Applied
+* default due date to 3 days out for MCP/agent add_job and automation-discovered jobs via shared DEFAULT_JOB_DUE_DAYS; update jobs, MCP and automations help pages
+* server-side column sorting on the jobs table via shared useSort, SortableTableHead and listSort helpers; update the jobs help page
+* filter questions and sidebar tags to one interview round via ?stage, link it from the interviews row, make edit/delete icon-only, update the help page
+* drop the Upcoming/Past/All tabs for one newest-first list, truncate long job titles, update the help page
+* restyle title/company links, add job-type/workplace/salary info, promote row shortcuts, fix company back nav
+* expand a round in place, set its outcome from the row menu, and share AddStageDialog with the job timeline
+* add the Interviews page, its sidebar entry, and the filterable interview table
+* add the interview list query, filter options, display helpers and a narrow stage-outcome action
+* add Activity and Contact quick-add shortcuts, re-icon the card, and document it in the wiki
+* show last contacted on the job Contacts tab and the interviewer's company on the stage panel
+* rename the interviewer link controls to Add and badge the Interviewer tab with its count
+* name the cascading interviewer and prep-question counts in the stage delete confirmation, and let DeleteAlertDialog take a node
+* expand prep-list answers inline, tag new questions with the TagInput, and reorder the job-details tabs
+* split the stage detail panel into Overview / Interviewer / Prep List tabs and turn the current-stage accents green
+* replace the stage stepper with a vertical Stage History rail, derive the header status from the current stage, and rename Match with AI to AI Match
+* order stages by their Library position, add stage deletion, and compact the job header controls
+* add the Stages tab listing stage types with reorder, rename and a guarded delete
+* add the Add to Prep List dialog and a creatable question-category combobox case
+* add the Link Interviewers dialog with inline contact creation, and widen getAllContacts with title and company
+* add the Add/Edit Stage dialog with custom stage types and interview-only fields
+* add the Update Status header menu, fold the status picker into it and gate the stage actions with a visible reason
+* add the Timeline tab with its stage count badge and stageless empty state
+* add the stage detail panel with interviewers, prep list, inline asked toggles and in-place notes
+* add the horizontal stage stepper and the full stage history list
+* add stage display helpers and the shared job-stages hook
+* add prep-list link, remove and asked actions, and guard question deletion
+* link and unlink stage interviewers, upserting the job's interviewer contact link
+* append a current stage when MCP updates a job's status, stop re-stamping appliedDate there, and assert stages on the job-details include
+* add stage-type list, create, rename and guarded delete actions
+* write a first current stage from every job creation path and load stages on the details page
+* make updateJobStatus and the Edit Job status field append a current stage, and stop re-stamping appliedDate
+* add job-stage read, add, edit, delete and promote actions behind a barrel
+* add the stage model types, form schema and the shared ordering/invariant helpers
+* resolve stage-type status by value on import, reseed stage types from a pre-stages file and seed them in the round-trip helper
+* add the four stage models to MODEL_SPECS, INSERT_ORDER and the Zod schema, export stage-type status by value, drop Interview
+
+### Bug Fixes
+
+* freeze the clock in ActivityForm.spec.tsx to stop a midnight flake
+* derive Applied from status and date everywhere, remove the Add Job Applied toggle, backfill applied via migration; move Add Skill beside Cover Letter in the job form; update the jobs help page
+* tell resume review, job match and automation match prompts today's date so recent dates aren't called future (#123); add a generated recent-dates resume-review eval and run it at the app's 0.3 temperature
+* scope Add Job dialog's Employment Type click to the dialog
+* adjust interviews page layout to allow wrapping of items in responsive design
+* agent panel full screen issue
+* order status lists by JOB_STATUSES and default Add Job to Draft by value, not list position
+* update dashboard quick-action button selectors after relabel
+* sort undated rounds last, restyle the row badges, move the sidebar entry after Jobs
+* scope the Ollama probe to the selected provider, label the base-URL reset, and stop the model select blanking on a provider switch
+* real OpenRouter key verification, verifier timeouts, provider error mapping, and legible dark destructive red
+* lift the job contact links into JobDetails so the tab count updates on add
+* render selected chips in pick order so resume skills match the view and PDF export
+* hold the derived-status invariant, make the job and interviewer writes atomic, keep dialog state across reloads, and scope the DatePicker and ComboBox changes
+* date the stage a status change appends, confine format/duration/location to interview stages, and unblock future dates in the stage pickers
+
+### Other Changes
+
+* rename default export function to loadRecentDatesResume for clarity
+* correct jobs, timeline and interviews help pages against the code; fix the delete-current-stage confirmation text
+* exclude log.md from wiki pages filter in tests
+* add the Interviews help page and cross-links, an end-to-end spec, and repoint the fixture's Add Job selector
+* move the board link inline after the company name on the boards browse table
+* tint the status badge palette and fold the current-stage and "via" pills into it
+* update specs for the stamped stage date, the prep answer select, the Interviewer tab badge, and the reordered job-details tabs
+* add E2E coverage for stage-to-status and interviewer-to-contacts, add the Job Timeline help page, and fix the greenhouse runner's prisma mock
+
+
 ## [1.1.20](https://github.com/Gsync/jobsync/compare/v1.1.19...v1.1.20) (2026-09-14)
 
 
