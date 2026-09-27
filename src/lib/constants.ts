@@ -422,3 +422,9 @@ export const SIDEBAR_LINKS = [
     devOnly: true,
   },
 ];
+
+export const NOTIFICATION_CONSTANTS = {
+  RETENTION_DAYS: 30,
+  POPOVER_LIMIT: 20,
+  PAGE_SIZE: 50,
+} as const;

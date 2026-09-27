@@ -45,6 +45,10 @@ vi.mock("@/lib/ai/provider-registry.server", () => ({
 
 vi.mock("ai", () => ({ generateText: vi.fn() }));
 
+vi.mock("@/lib/notifications/record", () => ({
+  recordRunNotifications: vi.fn(),
+}));
+
 vi.mock("@/lib/ai", async (orig) => {
   const actual = await (orig() as Promise<Record<string, unknown>>);
   return { ...actual, getModel: vi.fn().mockResolvedValue({}) };
@@ -172,7 +176,7 @@ describe("runAutomation (greenhouse)", () => {
 
     const result = await runAutomation(automation);
 
-    expect(result.status).toBe("completed");
+    expect(result.status).toBe("completed_with_errors");
     // Only the 2 floor-passers saved.
     expect((prisma.job.create as any).mock.calls).toHaveLength(2);
     // LLM called once per floor-passer (<= K).

@@ -50,6 +50,10 @@ vi.mock("@/lib/ai/provider-registry.server", () => ({
 
 vi.mock("ai", () => ({ generateText: vi.fn() }));
 
+vi.mock("@/lib/notifications/record", () => ({
+  recordRunNotifications: vi.fn(),
+}));
+
 vi.mock("@/lib/ai", async (orig) => {
   const actual = await (orig() as Promise<Record<string, unknown>>);
   return { ...actual, getModel: vi.fn().mockResolvedValue({}) };
@@ -59,6 +63,7 @@ import { runAutomation } from "@/lib/scraper/runner";
 import { searchGreenhouseJobs } from "@/lib/scraper/greenhouse";
 import { searchLeverJobs } from "@/lib/scraper/lever";
 import { generateText } from "ai";
+import { recordRunNotifications } from "@/lib/notifications/record";
 import type { Automation } from "@/models/automation.model";
 
 function makeJob(title: string, description = "", extra = {}) {
@@ -271,5 +276,65 @@ describe("runAutomation (lever)", () => {
 
     const createArg = (prisma.job.create as any).mock.calls[0][0];
     expect("tags" in createArg.data).toBe(false);
+  });
+
+  describe("board failures", () => {
+    const twoBoards: Automation = {
+      ...leverAutomation,
+      sourceConfig: JSON.stringify({
+        lever: {
+          companies: [
+            { name: "Acme", token: "acme" },
+            { name: "Globex", token: "globex" },
+          ],
+          targetTitles: ["Frontend Engineer"],
+          keywords: [],
+          locations: [],
+          strictLocation: false,
+        },
+      }),
+    };
+
+    it("fails the run when every board errored", async () => {
+      (searchLeverJobs as any).mockResolvedValue({
+        jobs: [],
+        errors: [
+          { token: "acme", reason: "Board 'acme' returned 404" },
+          { token: "globex", reason: "Board 'globex' timed out" },
+        ],
+      });
+
+      const result = await runAutomation(twoBoards);
+
+      expect(result.status).toBe("failed");
+      expect(result.errorMessage).toBe("All 2 boards unreachable");
+      const finalizeData = (recordRunNotifications as any).mock.calls[0][1];
+      expect(finalizeData.boardErrors).toEqual([
+        { token: "acme", name: "Acme", reason: "Board 'acme' returned 404" },
+        { token: "globex", name: "Globex", reason: "Board 'globex' timed out" },
+      ]);
+    });
+
+    it("completes with errors when only some boards errored", async () => {
+      (searchLeverJobs as any).mockResolvedValue({
+        jobs: [],
+        errors: [{ token: "acme", reason: "Board 'acme' returned 404" }],
+      });
+
+      const result = await runAutomation(twoBoards);
+
+      // Takes the "nothing new" early return, which must still carry it.
+      expect(result.status).toBe("completed_with_errors");
+      expect(result.errorMessage).toBe("1 of 2 boards unreachable");
+      const finalizeData = (recordRunNotifications as any).mock.calls[0][1];
+      expect(finalizeData.boardErrors).toHaveLength(1);
+    });
+
+    it("stays completed when no board errored", async () => {
+      (searchLeverJobs as any).mockResolvedValue({ jobs: [], errors: [] });
+      const result = await runAutomation(twoBoards);
+      expect(result.status).toBe("completed");
+      expect(result.errorMessage).toBeUndefined();
+    });
   });
 });

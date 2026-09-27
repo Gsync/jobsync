@@ -4,6 +4,7 @@ import db from "@/lib/db";
 import { runAutomation, AutomationAlreadyRunningError } from "@/lib/scraper";
 import { ATS_BOARDS, type JobBoard } from "@/models/automation.model";
 import { log } from "@/lib/telemetry";
+import { pruneNotifications } from "@/lib/notifications/prune";
 
 let scheduledTask: ScheduledTask | null = null;
 
@@ -14,6 +15,7 @@ async function runDueAutomations() {
   });
 
   try {
+    await pruneNotifications(now);
     const dueAutomations = await db.automation.findMany({
       where: {
         status: "active",

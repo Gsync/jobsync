@@ -1,7 +1,8 @@
 import db from "@/lib/db";
+import { recordRunNotifications } from "@/lib/notifications/record";
 import type { AutomationRunStatus } from "@/models/automation.model";
 import { calculateNextRunAt } from "../schedule";
-import type { RunnerResult } from "./types";
+import type { BoardFailure, RunnerResult } from "./types";
 
 export interface FinalizeData {
   status: AutomationRunStatus;
@@ -13,12 +14,19 @@ export interface FinalizeData {
   jobsProcessed: number;
   jobsMatched: number;
   jobsSaved: number;
+  // Forwarded to notifications only; not persisted on AutomationRun.
+  boardErrors?: BoardFailure[];
+  aiError?: string;
 }
 
 export async function finalizeRun(
   runId: string,
   data: FinalizeData,
 ): Promise<RunnerResult> {
+  // Before the terminal update: the run watcher refreshes the bell the
+  // moment it sees a terminal status.
+  await recordRunNotifications(runId, data);
+  const { boardErrors: _boardErrors, aiError: _aiError, ...result } = data;
   const run = await db.automationRun.update({
     where: { id: runId },
     data: {
@@ -52,6 +60,6 @@ export async function finalizeRun(
 
   return {
     runId: run.id,
-    ...data,
+    ...result,
   };
 }

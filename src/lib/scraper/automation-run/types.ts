@@ -1,6 +1,12 @@
 import type { AutomationRunStatus } from "@/models/automation.model";
 import type { Resume as PrismaResume } from "@prisma/client";
 
+export interface BoardFailure {
+  token: string;
+  name: string; // company name from the watchlist entry
+  reason: string;
+}
+
 export interface RunnerResult {
   runId: string;
   status: AutomationRunStatus;
