@@ -101,10 +101,11 @@ export function useAutomationRun({
       wasRunningRef.current = true;
     } else if (wasRunningRef.current) {
       wasRunningRef.current = false;
+      // No bell refresh here: the stream ends before finalizeRun records
+      // notifications. The run watcher below refreshes once the row is terminal.
       if (!runNowLoading) loadData();
-      refreshNotifications();
     }
-  }, [logData.isRunning, runNowLoading, loadData, refreshNotifications]);
+  }, [logData.isRunning, runNowLoading, loadData]);
 
   const handleClearLogs = useCallback(async () => {
     try {

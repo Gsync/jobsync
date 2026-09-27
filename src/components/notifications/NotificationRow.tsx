@@ -32,7 +32,7 @@ export function NotificationRow({ item, variant, onRemove, onOpenLink }: Notific
     <li
       className={cn(
         "flex gap-3 py-3 pl-4 pr-2",
-        unread && (isError ? "bg-red-950/40" : "bg-blue-950/40"),
+        unread && (isError ? "bg-red-50 dark:bg-red-950/40" : "bg-blue-50 dark:bg-blue-950/40"),
       )}
     >
       {isPage && (
@@ -45,9 +45,9 @@ export function NotificationRow({ item, variant, onRemove, onOpenLink }: Notific
           "flex shrink-0 items-center justify-center rounded-full",
           isPage ? "h-[34px] w-[34px]" : "h-8 w-8",
           isError
-            ? "bg-red-950 text-red-400"
+            ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
             : unread
-              ? "bg-green-950 text-green-400"
+              ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
               : "bg-muted text-muted-foreground",
         )}
       >
@@ -88,7 +88,11 @@ export function NotificationRow({ item, variant, onRemove, onOpenLink }: Notific
           <b
             className={cn(
               "font-semibold",
-              isError ? "text-red-300" : unread ? "text-green-400" : "text-foreground",
+              isError
+                ? "text-red-700 dark:text-red-300"
+                : unread
+                  ? "text-green-700 dark:text-green-400"
+                  : "text-foreground",
             )}
           >
             {d.lead}
@@ -96,7 +100,7 @@ export function NotificationRow({ item, variant, onRemove, onOpenLink }: Notific
           {d.detail}
         </span>
         {d.code && (
-          <code className="self-start rounded border border-red-900 bg-background px-1.5 py-1 font-mono text-[11.5px] text-red-300">
+          <code className="self-start rounded border border-red-200 bg-background px-1.5 py-1 font-mono text-[11.5px] text-red-700 dark:border-red-900 dark:text-red-300">
             {d.code}
           </code>
         )}
@@ -104,7 +108,7 @@ export function NotificationRow({ item, variant, onRemove, onOpenLink }: Notific
           <Link
             href={d.link.href}
             onClick={() => onOpenLink(item.id)}
-            className="self-start pt-1 text-[13px] font-medium text-blue-400 hover:text-blue-300 hover:underline"
+            className="self-start pt-1 text-[13px] font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
           >
             {d.link.label}
           </Link>
