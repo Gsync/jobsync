@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabQueryParam } from "@/hooks/useTabQueryParam";
 import { Badge } from "@/components/ui/badge";
@@ -90,6 +91,17 @@ export function AutomationDetailContainer({
 
   const [jobsBusy, setJobsBusy] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  // Deep link from a board-unreachable notification.
+  useEffect(() => {
+    if (searchParams.get("edit") !== "1" || !automation) return;
+    setWizardOpen(true);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("edit");
+    router.replace(params.size ? `${pathname}?${params}` : pathname);
+  }, [searchParams, automation, router, pathname]);
 
   if (loading) {
     return (

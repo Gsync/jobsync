@@ -36,7 +36,7 @@ export function NotificationRow({ item, variant, onRemove, onOpenLink }: Notific
       )}
     >
       {isPage && (
-        <span className="w-[200px] shrink-0 truncate pt-1.5 text-sm text-muted-foreground">
+        <span className="hidden w-[200px] shrink-0 truncate pt-1.5 text-sm text-muted-foreground sm:block">
           {item.automation.name}
         </span>
       )}
@@ -75,6 +75,15 @@ export function NotificationRow({ item, variant, onRemove, onOpenLink }: Notific
             </span>
           )}
         </div>
+        {isPage && (
+          // The fixed name and clock columns don't fit a phone.
+          <span
+            data-testid="row-meta-mobile"
+            className="truncate text-xs text-muted-foreground sm:hidden"
+          >
+            {item.automation.name} · {formatClock(item.occurredAt)}
+          </span>
+        )}
         <span className="text-[13px] text-muted-foreground">
           <b
             className={cn(
@@ -102,15 +111,15 @@ export function NotificationRow({ item, variant, onRemove, onOpenLink }: Notific
         )}
       </div>
       {isPage && (
-        <span className="w-[110px] shrink-0 pt-1.5 text-right text-xs text-muted-foreground">
+        <span className="hidden w-[110px] shrink-0 pt-1.5 text-right text-xs text-muted-foreground sm:block">
           {formatClock(item.occurredAt)}
         </span>
       )}
       <Button
         variant="ghost"
         size="icon"
-        aria-label="Dismiss notification"
-        title="Dismiss"
+        aria-label={isPage ? "Delete notification" : "Dismiss notification"}
+        title={isPage ? "Delete" : "Dismiss"}
         className="h-7 w-7 shrink-0 text-muted-foreground"
         onClick={() => onRemove(item.id)}
       >
