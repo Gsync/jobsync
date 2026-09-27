@@ -8,6 +8,7 @@ import {
   Info,
   ArrowUpCircle,
   ExternalLink,
+  Bell,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -21,6 +22,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import UserAvatar from "./UserAvatar";
 import { SupportDialog } from "./SupportDialog";
 import { useAppVersion } from "@/hooks/useAppVersion";
+import { useNotifications } from "@/context/NotificationContext";
 import { cn } from "@/lib/utils";
 
 interface ProfileDropdownProps {
@@ -36,6 +38,7 @@ export function ProfileDropdown({
 }: ProfileDropdownProps) {
   const [supportDialogOpen, setSupportDialogOpen] = useState(false);
   const version = useAppVersion();
+  const { summary } = useNotifications();
   const label = user?.email ?? "My Account";
 
   return (
@@ -51,14 +54,29 @@ export function ProfileDropdown({
               >
                 <span className="relative flex h-full w-14 shrink-0 items-center justify-center">
                   <UserAvatar user={user} />
-                  {version?.updateAvailable && (
+                  {summary.unread > 0 ? (
                     <>
                       <span
                         aria-hidden
-                        className="absolute right-3 top-1 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-background"
+                        data-testid="avatar-dot"
+                        className={cn(
+                          "absolute right-3 top-1 h-2.5 w-2.5 rounded-full ring-2 ring-background",
+                          summary.unreadErrors > 0 ? "bg-destructive" : "bg-primary"
+                        )}
                       />
-                      <span className="sr-only">Update available</span>
+                      <span className="sr-only">Unread notifications</span>
                     </>
+                  ) : (
+                    version?.updateAvailable && (
+                      <>
+                        <span
+                          aria-hidden
+                          data-testid="avatar-dot"
+                          className="absolute right-3 top-1 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-background"
+                        />
+                        <span className="sr-only">Update available</span>
+                      </>
+                    )
                   )}
                 </span>
                 <span
@@ -81,6 +99,22 @@ export function ProfileDropdown({
             <Link href="/dashboard/settings" className="cursor-pointer">
               <Settings className="w-5 mr-2" />
               Settings
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard/notifications" className="cursor-pointer">
+              <Bell className="w-5 mr-2" />
+              <span className="flex-1">Notifications</span>
+              {summary.unread > 0 && (
+                <span
+                  className={cn(
+                    "ml-2 rounded-full px-1.5 text-[11px] font-semibold text-white",
+                    summary.unreadErrors > 0 ? "bg-destructive" : "bg-primary"
+                  )}
+                >
+                  {summary.unread}
+                </span>
+              )}
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem

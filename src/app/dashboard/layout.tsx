@@ -6,6 +6,7 @@ import { GlobalActivityBanner } from "@/components/activities/GlobalActivityBann
 import { SidebarProvider } from "@/context/SidebarContext";
 import SidebarInset from "@/components/SidebarInset";
 import { RightRailProvider } from "@/context/RightRailContext";
+import { NotificationProvider } from "@/context/NotificationContext";
 import { AgentChatProvider } from "@/components/agent/AgentChatProvider";
 import { AgentChatPanel } from "@/components/agent/AgentChatPanel";
 import { getChatConversation } from "@/actions/agentChat.actions";
@@ -44,25 +45,27 @@ export default async function RootLayout({
     <ActivityProvider>
       <SidebarProvider initialExpanded={initialExpanded}>
         <RightRailProvider>
-          <AgentChatProvider initialMessages={conversation.data ?? []}>
-            <div className="flex min-h-screen w-full flex-col bg-muted/40">
-              <Sidebar user={user} signOutAction={signOutAction} />
-              <SidebarInset>
-                <Header />
-                <GlobalActivityBanner />
-                {/* Container, not viewport, queries: the docked chat panel
-                    shrinks this box without changing the viewport width. */}
-                <main className="@container/main flex-1 p-4 sm:px-4 sm:py-0">
-                  <div className="items-start gap-4 md:gap-4 @3xl/main:grid @3xl/main:grid-cols-3">
-                    {children}
-                  </div>
-                </main>
-              </SidebarInset>
-              {/* Portaled, so it sits outside the 3-column grid and needs no
-                  col-span-3 wrapper. */}
-              <AgentChatPanel />
-            </div>
-          </AgentChatProvider>
+          <NotificationProvider>
+            <AgentChatProvider initialMessages={conversation.data ?? []}>
+              <div className="flex min-h-screen w-full flex-col bg-muted/40">
+                <Sidebar user={user} signOutAction={signOutAction} />
+                <SidebarInset>
+                  <Header />
+                  <GlobalActivityBanner />
+                  {/* Container, not viewport, queries: the docked chat panel
+                      shrinks this box without changing the viewport width. */}
+                  <main className="@container/main flex-1 p-4 sm:px-4 sm:py-0">
+                    <div className="items-start gap-4 md:gap-4 @3xl/main:grid @3xl/main:grid-cols-3">
+                      {children}
+                    </div>
+                  </main>
+                </SidebarInset>
+                {/* Portaled, so it sits outside the 3-column grid and needs no
+                    col-span-3 wrapper. */}
+                <AgentChatPanel />
+              </div>
+            </AgentChatProvider>
+          </NotificationProvider>
         </RightRailProvider>
       </SidebarProvider>
     </ActivityProvider>

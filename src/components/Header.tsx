@@ -12,6 +12,7 @@ import {
 import { SIDEBAR_LINKS } from "@/lib/constants";
 import SidebarToggle from "./SidebarToggle";
 import { AgentChatTrigger } from "./AgentChatTrigger";
+import { NotificationBell } from "./notifications/NotificationBell";
 
 async function Header() {
   return (
@@ -69,6 +70,7 @@ async function Header() {
         /> */}
       </div>
 
+      <NotificationBell />
       <AgentChatTrigger />
     </header>
   );

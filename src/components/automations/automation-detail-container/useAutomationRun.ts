@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toastSuccess, toastError } from "@/lib/toast";
 import { getAutomationRuns } from "@/actions/automation.actions";
+import { useNotifications } from "@/context/NotificationContext";
 import type { AutomationWithResume } from "@/models/automation.model";
 import type { LogData } from "@/components/automations/LogsTab";
 
@@ -26,6 +27,7 @@ export function useAutomationRun({
   loadData,
   refreshJobs,
 }: UseAutomationRunArgs) {
+  const { refresh: refreshNotifications } = useNotifications();
   const [runNowLoading, setRunNowLoading] = useState(false);
   const [aborting, setAborting] = useState(false);
   const [abortConfirmOpen, setAbortConfirmOpen] = useState(false);
@@ -100,8 +102,9 @@ export function useAutomationRun({
     } else if (wasRunningRef.current) {
       wasRunningRef.current = false;
       if (!runNowLoading) loadData();
+      refreshNotifications();
     }
-  }, [logData.isRunning, runNowLoading, loadData]);
+  }, [logData.isRunning, runNowLoading, loadData, refreshNotifications]);
 
   const handleClearLogs = useCallback(async () => {
     try {
@@ -147,6 +150,8 @@ export function useAutomationRun({
       // Run is terminal; drop the live-follow signal so a later LogsTab remount
       // (e.g. switching tabs) doesn't re-init its badge to "Running".
       setRunKey(0);
+      // finalizeRun writes notifications before the run row turns terminal.
+      refreshNotifications();
       if (latest.status === "cancelled") {
         toastError(`Saved ${latest.jobsSaved} new jobs`, "Run cancelled");
       } else {
@@ -163,7 +168,7 @@ export function useAutomationRun({
       stopped = true;
       clearInterval(interval);
     };
-  }, [runNowLoading, automationId, loadData]);
+  }, [runNowLoading, automationId, loadData, refreshNotifications]);
 
   const handleRunNow = async () => {
     if (!automation) return;

@@ -8,10 +8,23 @@ import NavLink from "@/components/NavLink";
 import { SidebarProvider } from "@/context/SidebarContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { APP_CONSTANTS } from "@/lib/constants";
+import { useNotifications } from "@/context/NotificationContext";
+import { useAppVersion } from "@/hooks/useAppVersion";
 
 vi.mock("next/navigation", () => ({
   usePathname: vi.fn().mockReturnValue("/dashboard"),
 }));
+vi.mock("@/context/NotificationContext", () => ({ useNotifications: vi.fn() }));
+vi.mock("@/hooks/useAppVersion", () => ({ useAppVersion: vi.fn() }));
+
+// clearMocks keeps a mockReturnValue across tests, so reset to the quiet state.
+beforeEach(() => {
+  (useNotifications as any).mockReturnValue({
+    summary: { unread: 0, unreadErrors: 0 },
+    refresh: vi.fn(),
+  });
+  (useAppVersion as any).mockReturnValue({ updateAvailable: false });
+});
 
 const testUser = { id: "1", name: "Test User", email: "test@example.com" };
 
@@ -219,5 +232,41 @@ describe("SidebarToggle", () => {
     expect(document.getElementById(target!)).toBe(
       screen.getByRole("complementary")
     );
+  });
+});
+
+describe("ProfileDropdown notifications", () => {
+  beforeEach(() => {
+    (useAppVersion as any).mockReturnValue({ updateAvailable: true });
+  });
+  const renderIt = renderSidebar;
+
+  it("red avatar dot for an unread error, replacing the update dot", () => {
+    (useNotifications as any).mockReturnValue({ summary: { unread: 3, unreadErrors: 1 }, refresh: vi.fn() });
+    renderIt();
+    expect(screen.getByText("Unread notifications")).toBeInTheDocument();
+    expect(screen.queryByText("Update available")).toBeNull();
+    expect(screen.getByTestId("avatar-dot").className).toMatch(/destructive/);
+  });
+
+  it("blue avatar dot for unread runs only", () => {
+    (useNotifications as any).mockReturnValue({ summary: { unread: 1, unreadErrors: 0 }, refresh: vi.fn() });
+    renderIt();
+    expect(screen.getByTestId("avatar-dot").className).toMatch(/primary/);
+  });
+
+  it("falls back to the update dot when nothing is unread", () => {
+    (useNotifications as any).mockReturnValue({ summary: { unread: 0, unreadErrors: 0 }, refresh: vi.fn() });
+    renderIt();
+    expect(screen.getByText("Update available")).toBeInTheDocument();
+  });
+
+  it("menu has a Notifications entry with the count", async () => {
+    (useNotifications as any).mockReturnValue({ summary: { unread: 3, unreadErrors: 1 }, refresh: vi.fn() });
+    renderIt();
+    await userEvent.click(screen.getByRole("button", { name: /user menu/i }));
+    const item = await screen.findByRole("menuitem", { name: /notifications/i });
+    expect(item).toHaveAttribute("href", "/dashboard/notifications");
+    expect(item).toHaveTextContent("3");
   });
 });
