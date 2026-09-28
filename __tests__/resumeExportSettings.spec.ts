@@ -24,6 +24,7 @@ describe("defaultResumeExportSettings", () => {
       marginHorizontal: 48,
       sectionSpacing: 6,
       entrySpacing: 8,
+      showPageNumbers: true,
     });
   });
 
@@ -37,6 +38,7 @@ describe("defaultResumeExportSettings", () => {
       "marginHorizontal",
       "sectionSpacing",
       "entrySpacing",
+      "showPageNumbers",
     ]);
   });
 

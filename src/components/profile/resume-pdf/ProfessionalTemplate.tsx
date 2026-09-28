@@ -75,12 +75,14 @@ type Props = {
   resume: Resume;
   htmlNodes: ResumeHtmlNodes;
   styles: ProfessionalStyles;
+  showPageNumbers: boolean;
 };
 
 export function ProfessionalResumeDocument({
   resume,
   htmlNodes,
   styles: s,
+  showPageNumbers,
 }: Props) {
   const { ContactInfo, ResumeSections } = resume;
 
@@ -316,6 +318,15 @@ export function ProfessionalResumeDocument({
             </View>
           </View>
         ) : null}
+        {showPageNumbers && (
+          <Text
+            fixed
+            style={s.pageNumber}
+            render={({ pageNumber, totalPages }) =>
+              totalPages > 1 ? `Page ${pageNumber} of ${totalPages}` : ""
+            }
+          />
+        )}
       </Page>
     </Document>
   );

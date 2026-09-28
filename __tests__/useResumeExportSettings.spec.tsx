@@ -35,8 +35,18 @@ describe("coerceResumeExportSettings", () => {
       marginHorizontal: 36,
       sectionSpacing: 14,
       entrySpacing: 10,
+      showPageNumbers: false,
     };
     expect(coerceResumeExportSettings(stored)).toEqual(stored);
+  });
+
+  // Settings saved before the footer existed have no showPageNumbers key.
+  it("turns page numbers on unless a boolean says otherwise", () => {
+    for (const value of [undefined, "false", 0, null]) {
+      expect(
+        coerceResumeExportSettings({ showPageNumbers: value }).showPageNumbers,
+      ).toBe(true);
+    }
   });
 
   // A key written by an older build, or edited by hand, must never reach a
@@ -145,6 +155,28 @@ describe("useResumeExportSettings", () => {
     expect(JSON.parse(localStorage.getItem(KEY)!)).toEqual(
       RESUME_TEMPLATE_DEFAULTS.professional,
     );
+  });
+
+  it("keeps page numbers off across a template change", () => {
+    const { result } = renderHook(() => useResumeExportSettings(true));
+
+    act(() => {
+      result.current.setSettings({
+        ...defaultResumeExportSettings,
+        showPageNumbers: false,
+      });
+    });
+    act(() => {
+      result.current.setSettings({
+        ...result.current.settings,
+        template: "professional",
+      });
+    });
+
+    expect(result.current.settings).toEqual({
+      ...RESUME_TEMPLATE_DEFAULTS.professional,
+      showPageNumbers: false,
+    });
   });
 
   it("resets to the current template's defaults, not Simple's", () => {

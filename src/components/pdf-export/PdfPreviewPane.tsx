@@ -24,6 +24,8 @@ type PdfPreviewPaneProps = {
   previewLabel: string;
   /** Shown when canExport is false. */
   emptyMessage: string;
+  /** Must be stable (a state setter): it is an effect dependency. */
+  onPageCountChange?: (count: number) => void;
   className?: string;
 };
 
@@ -47,6 +49,7 @@ export function PdfPreviewPane({
   canExport,
   previewLabel,
   emptyMessage,
+  onPageCountChange,
   className,
 }: PdfPreviewPaneProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -213,6 +216,10 @@ export function PdfPreviewPane({
       void document_?.destroy().catch(() => {});
     };
   }, [blob, size, fitMode]);
+
+  useEffect(() => {
+    onPageCountChange?.(pageCount);
+  }, [pageCount, onPageCountChange]);
 
   const hasPages = pageCount > 0;
   const showEmpty = !canExport;

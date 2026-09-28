@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { PdfExportDialog } from "@/components/pdf-export/PdfExportDialog";
 import type { Resume } from "@/models/profile.model";
 import { settingsKey } from "@/models/pdfExport.model";
@@ -36,6 +37,9 @@ export function ExportPdfDialog({
     settingsKey(settings) ===
     settingsKey(RESUME_TEMPLATE_DEFAULTS[settings.template]);
 
+  // 0 until the preview has drawn, so the toggle is never locked on a guess.
+  const [pageCount, setPageCount] = useState(0);
+
   const canExport = canExportResume(resume);
   const { blob, filename, isGenerating, error } = useResumePdfPreview(
     resume,
@@ -56,6 +60,7 @@ export function ExportPdfDialog({
       isGenerating={isGenerating}
       hasError={!!error}
       canExport={canExport}
+      onPageCountChange={setPageCount}
       onExport={(prepared) => onExport(settings, prepared)}
       settingsPanel={
         <ExportSettingsPanel
@@ -63,6 +68,7 @@ export function ExportPdfDialog({
           onChange={setSettings}
           onReset={reset}
           isDefault={isDefault}
+          singlePage={pageCount === 1}
         />
       }
     />

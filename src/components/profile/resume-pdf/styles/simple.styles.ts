@@ -1,7 +1,7 @@
 import { StyleSheet } from "@react-pdf/renderer";
 import { HtmlStyleSet } from "@/components/pdf-export/types";
 import type { ResumeExportSettings } from "@/models/resumeExport.model";
-import { resumeStyleTokens } from "./tokens";
+import { A4_HEIGHT, resumeStyleTokens } from "./tokens";
 
 export function buildSimpleStyles(settings: ResumeExportSettings) {
   const t = resumeStyleTokens(settings);
@@ -89,6 +89,18 @@ export function buildSimpleStyles(settings: ResumeExportSettings) {
     entryBlock: { marginBottom: t.entrySpacing },
     certBlock: { marginBottom: t.certSpacing },
     link: { color: "#000000", textDecoration: "none" },
+    // Absolute offsets run from the page edge, not the padding; lineHeight 1
+    // keeps the number centred in the bottom margin.
+    pageNumber: {
+      position: "absolute",
+      top: A4_HEIGHT - (t.marginVertical + t.pt(9)) / 2,
+      left: t.marginHorizontal,
+      right: t.marginHorizontal,
+      textAlign: "right",
+      fontSize: t.pt(9),
+      lineHeight: 1,
+      color: "#444444",
+    },
   });
 
   const htmlStyles: HtmlStyleSet = {

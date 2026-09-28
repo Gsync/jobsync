@@ -185,6 +185,37 @@ describe("ExportSettingsPanel — stepper buttons", () => {
   });
 });
 
+describe("ExportSettingsPanel — footer", () => {
+  it("shows page numbers by default and turns them off on uncheck", async () => {
+    const { onChange, user } = renderPanel();
+    const toggle = screen.getByRole("switch", { name: "Show page numbers" });
+
+    expect(toggle).toBeChecked();
+    await user.click(toggle);
+
+    expect(onChange).toHaveBeenLastCalledWith({
+      ...defaultResumeExportSettings,
+      showPageNumbers: false,
+    });
+  });
+});
+
+describe("ExportSettingsPanel — footer, single page", () => {
+  it("hides the footer group when the resume is one page", () => {
+    render(
+      <ExportSettingsPanel
+        settings={defaultResumeExportSettings}
+        onChange={vi.fn()}
+        singlePage
+      />,
+    );
+    expect(screen.queryByRole("button", { name: /Footer/ })).toBeNull();
+    expect(
+      screen.queryByRole("switch", { name: "Show page numbers" }),
+    ).toBeNull();
+  });
+});
+
 describe("ExportSettingsPanel — typing", () => {
   it("commits a typed value that is in range", async () => {
     const { onChange, user } = renderPanel();

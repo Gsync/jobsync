@@ -34,9 +34,15 @@ type Props = {
   resume: Resume;
   htmlNodes: ResumeHtmlNodes;
   styles: SimpleStyles;
+  showPageNumbers: boolean;
 };
 
-export function SimpleResumeDocument({ resume, htmlNodes, styles }: Props) {
+export function SimpleResumeDocument({
+  resume,
+  htmlNodes,
+  styles,
+  showPageNumbers,
+}: Props) {
   const { ContactInfo, ResumeSections } = resume;
 
   const skillsSection = ResumeSections?.find(
@@ -205,6 +211,15 @@ export function SimpleResumeDocument({ resume, htmlNodes, styles }: Props) {
               ))}
             </View>
           )}
+        {showPageNumbers && (
+          <Text
+            fixed
+            style={styles.pageNumber}
+            render={({ pageNumber, totalPages }) =>
+              totalPages > 1 ? `Page ${pageNumber} of ${totalPages}` : ""
+            }
+          />
+        )}
       </Page>
     </Document>
   );

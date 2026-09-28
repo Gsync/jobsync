@@ -39,6 +39,10 @@ export function coerceResumeExportSettings(
     next.font = raw.font as PdfFont;
   }
 
+  if (typeof raw.showPageNumbers === "boolean") {
+    next.showPageNumbers = raw.showPageNumbers;
+  }
+
   // Iterates the resume's own field list, never the merged spec table.
   // clampNumericField returns the passed fallback for anything that is not
   // a finite number, so a missing key needs no guard.
@@ -56,8 +60,9 @@ export function coerceResumeExportSettings(
 // Reads on open, keeping the resume's own rule on top: picking a template
 // re-seeds the rest, because each template's defaults are its own shipped
 // literals and carrying the previous one's numbers across would silently
-// restyle the template the user just chose. The letter has no template, so
-// this rule stays here rather than moving into the shared hook.
+// restyle the template the user just chose. Page numbers are a preference,
+// not a template literal, so they carry across. The letter has no template,
+// so this rule stays here rather than moving into the shared hook.
 export function useResumeExportSettings(open: boolean) {
   const { settings, setSettings, ready } = useExportSettings({
     storageKey: KEY,
@@ -70,7 +75,10 @@ export function useResumeExportSettings(open: boolean) {
     setSettings(
       next.template === settings.template
         ? next
-        : { ...RESUME_TEMPLATE_DEFAULTS[next.template] },
+        : {
+            ...RESUME_TEMPLATE_DEFAULTS[next.template],
+            showPageNumbers: next.showPageNumbers,
+          },
     );
 
   return {

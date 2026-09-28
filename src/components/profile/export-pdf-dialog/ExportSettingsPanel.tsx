@@ -3,9 +3,12 @@
 import { Button } from "@/components/ui/button";
 import {
   DisclosureGroup,
+  ROW,
   SelectRow,
   StepperRow,
 } from "@/components/pdf-export/settings-rows";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   formatSettingValue,
   PDF_FONT_LABELS,
@@ -21,6 +24,8 @@ type ExportSettingsPanelProps = {
   onChange: (settings: ResumeExportSettings) => void;
   onReset?: () => void;
   isDefault?: boolean;
+  // Hides the Footer group: a one-page resume prints no page number.
+  singlePage?: boolean;
 };
 
 const ID_PREFIX = "resume-export";
@@ -30,6 +35,7 @@ export function ExportSettingsPanel({
   onChange,
   onReset,
   isDefault,
+  singlePage,
 }: ExportSettingsPanelProps) {
   const setNumber = (field: ResumeNumericSetting) => (value: number) =>
     onChange({ ...settings, [field]: value });
@@ -106,6 +112,31 @@ export function ExportSettingsPanel({
           onCommit={setNumber("entrySpacing")}
         />
       </DisclosureGroup>
+
+      {/* Its only option does nothing on a one-page resume. */}
+      {!singlePage && (
+        <DisclosureGroup
+          title="Footer"
+          summary={`Page numbers ${settings.showPageNumbers ? "on" : "off"}`}
+        >
+          <div className={ROW}>
+            <Label
+              htmlFor={`${ID_PREFIX}-showPageNumbers`}
+              className="cursor-pointer font-normal"
+            >
+              Show page numbers
+            </Label>
+            <Switch
+              id={`${ID_PREFIX}-showPageNumbers`}
+              className="ml-auto"
+              checked={settings.showPageNumbers}
+              onCheckedChange={(showPageNumbers) =>
+                onChange({ ...settings, showPageNumbers })
+              }
+            />
+          </div>
+        </DisclosureGroup>
+      )}
 
       {onReset && (
         <div className="flex justify-end">

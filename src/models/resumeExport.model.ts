@@ -30,6 +30,7 @@ export interface ResumeExportSettings {
   marginHorizontal: number;
   sectionSpacing: number;
   entrySpacing: number;
+  showPageNumbers: boolean;
 }
 
 // Each template's own literals, so building its styles at its own defaults
@@ -47,6 +48,7 @@ export const RESUME_TEMPLATE_DEFAULTS: Record<
     marginHorizontal: 48,
     sectionSpacing: 6,
     entrySpacing: 8,
+    showPageNumbers: true,
   },
   professional: {
     template: "professional",
@@ -57,6 +59,7 @@ export const RESUME_TEMPLATE_DEFAULTS: Record<
     marginHorizontal: 44,
     sectionSpacing: 12,
     entrySpacing: 8,
+    showPageNumbers: true,
   },
 };
 

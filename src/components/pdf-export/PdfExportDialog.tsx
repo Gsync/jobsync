@@ -29,6 +29,7 @@ type PdfExportDialogProps = {
   hasError: boolean;
   canExport: boolean;
   settingsPanel: ReactNode;
+  onPageCountChange?: (count: number) => void;
   onExport: (prepared: PreviewResult | null) => void;
 };
 
@@ -46,6 +47,7 @@ export function PdfExportDialog({
   hasError,
   canExport,
   settingsPanel,
+  onPageCountChange,
   onExport,
 }: PdfExportDialogProps) {
   // Exporting mid-generation would download the settings just switched away
@@ -73,6 +75,7 @@ export function PdfExportDialog({
               canExport={canExport}
               previewLabel={previewLabel}
               emptyMessage={emptyMessage}
+              onPageCountChange={onPageCountChange}
               className="h-full"
             />
           </div>

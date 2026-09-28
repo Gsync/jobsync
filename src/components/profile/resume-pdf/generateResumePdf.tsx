@@ -67,6 +67,7 @@ export async function generateResumePdfBlob(
         resume={resume}
         htmlNodes={htmlNodes}
         styles={styles}
+        showPageNumbers={settings.showPageNumbers}
       />
     );
   } else {
@@ -78,6 +79,7 @@ export async function generateResumePdfBlob(
         resume={resume}
         htmlNodes={htmlNodes}
         styles={styles}
+        showPageNumbers={settings.showPageNumbers}
       />
     );
   }
