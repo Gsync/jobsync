@@ -1,4 +1,4 @@
-import { Edit } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { ResumeSection } from "@/models/profile.model";
@@ -20,15 +20,14 @@ function SummarySectionCard({
       <Card>
         <CardHeader className="p-2 pb-0 flex-row justify-end items-center">
           <Button
+            title="Edit"
             variant="ghost"
-            size="sm"
-            className="h-8 gap-1"
+            size="icon"
+            className="h-8 w-8"
             onClick={openDialogForEdit}
           >
-            <Edit className="h-3.5 w-3.5" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-              Edit
-            </span>
+            <Pencil className="h-3.5 w-3.5" />
+            <span className="sr-only">Edit</span>
           </Button>
         </CardHeader>
         <CardContent>

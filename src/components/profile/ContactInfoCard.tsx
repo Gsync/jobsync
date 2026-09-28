@@ -2,7 +2,7 @@
 import { ContactInfo } from "@/models/profile.model";
 import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
-import { Edit } from "lucide-react";
+import { Pencil } from "lucide-react";
 
 interface ContactInfoCardProps {
   contactInfo: ContactInfo | undefined;
@@ -57,15 +57,14 @@ function ContactInfoCard({ contactInfo, openDialog }: ContactInfoCardProps) {
           )}
         </div>
         <Button
+          title="Edit"
           variant="ghost"
-          size="sm"
-          className="h-8 gap-1 absolute top-0 right-1"
+          size="icon"
+          className="h-8 w-8 absolute top-2 right-2"
           onClick={openDialog}
         >
-          <Edit className="h-3.5 w-3.5" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Edit
-          </span>
+          <Pencil className="h-3.5 w-3.5" />
+          <span className="sr-only">Edit</span>
         </Button>
       </CardHeader>
     </Card>

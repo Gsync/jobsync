@@ -2,7 +2,7 @@
 import { ResumeSection, Skill } from "@/models/profile.model";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
-import { Edit, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,27 +48,25 @@ function SkillsSectionCard({
         <CardHeader className="p-2 pb-0 flex-row justify-end items-center">
           <div className="flex gap-1">
             <Button
+              title="Edit"
               variant="ghost"
-              size="sm"
-              className="h-8 gap-1"
+              size="icon"
+              className="h-8 w-8"
               onClick={openDialogForEdit}
             >
-              <Edit className="h-3.5 w-3.5" />
-              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                Edit
-              </span>
+              <Pencil className="h-3.5 w-3.5" />
+              <span className="sr-only">Edit</span>
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
+                  title="Delete"
                   variant="ghost"
-                  size="sm"
-                  className="h-8 gap-1 text-destructive hover:text-destructive"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:text-destructive"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                    Delete
-                  </span>
+                  <span className="sr-only">Delete</span>
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>

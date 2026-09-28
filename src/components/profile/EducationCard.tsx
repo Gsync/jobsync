@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "../ui/card";
 import { Button } from "../ui/button";
-import { Edit } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { TipTapContentViewer } from "../TipTapContentViewer";
 
@@ -40,15 +40,14 @@ function EducationCard({
             <CardHeader className="p-2 pb-0 flex-row justify-between relative">
               <CardTitle className="text-xl pl-4">{institution}</CardTitle>
               <Button
+                title="Edit"
                 variant="ghost"
-                size="sm"
-                className="h-8 gap-1 absolute top-0 right-1"
+                size="icon"
+                className="h-8 w-8 absolute top-2 right-2"
                 onClick={() => openDialogForEdit(id!)}
               >
-                <Edit className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Edit
-                </span>
+                <Pencil className="h-3.5 w-3.5" />
+                <span className="sr-only">Edit</span>
               </Button>
             </CardHeader>
             <CardContent>
