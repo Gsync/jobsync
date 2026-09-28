@@ -18,6 +18,7 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/actions/profile.actions", () => ({
   deleteResumeById: vi.fn(),
+  deleteCertification: vi.fn(),
   deleteSkillsSection: vi.fn(),
   setDefaultResume: vi.fn(),
 }));

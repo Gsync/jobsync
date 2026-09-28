@@ -7,6 +7,7 @@ import {
   updateEducation,
   addCertification,
   updateCertification,
+  deleteCertification,
   addSkillsSection,
   updateSkillsSection,
   deleteSkillsSection,
@@ -28,7 +29,12 @@ vi.mock("@prisma/client", () => {
     },
     workExperience: { update: vi.fn() },
     education: { update: vi.fn() },
-    licenseOrCertification: { update: vi.fn() },
+    licenseOrCertification: {
+      update: vi.fn(),
+      findFirst: vi.fn(),
+      delete: vi.fn(),
+      count: vi.fn(),
+    },
     skill: { createMany: vi.fn(), deleteMany: vi.fn() },
     $transaction: vi.fn(),
   };
@@ -468,6 +474,59 @@ describe("Resume section actions", () => {
       ).toEqual({
         id: "cert-1",
         ResumeSection: { Resume: { profile: { userId: "user-1" } } },
+      });
+    });
+  });
+
+  describe("deleteCertification", () => {
+    beforeEach(() => {
+      (prisma.$transaction as any).mockImplementation((fn: any) =>
+        fn(prisma),
+      );
+      (prisma.licenseOrCertification.findFirst as any).mockResolvedValue({
+        id: "cert-1",
+        resumeSectionId: "section-1",
+        ResumeSection: { resumeId: "resume-1" },
+      });
+    });
+    // clearAllMocks keeps implementations; the skills specs expect the bare fn
+    afterEach(() => (prisma.$transaction as any).mockReset());
+
+    it("scopes the lookup through section -> resume -> profile", async () => {
+      (prisma.licenseOrCertification.findFirst as any).mockResolvedValue(null);
+
+      const result = await deleteCertification("someone-elses-cert");
+
+      expect(result.success).toBe(false);
+      expect(
+        (prisma.licenseOrCertification.findFirst as any).mock.calls[0][0].where,
+      ).toEqual({
+        id: "someone-elses-cert",
+        ResumeSection: { Resume: { profile: { userId: "user-1" } } },
+      });
+      expect(prisma.licenseOrCertification.delete).not.toHaveBeenCalled();
+    });
+
+    it("keeps the section while other certifications remain", async () => {
+      (prisma.licenseOrCertification.count as any).mockResolvedValue(2);
+
+      const result = await deleteCertification("cert-1");
+
+      expect(result.success).toBe(true);
+      expect(prisma.licenseOrCertification.delete).toHaveBeenCalledWith({
+        where: { id: "cert-1" },
+      });
+      expect(prisma.resumeSection.delete).not.toHaveBeenCalled();
+    });
+
+    it("removes the section with its last certification", async () => {
+      (prisma.licenseOrCertification.count as any).mockResolvedValue(0);
+
+      const result = await deleteCertification("cert-1");
+
+      expect(result.success).toBe(true);
+      expect(prisma.resumeSection.delete).toHaveBeenCalledWith({
+        where: { id: "section-1" },
       });
     });
   });

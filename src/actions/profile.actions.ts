@@ -32,7 +32,11 @@ export { addExperience, updateExperience } from "./profile/experience";
 
 export { addEducation, updateEducation } from "./profile/education";
 
-export { addCertification, updateCertification } from "./profile/certification";
+export {
+  addCertification,
+  updateCertification,
+  deleteCertification,
+} from "./profile/certification";
 
 export {
   addSkillsSection,

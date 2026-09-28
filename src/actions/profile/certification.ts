@@ -76,3 +76,42 @@ export const updateCertification = async (
     return handleError(error, msg);
   }
 };
+
+export const deleteCertification = async (
+  certificationId: string,
+): Promise<any | undefined> => {
+  try {
+    const user = await requireUser();
+
+    const cert = await prisma.licenseOrCertification.findFirst({
+      where: {
+        id: certificationId,
+        ResumeSection: { Resume: { profile: { userId: user.id } } },
+      },
+      select: {
+        id: true,
+        resumeSectionId: true,
+        ResumeSection: { select: { resumeId: true } },
+      },
+    });
+    if (!cert) throw new Error("Certification not found or access denied");
+
+    await prisma.$transaction(async (tx) => {
+      await tx.licenseOrCertification.delete({ where: { id: cert.id } });
+      // Drop the section with its last entry so no empty heading lingers
+      const remaining = await tx.licenseOrCertification.count({
+        where: { resumeSectionId: cert.resumeSectionId },
+      });
+      if (remaining === 0) {
+        await tx.resumeSection.delete({
+          where: { id: cert.resumeSectionId! },
+        });
+      }
+    });
+
+    revalidatePath(`/dashboard/profile/resume/${cert.ResumeSection?.resumeId}`);
+    return { success: true };
+  } catch (error) {
+    return handleError(error, "Failed to delete certification.");
+  }
+};
