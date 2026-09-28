@@ -1093,6 +1093,7 @@ describe("JobsContainer Search Functionality", () => {
     it("reloads page 1 sorted when a header is clicked", async () => {
       renderComponent();
       await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
+      await screen.findByRole("table");
 
       await user.click(screen.getByRole("button", { name: /^Company/ }));
 
@@ -1106,6 +1107,7 @@ describe("JobsContainer Search Functionality", () => {
     it("starts date and match columns descending", async () => {
       renderComponent();
       await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
+      await screen.findByRole("table");
 
       await user.click(screen.getByRole("button", { name: /^Applied/ }));
 
@@ -1119,6 +1121,7 @@ describe("JobsContainer Search Functionality", () => {
     it("keeps the active search when sorting", async () => {
       renderComponent();
       await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
+      await screen.findByRole("table");
 
       await user.type(screen.getByPlaceholderText("Search jobs..."), "Amazon");
       await act(async () => {
@@ -1136,6 +1139,7 @@ describe("JobsContainer Search Functionality", () => {
     it("cycles natural → reversed → off", async () => {
       renderComponent();
       await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
+      await screen.findByRole("table");
       const header = () => screen.getByRole("columnheader", { name: /^Title/ });
       const button = () => screen.getByRole("button", { name: /^Title/ });
 
@@ -1158,6 +1162,7 @@ describe("JobsContainer Search Functionality", () => {
       };
       renderComponent();
       await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
+      await screen.findByRole("table");
 
       const older = deferred();
       const newer = deferred();
