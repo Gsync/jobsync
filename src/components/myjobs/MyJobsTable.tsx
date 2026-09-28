@@ -103,6 +103,11 @@ function MyJobsTable({
                 </TableCell>
                 <TableCell className="hidden md:table-cell w-[120px] whitespace-nowrap">
                   {job.appliedDate ? format(job.appliedDate, "PP") : "N/A"}
+                  {job.createdAt && (
+                    <span className="block text-xs text-muted-foreground">
+                      Added {format(job.createdAt, "PP")}
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell
                   className="font-medium cursor-pointer max-w-[120px] md:max-w-[220px]"

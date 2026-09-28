@@ -17,6 +17,7 @@ import { STAGE_DETAIL_INCLUDE } from "../jobStage/shared";
 
 const JOB_LIST_SELECT = {
   id: true,
+  createdAt: true,
   JobSource: true,
   JobTitle: true,
   jobType: true,
