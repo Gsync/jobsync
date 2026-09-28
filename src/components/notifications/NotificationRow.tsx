@@ -84,7 +84,7 @@ export function NotificationRow({ item, variant, onRemove, onOpenLink }: Notific
             {item.automation.name} · {formatClock(item.occurredAt)}
           </span>
         )}
-        <span className="text-[13px] text-muted-foreground">
+        <span className="text-[13px] text-muted-foreground" title={d.hint ?? undefined}>
           <b
             className={cn(
               "font-semibold",
@@ -99,11 +99,6 @@ export function NotificationRow({ item, variant, onRemove, onOpenLink }: Notific
           </b>
           {d.detail}
         </span>
-        {d.code && (
-          <code className="self-start rounded border border-red-200 bg-background px-1.5 py-1 font-mono text-[11.5px] text-red-700 dark:border-red-900 dark:text-red-300">
-            {d.code}
-          </code>
-        )}
         {d.link && (
           <Link
             href={d.link.href}

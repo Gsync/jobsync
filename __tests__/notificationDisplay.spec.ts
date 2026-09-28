@@ -35,7 +35,7 @@ describe("describeNotification", () => {
       title: "“Remote Frontend” finished",
       lead: "12 jobs saved",
       detail: " · 38 scanned · 26 below match threshold",
-      code: null,
+      hint: null,
       link: { label: "Review 12 new jobs", href: "/dashboard/automations/a-1?tab=jobs" },
     });
   });
@@ -63,7 +63,7 @@ describe("describeNotification", () => {
     expect(d.detail).toBe(" · 38 scanned · 1 board failed · AI unavailable, rest saved without analysis");
   });
 
-  it("board row: 404 copy, raw reason as code, repeat count, edit link", () => {
+  it("board row: 404 copy, raw reason as hint, repeat count, edit link", () => {
     const d = describeNotification(
       item({
         kind: "board",
@@ -77,9 +77,19 @@ describe("describeNotification", () => {
       title: "Job board unreachable",
       lead: "Greenhouse · Northwind",
       detail: " returned 404 — the company may have moved ATS. Failed on 3 runs since Sep 20.",
-      code: "Board 'northwind' returned 404",
+      hint: "Board 'northwind' returned 404",
       link: { label: "Edit watchlist", href: "/dashboard/automations/a-1?edit=1" },
     });
+  });
+
+  it("board row: http_error names the status instead of the generic copy", () => {
+    const d = describeNotification(
+      item({
+        kind: "board",
+        payload: { provider: "Lever", token: "acme", companyName: "Acme", code: "http_error", reason: "Board 'acme' returned 503" },
+      }),
+    );
+    expect(d.detail).toBe(" returned 503.");
   });
 
   it("error row lists boards when every board failed", () => {

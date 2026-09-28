@@ -33,12 +33,14 @@ export function describeNotification(n: NotificationItem) {
       n.occurrences > 1
         ? ` Failed on ${n.occurrences} runs since ${monthDay(new Date(n.createdAt))}.`
         : "";
+    // The status is the one detail the generic http_error copy would lose.
+    const status = p.code === "http_error" ? p.reason.match(/returned (\d{3})/)?.[1] : undefined;
     return {
       icon: "warn" as const,
       title: "Job board unreachable",
       lead: `${p.provider} · ${p.companyName}`,
-      detail: ` ${BOARD_COPY[p.code]}${repeat}`,
-      code: p.reason,
+      detail: ` ${status ? `returned ${status}.` : BOARD_COPY[p.code]}${repeat}`,
+      hint: p.reason,
       link: { label: "Edit watchlist", href: `${base}?edit=1` },
     };
   }
@@ -54,7 +56,7 @@ export function describeNotification(n: NotificationItem) {
       lead: plural(p.jobsSaved, "job") + " saved",
       // Reasons may already end in a period ("…no longer exists.").
       detail: ` · ${name} stopped: ${p.reason.replace(/\.$/, "")}${boards}.`,
-      code: null,
+      hint: null,
       link: { label: "Open automation", href: `${base}?tab=history` },
     };
   }
@@ -69,7 +71,7 @@ export function describeNotification(n: NotificationItem) {
     title: `${name} finished`,
     lead: p.jobsSaved > 0 ? `${plural(p.jobsSaved, "job")} saved` : "No new jobs",
     detail: parts.join(" · "),
-    code: null,
+    hint: null,
     link:
       p.jobsSaved > 0
         ? { label: `Review ${plural(p.jobsSaved, "new job")}`, href: `${base}?tab=jobs` }
