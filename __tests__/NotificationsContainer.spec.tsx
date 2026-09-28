@@ -56,6 +56,8 @@ const automations = [{ id: "a-1", name: "Remote Frontend" }, { id: "a-2", name: 
 
 const renderPage = (init = initial) =>
   render(<NotificationsContainer initial={init} automations={automations} />);
+const confirmDelete = () =>
+  userEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Delete" }));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -89,10 +91,20 @@ it("row × deletes the row, not dismisses it", async () => {
   renderPage();
   const row = screen.getByText("Remote Frontend", { selector: "li span" }).closest("li")!;
   await userEvent.click(within(row).getByRole("button", { name: /delete notification/i }));
+  await confirmDelete();
   expect(actions.deleteNotification).toHaveBeenCalledWith("r1");
   expect(actions.dismissNotification).not.toHaveBeenCalled();
   expect(screen.queryByText("Remote Frontend", { selector: "li span" })).toBeNull();
   expect(refresh).toHaveBeenCalled();
+});
+
+it("cancelling the confirmation keeps the row", async () => {
+  renderPage();
+  const row = screen.getByText("Remote Frontend", { selector: "li span" }).closest("li")!;
+  await userEvent.click(within(row).getByRole("button", { name: /delete notification/i }));
+  await userEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Cancel" }));
+  expect(actions.deleteNotification).not.toHaveBeenCalled();
+  expect(screen.getByText("Remote Frontend", { selector: "li span" })).toBeInTheDocument();
 });
 
 it("Clear read deletes read rows from the list", async () => {
@@ -101,6 +113,7 @@ it("Clear read deletes read rows from the list", async () => {
   });
   renderPage();
   await userEvent.click(screen.getByRole("button", { name: /clear read/i }));
+  await confirmDelete();
   expect(actions.clearReadNotifications).toHaveBeenCalled();
   expect(await screen.findByRole("tab", { name: /All\s*1/ })).toBeInTheDocument();
   expect(screen.queryByText("Backend EU", { selector: "li span" })).toBeNull();
@@ -165,6 +178,7 @@ it("a failed delete shows an error and restores the row", async () => {
   renderPage();
   const row = screen.getByText("Remote Frontend", { selector: "li span" }).closest("li")!;
   await userEvent.click(within(row).getByRole("button", { name: /delete notification/i }));
+  await confirmDelete();
   expect(toastError).toHaveBeenCalledWith("Not authenticated");
   expect(await screen.findByText("Remote Frontend", { selector: "li span" })).toBeInTheDocument();
 });
@@ -181,6 +195,7 @@ it("a failed clear read shows an error", async () => {
   (actions.clearReadNotifications as any).mockResolvedValueOnce({ success: false, message: "Busy" });
   renderPage();
   await userEvent.click(screen.getByRole("button", { name: /clear read/i }));
+  await confirmDelete();
   expect(toastError).toHaveBeenCalledWith("Busy");
   expect(screen.getByText("Backend EU", { selector: "li span" })).toBeInTheDocument();
 });

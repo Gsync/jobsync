@@ -108,4 +108,4 @@ The bell in the header tells you: it shows a count of unread notifications, red 
 
 Every finished run posts a summary of what it found, with a link to any new jobs; cancelled runs post nothing. A company board that could not be reached (removed, timed out or rate-limited) gets its own row, which comes back after each run until you fix it — **Edit watchlist** opens the automation's editor. If every board fails, the run is marked failed.
 
-The **×** in the bell only hides a row; the Notifications page (**View all notifications**, or the account menu) still lists it. On the page, **×** and **Clear read** delete for good. Notifications are kept for 30 days.
+The **×** in the bell only hides a row; the Notifications page (**View all notifications**, or the account menu) still lists it. On the page, **×** and **Clear read** delete for good, after asking you to confirm. Notifications are kept for 30 days.

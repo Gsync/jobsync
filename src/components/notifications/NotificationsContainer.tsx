@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ResponsiveCardHeader } from "@/components/ResponsiveCardHeader";
+import { DeleteAlertDialog } from "@/components/DeleteAlertDialog";
 import { cn } from "@/lib/utils";
 import { toastError } from "@/lib/toast";
 import { useTabQueryParam } from "@/hooks/useTabQueryParam";
@@ -28,6 +29,7 @@ import { NotificationRow } from "./NotificationRow";
 import { groupByDay, isErrorNotification } from "./notificationDisplay";
 
 type Counts = Record<NotificationTab, number>;
+type PendingDelete = { kind: "clear" } | { kind: "delete"; id: string };
 
 interface NotificationsContainerProps {
   initial: { items: NotificationItem[]; total: number; counts: Counts };
@@ -52,6 +54,7 @@ export function NotificationsContainer({ initial, automations }: NotificationsCo
   const [total, setTotal] = useState(initial.total);
   const [counts, setCounts] = useState(initial.counts);
   const [loading, setLoading] = useState(false);
+  const [pending, setPending] = useState<PendingDelete | null>(null);
   // Drops a response that a newer tab or filter pick has overtaken.
   const requestId = useRef(0);
 
@@ -136,6 +139,12 @@ export function NotificationsContainer({ initial, automations }: NotificationsCo
     await query(tab, automationId, 0);
   };
 
+  const onConfirmDelete = () => {
+    if (pending?.kind === "clear") onClearRead();
+    else if (pending?.kind === "delete") onRemove(pending.id);
+    setPending(null);
+  };
+
   const groups = groupByDay(items);
 
   return (
@@ -152,7 +161,7 @@ export function NotificationsContainer({ initial, automations }: NotificationsCo
             <CheckCheck className="h-4 w-4" />
             Mark all read
           </Button>
-          <Button variant="ghost" size="sm" className="gap-1.5" onClick={onClearRead}>
+          <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setPending({ kind: "clear" })}>
             <Trash2 className="h-4 w-4" />
             Clear read
           </Button>
@@ -226,7 +235,7 @@ export function NotificationsContainer({ initial, automations }: NotificationsCo
                     key={item.id}
                     item={item}
                     variant="page"
-                    onRemove={onRemove}
+                    onRemove={(id) => setPending({ kind: "delete", id })}
                     onOpenLink={onOpenLink}
                   />
                 ))}
@@ -252,6 +261,20 @@ export function NotificationsContainer({ initial, automations }: NotificationsCo
           Notifications older than 30 days are removed automatically.
         </p>
       </CardContent>
+      <DeleteAlertDialog
+        pageTitle="notification"
+        open={pending !== null}
+        onOpenChange={(open) => !open && setPending(null)}
+        onDelete={onConfirmDelete}
+        alertTitle={
+          pending?.kind === "clear" ? "Delete all read notifications?" : "Delete this notification?"
+        }
+        alertDescription={
+          pending?.kind === "clear"
+            ? "Every read notification is deleted, including ones not loaded on this page. This cannot be undone."
+            : "This notification is deleted for good. This cannot be undone."
+        }
+      />
     </Card>
   );
 }
