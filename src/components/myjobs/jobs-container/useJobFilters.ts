@@ -1,10 +1,16 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Company, JobLocation, JobSource, JobTitle } from "@/models/job.model";
+import { parseJobFacets, writeJobFacets } from "@/lib/jobs/jobFacets";
+import {
+  Company,
+  JobFacets,
+  JobLocation,
+  JobSource,
+  JobTitle,
+} from "@/models/job.model";
 
-// Owns the URL-synced job list filters (company/title/location/source/applied),
-// their display labels, and the clear handlers.
+// Owns the URL-synced job list filters: deep-link chips (company/title/location/source/applied) and the popover facets.
 export function useJobFilters({
   companies,
   titles,
@@ -50,6 +56,18 @@ export function useJobFilters({
   const sourceLabel = sourceFilter
     ? sources.find((s) => s.value === sourceFilter)?.label
     : null;
+
+  // Parsed from the URL string so the object is stable between renders.
+  const queryString = queryParams.toString();
+  const facets = useMemo(
+    () => parseJobFacets(new URLSearchParams(queryString)),
+    [queryString],
+  );
+
+  const applyFacets = (next: JobFacets) => {
+    const qs = writeJobFacets(new URLSearchParams(queryString), next).toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname);
+  };
 
   const clearCompanyFilter = () => {
     setCompanyFilter(null);
@@ -103,5 +121,7 @@ export function useJobFilters({
     clearTitleFilter,
     clearLocationFilter,
     clearSourceFilter,
+    facets,
+    applyFacets,
   };
 }

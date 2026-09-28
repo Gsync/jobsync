@@ -5,6 +5,7 @@ import {
   deleteJobById,
   getJobDetails,
   getJobsList,
+  getJobFilterCounts,
   getJobSourceList,
   getStatusList,
   saveJobMatchResult,
@@ -12,6 +13,7 @@ import {
   updateJobStatus,
 } from "@/actions/job.actions";
 import { getMockJobDetails, getMockJobsList } from "@/lib/mock.utils";
+import { EMPTY_JOB_FACETS } from "@/lib/jobs/jobFacets";
 import { JobResponse } from "@/models/job.model";
 import { getCurrentUser } from "@/utils/user.utils";
 import { resolveStageTypeForStatusId } from "@/lib/jobs/resolve";
@@ -38,6 +40,7 @@ vi.mock("@prisma/client", () => {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
       count: vi.fn(),
+      groupBy: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -329,6 +332,84 @@ describe("jobActions", () => {
       });
     });
 
+    describe("facets", () => {
+      const whereOf = () => (prisma.job.findMany as any).mock.calls[0][0].where;
+
+      beforeEach(() => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+      });
+
+      it("hides dismissed discovered jobs by default", async () => {
+        await getJobsList(1, 10);
+        expect(whereOf().AND).toEqual([
+          {
+            OR: [
+              { discoveryStatus: null },
+              { discoveryStatus: { not: "dismissed" } },
+            ],
+          },
+        ]);
+      });
+
+      it("ORs statuses with accepted-discovered inside one AND entry", async () => {
+        await getJobsList(1, 10, {
+          ...EMPTY_JOB_FACETS,
+          statuses: ["applied", "interview"],
+          acceptedDiscovered: true,
+        });
+        expect(whereOf().AND).toContainEqual({
+          OR: [
+            { Status: { value: { in: ["applied", "interview"] } } },
+            { discoveryStatus: "accepted" },
+          ],
+        });
+      });
+
+      it("ANDs job type and workplace as `in` lists", async () => {
+        await getJobsList(1, 10, {
+          ...EMPTY_JOB_FACETS,
+          jobTypes: ["FT", "C"],
+          workplaces: ["REMOTE"],
+        });
+        expect(whereOf().AND).toEqual(
+          expect.arrayContaining([
+            { jobType: { in: ["FT", "C"] } },
+            { workplaceType: { in: ["REMOTE"] } },
+          ]),
+        );
+      });
+
+      it("drops the dismissed exclusion when dismissed jobs are included", async () => {
+        await getJobsList(1, 10, { ...EMPTY_JOB_FACETS, includeDismissed: true });
+        expect(whereOf().AND).toEqual([]);
+      });
+
+      it("keeps the search OR alongside the status OR", async () => {
+        await getJobsList(1, 10, { ...EMPTY_JOB_FACETS, statuses: ["applied"] }, "Developer");
+        const where = whereOf();
+        expect(where.OR).toContainEqual({ description: { contains: "Developer" } });
+        expect(where.AND).toContainEqual({
+          OR: [{ Status: { value: { in: ["applied"] } } }],
+        });
+      });
+
+      it("ignores values outside the whitelist", async () => {
+        await getJobsList(1, 10, {
+          ...EMPTY_JOB_FACETS,
+          statuses: ["bogus"],
+          jobTypes: ["fulltime"],
+        });
+        expect(whereOf().AND).toHaveLength(1);
+      });
+
+      it("always scopes by the current user", async () => {
+        await getJobsList(1, 10, { ...EMPTY_JOB_FACETS, statuses: ["applied"] });
+        expect(whereOf().userId).toBe(mockUser.id);
+      });
+    });
+
     describe("search functionality", () => {
       it("should build OR clause when search parameter is provided", async () => {
         (getCurrentUser as any).mockResolvedValue(mockUser);
@@ -460,13 +541,20 @@ describe("jobActions", () => {
         (prisma.job.findMany as any).mockResolvedValue([]);
         (prisma.job.count as any).mockResolvedValue(0);
 
-        await getJobsList(1, 10, "applied", "Developer");
+        await getJobsList(
+          1,
+          10,
+          { ...EMPTY_JOB_FACETS, statuses: ["applied"] },
+          "Developer",
+        );
 
         const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where).toMatchObject({
           userId: mockUser.id,
-          Status: { value: "applied" },
           OR: expect.any(Array),
+        });
+        expect(findManyCall.where.AND).toContainEqual({
+          OR: [{ Status: { value: { in: ["applied"] } } }],
         });
       });
 
@@ -518,13 +606,20 @@ describe("jobActions", () => {
         (prisma.job.findMany as any).mockResolvedValue([]);
         (prisma.job.count as any).mockResolvedValue(0);
 
-        await getJobsList(1, 10, "PT", "Developer");
+        await getJobsList(
+          1,
+          10,
+          { ...EMPTY_JOB_FACETS, jobTypes: ["PT"] },
+          "Developer",
+        );
 
         const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where).toMatchObject({
           userId: mockUser.id,
-          jobType: "PT",
           OR: expect.any(Array),
+        });
+        expect(findManyCall.where.AND).toContainEqual({
+          jobType: { in: ["PT"] },
         });
       });
     });
@@ -596,14 +691,23 @@ describe("jobActions", () => {
         (prisma.job.findMany as any).mockResolvedValue([]);
         (prisma.job.count as any).mockResolvedValue(0);
 
-        await getJobsList(1, 10, "applied", undefined, "google", true);
+        await getJobsList(
+          1,
+          10,
+          { ...EMPTY_JOB_FACETS, statuses: ["applied"] },
+          undefined,
+          "google",
+          true,
+        );
 
         const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where).toMatchObject({
           userId: mockUser.id,
-          Status: { value: "applied" },
           Company: { value: "google" },
           applied: true,
+        });
+        expect(findManyCall.where.AND).toContainEqual({
+          OR: [{ Status: { value: { in: ["applied"] } } }],
         });
       });
 
@@ -869,6 +973,77 @@ describe("jobActions", () => {
       });
     });
   });
+  describe("getJobFilterCounts", () => {
+    // Queued per test, not in beforeEach: clearMocks keeps unused Once values,
+    // so the unauthenticated test would leak them into later describes.
+    const queueCounts = () =>
+      (prisma.job.count as any)
+        .mockResolvedValueOnce(18)
+        .mockResolvedValueOnce(7);
+
+    beforeEach(() => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.groupBy as any).mockResolvedValue([
+        { statusId: "s-applied", _count: { _all: 11 } },
+        { statusId: "s-interview", _count: { _all: 4 } },
+      ]);
+    });
+
+    it("returns the total, per-status counts and the accepted count", async () => {
+      queueCounts();
+      const result = await getJobFilterCounts({
+        ...EMPTY_JOB_FACETS,
+        statuses: ["applied"],
+      });
+      expect(result).toEqual({
+        success: true,
+        data: {
+          total: 18,
+          statusCounts: { "s-applied": 11, "s-interview": 4 },
+          acceptedDiscovered: 7,
+        },
+      });
+    });
+
+    it("counts statuses without the Status section but with the others", async () => {
+      queueCounts();
+      await getJobFilterCounts({
+        ...EMPTY_JOB_FACETS,
+        statuses: ["applied"],
+        jobTypes: ["FT"],
+      });
+      const where = (prisma.job.groupBy as any).mock.calls[0][0].where;
+      expect(where.AND).toContainEqual({ jobType: { in: ["FT"] } });
+      expect(JSON.stringify(where)).not.toContain('"applied"');
+      expect((prisma.job.groupBy as any).mock.calls[0][0].by).toEqual(["statusId"]);
+    });
+
+    it("scopes counts by the deep-link filters and search", async () => {
+      queueCounts();
+      await getJobFilterCounts(EMPTY_JOB_FACETS, "Dev", {
+        companyValue: "google",
+        appliedOnly: true,
+      });
+      const totalWhere = (prisma.job.count as any).mock.calls[0][0].where;
+      expect(totalWhere).toMatchObject({
+        userId: mockUser.id,
+        Company: { value: "google" },
+        applied: true,
+      });
+      expect(totalWhere.OR).toContainEqual({ description: { contains: "Dev" } });
+      const acceptedWhere = (prisma.job.count as any).mock.calls[1][0].where;
+      expect(acceptedWhere.AND[1]).toEqual({ discoveryStatus: "accepted" });
+      expect(acceptedWhere.AND[0].userId).toBe(mockUser.id);
+    });
+
+    it("returns Not authenticated without a session", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+      const result = await getJobFilterCounts(EMPTY_JOB_FACETS);
+      expect(result).toEqual({ success: false, message: "Not authenticated" });
+    });
+  });
+
+
   describe("getJobDetails", () => {
     it("should throw error when jobId is not provided", async () => {
       await expect(getJobDetails("")).resolves.toStrictEqual({

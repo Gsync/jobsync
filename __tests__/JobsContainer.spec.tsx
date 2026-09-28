@@ -3,11 +3,13 @@ import { screen, render, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   getJobsList,
+  getJobFilterCounts,
   getJobDetails,
   deleteJobById,
   updateJobStatus,
 } from "@/actions/job.actions";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { EMPTY_JOB_FACETS } from "@/lib/jobs/jobFacets";
 
 vi.mock("next-auth", () => {
   const mockAuth = vi.fn();
@@ -41,6 +43,7 @@ vi.mock("next-auth/providers/credentials", () => ({
 
 vi.mock("@/actions/job.actions", () => ({
   getJobsList: vi.fn(),
+  getJobFilterCounts: vi.fn(),
   getJobDetails: vi.fn(),
   deleteJobById: vi.fn(),
   updateJobStatus: vi.fn(),
@@ -219,6 +222,10 @@ describe("JobsContainer Search Functionality", () => {
     (useRouter as any).mockReturnValue(mockRouter);
     (usePathname as any).mockReturnValue("/dashboard/myjobs");
     (useSearchParams as any).mockReturnValue(mockSearchParams);
+    (getJobFilterCounts as any).mockResolvedValue({
+      success: true,
+      data: { total: 2, statusCounts: {}, acceptedDiscovered: 0 },
+    });
   });
 
   afterEach(() => {
@@ -401,152 +408,122 @@ describe("JobsContainer Search Functionality", () => {
     });
   });
 
-  describe("Search with Filters", () => {
-    it("should combine search with status filter", async () => {
-      (getJobsList as any).mockResolvedValue({
-        success: true,
-        data: mockJobs,
-        total: 2,
-      });
+  describe("Popover filters", () => {
+    const U = undefined;
+
+    it("passes facets from the URL to getJobsList", async () => {
+      (useSearchParams as any).mockReturnValue(
+        new URLSearchParams("status=applied,interview&type=FT"),
+      );
+      (getJobsList as any).mockResolvedValue({ success: true, data: mockJobs, total: 2 });
 
       renderComponent();
 
       await waitFor(() => {
-        expect(
-          screen.getByPlaceholderText("Search jobs..."),
-        ).toBeInTheDocument();
-      });
-
-      // Type in search
-      const searchInput = screen.getByPlaceholderText("Search jobs...");
-      await act(async () => {
-        await user.type(searchInput, "Developer");
-      });
-
-      await act(async () => {
-        vi.advanceTimersByTime(300);
-      });
-
-      await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Developer", undefined, undefined, undefined, undefined, undefined, undefined);
-      });
-
-      // Now change filter
-      const filterTrigger = screen.getByRole("combobox");
-      await act(async () => {
-        await user.click(filterTrigger);
-      });
-
-      const appliedOption = screen.getByRole("option", { name: "Applied" });
-      await act(async () => {
-        await user.click(appliedOption);
-      });
-
-      await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, "applied", "Developer", undefined, undefined, undefined, undefined, undefined, undefined);
+        expect(getJobsList).toHaveBeenCalledWith(
+          1, 25,
+          { ...EMPTY_JOB_FACETS, statuses: ["applied", "interview"], jobTypes: ["FT"] },
+          U, U, U, U, U, U, U,
+        );
       });
     });
 
-    it("should preserve search when changing filter", async () => {
-      (getJobsList as any).mockResolvedValue({
-        success: true,
-        data: mockJobs,
-        total: 2,
-      });
+    it("combines URL facets with search", async () => {
+      (useSearchParams as any).mockReturnValue(new URLSearchParams("status=applied"));
+      (getJobsList as any).mockResolvedValue({ success: true, data: mockJobs, total: 2 });
 
       renderComponent();
+      await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
 
-      await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledTimes(1);
-      });
-
-      // Type in search
-      const searchInput = screen.getByPlaceholderText("Search jobs...");
       await act(async () => {
-        await user.type(searchInput, "Amazon");
+        await user.type(screen.getByPlaceholderText("Search jobs..."), "Developer");
       });
-
       await act(async () => {
         vi.advanceTimersByTime(300);
       });
 
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Amazon", undefined, undefined, undefined, undefined, undefined, undefined);
-      });
-
-      // Change filter
-      const filterTrigger = screen.getByRole("combobox");
-      await act(async () => {
-        await user.click(filterTrigger);
-      });
-
-      const interviewOption = screen.getByRole("option", { name: "Interview" });
-      await act(async () => {
-        await user.click(interviewOption);
-      });
-
-      // Search term should still be present
-      await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, "interview", "Amazon", undefined, undefined, undefined, undefined, undefined, undefined);
+        expect(getJobsList).toHaveBeenLastCalledWith(
+          1, 25, { ...EMPTY_JOB_FACETS, statuses: ["applied"] },
+          "Developer", U, U, U, U, U, U,
+        );
       });
     });
 
-    it("should clear filter but preserve search when selecting None filter", async () => {
-      (getJobsList as any).mockResolvedValue({
-        success: true,
-        data: mockJobs,
-        total: 2,
-      });
+    it("writes applied facets to the URL, keeping deep-link params", async () => {
+      (useSearchParams as any).mockReturnValue(
+        new URLSearchParams("company=google&applied=true"),
+      );
+      (getJobsList as any).mockResolvedValue({ success: true, data: mockJobs, total: 2 });
+
+      renderComponent();
+      await user.click(screen.getByRole("button", { name: /^Filter jobs/ }));
+      await user.click(screen.getByRole("checkbox", { name: "Interview" }));
+      await user.click(screen.getByRole("button", { name: /^Show / }));
+
+      expect(mockRouter.push).toHaveBeenCalledWith(
+        "/dashboard/myjobs?company=google&applied=true&status=interview",
+      );
+    });
+
+    it("shows a chip per active section and clears one on its ×", async () => {
+      (useSearchParams as any).mockReturnValue(
+        new URLSearchParams("status=applied&workplace=REMOTE"),
+      );
+      (getJobsList as any).mockResolvedValue({ success: true, data: mockJobs, total: 2 });
 
       renderComponent();
 
-      await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledTimes(1);
-      });
+      expect(screen.getByText("Filtered by")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Remove Workplace filter" }));
+      expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/myjobs?status=applied");
+    });
 
-      // First type in search
-      const searchInput = screen.getByPlaceholderText("Search jobs...");
-      await act(async () => {
-        await user.type(searchInput, "Developer");
-      });
+    it("hides the chip row when no facets are active", async () => {
+      (getJobsList as any).mockResolvedValue({ success: true, data: mockJobs, total: 2 });
+      renderComponent();
+      await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
+      expect(screen.queryByText("Filtered by")).not.toBeInTheDocument();
+    });
 
-      await act(async () => {
-        vi.advanceTimersByTime(300);
-      });
+    it("keeps facets and search on reload", async () => {
+      (useSearchParams as any).mockReturnValue(new URLSearchParams("status=draft"));
+      (getJobsList as any).mockResolvedValue({ success: true, data: mockJobs, total: 2 });
 
-      // Set a filter
-      const filterTrigger = screen.getByRole("combobox");
-      await act(async () => {
-        await user.click(filterTrigger);
-      });
-
-      const appliedOption = screen.getByRole("option", { name: "Applied" });
-      await act(async () => {
-        await user.click(appliedOption);
-      });
+      renderComponent();
+      await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
+      await user.click(screen.getByRole("button", { name: "Reload jobs" }));
 
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, "applied", "Developer", undefined, undefined, undefined, undefined, undefined, undefined);
+        expect(getJobsList).toHaveBeenLastCalledWith(
+          1, 25, { ...EMPTY_JOB_FACETS, statuses: ["draft"] }, U, U, U, U, U, U, U,
+        );
       });
+    });
 
-      // Now clear filter by selecting None
-      await act(async () => {
-        await user.click(filterTrigger);
-      });
+    it("does not blame the filters when the list failed to load", async () => {
+      (useSearchParams as any).mockReturnValue(new URLSearchParams("status=rejected"));
+      (getJobsList as any).mockResolvedValue({ success: false, message: "boom" });
 
-      const noneOption = screen.getByRole("option", {
-        name: "All (Except Dismissed)",
-      });
-      await act(async () => {
-        await user.click(noneOption);
-      });
+      renderComponent();
 
-      // Filter should be cleared but search preserved
-      await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Developer", undefined, undefined, undefined, undefined, undefined, undefined);
-      });
+      await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
+      await act(async () => {});
+      expect(screen.queryByText("No jobs match these filters.")).not.toBeInTheDocument();
+    });
+
+    it("explains an empty filtered list and offers Clear all", async () => {
+      (useSearchParams as any).mockReturnValue(new URLSearchParams("status=rejected"));
+      (getJobsList as any).mockResolvedValue({ success: true, data: [], total: 0 });
+
+      renderComponent();
+
+      expect(await screen.findByText("No jobs match these filters.")).toBeInTheDocument();
+      await user.click(screen.getAllByRole("button", { name: "Clear all" })[0]);
+      expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/myjobs");
     });
   });
+
 
   describe("Search Results Display", () => {
     it("should display filtered jobs after search", async () => {
@@ -823,33 +800,19 @@ describe("JobsContainer Search Functionality", () => {
       expect(googleButtons).toHaveLength(0);
     });
 
-    it("should combine company filter with status filter", async () => {
-      const companySearchParams = new URLSearchParams("company=google&applied=true");
-      (useSearchParams as any).mockReturnValue(companySearchParams);
-      (getJobsList as any).mockResolvedValue({
-        success: true,
-        data: mockJobs,
-        total: 2,
-      });
+    it("should combine company filter with status facets", async () => {
+      (useSearchParams as any).mockReturnValue(
+        new URLSearchParams("company=google&applied=true&status=applied"),
+      );
+      (getJobsList as any).mockResolvedValue({ success: true, data: mockJobs, total: 2 });
 
       renderComponent();
 
       await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, undefined, "google", true, undefined, undefined, undefined, undefined);
-      });
-
-      const filterTrigger = screen.getByRole("combobox");
-      await act(async () => {
-        await user.click(filterTrigger);
-      });
-
-      const appliedOption = screen.getByRole("option", { name: "Applied" });
-      await act(async () => {
-        await user.click(appliedOption);
-      });
-
-      await waitFor(() => {
-        expect(getJobsList).toHaveBeenCalledWith(1, 25, "applied", undefined, "google", true, undefined, undefined, undefined, undefined);
+        expect(getJobsList).toHaveBeenCalledWith(
+          1, 25, { ...EMPTY_JOB_FACETS, statuses: ["applied"] },
+          undefined, "google", true, undefined, undefined, undefined, undefined,
+        );
       });
     });
   });

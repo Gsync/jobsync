@@ -1,23 +1,17 @@
 "use client";
-import { File, ListFilter, RefreshCw, X } from "lucide-react";
+import { File, RefreshCw, X } from "lucide-react";
 import { CardHeader, CardTitle } from "../../ui/card";
 import { Button } from "../../ui/button";
 import { SearchInput } from "../../SearchInput";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-} from "../../ui/select";
 import { RecordsCount } from "../../RecordsCount";
 import { JobsViewToggle } from "../JobsViewToggle";
 import { AddJob } from "../AddJob";
+import { JobsFilterPopover } from "./JobsFilterPopover";
+import { JobsFilterChips } from "./JobsFilterChips";
 import {
   Company,
+  JobFacets,
+  JobListScope,
   JobLocation,
   JobResponse,
   JobSource,
@@ -28,7 +22,7 @@ import {
 } from "@/models/job.model";
 
 // Presentational: the Jobs card header — title/count, active filter chips,
-// view toggle, search, filter select, export and Add Job.
+// view toggle, search, filter popover, export and Add Job.
 export function JobsToolbar({
   jobsCount,
   totalJobs,
@@ -46,8 +40,9 @@ export function JobsToolbar({
   onReload,
   searchTerm,
   onSearchTermChange,
-  filterKey,
-  onFilterChange,
+  facets,
+  onApplyFacets,
+  scope,
   onDownload,
   statuses,
   companies,
@@ -75,8 +70,9 @@ export function JobsToolbar({
   onReload: () => void;
   searchTerm: string;
   onSearchTermChange: (value: string) => void;
-  filterKey: string;
-  onFilterChange: (filterBy: string) => void;
+  facets: JobFacets;
+  onApplyFacets: (facets: JobFacets) => void;
+  scope: JobListScope;
   onDownload: () => void;
   statuses: JobStatus[];
   companies: Company[];
@@ -152,29 +148,13 @@ export function JobsToolbar({
           onChange={onSearchTermChange}
           placeholder="Search jobs..."
         />
-        <Select value={filterKey} onValueChange={onFilterChange}>
-          <SelectTrigger
-            className="w-[120px] h-8"
-            data-testid="job-filter-select"
-          >
-            <ListFilter className="h-3.5 w-3.5" />
-            <SelectValue placeholder="Filter" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Filter by</SelectLabel>
-              <SelectSeparator />
-              <SelectItem value="none">All (Except Dismissed)</SelectItem>
-              <SelectItem value="applied">Applied</SelectItem>
-              <SelectItem value="interview">Interview</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
-              <SelectItem value="PT">Part-time</SelectItem>
-              <SelectItem value="accepted">Accepted (discovered)</SelectItem>
-              <SelectItem value="dismissed">Dismissed (discovered)</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+        <JobsFilterPopover
+          statuses={statuses}
+          facets={facets}
+          search={searchTerm}
+          scope={scope}
+          onApply={onApplyFacets}
+        />
         <Button
           size="sm"
           variant="outline"
@@ -199,6 +179,11 @@ export function JobsToolbar({
           initialOpen={addJobInitialOpen}
         />
       </div>
+      <JobsFilterChips
+        statuses={statuses}
+        facets={facets}
+        onChange={onApplyFacets}
+      />
     </CardHeader>
   );
 }

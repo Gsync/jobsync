@@ -1,7 +1,13 @@
 "use server";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
-import { JOB_TYPES, JobSortField } from "@/models/job.model";
+import {
+  JOB_TYPES,
+  JobFacets,
+  JobListScope,
+  JobSortField,
+} from "@/models/job.model";
+import { normalizeJobFacets } from "@/lib/jobs/jobFacets";
 import type { SortState } from "@/models/sort.model";
 import { findManySorted, planListSort, SortFieldSpec } from "@/lib/listSort";
 import { APP_CONSTANTS } from "@/lib/constants";
@@ -79,19 +85,13 @@ const JOB_DETAILS_INCLUDE = {
   stages: { include: STAGE_DETAIL_INCLUDE },
 };
 
-type JobsListFilters = {
-  filter?: string;
+type JobsListFilters = JobListScope & {
+  facets?: JobFacets;
   search?: string;
-  companyValue?: string;
-  appliedOnly?: boolean;
-  titleValue?: string;
-  locationValue?: string;
-  sourceValue?: string;
 };
 
 const buildJobsWhereClause = (userId: string, filters: JobsListFilters) => {
   const {
-    filter,
     search,
     companyValue,
     appliedOnly,
@@ -99,37 +99,35 @@ const buildJobsWhereClause = (userId: string, filters: JobsListFilters) => {
     locationValue,
     sourceValue,
   } = filters;
-
-  const filterBy = filter
-    ? filter === Object.keys(JOB_TYPES)[1]
-      ? {
-          jobType: filter,
-        }
-      : filter === "accepted" || filter === "dismissed"
-        ? {
-            discoveryStatus: filter,
-          }
-        : {
-            Status: {
-              value: filter,
-            },
-          }
-    : {};
-
-  const whereClause: any = {
-    userId,
-    ...filterBy,
-  };
+  const facets = normalizeJobFacets(filters.facets);
+  const and: Record<string, any>[] = [];
 
   // Dismissed discovered jobs are kept only for dedup and shouldn't
-  // clutter the tracked jobs list unless explicitly filtered for.
-  if (filter !== "dismissed") {
-    whereClause.AND = [
-      {
-        OR: [{ discoveryStatus: null }, { discoveryStatus: { not: "dismissed" } }],
-      },
-    ];
+  // clutter the tracked jobs list unless explicitly included.
+  if (!facets.includeDismissed) {
+    and.push({
+      OR: [{ discoveryStatus: null }, { discoveryStatus: { not: "dismissed" } }],
+    });
   }
+
+  // Accepted (discovered) sits in the Status list, so it ORs with statuses.
+  const statusOr: Record<string, any>[] = [];
+  if (facets.statuses.length) {
+    statusOr.push({ Status: { value: { in: facets.statuses } } });
+  }
+  if (facets.acceptedDiscovered) {
+    statusOr.push({ discoveryStatus: "accepted" });
+  }
+  if (statusOr.length) and.push({ OR: statusOr });
+
+  if (facets.jobTypes.length) {
+    and.push({ jobType: { in: facets.jobTypes } });
+  }
+  if (facets.workplaces.length) {
+    and.push({ workplaceType: { in: facets.workplaces } });
+  }
+
+  const whereClause: any = { userId, AND: and };
 
   if (companyValue) {
     whereClause.Company = { value: companyValue };
@@ -226,7 +224,7 @@ const JOB_SORT_SPECS: Record<JobSortField, SortFieldSpec> = {
 export const getJobsList = async (
   page: number = 1,
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
-  filter?: string,
+  facets?: JobFacets,
   search?: string,
   companyValue?: string,
   appliedOnly?: boolean,
@@ -240,7 +238,7 @@ export const getJobsList = async (
     const skip = (page - 1) * limit;
 
     const whereClause = buildJobsWhereClause(user.id, {
-      filter,
+      facets,
       search,
       companyValue,
       appliedOnly,
@@ -260,6 +258,47 @@ export const getJobsList = async (
     return handleError(error, msg);
   }
 };
+
+export const getJobFilterCounts = async (
+  facets: JobFacets,
+  search?: string,
+  scope: JobListScope = {},
+): Promise<any | undefined> => {
+  try {
+    const user = await requireUser();
+    const applied = normalizeJobFacets(facets);
+    // Status counts ignore the Status section itself, so ticking one status
+    // never zeroes the others.
+    const statusFree = { ...applied, statuses: [], acceptedDiscovered: false };
+    const where = buildJobsWhereClause(user.id, { ...scope, search, facets: applied });
+    const statusFreeWhere = buildJobsWhereClause(user.id, {
+      ...scope,
+      search,
+      facets: statusFree,
+    });
+
+    const [total, grouped, acceptedDiscovered] = await Promise.all([
+      prisma.job.count({ where }),
+      prisma.job.groupBy({
+        by: ["statusId"],
+        where: statusFreeWhere,
+        _count: { _all: true },
+      }),
+      prisma.job.count({
+        where: { AND: [statusFreeWhere, { discoveryStatus: "accepted" }] },
+      }),
+    ]);
+
+    const statusCounts = Object.fromEntries(
+      grouped.map((row) => [row.statusId, row._count._all]),
+    );
+    return { success: true, data: { total, statusCounts, acceptedDiscovered } };
+  } catch (error) {
+    const msg = "Failed to count jobs. ";
+    return handleError(error, msg);
+  }
+};
+
 
 export async function* getJobsIterator(filter?: string, pageSize = 200) {
   const user = await requireUser();

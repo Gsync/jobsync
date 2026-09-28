@@ -289,12 +289,17 @@ test.describe("Add New Job", () => {
     await createNewJob(page, jobText, cleanup);
     await expect(page.getByRole("row", { name: jobText }).first()).toBeVisible();
 
-    await page.getByTestId("job-filter-select").click();
-    await page.getByRole("option", { name: "Rejected", exact: true }).click();
+    await page.getByTestId("job-filter-button").click();
+    await page.getByRole("checkbox", { name: "Rejected", exact: true }).check();
+    await page.getByRole("button", { name: /^Show (\d+ )?jobs?$/ }).click();
+    await expect(page).toHaveURL(/status=rejected/);
     await expect(page.getByRole("row", { name: jobText })).not.toBeVisible();
 
-    await page.getByTestId("job-filter-select").click();
-    await page.getByRole("option", { name: "Draft", exact: true }).click();
+    await page.getByTestId("job-filter-button").click();
+    await page.getByRole("checkbox", { name: "Rejected", exact: true }).uncheck();
+    await page.getByRole("checkbox", { name: "Draft", exact: true }).check();
+    await page.getByRole("button", { name: /^Show (\d+ )?jobs?$/ }).click();
+    await expect(page).toHaveURL(/status=draft/);
     await expect(page.getByRole("row", { name: jobText }).first()).toBeVisible();
   });
 

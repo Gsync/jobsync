@@ -2,7 +2,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getJobsList } from "@/actions/job.actions";
 import { toastError } from "@/lib/toast";
-import { JobResponse, JobSortField, JobsViewMode } from "@/models/job.model";
+import {
+  JobFacets,
+  JobResponse,
+  JobSortField,
+  JobsViewMode,
+} from "@/models/job.model";
+import { hasJobFacets } from "@/lib/jobs/jobFacets";
 import type { SortState } from "@/models/sort.model";
 import { APP_CONSTANTS } from "@/lib/constants";
 import {
@@ -19,6 +25,7 @@ export function useJobsList({
   titleFilter,
   locationFilter,
   sourceFilter,
+  facets,
   sort,
 }: {
   companyFilter: string | null;
@@ -26,6 +33,7 @@ export function useJobsList({
   titleFilter: string | null;
   locationFilter: string | null;
   sourceFilter: string | null;
+  facets: JobFacets;
   sort: SortState<JobSortField> | null;
 }) {
   const { jobWrites } = useAgentChat();
@@ -33,9 +41,11 @@ export function useJobsList({
   const [viewMode, setViewMode] = useState<JobsViewMode>("table");
   const [page, setPage] = useState(1);
   const [totalJobs, setTotalJobs] = useState(0);
-  const [filterKey, setFilterKey] = useState<string>("none");
   const [searchTerm, setSearchTerm] = useState("");
   const [initialLoading, setInitialLoading] = useState(false);
+  // False until page 1 has loaded, so an empty list isn't read as "no matches"
+  // before the first fetch or after a failed one.
+  const [listLoaded, setListLoaded] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const hasSearched = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -61,7 +71,7 @@ export function useJobsList({
   const jobsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
 
   const loadJobs = useCallback(
-    async (page: number, filter?: string, search?: string) => {
+    async (page: number, search?: string) => {
       // Only the newest request may write: a slower response to an older
       // sort, search or page must not replace or extend the newer list.
       const request = ++requestSeq.current;
@@ -70,7 +80,7 @@ export function useJobsList({
       const { success, data, total, message } = await getJobsList(
         page,
         jobsPerPage,
-        filter && filter !== "none" ? filter : undefined,
+        hasJobFacets(facets) ? facets : undefined,
         search,
         companyFilter || undefined,
         appliedFilter || undefined,
@@ -84,14 +94,17 @@ export function useJobsList({
         setJobs((prev) => (page === 1 ? data : [...prev, ...data]));
         setTotalJobs(total);
         setPage(page);
+        setListLoaded(true);
       } else {
         toastError(message);
+        if (page === 1) setListLoaded(false);
       }
       setInitialLoading(false);
       setLoadingMore(false);
     },
     [
       jobsPerPage,
+      facets,
       companyFilter,
       appliedFilter,
       titleFilter,
@@ -101,14 +114,14 @@ export function useJobsList({
   );
 
   const reloadJobs = useCallback(async () => {
-    await loadJobs(1, undefined, searchTerm || undefined);
-    if (filterKey !== "none") {
-      setFilterKey("none");
-    }
-  }, [loadJobs, filterKey, searchTerm]);
+    await loadJobs(1, searchTerm || undefined);
+  }, [loadJobs, searchTerm]);
 
   useEffect(() => {
-    (async () => await loadJobs(1))();
+    (async () => await loadJobs(1, searchTerm || undefined))();
+    // Search has its own debounced effect below; keying on it here too
+    // would fire a second, undebounced request per keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadJobs]);
 
   // The agent saves server-side, so only this counter tells us a row appeared
@@ -128,7 +141,7 @@ export function useJobsList({
     if (searchTerm === "" && !hasSearched.current) return;
 
     const timer = setTimeout(() => {
-      loadJobs(1, filterKey, searchTerm || undefined);
+      loadJobs(1, searchTerm || undefined);
     }, 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -141,7 +154,7 @@ export function useJobsList({
     sortRef.current = sort;
     if (lastSort.current === sort) return;
     lastSort.current = sort;
-    loadJobs(1, filterKey, searchTerm || undefined);
+    loadJobs(1, searchTerm || undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sort]);
 
@@ -158,7 +171,7 @@ export function useJobsList({
           !loadingMore &&
           jobs.length < totalJobs
         ) {
-          loadJobs(page + 1, filterKey, searchTerm || undefined);
+          loadJobs(page + 1, searchTerm || undefined);
         }
       },
       { threshold: APP_CONSTANTS.INTERSECTION_OBSERVER_THRESHOLD },
@@ -170,17 +183,11 @@ export function useJobsList({
     jobs.length,
     totalJobs,
     page,
-    filterKey,
     searchTerm,
     initialLoading,
     loadingMore,
     loadJobs,
   ]);
-
-  const onFilterChange = (filterBy: string) => {
-    setFilterKey(filterBy);
-    loadJobs(1, filterBy, searchTerm || undefined);
-  };
 
   return {
     jobs,
@@ -188,14 +195,13 @@ export function useJobsList({
     onChangeViewMode,
     page,
     totalJobs,
-    filterKey,
     searchTerm,
     setSearchTerm,
     initialLoading,
+    listLoaded,
     loadingMore,
     loadJobs,
     reloadJobs,
-    onFilterChange,
     sentinelRef,
   };
 }
