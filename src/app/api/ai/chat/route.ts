@@ -243,8 +243,12 @@ export const POST = async (req: NextRequest) => {
   // onError, which would map and log the same failure a second time. Passing
   // an already-mapped string straight back keeps it to one line per failure.
   const alreadyMapped = new Set<string>();
+  // A doStream throw (Ollama down, bad key) never reaches streamText's
+  // onFinish; this is the only place the turn learns it failed.
+  let turnError: unknown;
   const mapTurnError = (error: unknown): string =>
     runInSpan(turnSpan, () => {
+      turnError ??= error;
       const message = error instanceof Error ? error.message : "";
       if (alreadyMapped.has(message)) return message;
       const mapped = mapAgentError(error, errorContext);
@@ -371,11 +375,16 @@ export const POST = async (req: NextRequest) => {
         "jobsync.message_chars": fields.messageChars,
         "jobsync.prefix_changed": fields.prefixChanged,
       });
-      void turnUsageTracker.finish(
-        isAborted
-          ? { usage: turnAbortUsage, abortedBy: turnSignal, excludeMs: nestedGuard.elapsedMs }
-          : { usage: turnUsage, finishReason: turnFinishReason, excludeMs: nestedGuard.elapsedMs },
-      );
+      // The stream's cancel path can run this before isAborted is set, so the
+      // signal decides too; statusOf ignores abortedBy unless it fired.
+      const aborted = isAborted || turnSignal.aborted;
+      void turnUsageTracker.finish({
+        usage: aborted ? turnAbortUsage : turnUsage,
+        finishReason: turnFinishReason,
+        error: turnError,
+        abortedBy: turnSignal,
+        excludeMs: nestedGuard.elapsedMs,
+      });
       // A cancelled turn never writes back. Clear deletes the conversation and
       // this fires afterwards on the stream's cancel path, so saving here would
       // restore exactly what the user just deleted. The write-on-receipt above

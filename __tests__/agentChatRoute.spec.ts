@@ -58,6 +58,7 @@ import { getModel } from "@/lib/ai/providers";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { saveChatConversation } from "@/actions/agentChat.actions";
 import { buildAgentTools } from "@/lib/agent/tools";
+import { statusOf } from "@/lib/aiUsage/tracker";
 import { buildPageContextMessage } from "@/lib/agent/prompt";
 import { APP_CONSTANTS } from "@/lib/constants";
 import {
@@ -445,11 +446,13 @@ describe("POST /api/ai/chat", () => {
       await POST(req({ messages: [pasteMessage("posting")] }));
       streamArgs().onFinish({ totalUsage: { inputTokens: 5000, outputTokens: 200 }, finishReason: "stop" });
       await finishTurn();
-      expect(finish).toHaveBeenCalledWith({
+      const arg = finish.mock.calls[0][0];
+      expect(arg).toMatchObject({
         usage: { inputTokens: 5000, outputTokens: 200 },
         finishReason: "stop",
         excludeMs: 0,
       });
+      expect(statusOf(arg)).toBe("ok");
     });
 
     it("records a stopped turn with finished-step usage", async () => {
@@ -471,6 +474,37 @@ describe("POST /api/ai/chat", () => {
       streamArgs().onFinish({ totalUsage: {}, finishReason: "stop" });
       await finishTurn();
       expect(finish.mock.calls[0][0].excludeMs).toBe(90_000);
+    });
+
+    // A doStream throw (Ollama down, bad key) skips streamText's onFinish and
+    // reaches the route only as an error part through toUIMessageStream.
+    const streamError = (error: unknown) =>
+      (toUIMessageStream.mock.calls as any)[0][0].onError(error);
+
+    it("records a provider error before any step as error", async () => {
+      await POST(req({ messages: [pasteMessage("posting")] }));
+      streamError(new Error("connect ECONNREFUSED 127.0.0.1:11434"));
+      await finishTurn();
+      expect(statusOf(finish.mock.calls[0][0])).toBe("error");
+    });
+
+    it("records an error after a finished tool step as error, not ok", async () => {
+      await POST(req({ messages: [pasteMessage("posting")] }));
+      streamArgs().onFinish({ totalUsage: { inputTokens: 900, outputTokens: 30 }, finishReason: "tool-calls" });
+      streamError(new Error("connect ECONNREFUSED 127.0.0.1:11434"));
+      await finishTurn();
+      expect(statusOf(finish.mock.calls[0][0])).toBe("error");
+    });
+
+    it("records a disconnect as stopped before isAborted is set", async () => {
+      const controller = new AbortController();
+      await POST({ json: async () => ({ messages: [pasteMessage("posting")] }), signal: controller.signal } as any);
+      streamArgs().onAbort({ steps: [{ usage: { inputTokens: 4000, outputTokens: 50 } }] });
+      controller.abort();
+      await finishTurn(false);
+      const arg = finish.mock.calls[0][0];
+      expect(statusOf(arg)).toBe("stopped");
+      expect(arg.usage).toEqual({ inputTokens: 4000, outputTokens: 50 });
     });
   });
 });
