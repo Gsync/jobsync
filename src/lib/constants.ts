@@ -271,6 +271,7 @@ export const APP_CONSTANTS = {
 export const SCHEDULER_CONSTANTS = {
   ENABLED: true,
   CRON_EXPRESSION: "0 * * * *", // Every hour at minute 0
+  PRUNE_CRON_EXPRESSION: "0 3 * * *", // Daily at 03:00; reads filter anyway
   STALE_RUN_TIMEOUT_MS: 15 * 60 * 1000, // 15 min; reaper cutoff for stuck runs
 } as const;
 
