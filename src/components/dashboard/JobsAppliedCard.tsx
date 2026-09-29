@@ -20,7 +20,7 @@ import AddContactShortcut from "./AddContactShortcut";
 export default function JobsAppliedCard() {
   const router = useRouter();
   return (
-    <Card className="sm:col-span-2 min-w-0 flex flex-col">
+    <Card className="@lg:col-span-2 min-w-0 flex flex-col">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg text-green-600">Dashboard</CardTitle>
         <CardDescription className="max-w-lg text-balance leading-relaxed">
