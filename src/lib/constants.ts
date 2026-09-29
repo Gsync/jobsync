@@ -428,3 +428,11 @@ export const NOTIFICATION_CONSTANTS = {
   POPOVER_LIMIT: 20,
   PAGE_SIZE: 50,
 } as const;
+
+export const AI_USAGE_CONSTANTS = {
+  RETENTION_DAYS: 90,
+  RECENT_LIMIT: 50,
+  // Ollama drops the oldest context silently on overflow, so "near" is the
+  // only warning available.
+  CONTEXT_WARN_RATIO: 0.9,
+} as const;

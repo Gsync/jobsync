@@ -38,6 +38,7 @@ model User {
   Question       Question[]
   McpAccessToken McpAccessToken[]
   Notification   Notification[]
+  aiCalls        AiCall[]
   ChatConversation ChatConversation?
   defaultResumeId String?
   defaultResume   Resume?          @relation("UserDefaultResume", fields: [defaultResumeId], references: [id], onDelete: SetNull)
@@ -629,6 +630,24 @@ model Notification {
   @@index([userId, occurredAt])
   @@index([userId, readAt])
   @@index([automationId, kind, boardToken])
+}
+
+model AiCall {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  feature      String // AiUsageFeature in aiUsage.model.ts
+  provider     String
+  model        String
+  status       String // AiCallStatus in aiUsage.model.ts
+  inputTokens  Int?
+  outputTokens Int?
+  durationMs   Int
+  firstTokenMs Int?
+  numCtx       Int? // Ollama only, and only where the app passes num_ctx
+  startedAt    DateTime @default(now())
+
+  @@index([userId, startedAt])
 }
 
 model Note {
