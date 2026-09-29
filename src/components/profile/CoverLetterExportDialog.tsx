@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { PdfExportDialog } from "@/components/pdf-export/PdfExportDialog";
 import { triggerDownload } from "@/components/pdf-export/download";
 import { useExportSettings } from "@/components/pdf-export/useExportSettings";
@@ -16,6 +16,8 @@ import {
 } from "@/models/coverLetterExport.model";
 import { CoverLetterSettingsPanel } from "./cover-letter-export-dialog/CoverLetterSettingsPanel";
 import { canExportCoverLetter } from "./cover-letter-export-dialog/canExportCoverLetter";
+
+type PreviewInput = CoverLetterExportSettings & { headline: string };
 
 const EMPTY_MESSAGE = "Add some content to this cover letter to preview it.";
 
@@ -40,8 +42,19 @@ export function CoverLetterExportDialog({
     open,
   });
 
+  // null means untouched, so the box follows the resume until it is edited.
+  // Never persisted: a headline is usually tailored to one letter.
+  const [editedHeadline, setEditedHeadline] = useState<string | null>(null);
+  const resumeHeadline = contactInfo?.headline ?? "";
+  const headline = editedHeadline ?? resumeHeadline;
+
+  useEffect(() => {
+    if (!open) setEditedHeadline(null);
+  }, [open]);
+
   const isDefault =
-    settingsKey(settings) === settingsKey(defaultCoverLetterExportSettings);
+    settingsKey(settings) === settingsKey(defaultCoverLetterExportSettings) &&
+    headline === resumeHeadline;
 
   // Memoized because the editor trigger re-renders this on every keystroke,
   // and the guard parses the whole letter.
@@ -58,18 +71,28 @@ export function CoverLetterExportDialog({
   // The dynamic import stays here, so @react-pdf/renderer never reaches an
   // eagerly-loaded chunk.
   const generate = useCallback(
-    async (next: CoverLetterExportSettings) => {
+    async ({ headline, ...next }: PreviewInput) => {
       const { generateCoverLetterPdfBlob } = await import(
         "./cover-letter-pdf/generateCoverLetterPdf"
       );
-      return generateCoverLetterPdfBlob(letter!, contactInfo ?? null, next);
+      // Trimmed, so a whitespace-only box drops the line like an empty one.
+      const letterhead = contactInfo
+        ? { ...contactInfo, headline: headline.trim() }
+        : null;
+      return generateCoverLetterPdfBlob(letter!, letterhead, next);
     },
     [letter, contactInfo],
   );
 
+  // The headline rides in the preview input so it reaches the cache key.
+  const previewInput = useMemo(
+    () => ({ ...settings, headline }),
+    [settings, headline],
+  );
+
   const { blob, filename, isGenerating, error } = usePdfPreview(
     generate,
-    settings,
+    previewInput,
     open && ready && canExport && !letterheadPending,
   );
 
@@ -83,7 +106,7 @@ export function CoverLetterExportDialog({
     try {
       // The blob on screen is the artifact; generating is the fallback for a
       // failed preview.
-      const output = prepared ?? (await generate(settings));
+      const output = prepared ?? (await generate(previewInput));
       triggerDownload(output.blob, output.filename);
       toastSuccess("Saved to your Downloads folder.", "PDF exported");
     } catch {
@@ -110,9 +133,14 @@ export function CoverLetterExportDialog({
         <CoverLetterSettingsPanel
           settings={settings}
           onChange={setSettings}
-          onReset={reset}
+          onReset={() => {
+            reset();
+            setEditedHeadline(null);
+          }}
           isDefault={isDefault}
           hasLetterhead={contactInfo !== null}
+          headline={headline}
+          onHeadlineChange={setEditedHeadline}
         />
       }
     />

@@ -1,8 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   DisclosureGroup,
+  ROW,
   SelectRow,
   StepperRow,
 } from "@/components/pdf-export/settings-rows";
@@ -22,6 +25,8 @@ type CoverLetterSettingsPanelProps = {
   isDefault?: boolean;
   /** False once the lookup has resolved and found no contact info. */
   hasLetterhead: boolean;
+  headline: string;
+  onHeadlineChange: (headline: string) => void;
 };
 
 const ID_PREFIX = "cover-letter-export";
@@ -32,6 +37,8 @@ export function CoverLetterSettingsPanel({
   onReset,
   isDefault,
   hasLetterhead,
+  headline,
+  onHeadlineChange,
 }: CoverLetterSettingsPanelProps) {
   const setNumber = (field: CoverLetterNumericSetting) => (value: number) =>
     onChange({ ...settings, [field]: value });
@@ -49,6 +56,29 @@ export function CoverLetterSettingsPanel({
 
   return (
     <div className="flex flex-col gap-4">
+      {hasLetterhead && (
+        <DisclosureGroup
+          title="Letterhead"
+          summary={headline.trim() || "No headline"}
+        >
+          <div className={ROW}>
+            <Label
+              htmlFor={`${ID_PREFIX}-headline`}
+              className="cursor-pointer font-normal"
+            >
+              Headline
+            </Label>
+            <Input
+              id={`${ID_PREFIX}-headline`}
+              value={headline}
+              onChange={(event) => onHeadlineChange(event.target.value)}
+              placeholder="Leave blank to omit"
+              className="h-8 w-full text-sm"
+            />
+          </div>
+        </DisclosureGroup>
+      )}
+
       {/* No Template row: a cover letter has exactly one style. */}
       <DisclosureGroup title="Typography" summary={typographySummary}>
         <SelectRow

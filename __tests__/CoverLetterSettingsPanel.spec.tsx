@@ -12,18 +12,21 @@ beforeAll(() => {
 
 const renderPanel = (
   patch: Partial<typeof defaultCoverLetterExportSettings> = {},
-  props: { hasLetterhead?: boolean } = {},
+  props: { hasLetterhead?: boolean; headline?: string } = {},
 ) => {
   const user = userEvent.setup();
   const onChange = vi.fn();
+  const onHeadlineChange = vi.fn();
   render(
     <CoverLetterSettingsPanel
       settings={{ ...defaultCoverLetterExportSettings, ...patch }}
       onChange={onChange}
       hasLetterhead={props.hasLetterhead ?? true}
+      headline={props.headline ?? "Engineer"}
+      onHeadlineChange={onHeadlineChange}
     />,
   );
-  return { onChange, user };
+  return { onChange, onHeadlineChange, user };
 };
 
 describe("CoverLetterSettingsPanel — structure", () => {
@@ -114,10 +117,31 @@ describe("CoverLetterSettingsPanel — reset", () => {
         onReset={vi.fn()}
         isDefault
         hasLetterhead
+        headline=""
+        onHeadlineChange={vi.fn()}
       />,
     );
     expect(
       screen.getByRole("button", { name: "Reset to defaults" }),
     ).toBeDisabled();
+  });
+});
+
+describe("CoverLetterSettingsPanel — headline", () => {
+  it("shows the headline it is given", () => {
+    renderPanel({}, { headline: "Staff Engineer" });
+    expect(screen.getByLabelText("Headline")).toHaveValue("Staff Engineer");
+  });
+
+  it("emits the typed headline", async () => {
+    const { onHeadlineChange, user } = renderPanel({}, { headline: "" });
+    await user.type(screen.getByLabelText("Headline"), "X");
+    expect(onHeadlineChange).toHaveBeenCalledWith("X");
+  });
+
+  // With no letterhead the field would edit nothing on the page.
+  it("is hidden when there is no letterhead", () => {
+    renderPanel({}, { hasLetterhead: false });
+    expect(screen.queryByLabelText("Headline")).not.toBeInTheDocument();
   });
 });
