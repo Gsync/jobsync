@@ -19,11 +19,8 @@ export function buildAgentTools(ctx: {
   provider: string;
   modelName: string;
   writer: UIMessageStreamWriter;
+  nestedGuard: NestedGenerationGuard;
 }): ToolSet {
-  // One per request, so no two nested tools run at once but two users never
-  // block each other.
-  const nestedGuard: NestedGenerationGuard = { running: false };
-
   return {
     add_job: buildAddJobTool(ctx.userId, ctx.pastedText),
     get_resume: buildGetResumeTool(ctx.userId, ctx.pageContext?.resumeId),
@@ -34,7 +31,7 @@ export function buildAgentTools(ctx: {
       provider: ctx.provider,
       modelName: ctx.modelName,
       writer: ctx.writer,
-      guard: nestedGuard,
+      guard: ctx.nestedGuard,
     }),
     match_job: buildMatchJobTool({
       userId: ctx.userId,
@@ -43,7 +40,7 @@ export function buildAgentTools(ctx: {
       provider: ctx.provider,
       modelName: ctx.modelName,
       writer: ctx.writer,
-      guard: nestedGuard,
+      guard: ctx.nestedGuard,
     }),
     generate_cover_letter: buildGenerateCoverLetterTool({
       userId: ctx.userId,
@@ -52,7 +49,7 @@ export function buildAgentTools(ctx: {
       provider: ctx.provider,
       modelName: ctx.modelName,
       writer: ctx.writer,
-      guard: nestedGuard,
+      guard: ctx.nestedGuard,
     }),
   };
 }

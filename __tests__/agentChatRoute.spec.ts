@@ -16,6 +16,14 @@ vi.mock("@/lib/agent/tools", async (importOriginal) => {
   return { ...actual, buildAgentTools: vi.fn(actual.buildAgentTools) };
 });
 
+const markFirstToken = vi.fn();
+const finish = vi.fn();
+const startAiCall = vi.fn((..._args: unknown[]) => ({ markFirstToken, finish }));
+vi.mock("@/lib/aiUsage/tracker", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/aiUsage/tracker")>();
+  return { ...actual, startAiCall: (...args: unknown[]) => startAiCall(...args) };
+});
+
 // The route merges this into createUIMessageStream now. An immediately
 // closed stream is enough — these tests assert on the streamText ARGS.
 const toUIMessageStream = vi.fn(
@@ -403,5 +411,66 @@ describe("POST /api/ai/chat", () => {
     );
     const sent = JSON.stringify(streamArgs().messages);
     expect(sent).not.toContain("<page-context>");
+  });
+
+  describe("usage", () => {
+    const finishTurn = (isAborted = false) =>
+      capturedOnFinish!({ messages: [pasteMessage("posting")], responseMessage: undefined, isAborted });
+
+    it("starts one agent_chat call with the chat num_ctx", async () => {
+      await POST(req({ messages: [pasteMessage("posting")] }));
+      expect(startAiCall).toHaveBeenCalledWith({
+        userId: "user-1",
+        feature: "agent_chat",
+        provider: "ollama",
+        model: "qwen3.5:9b",
+        numCtx: APP_CONSTANTS.AGENT_CHAT_NUM_CTX,
+      });
+    });
+
+    it("marks the first token on text or a tool call, not on reasoning", async () => {
+      await POST(req({ messages: [pasteMessage("posting")] }));
+      const { onChunk } = streamArgs();
+      onChunk({ chunk: { type: "reasoning-delta", text: "hmm" } });
+      // Ollama with think:true sends content "" beside every thinking chunk.
+      onChunk({ chunk: { type: "text-delta", text: "" } });
+      expect(markFirstToken).not.toHaveBeenCalled();
+      onChunk({ chunk: { type: "tool-input-start" } });
+      expect(markFirstToken).toHaveBeenCalledTimes(1);
+      onChunk({ chunk: { type: "text-delta", text: "Hi" } });
+      expect(markFirstToken).toHaveBeenCalledTimes(2);
+    });
+
+    it("records a finished turn with its total usage", async () => {
+      await POST(req({ messages: [pasteMessage("posting")] }));
+      streamArgs().onFinish({ totalUsage: { inputTokens: 5000, outputTokens: 200 }, finishReason: "stop" });
+      await finishTurn();
+      expect(finish).toHaveBeenCalledWith({
+        usage: { inputTokens: 5000, outputTokens: 200 },
+        finishReason: "stop",
+        excludeMs: 0,
+      });
+    });
+
+    it("records a stopped turn with finished-step usage", async () => {
+      const controller = new AbortController();
+      await POST({ json: async () => ({ messages: [pasteMessage("posting")] }), signal: controller.signal } as any);
+      streamArgs().onAbort({ steps: [{ usage: { inputTokens: 4000, outputTokens: 50 } }] });
+      controller.abort();
+      await finishTurn(true);
+      const arg = finish.mock.calls[0][0];
+      expect(arg.usage).toEqual({ inputTokens: 4000, outputTokens: 50 });
+      expect(arg.abortedBy.aborted).toBe(true);
+      expect(arg.abortedBy.reason.name).not.toBe("TimeoutError");
+    });
+
+    it("subtracts nested time from the turn", async () => {
+      await POST(req({ messages: [pasteMessage("posting")] }));
+      const { nestedGuard } = (buildAgentTools as any).mock.calls[0][0];
+      nestedGuard.elapsedMs = 90_000;
+      streamArgs().onFinish({ totalUsage: {}, finishReason: "stop" });
+      await finishTurn();
+      expect(finish.mock.calls[0][0].excludeMs).toBe(90_000);
+    });
   });
 });

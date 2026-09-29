@@ -22,6 +22,7 @@ const toolCtx = {
   provider: "ollama",
   modelName: "qwen3.5:9b",
   writer: { write: () => {}, merge: () => {}, onError: undefined } as any,
+  nestedGuard: { running: false, elapsedMs: 0 },
 };
 
 describe("get_resume agent tool", () => {

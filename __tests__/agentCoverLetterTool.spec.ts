@@ -58,7 +58,7 @@ const ctx = (overrides: Record<string, unknown> = {}) => ({
   provider: "ollama",
   modelName: "qwen3.5:9b",
   writer: writer as any,
-  guard: { running: false },
+  guard: { running: false, elapsedMs: 0 },
   ...overrides,
 });
 
@@ -317,7 +317,7 @@ describe("generate_cover_letter agent tool", () => {
   // The guard is shared with the other two nested tools, per request.
   it("declines to start while another nested generation is running", async () => {
     const result = await execute(
-      buildGenerateCoverLetterTool(ctx({ guard: { running: true } })),
+      buildGenerateCoverLetterTool(ctx({ guard: { running: true, elapsedMs: 0 } })),
       {},
     );
     expect(result.status).toBe("generation_failed");

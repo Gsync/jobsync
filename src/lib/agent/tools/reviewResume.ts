@@ -66,6 +66,7 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
 
       const generation = await runNestedGeneration({
         model: ctx.model,
+        userId: ctx.userId,
         system: RESUME_REVIEW_SYSTEM_PROMPT,
         prompt: buildResumeReviewPrompt(pre.data.normalizedText),
         temperature: TEMPERATURES.FEEDBACK,

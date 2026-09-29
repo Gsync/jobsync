@@ -32,6 +32,7 @@ import {
 } from "@/lib/agent/paste";
 import { truncateForModel } from "@/lib/agent/paste.server";
 import { buildAgentTools } from "@/lib/agent/tools";
+import type { NestedGenerationGuard } from "@/lib/agent/nestedGeneration";
 import { measureTurnPrefix, type TurnPrefixMetrics } from "@/lib/agent/turnMetrics";
 import { mapAgentError } from "@/lib/agent/errors";
 import { getUserSettings } from "@/actions/userSettings.actions";
@@ -46,6 +47,7 @@ import {
   SURFACES,
 } from "@/lib/telemetry";
 import { addJobSettled, AGENT_CHAT_TERMINAL_TOOLS } from "@/models/agent.model";
+import { startAiCall, usageOfSteps, type TokenUsage } from "@/lib/aiUsage/tracker";
 
 // The one terminal tool whose stop condition is not "was it called" — see
 // addJobSettled.
@@ -207,6 +209,21 @@ export const POST = async (req: NextRequest) => {
   // totalUsage, not one step's usage: stopWhen permits AGENT_CHAT_MAX_STEPS.
   let turnUsage: LanguageModelUsage | undefined;
   let turnFinishReason: string | undefined;
+  // streamText's onFinish never fires on abort; onAbort reports the steps that
+  // did finish. The in-flight step's tokens are lost with the connection.
+  let turnAbortUsage: TokenUsage | undefined;
+
+  // Created here, not in buildAgentTools, so the turn can subtract the nested
+  // generations' time — they are recorded as their own calls.
+  const nestedGuard: NestedGenerationGuard = { running: false, elapsedMs: 0 };
+
+  const turnUsageTracker = startAiCall({
+    userId,
+    feature: "agent_chat",
+    provider,
+    model: modelName,
+    numCtx: APP_CONSTANTS.AGENT_CHAT_NUM_CTX,
+  });
 
   const turnSpan = startSpan("agent.chat.turn", {
     ...genAiRequestAttrs({
@@ -247,6 +264,7 @@ export const POST = async (req: NextRequest) => {
           provider,
           modelName,
           writer,
+          nestedGuard,
         });
         prefixMetrics = measureTurnPrefix({
           userId,
@@ -276,6 +294,19 @@ export const POST = async (req: NextRequest) => {
             // the content channel, and content and a tool call are mutually
             // exclusive — add_job measured 1/7 with it off, 7/7 with it on.
             ollama: { think: true, options: { num_ctx: APP_CONSTANTS.AGENT_CHAT_NUM_CTX } },
+          },
+          // First thing the user sees: reasoning is never rendered, and Ollama
+          // sends an empty text delta beside every thinking chunk.
+          onChunk: ({ chunk }) => {
+            if (
+              (chunk.type === "text-delta" && chunk.text.length > 0) ||
+              chunk.type === "tool-input-start"
+            ) {
+              turnUsageTracker.markFirstToken();
+            }
+          },
+          onAbort: ({ steps }) => {
+            turnAbortUsage = usageOfSteps(steps);
           },
           // streamText's onFinish, not createUIMessageStream's: result is
           // scoped inside execute while the span ends in the outer onFinish.
@@ -340,6 +371,11 @@ export const POST = async (req: NextRequest) => {
         "jobsync.message_chars": fields.messageChars,
         "jobsync.prefix_changed": fields.prefixChanged,
       });
+      void turnUsageTracker.finish(
+        isAborted
+          ? { usage: turnAbortUsage, abortedBy: turnSignal, excludeMs: nestedGuard.elapsedMs }
+          : { usage: turnUsage, finishReason: turnFinishReason, excludeMs: nestedGuard.elapsedMs },
+      );
       // A cancelled turn never writes back. Clear deletes the conversation and
       // this fires afterwards on the stream's cancel path, so saving here would
       // restore exactly what the user just deleted. The write-on-receipt above

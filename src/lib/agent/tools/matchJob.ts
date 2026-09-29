@@ -87,6 +87,7 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
 
       const generation = await runNestedGeneration({
         model: ctx.model,
+        userId: ctx.userId,
         system: JOB_MATCH_SYSTEM_PROMPT,
         prompt: buildJobMatchPrompt(
           resumePre.data.normalizedText,

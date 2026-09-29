@@ -28,6 +28,7 @@ import {
   startSpan,
   SURFACES,
 } from "@/lib/telemetry";
+import { startAiCall } from "@/lib/aiUsage/tracker";
 
 export const POST = async (req: NextRequest) => {
   const session = await auth();
@@ -122,8 +123,9 @@ export const POST = async (req: NextRequest) => {
     );
 
     const controller = new AbortController();
+    // A named reason is what tells "timed out" from "client went away".
     const timer = setTimeout(
-      () => controller.abort(),
+      () => controller.abort(new DOMException("Resume import timed out", "TimeoutError")),
       APP_CONSTANTS.AI_RESUME_IMPORT_TIMEOUT_MS,
     );
 
@@ -156,6 +158,14 @@ export const POST = async (req: NextRequest) => {
       "jobsync.resume_id": resumeId,
     });
 
+    const importUsage = startAiCall({
+      userId,
+      feature: "resume_import",
+      provider: selectedModel.provider,
+      model: selectedModel.model,
+      numCtx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
+    });
+
     const result = runInSpan(importSpan, () =>
       streamText({
         model,
@@ -174,16 +184,22 @@ export const POST = async (req: NextRequest) => {
         },
         onFinish: ({ totalUsage, finishReason }) => {
           clearTimeout(timer);
+          void importUsage.finish({ usage: totalUsage, finishReason });
           importSpan.end(
             genAiResponseAttrs({ usage: totalUsage, finishReason }),
           );
         },
         onError: ({ error }) => {
           clearTimeout(timer);
+          void importUsage.finish({ error, abortedBy: controller.signal });
           log.error("Resume import stream error", { error: String(error) });
           streamErrorMessage = error instanceof Error ? error.message : undefined;
           importSpan.setError(error);
           importSpan.end();
+        },
+        onAbort: () => {
+          clearTimeout(timer);
+          void importUsage.finish({ abortedBy: controller.signal });
         },
       }),
     );
@@ -198,6 +214,7 @@ export const POST = async (req: NextRequest) => {
       async start(controller) {
         try {
           for await (const partial of result.partialOutputStream) {
+            importUsage.markFirstToken();
             controller.enqueue(encoder.encode(JSON.stringify(partial) + "\n"));
           }
         } catch (err) {

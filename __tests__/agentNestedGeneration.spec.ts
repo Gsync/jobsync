@@ -7,12 +7,24 @@ vi.mock("ai", async (importOriginal) => {
   return { ...actual, streamText: (...args: unknown[]) => streamText(...(args as [])) };
 });
 
-function textStreamOf(chunks: string[], finishReason: unknown = "stop") {
+const markFirstToken = vi.fn();
+const finish = vi.fn();
+const startAiCall = vi.fn((..._args: unknown[]) => ({ markFirstToken, finish }));
+vi.mock("@/lib/aiUsage/tracker", () => ({
+  startAiCall: (...args: unknown[]) => startAiCall(...args),
+}));
+
+function textStreamOf(
+  chunks: string[],
+  finishReason: unknown = "stop",
+  totalUsage: unknown = { inputTokens: 700, outputTokens: 300 },
+) {
   return {
     textStream: (async function* () {
       for (const chunk of chunks) yield chunk;
     })(),
     finishReason: Promise.resolve(finishReason),
+    totalUsage: Promise.resolve(totalUsage),
   };
 }
 
@@ -27,10 +39,11 @@ const args = () => ({
   timeoutMs: 1000,
   writer: writer as any,
   toolCallId: "call-1",
-  guard: { running: false },
+  guard: { running: false, elapsedMs: 0 },
   label: "test_tool",
   provider: "ollama",
   modelName: "test-model",
+  userId: "user-1",
 });
 
 describe("runNestedGeneration", () => {
@@ -110,14 +123,14 @@ describe("runNestedGeneration", () => {
   // Two nested generations in one turn serialize on Ollama to ~360s against a
   // 300s deadline, so the second must be refused rather than started.
   it("refuses a second generation while one is already running", async () => {
-    const guard = { running: true };
+    const guard = { running: true, elapsedMs: 0 };
     const result = await runNestedGeneration({ ...args(), guard });
     expect(result).toEqual({ status: "busy" });
     expect(streamText).not.toHaveBeenCalled();
   });
 
   it("releases the guard so a later generation can run", async () => {
-    const guard = { running: false };
+    const guard = { running: false, elapsedMs: 0 };
     await runNestedGeneration({ ...args(), guard });
     expect(guard.running).toBe(false);
     const second = await runNestedGeneration({ ...args(), guard });
@@ -125,7 +138,7 @@ describe("runNestedGeneration", () => {
   });
 
   it("releases the guard even when the generation throws", async () => {
-    const guard = { running: false };
+    const guard = { running: false, elapsedMs: 0 };
     streamText.mockReturnValue({
       textStream: (async function* () {
         throw new Error("boom");
@@ -133,5 +146,77 @@ describe("runNestedGeneration", () => {
     });
     await runNestedGeneration({ ...args(), guard });
     expect(guard.running).toBe(false);
+  });
+});
+
+describe("runNestedGeneration usage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    streamText.mockReturnValue(textStreamOf(["hello ", "world"]));
+  });
+
+  it("records the call under the feature its label maps to", async () => {
+    await runNestedGeneration({ ...args(), label: "review_resume" });
+    expect(startAiCall).toHaveBeenCalledWith({
+      userId: "user-1",
+      feature: "resume_review",
+      provider: "ollama",
+      model: "test-model",
+      numCtx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
+    });
+  });
+
+  it("marks the first token and finishes with usage on a clean run", async () => {
+    await runNestedGeneration(args());
+    expect(markFirstToken).toHaveBeenCalled();
+    expect(finish).toHaveBeenCalledWith({
+      usage: { inputTokens: 700, outputTokens: 300 },
+      finishReason: "stop",
+    });
+  });
+
+  it("finishes with the finish reason when incomplete", async () => {
+    streamText.mockReturnValue(textStreamOf(["partial"], "length"));
+    await runNestedGeneration(args());
+    expect(finish).toHaveBeenCalledWith(
+      expect.objectContaining({ finishReason: "length" }),
+    );
+  });
+
+  it("records timed_out when the sub-call deadline fires", async () => {
+    // Getters, so the rejection is created only when awaited — an eager
+    // Promise.reject is reported by Vitest as an unhandled rejection.
+    streamText.mockImplementation(() => ({
+      textStream: (async function* () {
+        await new Promise((r) => setTimeout(r, 30));
+      })(),
+      get finishReason() {
+        return Promise.reject(new Error("aborted"));
+      },
+      get totalUsage() {
+        return Promise.reject(new Error("aborted"));
+      },
+    }));
+    await runNestedGeneration({ ...args(), timeoutMs: 5 });
+    const { abortedBy } = finish.mock.calls[0][0];
+    expect(abortedBy.reason.name).toBe("TimeoutError");
+  });
+
+  it("records nothing for a busy rejection", async () => {
+    await runNestedGeneration({ ...args(), guard: { running: true, elapsedMs: 0 } });
+    expect(startAiCall).not.toHaveBeenCalled();
+  });
+
+  it("adds its elapsed time to the guard", async () => {
+    const guard = { running: false, elapsedMs: 0 };
+    streamText.mockReturnValue({
+      ...textStreamOf([]),
+      textStream: (async function* () {
+        await new Promise((r) => setTimeout(r, 20));
+        yield "done";
+      })(),
+    });
+    await runNestedGeneration({ ...args(), guard });
+    expect(guard.elapsedMs).toBeGreaterThanOrEqual(15);
   });
 });

@@ -49,7 +49,7 @@ const ctx = () => ({
   provider: "ollama",
   modelName: "qwen3.5:9b",
   writer: writer as any,
-  guard: { running: false },
+  guard: { running: false, elapsedMs: 0 },
 });
 
 const execute = (agentTool: any, input: any) =>
@@ -80,7 +80,7 @@ describe("review_resume agent tool", () => {
 
   it("is registered in the tool registry", async () => {
     const { buildAgentTools } = await import("@/lib/agent/tools");
-    const tools = buildAgentTools(ctx());
+    const tools = buildAgentTools({ ...ctx(), nestedGuard: ctx().guard });
     expect(Object.keys(tools)).toContain("review_resume");
   });
 

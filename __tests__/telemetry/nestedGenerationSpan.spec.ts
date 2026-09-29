@@ -48,10 +48,11 @@ describe("agent.nested span", () => {
       timeoutMs: 1000,
       writer,
       toolCallId: "call-1",
-      guard: { running: false },
+      guard: { running: false, elapsedMs: 0 },
       label: "review_resume",
       provider: "ollama",
       modelName: "qwen3.5:9b",
+      userId: "user-1",
       attrs: { "jobsync.input.resume_chars": 14500 },
     });
 
@@ -75,10 +76,11 @@ describe("agent.nested span", () => {
       timeoutMs: 1000,
       writer,
       toolCallId: "call-1",
-      guard: { running: false },
+      guard: { running: false, elapsedMs: 0 },
       label: "review_resume",
       provider: "ollama",
       modelName: "qwen3.5:9b",
+      userId: "user-1",
     });
 
     expect(result).toEqual({ status: "incomplete" });
@@ -99,10 +101,11 @@ describe("agent.nested span", () => {
       timeoutMs: 1000,
       writer,
       toolCallId: "call-1",
-      guard: { running: true },
+      guard: { running: true, elapsedMs: 0 },
       label: "match_job",
       provider: "ollama",
       modelName: "qwen3.5:9b",
+      userId: "user-1",
     });
 
     expect(result).toEqual({ status: "busy" });

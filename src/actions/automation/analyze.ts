@@ -3,6 +3,7 @@
 import db from "@/lib/db";
 import { requireUser } from "../shared";
 import { generateText } from "ai";
+import { startAiCall } from "@/lib/aiUsage/tracker";
 import {
   getModel,
   parseJobMatch,
@@ -109,11 +110,28 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
         "jobsync.job_id": jobId,
       },
       async (span) => {
-        const generated = await generateText({
-          model,
-          system: JOB_MATCH_SYSTEM_PROMPT,
-          prompt: promptText,
-          temperature: 0.3,
+        // The Analyze button on a discovered job counts as Automations.
+        const tracker = startAiCall({
+          userId: user.id,
+          feature: "automations",
+          provider: ai.provider,
+          model: ai.model || "llama3.2",
+        });
+        let generated;
+        try {
+          generated = await generateText({
+            model,
+            system: JOB_MATCH_SYSTEM_PROMPT,
+            prompt: promptText,
+            temperature: 0.3,
+          });
+        } catch (error) {
+          void tracker.finish({ error });
+          throw error;
+        }
+        void tracker.finish({
+          usage: generated.totalUsage,
+          finishReason: generated.finishReason,
         });
         span.setAttrs(
           genAiResponseAttrs({

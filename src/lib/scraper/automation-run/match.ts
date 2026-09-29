@@ -21,6 +21,7 @@ import type { JobDetails } from "../types";
 import type { ResumeWithSections } from "./types";
 import { getDefaultModelForProvider } from "./aiSettings";
 import { convertResumeForMatch } from "./resumeText";
+import { startAiCall } from "@/lib/aiUsage/tracker";
 
 export interface MatchResult {
   success: boolean;
@@ -75,12 +76,29 @@ ${removeHtmlTags(job.description)}
         "jobsync.user_id": userId,
       },
       async (span) => {
-        const generated = await generateText({
-          model,
-          system: AUTOMATION_JOB_MATCH_SYSTEM_PROMPT,
-          prompt: promptText,
-          temperature: 0.3,
-          abortSignal: signal,
+        // No numCtx: this call passes none, so Ollama uses its daemon default.
+        const tracker = startAiCall({
+          userId,
+          feature: "automations",
+          provider,
+          model: modelName,
+        });
+        let generated;
+        try {
+          generated = await generateText({
+            model,
+            system: AUTOMATION_JOB_MATCH_SYSTEM_PROMPT,
+            prompt: promptText,
+            temperature: 0.3,
+            abortSignal: signal,
+          });
+        } catch (error) {
+          void tracker.finish({ error, abortedBy: signal });
+          throw error;
+        }
+        void tracker.finish({
+          usage: generated.totalUsage,
+          finishReason: generated.finishReason,
         });
         span.setAttrs(
           genAiResponseAttrs({

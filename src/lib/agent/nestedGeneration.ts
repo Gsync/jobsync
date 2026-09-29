@@ -11,6 +11,8 @@ import {
   SURFACE_BY_NESTED_LABEL,
   SURFACES,
 } from "@/lib/telemetry";
+import { startAiCall } from "@/lib/aiUsage/tracker";
+import { FEATURE_BY_NESTED_LABEL } from "@/models/aiUsage.model";
 
 export type NestedGenerationResult =
   | { status: "ok"; text: string }
@@ -18,9 +20,10 @@ export type NestedGenerationResult =
   | { status: "busy" }
   | { status: "failed" };
 
-// One per request, created in buildAgentTools. Process-wide state would block
-// one user behind another's generation.
-export type NestedGenerationGuard = { running: boolean };
+// One per request, created by the chat route. Process-wide state would block
+// one user behind another's generation. elapsedMs is what the turn subtracts
+// so its own duration excludes the nested work recorded separately.
+export type NestedGenerationGuard = { running: boolean; elapsedMs: number };
 
 type NestedGenerationArgs = {
   model: LanguageModel;
@@ -36,6 +39,7 @@ type NestedGenerationArgs = {
   label: string;
   provider: string;
   modelName: string;
+  userId: string;
   // Call-site facts the invariant half cannot know: input sizes and whether
   // the caller clipped what it sent.
   attrs?: Record<string, unknown>;
@@ -61,6 +65,7 @@ export async function runNestedGeneration({
   label,
   provider,
   modelName,
+  userId,
   attrs,
 }: NestedGenerationArgs): Promise<NestedGenerationResult> {
   // Started before the guard check so a rejected call is visible too — "busy"
@@ -92,6 +97,16 @@ export async function runNestedGeneration({
     // this too.
     const signals: AbortSignal[] = [AbortSignal.timeout(timeoutMs)];
     if (abortSignal) signals.push(abortSignal);
+    const signal = AbortSignal.any(signals);
+
+    const startedAt = Date.now();
+    const tracker = startAiCall({
+      userId,
+      feature: FEATURE_BY_NESTED_LABEL[label] ?? "agent_chat",
+      provider,
+      model: modelName,
+      numCtx,
+    });
 
     let text = "";
     try {
@@ -100,13 +115,14 @@ export async function runNestedGeneration({
         system,
         prompt,
         temperature,
-        abortSignal: AbortSignal.any(signals),
+        abortSignal: signal,
         // Deliberately no think:true. These sub-calls have no tools, so
         // reasoning buys nothing and costs 30s. The chat loop enables it.
         providerOptions: { ollama: { options: { num_ctx: numCtx } } },
       });
 
       for await (const delta of sub.textStream) {
+        tracker.markFirstToken();
         text += delta;
         writer.write({
           type: AGENT_NESTED_STREAM_PART_TYPE,
@@ -121,6 +137,10 @@ export async function runNestedGeneration({
       // promise, and a body that stops without Ollama's done chunk resolves
       // to "other".
       const finishReason = await sub.finishReason;
+      // Defensively: an aborted stream rejects this, the same trap the
+      // finishReason guard exists for.
+      const tokens = await Promise.resolve(sub.totalUsage).catch(() => undefined);
+      void tracker.finish({ usage: tokens, finishReason });
       if (finishReason !== "stop") {
         span.setError(new Error(`finishReason=${finishReason}`));
         span.end({
@@ -130,20 +150,19 @@ export async function runNestedGeneration({
         return { status: "incomplete" };
       }
 
-      // Only on the ok path, and defensively: an aborted stream rejects this,
-      // the same trap the finishReason guard above exists for.
-      const usage = await Promise.resolve(sub.totalUsage).catch(() => undefined);
       span.end({
         "jobsync.nested.status": "ok",
-        ...genAiResponseAttrs({ usage, finishReason, text }),
+        ...genAiResponseAttrs({ usage: tokens, finishReason, text }),
       });
       return { status: "ok", text };
     } catch (error) {
+      void tracker.finish({ error, abortedBy: signal });
       log.error(`[agent-chat] ${label} generation failed`, { error: String(error) });
       span.setError(error);
       span.end({ "jobsync.nested.status": "failed" });
       return { status: "failed" };
     } finally {
+      guard.elapsedMs += Date.now() - startedAt;
       guard.running = false;
     }
   });

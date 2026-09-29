@@ -97,6 +97,7 @@ export function buildGenerateCoverLetterTool(ctx: CoverLetterContext) {
 
       const generation = await runNestedGeneration({
         model: ctx.model,
+        userId: ctx.userId,
         system: COVER_LETTER_SYSTEM_PROMPT,
         prompt: buildCoverLetterPrompt(
           resumePre.data.normalizedText,
