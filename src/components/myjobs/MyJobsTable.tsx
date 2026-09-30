@@ -67,7 +67,12 @@ function MyJobsTable({
             <TableHead className="hidden w-[100px] sm:table-cell">
               <span className="sr-only">Company Logo</span>
             </TableHead>
-            <SortableTableHead field="appliedDate" sort={sort} onSort={onSort} className="hidden md:table-cell">
+            <SortableTableHead
+              field="appliedDate"
+              sort={sort}
+              onSort={onSort}
+              className="hidden md:table-cell"
+            >
               Applied
             </SortableTableHead>
             <SortableTableHead field="title" sort={sort} onSort={onSort}>
@@ -76,14 +81,29 @@ function MyJobsTable({
             <SortableTableHead field="company" sort={sort} onSort={onSort}>
               Company
             </SortableTableHead>
-            <SortableTableHead field="location" sort={sort} onSort={onSort} className="hidden md:table-cell">
+            <SortableTableHead
+              field="location"
+              sort={sort}
+              onSort={onSort}
+              className="hidden md:table-cell"
+            >
               Location
             </SortableTableHead>
             <TableHead>Status</TableHead>
-            <SortableTableHead field="matchScore" sort={sort} onSort={onSort} className="hidden md:table-cell text-center">
+            <SortableTableHead
+              field="matchScore"
+              sort={sort}
+              onSort={onSort}
+              className="hidden md:table-cell text-center"
+            >
               Match
             </SortableTableHead>
-            <SortableTableHead field="source" sort={sort} onSort={onSort} className="hidden md:table-cell">
+            <SortableTableHead
+              field="source"
+              sort={sort}
+              onSort={onSort}
+              className="hidden md:table-cell"
+            >
               Source
             </SortableTableHead>
             <TableHead>
@@ -102,22 +122,28 @@ function MyJobsTable({
                   />
                 </TableCell>
                 <TableCell className="hidden md:table-cell w-[120px] whitespace-nowrap">
-                  {job.appliedDate ? format(job.appliedDate, "PP") : "N/A"}
+                  {job.appliedDate
+                    ? format(job.appliedDate, "PP")
+                    : "Not Applied"}
                   {job.createdAt && (
                     <span className="block text-xs text-muted-foreground">
                       Added {format(job.createdAt, "PP")}
                     </span>
                   )}
                 </TableCell>
-                <TableCell
-                  className="font-medium cursor-pointer max-w-[120px] md:max-w-[220px]"
-                >
+                <TableCell className="font-medium cursor-pointer max-w-[120px] md:max-w-[220px]">
                   <div className="flex items-center gap-1.5">
-                    <Link href={`/dashboard/myjobs/${job?.id}`} className="block truncate text-primary underline-offset-4 hover:underline">
+                    <Link
+                      href={`/dashboard/myjobs/${job?.id}`}
+                      className="block truncate text-primary underline-offset-4 hover:underline"
+                    >
                       {job.JobTitle?.label}
                     </Link>
                     {(job._count?.Notes ?? 0) > 0 && (
-                      <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5 shrink-0">
+                      <Badge
+                        variant="secondary"
+                        className="text-xs px-1.5 py-0 h-5 shrink-0"
+                      >
                         <StickyNote className="h-3 w-3 mr-0.5" />
                         {job._count!.Notes}
                       </Badge>
@@ -126,7 +152,9 @@ function MyJobsTable({
                   <span className="block truncate text-xs font-normal text-muted-foreground">
                     {[
                       getJobTypeLabel(job.jobType),
-                      job.workplaceType ? getWorkplaceTypeLabel(job.workplaceType) : null,
+                      job.workplaceType
+                        ? getWorkplaceTypeLabel(job.workplaceType)
+                        : null,
                     ]
                       .filter(Boolean)
                       .join(" · ")}

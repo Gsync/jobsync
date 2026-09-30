@@ -1,9 +1,11 @@
 "use client";
-import { File, RefreshCw, X } from "lucide-react";
+import { useState } from "react";
+import { Download, RefreshCw, X } from "lucide-react";
 import { CardHeader, CardTitle } from "../../ui/card";
 import { Button } from "../../ui/button";
 import { SearchInput } from "../../SearchInput";
 import { RecordsCount } from "../../RecordsCount";
+import { DeleteAlertDialog } from "../../DeleteAlertDialog";
 import { JobsViewToggle } from "../JobsViewToggle";
 import { AddJob } from "../AddJob";
 import { JobsFilterPopover } from "./JobsFilterPopover";
@@ -84,6 +86,8 @@ export function JobsToolbar({
   resetEditJob: () => void;
   addJobInitialOpen: boolean;
 }) {
+  const [exportOpen, setExportOpen] = useState(false);
+
   return (
     <CardHeader className="flex-row flex-wrap justify-between items-center gap-3">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -158,14 +162,13 @@ export function JobsToolbar({
         <Button
           size="sm"
           variant="outline"
-          className="h-8 gap-1"
+          className="h-8 w-8 p-0"
           disabled={initialLoading}
-          onClick={onDownload}
+          title="Export jobs"
+          onClick={() => setExportOpen(true)}
         >
-          <File className="h-3.5 w-3.5" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Export
-          </span>
+          <Download className="h-3.5 w-3.5" />
+          <span className="sr-only">Export jobs</span>
         </Button>
         <AddJob
           jobStatuses={statuses}
@@ -179,6 +182,16 @@ export function JobsToolbar({
           initialOpen={addJobInitialOpen}
         />
       </div>
+      <DeleteAlertDialog
+        pageTitle="jobs"
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        onDelete={onDownload}
+        alertTitle="Export jobs?"
+        alertDescription="This downloads your jobs as a file."
+        actionLabel="Export"
+        actionVariant="default"
+      />
       <JobsFilterChips
         statuses={statuses}
         facets={facets}
