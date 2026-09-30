@@ -39,8 +39,8 @@ export default async function Dashboard() {
   const activityCalendarDataKeys = Object.keys(activityCalendarData);
   return (
     <>
-      <div className="@container grid grid-cols-1 auto-rows-max items-start gap-2 md:gap-2 @3xl/main:col-span-2">
-        <div className="grid gap-2 @lg:grid-cols-4">
+      <div className="@container grid grid-cols-1 auto-rows-max items-start gap-4 @3xl/main:col-span-2">
+        <div className="grid gap-4 @lg:grid-cols-4">
           <JobsApplied />
           <JobsActivityCard
             data={[

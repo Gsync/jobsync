@@ -132,7 +132,7 @@
   /* v4 Preflight renders placeholders at 50% currentColor; v3 used gray-400 */
   input::placeholder,
   textarea::placeholder {
-    color: var(--color-gray-400);
+    color: hsl(var(--muted-foreground));
   }
 }
 
@@ -192,26 +192,9 @@
   @apply text-14 lg:text-16 font-normal text-muted-foreground;
 }
 
-/* Sidebar */
-@utility sidebar {
-  @apply sticky left-0 top-0 flex h-screen w-fit flex-col justify-between border-r border-border bg-card pt-8 text-foreground max-md:hidden sm:p-4 xl:p-6 2xl:w-[355px];
-}
-
-@utility sidebar-logo {
-  @apply 2xl:text-26 text-[26px] text-blue-500 font-bold max-xl:hidden;
-}
-
-@utility sidebar-link {
-  @apply flex gap-3 items-center text-blue-500 py-1 md:p-3 2xl:p-4 rounded-lg justify-center xl:justify-start;
-}
-
-@utility sidebar-label {
-  @apply text-16 font-semibold text-foreground max-xl:hidden;
-}
-
 /* Navlink */
 @utility navlink {
-  @apply relative flex items-center overflow-hidden transition-all duration-200 ease-in-out;
+  @apply relative flex items-center overflow-hidden transition-colors duration-200 ease-in-out;
 }
 
 /* Override: For Calender component to hide month, year labels */

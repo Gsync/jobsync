@@ -1,76 +1,69 @@
-"use client";
-
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { BriefcaseBusiness } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import SigninForm from "./SigninForm";
 import SignupForm from "./SignupForm";
 
 type AuthMode = "signin" | "signup";
 
-interface AuthCardProps {
-  mode: AuthMode;
-}
-
-export default function AuthCard({ mode }: AuthCardProps) {
-  const router = useRouter();
-
+export default function AuthCard({ mode }: { mode: AuthMode }) {
   return (
-    <div className="mx-auto w-full max-w-md px-4">
-      {/* App branding */}
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold tracking-tight">JobSync</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+    <div className="mx-auto flex w-full max-w-md flex-col gap-6">
+      <div className="text-center">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 rounded-sm focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          <BriefcaseBusiness
+            className="size-6 text-primary"
+            aria-hidden="true"
+          />
+          <h1 className="text-2xl font-semibold tracking-tight">JobSync</h1>
+        </Link>
+        <p className="mt-2 text-sm text-muted-foreground">
           Track your job search, powered by AI
         </p>
       </div>
-
-      {/* Tab toggle */}
-      <div className="mb-6 flex rounded-xl border bg-muted p-1">
-        <button
-          onClick={() => router.push("/signin")}
-          className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all duration-200 ${
-            mode === "signin"
-              ? "bg-background text-foreground shadow-xs"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Sign In
-        </button>
-        <button
-          onClick={() => router.push("/signup")}
-          className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all duration-200 ${
-            mode === "signup"
-              ? "bg-background text-foreground shadow-xs"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Create Account
-        </button>
-      </div>
-
-      {/* Form card */}
-      <div className="rounded-xl border bg-card p-6 shadow-xs">
-        {mode === "signin" ? (
-          <>
-            <div className="mb-5">
-              <h2 className="text-xl font-semibold">Welcome back</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Enter your credentials to access your account
-              </p>
-            </div>
-            <SigninForm />
-          </>
-        ) : (
-          <>
-            <div className="mb-5">
-              <h2 className="text-xl font-semibold">Get started</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Create a free account to start tracking your applications
-              </p>
-            </div>
-            <SignupForm />
-          </>
-        )}
-      </div>
+      <nav aria-label="Authentication" className="grid grid-cols-2 gap-2">
+        <Button variant={mode === "signin" ? "secondary" : "ghost"} asChild>
+          <Link
+            href="/signin"
+            aria-current={mode === "signin" ? "page" : undefined}
+          >
+            Sign In
+          </Link>
+        </Button>
+        <Button variant={mode === "signup" ? "secondary" : "ghost"} asChild>
+          <Link
+            href="/signup"
+            aria-current={mode === "signup" ? "page" : undefined}
+          >
+            Create Account
+          </Link>
+        </Button>
+      </nav>
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            {mode === "signin" ? "Welcome back" : "Get started"}
+          </CardTitle>
+          <CardDescription>
+            {mode === "signin"
+              ? "Enter your credentials to access your account"
+              : "Create a free account to start tracking your applications"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {mode === "signin" ? <SigninForm /> : <SignupForm />}
+        </CardContent>
+      </Card>
     </div>
   );
 }

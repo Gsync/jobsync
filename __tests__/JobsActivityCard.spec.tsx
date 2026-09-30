@@ -107,7 +107,7 @@ describe("JobsActivityCard", () => {
     render(<JobsActivityCard data={data} />);
 
     const toggle = screen.getByTestId("jobs-activity-toggle-group");
-    await user.click(within(toggle).getByRole("button", { name: "30d" }));
+    await user.click(within(toggle).getByRole("tab", { name: "30d" }));
 
     const total = screen.getByTestId("jobs-activity-total");
 
@@ -129,7 +129,7 @@ describe("JobsActivityCard", () => {
     render(<JobsActivityCard data={data} />);
 
     const toggle = screen.getByTestId("jobs-activity-toggle-group");
-    await user.click(within(toggle).getByRole("button", { name: "30d" }));
+    await user.click(within(toggle).getByRole("tab", { name: "30d" }));
 
     const total = screen.getByTestId("jobs-activity-total");
 

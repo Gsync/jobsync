@@ -24,9 +24,11 @@ import { SupportDialog } from "./SupportDialog";
 import { useAppVersion } from "@/hooks/useAppVersion";
 import { useNotifications } from "@/context/NotificationContext";
 import { cn } from "@/lib/utils";
+import { CurrentUser } from "@/models/user.model";
+import { Button } from "@/components/ui/button";
 
 interface ProfileDropdownProps {
-  user: any;
+  user: CurrentUser | null;
   expanded: boolean;
   signOutAction: () => void;
 }
@@ -47,10 +49,11 @@ export function ProfileDropdown({
         <Tooltip>
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
-              <button
+              <Button
+                variant="ghost"
                 type="button"
                 aria-label="User menu"
-                className="navlink h-10 w-full text-muted-foreground hover:text-foreground"
+                className="navlink h-10 w-full justify-start gap-0 p-0 text-muted-foreground"
               >
                 <span className="relative flex h-full w-14 shrink-0 items-center justify-center">
                   <UserAvatar user={user} />
@@ -87,7 +90,7 @@ export function ProfileDropdown({
                 >
                   {label}
                 </span>
-              </button>
+              </Button>
             </DropdownMenuTrigger>
           </TooltipTrigger>
           {!expanded && <TooltipContent side="right">{label}</TooltipContent>}
@@ -108,8 +111,10 @@ export function ProfileDropdown({
               {summary.unread > 0 && (
                 <span
                   className={cn(
-                    "ml-2 rounded-full px-1.5 text-[11px] font-semibold text-white",
-                    summary.unreadErrors > 0 ? "bg-destructive" : "bg-primary"
+                    "ml-2 rounded-full px-1.5 text-[11px] font-semibold",
+                    summary.unreadErrors > 0
+                      ? "bg-destructive-bg text-destructive-foreground"
+                      : "bg-primary text-primary-foreground"
                   )}
                 >
                   {summary.unread}
@@ -149,7 +154,7 @@ export function ProfileDropdown({
             <form action={signOutAction}>
               <button type="submit" className="flex w-full items-center">
                 <PowerIcon className="w-5 mr-2" />
-                <div className="hidden md:block">Logout</div>
+                <span>Logout</span>
               </button>
             </form>
           </DropdownMenuItem>

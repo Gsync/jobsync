@@ -593,7 +593,7 @@ describe("JobsContainer Search Functionality", () => {
 
       // Should show loading indicator
       await waitFor(() => {
-        expect(screen.getByTestId("loader")).toBeInTheDocument();
+        expect(screen.getByRole("region", { name: "Job records" })).toHaveAttribute("aria-busy", "true");
       });
 
       // Resolve the search

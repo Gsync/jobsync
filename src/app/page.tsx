@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import db from "@/lib/db";
+import LandingPage from "@/components/landing/LandingPage";
 
 export default async function RootPage() {
   const session = await auth();
@@ -11,9 +12,5 @@ export default async function RootPage() {
 
   const userCount = await db.user.count();
 
-  if (userCount === 0) {
-    redirect("/signup");
-  } else {
-    redirect("/signin");
-  }
+  return <LandingPage hasUsers={userCount > 0} />;
 }
