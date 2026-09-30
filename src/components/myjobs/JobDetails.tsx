@@ -239,7 +239,7 @@ function JobDetails({
         />
 
         <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList>
+          <TabsList className="w-full justify-start overflow-x-auto">
             <TabsTrigger value="description">Description</TabsTrigger>
             <TabsTrigger value="timeline">
               Timeline
