@@ -17,7 +17,7 @@ function Settings() {
       <h3 className="text-2xl font-semibold leading-none tracking-tight mb-4">
         Settings
       </h3>
-      <div className="flex gap-6">
+      <div className="flex gap-3 sm:gap-6">
         <SettingsSidebar
           activeSection={activeSection}
           onSectionChange={setActiveSection}
