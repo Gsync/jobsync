@@ -16,7 +16,7 @@ function streamingResponse(
   return new Response(stream, { status: 200, headers });
 }
 
-const selectedModel = { provider: AiProvider.OLLAMA, model: "llama3.1" };
+const selectedModel = { provider: AiProvider.OLLAMA, model: "qwen3.5:9b" };
 
 afterEach(() => {
   vi.unstubAllGlobals();

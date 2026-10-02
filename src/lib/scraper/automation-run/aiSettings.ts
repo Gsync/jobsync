@@ -26,7 +26,7 @@ export function getAutomationMatchLimit(provider: AiProvider) {
 export function getDefaultModelForProvider(provider: AiProvider): string {
   switch (provider) {
     case AiProvider.OLLAMA:
-      return OllamaModel.LLAMA3_2;
+      return OllamaModel.QWEN3_5_9B;
     case AiProvider.OPENAI:
       return OpenaiModel.GPT4O_MINI;
     case AiProvider.DEEPSEEK:

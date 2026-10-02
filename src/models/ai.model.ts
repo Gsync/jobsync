@@ -24,8 +24,7 @@ export enum AiProvider {
 
 // Default models per provider
 export enum OllamaModel {
-  LLAMA3_1 = "llama3.1",
-  LLAMA3_2 = "llama3.2",
+  QWEN3_5_9B = "qwen3.5:9b",
 }
 
 export enum OpenaiModel {
@@ -48,5 +47,5 @@ export enum GeminiModel {
 
 export const defaultModel: AiModel = {
   provider: AiProvider.OLLAMA,
-  model: OllamaModel.LLAMA3_1,
+  model: OllamaModel.QWEN3_5_9B,
 };

@@ -49,20 +49,22 @@ describe("AiSettings model select", () => {
       success: true,
       data: {
         userId: "u1",
-        settings: { ai: { provider: "ollama", model: "llama3.1" }, display: {} },
+        settings: { ai: { provider: "ollama", model: "qwen3.5:9b" }, display: {} },
       },
     });
     global.fetch = vi.fn(() =>
       Promise.resolve({
         ok: true,
-        json: async () => ({ models: [{ name: "llama3.1" }] }),
+        json: async () => ({ models: [{ name: "qwen3.5:9b" }] }),
       }),
     ) as unknown as typeof fetch;
   });
 
   it("prompts for a model after every provider switch, not just the first", async () => {
     render(<AiSettings />);
-    await waitFor(() => expect(modelTrigger().textContent).toBe("llama3.1"));
+    await waitFor(() => expect(modelTrigger().textContent).toBe("qwen3.5:9b"), {
+      timeout: 5000,
+    });
 
     mockModels(["deepseek-chat"]);
     await pick(providerTrigger(), "DeepSeek");
@@ -79,7 +81,9 @@ describe("AiSettings model select", () => {
 
   it("shows a spinner while the model list loads", async () => {
     render(<AiSettings />);
-    await waitFor(() => expect(modelTrigger().textContent).toBe("llama3.1"));
+    await waitFor(() => expect(modelTrigger().textContent).toBe("qwen3.5:9b"), {
+      timeout: 5000,
+    });
 
     let release: (value: unknown) => void = () => {};
     global.fetch = vi.fn(

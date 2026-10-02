@@ -83,7 +83,7 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
       return { success: false, message: "Failed to prepare match inputs" };
     }
 
-    const model = await getModel(ai.provider, ai.model || "llama3.2", user.id);
+    const model = await getModel(ai.provider, ai.model || "qwen3.5:9b", user.id);
 
     const promptText = buildJobMatchPrompt(
       resumePre.data.normalizedText,
@@ -95,7 +95,7 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
       {
         ...genAiRequestAttrs({
           provider: ai.provider,
-          model: ai.model || "llama3.2",
+          model: ai.model || "qwen3.5:9b",
           temperature: 0.3,
           numCtx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
           surface: SURFACES.JOB_MATCH,
@@ -115,7 +115,7 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
           userId: user.id,
           feature: "automations",
           provider: ai.provider,
-          model: ai.model || "llama3.2",
+          model: ai.model || "qwen3.5:9b",
         });
         let generated;
         try {

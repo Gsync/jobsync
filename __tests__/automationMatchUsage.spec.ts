@@ -11,7 +11,7 @@ vi.mock("@/lib/ai", () => ({
   removeHtmlTags: (s: string) => s,
 }));
 vi.mock("@/lib/scraper/automation-run/resumeText", () => ({ convertResumeForMatch: async () => "resume" }));
-vi.mock("@/lib/scraper/automation-run/aiSettings", () => ({ getDefaultModelForProvider: () => "llama3.2" }));
+vi.mock("@/lib/scraper/automation-run/aiSettings", () => ({ getDefaultModelForProvider: () => "qwen3.5:9b" }));
 vi.mock("@/lib/telemetry", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/telemetry")>();
   return { ...actual, log: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } };

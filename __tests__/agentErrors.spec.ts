@@ -38,9 +38,9 @@ describe("mapAgentError", () => {
   it("names the provider and model when the model cannot tool-call", () => {
     const mapped = mapAgentError(new Error("model does not support tools"), {
       provider: "ollama",
-      model: "llama3.1",
+      model: "qwen3.5:9b",
     });
-    expect(mapped).toMatch(/llama3\.1/);
+    expect(mapped).toMatch(/qwen3\.5:9b/);
     expect(mapped).toMatch(/tool/i);
     expect(mapped).toMatch(/settings/i);
   });
