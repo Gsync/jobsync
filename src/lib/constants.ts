@@ -298,6 +298,17 @@ export const CONTACT_ROLES = [
   { label: "Reference", value: "reference" },
 ] as const;
 
+export const COMPANY_SIZES = [
+  "1-10",
+  "11-50",
+  "51-200",
+  "201-1000",
+  "1001-5000",
+  "5000+",
+] as const;
+
+export const COMPANY_NOTES_MAX_LENGTH = 5000;
+
 export const JOB_STATUSES = [
   { label: "New", value: "new" },
   { label: "Draft", value: "draft" },

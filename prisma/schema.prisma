@@ -341,6 +341,9 @@ model Company {
   websiteUrl      String?
   careersUrl      String?
   industry        String?
+  linkedinUrl     String?
+  size            String?
+  notes           String?
 
   @@unique([value, createdBy])
   @@unique([createdBy, atsProvider, atsToken])

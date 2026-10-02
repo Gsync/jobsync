@@ -68,16 +68,26 @@ export function CompanySummaryCard({
             <BoardCell company={company} />
           </Fact>
           <Fact label="Industry">{company.industry || "—"}</Fact>
+          <Fact label="Size">{company.size || "—"}</Fact>
           <Fact label="Website">
             <HostLink url={company.websiteUrl} />
           </Fact>
           <Fact label="Careers page">
             <HostLink url={company.careersUrl} />
           </Fact>
+          <Fact label="LinkedIn">
+            <HostLink url={company.linkedinUrl} />
+          </Fact>
           <Fact label="Jobs">{jobsCount}</Fact>
           <Fact label="Applied">{appliedCount}</Fact>
           <Fact label="Contacts">{contactsCount}</Fact>
         </div>
+        {company.notes && (
+          <div className="mt-4 border-t pt-4" data-testid="company-notes">
+            <p className="text-sm text-muted-foreground">Notes</p>
+            <p className="mt-1 whitespace-pre-wrap">{company.notes}</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -2,6 +2,7 @@
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { canonicalizeEntityValue } from "@/lib/jobs/canonicalize";
+import { COMPANY_NOTES_MAX_LENGTH, COMPANY_SIZES } from "@/lib/constants";
 import { AddCompanyFormSchema } from "@/models/addCompanyForm.schema";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -32,13 +33,40 @@ const isValidHttpUrl = (url: string): boolean => {
   }
 };
 
+const assertLinkedinSizeNotes = (
+  linkedinUrl?: string,
+  size?: string,
+  notes?: string,
+) => {
+  if (linkedinUrl && !isValidHttpUrl(linkedinUrl)) {
+    throw new Error("LinkedIn page must be a full http or https URL.");
+  }
+  if (size && !(COMPANY_SIZES as readonly string[]).includes(size)) {
+    throw new Error("Invalid company size.");
+  }
+  if (notes && notes.length > COMPANY_NOTES_MAX_LENGTH) {
+    throw new Error(
+      `Notes must be ${COMPANY_NOTES_MAX_LENGTH} characters or fewer.`,
+    );
+  }
+};
+
 export const addCompany = async (
   data: z.infer<typeof AddCompanyFormSchema>,
 ): Promise<any | undefined> => {
   try {
     const user = await requireUser();
 
-    const { company, logoUrl, websiteUrl, careersUrl, industry } = data;
+    const {
+      company,
+      logoUrl,
+      websiteUrl,
+      careersUrl,
+      industry,
+      linkedinUrl,
+      size,
+      notes,
+    } = data;
 
     // Validate image URL
     if (logoUrl && !isValidImageUrl(logoUrl)) {
@@ -53,6 +81,7 @@ export const addCompany = async (
     if (careersUrl && !isValidHttpUrl(careersUrl)) {
       throw new Error("Careers page must be a full http or https URL.");
     }
+    assertLinkedinSizeNotes(linkedinUrl, size, notes);
 
     const value = canonicalizeEntityValue(company.trim(), { stripLegalSuffix: true });
 
@@ -76,6 +105,9 @@ export const addCompany = async (
         websiteUrl,
         careersUrl,
         industry,
+        linkedinUrl,
+        size,
+        notes,
       },
     });
     revalidatePath("/dashboard/myjobs", "page");
@@ -92,8 +124,18 @@ export const updateCompany = async (
   try {
     const user = await requireUser();
 
-    const { id, company, logoUrl, createdBy, websiteUrl, careersUrl, industry } =
-      data;
+    const {
+      id,
+      company,
+      logoUrl,
+      createdBy,
+      websiteUrl,
+      careersUrl,
+      industry,
+      linkedinUrl,
+      size,
+      notes,
+    } = data;
 
     if (!id) {
       throw new Error("Company id is required");
@@ -112,6 +154,7 @@ export const updateCompany = async (
     if (careersUrl && !isValidHttpUrl(careersUrl)) {
       throw new Error("Careers page must be a full http or https URL.");
     }
+    assertLinkedinSizeNotes(linkedinUrl, size, notes);
 
     const existingCompany = await prisma.company.findFirst({
       where: {
@@ -158,6 +201,9 @@ export const updateCompany = async (
         websiteUrl,
         careersUrl,
         industry,
+        linkedinUrl,
+        size,
+        notes,
       },
     });
 

@@ -139,6 +139,9 @@ describe("AddCompany Component", () => {
         websiteUrl: "",
         careersUrl: "",
         industry: "",
+        linkedinUrl: "",
+        size: "",
+        notes: "",
       });
     });
   });
@@ -189,6 +192,9 @@ describe("AddCompany Component", () => {
         websiteUrl: "",
         careersUrl: "",
         industry: "",
+        linkedinUrl: "",
+        size: "",
+        notes: "",
       });
     });
   });

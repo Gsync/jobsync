@@ -208,7 +208,55 @@ describe("AddCompanyFormSchema", () => {
         websiteUrl: "",
         careersUrl: "",
         industry: "",
+        linkedinUrl: "",
+        notes: "",
       });
+    });
+  });
+
+  describe("linkedinUrl, size and notes fields", () => {
+    it("accepts a LinkedIn URL, a listed size and notes", () => {
+      const result = AddCompanyFormSchema.parse({
+        company: "Tech Company",
+        linkedinUrl: "https://www.linkedin.com/company/tech",
+        size: "51-200",
+        notes: "Good culture",
+      });
+      expect(result.linkedinUrl).toBe("https://www.linkedin.com/company/tech");
+      expect(result.size).toBe("51-200");
+      expect(result.notes).toBe("Good culture");
+    });
+
+    it("accepts an empty size", () => {
+      const result = AddCompanyFormSchema.parse({
+        company: "Tech Company",
+        size: "",
+      });
+      expect(result.size).toBe("");
+    });
+
+    it("rejects a non-http LinkedIn URL", () => {
+      expect(() =>
+        AddCompanyFormSchema.parse({
+          company: "Tech Company",
+          linkedinUrl: "linkedin.com/company/tech",
+        }),
+      ).toThrow();
+    });
+
+    it("rejects a size outside the listed bands", () => {
+      expect(() =>
+        AddCompanyFormSchema.parse({ company: "Tech Company", size: "huge" }),
+      ).toThrow();
+    });
+
+    it("rejects notes over the length cap", () => {
+      expect(() =>
+        AddCompanyFormSchema.parse({
+          company: "Tech Company",
+          notes: "x".repeat(5001),
+        }),
+      ).toThrow();
     });
   });
 });

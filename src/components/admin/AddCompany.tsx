@@ -23,6 +23,9 @@ import {
   FormMessage,
 } from "../ui/form";
 import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
+import SelectFormCtrl from "../Select";
+import { COMPANY_SIZES } from "@/lib/constants";
 import { toastActionResult } from "@/lib/toast";
 import { addCompany, updateCompany } from "@/actions/company.actions";
 import { Company } from "@/models/job.model";
@@ -56,6 +59,9 @@ function AddCompany({
       websiteUrl: "",
       careersUrl: "",
       industry: "",
+      linkedinUrl: "",
+      size: "",
+      notes: "",
       id: undefined,
       createdBy: undefined,
     },
@@ -74,6 +80,11 @@ function AddCompany({
           websiteUrl: editCompany?.websiteUrl ?? "",
           careersUrl: editCompany?.careersUrl ?? "",
           industry: editCompany?.industry ?? "",
+          linkedinUrl: editCompany?.linkedinUrl ?? "",
+          size: (editCompany?.size ?? "") as z.infer<
+            typeof AddCompanyFormSchema
+          >["size"],
+          notes: editCompany?.notes ?? "",
         },
         { keepDefaultValues: true },
       );
@@ -205,15 +216,71 @@ function AddCompany({
               />
 
               {/* INDUSTRY */}
+              <FormField
+                control={form.control}
+                name="industry"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Industry</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Financial Services" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* SIZE */}
+              <FormField
+                control={form.control}
+                name="size"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Size</FormLabel>
+                    <SelectFormCtrl
+                      label="size"
+                      options={COMPANY_SIZES.map((s) => ({ id: s, label: s }))}
+                      field={field}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* LINKEDIN */}
               <div className="md:col-span-2">
                 <FormField
                   control={form.control}
-                  name="industry"
+                  name="linkedinUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Industry</FormLabel>
+                      <FormLabel>LinkedIn</FormLabel>
                       <FormControl>
-                        <Input placeholder="Financial Services" {...field} />
+                        <Input
+                          placeholder="https://www.linkedin.com/company/example"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* NOTES */}
+              <div className="md:col-span-2">
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notes</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          className="min-h-24"
+                          placeholder="Culture, red flags, what you learned on calls..."
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

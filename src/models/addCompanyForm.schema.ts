@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { COMPANY_NOTES_MAX_LENGTH, COMPANY_SIZES } from "@/lib/constants";
 
 const isValidUrl = (url: string) => {
   try {
@@ -49,4 +50,7 @@ export const AddCompanyFormSchema = z.object({
   websiteUrl: httpUrlField("website"),
   careersUrl: httpUrlField("careers page"),
   industry: z.string().default("").optional(),
+  linkedinUrl: httpUrlField("LinkedIn page"),
+  size: z.enum(COMPANY_SIZES).or(z.literal("")).optional(),
+  notes: z.string().max(COMPANY_NOTES_MAX_LENGTH).default("").optional(),
 });

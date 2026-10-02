@@ -414,6 +414,48 @@ describe("Company Actions", () => {
       });
     });
 
+    it("persists linkedinUrl, size and notes", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findFirst as any).mockResolvedValue(null);
+      (prisma.company.create as any).mockResolvedValue({ id: "c1" });
+
+      await addCompany({
+        company: "Acme",
+        linkedinUrl: "https://www.linkedin.com/company/acme",
+        size: "51-200",
+        notes: "Strong engineering culture",
+      } as any);
+
+      expect(prisma.company.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          linkedinUrl: "https://www.linkedin.com/company/acme",
+          size: "51-200",
+          notes: "Strong engineering culture",
+        }),
+      });
+    });
+
+    it("rejects a non-http LinkedIn URL", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      const res = await addCompany({
+        company: "Acme",
+        linkedinUrl: "javascript:alert(1)",
+      } as any);
+
+      expect(res.success).toBe(false);
+      expect(prisma.company.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects a size outside the listed bands", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      const res = await addCompany({ company: "Acme", size: "huge" } as any);
+
+      expect(res.success).toBe(false);
+      expect(prisma.company.create).not.toHaveBeenCalled();
+    });
+
     it("rejects a site-relative website URL", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
 

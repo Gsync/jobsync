@@ -71,6 +71,9 @@ const makeDetails = (overrides: Record<string, unknown> = {}) =>
     websiteUrl: null,
     careersUrl: null,
     industry: null,
+    linkedinUrl: null,
+    size: null,
+    notes: null,
     jobs: [],
     appliedCount: 0,
     dismissedJobsCount: 0,
@@ -226,6 +229,27 @@ describe("CompanyDetails – summary card", () => {
     expect(fact("Industry")).toHaveTextContent("—");
     expect(fact("Website")).toHaveTextContent("—");
     expect(fact("Careers page")).toHaveTextContent("—");
+    expect(fact("Size")).toHaveTextContent("—");
+    expect(fact("LinkedIn")).toHaveTextContent("—");
+    expect(screen.queryByTestId("company-notes")).not.toBeInTheDocument();
+  });
+
+  it("shows size, LinkedIn host and notes when set", () => {
+    render(
+      <CompanyDetails
+        details={makeDetails({
+          size: "51-200",
+          linkedinUrl: "https://www.linkedin.com/company/stripe",
+          notes: "Great culture",
+        })}
+      />,
+    );
+
+    expect(fact("Size")).toHaveTextContent("51-200");
+    expect(fact("LinkedIn")).toHaveTextContent("www.linkedin.com");
+    expect(screen.getByTestId("company-notes")).toHaveTextContent(
+      "Great culture",
+    );
   });
 
   it("counts jobs, applied jobs and distinct contacts", () => {

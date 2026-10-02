@@ -108,6 +108,9 @@ export interface Company {
   websiteUrl?: string | null;
   careersUrl?: string | null;
   industry?: string | null;
+  linkedinUrl?: string | null;
+  size?: string | null;
+  notes?: string | null;
   _count?: {
     jobsApplied: number;
     jobsRejected?: number;

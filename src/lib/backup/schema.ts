@@ -37,6 +37,9 @@ const Company = z.object({
   websiteUrl: optStr.optional(),
   careersUrl: optStr.optional(),
   industry: optStr.optional(),
+  linkedinUrl: optStr.optional(),
+  size: optStr.optional(),
+  notes: optStr.optional(),
 });
 const JobTitle = z.object({ id, label: str, value: str });
 const Location = z.object({

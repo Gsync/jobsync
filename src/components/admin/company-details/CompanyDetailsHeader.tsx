@@ -53,6 +53,7 @@ export function CompanyDetailsHeader({
   const links = [
     { label: "Open website", href: company.websiteUrl ? formatUrl(company.websiteUrl) : null },
     { label: "Open careers page", href: company.careersUrl ? formatUrl(company.careersUrl) : null },
+    { label: "Open LinkedIn", href: company.linkedinUrl ? formatUrl(company.linkedinUrl) : null },
     { label: "Open job board", href: boardUrl },
   ].filter((link): link is { label: string; href: string } => !!link.href);
 

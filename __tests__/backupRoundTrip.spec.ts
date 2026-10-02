@@ -62,6 +62,9 @@ async function seedFullAccount() {
       websiteUrl: "https://acme.example.com",
       careersUrl: "https://acme.example.com/careers",
       industry: "Widgets",
+      linkedinUrl: "https://www.linkedin.com/company/acme",
+      size: "51-200",
+      notes: "Strong engineering culture",
     },
   });
   const title = await prisma.jobTitle.create({
@@ -337,6 +340,9 @@ describe("backup round trip", () => {
     expect(restored.websiteUrl).toBe("https://acme.example.com");
     expect(restored.careersUrl).toBe("https://acme.example.com/careers");
     expect(restored.industry).toBe("Widgets");
+    expect(restored.linkedinUrl).toBe("https://www.linkedin.com/company/acme");
+    expect(restored.size).toBe("51-200");
+    expect(restored.notes).toBe("Strong engineering culture");
   });
 
   it("restores a contact with its company, standing role and job link remapped", async () => {
