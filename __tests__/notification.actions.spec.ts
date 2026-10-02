@@ -5,6 +5,7 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
   dismissNotification,
+  dismissAllNotifications,
   deleteNotification,
   clearReadNotifications,
 } from "@/actions/notification.actions";
@@ -100,6 +101,14 @@ describe("mutations are scoped to the user", () => {
   it("another user's id is a no-op, not an error", async () => {
     db.notification.updateMany.mockResolvedValue({ count: 0 });
     await expect(dismissNotification("someone-elses")).resolves.toEqual({ success: true });
+  });
+
+  it("dismiss all hides every undismissed row and marks it read", async () => {
+    await dismissAllNotifications();
+    const { where, data } = db.notification.updateMany.mock.calls[0][0];
+    expect(where).toEqual({ userId: "user-1", dismissedAt: null });
+    expect(data.dismissedAt).toBeInstanceOf(Date);
+    expect(data.readAt).toBe(data.dismissedAt);
   });
 
   it("delete", async () => {

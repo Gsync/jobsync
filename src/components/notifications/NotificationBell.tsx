@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Bell, CheckCheck } from "lucide-react";
+import { Bell, CheckCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useNotifications } from "@/context/NotificationContext";
 import {
+  dismissAllNotifications,
   dismissNotification,
   getPopoverNotifications,
   markAllNotificationsRead,
@@ -62,6 +63,12 @@ export function NotificationBell() {
     refresh();
   };
 
+  const onClearAll = async () => {
+    setItems([]);
+    await dismissAllNotifications();
+    refresh();
+  };
+
   // Unread only, like the bell badge: a read error needs no attention.
   const errorCount = items.filter(
     (i) => isErrorNotification(i) && i.readAt === null,
@@ -99,6 +106,15 @@ export function NotificationBell() {
           >
             <CheckCheck className="h-3.5 w-3.5" />
             Mark all read
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-auto gap-1 px-1 py-1.5 text-[13px] font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+            onClick={onClearAll}
+          >
+            <X className="h-3.5 w-3.5" />
+            Clear all
           </Button>
         </div>
         <div role="tablist" className="flex gap-1 border-b px-4">

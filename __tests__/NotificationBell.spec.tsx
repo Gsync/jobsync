@@ -9,6 +9,7 @@ vi.mock("@/actions/notification.actions", () => ({
   markNotificationRead: vi.fn().mockResolvedValue({ success: true }),
   markAllNotificationsRead: vi.fn().mockResolvedValue({ success: true }),
   dismissNotification: vi.fn().mockResolvedValue({ success: true }),
+  dismissAllNotifications: vi.fn().mockResolvedValue({ success: true }),
 }));
 vi.mock("@/context/NotificationContext", () => ({ useNotifications: vi.fn() }));
 vi.mock("next/link", () => ({
@@ -91,6 +92,15 @@ it("Mark all read marks all and refreshes", async () => {
   await userEvent.click(screen.getByRole("button", { name: /notifications/i }));
   await userEvent.click(await screen.findByRole("button", { name: /mark all read/i }));
   expect(actions.markAllNotificationsRead).toHaveBeenCalled();
+  expect(refresh).toHaveBeenCalled();
+});
+
+it("Clear all dismisses every row and refreshes the badge", async () => {
+  render(<NotificationBell />);
+  await userEvent.click(screen.getByRole("button", { name: /notifications/i }));
+  await userEvent.click(await screen.findByRole("button", { name: /clear all/i }));
+  expect(actions.dismissAllNotifications).toHaveBeenCalled();
+  expect(screen.getByText("You’re all caught up.")).toBeInTheDocument();
   expect(refresh).toHaveBeenCalled();
 });
 

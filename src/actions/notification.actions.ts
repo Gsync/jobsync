@@ -174,6 +174,21 @@ export async function dismissNotification(id: string) {
   }
 }
 
+// Popover "Clear all": every undismissed row, not just the loaded page.
+export async function dismissAllNotifications() {
+  try {
+    const user = await requireUser();
+    const now = new Date();
+    await db.notification.updateMany({
+      where: { userId: user.id, dismissedAt: null },
+      data: { dismissedAt: now, readAt: now },
+    });
+    return { success: true };
+  } catch (error) {
+    return handleError(error, "Failed to clear notifications.");
+  }
+}
+
 export async function deleteNotification(id: string) {
   try {
     const user = await requireUser();
