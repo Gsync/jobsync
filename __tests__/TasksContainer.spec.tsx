@@ -219,7 +219,7 @@ describe("TasksContainer Component", () => {
 
       render(<TasksContainer activityTypes={mockActivityTypes} />);
 
-      expect(screen.getByTestId("loader")).toBeInTheDocument();
+      expect(screen.getByRole("status", { name: "Loading records" })).toBeInTheDocument();
     });
 
     it("should show empty state when no tasks are found", async () => {
@@ -248,7 +248,7 @@ describe("TasksContainer Component", () => {
       render(<TasksContainer activityTypes={mockActivityTypes} />);
 
       await waitFor(() => {
-        expect(screen.queryByTestId("loader")).not.toBeInTheDocument();
+        expect(screen.queryByRole("status", { name: "Loading records" })).not.toBeInTheDocument();
       });
     });
 
@@ -283,7 +283,7 @@ describe("TasksContainer Component", () => {
         });
 
       await waitFor(() => {
-        expect(screen.queryByTestId("loader")).not.toBeInTheDocument();
+        expect(screen.queryByRole("status", { name: "Loading records" })).not.toBeInTheDocument();
       });
 
       // Find and click the actions menu button for the first task
@@ -314,7 +314,7 @@ describe("TasksContainer Component", () => {
       });
 
       await waitFor(() => {
-        expect(screen.queryByTestId("loader")).not.toBeInTheDocument();
+        expect(screen.queryByRole("status", { name: "Loading records" })).not.toBeInTheDocument();
       });
 
       // Find and click the actions menu button for the first task
@@ -369,7 +369,7 @@ describe("TasksContainer Component", () => {
       });
 
       await waitFor(() => {
-        expect(screen.queryByTestId("loader")).not.toBeInTheDocument();
+        expect(screen.queryByRole("status", { name: "Loading records" })).not.toBeInTheDocument();
       });
 
       // Find and click the actions menu button for the first task
@@ -396,7 +396,7 @@ describe("TasksContainer Component", () => {
       });
 
       await waitFor(() => {
-        expect(screen.queryByTestId("loader")).not.toBeInTheDocument();
+        expect(screen.queryByRole("status", { name: "Loading records" })).not.toBeInTheDocument();
       });
 
       // Find and click the actions menu button for the first task
@@ -427,7 +427,7 @@ describe("TasksContainer Component", () => {
       });
 
       await waitFor(() => {
-        expect(screen.queryByTestId("loader")).not.toBeInTheDocument();
+        expect(screen.queryByRole("status", { name: "Loading records" })).not.toBeInTheDocument();
       });
 
       // Find and click the actions menu button for the first task

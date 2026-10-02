@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getJobStatusBadgeColor } from "@/lib/badge-colors";
-import { cn } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { usePersistedTabIndex } from "@/hooks/usePersistedTabIndex";
 import { useActivity } from "@/context/ActivityContext";
@@ -80,36 +80,25 @@ export default function RecentCardToggle({
   const { requestStart, confirmDialog } = useActivitySwitchConfirm();
 
   return (
-    <Card className="mb-2 @3xl/main:absolute @3xl/main:inset-0 @3xl/main:mb-0 @3xl/main:flex @3xl/main:flex-col">
+    <Tabs value={tabs[activeIndex]} onValueChange={(value) => selectTab(tabs.findIndex((item) => item === value))} asChild>
+    <Card className="@3xl/main:absolute @3xl/main:inset-0 @3xl/main:flex @3xl/main:flex-col">
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-lg text-green-600 min-w-0 truncate">
+          <CardTitle className="text-lg min-w-0 truncate">
             Recent {tabs[activeIndex]}
           </CardTitle>
-          <div
-            className="flex shrink-0 rounded-md border text-xs"
-            data-testid="recent-card-toggle-group"
-          >
-            {tabs.map((tab, index) => (
-              <button
-                key={tab}
-                onClick={() => selectTab(index)}
-                className={cn(
-                  "px-2 py-1 transition-colors",
-                  index === 0 && "rounded-l-md",
-                  index === tabs.length - 1 && "rounded-r-md",
-                  activeIndex === index
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted",
-                )}
-              >
-                {tab}
-              </button>
+          <TabsList aria-label="Recent records" className="h-8 shrink-0" data-testid="recent-card-toggle-group">
+            {tabs.map((tab) => (
+              <TabsTrigger key={tab} value={tab} className="px-2 py-1 text-xs">{tab}</TabsTrigger>
             ))}
-          </div>
+          </TabsList>
         </div>
       </CardHeader>
+      <TabsContent value={tabs[activeIndex]} className="mt-0 @3xl/main:min-h-0 @3xl/main:flex-1 @3xl/main:overflow-y-auto" asChild>
       <CardContent className="grid auto-rows-max gap-6 px-4 @3xl/main:min-h-0 @3xl/main:flex-1 @3xl/main:overflow-y-auto">
+        {(activeIndex === 0 ? jobs.length : activities.length) === 0 && (
+          <p className="text-sm text-muted-foreground">No recent {tabs[activeIndex].toLowerCase()} yet.</p>
+        )}
         {activeIndex === 0
           ? groupJobsByDate(jobs).map(([date, dateJobs]) => (
               <div key={date} className="grid gap-4">
@@ -168,7 +157,7 @@ export default function RecentCardToggle({
                         className="h-9 w-9 shrink-0"
                       >
                         <span>
-                          <CirclePlay className="text-green-600 h-6 w-6" />
+                          <CirclePlay className="text-primary h-6 w-6" />
                         </span>
                       </Button>
                       <div className="grid gap-1 min-w-0 flex-1">
@@ -190,7 +179,9 @@ export default function RecentCardToggle({
               </div>
             ))}
       </CardContent>
+      </TabsContent>
       {confirmDialog}
     </Card>
+    </Tabs>
   );
 }

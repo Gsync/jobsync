@@ -11,7 +11,7 @@ import { getAutomationsList } from "@/actions/automation.actions";
 import type { AutomationWithResume } from "@/models/automation.model";
 import { AutomationList } from "./AutomationList";
 import { AutomationWizard } from "./AutomationWizard";
-import Loading from "@/components/Loading";
+import ListSkeleton from "@/components/ListSkeleton";
 
 interface Resume {
   id: string;
@@ -95,7 +95,7 @@ export function AutomationContainer({ resumes }: AutomationContainerProps) {
         </ResponsiveCardHeader>
         <CardContent>
           {loading ? (
-            <Loading />
+            <ListSkeleton />
           ) : (
             <AutomationList
               automations={automations}

@@ -381,7 +381,7 @@ describe("ActivitiesContainer Search Functionality", () => {
 
       // Should show loading indicator
       await waitFor(() => {
-        expect(screen.getByTestId("loader")).toBeInTheDocument();
+        expect(screen.getByRole("region", { name: "Activity records" })).toHaveAttribute("aria-busy", "true");
       });
 
       // Resolve the search

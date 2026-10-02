@@ -9,7 +9,7 @@ import {
 } from "@/actions/task.actions";
 import { toastActionResult, toastError } from "@/lib/toast";
 import { Task } from "@/models/task.model";
-import Loading from "../Loading";
+import ListSkeleton from "@/components/ListSkeleton";
 import TasksTable from "./TasksTable";
 import { TaskForm } from "./TaskForm";
 import { ActivityType } from "@/models/activity.model";
@@ -107,7 +107,7 @@ function TasksContainer({
           onAddTask={addTaskForm}
         />
         <CardContent>
-          {initialLoading && <Loading />}
+          {initialLoading && <ListSkeleton />}
           {!initialLoading && tasks.length > 0 && (
             <>
               <TasksTable
@@ -128,7 +128,7 @@ function TasksContainer({
           {tasks.length < totalTasks && (
             <div ref={sentinelRef} className="flex justify-center p-4">
               {loadingMore && (
-                <Loader className="h-5 w-5 animate-spin text-blue-500" />
+                <Loader className="h-5 w-5 animate-spin text-primary" />
               )}
             </div>
           )}
