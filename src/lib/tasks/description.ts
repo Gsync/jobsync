@@ -26,3 +26,20 @@ export function getDescriptionExcerpt(html?: string | null): string {
 
   return `${text.slice(0, EXCERPT_MAX_LENGTH).trimEnd()}…`;
 }
+
+export function plainTextToTiptapHtml(text?: string | null): string | null {
+  if (text == null) return null;
+
+  const escapeHtml = (value: string) =>
+    value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  return text
+    .split(/\r?\n/)
+    .map((line) => `<p>${line ? escapeHtml(line) : "<br>"}</p>`)
+    .join("");
+}

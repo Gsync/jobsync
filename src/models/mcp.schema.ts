@@ -2,6 +2,99 @@ import { z } from "zod";
 import { APP_CONSTANTS, JOB_STATUS_VALUES } from "@/lib/constants";
 import { WORKPLACE_TYPES, matchEnumEntry } from "@/models/job.model";
 
+const MCP_TASK_STATUS_VALUES = [
+  "in-progress",
+  "complete",
+  "needs-attention",
+  "cancelled",
+] as const;
+
+export const McpListTasksInputShape = {
+  statuses: z
+    .array(z.enum(MCP_TASK_STATUS_VALUES))
+    .optional()
+    .describe("Task statuses to include. Defaults to in-progress and needs-attention."),
+  search: z.string().trim().min(1).max(200).optional().describe("Text to match in the task title, description, or activity type."),
+  activityType: z.string().trim().min(1).max(100).optional().describe("Activity-type label to match case-insensitively."),
+  page: z.number().int().min(1).optional().describe("One-based page number. Defaults to 1."),
+  limit: z.number().int().min(1).max(50).optional().describe("Tasks per page. Defaults to 25; maximum 50."),
+};
+
+export const McpListTasksSchema = z.object(McpListTasksInputShape).transform((input) => ({
+  ...input,
+  statuses: input.statuses ?? ["in-progress", "needs-attention"],
+  page: input.page ?? 1,
+  limit: input.limit ?? 25,
+}));
+export type McpListTasksInput = z.infer<typeof McpListTasksSchema>;
+
+export const McpGetTaskInputShape = {
+  taskId: z.string().min(1).describe("The task id returned by list_tasks or another task tool."),
+};
+
+export const McpGetTaskSchema = z.object(McpGetTaskInputShape);
+export type McpGetTaskInput = z.infer<typeof McpGetTaskSchema>;
+
+const mcpTaskDueDate = z
+  .string()
+  .datetime({ offset: true })
+  .refine((value) => new Date(value).getTime() >= Date.now(), {
+    message: "Due date cannot be in the past.",
+  });
+
+export const McpCreateTaskInputShape = {
+  title: z.string().trim().min(2, "title must be at least 2 characters"),
+  description: z.string().max(2000).optional().describe("Plain-text task description."),
+  status: z.enum(MCP_TASK_STATUS_VALUES).optional().describe("Defaults to in-progress."),
+  priority: z.number().int().min(0).max(10).optional().describe("Defaults to 5."),
+  percentComplete: z.number().int().min(0).max(100).optional().describe("Defaults to 0."),
+  dueDate: mcpTaskDueDate.optional().describe("RFC 3339 due date. Past dates are rejected."),
+  activityType: z.string().trim().min(1).max(100).optional().describe("Activity-type label, matched case-insensitively and created when absent."),
+};
+
+export const McpCreateTaskSchema = z.object(McpCreateTaskInputShape).transform((input) => ({
+  ...input,
+  status: input.status ?? "in-progress",
+  priority: input.priority ?? 5,
+  percentComplete: input.percentComplete ?? 0,
+  dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
+}));
+export type McpCreateTaskInput = z.infer<typeof McpCreateTaskSchema>;
+
+export const McpUpdateTaskInputShape = {
+  taskId: z.string().min(1),
+  title: z.string().trim().min(2).optional(),
+  description: z.string().max(2000).nullable().optional().describe("Plain text; null clears the description."),
+  status: z.enum(MCP_TASK_STATUS_VALUES).optional(),
+  priority: z.number().int().min(0).max(10).optional(),
+  percentComplete: z.number().int().min(0).max(100).optional(),
+  dueDate: mcpTaskDueDate.nullable().optional().describe("RFC 3339 due date; null clears it."),
+  activityType: z.string().trim().min(1).max(100).nullable().optional().describe("Activity-type label; null clears it."),
+};
+
+export const McpUpdateTaskSchema = z
+  .object(McpUpdateTaskInputShape)
+  .refine(
+    (input) => Object.entries(input).some(([key, value]) => key !== "taskId" && value !== undefined),
+    { message: "At least one task field must be changed." },
+  )
+  .transform((input) => ({
+    ...input,
+    dueDate:
+      input.dueDate === undefined
+        ? undefined
+        : input.dueDate === null
+          ? null
+          : new Date(input.dueDate),
+  }));
+export type McpUpdateTaskInput = z.infer<typeof McpUpdateTaskSchema>;
+
+export const McpCompleteTaskInputShape = {
+  taskId: z.string().min(1),
+};
+export const McpCompleteTaskSchema = z.object(McpCompleteTaskInputShape);
+export type McpCompleteTaskInput = z.infer<typeof McpCompleteTaskSchema>;
+
 // An enum rather than a described string, for the same reason status is one:
 // a small local model fills an enum-constrained slot and ignores prose hints.
 // It sent "On-site" — the posting's own spelling — and when that was rejected
