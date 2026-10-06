@@ -235,6 +235,7 @@
     --gc-muted-fg: hsl(var(--muted-foreground));
     --gc-border: hsl(var(--border));
     --gc-primary: hsl(var(--primary));
+    --gc-danger: hsl(var(--destructive));
     /* Donut hues from jobsActivityChart.ts SERIES_COLORS */
     --gc-ring-1: #2a9d90;
     --gc-ring-2: #c97e22;
