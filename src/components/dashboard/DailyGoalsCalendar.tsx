@@ -1,11 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import { GcMonthCalendar, type GcGoal } from "react-goal-calendar";
+import { useMemo, useState } from "react";
+import {
+  GcMonthCalendar,
+  GcMonthSummary,
+  type GcGoal,
+} from "react-goal-calendar";
 import { getDailyGoalValues } from "@/actions/dailyGoals.actions";
 import { Card } from "@/components/ui/card";
 import { DAILY_GOALS } from "@/lib/constants";
-import { GOAL_IDS, goalMonthRange, type GoalValues } from "@/lib/dailyGoals";
+import {
+  GOAL_IDS,
+  buildMonthSummary,
+  goalMonthRange,
+  type GoalValues,
+  type MonthSummary,
+} from "@/lib/dailyGoals";
 import { toastError } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +31,7 @@ const GOALS: GcGoal[] = [
 
 interface DailyGoalsCalendarProps {
   today: string;
-  initialValues: GoalValues;
+  initialValues: GoalValues | null;
 }
 
 export default function DailyGoalsCalendar({
@@ -30,10 +40,20 @@ export default function DailyGoalsCalendar({
 }: DailyGoalsCalendarProps) {
   const { minMonth, maxMonth } = goalMonthRange(today);
   const [month, setMonth] = useState(maxMonth);
+  // null = the server fetch failed: leave uncached so it shows "—"
   const [valuesByMonth, setValuesByMonth] = useState<
     Record<string, GoalValues>
-  >({ [maxMonth]: initialValues });
+  >(initialValues ? { [maxMonth]: initialValues } : {});
   const [loadingMonth, setLoadingMonth] = useState<string | null>(null);
+
+  // Only cached months get an entry; the rest show the package's "—"
+  const summaries = useMemo(() => {
+    const data: Record<string, MonthSummary> = {};
+    for (const [key, values] of Object.entries(valuesByMonth)) {
+      data[key] = buildMonthSummary(key, values, today);
+    }
+    return data;
+  }, [valuesByMonth, today]);
 
   const handleMonthChange = async (next: string) => {
     setMonth(next);
@@ -50,22 +70,31 @@ export default function DailyGoalsCalendar({
   };
 
   const loading = loadingMonth === month;
+  const cardProps = {
+    "aria-busy": loading || undefined,
+    className: cn("daily-goals-calendar p-4", loading && "opacity-60"),
+  };
+  const monthProps = {
+    today,
+    month,
+    minMonth,
+    maxMonth,
+    onMonthChange: handleMonthChange,
+  };
 
   return (
-    <Card
-      aria-busy={loading || undefined}
-      className={cn("daily-goals-calendar p-4", loading && "opacity-60")}
-    >
-      <GcMonthCalendar
-        goals={GOALS}
-        values={valuesByMonth[month]}
-        today={today}
-        month={month}
-        minMonth={minMonth}
-        maxMonth={maxMonth}
-        onMonthChange={handleMonthChange}
-        legend
-      />
-    </Card>
+    <>
+      <Card {...cardProps}>
+        <GcMonthSummary rings={GOALS} data={summaries} {...monthProps} />
+      </Card>
+      <Card {...cardProps}>
+        <GcMonthCalendar
+          goals={GOALS}
+          values={valuesByMonth[month]}
+          legend
+          {...monthProps}
+        />
+      </Card>
+    </>
   );
 }

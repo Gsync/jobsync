@@ -43,6 +43,8 @@ Five of them take you to the matching page with the form already open, so you la
 
 The calendar at the top right of the Dashboard shows one month, with two rings under each day. The outer ring fills as you apply to jobs that day, towards a target of 5; the inner ring fills with the hours of finished activities started that day, towards 4 hours. The key under the calendar shows which ring is which. A day where both targets are met is shown in bold, and hovering over a day, or tapping it, shows the exact numbers. Use the arrows beside the month name to look back up to 11 months; future days stay empty. The targets are fixed for now.
 
+Above the calendar, the summary card shows the same month at a glance. The donut gives the share of days each goal was hit: past days of the month, plus today once that goal is met, so an unfinished today never lowers it. Beside it, "Both goals met" counts the days both targets were reached and "Nothing logged" counts past days with no applications and no finished activity. The streak rows are placeholders for now and show fixed numbers. Both cards' arrows move together.
+
 ## What is each area of the sidebar for?
 
 - **Dashboard** — summary cards: application counts, recent jobs and activities, weekly charts, and a quick-add card for the six kinds of record you create most.

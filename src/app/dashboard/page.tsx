@@ -77,7 +77,7 @@ export default async function Dashboard() {
       <div className="flex flex-col gap-2 @3xl/main:self-stretch">
         <DailyGoalsCalendar
           today={today}
-          initialValues={dailyGoals.success ? dailyGoals.data : {}}
+          initialValues={dailyGoals.success ? dailyGoals.data : null}
         />
         <div className="@3xl/main:relative @3xl/main:min-h-64 @3xl/main:flex-1">
           <RecentCardToggle jobs={recentJobs} activities={recentActivities} />

@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DailyGoalsCalendar from "@/components/dashboard/DailyGoalsCalendar";
 import { getDailyGoalValues } from "@/actions/dailyGoals.actions";
@@ -30,27 +30,36 @@ describe("DailyGoalsCalendar", () => {
       />,
     );
 
-  const root = () => screen.getByRole("status").closest(".daily-goals-calendar")!;
+  // [summary Card, calendar Card]; the calendar is always the last one
+  const cards = () =>
+    Array.from(
+      document.querySelectorAll<HTMLElement>(".daily-goals-calendar"),
+    );
+  const summary = () => within(cards()[0]);
+  const calendar = () => within(cards().at(-1)!);
+  const previous = () =>
+    calendar().getByRole("button", { name: "Previous month" });
+  const next = () => calendar().getByRole("button", { name: "Next month" });
 
   it("shows the current month from the initial values without fetching", () => {
     renderCalendar();
-    expect(screen.getByRole("status")).toHaveTextContent("Oct 2026");
+    expect(calendar().getByRole("status")).toHaveTextContent("Oct 2026");
     expect(
-      screen.getByText(/October 1: Jobs applied 3 of 5, Activity 2\.5 of 4 h/),
+      calendar().getByText(/October 1: Jobs applied 3 of 5, Activity 2\.5 of 4 h/),
     ).toBeInTheDocument();
     expect(getDailyGoalValues).not.toHaveBeenCalled();
   });
 
   it("shows a legend naming both rings and their targets", () => {
     renderCalendar();
-    expect(screen.getByText("Jobs applied")).toBeInTheDocument();
-    expect(screen.getByText("Activity")).toBeInTheDocument();
-    expect(screen.getByText("4 h")).toBeInTheDocument();
+    expect(calendar().getByText("Jobs applied")).toBeInTheDocument();
+    expect(calendar().getByText("Activity")).toBeInTheDocument();
+    expect(calendar().getByText("4 h")).toBeInTheDocument();
   });
 
   it("cannot navigate into future months", () => {
     renderCalendar();
-    expect(screen.getByRole("button", { name: "Next month" })).toHaveAttribute(
+    expect(next()).toHaveAttribute(
       "aria-disabled",
       "true",
     );
@@ -63,15 +72,15 @@ describe("DailyGoalsCalendar", () => {
     });
     renderCalendar();
 
-    await user.click(screen.getByRole("button", { name: "Previous month" }));
+    await user.click(previous());
     expect(getDailyGoalValues).toHaveBeenCalledWith("2026-09");
     expect(
-      await screen.findByText(/September 10: Jobs applied 5 of 5, Activity 4 of 4 h\. All goals met\./),
+      await calendar().findByText(/September 10: Jobs applied 5 of 5, Activity 4 of 4 h\. All goals met\./),
     ).toBeInTheDocument();
-    expect(root()).not.toHaveAttribute("aria-busy");
+    expect(cards().at(-1)).not.toHaveAttribute("aria-busy");
 
-    await user.click(screen.getByRole("button", { name: "Next month" }));
-    await user.click(screen.getByRole("button", { name: "Previous month" }));
+    await user.click(next());
+    await user.click(previous());
     expect(getDailyGoalValues).toHaveBeenCalledTimes(1);
   });
 
@@ -83,16 +92,16 @@ describe("DailyGoalsCalendar", () => {
       .mockReturnValueOnce(aug.promise);
     renderCalendar();
 
-    await user.click(screen.getByRole("button", { name: "Previous month" }));
-    await user.click(screen.getByRole("button", { name: "Previous month" }));
-    expect(root()).toHaveAttribute("aria-busy", "true");
+    await user.click(previous());
+    await user.click(previous());
+    expect(cards().at(-1)).toHaveAttribute("aria-busy", "true");
 
     // September settles while August is on screen: the dim must stay
     await act(async () => sep.resolve({ success: true, data: {} }));
-    expect(root()).toHaveAttribute("aria-busy", "true");
+    expect(cards().at(-1)).toHaveAttribute("aria-busy", "true");
 
     await act(async () => aug.resolve({ success: true, data: {} }));
-    expect(root()).not.toHaveAttribute("aria-busy");
+    expect(cards().at(-1)).not.toHaveAttribute("aria-busy");
   });
 
   it("toasts a failed month and retries on the next visit", async () => {
@@ -101,12 +110,92 @@ describe("DailyGoalsCalendar", () => {
       .mockResolvedValueOnce({ success: true, data: {} });
     renderCalendar();
 
-    await user.click(screen.getByRole("button", { name: "Previous month" }));
+    await user.click(previous());
     await waitFor(() => expect(toastError).toHaveBeenCalledWith("Boom"));
-    expect(root()).not.toHaveAttribute("aria-busy");
+    expect(cards().at(-1)).not.toHaveAttribute("aria-busy");
 
-    await user.click(screen.getByRole("button", { name: "Next month" }));
-    await user.click(screen.getByRole("button", { name: "Previous month" }));
+    await user.click(next());
+    await user.click(previous());
     expect(getDailyGoalValues).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows the current month's summary above the calendar", () => {
+    renderCalendar();
+    expect(cards()).toHaveLength(2);
+    // Oct 1 had 3 jobs, 2.5h: neither met; Oct 2–4 empty; today not met
+    expect(summary().getByRole("status")).toHaveTextContent(
+      "October 2026. Goal hit: Jobs applied 0%, Activity 0%",
+    );
+    // Stat rows are <dt>/<dd>: roles "term" / "definition"
+    const text = (role: string) =>
+      summary().getAllByRole(role).map((el) => el.textContent);
+    expect(text("term")).toEqual([
+      "Current streak",
+      "Best streak",
+      "Both goals met",
+      "Nothing logged",
+    ]);
+    // Placeholder streaks, then Oct 2–4 with nothing logged
+    expect(text("definition")).toEqual(["3 days", "7 days", "0 days", "3 days"]);
+  });
+
+  it("moves the calendar when the summary navigates", async () => {
+    (getDailyGoalValues as any).mockResolvedValue({ success: true, data: {} });
+    renderCalendar();
+
+    await user.click(
+      summary().getByRole("button", { name: "Previous month" }),
+    );
+    expect(getDailyGoalValues).toHaveBeenCalledWith("2026-09");
+    expect(calendar().getByRole("status")).toHaveTextContent("Sep 2026");
+  });
+
+  it("summarises a lazily loaded month once it arrives", async () => {
+    const sep = deferred<any>();
+    (getDailyGoalValues as any).mockReturnValueOnce(sep.promise);
+    renderCalendar();
+
+    await user.click(previous());
+    // data-empty is on the package root inside the Card
+    expect(cards()[0].querySelector("[data-empty]")).not.toBeNull();
+    expect(cards()[0]).toHaveAttribute("aria-busy", "true");
+    expect(cards()[1]).toHaveAttribute("aria-busy", "true");
+
+    await act(async () =>
+      sep.resolve({
+        success: true,
+        data: { "2026-09-01": { jobs: 5, hours: 4 } },
+      }),
+    );
+    expect(summary().getByRole("status")).toHaveTextContent(
+      "September 2026. Goal hit: Jobs applied 3%, Activity 3%",
+    );
+    expect(cards()[0]).not.toHaveAttribute("aria-busy");
+    expect(cards()[1]).not.toHaveAttribute("aria-busy");
+  });
+
+  it("shows no summary for a month that failed", async () => {
+    (getDailyGoalValues as any).mockResolvedValueOnce({
+      success: false,
+      message: "Boom",
+    });
+    renderCalendar();
+
+    await user.click(previous());
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith("Boom"));
+    expect(summary().getByRole("status")).toHaveTextContent(
+      "September 2026. Goal hit: no data",
+    );
+    expect(summary().queryByText("Current streak")).not.toBeInTheDocument();
+    expect(cards()[0]).not.toHaveAttribute("aria-busy");
+  });
+
+  it("shows no summary when the current month failed to load", () => {
+    render(<DailyGoalsCalendar today={today} initialValues={null} />);
+    expect(summary().getByRole("status")).toHaveTextContent(
+      "October 2026. Goal hit: no data",
+    );
+    expect(summary().queryByText("Nothing logged")).not.toBeInTheDocument();
+    expect(getDailyGoalValues).not.toHaveBeenCalled();
   });
 });
