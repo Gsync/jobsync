@@ -1,5 +1,8 @@
+import { DAILY_GOALS } from "@/lib/constants";
 import {
   buildGoalValues,
+  buildMonthSummary,
+  formatDays,
   goalMonthRange,
   isValidMonth,
   monthBounds,
@@ -72,6 +75,130 @@ describe("dailyGoals helpers", () => {
           [{ startTime: new Date(2026, 9, 1, 10), duration: null }],
         ),
       ).toEqual({});
+    });
+  });
+
+  describe("formatDays", () => {
+    it("uses the singular only for one", () => {
+      expect(formatDays(0)).toBe("0 days");
+      expect(formatDays(1)).toBe("1 day");
+      expect(formatDays(12)).toBe("12 days");
+    });
+  });
+
+  describe("buildMonthSummary", () => {
+    const met = { jobs: 5, hours: 4 };
+    const stat = (summary: ReturnType<typeof buildMonthSummary>, label: string) =>
+      summary.stats?.find((s) => s.label === label)?.value;
+
+    it("rates a past month over all its days", () => {
+      const summary = buildMonthSummary(
+        "2026-09",
+        {
+          "2026-09-01": met,
+          "2026-09-02": { jobs: 5, hours: 1 },
+          "2026-09-03": { jobs: 0, hours: 4 },
+        },
+        "2026-10-05",
+      );
+      expect(summary.rings).toEqual({ jobs: 2 / 30, hours: 2 / 30 });
+      expect(stat(summary, "Both goals met")).toBe("1 day");
+      expect(stat(summary, "Nothing logged")).toBe("27 days");
+    });
+
+    it("counts a goal exceeded as met and below target as not", () => {
+      const summary = buildMonthSummary(
+        "2026-09",
+        { "2026-09-01": { jobs: 9, hours: 3.9 } },
+        "2026-10-05",
+      );
+      expect(summary.rings).toEqual({ jobs: 1 / 30, hours: 0 });
+    });
+
+    it("ignores days after today", () => {
+      const summary = buildMonthSummary(
+        "2026-10",
+        { "2026-10-01": met, "2026-10-20": met },
+        "2026-10-05",
+      );
+      // Oct 1–4 past, today not met
+      expect(summary.rings).toEqual({ jobs: 1 / 4, hours: 1 / 4 });
+      expect(stat(summary, "Both goals met")).toBe("1 day");
+      expect(stat(summary, "Nothing logged")).toBe("3 days");
+    });
+
+    it("counts today per ring only when met", () => {
+      const summary = buildMonthSummary(
+        "2026-10",
+        { "2026-10-05": { jobs: 5, hours: 1 } },
+        "2026-10-05",
+      );
+      expect(summary.rings).toEqual({ jobs: 1 / 5, hours: 0 / 4 });
+      expect(stat(summary, "Both goals met")).toBe("0 days");
+    });
+
+    it("counts today in both goals met once both are met", () => {
+      const summary = buildMonthSummary(
+        "2026-10",
+        { "2026-10-05": met },
+        "2026-10-05",
+      );
+      expect(summary.rings).toEqual({ jobs: 1 / 5, hours: 1 / 5 });
+      expect(stat(summary, "Both goals met")).toBe("1 day");
+    });
+
+    it("never counts today as nothing logged", () => {
+      const summary = buildMonthSummary("2026-10", {}, "2026-10-05");
+      expect(stat(summary, "Nothing logged")).toBe("4 days");
+    });
+
+    it("first of the month with nothing met has no ring values", () => {
+      const summary = buildMonthSummary("2026-10", {}, "2026-10-01");
+      expect(summary.rings).toEqual({});
+      expect(stat(summary, "Both goals met")).toBe("0 days");
+      expect(stat(summary, "Nothing logged")).toBe("0 days");
+    });
+
+    it("uses the real month length", () => {
+      expect(
+        stat(buildMonthSummary("2024-02", {}, "2026-10-05"), "Nothing logged"),
+      ).toBe("29 days");
+      expect(
+        stat(buildMonthSummary("2026-02", {}, "2026-10-05"), "Nothing logged"),
+      ).toBe("28 days");
+    });
+
+    it("shows real zeros for a loaded month with no records", () => {
+      const summary = buildMonthSummary("2026-08", {}, "2026-10-05");
+      expect(summary.rings).toEqual({ jobs: 0, hours: 0 });
+      expect(stat(summary, "Nothing logged")).toBe("31 days");
+    });
+
+    it("treats a day with only zeros as nothing logged", () => {
+      const summary = buildMonthSummary(
+        "2026-09",
+        { "2026-09-01": { jobs: 0, hours: 0 }, "2026-09-02": { jobs: 1, hours: 0 } },
+        "2026-10-05",
+      );
+      expect(stat(summary, "Nothing logged")).toBe("29 days");
+    });
+
+    it("lists the four rows in order with placeholder streaks", () => {
+      const summary = buildMonthSummary("2026-09", {}, "2026-10-05");
+      expect(summary.stats).toEqual([
+        {
+          label: "Current streak",
+          value: formatDays(DAILY_GOALS.PLACEHOLDER_STREAKS.CURRENT),
+          tone: "primary",
+        },
+        {
+          label: "Best streak",
+          value: formatDays(DAILY_GOALS.PLACEHOLDER_STREAKS.BEST),
+          tone: "warning",
+        },
+        { label: "Both goals met", value: "0 days", tone: "success" },
+        { label: "Nothing logged", value: "30 days", tone: "danger" },
+      ]);
     });
   });
 });

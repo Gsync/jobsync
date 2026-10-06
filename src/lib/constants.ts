@@ -455,4 +455,6 @@ export const DAILY_GOALS = {
   HOURS_TARGET: 4,
   // Months browsable before the current one
   MONTHS_BACK: 11,
+  // Shown until streaks are computed across months
+  PLACEHOLDER_STREAKS: { CURRENT: 3, BEST: 7 },
 } as const;

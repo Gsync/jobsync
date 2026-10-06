@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import type { GcMonthSummaryProps } from "react-goal-calendar";
 import { DAILY_GOALS } from "@/lib/constants";
 
 // Directive-free: imported by the server action and the client calendar.
@@ -63,4 +64,71 @@ export function buildGoalValues(
     values[key][GOAL_IDS.HOURS] = Math.round((total / 60) * 10) / 10;
   }
   return values;
+}
+
+export type MonthSummary = NonNullable<GcMonthSummaryProps["data"]>[string];
+
+export function formatDays(count: number): string {
+  return `${count} ${count === 1 ? "day" : "days"}`;
+}
+
+// Typed wide: ids come from Object.keys, which yields string
+const TARGETS: Record<string, number> = {
+  [GOAL_IDS.JOBS]: DAILY_GOALS.JOBS_TARGET,
+  [GOAL_IDS.HOURS]: DAILY_GOALS.HOURS_TARGET,
+};
+
+export function buildMonthSummary(
+  month: string,
+  values: GoalValues,
+  today: string,
+): MonthSummary {
+  const ids = Object.keys(TARGETS);
+  const hit: Record<string, number> = {};
+  const counted: Record<string, number> = {};
+  let bothMet = 0;
+  let nothingLogged = 0;
+
+  const { end } = monthBounds(month);
+  for (let d = 1; d <= end.getDate(); d++) {
+    const key = `${month}-${String(d).padStart(2, "0")}`;
+    if (key > today) break;
+    const day = values[key] ?? {};
+    const isMet = (id: string) => (day[id] ?? 0) >= TARGETS[id];
+    // Today counts only once met, so an unfinished day never drags it down
+    for (const id of ids) {
+      if (key === today && !isMet(id)) continue;
+      counted[id] = (counted[id] ?? 0) + 1;
+      if (isMet(id)) hit[id] = (hit[id] ?? 0) + 1;
+    }
+    if (ids.every(isMet)) bothMet++;
+    if (key < today && ids.every((id) => !day[id])) nothingLogged++;
+  }
+
+  const rings: Record<string, number> = {};
+  for (const id of ids) {
+    if (counted[id]) rings[id] = (hit[id] ?? 0) / counted[id];
+  }
+
+  return {
+    rings,
+    stats: [
+      {
+        label: "Current streak",
+        value: formatDays(DAILY_GOALS.PLACEHOLDER_STREAKS.CURRENT),
+        tone: "primary",
+      },
+      {
+        label: "Best streak",
+        value: formatDays(DAILY_GOALS.PLACEHOLDER_STREAKS.BEST),
+        tone: "warning",
+      },
+      { label: "Both goals met", value: formatDays(bothMet), tone: "success" },
+      {
+        label: "Nothing logged",
+        value: formatDays(nothingLogged),
+        tone: "danger",
+      },
+    ],
+  };
 }
