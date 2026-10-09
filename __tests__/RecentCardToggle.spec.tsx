@@ -27,7 +27,7 @@ describe("RecentCardToggle - Start Activity", () => {
   };
 
   const switchToActivitiesTab = async () => {
-    await user.click(screen.getByRole("button", { name: "Activities" }));
+    await user.click(screen.getByRole("tab", { name: "Activities" }));
   };
 
   beforeEach(() => {

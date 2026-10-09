@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useTheme } from "next-themes";
 import { ResponsiveBar } from "@nivo/bar";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { cn } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { usePersistedTabIndex } from "@/hooks/usePersistedTabIndex";
 import {
@@ -99,11 +99,12 @@ export default function WeeklyBarChartToggle({
       : null;
 
   return (
-    <Card className="mb-2 @3xl/main:mb-0">
+    <Tabs value={current.label} onValueChange={(value) => selectTab(charts.findIndex((item) => item.label === value))} asChild>
+    <Card>
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between gap-2 mb-1 mt-3">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-baseline gap-2 min-w-0">
-            <CardTitle className="text-lg text-green-600 truncate">
+            <CardTitle className="text-lg truncate">
               Weekly {current.label}
             </CardTitle>
             {totalHours !== null && (
@@ -112,30 +113,15 @@ export default function WeeklyBarChartToggle({
               </span>
             )}
           </div>
-          <div
-            className="flex shrink-0 rounded-md border text-xs"
-            data-testid="weekly-chart-toggle-group"
-          >
-            {charts.map((chart, index) => (
-              <button
-                key={chart.label}
-                onClick={() => selectTab(index)}
-                className={cn(
-                  "px-2 py-1 transition-colors",
-                  index === 0 && "rounded-l-md",
-                  index === charts.length - 1 && "rounded-r-md",
-                  activeIndex === index
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted",
-                )}
-              >
-                {chart.label}
-              </button>
+          <TabsList aria-label="Weekly chart" className="h-8 shrink-0" data-testid="weekly-chart-toggle-group">
+            {charts.map((item) => (
+              <TabsTrigger key={item.label} value={item.label} className="px-2 py-1 text-xs">{item.label}</TabsTrigger>
             ))}
-          </div>
+          </TabsList>
         </div>
       </CardHeader>
 
+      <TabsContent value={current.label} className="mt-0" asChild>
       <CardContent className="h-[240px] p-3 pt-1">
         <div className="h-[200px]">
           <ResponsiveBar
@@ -259,6 +245,8 @@ export default function WeeklyBarChartToggle({
           />
         </div>
       </CardContent>
+      </TabsContent>
     </Card>
+    </Tabs>
   );
 }

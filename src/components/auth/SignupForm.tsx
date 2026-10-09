@@ -16,7 +16,8 @@ import { Input } from "../ui/input";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { SignupFormSchema } from "@/models/signupForm.schema";
-import Loading from "../Loading";
+import { Spinner } from "@/components/ui/spinner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff } from "lucide-react";
 
 function SignupForm() {
@@ -106,6 +107,7 @@ function SignupForm() {
                     <FormControl>
                       <Input
                         type={showPassword ? "text" : "password"}
+                        className="pr-12"
                         autoComplete="new-password"
                         spellCheck={false}
                         autoCorrect="off"
@@ -122,7 +124,7 @@ function SignupForm() {
                       aria-label={
                         showPassword ? "Hide password" : "Show password"
                       }
-                      tabIndex={-1}
+                      aria-pressed={showPassword}
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" aria-hidden="true" />
@@ -136,16 +138,15 @@ function SignupForm() {
               )}
             />
           </div>
-          <Button type="submit" disabled={isPending} className="w-full">
-            {isPending ? <Loading /> : "Create an account"}
+          <Button type="submit" disabled={isPending} aria-busy={isPending} className="w-full">
+            {isPending && <Spinner aria-hidden="true" />}
+            Create an account
           </Button>
-          <div
-            className="flex h-8 items-end space-x-1"
-            aria-live="polite"
-            aria-atomic="true"
-          >
+          <div className="min-h-12" aria-live="polite" aria-atomic="true">
             {errorMessage && (
-              <p className="text-sm text-red-500">{errorMessage}</p>
+              <Alert variant="destructive">
+                <AlertDescription>{errorMessage}</AlertDescription>
+              </Alert>
             )}
           </div>
         </div>

@@ -9,7 +9,7 @@ import {
 import { LucideProps } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface NavLinkProps {
+interface NavLinkProps extends Omit<React.ComponentProps<typeof Link>, "href"> {
   label: string;
   Icon: ForwardRefExoticComponent<
     Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
@@ -19,7 +19,7 @@ interface NavLinkProps {
   expanded: boolean;
 }
 
-function NavLink({ label, Icon, route, pathname, expanded }: NavLinkProps) {
+function NavLink({ label, Icon, route, pathname, expanded, ...props }: NavLinkProps) {
   // "/dashboard" is a prefix of every other route, so it only matches exactly.
   const isActive =
     pathname === route ||
@@ -27,24 +27,24 @@ function NavLink({ label, Icon, route, pathname, expanded }: NavLinkProps) {
 
   const link = (
     <Link
+      {...props}
       href={route}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "navlink h-10 w-full hover:text-foreground",
-        isActive ? "text-foreground" : "text-muted-foreground",
-        isActive && expanded && "rounded-md bg-accent"
+        "navlink h-10 w-full rounded-md hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+        isActive ? "bg-accent text-primary font-medium" : "text-muted-foreground"
       )}
     >
       {isActive && (
         <span
           aria-hidden
-          className="absolute left-0 top-0 h-full w-0.5 bg-foreground"
+          className="absolute left-0 top-0 h-full w-0.5 bg-primary"
         />
       )}
       {/* Fixed-width lead box (= collapsed rail width) so the icon sits at the
           same spot in both states and never moves during the slide. */}
       <span className="flex h-full w-14 shrink-0 items-center justify-center">
-        <Icon className="h-6 w-6 shrink-0" strokeWidth={1.5} />
+        <Icon className="size-5 shrink-0" strokeWidth={1.5} />
       </span>
       <span
         className={cn(

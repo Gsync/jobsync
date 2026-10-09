@@ -214,19 +214,19 @@ test.describe("Dashboard page", () => {
     page,
   }) => {
     const jobsActivityToggle = page.getByTestId("jobs-activity-toggle-group");
-    await jobsActivityToggle.getByRole("button", { name: "30d" }).click();
+    await jobsActivityToggle.getByRole("tab", { name: "30d" }).click();
     await expect(
-      jobsActivityToggle.getByRole("button", { name: "30d" }),
-    ).toHaveClass(/bg-primary/);
+      jobsActivityToggle.getByRole("tab", { name: "30d" }),
+    ).toHaveAttribute("aria-selected", "true");
 
     const recentToggle = page.getByTestId("recent-card-toggle-group");
-    await recentToggle.getByRole("button", { name: "Activities" }).click();
+    await recentToggle.getByRole("tab", { name: "Activities" }).click();
     await expect(
       page.getByRole("heading", { name: "Recent Activities", exact: true }),
     ).toBeVisible();
 
     const weeklyToggle = page.getByTestId("weekly-chart-toggle-group");
-    await weeklyToggle.getByRole("button", { name: "Activities" }).click();
+    await weeklyToggle.getByRole("tab", { name: "Activities" }).click();
     await expect(
       page.getByRole("heading", { name: "Weekly Activities", exact: true }),
     ).toBeVisible();
@@ -268,7 +268,7 @@ test.describe("Dashboard page", () => {
     await navigateToDashboard(page);
     await page
       .getByTestId("recent-card-toggle-group")
-      .getByRole("button", { name: "Activities" })
+      .getByRole("tab", { name: "Activities" })
       .click();
     await expect(page.getByText(taskTitle, { exact: true })).not.toBeVisible();
   });
@@ -284,7 +284,7 @@ test.describe("Dashboard page", () => {
     await navigateToDashboard(page);
     await page
       .getByTestId("recent-card-toggle-group")
-      .getByRole("button", { name: "Activities" })
+      .getByRole("tab", { name: "Activities" })
       .click();
 
     const activityRow = page

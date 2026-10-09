@@ -5,7 +5,7 @@ import { test, expect } from "@playwright/test";
 import { login } from "./fixtures";
 
 test("Signin page has title", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/signin");
 
   await expect(page).toHaveTitle("Sign In | JobSync");
 
@@ -17,7 +17,7 @@ test("Signin page has title", async ({ page }) => {
 });
 
 test("Signin and out from app", async ({ page, baseURL }) => {
-  await page.goto("/");
+  await page.goto("/signin");
   await login(page);
 
   await expect(page).toHaveURL(baseURL + "/dashboard");

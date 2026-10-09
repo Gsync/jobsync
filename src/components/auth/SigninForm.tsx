@@ -16,7 +16,8 @@ import { Input } from "../ui/input";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { SigninFormSchema } from "@/models/signinForm.schema";
-import Loading from "../Loading";
+import { Spinner } from "@/components/ui/spinner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff } from "lucide-react";
 
 function SigninForm() {
@@ -92,6 +93,7 @@ function SigninForm() {
                         <Input
                           id="password"
                           type={showPassword ? "text" : "password"}
+                          className="pr-12"
                           autoComplete="current-password"
                           spellCheck={false}
                           autoCorrect="off"
@@ -107,7 +109,7 @@ function SigninForm() {
                           aria-label={
                             showPassword ? "Hide password" : "Show password"
                           }
-                          tabIndex={-1}
+                          aria-pressed={showPassword}
                         >
                           {showPassword ? (
                             <EyeOff className="h-4 w-4" aria-hidden="true" />
@@ -122,18 +124,15 @@ function SigninForm() {
                 )}
               />
             </div>
-            <Button type="submit" disabled={isPending} className="w-full">
-              {isPending ? <Loading /> : "Login"}
+            <Button type="submit" disabled={isPending} aria-busy={isPending} className="w-full">
+              {isPending && <Spinner aria-hidden="true" />}
+              Login
             </Button>
-            <div
-              className="flex h-8 items-end space-x-1"
-              aria-live="polite"
-              aria-atomic="true"
-            >
+            <div className="min-h-12" aria-live="polite" aria-atomic="true">
               {errorMessage && (
-                <>
-                  <p className="text-sm text-red-500">{errorMessage}</p>
-                </>
+                <Alert variant="destructive">
+                  <AlertDescription>{errorMessage}</AlertDescription>
+                </Alert>
               )}
             </div>
           </div>

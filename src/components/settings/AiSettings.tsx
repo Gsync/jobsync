@@ -301,7 +301,7 @@ function AiSettings() {
             </SelectContent>
           </Select>
           {fetchError && (
-            <div className="flex items-start gap-1 text-red-600 text-sm mt-2">
+            <div className="flex items-start gap-1 text-destructive text-sm mt-2">
               <XCircle className="h-4 w-4 shrink-0 mt-0.5" />
               <span>{fetchError}</span>
             </div>
@@ -318,7 +318,7 @@ function AiSettings() {
                 <RefreshCw className={`h-3.5 w-3.5 ${isLoadingModels ? "animate-spin" : ""}`} />
                 Retry
               </Button>
-              <div className="flex items-start gap-1 text-red-600 text-sm">
+              <div className="flex items-start gap-1 text-destructive text-sm">
                 <XCircle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>{connectionError}</span>
               </div>

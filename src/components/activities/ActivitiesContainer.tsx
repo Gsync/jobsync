@@ -19,7 +19,7 @@ import { ActivityForm } from "./ActivityForm";
 import { getActivitiesList } from "@/actions/activity.actions";
 import { Activity } from "@/models/activity.model";
 import { toastError } from "@/lib/toast";
-import Loading from "../Loading";
+import ListSkeleton from "@/components/ListSkeleton";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { RecordsCount } from "../RecordsCount";
 import { useActivity } from "@/context/ActivityContext";
@@ -203,8 +203,8 @@ function ActivitiesContainer() {
           </Dialog>
         </div>
       </ResponsiveCardHeader>
-      <CardContent>
-        {initialLoading && <Loading />}
+      <CardContent role="region" aria-label="Activity records" aria-busy={initialLoading}>
+        {initialLoading && activitiesList.length === 0 && <ListSkeleton />}
         {activitiesList.length > 0 && (
           <>
             <ActivitiesTable
@@ -217,7 +217,7 @@ function ActivitiesContainer() {
         {activitiesList.length < totalActivities && (
           <div ref={sentinelRef} className="flex justify-center p-4">
             {loadingMore && (
-              <Loader className="h-5 w-5 animate-spin text-blue-500" />
+              <Loader className="h-5 w-5 animate-spin text-primary" />
             )}
           </div>
         )}

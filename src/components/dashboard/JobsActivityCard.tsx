@@ -14,6 +14,7 @@ import { useElementWidth } from "@/hooks/useElementWidth";
 import { usePersistedTabIndex } from "@/hooks/usePersistedTabIndex";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   ARC_LABEL_TEXT_COLOR,
   arcLabelLines,
@@ -106,35 +107,21 @@ export default function JobsActivityCard({ data }: JobsActivityCardProps) {
   );
 
   return (
+    <Tabs value={current.label} onValueChange={(value) => selectTab(data.findIndex((item) => item.label === value))} asChild>
     <Card className="@lg:col-span-2">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-lg text-green-600 min-w-0 truncate">
+          <CardTitle className="text-lg min-w-0 truncate">
             Jobs &amp; Activity
           </CardTitle>
-          <div
-            className="flex shrink-0 rounded-md border text-xs"
-            data-testid="jobs-activity-toggle-group"
-          >
-            {data.map((item, index) => (
-              <button
-                key={item.label}
-                onClick={() => selectTab(index)}
-                className={cn(
-                  "px-2 py-1 transition-colors",
-                  index === 0 && "rounded-l-md",
-                  index === data.length - 1 && "rounded-r-md",
-                  activeIndex === index
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted",
-                )}
-              >
-                {item.label}
-              </button>
+          <TabsList aria-label="Activity period" className="h-8 shrink-0" data-testid="jobs-activity-toggle-group">
+            {data.map((item) => (
+              <TabsTrigger key={item.label} value={item.label} className="px-2 py-1 text-xs">{item.label}</TabsTrigger>
             ))}
-          </div>
+          </TabsList>
         </div>
       </CardHeader>
+      <TabsContent value={current.label} className="mt-0" asChild>
       <CardContent>
         <div ref={chartRef} className="relative h-[200px] w-full">
           {slices.length === 0 ? (
@@ -245,6 +232,8 @@ export default function JobsActivityCard({ data }: JobsActivityCardProps) {
           </div>
         </div>
       </CardContent>
+      </TabsContent>
     </Card>
+    </Tabs>
   );
 }

@@ -34,7 +34,7 @@ export default function ActivityCalendar({
     <Card className="w-[100%]">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg text-green-600">Activity Calendar</CardTitle>
+          <CardTitle className="text-lg">Activity Calendar</CardTitle>
           <Select value={year} onValueChange={setYear}>
             <SelectTrigger className="w-[100px]" aria-label="Select year">
               <SelectValue placeholder="Select year" />

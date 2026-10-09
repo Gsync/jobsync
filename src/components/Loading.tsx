@@ -1,11 +1,9 @@
-import { Loader } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
-const Loading = () => {
-  return (
-    <div className="flex items-center justify-center" data-testid="loader">
-      <Loader className="animate-spin text-blue-500" size={48} />
-    </div>
-  );
-};
+const Loading = () => (
+  <span className="inline-flex items-center justify-center text-primary" data-testid="loader">
+    <Spinner />
+  </span>
+);
 
 export default Loading;

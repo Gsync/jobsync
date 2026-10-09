@@ -164,7 +164,7 @@ type Fixtures = {
 export const test = base.extend<Fixtures>({
   // Auto-login every test and land on the dashboard.
   page: async ({ page, baseURL }, use) => {
-    await page.goto("/");
+    await page.goto("/signin");
     await login(page);
     await expect(page).toHaveURL(baseURL + "/dashboard");
     await use(page);

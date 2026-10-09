@@ -18,7 +18,7 @@ import {
   Tag,
 } from "@/models/job.model";
 import { useSort } from "@/hooks/useSort";
-import Loading from "../Loading";
+import ListSkeleton from "@/components/ListSkeleton";
 import { useRouter } from "next/navigation";
 import MyJobsTable from "./MyJobsTable";
 import MyJobsGrid from "./MyJobsGrid";
@@ -175,8 +175,8 @@ function JobsContainer({
           resetEditJob={resetEditJob}
           addJobInitialOpen={queryParams.get("add-job") === "true"}
         />
-        <CardContent>
-          {initialLoading && <Loading />}
+        <CardContent role="region" aria-label="Job records" aria-busy={initialLoading}>
+          {initialLoading && jobs.length === 0 && <ListSkeleton />}
           {!initialLoading &&
             listLoaded &&
             jobs.length === 0 &&
@@ -217,7 +217,7 @@ function JobsContainer({
           {jobs.length < totalJobs && (
             <div ref={sentinelRef} className="flex justify-center p-4">
               {loadingMore && (
-                <Loader className="h-5 w-5 animate-spin text-blue-500" />
+                <Loader className="h-5 w-5 animate-spin text-primary" />
               )}
             </div>
           )}
