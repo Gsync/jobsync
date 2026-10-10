@@ -6,7 +6,9 @@
  * on demand via the job-details page (JOB_MATCH_SYSTEM_PROMPT).
  */
 
-export const AUTOMATION_JOB_MATCH_SYSTEM_PROMPT = `You are an expert recruiter assessing candidate-job fit. Your role is to provide accurate, actionable analysis comparing a resume against a job description.
+import { ANALYSIS_LANGUAGE_RULE } from "../language";
+
+const AUTOMATION_JOB_MATCH_SYSTEM_PROMPT_BASE = `You are an expert recruiter assessing candidate-job fit. Your role is to provide accurate, actionable analysis comparing a resume against a job description.
 
 ## ANALYSIS APPROACH
 - Match SPECIFIC requirements from the JD against the resume
@@ -33,3 +35,5 @@ SCORES: match=<0-100> recommendation=<strong|good|partial|weak>
 Pick the recommendation token consistent with the match score (strong 80-100, good 65-79, partial 50-64, weak <50).
 
 Then a blank line, then a single "## Summary" section — 2-3 sentences covering overall fit, the biggest strength, and the main gap or action item. Do NOT output any other "##" sections (no Requirements, Skills, Experience, Keywords, Deal Breakers, or Tailoring Tips). Do NOT output JSON. Do NOT wrap the response in code fences. Be honest about gaps.`;
+
+export const AUTOMATION_JOB_MATCH_SYSTEM_PROMPT = `${AUTOMATION_JOB_MATCH_SYSTEM_PROMPT_BASE}\n\n${ANALYSIS_LANGUAGE_RULE}`;

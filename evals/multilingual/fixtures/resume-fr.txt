@@ -1,0 +1,26 @@
+CONTACT
+Camille Tremblay
+camille.tremblay@example.com | Montréal, QC
+
+SOMMAIRE
+Développeuse backend comptant sept ans d'expérience dans la conception d'API et de services infonuagiques. À l'aise avec Go, PostgreSQL et Kubernetes, elle a dirigé la migration d'une plateforme de paiement vers des microservices.
+
+EXPÉRIENCE
+Entreprise: Paiements Boréal
+Titre: Développeuse backend principale
+Dates: janvier 2021 - Présent
+• Dirigé la migration d'un monolithe vers des services Go déployés sur Kubernetes
+• Réduit la latence p99 de 820 ms à 140 ms grâce à la mise en cache et à l'optimisation des requêtes PostgreSQL
+• Encadré une équipe de quatre développeurs et animé les revues de code
+
+Entreprise: Logiciels Saint-Laurent
+Titre: Développeuse logiciel
+Dates: septembre 2017 - décembre 2020
+• Conçu des API REST pour une application de gestion d'inventaire utilisée par 200 magasins
+• Automatisé le déploiement continu avec GitLab CI
+
+FORMATION
+Université de Montréal — Baccalauréat en informatique, 2013 - 2017
+
+COMPÉTENCES
+Go, PostgreSQL, Kubernetes, AWS, Docker, GitLab CI, API REST
