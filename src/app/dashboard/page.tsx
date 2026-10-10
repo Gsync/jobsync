@@ -46,48 +46,50 @@ export default async function Dashboard() {
   const activityCalendarDataKeys = Object.keys(activityCalendarData);
   return (
     <>
-      <div className="@container grid grid-cols-1 auto-rows-max items-start gap-2 md:gap-2 @3xl/main:col-span-2">
-        <div className="grid gap-2 @lg:grid-cols-4">
-          <JobsApplied />
-          <JobsActivityCard
-            data={[
-              { label: "7d", summary: summary7Days },
-              { label: "30d", summary: summary30Days },
+      <div className="grid gap-4 @3xl/main:col-span-2">
+        <div className="@container grid grid-cols-1 auto-rows-max items-start gap-2 md:gap-2">
+          <div className="grid gap-2 @lg:grid-cols-4">
+            <JobsApplied />
+            <JobsActivityCard
+              data={[
+                { label: "7d", summary: summary7Days },
+                { label: "30d", summary: summary30Days },
+              ]}
+            />
+          </div>
+          <WeeklyBarChartToggle
+            charts={[
+              {
+                label: "Jobs",
+                data: weeklyData,
+                keys: ["value"],
+                axisLeftLegend: "JOBS APPLIED",
+              },
+              {
+                label: "Activities",
+                data: activitiesData.data,
+                keys: activitiesData.keys,
+                groupMode: "stacked",
+                axisLeftLegend: "TIME SPENT (Hours)",
+              },
             ]}
           />
         </div>
-        <WeeklyBarChartToggle
-          charts={[
-            {
-              label: "Jobs",
-              data: weeklyData,
-              keys: ["value"],
-              axisLeftLegend: "JOBS APPLIED",
-            },
-            {
-              label: "Activities",
-              data: activitiesData.data,
-              keys: activitiesData.keys,
-              groupMode: "stacked",
-              axisLeftLegend: "TIME SPENT (Hours)",
-            },
-          ]}
-        />
+        <div className="w-full">
+          <ActivityCalendar
+            years={activityCalendarDataKeys}
+            dataByYear={activityCalendarData}
+          />
+        </div>
       </div>
-      <div className="flex flex-col gap-2 @3xl/main:self-stretch">
+      <div className="flex flex-col gap-2">
         <DailyGoalsCalendar
           today={today}
           initialValues={dailyGoals.success ? dailyGoals.data : null}
         />
-        <div className="@3xl/main:relative @3xl/main:min-h-64 @3xl/main:flex-1">
-          <RecentCardToggle jobs={recentJobs} activities={recentActivities} />
-        </div>
       </div>
       <div className="w-full col-span-3">
-        <ActivityCalendar
-          years={activityCalendarDataKeys}
-          dataByYear={activityCalendarData}
-        />
+        <RecentCardToggle jobs={recentJobs} activities={recentActivities} />
       </div>
     </>
   );
