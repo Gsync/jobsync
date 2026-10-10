@@ -55,6 +55,18 @@ async function loadStoredTargets(userId: string): Promise<{
   return { settings, targets: parseStoredTargets(settings?.goals?.targets) };
 }
 
+// Corrupt settings JSON must not hide values or streaks; targets use defaults
+async function loadTargetsOrDefaults(
+  userId: string,
+): Promise<GoalTargetsByMonth> {
+  try {
+    return (await loadStoredTargets(userId)).targets;
+  } catch (error) {
+    if (error instanceof SyntaxError) return {};
+    throw error;
+  }
+}
+
 async function computeStreaks(
   userId: string,
   targets: GoalTargetsByMonth,
@@ -73,7 +85,7 @@ export async function getGoalStreaks(): Promise<
 > {
   try {
     const user = await requireUser();
-    const { targets } = await loadStoredTargets(user.id);
+    const targets = await loadTargetsOrDefaults(user.id);
     return { success: true, data: await computeStreaks(user.id, targets) };
   } catch (error) {
     const { message } = handleError(error, "Failed to load goal streaks.");
@@ -94,13 +106,9 @@ export async function getDailyGoalValues(
       return { success: false, message: "Invalid month." };
     }
     const { start, end } = monthBounds(month);
-    const [values, { targets }] = await Promise.all([
+    const [values, targets] = await Promise.all([
       loadGoalValues(user.id, start, end),
-      // Corrupt settings JSON must not hide the values; targets use defaults
-      loadStoredTargets(user.id).catch((error) => {
-        if (error instanceof SyntaxError) return { targets: {} };
-        throw error;
-      }),
+      loadTargetsOrDefaults(user.id),
     ]);
     return { success: true, data: { values, targets } };
   } catch (error) {

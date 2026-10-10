@@ -323,6 +323,22 @@ describe("getGoalStreaks", () => {
     });
   });
 
+  it("counts against defaults when the settings JSON is malformed", async () => {
+    (prisma.userSettings.findUnique as any).mockResolvedValue({
+      settings: '{"ai":',
+    });
+    (prisma.job.groupBy as any).mockResolvedValue([
+      { appliedDate: new Date(2026, 9, 5, 9), _count: { _all: 5 } },
+    ]);
+    (prisma.activity.findMany as any).mockResolvedValue([
+      { startTime: new Date(2026, 9, 5, 10), duration: 240 },
+    ]);
+    expect(await getGoalStreaks()).toEqual({
+      success: true,
+      data: { current: 1, best: 1 },
+    });
+  });
+
   it("returns a failure when not signed in", async () => {
     (getCurrentUser as any).mockResolvedValue(null);
     expect(await getGoalStreaks()).toEqual({
