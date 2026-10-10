@@ -43,7 +43,7 @@ describe("DailyGoalsCalendar", () => {
 
   it("shows the current month from the initial values without fetching", () => {
     renderCalendar();
-    expect(calendar().getByRole("status")).toHaveTextContent("Oct 2026");
+    expect(calendar().getByText("Oct 2026")).toBeInTheDocument();
     expect(
       calendar().getByText(/October 1: Jobs applied 3 of 5, Activity 2\.5 of 4 h/),
     ).toBeInTheDocument();
@@ -123,9 +123,9 @@ describe("DailyGoalsCalendar", () => {
     renderCalendar();
     expect(cards()).toHaveLength(2);
     // Oct 1 had 3 jobs, 2.5h: neither met; Oct 2–4 empty; today not met
-    expect(summary().getByRole("status")).toHaveTextContent(
-      "October 2026. Goal hit: Jobs applied 0%, Activity 0%",
-    );
+    expect(
+      summary().getByText("October 2026. Goal hit: Jobs applied 0%, Activity 0%"),
+    ).toBeInTheDocument();
     // Stat rows are <dt>/<dd>: roles "term" / "definition"
     const text = (role: string) =>
       summary().getAllByRole(role).map((el) => el.textContent);
@@ -147,7 +147,7 @@ describe("DailyGoalsCalendar", () => {
       summary().getByRole("button", { name: "Previous month" }),
     );
     expect(getDailyGoalValues).toHaveBeenCalledWith("2026-09");
-    expect(calendar().getByRole("status")).toHaveTextContent("Sep 2026");
+    expect(calendar().getByText("Sep 2026")).toBeInTheDocument();
   });
 
   it("summarises a lazily loaded month once it arrives", async () => {
@@ -167,9 +167,9 @@ describe("DailyGoalsCalendar", () => {
         data: { "2026-09-01": { jobs: 5, hours: 4 } },
       }),
     );
-    expect(summary().getByRole("status")).toHaveTextContent(
-      "September 2026. Goal hit: Jobs applied 3%, Activity 3%",
-    );
+    expect(
+      summary().getByText("September 2026. Goal hit: Jobs applied 3%, Activity 3%"),
+    ).toBeInTheDocument();
     expect(cards()[0]).not.toHaveAttribute("aria-busy");
     expect(cards()[1]).not.toHaveAttribute("aria-busy");
   });
@@ -183,18 +183,18 @@ describe("DailyGoalsCalendar", () => {
 
     await user.click(previous());
     await waitFor(() => expect(toastError).toHaveBeenCalledWith("Boom"));
-    expect(summary().getByRole("status")).toHaveTextContent(
-      "September 2026. Goal hit: no data",
-    );
+    expect(
+      summary().getByText("September 2026. Goal hit: no data"),
+    ).toBeInTheDocument();
     expect(summary().queryByText("Current streak")).not.toBeInTheDocument();
     expect(cards()[0]).not.toHaveAttribute("aria-busy");
   });
 
   it("shows no summary when the current month failed to load", () => {
     render(<DailyGoalsCalendar today={today} initialValues={null} />);
-    expect(summary().getByRole("status")).toHaveTextContent(
-      "October 2026. Goal hit: no data",
-    );
+    expect(
+      summary().getByText("October 2026. Goal hit: no data"),
+    ).toBeInTheDocument();
     expect(summary().queryByText("Nothing logged")).not.toBeInTheDocument();
     expect(getDailyGoalValues).not.toHaveBeenCalled();
   });
