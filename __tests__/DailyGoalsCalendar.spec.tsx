@@ -1,15 +1,24 @@
-import { act, render, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DailyGoalsCalendar from "@/components/dashboard/DailyGoalsCalendar";
-import { getDailyGoalValues } from "@/actions/dailyGoals.actions";
+import {
+  getDailyGoalValues,
+  updateGoalTargets,
+} from "@/actions/dailyGoals.actions";
 import { toastError } from "@/lib/toast";
 
 vi.mock("@/actions/dailyGoals.actions", () => ({
   getDailyGoalValues: vi.fn(),
+  updateGoalTargets: vi.fn(),
 }));
 
 vi.mock("@/lib/toast", () => ({
+  toastSuccess: vi.fn(),
   toastError: vi.fn(),
+  toastActionResult: vi.fn((result, opts) => {
+    if (result?.success) opts.onSuccess?.(result.data);
+    else (toastError as any)(result?.message);
+  }),
 }));
 
 const deferred = <T,>() => {
@@ -255,5 +264,81 @@ describe("DailyGoalsCalendar", () => {
     await user.click(previous());
     // Sep has no entry: carried from March, not the 4 h default
     expect(calendar().getByText("7 h")).toBeInTheDocument();
+  });
+
+  const setGoals = () => calendar().getByRole("button", { name: "Set goals" });
+
+  it("places Set goals inside the calendar", () => {
+    renderCalendar();
+    // data-gc-actions wraps the package's settings button
+    expect(cards().at(-1)!.querySelector("[data-gc-actions]")).toContainElement(
+      setGoals(),
+    );
+  });
+
+  it("applies saved targets and streaks without refetching values", async () => {
+    (updateGoalTargets as any).mockResolvedValue({
+      success: true,
+      data: {
+        targets: { "2026-10": { jobs: 3, hours: 2 } },
+        streaks: { current: 6, best: 11 },
+      },
+    });
+    renderCalendar();
+
+    await user.click(setGoals());
+    const jobs = await screen.findByLabelText("Jobs applied per day");
+    await user.clear(jobs);
+    await user.type(jobs, "3");
+    const hours = screen.getByLabelText("Activity hours per day");
+    await user.clear(hours);
+    await user.type(hours, "2");
+    await user.click(screen.getByRole("button", { name: "Save goals" }));
+
+    expect(
+      await calendar().findByText(/October 1: Jobs applied 3 of 3, Activity 2\.5 of 2 h\. All goals met\./),
+    ).toBeInTheDocument();
+    // "Both goals met" is now 1 day; "6 days" is the new current streak
+    expect(summary().getByText("6 days")).toBeInTheDocument();
+    expect(getDailyGoalValues).not.toHaveBeenCalled();
+  });
+
+  it("hides Set goals when no targets have loaded", () => {
+    render(
+      <DailyGoalsCalendar today={today} initialData={null} initialStreaks={null} />,
+    );
+    expect(
+      calendar().queryByRole("button", { name: "Set goals" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps saved targets when an older month fetch lands", async () => {
+    const sep = deferred<any>();
+    (getDailyGoalValues as any).mockReturnValueOnce(sep.promise);
+    (updateGoalTargets as any).mockResolvedValue({
+      success: true,
+      data: {
+        targets: { "2026-10": { jobs: 3, hours: 2 } },
+        streaks: { current: 2, best: 11 },
+      },
+    });
+    renderCalendar();
+
+    await user.click(previous());
+    await user.click(setGoals());
+    const jobs = await screen.findByLabelText("Jobs applied per day");
+    await user.clear(jobs);
+    await user.type(jobs, "3");
+    const hours = screen.getByLabelText("Activity hours per day");
+    await user.clear(hours);
+    await user.type(hours, "2");
+    await user.click(screen.getByRole("button", { name: "Save goals" }));
+    // This read happened before the save, so it carries the old (empty) map
+    await act(async () => sep.resolve(ok()));
+
+    await user.click(next());
+    expect(
+      calendar().getByText(/October 1: Jobs applied 3 of 3, Activity 2\.5 of 2 h\. All goals met\./),
+    ).toBeInTheDocument();
   });
 });

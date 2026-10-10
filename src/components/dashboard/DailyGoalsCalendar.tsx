@@ -8,6 +8,7 @@ import {
 } from "react-goal-calendar";
 import { getDailyGoalValues } from "@/actions/dailyGoals.actions";
 import { Card } from "@/components/ui/card";
+import SetGoalsDialog from "@/components/dashboard/SetGoalsDialog";
 import {
   GOAL_IDS,
   buildMonthSummary,
@@ -30,6 +31,8 @@ const RINGS = [
   { id: GOAL_IDS.JOBS, label: "Jobs applied" },
   { id: GOAL_IDS.HOURS, label: "Activity" },
 ];
+
+const CALENDAR_LABELS = { settings: "Set goals" };
 
 const goalsFor = (targets: GoalTargets): GcGoal[] => [
   { ...RINGS[0], target: targets.jobs },
@@ -59,6 +62,12 @@ export default function DailyGoalsCalendar({
   const targetsFor = (key: string) => resolveTargets(key, storedTargets ?? {});
   const [streaks, setStreaks] = useState(initialStreaks);
   const [loadingMonth, setLoadingMonth] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  // Stable identity: the dialog re-applies its pre-fill when this changes
+  const currentTargets = useMemo(
+    () => resolveTargets(maxMonth, storedTargets ?? {}),
+    [maxMonth, storedTargets],
+  );
 
   // Only cached months get an entry; the rest show the package's "—"
   const summaries = useMemo(() => {
@@ -114,9 +123,24 @@ export default function DailyGoalsCalendar({
           goals={goalsFor(targetsFor(month))}
           values={valuesByMonth[month]}
           legend
+          labels={CALENDAR_LABELS}
+          // No button until targets load: the pre-fill would be defaults
+          onSettingsClick={
+            storedTargets ? () => setDialogOpen(true) : undefined
+          }
           {...monthProps}
         />
       </Card>
+      <SetGoalsDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        month={maxMonth}
+        targets={currentTargets}
+        onSaved={(data) => {
+          setStoredTargets(data.targets);
+          setStreaks(data.streaks);
+        }}
+      />
     </>
   );
 }
