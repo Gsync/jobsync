@@ -20,6 +20,7 @@ import {
 import { toastError } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import type {
+  GoalStreaks,
   GoalTargets,
   GoalTargetsByMonth,
 } from "@/models/dailyGoals.model";
@@ -38,11 +39,13 @@ const goalsFor = (targets: GoalTargets): GcGoal[] => [
 interface DailyGoalsCalendarProps {
   today: string;
   initialData: GoalMonthData | null;
+  initialStreaks: GoalStreaks | null;
 }
 
 export default function DailyGoalsCalendar({
   today,
   initialData,
+  initialStreaks,
 }: DailyGoalsCalendarProps) {
   const { minMonth, maxMonth } = goalMonthRange(today);
   const [month, setMonth] = useState(maxMonth);
@@ -54,6 +57,7 @@ export default function DailyGoalsCalendar({
   const [storedTargets, setStoredTargets] =
     useState<GoalTargetsByMonth | null>(initialData?.targets ?? null);
   const targetsFor = (key: string) => resolveTargets(key, storedTargets ?? {});
+  const [streaks, setStreaks] = useState(initialStreaks);
   const [loadingMonth, setLoadingMonth] = useState<string | null>(null);
 
   // Only cached months get an entry; the rest show the package's "—"
@@ -65,10 +69,11 @@ export default function DailyGoalsCalendar({
         values,
         today,
         resolveTargets(key, storedTargets ?? {}),
+        streaks,
       );
     }
     return data;
-  }, [valuesByMonth, storedTargets, today]);
+  }, [valuesByMonth, storedTargets, streaks, today]);
 
   const handleMonthChange = async (next: string) => {
     setMonth(next);

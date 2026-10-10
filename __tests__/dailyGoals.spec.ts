@@ -1,8 +1,9 @@
-import { DAILY_GOALS } from "@/lib/constants";
+import { format } from "date-fns";
 import {
   DEFAULT_GOAL_TARGETS,
   buildGoalValues,
   buildMonthSummary,
+  findStreaks,
   formatDays,
   goalMonthRange,
   isValidMonth,
@@ -105,6 +106,7 @@ describe("dailyGoals helpers", () => {
         },
         "2026-10-05",
         T,
+        null,
       );
       expect(summary.rings).toEqual({ jobs: 2 / 30, hours: 2 / 30 });
       expect(stat(summary, "Both goals met")).toBe("1 day");
@@ -117,6 +119,7 @@ describe("dailyGoals helpers", () => {
         { "2026-09-01": { jobs: 9, hours: 3.9 } },
         "2026-10-05",
         T,
+        null,
       );
       expect(summary.rings).toEqual({ jobs: 1 / 30, hours: 0 });
     });
@@ -127,6 +130,7 @@ describe("dailyGoals helpers", () => {
         { "2026-10-01": met, "2026-10-20": met },
         "2026-10-05",
         T,
+        null,
       );
       // Oct 1–4 past, today not met
       expect(summary.rings).toEqual({ jobs: 1 / 4, hours: 1 / 4 });
@@ -140,6 +144,7 @@ describe("dailyGoals helpers", () => {
         { "2026-10-05": { jobs: 5, hours: 1 } },
         "2026-10-05",
         T,
+        null,
       );
       expect(summary.rings).toEqual({ jobs: 1 / 5, hours: 0 / 4 });
       expect(stat(summary, "Both goals met")).toBe("0 days");
@@ -151,18 +156,19 @@ describe("dailyGoals helpers", () => {
         { "2026-10-05": met },
         "2026-10-05",
         T,
+        null,
       );
       expect(summary.rings).toEqual({ jobs: 1 / 5, hours: 1 / 5 });
       expect(stat(summary, "Both goals met")).toBe("1 day");
     });
 
     it("never counts today as nothing logged", () => {
-      const summary = buildMonthSummary("2026-10", {}, "2026-10-05", T);
+      const summary = buildMonthSummary("2026-10", {}, "2026-10-05", T, null);
       expect(stat(summary, "Nothing logged")).toBe("4 days");
     });
 
     it("first of the month with nothing met has no ring values", () => {
-      const summary = buildMonthSummary("2026-10", {}, "2026-10-01", T);
+      const summary = buildMonthSummary("2026-10", {}, "2026-10-01", T, null);
       expect(summary.rings).toEqual({});
       expect(stat(summary, "Both goals met")).toBe("0 days");
       expect(stat(summary, "Nothing logged")).toBe("0 days");
@@ -170,15 +176,15 @@ describe("dailyGoals helpers", () => {
 
     it("uses the real month length", () => {
       expect(
-        stat(buildMonthSummary("2024-02", {}, "2026-10-05", T), "Nothing logged"),
+        stat(buildMonthSummary("2024-02", {}, "2026-10-05", T, null), "Nothing logged"),
       ).toBe("29 days");
       expect(
-        stat(buildMonthSummary("2026-02", {}, "2026-10-05", T), "Nothing logged"),
+        stat(buildMonthSummary("2026-02", {}, "2026-10-05", T, null), "Nothing logged"),
       ).toBe("28 days");
     });
 
     it("shows real zeros for a loaded month with no records", () => {
-      const summary = buildMonthSummary("2026-08", {}, "2026-10-05", T);
+      const summary = buildMonthSummary("2026-08", {}, "2026-10-05", T, null);
       expect(summary.rings).toEqual({ jobs: 0, hours: 0 });
       expect(stat(summary, "Nothing logged")).toBe("31 days");
     });
@@ -189,26 +195,28 @@ describe("dailyGoals helpers", () => {
         { "2026-09-01": { jobs: 0, hours: 0 }, "2026-09-02": { jobs: 1, hours: 0 } },
         "2026-10-05",
         T,
+        null,
       );
       expect(stat(summary, "Nothing logged")).toBe("29 days");
     });
 
-    it("lists the four rows in order with placeholder streaks", () => {
-      const summary = buildMonthSummary("2026-09", {}, "2026-10-05", T);
+    it("lists the four rows in order with the streaks passed in", () => {
+      const summary = buildMonthSummary("2026-09", {}, "2026-10-05", T, {
+        current: 1,
+        best: 11,
+      });
       expect(summary.stats).toEqual([
-        {
-          label: "Current streak",
-          value: formatDays(DAILY_GOALS.PLACEHOLDER_STREAKS.CURRENT),
-          tone: "primary",
-        },
-        {
-          label: "Best streak",
-          value: formatDays(DAILY_GOALS.PLACEHOLDER_STREAKS.BEST),
-          tone: "warning",
-        },
+        { label: "Current streak", value: "1 day", tone: "primary" },
+        { label: "Best streak (12 mo)", value: "11 days", tone: "warning" },
         { label: "Both goals met", value: "0 days", tone: "success" },
         { label: "Nothing logged", value: "30 days", tone: "danger" },
       ]);
+    });
+
+    it("shows a dash for streaks that failed to load", () => {
+      const summary = buildMonthSummary("2026-09", {}, "2026-10-05", T, null);
+      expect(stat(summary, "Current streak")).toBe("—");
+      expect(stat(summary, "Best streak (12 mo)")).toBe("—");
     });
 
     it("judges days against the targets passed in", () => {
@@ -217,6 +225,7 @@ describe("dailyGoals helpers", () => {
         { "2026-09-01": { jobs: 3, hours: 2 } },
         "2026-10-05",
         { jobs: 3, hours: 2 },
+        null,
       );
       expect(summary.rings).toEqual({ jobs: 1 / 30, hours: 1 / 30 });
       expect(stat(summary, "Both goals met")).toBe("1 day");
@@ -273,6 +282,83 @@ describe("dailyGoals helpers", () => {
       expect(
         resolveTargets("2026-01", { "2025-12": { jobs: 2, hours: 1 } }),
       ).toEqual({ jobs: 2, hours: 1 });
+    });
+  });
+
+  describe("findStreaks", () => {
+    const met = { jobs: 5, hours: 4 };
+    // Every day from `from` to `to` inclusive, met at the default targets
+    const days = (from: string, to: string, value = met) => {
+      const out: Record<string, typeof met> = {};
+      const d = new Date(`${from}T00:00:00`);
+      for (; format(d, "yyyy-MM-dd") <= to; d.setDate(d.getDate() + 1)) {
+        out[format(d, "yyyy-MM-dd")] = value;
+      }
+      return out;
+    };
+
+    it("counts both ends of a run across a month boundary", () => {
+      expect(
+        findStreaks(days("2026-09-25", "2026-10-05"), {}, "2025-11-01", "2026-10-05"),
+      ).toEqual({ current: 11, best: 11 });
+    });
+
+    it("an unmet today does not break the run", () => {
+      const values = { ...days("2026-10-01", "2026-10-04"), "2026-10-05": { jobs: 1, hours: 0 } };
+      expect(findStreaks(values, {}, "2025-11-01", "2026-10-05")).toEqual({
+        current: 4,
+        best: 4,
+      });
+    });
+
+    it("is zero when neither today nor yesterday is met", () => {
+      expect(
+        findStreaks(days("2026-09-01", "2026-09-10"), {}, "2025-11-01", "2026-10-05"),
+      ).toEqual({ current: 0, best: 10 });
+    });
+
+    it("finds the best run anywhere in the window", () => {
+      const values = {
+        ...days("2026-03-01", "2026-03-20"),
+        ...days("2026-10-04", "2026-10-05"),
+      };
+      expect(findStreaks(values, {}, "2025-11-01", "2026-10-05")).toEqual({
+        current: 2,
+        best: 20,
+      });
+    });
+
+    it("judges each day against its own month", () => {
+      const stored = { "2026-10": { jobs: 3, hours: 4 } };
+      const values = {
+        "2026-09-29": met,
+        "2026-09-30": met,
+        "2026-10-01": { jobs: 3, hours: 4 },
+        "2026-10-02": { jobs: 3, hours: 4 },
+      };
+      expect(findStreaks(values, stored, "2025-11-01", "2026-10-02")).toEqual({
+        current: 4,
+        best: 4,
+      });
+      // 4 jobs met October's 3 but not September's 5
+      const broken = { ...values, "2026-09-30": { jobs: 4, hours: 4 } };
+      expect(findStreaks(broken, stored, "2025-11-01", "2026-10-02")).toEqual({
+        current: 2,
+        best: 2,
+      });
+    });
+
+    it("ignores values before the window", () => {
+      expect(
+        findStreaks(days("2025-10-25", "2025-11-03"), {}, "2025-11-01", "2026-10-05"),
+      ).toEqual({ current: 0, best: 3 });
+    });
+
+    it("returns zeros with no data", () => {
+      expect(findStreaks({}, {}, "2025-11-01", "2026-10-05")).toEqual({
+        current: 0,
+        best: 0,
+      });
     });
   });
 });

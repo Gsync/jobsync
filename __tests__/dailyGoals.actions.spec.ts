@@ -1,5 +1,6 @@
 import {
   getDailyGoalValues,
+  getGoalStreaks,
   updateGoalTargets,
 } from "@/actions/dailyGoals.actions";
 import { getCurrentUser } from "@/utils/user.utils";
@@ -239,9 +240,94 @@ describe("updateGoalTargets", () => {
     expect(prisma.userSettings.upsert).not.toHaveBeenCalled();
   });
 
+  it("returns fresh streaks judged against the new targets", async () => {
+    (prisma.job.groupBy as any).mockResolvedValue([
+      { appliedDate: new Date(2026, 9, 5, 9), _count: { _all: 3 } },
+    ]);
+    (prisma.activity.findMany as any).mockResolvedValue([
+      { startTime: new Date(2026, 9, 5, 10), duration: 360 },
+    ]);
+    const result = await updateGoalTargets({ month: "2026-10", jobs: 3, hours: 6 });
+    expect(result).toEqual({
+      success: true,
+      data: {
+        targets: { "2026-10": { jobs: 3, hours: 6 } },
+        streaks: { current: 1, best: 1 },
+      },
+    });
+  });
+
+  it("still reports the save when the recount fails", async () => {
+    (prisma.activity.findMany as any).mockRejectedValue(new Error("busy"));
+    const result = await updateGoalTargets({ month: "2026-10", jobs: 3, hours: 6 });
+    expect(result).toEqual({
+      success: true,
+      data: { targets: { "2026-10": { jobs: 3, hours: 6 } }, streaks: null },
+    });
+  });
+
   it("returns a failure when not signed in", async () => {
     (getCurrentUser as any).mockResolvedValue(null);
     const result = await updateGoalTargets({ month: "2026-10", jobs: 3, hours: 6 });
     expect(result).toEqual({ success: false, message: "Not authenticated" });
+  });
+});
+
+describe("getGoalStreaks", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 5, 12));
+    (getCurrentUser as any).mockResolvedValue({ id: "user-id" });
+    (prisma.userSettings.findUnique as any).mockResolvedValue(null);
+    (prisma.job.groupBy as any).mockResolvedValue([]);
+    (prisma.activity.findMany as any).mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("scans the 12-month window through today for the user", async () => {
+    await getGoalStreaks();
+    const range = {
+      gte: new Date(2025, 10, 1, 0, 0, 0, 0),
+      lte: new Date(2026, 9, 5, 23, 59, 59, 999),
+    };
+    expect(prisma.job.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user-id", applied: true, appliedDate: range },
+      }),
+    );
+    expect(prisma.activity.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user-id", startTime: range, duration: { not: null } },
+      }),
+    );
+  });
+
+  it("judges days against the stored targets", async () => {
+    (prisma.userSettings.findUnique as any).mockResolvedValue({
+      settings: JSON.stringify({ goals: { targets: { "2026-10": { jobs: 1, hours: 1 } } } }),
+    });
+    (prisma.job.groupBy as any).mockResolvedValue([
+      { appliedDate: new Date(2026, 9, 4, 9), _count: { _all: 1 } },
+      { appliedDate: new Date(2026, 9, 5, 9), _count: { _all: 1 } },
+    ]);
+    (prisma.activity.findMany as any).mockResolvedValue([
+      { startTime: new Date(2026, 9, 4, 10), duration: 60 },
+      { startTime: new Date(2026, 9, 5, 10), duration: 60 },
+    ]);
+    expect(await getGoalStreaks()).toEqual({
+      success: true,
+      data: { current: 2, best: 2 },
+    });
+  });
+
+  it("returns a failure when not signed in", async () => {
+    (getCurrentUser as any).mockResolvedValue(null);
+    expect(await getGoalStreaks()).toEqual({
+      success: false,
+      message: "Not authenticated",
+    });
   });
 });

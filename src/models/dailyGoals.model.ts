@@ -17,3 +17,8 @@ export type GoalTargets = z.infer<typeof GoalTargetsSchema>;
 
 // Keyed by "YYYY-MM"; a month with no entry carries the latest earlier one
 export type GoalTargetsByMonth = Record<string, GoalTargets>;
+
+export interface GoalStreaks {
+  current: number;
+  best: number;
+}

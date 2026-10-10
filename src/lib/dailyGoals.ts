@@ -3,6 +3,7 @@ import type { GcMonthSummaryProps } from "react-goal-calendar";
 import { DAILY_GOALS } from "@/lib/constants";
 import {
   GoalTargetsSchema,
+  type GoalStreaks,
   type GoalTargets,
   type GoalTargetsByMonth,
 } from "@/models/dailyGoals.model";
@@ -114,6 +115,7 @@ export function buildMonthSummary(
   values: GoalValues,
   today: string,
   targets: GoalTargets,
+  streaks: GoalStreaks | null,
 ): MonthSummary {
   const hit: Record<string, number> = {};
   const counted: Record<string, number> = {};
@@ -146,12 +148,12 @@ export function buildMonthSummary(
     stats: [
       {
         label: "Current streak",
-        value: formatDays(DAILY_GOALS.PLACEHOLDER_STREAKS.CURRENT),
+        value: streaks ? formatDays(streaks.current) : "—",
         tone: "primary",
       },
       {
-        label: "Best streak",
-        value: formatDays(DAILY_GOALS.PLACEHOLDER_STREAKS.BEST),
+        label: "Best streak (12 mo)",
+        value: streaks ? formatDays(streaks.best) : "—",
         tone: "warning",
       },
       { label: "Both goals met", value: formatDays(bothMet), tone: "success" },
@@ -162,4 +164,31 @@ export function buildMonthSummary(
       },
     ],
   };
+}
+
+export function findStreaks(
+  values: GoalValues,
+  stored: GoalTargetsByMonth,
+  from: string,
+  today: string,
+): GoalStreaks {
+  const byMonth: Record<string, GoalTargets> = {};
+  let run = 0;
+  let best = 0;
+  const [y, m, d] = from.split("-").map(Number);
+  for (const day = new Date(y, m - 1, d); ; day.setDate(day.getDate() + 1)) {
+    const key = format(day, "yyyy-MM-dd");
+    if (key > today) break;
+    const month = key.slice(0, 7);
+    const targets = (byMonth[month] ??= resolveTargets(month, stored));
+    const v = values[key] ?? {};
+    if (IDS.every((id) => (v[id] ?? 0) >= targets[id])) {
+      run++;
+      best = Math.max(best, run);
+    } else if (key !== today) {
+      // An unfinished today never breaks the run
+      run = 0;
+    }
+  }
+  return { current: run, best };
 }

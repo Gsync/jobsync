@@ -30,6 +30,7 @@ describe("DailyGoalsCalendar", () => {
           values: { "2026-10-01": { jobs: 3, hours: 2.5 } },
           targets,
         }}
+        initialStreaks={{ current: 2, best: 11 }}
       />,
     );
   const ok = (values: object = {}, targets: object = {}) => ({
@@ -137,12 +138,30 @@ describe("DailyGoalsCalendar", () => {
       summary().getAllByRole(role).map((el) => el.textContent);
     expect(text("term")).toEqual([
       "Current streak",
-      "Best streak",
+      "Best streak (12 mo)",
       "Both goals met",
       "Nothing logged",
     ]);
-    // Placeholder streaks, then Oct 2–4 with nothing logged
-    expect(text("definition")).toEqual(["3 days", "7 days", "0 days", "3 days"]);
+    // Streaks from the server, then Oct 2–4 with nothing logged
+    expect(text("definition")).toEqual(["2 days", "11 days", "0 days", "3 days"]);
+  });
+
+  it("shows the same streaks on an earlier month", async () => {
+    (getDailyGoalValues as any).mockResolvedValue(ok());
+    renderCalendar();
+    await user.click(previous());
+    expect(await summary().findByText("11 days")).toBeInTheDocument();
+  });
+
+  it("shows dashes when streaks failed to load", () => {
+    render(
+      <DailyGoalsCalendar
+        today={today}
+        initialData={{ values: {}, targets: {} }}
+        initialStreaks={null}
+      />,
+    );
+    expect(summary().getAllByText("—")).toHaveLength(2);
   });
 
   it("moves the calendar when the summary navigates", async () => {
@@ -194,7 +213,13 @@ describe("DailyGoalsCalendar", () => {
   });
 
   it("shows no summary when the current month failed to load", () => {
-    render(<DailyGoalsCalendar today={today} initialData={null} />);
+    render(
+      <DailyGoalsCalendar
+        today={today}
+        initialData={null}
+        initialStreaks={null}
+      />,
+    );
     expect(
       summary().getByText("October 2026. Goal hit: no data"),
     ).toBeInTheDocument();

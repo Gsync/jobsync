@@ -6,6 +6,7 @@ import { handleError } from "@/lib/utils";
 import { requireUser } from "@/actions/shared";
 import {
   buildGoalValues,
+  findStreaks,
   goalMonthRange,
   isValidMonth,
   monthBounds,
@@ -15,6 +16,7 @@ import {
 } from "@/lib/dailyGoals";
 import {
   GoalTargetsSchema,
+  type GoalStreaks,
   type GoalTargetsByMonth,
 } from "@/models/dailyGoals.model";
 import { defaultUserSettings } from "@/models/userSettings.model";
@@ -53,6 +55,32 @@ async function loadStoredTargets(userId: string): Promise<{
   return { settings, targets: parseStoredTargets(settings?.goals?.targets) };
 }
 
+async function computeStreaks(
+  userId: string,
+  targets: GoalTargetsByMonth,
+): Promise<GoalStreaks> {
+  const now = new Date();
+  const today = format(now, "yyyy-MM-dd");
+  const { minMonth } = goalMonthRange(today);
+  const end = new Date(now);
+  end.setHours(23, 59, 59, 999);
+  const values = await loadGoalValues(userId, monthBounds(minMonth).start, end);
+  return findStreaks(values, targets, `${minMonth}-01`, today);
+}
+
+export async function getGoalStreaks(): Promise<
+  { success: true; data: GoalStreaks } | Failure
+> {
+  try {
+    const user = await requireUser();
+    const { targets } = await loadStoredTargets(user.id);
+    return { success: true, data: await computeStreaks(user.id, targets) };
+  } catch (error) {
+    const { message } = handleError(error, "Failed to load goal streaks.");
+    return { success: false, message };
+  }
+}
+
 export async function getDailyGoalValues(
   month: string,
 ): Promise<{ success: true; data: GoalMonthData } | Failure> {
@@ -87,7 +115,11 @@ export async function updateGoalTargets(input: {
   jobs: number;
   hours: number;
 }): Promise<
-  { success: true; data: { targets: GoalTargetsByMonth } } | Failure
+  | {
+      success: true;
+      data: { targets: GoalTargetsByMonth; streaks: GoalStreaks | null };
+    }
+  | Failure
 > {
   try {
     const user = await requireUser();
@@ -118,7 +150,13 @@ export async function updateGoalTargets(input: {
       update: { settings: json },
       create: { userId: user.id, settings: json },
     });
-    return { success: true, data: { targets } };
+    let streaks: GoalStreaks | null = null;
+    try {
+      streaks = await computeStreaks(user.id, targets);
+    } catch {
+      // The targets are saved; the rows show "—" until the next load
+    }
+    return { success: true, data: { targets, streaks } };
   } catch (error) {
     const { message } = handleError(error, "Failed to save daily goals.");
     return { success: false, message };
