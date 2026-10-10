@@ -12,6 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import type { CreateAutomationInput } from "@/models/automation.schema";
 import { toastError } from "@/lib/toast";
+import {
+  buildIncompleteResumeHint,
+  hasMinResumeSections,
+} from "@/lib/resumeSections";
 import type { AutomationWithResume } from "@/models/automation.model";
 import { AtsSearchStep } from "./AtsSearchStep";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
@@ -88,7 +92,16 @@ export function AutomationWizard({
 
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(onSubmit, (errors) => {
+            onSubmit={form.handleSubmit((data) => {
+              if (
+                selectedResume &&
+                !hasMinResumeSections(selectedResume.sectionCount)
+              ) {
+                toastError(buildIncompleteResumeHint());
+                return;
+              }
+              return onSubmit(data);
+            }, (errors) => {
               const firstError = Object.values(errors)[0];
               if (firstError?.message) {
                 toastError(firstError.message as string, "Validation Error");

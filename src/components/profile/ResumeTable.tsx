@@ -33,6 +33,7 @@ import { toastSuccess, toastError } from "@/lib/toast";
 import { deleteResumeById, setDefaultResume } from "@/actions/profile.actions";
 import { deleteCoverLetterById } from "@/actions/coverLetter.actions";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
+import { IncompleteResumeHint } from "../IncompleteResumeHint";
 import { Badge } from "../ui/badge";
 import { StatusBadge } from "../StatusBadge";
 import { DOCUMENT_TYPE_BADGE_COLORS } from "@/lib/badge-colors";
@@ -172,6 +173,9 @@ function DocumentTable({
                       {doc.title}
                       {doc.FileId ? (
                         <Paperclip className="h-3.5 w-3.5 ml-1" />
+                      ) : null}
+                      {!hasMinResumeSections(doc.sectionCount) ? (
+                        <IncompleteResumeHint />
                       ) : null}
                       {doc.isDefault ? (
                         <Badge className="ml-2 border-transparent bg-green-600 text-white hover:bg-green-600/90">

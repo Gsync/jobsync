@@ -34,7 +34,7 @@ import {
 } from "@/models/job.model";
 import { addDays } from "date-fns";
 import { z } from "zod";
-import { toastActionResult } from "@/lib/toast";
+import { toastActionResult, toastError } from "@/lib/toast";
 import {
   Form,
   FormControl,
@@ -57,6 +57,11 @@ import CreateResume from "../profile/CreateResume";
 import { getResumeList } from "@/actions/profile.actions";
 import { getCoverLetterList } from "@/actions/coverLetter.actions";
 import { TagInput } from "./TagInput";
+import { IncompleteResumeHint } from "../IncompleteResumeHint";
+import {
+  buildIncompleteResumeHint,
+  hasMinResumeSections,
+} from "@/lib/resumeSections";
 import { APP_CONSTANTS, APPLIED_STATUS_VALUES } from "@/lib/constants";
 import {
   getFromLocalStorage,
@@ -148,11 +153,7 @@ export function AddJob({
 
   const loadResumes = useCallback(async () => {
     try {
-      const resumes = await getResumeList(
-        1,
-        APP_CONSTANTS.RECORDS_PER_PAGE,
-        APP_CONSTANTS.MIN_RESUME_SECTIONS_FOR_SELECTION,
-      );
+      const resumes = await getResumeList(1, APP_CONSTANTS.RESUME_PICKER_LIMIT);
       setResumes(resumes.data);
     } catch (error) {
       console.error("Failed to load resumes:", error);
@@ -215,6 +216,11 @@ export function AddJob({
   };
 
   function onSubmit(data: z.infer<typeof AddJobFormSchema>) {
+    const selected = resumes.find((r) => r.id === data.resume);
+    if (selected && !hasMinResumeSections(selected._count?.ResumeSections)) {
+      toastError(buildIncompleteResumeHint());
+      return;
+    }
     startTransition(async () => {
       const result = editJob ? await updateJob(data) : await addJob(data);
       toastActionResult(result, {
@@ -582,7 +588,15 @@ export function AddJob({
                         <FormLabel>Resume</FormLabel>
                         <SelectFormCtrl
                           label="Resume"
-                          options={resumes}
+                          options={resumes?.map((r) =>
+                            hasMinResumeSections(r._count?.ResumeSections)
+                              ? r
+                              : {
+                                  ...r,
+                                  disabled: true,
+                                  suffix: <IncompleteResumeHint />,
+                                },
+                          )}
                           field={field}
                         />
                         <FormMessage />

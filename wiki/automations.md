@@ -25,7 +25,7 @@ Open **Automations** in the sidebar and click **Create Automation**. The wizard 
 
 1. **Basics** — a name, and which job board (Greenhouse, Lever or Ashby) the companies live on.
 2. **Search** — the companies to track, then your filters: target job titles, keywords/skills, locations, and how many listings get full AI analysis per run. This is the step that decides how useful the automation is; see the next two sections.
-3. **Resume** — the resume every discovered job is scored against.
+3. **Resume** — the resume every discovered job is scored against. Resumes with fewer than two sections are shown greyed out with an alert icon until you fill them in under **Profile**; an attached file does not count.
 4. **Matching** — a match threshold. Only listings whose AI match score reaches it are saved; anything analyzed and scored below it is discarded.
 5. **Schedule** — the hour of the day the automation runs (server time). Only one automation may occupy an hour, so hours already taken are marked **In use** and rejected.
 6. **Review** — confirm and save.

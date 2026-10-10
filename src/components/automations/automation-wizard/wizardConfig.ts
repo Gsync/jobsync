@@ -45,4 +45,5 @@ export function parseEditSourceConfig(
 export interface WizardResume {
   id: string;
   title: string;
+  sectionCount: number;
 }

@@ -25,7 +25,10 @@ function SelectFormCtrl({ label, options, field }: SelectProps) {
         name={field.name}
       >
         <FormControl>
-          <SelectTrigger aria-label={`Select ${label}`} className="w-[200px]">
+          <SelectTrigger
+            aria-label={`Select ${label}`}
+            className="w-[200px] [&_[data-incomplete-hint]]:pointer-events-none"
+          >
             <SelectValue placeholder={`Select ${label}`} />
           </SelectTrigger>
         </FormControl>
@@ -34,8 +37,13 @@ function SelectFormCtrl({ label, options, field }: SelectProps) {
             {options &&
               options.map((option) => {
                 return (
-                  <SelectItem key={option.id} value={option.id}>
+                  <SelectItem
+                    key={option.id}
+                    value={option.id}
+                    disabled={option.disabled}
+                  >
                     {option.label ?? option.value ?? option.title}
+                    {option.suffix}
                   </SelectItem>
                 );
               })}

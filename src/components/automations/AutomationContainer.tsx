@@ -16,6 +16,7 @@ import Loading from "@/components/Loading";
 interface Resume {
   id: string;
   title: string;
+  sectionCount: number;
 }
 
 interface AutomationContainerProps {

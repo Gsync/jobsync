@@ -10,7 +10,6 @@ import { deleteFile } from "./files";
 export const getResumeList = async (
   page: number = 1,
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
-  minSections: number = 0,
 ): Promise<any | undefined> => {
   try {
     const user = await requireUser();
@@ -26,25 +25,7 @@ export const getResumeList = async (
     const defaultResumeId = userRow?.defaultResumeId ?? null;
 
     let rawData;
-    if (minSections > 0) {
-      // When filtering by section count, Prisma can't express ">= N
-      // related rows" in `where`, so fetch all of the user's resumes and
-      // filter in JS instead of applying skip/take.
-      rawData = await prisma.resume.findMany({
-        where,
-        select: resumeListSelect,
-        orderBy: { createdAt: "desc" },
-      });
-      if (defaultResumeId) {
-        const defaultIndex = rawData.findIndex(
-          (r) => r.id === defaultResumeId,
-        );
-        if (defaultIndex > 0) {
-          const [defaultResume] = rawData.splice(defaultIndex, 1);
-          rawData.unshift(defaultResume);
-        }
-      }
-    } else if (defaultResumeId) {
+    if (defaultResumeId) {
       // Pin the default resume to the very first row so it always lands on
       // page 1, then page through the remaining resumes excluding it.
       const restWhere = { ...where, id: { not: defaultResumeId } };
@@ -81,12 +62,7 @@ export const getResumeList = async (
       });
     }
 
-    const data =
-      minSections > 0
-        ? rawData.filter((r) => r._count.ResumeSections >= minSections)
-        : rawData;
-
-    return { data, total, success: true };
+    return { data: rawData, total, success: true };
   } catch (error) {
     const msg = "Failed to get resume list.";
     return handleError(error, msg);

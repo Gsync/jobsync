@@ -14,3 +14,6 @@ export const buildInsufficientSectionsMessage = (
     hint ? ` (${hint})` : ""
   } before ${action}.`;
 };
+
+export const buildIncompleteResumeHint = (): string =>
+  `Add at least ${APP_CONSTANTS.MIN_RESUME_SECTIONS_FOR_SELECTION} sections to use this resume when adding a job or in an automation. An attached file does not count.`;

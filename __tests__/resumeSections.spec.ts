@@ -1,4 +1,5 @@
 import {
+  buildIncompleteResumeHint,
   buildInsufficientSectionsMessage,
   hasMinResumeSections,
 } from "@/lib/resumeSections";
@@ -52,5 +53,16 @@ describe("buildInsufficientSectionsMessage", () => {
     const message = buildInsufficientSectionsMessage("running a review");
 
     expect(message).not.toContain("(");
+  });
+});
+
+describe("buildIncompleteResumeHint", () => {
+  it("states the minimum and that an attachment does not count", () => {
+    const hint = buildIncompleteResumeHint();
+
+    expect(hint).toContain(
+      String(APP_CONSTANTS.MIN_RESUME_SECTIONS_FOR_SELECTION),
+    );
+    expect(hint).toContain("attached file does not count");
   });
 });
