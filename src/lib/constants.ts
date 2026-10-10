@@ -453,6 +453,10 @@ export const AI_USAGE_CONSTANTS = {
 export const DAILY_GOALS = {
   JOBS_TARGET: 5,
   HOURS_TARGET: 4,
+  JOBS_MIN: 1,
+  JOBS_MAX: 50,
+  HOURS_MIN: 1,
+  HOURS_MAX: 24,
   // Months browsable before the current one
   MONTHS_BACK: 11,
   // Shown until streaks are computed across months

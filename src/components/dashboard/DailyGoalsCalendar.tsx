@@ -8,52 +8,67 @@ import {
 } from "react-goal-calendar";
 import { getDailyGoalValues } from "@/actions/dailyGoals.actions";
 import { Card } from "@/components/ui/card";
-import { DAILY_GOALS } from "@/lib/constants";
 import {
   GOAL_IDS,
   buildMonthSummary,
   goalMonthRange,
+  resolveTargets,
+  type GoalMonthData,
   type GoalValues,
   type MonthSummary,
 } from "@/lib/dailyGoals";
 import { toastError } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import type {
+  GoalTargets,
+  GoalTargetsByMonth,
+} from "@/models/dailyGoals.model";
 
-const GOALS: GcGoal[] = [
-  { id: GOAL_IDS.JOBS, label: "Jobs applied", target: DAILY_GOALS.JOBS_TARGET },
-  {
-    id: GOAL_IDS.HOURS,
-    label: "Activity",
-    target: DAILY_GOALS.HOURS_TARGET,
-    unit: "h",
-  },
+// The summary's rings need labels only; targets vary by month
+const RINGS = [
+  { id: GOAL_IDS.JOBS, label: "Jobs applied" },
+  { id: GOAL_IDS.HOURS, label: "Activity" },
+];
+
+const goalsFor = (targets: GoalTargets): GcGoal[] => [
+  { ...RINGS[0], target: targets.jobs },
+  { ...RINGS[1], target: targets.hours, unit: "h" },
 ];
 
 interface DailyGoalsCalendarProps {
   today: string;
-  initialValues: GoalValues | null;
+  initialData: GoalMonthData | null;
 }
 
 export default function DailyGoalsCalendar({
   today,
-  initialValues,
+  initialData,
 }: DailyGoalsCalendarProps) {
   const { minMonth, maxMonth } = goalMonthRange(today);
   const [month, setMonth] = useState(maxMonth);
   // null = the server fetch failed: leave uncached so it shows "—"
   const [valuesByMonth, setValuesByMonth] = useState<
     Record<string, GoalValues>
-  >(initialValues ? { [maxMonth]: initialValues } : {});
+  >(initialData ? { [maxMonth]: initialData.values } : {});
+  // null until any load succeeds; resolves every month, cached or not
+  const [storedTargets, setStoredTargets] =
+    useState<GoalTargetsByMonth | null>(initialData?.targets ?? null);
+  const targetsFor = (key: string) => resolveTargets(key, storedTargets ?? {});
   const [loadingMonth, setLoadingMonth] = useState<string | null>(null);
 
   // Only cached months get an entry; the rest show the package's "—"
   const summaries = useMemo(() => {
     const data: Record<string, MonthSummary> = {};
     for (const [key, values] of Object.entries(valuesByMonth)) {
-      data[key] = buildMonthSummary(key, values, today);
+      data[key] = buildMonthSummary(
+        key,
+        values,
+        today,
+        resolveTargets(key, storedTargets ?? {}),
+      );
     }
     return data;
-  }, [valuesByMonth, today]);
+  }, [valuesByMonth, storedTargets, today]);
 
   const handleMonthChange = async (next: string) => {
     setMonth(next);
@@ -61,7 +76,9 @@ export default function DailyGoalsCalendar({
     setLoadingMonth(next);
     const result = await getDailyGoalValues(next);
     if (result.success) {
-      setValuesByMonth((prev) => ({ ...prev, [next]: result.data }));
+      setValuesByMonth((prev) => ({ ...prev, [next]: result.data.values }));
+      // Only fills a failed initial load; a save may be newer than this read
+      setStoredTargets((prev) => prev ?? result.data.targets);
     } else {
       toastError(result.message);
     }
@@ -85,11 +102,11 @@ export default function DailyGoalsCalendar({
   return (
     <>
       <Card {...cardProps}>
-        <GcMonthSummary rings={GOALS} data={summaries} {...monthProps} />
+        <GcMonthSummary rings={RINGS} data={summaries} {...monthProps} />
       </Card>
       <Card {...cardProps}>
         <GcMonthCalendar
-          goals={GOALS}
+          goals={goalsFor(targetsFor(month))}
           values={valuesByMonth[month]}
           legend
           {...monthProps}

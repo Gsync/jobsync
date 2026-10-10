@@ -1,6 +1,11 @@
 import { format } from "date-fns";
 import type { GcMonthSummaryProps } from "react-goal-calendar";
 import { DAILY_GOALS } from "@/lib/constants";
+import {
+  GoalTargetsSchema,
+  type GoalTargets,
+  type GoalTargetsByMonth,
+} from "@/models/dailyGoals.model";
 
 // Directive-free: imported by the server action and the client calendar.
 
@@ -8,10 +13,40 @@ export type GoalValues = Record<string, Record<string, number>>;
 
 export const GOAL_IDS = { JOBS: "jobs", HOURS: "hours" } as const;
 
+export type GoalMonthData = { values: GoalValues; targets: GoalTargetsByMonth };
+
+export const DEFAULT_GOAL_TARGETS: GoalTargets = {
+  jobs: DAILY_GOALS.JOBS_TARGET,
+  hours: DAILY_GOALS.HOURS_TARGET,
+};
+
 const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 export function isValidMonth(month: unknown): month is string {
   return typeof month === "string" && MONTH_PATTERN.test(month);
+}
+
+// Settings JSON is not schema-checked by Prisma; ignore anything malformed
+export function parseStoredTargets(raw: unknown): GoalTargetsByMonth {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const targets: GoalTargetsByMonth = {};
+  for (const [month, value] of Object.entries(raw)) {
+    const parsed = GoalTargetsSchema.safeParse(value);
+    if (isValidMonth(month) && parsed.success) targets[month] = parsed.data;
+  }
+  return targets;
+}
+
+export function resolveTargets(
+  month: string,
+  stored: GoalTargetsByMonth,
+): GoalTargets {
+  let from: string | undefined;
+  // "YYYY-MM" sorts as a string; only look backward so the past stays fixed
+  for (const key of Object.keys(stored)) {
+    if (key <= month && (!from || key > from)) from = key;
+  }
+  return from ? stored[from] : DEFAULT_GOAL_TARGETS;
 }
 
 export function shiftMonth(month: string, delta: number): string {
@@ -72,18 +107,14 @@ export function formatDays(count: number): string {
   return `${count} ${count === 1 ? "day" : "days"}`;
 }
 
-// Typed wide: ids come from Object.keys, which yields string
-const TARGETS: Record<string, number> = {
-  [GOAL_IDS.JOBS]: DAILY_GOALS.JOBS_TARGET,
-  [GOAL_IDS.HOURS]: DAILY_GOALS.HOURS_TARGET,
-};
+const IDS = Object.values(GOAL_IDS);
 
 export function buildMonthSummary(
   month: string,
   values: GoalValues,
   today: string,
+  targets: GoalTargets,
 ): MonthSummary {
-  const ids = Object.keys(TARGETS);
   const hit: Record<string, number> = {};
   const counted: Record<string, number> = {};
   let bothMet = 0;
@@ -94,19 +125,19 @@ export function buildMonthSummary(
     const key = `${month}-${String(d).padStart(2, "0")}`;
     if (key > today) break;
     const day = values[key] ?? {};
-    const isMet = (id: string) => (day[id] ?? 0) >= TARGETS[id];
+    const isMet = (id: (typeof IDS)[number]) => (day[id] ?? 0) >= targets[id];
     // Today counts only once met, so an unfinished day never drags it down
-    for (const id of ids) {
+    for (const id of IDS) {
       if (key === today && !isMet(id)) continue;
       counted[id] = (counted[id] ?? 0) + 1;
       if (isMet(id)) hit[id] = (hit[id] ?? 0) + 1;
     }
-    if (ids.every(isMet)) bothMet++;
-    if (key < today && ids.every((id) => !day[id])) nothingLogged++;
+    if (IDS.every(isMet)) bothMet++;
+    if (key < today && IDS.every((id) => !day[id])) nothingLogged++;
   }
 
   const rings: Record<string, number> = {};
-  for (const id of ids) {
+  for (const id of IDS) {
     if (counted[id]) rings[id] = (hit[id] ?? 0) / counted[id];
   }
 

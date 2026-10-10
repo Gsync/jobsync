@@ -1,11 +1,14 @@
 import { DAILY_GOALS } from "@/lib/constants";
 import {
+  DEFAULT_GOAL_TARGETS,
   buildGoalValues,
   buildMonthSummary,
   formatDays,
   goalMonthRange,
   isValidMonth,
   monthBounds,
+  parseStoredTargets,
+  resolveTargets,
   shiftMonth,
 } from "@/lib/dailyGoals";
 
@@ -88,6 +91,7 @@ describe("dailyGoals helpers", () => {
 
   describe("buildMonthSummary", () => {
     const met = { jobs: 5, hours: 4 };
+    const T = { jobs: 5, hours: 4 };
     const stat = (summary: ReturnType<typeof buildMonthSummary>, label: string) =>
       summary.stats?.find((s) => s.label === label)?.value;
 
@@ -100,6 +104,7 @@ describe("dailyGoals helpers", () => {
           "2026-09-03": { jobs: 0, hours: 4 },
         },
         "2026-10-05",
+        T,
       );
       expect(summary.rings).toEqual({ jobs: 2 / 30, hours: 2 / 30 });
       expect(stat(summary, "Both goals met")).toBe("1 day");
@@ -111,6 +116,7 @@ describe("dailyGoals helpers", () => {
         "2026-09",
         { "2026-09-01": { jobs: 9, hours: 3.9 } },
         "2026-10-05",
+        T,
       );
       expect(summary.rings).toEqual({ jobs: 1 / 30, hours: 0 });
     });
@@ -120,6 +126,7 @@ describe("dailyGoals helpers", () => {
         "2026-10",
         { "2026-10-01": met, "2026-10-20": met },
         "2026-10-05",
+        T,
       );
       // Oct 1–4 past, today not met
       expect(summary.rings).toEqual({ jobs: 1 / 4, hours: 1 / 4 });
@@ -132,6 +139,7 @@ describe("dailyGoals helpers", () => {
         "2026-10",
         { "2026-10-05": { jobs: 5, hours: 1 } },
         "2026-10-05",
+        T,
       );
       expect(summary.rings).toEqual({ jobs: 1 / 5, hours: 0 / 4 });
       expect(stat(summary, "Both goals met")).toBe("0 days");
@@ -142,18 +150,19 @@ describe("dailyGoals helpers", () => {
         "2026-10",
         { "2026-10-05": met },
         "2026-10-05",
+        T,
       );
       expect(summary.rings).toEqual({ jobs: 1 / 5, hours: 1 / 5 });
       expect(stat(summary, "Both goals met")).toBe("1 day");
     });
 
     it("never counts today as nothing logged", () => {
-      const summary = buildMonthSummary("2026-10", {}, "2026-10-05");
+      const summary = buildMonthSummary("2026-10", {}, "2026-10-05", T);
       expect(stat(summary, "Nothing logged")).toBe("4 days");
     });
 
     it("first of the month with nothing met has no ring values", () => {
-      const summary = buildMonthSummary("2026-10", {}, "2026-10-01");
+      const summary = buildMonthSummary("2026-10", {}, "2026-10-01", T);
       expect(summary.rings).toEqual({});
       expect(stat(summary, "Both goals met")).toBe("0 days");
       expect(stat(summary, "Nothing logged")).toBe("0 days");
@@ -161,15 +170,15 @@ describe("dailyGoals helpers", () => {
 
     it("uses the real month length", () => {
       expect(
-        stat(buildMonthSummary("2024-02", {}, "2026-10-05"), "Nothing logged"),
+        stat(buildMonthSummary("2024-02", {}, "2026-10-05", T), "Nothing logged"),
       ).toBe("29 days");
       expect(
-        stat(buildMonthSummary("2026-02", {}, "2026-10-05"), "Nothing logged"),
+        stat(buildMonthSummary("2026-02", {}, "2026-10-05", T), "Nothing logged"),
       ).toBe("28 days");
     });
 
     it("shows real zeros for a loaded month with no records", () => {
-      const summary = buildMonthSummary("2026-08", {}, "2026-10-05");
+      const summary = buildMonthSummary("2026-08", {}, "2026-10-05", T);
       expect(summary.rings).toEqual({ jobs: 0, hours: 0 });
       expect(stat(summary, "Nothing logged")).toBe("31 days");
     });
@@ -179,12 +188,13 @@ describe("dailyGoals helpers", () => {
         "2026-09",
         { "2026-09-01": { jobs: 0, hours: 0 }, "2026-09-02": { jobs: 1, hours: 0 } },
         "2026-10-05",
+        T,
       );
       expect(stat(summary, "Nothing logged")).toBe("29 days");
     });
 
     it("lists the four rows in order with placeholder streaks", () => {
-      const summary = buildMonthSummary("2026-09", {}, "2026-10-05");
+      const summary = buildMonthSummary("2026-09", {}, "2026-10-05", T);
       expect(summary.stats).toEqual([
         {
           label: "Current streak",
@@ -199,6 +209,70 @@ describe("dailyGoals helpers", () => {
         { label: "Both goals met", value: "0 days", tone: "success" },
         { label: "Nothing logged", value: "30 days", tone: "danger" },
       ]);
+    });
+
+    it("judges days against the targets passed in", () => {
+      const summary = buildMonthSummary(
+        "2026-09",
+        { "2026-09-01": { jobs: 3, hours: 2 } },
+        "2026-10-05",
+        { jobs: 3, hours: 2 },
+      );
+      expect(summary.rings).toEqual({ jobs: 1 / 30, hours: 1 / 30 });
+      expect(stat(summary, "Both goals met")).toBe("1 day");
+    });
+  });
+
+  describe("parseStoredTargets", () => {
+    it("keeps valid month entries", () => {
+      expect(
+        parseStoredTargets({ "2026-10": { jobs: 3, hours: 4 } }),
+      ).toEqual({ "2026-10": { jobs: 3, hours: 4 } });
+    });
+
+    it.each([undefined, null, "x", 5, []])("returns {} for %s", (raw) => {
+      expect(parseStoredTargets(raw)).toEqual({});
+    });
+
+    it("drops bad keys and out-of-range or non-numeric values", () => {
+      expect(
+        parseStoredTargets({
+          "2026-13": { jobs: 3, hours: 4 },
+          "2026-09": { jobs: "5", hours: 4 },
+          "2026-08": { jobs: 0, hours: 4 },
+          "2026-07": { jobs: 3, hours: 2.5 },
+          "2026-06": { jobs: 51, hours: 4 },
+          "2026-05": { jobs: 2, hours: 25 },
+          "2026-04": { jobs: 2, hours: 3 },
+        }),
+      ).toEqual({ "2026-04": { jobs: 2, hours: 3 } });
+    });
+  });
+
+  describe("resolveTargets", () => {
+    const stored = {
+      "2026-03": { jobs: 4, hours: 2 },
+      "2026-10": { jobs: 3, hours: 6 },
+    };
+
+    it("uses the month's own entry", () => {
+      expect(resolveTargets("2026-10", stored)).toEqual({ jobs: 3, hours: 6 });
+    });
+
+    it("carries the latest earlier entry forward", () => {
+      expect(resolveTargets("2026-09", stored)).toEqual({ jobs: 4, hours: 2 });
+      expect(resolveTargets("2027-02", stored)).toEqual({ jobs: 3, hours: 6 });
+    });
+
+    it("falls back to the defaults before any entry", () => {
+      expect(resolveTargets("2026-02", stored)).toEqual(DEFAULT_GOAL_TARGETS);
+      expect(resolveTargets("2026-10", {})).toEqual({ jobs: 5, hours: 4 });
+    });
+
+    it("compares months across years", () => {
+      expect(
+        resolveTargets("2026-01", { "2025-12": { jobs: 2, hours: 1 } }),
+      ).toEqual({ jobs: 2, hours: 1 });
     });
   });
 });

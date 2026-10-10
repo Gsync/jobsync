@@ -22,13 +22,20 @@ describe("DailyGoalsCalendar", () => {
   const user = userEvent.setup();
   const today = "2026-10-05";
 
-  const renderCalendar = () =>
+  const renderCalendar = (targets: Record<string, any> = {}) =>
     render(
       <DailyGoalsCalendar
         today={today}
-        initialValues={{ "2026-10-01": { jobs: 3, hours: 2.5 } }}
+        initialData={{
+          values: { "2026-10-01": { jobs: 3, hours: 2.5 } },
+          targets,
+        }}
       />,
     );
+  const ok = (values: object = {}, targets: object = {}) => ({
+    success: true,
+    data: { values, targets },
+  });
 
   // [summary Card, calendar Card]; the calendar is always the last one
   const cards = () =>
@@ -66,10 +73,9 @@ describe("DailyGoalsCalendar", () => {
   });
 
   it("fetches a month on first visit and caches it", async () => {
-    (getDailyGoalValues as any).mockResolvedValue({
-      success: true,
-      data: { "2026-09-10": { jobs: 5, hours: 4 } },
-    });
+    (getDailyGoalValues as any).mockResolvedValue(
+      ok({ "2026-09-10": { jobs: 5, hours: 4 } }),
+    );
     renderCalendar();
 
     await user.click(previous());
@@ -97,17 +103,17 @@ describe("DailyGoalsCalendar", () => {
     expect(cards().at(-1)).toHaveAttribute("aria-busy", "true");
 
     // September settles while August is on screen: the dim must stay
-    await act(async () => sep.resolve({ success: true, data: {} }));
+    await act(async () => sep.resolve(ok()));
     expect(cards().at(-1)).toHaveAttribute("aria-busy", "true");
 
-    await act(async () => aug.resolve({ success: true, data: {} }));
+    await act(async () => aug.resolve(ok()));
     expect(cards().at(-1)).not.toHaveAttribute("aria-busy");
   });
 
   it("toasts a failed month and retries on the next visit", async () => {
     (getDailyGoalValues as any)
       .mockResolvedValueOnce({ success: false, message: "Boom" })
-      .mockResolvedValueOnce({ success: true, data: {} });
+      .mockResolvedValueOnce(ok());
     renderCalendar();
 
     await user.click(previous());
@@ -140,7 +146,7 @@ describe("DailyGoalsCalendar", () => {
   });
 
   it("moves the calendar when the summary navigates", async () => {
-    (getDailyGoalValues as any).mockResolvedValue({ success: true, data: {} });
+    (getDailyGoalValues as any).mockResolvedValue(ok());
     renderCalendar();
 
     await user.click(
@@ -162,10 +168,7 @@ describe("DailyGoalsCalendar", () => {
     expect(cards()[1]).toHaveAttribute("aria-busy", "true");
 
     await act(async () =>
-      sep.resolve({
-        success: true,
-        data: { "2026-09-01": { jobs: 5, hours: 4 } },
-      }),
+      sep.resolve(ok({ "2026-09-01": { jobs: 5, hours: 4 } })),
     );
     expect(
       summary().getByText("September 2026. Goal hit: Jobs applied 3%, Activity 3%"),
@@ -191,11 +194,41 @@ describe("DailyGoalsCalendar", () => {
   });
 
   it("shows no summary when the current month failed to load", () => {
-    render(<DailyGoalsCalendar today={today} initialValues={null} />);
+    render(<DailyGoalsCalendar today={today} initialData={null} />);
     expect(
       summary().getByText("October 2026. Goal hit: no data"),
     ).toBeInTheDocument();
     expect(summary().queryByText("Nothing logged")).not.toBeInTheDocument();
     expect(getDailyGoalValues).not.toHaveBeenCalled();
+  });
+
+  it("judges the current month against its stored target", () => {
+    renderCalendar({ "2026-10": { jobs: 3, hours: 2 } });
+    expect(
+      calendar().getByText(/October 1: Jobs applied 3 of 3, Activity 2\.5 of 2 h\. All goals met\./),
+    ).toBeInTheDocument();
+    expect(calendar().getByText("2 h")).toBeInTheDocument();
+  });
+
+  it("keeps an earlier month on the target it had", async () => {
+    (getDailyGoalValues as any).mockResolvedValue(
+      ok({ "2026-09-10": { jobs: 4, hours: 4 } }, { "2026-10": { jobs: 3, hours: 4 } }),
+    );
+    renderCalendar({ "2026-10": { jobs: 3, hours: 4 } });
+
+    await user.click(previous());
+    expect(
+      await calendar().findByText(/September 10: Jobs applied 4 of 5, Activity 4 of 4 h$/),
+    ).toBeInTheDocument();
+  });
+
+  it("shows carried targets for a month still loading", async () => {
+    const sep = deferred<any>();
+    (getDailyGoalValues as any).mockReturnValueOnce(sep.promise);
+    renderCalendar({ "2026-03": { jobs: 2, hours: 7 } });
+
+    await user.click(previous());
+    // Sep has no entry: carried from March, not the 4 h default
+    expect(calendar().getByText("7 h")).toBeInTheDocument();
   });
 });

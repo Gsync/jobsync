@@ -1,4 +1,7 @@
-import { getDailyGoalValues } from "@/actions/dailyGoals.actions";
+import {
+  getDailyGoalValues,
+  updateGoalTargets,
+} from "@/actions/dailyGoals.actions";
 import { getCurrentUser } from "@/utils/user.utils";
 import { PrismaClient } from "@prisma/client";
 
@@ -8,6 +11,7 @@ vi.mock("@prisma/client", () => {
   const mPrismaClient = {
     job: { groupBy: vi.fn() },
     activity: { findMany: vi.fn() },
+    userSettings: { findUnique: vi.fn(), upsert: vi.fn() },
   };
   return { PrismaClient: vi.fn(function () { return mPrismaClient; }) };
 });
@@ -25,6 +29,7 @@ describe("getDailyGoalValues", () => {
     (getCurrentUser as any).mockResolvedValue(mockUser);
     (prisma.job.groupBy as any).mockResolvedValue([]);
     (prisma.activity.findMany as any).mockResolvedValue([]);
+    (prisma.userSettings.findUnique as any).mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -60,7 +65,48 @@ describe("getDailyGoalValues", () => {
     });
     expect(result).toEqual({
       success: true,
-      data: { "2026-09-02": { jobs: 3, hours: 2.5 } },
+      data: { values: { "2026-09-02": { jobs: 3, hours: 2.5 } }, targets: {} },
+    });
+  });
+
+  it("returns the parsed stored targets scoped to the user", async () => {
+    (prisma.userSettings.findUnique as any).mockResolvedValue({
+      settings: JSON.stringify({
+        ai: {},
+        goals: {
+          targets: {
+            "2026-08": { jobs: 3, hours: 2 },
+            "2026-13": { jobs: 3, hours: 2 },
+          },
+        },
+      }),
+    });
+
+    const result = await getDailyGoalValues("2026-10");
+
+    expect(prisma.userSettings.findUnique).toHaveBeenCalledWith({
+      where: { userId: "user-id" },
+      select: { settings: true },
+    });
+    expect(result).toEqual({
+      success: true,
+      data: { values: {}, targets: { "2026-08": { jobs: 3, hours: 2 } } },
+    });
+  });
+
+  it("still returns values when the settings JSON is malformed", async () => {
+    (prisma.job.groupBy as any).mockResolvedValue([
+      { appliedDate: new Date(2026, 9, 2, 9), _count: { _all: 2 } },
+    ]);
+    (prisma.userSettings.findUnique as any).mockResolvedValue({
+      settings: '{"ai":',
+    });
+
+    const result = await getDailyGoalValues("2026-10");
+
+    expect(result).toEqual({
+      success: true,
+      data: { values: { "2026-10-02": { jobs: 2, hours: 0 } }, targets: {} },
     });
   });
 
@@ -82,6 +128,120 @@ describe("getDailyGoalValues", () => {
   it("returns a failure when not signed in", async () => {
     (getCurrentUser as any).mockResolvedValue(null);
     const result = await getDailyGoalValues("2026-10");
+    expect(result).toEqual({ success: false, message: "Not authenticated" });
+  });
+});
+
+describe("updateGoalTargets", () => {
+  const mockUser = { id: "user-id" };
+  const stored = (settings: object) =>
+    (prisma.userSettings.findUnique as any).mockResolvedValue({
+      settings: JSON.stringify(settings),
+    });
+  const written = () =>
+    JSON.parse((prisma.userSettings.upsert as any).mock.calls[0][0].update.settings);
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 5, 12));
+    (getCurrentUser as any).mockResolvedValue(mockUser);
+    (prisma.userSettings.findUnique as any).mockResolvedValue(null);
+    (prisma.userSettings.upsert as any).mockResolvedValue({});
+    (prisma.job.groupBy as any).mockResolvedValue([]);
+    (prisma.activity.findMany as any).mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("writes the current month and keeps the other settings", async () => {
+    stored({
+      ai: { provider: "ollama", model: "m" },
+      display: { theme: "dark" },
+      goals: { targets: { "2026-08": { jobs: 2, hours: 2 } } },
+    });
+
+    const result = await updateGoalTargets({ month: "2026-10", jobs: 3, hours: 6 });
+
+    const targets = {
+      "2026-08": { jobs: 2, hours: 2 },
+      "2026-10": { jobs: 3, hours: 6 },
+    };
+    expect(result).toEqual(
+      expect.objectContaining({ success: true, data: expect.objectContaining({ targets }) }),
+    );
+    expect((prisma.userSettings.upsert as any).mock.calls[0][0].where).toEqual({
+      userId: "user-id",
+    });
+    expect(written()).toEqual({
+      ai: { provider: "ollama", model: "m" },
+      display: { theme: "dark" },
+      goals: { targets },
+    });
+  });
+
+  it("creates the settings row with defaults when none exists", async () => {
+    await updateGoalTargets({ month: "2026-10", jobs: 3, hours: 6 });
+    const create = JSON.parse(
+      (prisma.userSettings.upsert as any).mock.calls[0][0].create.settings,
+    );
+    expect(create.goals).toEqual({ targets: { "2026-10": { jobs: 3, hours: 6 } } });
+    expect(create.display).toEqual({ theme: "system" });
+    expect((prisma.userSettings.upsert as any).mock.calls[0][0].create.userId).toBe(
+      "user-id",
+    );
+  });
+
+  it("overwrites an earlier save in the same month", async () => {
+    stored({ goals: { targets: { "2026-10": { jobs: 9, hours: 9 } } } });
+    await updateGoalTargets({ month: "2026-10", jobs: 3, hours: 6 });
+    expect(written().goals.targets).toEqual({ "2026-10": { jobs: 3, hours: 6 } });
+  });
+
+  it("drops invalid stored entries on save", async () => {
+    stored({ goals: { targets: { "2026-13": { jobs: 1, hours: 1 }, "2026-09": "x" } } });
+    await updateGoalTargets({ month: "2026-10", jobs: 3, hours: 6 });
+    expect(written().goals.targets).toEqual({ "2026-10": { jobs: 3, hours: 6 } });
+  });
+
+  it("refuses to save over malformed settings JSON", async () => {
+    (prisma.userSettings.findUnique as any).mockResolvedValue({
+      settings: '{"ai":',
+    });
+    const result = await updateGoalTargets({ month: "2026-10", jobs: 3, hours: 6 });
+    expect(result.success).toBe(false);
+    expect(prisma.userSettings.upsert).not.toHaveBeenCalled();
+  });
+
+  it.each(["2026-09", "2026-11", "bad"])(
+    "rejects a month that is no longer current (%s)",
+    async (month) => {
+      const result = await updateGoalTargets({ month, jobs: 3, hours: 6 });
+      expect(result).toEqual({
+        success: false,
+        message: "The month has changed — reload the page.",
+      });
+      expect(prisma.userSettings.upsert).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    { jobs: 0, hours: 4 },
+    { jobs: 51, hours: 4 },
+    { jobs: 2.5, hours: 4 },
+    { jobs: 3, hours: 0 },
+    { jobs: 3, hours: 25 },
+    { jobs: Number.NaN, hours: 4 },
+  ])("rejects out-of-range targets %o", async (targets) => {
+    const result = await updateGoalTargets({ month: "2026-10", ...targets });
+    expect(result).toEqual({ success: false, message: "Invalid goal targets." });
+    expect(prisma.userSettings.upsert).not.toHaveBeenCalled();
+  });
+
+  it("returns a failure when not signed in", async () => {
+    (getCurrentUser as any).mockResolvedValue(null);
+    const result = await updateGoalTargets({ month: "2026-10", jobs: 3, hours: 6 });
     expect(result).toEqual({ success: false, message: "Not authenticated" });
   });
 });
