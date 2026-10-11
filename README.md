@@ -11,39 +11,45 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Gsync/jobsync/releases/latest"><img src="https://img.shields.io/github/v/release/Gsync/jobsync" alt="Latest Release"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/github/license/Gsync/jobsync" alt="License"></a>
   <a href="https://github.com/Gsync/jobsync/stargazers"><img src="https://img.shields.io/github/stars/Gsync/jobsync?style=social" alt="GitHub Stars"></a>
   <img src="https://img.shields.io/badge/self--hosted-Docker-blue" alt="Self-hosted with Docker">
 </p>
 
-JobSync is a free, open-source companion for your job search: track applications, manage and export resumes, and ask a built-in AI assistant to review a resume, match it against a job, write a cover letter, or add a job from a posting you paste in — all self-hosted on your own server, so your data stays under your control. AI features can run entirely locally via Ollama or through your choice of cloud provider, and JobSync's built-in MCP server lets AI agents like Claude Desktop add jobs and interview questions straight from your chat.
+Track every application, get AI resume reviews and job matches, and discover new openings automatically — **free, open source, and your data never leaves your server.**
+
+🔒 Self-hosted · 🤖 Local AI via Ollama or any cloud provider · 🔌 MCP server for Claude Desktop, Hermes, etc
+
+![AI Job Match](./screenshots/jobsync-ai-jobmatch.gif)
 
 ![App Snapshot](./screenshots/jobsync-dashboard.png?raw=true "Jobsync dashboard")
 
+⭐ If JobSync helps your search, a star helps other job seekers find it.
+
+## Why JobSync?
+
+- **One place for your whole search:** applications, resumes, contacts, interviews, tasks and AI help in a single source of truth, instead of scattered spreadsheets, notes and tabs.
+- **Free forever:** no subscription and no paywalled tiers.
+- **Private:** self-hosted, so your resumes and applications stay on your own server.
+- **Local AI, no API costs:** run models on your own machine with Ollama, or bring a cloud provider key.
+
 ## Key Features
-- **Application Tracker:** Keep a detailed record of all your job applications, including company details, job titles, application dates, and current status.
+
+- **Application Tracker:** Record every application with its company, title, dates and current status.
 
   ![Jobs Applied List](./screenshots/jobsync-jobs.png?raw=true "Jobsync Jobs Page")
 
-- **Monitoring Dashboard:** Visualize your job search progress with an interactive dashboard that provides insights into your application activities, success rates, and upcoming tasks.
-
-- **Resume Management:** Store and manage your resumes, export them as professionally formatted PDFs (Simple or Professional template), and use them with AI to get reviews and match with job descriptions. Import existing resumes from PDF or Word (.docx) files — AI extracts and structures your contact info, experience, education, and certifications so you can review and save each section individually.
-
-- **Automated Job Discovery:** Schedule automations that track companies via job board APIs, then AI-match each listing against your resume and surface the best fits for review. See [Features in Detail](#automated-job-discovery) below.
-
-- **Task & Activity Management:** Manage tasks, track activities linked with tasks including time tracking.
-
-- **Contacts:** Keep the people behind your job hunt — recruiters, hiring managers, interviewers, referrers and references — with how you know them and when you last spoke. Link a contact to any number of jobs with a role on each link, so the same recruiter can sit on three applications, and filter by role to find your references in one click.
-
-- **Company Pages:** Every company gets a details page with its jobs, the people who work there or worked with you there, and links to its website, careers page and job board. Watch a company to put it on your watchlist; watched companies with a job board appear in their own Watched group when you pick companies for an automation.
-
-- **Question Bank:** Build a library of interview questions with your answers, tagged by skill, so your preparation is in one place when the next interview comes up.
-
-- **Data Backup & Restore:** Download every job, resume, task, activity, contact and question — plus your uploaded resume files — as one zip from **Settings > Data**, and import it back on any JobSync instance. Backups never contain API keys, MCP tokens or passwords, and every import first saves a snapshot so you can undo it.
-
-- **AI Assistant:** A chat panel that stays docked beside whatever page you're on. Ask it to review a resume, score how well it matches the job you're viewing, write a tailored cover letter, or add a job straight from a posting you paste in — it asks for your confirmation before saving anything. See [Features in Detail](#ai-assistant-in-app-chat) below.
-
-- **AI Agent Integration (MCP):** Connect AI agents like Claude Desktop via a built-in MCP server to add job applications and Question Bank entries directly from your chat, with your approval. When a job description is substantial enough, the agent can also analyze it against your default resume and save a job match score right from the chat.
+- **Monitoring Dashboard:** See your search progress, activity and daily goals at a glance.
+- **Resume Management:** Store resumes, export them as PDFs, and import existing PDF or Word files with AI.
+- **Automated Job Discovery:** Schedule searches over company job boards and AI-match each listing to your resume. [Details](#automated-job-discovery)
+- **Task & Activity Management:** Track tasks and time your activities. [Tasks](https://github.com/Gsync/jobsync/wiki/Tasks) · [Activities](https://github.com/Gsync/jobsync/wiki/Activities)
+- **Contacts:** Keep recruiters, interviewers and references, linked to the jobs they touched. [Details](https://github.com/Gsync/jobsync/wiki/Contacts)
+- **Company Pages:** One page per company with its jobs, people and links, plus a watchlist. [Details](https://github.com/Gsync/jobsync/wiki/Companies)
+- **Question Bank:** Build a library of interview questions and answers, tagged by skill.
+- **Data Backup & Restore:** Export everything as one zip, import it anywhere, and undo an import. [Details](https://github.com/Gsync/jobsync/wiki/Data-Backup)
+- **AI Assistant:** A docked chat that reviews resumes, scores job matches, writes cover letters and adds jobs you paste in. [Details](#ai-assistant-in-app-chat)
+- **AI Agent Integration (MCP):** Add jobs and questions from Claude Desktop and other agents. [Details](#mcp-server-ai-agent-integration)
 
 ## Quick Start
 
@@ -55,7 +61,7 @@ cd jobsync
 docker compose up
 ```
 
-> **Note:** The first startup builds the app image, which can take a few minutes — if the app is unreachable right after `docker compose up`, wait a bit before accessing it in your browser.
+> **Note:** The first startup downloads the prebuilt app image, so give it a moment before opening the browser.
 
 Open [http://localhost:3737](http://localhost:3737) and create your account. That's it!
 
@@ -75,7 +81,7 @@ Environment variables can be set in `docker-compose.yml`:
 
 ### Updating
 
-From the project directory, run the deploy script to pull the latest changes and rebuild:
+From the project directory, run the deploy script to pull the latest image and restart:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Gsync/jobsync/main/deploy.sh | sudo bash -s
@@ -109,8 +115,6 @@ The reviews, matches and letters are the same analyses the dedicated panels used
 The assistant is deliberately narrow about what it can see: it reads your resumes and the single job you're looking at, and nothing else. It can't list or search your jobs, and it can't see tasks or activities. Pasted postings are also treated as untrusted text, so instructions hidden inside a posting can't make the assistant act on your data.
 
 Pick a model under **Settings > AI Settings** before using the panel — it needs one that supports tool calling, and it will tell you rather than guessing if none is set. See [known-good models](#supported-ai-model-providers) for the ones that have been tested, including a fully local option.
-
-![AI Job Match](./screenshots/jobsync-ai-jobmatch.gif)
 
 ### PDF Resume Export
 

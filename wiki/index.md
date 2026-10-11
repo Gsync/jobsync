@@ -15,6 +15,7 @@ JobSync tracks job applications, resumes and the work you do around them. These 
 - [Automations](./automations.md) — set up a scheduled search over Greenhouse, Lever and Ashby company boards, fill in the filters that make it work, and handle the jobs it discovers.
 - [Tasks](./tasks.md) — add to-dos with a priority and due date, find them with the status filter and activity-type panel, mark them done, and start a timed activity from one.
 - [Activities](./activities.md) — time the work you do with a start/stop timer and breaks, log time after the fact, and see your hours on the Dashboard.
+- [Data Backup](./backup.md) — download everything as one zip, import it on any instance, and undo an import.
 - [MCP Access](./mcp.md) — connect an external AI agent such as Claude Desktop, generate and revoke access tokens, and what the agent can do once connected.
 
 Installation, Docker and environment variables are in the [project README](https://github.com/Gsync/jobsync#readme).

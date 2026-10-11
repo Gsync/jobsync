@@ -24,6 +24,7 @@ export const WIKI_FEATURES = [
   "activities",
   "questions",
   "mcp",
+  "backup",
 ] as const;
 
 export const WIKI_STATUSES = ["draft", "stable", "deprecated"] as const;
