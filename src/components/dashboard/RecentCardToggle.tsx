@@ -109,9 +109,16 @@ export default function RecentCardToggle({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="grid auto-rows-max gap-6 px-4">
-        {activeIndex === 0
-          ? groupJobsByDate(jobs).map(([date, dateJobs]) => (
+      <CardContent className="px-4">
+        {/* One shared grid cell keeps the card height equal on both tabs */}
+        <div className="grid">
+          <div
+            className={cn(
+              "col-start-1 row-start-1 grid auto-rows-max content-start gap-6",
+              activeIndex !== 0 && "invisible",
+            )}
+          >
+            {groupJobsByDate(jobs).map(([date, dateJobs]) => (
               <div key={date} className="grid gap-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {date}
@@ -146,8 +153,15 @@ export default function RecentCardToggle({
                   </div>
                 ))}
               </div>
-            ))
-          : groupActivitiesByDate(activities).map(([date, dateActivities]) => (
+            ))}
+          </div>
+          <div
+            className={cn(
+              "col-start-1 row-start-1 grid auto-rows-max content-start gap-6",
+              activeIndex !== 1 && "invisible",
+            )}
+          >
+            {groupActivitiesByDate(activities).map(([date, dateActivities]) => (
               <div key={date} className="grid gap-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {date}
@@ -189,6 +203,8 @@ export default function RecentCardToggle({
                 </div>
               </div>
             ))}
+          </div>
+        </div>
       </CardContent>
       {confirmDialog}
     </Card>
