@@ -1,5 +1,64 @@
 # Changelog
 
+## [1.1.22](https://github.com/Gsync/jobsync/compare/v1.1.21...v1.1.22) (2026-10-11)
+
+
+### Features
+
+* grey out incomplete resumes in Add Job and automation pickers, flag them in the Profile table, and block saving one
+* set daily goal targets from a dialog opened by the calendar's settings button
+* compute current and 12-month best goal streaks
+* store daily goal targets per month with carry-forward, and add the save action
+* show a monthly goal summary above the daily goals calendar, with wiki help
+* add monthly goal summary maths and placeholder streaks
+* add daily goals calendar above the recent card
+* add per-month daily goal values action and helpers
+* add Clear all to the bell popover
+* add notes, size and LinkedIn URL to companies
+* make the letterhead headline editable in the export dialog, prefilled from the default resume and dropped from the PDF when blank
+* add the AI Usage section — token, call, response-time and failure cards, daily tokens by provider, provider/model and feature breakdowns with context-limit flags, failures with timeouts, and the last 50 calls
+* add getAiUsage with calendar-day buckets in the viewer's timezone, per-provider/model/feature totals, completed-call percentiles, near-context counts and the last 50 calls
+* record every AI call — chat turns (excluding nested time), nested review/match/cover letter, resume import, automation match and the Analyze button — with first visible token and timeout-vs-stop classification
+* add the AiCall table, a never-throwing per-call usage tracker with ok/error/truncated/interrupted/timed-out/stopped classification, and 90-day hourly pruning
+* add a confirmed Delete button to each resume certification, removing the section with its last entry; toast on successful certification and skills section deletes
+* make resume section Edit/Delete buttons icon-only with the job details pencil and trash icons, and give every card the same 8px button inset
+* add "Page n of N" to the bottom right of multi-page resume exports, with a Footer toggle in the export settings that is on by default and hidden for one-page resumes; report the preview's page count from the shared preview pane
+* show the date a job was added under its applied date in the jobs table; note it on the jobs help page
+* replace the preset filter with a multi-facet filter popover with live counts, URL-synced filters and a Filtered-by chip row; keep filters on reload; update the jobs help page and status-filter e2e
+* confirm before deleting a notification or clearing read ones on the notifications page; note it in the automations help page
+* add notifications page with tabs, automation filter and day groups; open the automation wizard from ?edit=1; make page rows deletable and phone-width safe
+* add header bell popover, account-menu entry and avatar dot on an event-driven notification context; refresh it when a manual run ends
+* add user-scoped notification read, dismiss, delete and summary actions
+
+### Bug Fixes
+
+* count goal streaks against defaults when settings JSON is malformed
+* show icon-only section nav on mobile so content is no longer squeezed into a narrow column
+* scroll the tab bar horizontally on mobile instead of overflowing the page
+* span the Dashboard card on the container breakpoint so Jobs & Activity keeps full width beside the docked chat panel
+* prune notifications and AI usage once a day at 03:00 instead of every hourly automation tick
+* record chat provider errors as Error and disconnects as Stopped, group rows without copying; docs(wiki): describe Settings → AI Usage
+* drop the raw error box from board rows; name the status in http_error copy and keep the raw reason as a hover tooltip
+* pair light-mode colours with the dark tints in the bell popover and rows; stop refreshing the bell when the log stream ends, before finalizeRun records notifications
+
+### Other Changes
+
+* handle empty resume list gracefully in loadResumes function
+* update Data Backup guide, refresh README features and screenshots, remove apiTest.rest
+* explain daily goal targets and real streaks
+* upgrade react-goal-calendar to 0.4.0 and find month titles by text in its spec
+* simplify layout structure and improve styling for responsiveness
+* upgrade react-goal-calendar to 0.3.0 and map its danger tone
+* explain the dashboard daily goals calendar
+* add react-goal-calendar and map its colours to app tokens
+* update default AI model from llama3.1 to qwen3.5:9b
+* add star request link to encourage users to give feedback
+* add confirmation dialog for export jobs; change icon
+* increase MCP_RATE_LIMIT_MAX from 60 to 100
+* wait for the jobs table to render before clicking sort headers in the column-sorting specs
+* explain automation notifications on the automations help page
+
+
 ## [1.1.21](https://github.com/Gsync/jobsync/compare/v1.1.20...v1.1.21) (2026-09-27)
 
 
