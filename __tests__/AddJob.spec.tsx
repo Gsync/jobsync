@@ -19,6 +19,10 @@ vi.mock("@/actions/job.actions", () => ({
   updateJob: vi.fn().mockResolvedValue({ success: true }),
 }));
 
+vi.mock("@/actions/profile.actions", () => ({
+  getResumeList: vi.fn().mockResolvedValue({ success: true, data: [] }),
+}));
+
 vi.mock("@/actions/note.actions", () => ({
   getNotesByJobId: vi.fn().mockResolvedValue({ success: true, data: [] }),
   addNote: vi.fn(),

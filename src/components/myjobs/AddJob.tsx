@@ -154,7 +154,7 @@ export function AddJob({
   const loadResumes = useCallback(async () => {
     try {
       const resumes = await getResumeList(1, APP_CONSTANTS.RESUME_PICKER_LIMIT);
-      setResumes(resumes.data);
+      setResumes(resumes.data ?? []);
     } catch (error) {
       console.error("Failed to load resumes:", error);
     }
