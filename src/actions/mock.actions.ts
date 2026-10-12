@@ -20,6 +20,7 @@ import { getRandomInt } from "@/lib/mock.utils";
 import {
   mockJobDescriptions,
   mockJobTypes,
+  mockMatchTiers,
   STATUS_WEIGHTS,
 } from "@/lib/data/mockJobsData";
 import { SALARY_RANGES } from "@/lib/data/salaryRangeData";
@@ -559,6 +560,23 @@ export const generateMockJobsAction = async (): Promise<any> => {
           ? resumes[getRandomInt(0, resumes.length - 1)]
           : null;
 
+      // ~70% of jobs carry an AI match
+      const tier =
+        Math.random() < 0.7
+          ? mockMatchTiers[getRandomInt(0, mockMatchTiers.length - 1)]
+          : null;
+      const matchScore = tier ? getRandomInt(tier.min, tier.max) : null;
+      const matchData = tier
+        ? JSON.stringify({
+            matchScore,
+            recommendation: tier.recommendation,
+            body: tier.body,
+            analyzed: true,
+            matchedAt: createdAt.toISOString(),
+            ...(resume ? { resumeId: resume.id, resumeTitle: resume.title } : {}),
+          })
+        : null;
+
       return {
         userId: user.id,
         companyId: company.id,
@@ -575,6 +593,8 @@ export const generateMockJobsAction = async (): Promise<any> => {
         dueDate,
         jobSourceId: jobSource.id,
         resumeId: resume?.id ?? null,
+        matchScore,
+        matchData,
       };
     });
 
