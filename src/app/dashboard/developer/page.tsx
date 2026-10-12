@@ -5,6 +5,7 @@ import {
   MockJobsCard,
 } from "@/components/developer/DeveloperContainer";
 import { ClearAllDataButton } from "@/components/developer/ClearAllDataButton";
+import { GenerateMockDataButton } from "@/components/developer/GenerateMockDataButton";
 
 export const metadata: Metadata = {
   title: "Developer Options | JobSync",
@@ -24,7 +25,10 @@ export default function DeveloperPage() {
             mode.
           </p>
         </div>
-        <ClearAllDataButton />
+        <div className="flex gap-2">
+          <GenerateMockDataButton />
+          <ClearAllDataButton />
+        </div>
       </div>
       <div className="col-start-1 self-start">
         <MockActivitiesCard />
