@@ -80,7 +80,7 @@ export interface ImportResult {
   snapshotPath: string | null;
 }
 
-type Tx = Record<string, Record<string, (a: unknown) => Promise<unknown>>>;
+export type Tx = Record<string, Record<string, (a: unknown) => Promise<unknown>>>;
 
 async function readData(zip: JSZip): Promise<BackupData> {
   const entry = zip.file("data.json");
@@ -180,7 +180,11 @@ async function insertLookups(
   }
 }
 
-async function wipe(tx: Tx, userId: string): Promise<void> {
+export async function wipe(
+  tx: Tx,
+  userId: string,
+  keep: BackupModel[] = [],
+): Promise<void> {
   // Null the back-reference first: User.defaultResumeId is a foreign key into
   // a table the wipe is about to empty.
   await tx.user.update({
@@ -193,6 +197,7 @@ async function wipe(tx: Tx, userId: string): Promise<void> {
   await tx.chatConversation.deleteMany({ where: { userId } });
 
   for (const model of DELETE_ORDER) {
+    if (keep.includes(model)) continue;
     const spec = MODEL_SPECS[model];
     await tx[spec.delegate].deleteMany({ where: spec.scope(userId) });
   }

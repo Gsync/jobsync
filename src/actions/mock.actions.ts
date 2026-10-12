@@ -23,6 +23,10 @@ import {
   STATUS_WEIGHTS,
 } from "@/lib/data/mockJobsData";
 import { SALARY_RANGES } from "@/lib/data/salaryRangeData";
+import { wipe, type Tx } from "@/lib/backup/import";
+import { MODEL_SPECS } from "@/lib/backup/ordering";
+import { removeResumeFile } from "@/lib/resumeFiles";
+import { CONTACT_ROLES, JOB_SOURCES, JOB_STAGES } from "@/lib/constants";
 
 export const generateMockActivitiesAction = async (): Promise<any> => {
   try {
@@ -640,5 +644,63 @@ export const clearMockJobsAction = async (): Promise<any> => {
     };
   } catch (error) {
     return handleError(error, "Failed to clear mock jobs");
+  }
+};
+
+export const clearAllDataAction = async (): Promise<any> => {
+  try {
+    const user = await requireUser();
+
+    if (process.env.NODE_ENV !== "development") {
+      throw new Error("Clearing all data is only available in development mode");
+    }
+
+    const files = await prisma.file.findMany({
+      where: MODEL_SPECS.File.scope(user.id),
+      select: { filePath: true },
+    });
+
+    await prisma.$transaction(
+      async (tx) => {
+        await wipe(tx as unknown as Tx, user.id, ["UserSettings"]);
+
+        // The wipe removes the seeded lookups; Add Contact, Add Stage and the
+        // job source picker have nothing to resolve without them
+        await tx.jobSource.createMany({
+          data: JOB_SOURCES.map((s) => ({
+            label: s.label,
+            value: s.value,
+            createdBy: user.id,
+          })),
+        });
+        await tx.contactRole.createMany({
+          data: CONTACT_ROLES.map((r) => ({
+            label: r.label,
+            value: r.value,
+            createdBy: user.id,
+          })),
+        });
+        const statuses = await tx.jobStatus.findMany({
+          select: { id: true, value: true },
+        });
+        const statusIds = new Map(statuses.map((s) => [s.value, s.id]));
+        await tx.jobStageType.createMany({
+          data: JOB_STAGES.map((st) => ({
+            label: st.label,
+            value: st.value,
+            statusId: statusIds.get(st.status)!,
+            sortOrder: st.sortOrder,
+            createdBy: user.id,
+          })),
+        });
+      },
+      { timeout: 60_000, maxWait: 15_000 },
+    );
+
+    await Promise.all(files.map((f) => removeResumeFile(f.filePath)));
+
+    return { success: true, message: "All data cleared." };
+  } catch (error) {
+    return handleError(error, "Failed to clear all data");
   }
 };
