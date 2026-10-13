@@ -31,6 +31,7 @@ export const getJobSourceList = async (): Promise<any | undefined> => {
       where: {
         createdBy: user.id,
       },
+      orderBy: [{ label: "asc" }, { id: "asc" }],
     });
     return list;
   } catch (error) {

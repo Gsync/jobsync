@@ -117,9 +117,9 @@ describe("activity.actions", () => {
               userId: mockUser.id,
               endTime: { not: null },
               OR: [
-                { activityName: { contains: "TypeScript" } },
-                { description: { contains: "TypeScript" } },
-                { activityType: { label: { contains: "TypeScript" } } },
+                { activityName: { contains: "TypeScript", mode: "insensitive" } },
+                { description: { contains: "TypeScript", mode: "insensitive" } },
+                { activityType: { label: { contains: "TypeScript", mode: "insensitive" } } },
               ],
             }),
           })
@@ -128,9 +128,9 @@ describe("activity.actions", () => {
           expect.objectContaining({
             where: expect.objectContaining({
               OR: [
-                { activityName: { contains: "TypeScript" } },
-                { description: { contains: "TypeScript" } },
-                { activityType: { label: { contains: "TypeScript" } } },
+                { activityName: { contains: "TypeScript", mode: "insensitive" } },
+                { description: { contains: "TypeScript", mode: "insensitive" } },
+                { activityType: { label: { contains: "TypeScript", mode: "insensitive" } } },
               ],
             }),
           })
@@ -147,7 +147,7 @@ describe("activity.actions", () => {
         const findManyCall = (prisma.activity.findMany as any).mock
           .calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
-          activityName: { contains: "Portfolio" },
+          activityName: { contains: "Portfolio", mode: "insensitive" },
         });
       });
 
@@ -161,7 +161,7 @@ describe("activity.actions", () => {
         const findManyCall = (prisma.activity.findMany as any).mock
           .calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
-          description: { contains: "developer" },
+          description: { contains: "developer", mode: "insensitive" },
         });
       });
 
@@ -175,7 +175,7 @@ describe("activity.actions", () => {
         const findManyCall = (prisma.activity.findMany as any).mock
           .calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
-          activityType: { label: { contains: "Learning" } },
+          activityType: { label: { contains: "Learning", mode: "insensitive" } },
         });
       });
 
@@ -244,7 +244,7 @@ describe("activity.actions", () => {
 
         expect(prisma.activity.findMany).toHaveBeenCalledWith(
           expect.objectContaining({
-            orderBy: { createdAt: "desc" },
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           })
         );
       });

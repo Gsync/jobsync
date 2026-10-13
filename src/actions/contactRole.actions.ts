@@ -28,7 +28,7 @@ export const getContactRoleList = async (
     const user = await requireUser();
     const whereClause: any = { createdBy: user.id };
     if (search) {
-      whereClause.label = { contains: search };
+      whereClause.label = { contains: search, mode: "insensitive" };
     }
 
     const [data, total] = await Promise.all([
@@ -37,7 +37,7 @@ export const getContactRoleList = async (
         skip: (page - 1) * limit,
         take: limit,
         include: { _count: { select: { jobContacts: true, contacts: true } } },
-        orderBy: [{ label: "asc" }],
+        orderBy: [{ label: "asc" }, { id: "desc" }],
       }),
       prisma.contactRole.count({ where: whereClause }),
     ]);

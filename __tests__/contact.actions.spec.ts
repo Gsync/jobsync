@@ -51,9 +51,9 @@ describe("contact actions", () => {
     it("searches name, email and title", async () => {
       await getContactList(1, 10, "pat");
       expect(db.contact.findMany.mock.calls[0][0].where.OR).toEqual([
-        { name: { contains: "pat" } },
-        { email: { contains: "pat" } },
-        { title: { contains: "pat" } },
+        { name: { contains: "pat", mode: "insensitive" } },
+        { email: { contains: "pat", mode: "insensitive" } },
+        { title: { contains: "pat", mode: "insensitive" } },
       ]);
     });
 

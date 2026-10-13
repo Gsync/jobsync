@@ -105,7 +105,7 @@ describe("Tag Actions", () => {
           where: { createdBy: mockUser.id },
           skip: 0,
           take: 10,
-          orderBy: { jobs: { _count: "desc" } },
+          orderBy: [{ jobs: { _count: "desc" } }, { id: "desc" }],
         }),
       );
     });
@@ -153,11 +153,11 @@ describe("Tag Actions", () => {
       expect(result).toEqual({ data: mockData, total: 1 });
       expect(prisma.tag.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { createdBy: mockUser.id, label: { contains: "Rea" } },
+          where: { createdBy: mockUser.id, label: { contains: "Rea", mode: "insensitive" } },
         }),
       );
       expect(prisma.tag.count).toHaveBeenCalledWith({
-        where: { createdBy: mockUser.id, label: { contains: "Rea" } },
+        where: { createdBy: mockUser.id, label: { contains: "Rea", mode: "insensitive" } },
       });
     });
 

@@ -389,7 +389,7 @@ describe("jobActions", () => {
       it("keeps the search OR alongside the status OR", async () => {
         await getJobsList(1, 10, { ...EMPTY_JOB_FACETS, statuses: ["applied"] }, "Developer");
         const where = whereOf();
-        expect(where.OR).toContainEqual({ description: { contains: "Developer" } });
+        expect(where.OR).toContainEqual({ description: { contains: "Developer", mode: "insensitive" } });
         expect(where.AND).toContainEqual({
           OR: [{ Status: { value: { in: ["applied"] } } }],
         });
@@ -424,11 +424,11 @@ describe("jobActions", () => {
             where: expect.objectContaining({
               userId: mockUser.id,
               OR: [
-                { JobTitle: { label: { contains: "Amazon" } } },
-                { Company: { label: { contains: "Amazon" } } },
-                { Location: { label: { contains: "Amazon" } } },
-                { JobSource: { label: { contains: "Amazon" } } },
-                { description: { contains: "Amazon" } },
+                { JobTitle: { label: { contains: "Amazon", mode: "insensitive" } } },
+                { Company: { label: { contains: "Amazon", mode: "insensitive" } } },
+                { Location: { label: { contains: "Amazon", mode: "insensitive" } } },
+                { JobSource: { label: { contains: "Amazon", mode: "insensitive" } } },
+                { description: { contains: "Amazon", mode: "insensitive" } },
               ],
             }),
           }),
@@ -437,11 +437,11 @@ describe("jobActions", () => {
           expect.objectContaining({
             where: expect.objectContaining({
               OR: [
-                { JobTitle: { label: { contains: "Amazon" } } },
-                { Company: { label: { contains: "Amazon" } } },
-                { Location: { label: { contains: "Amazon" } } },
-                { JobSource: { label: { contains: "Amazon" } } },
-                { description: { contains: "Amazon" } },
+                { JobTitle: { label: { contains: "Amazon", mode: "insensitive" } } },
+                { Company: { label: { contains: "Amazon", mode: "insensitive" } } },
+                { Location: { label: { contains: "Amazon", mode: "insensitive" } } },
+                { JobSource: { label: { contains: "Amazon", mode: "insensitive" } } },
+                { description: { contains: "Amazon", mode: "insensitive" } },
               ],
             }),
           }),
@@ -457,7 +457,7 @@ describe("jobActions", () => {
 
         const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
-          JobTitle: { label: { contains: "Developer" } },
+          JobTitle: { label: { contains: "Developer", mode: "insensitive" } },
         });
       });
 
@@ -470,7 +470,7 @@ describe("jobActions", () => {
 
         const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
-          Company: { label: { contains: "Google" } },
+          Company: { label: { contains: "Google", mode: "insensitive" } },
         });
       });
 
@@ -483,7 +483,7 @@ describe("jobActions", () => {
 
         const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
-          Location: { label: { contains: "Remote" } },
+          Location: { label: { contains: "Remote", mode: "insensitive" } },
         });
       });
 
@@ -496,7 +496,7 @@ describe("jobActions", () => {
 
         const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
-          JobSource: { label: { contains: "LinkedIn" } },
+          JobSource: { label: { contains: "LinkedIn", mode: "insensitive" } },
         });
       });
 
@@ -519,7 +519,7 @@ describe("jobActions", () => {
 
         const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).not.toContainEqual({
-          JobSource: { label: { contains: "LinkedIn" } },
+          JobSource: { label: { contains: "LinkedIn", mode: "insensitive" } },
         });
       });
 
@@ -532,7 +532,7 @@ describe("jobActions", () => {
 
         const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
-          description: { contains: "React" },
+          description: { contains: "React", mode: "insensitive" },
         });
       });
 
@@ -663,13 +663,13 @@ describe("jobActions", () => {
 
         const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).toEqual([
-          { JobTitle: { label: { contains: "Developer" } } },
-          { Location: { label: { contains: "Developer" } } },
-          { JobSource: { label: { contains: "Developer" } } },
-          { description: { contains: "Developer" } },
+          { JobTitle: { label: { contains: "Developer", mode: "insensitive" } } },
+          { Location: { label: { contains: "Developer", mode: "insensitive" } } },
+          { JobSource: { label: { contains: "Developer", mode: "insensitive" } } },
+          { description: { contains: "Developer", mode: "insensitive" } },
         ]);
         expect(findManyCall.where.OR).not.toContainEqual({
-          Company: { label: { contains: "Developer" } },
+          Company: { label: { contains: "Developer", mode: "insensitive" } },
         });
       });
 
@@ -682,7 +682,7 @@ describe("jobActions", () => {
 
         const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
-          Company: { label: { contains: "Developer" } },
+          Company: { label: { contains: "Developer", mode: "insensitive" } },
         });
       });
 
@@ -787,7 +787,7 @@ describe("jobActions", () => {
 
         const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).not.toContainEqual({
-          JobTitle: { label: { contains: "React" } },
+          JobTitle: { label: { contains: "React", mode: "insensitive" } },
         });
       });
 
@@ -800,7 +800,7 @@ describe("jobActions", () => {
 
         const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
-          JobTitle: { label: { contains: "React" } },
+          JobTitle: { label: { contains: "React", mode: "insensitive" } },
         });
       });
 
@@ -882,7 +882,7 @@ describe("jobActions", () => {
 
         const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).not.toContainEqual({
-          Location: { label: { contains: "React" } },
+          Location: { label: { contains: "React", mode: "insensitive" } },
         });
       });
 
@@ -895,7 +895,7 @@ describe("jobActions", () => {
 
         const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
         expect(findManyCall.where.OR).toContainEqual({
-          Location: { label: { contains: "React" } },
+          Location: { label: { contains: "React", mode: "insensitive" } },
         });
       });
 
@@ -1030,7 +1030,7 @@ describe("jobActions", () => {
         Company: { value: "google" },
         applied: true,
       });
-      expect(totalWhere.OR).toContainEqual({ description: { contains: "Dev" } });
+      expect(totalWhere.OR).toContainEqual({ description: { contains: "Dev", mode: "insensitive" } });
       const acceptedWhere = (prisma.job.count as any).mock.calls[1][0].where;
       expect(acceptedWhere.AND[1]).toEqual({ discoveryStatus: "accepted" });
       expect(acceptedWhere.AND[0].userId).toBe(mockUser.id);
@@ -1085,7 +1085,7 @@ describe("jobActions", () => {
             File: true,
           },
         },
-        tags: true,
+        tags: { orderBy: [{ label: "asc" }, { id: "asc" }] },
         contactLinks: {
           include: {
             Role: true,

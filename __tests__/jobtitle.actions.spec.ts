@@ -57,6 +57,7 @@ describe("Job Title Actions", () => {
       expect(result).toEqual(mockTitles);
       expect(prisma.jobTitle.findMany).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
+        orderBy: [{ label: "asc" }, { id: "asc" }],
       });
     });
 
@@ -99,7 +100,7 @@ describe("Job Title Actions", () => {
         where: { createdBy: mockUser.id },
         skip: 0,
         take: 10,
-        orderBy: [{ jobs: { _count: "desc" } }, { label: "asc" }],
+        orderBy: [{ jobs: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
       });
       expect(prisma.jobTitle.count).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
@@ -138,7 +139,7 @@ describe("Job Title Actions", () => {
             },
           },
         },
-        orderBy: [{ jobs: { _count: "desc" } }, { label: "asc" }],
+        orderBy: [{ jobs: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
       });
     });
 
@@ -185,13 +186,13 @@ describe("Job Title Actions", () => {
 
       expect(result).toEqual({ data: mockData, total: 1 });
       expect(prisma.jobTitle.findMany).toHaveBeenCalledWith({
-        where: { createdBy: mockUser.id, OR: [{ label: { contains: "Dev" } }] },
+        where: { createdBy: mockUser.id, OR: [{ label: { contains: "Dev", mode: "insensitive" } }] },
         skip: 0,
         take: 10,
-        orderBy: [{ jobs: { _count: "desc" } }, { label: "asc" }],
+        orderBy: [{ jobs: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
       });
       expect(prisma.jobTitle.count).toHaveBeenCalledWith({
-        where: { createdBy: mockUser.id, OR: [{ label: { contains: "Dev" } }] },
+        where: { createdBy: mockUser.id, OR: [{ label: { contains: "Dev", mode: "insensitive" } }] },
       });
     });
 
@@ -206,7 +207,7 @@ describe("Job Title Actions", () => {
         where: { createdBy: mockUser.id },
         skip: 0,
         take: 10,
-        orderBy: [{ jobs: { _count: "desc" } }, { label: "asc" }],
+        orderBy: [{ jobs: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
       });
     });
   });

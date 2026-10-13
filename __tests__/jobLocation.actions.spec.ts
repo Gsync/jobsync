@@ -61,6 +61,7 @@ describe("Job Location Actions", () => {
       expect(result).toEqual(mockLocations);
       expect(prisma.location.findMany).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
+        orderBy: [{ label: "asc" }, { id: "asc" }],
       });
     });
 
@@ -103,7 +104,7 @@ describe("Job Location Actions", () => {
         where: { createdBy: mockUser.id },
         skip: 0,
         take: 10,
-        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
       });
       expect(prisma.location.count).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
@@ -142,7 +143,7 @@ describe("Job Location Actions", () => {
             },
           },
         },
-        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
       });
     });
 
@@ -187,13 +188,13 @@ describe("Job Location Actions", () => {
 
       expect(result).toEqual({ data: mockData, total: 1 });
       expect(prisma.location.findMany).toHaveBeenCalledWith({
-        where: { createdBy: mockUser.id, OR: [{ label: { contains: "New" } }] },
+        where: { createdBy: mockUser.id, OR: [{ label: { contains: "New", mode: "insensitive" } }] },
         skip: 0,
         take: 10,
-        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
       });
       expect(prisma.location.count).toHaveBeenCalledWith({
-        where: { createdBy: mockUser.id, OR: [{ label: { contains: "New" } }] },
+        where: { createdBy: mockUser.id, OR: [{ label: { contains: "New", mode: "insensitive" } }] },
       });
     });
 
@@ -208,7 +209,7 @@ describe("Job Location Actions", () => {
         where: { createdBy: mockUser.id },
         skip: 0,
         take: 10,
-        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
       });
     });
   });

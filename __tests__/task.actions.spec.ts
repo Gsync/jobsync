@@ -88,7 +88,12 @@ describe("taskActions", () => {
             select: { id: true },
           },
         },
-        orderBy: [{ priority: "desc" }, { createdAt: "desc" }, { updatedAt: "desc" }],
+        orderBy: [
+          { priority: "desc" },
+          { createdAt: "desc" },
+          { updatedAt: "desc" },
+          { id: "desc" },
+        ],
         skip: 0,
         take: 25,
       });
@@ -119,7 +124,12 @@ describe("taskActions", () => {
             select: { id: true },
           },
         },
-        orderBy: [{ priority: "desc" }, { createdAt: "desc" }, { updatedAt: "desc" }],
+        orderBy: [
+          { priority: "desc" },
+          { createdAt: "desc" },
+          { updatedAt: "desc" },
+          { id: "desc" },
+        ],
         skip: 10,
         take: 10,
       });
@@ -150,7 +160,12 @@ describe("taskActions", () => {
             select: { id: true },
           },
         },
-        orderBy: [{ priority: "desc" }, { createdAt: "desc" }, { updatedAt: "desc" }],
+        orderBy: [
+          { priority: "desc" },
+          { createdAt: "desc" },
+          { updatedAt: "desc" },
+          { id: "desc" },
+        ],
         skip: 0,
         take: 10,
       });
@@ -184,7 +199,12 @@ describe("taskActions", () => {
             select: { id: true },
           },
         },
-        orderBy: [{ priority: "desc" }, { createdAt: "desc" }, { updatedAt: "desc" }],
+        orderBy: [
+          { priority: "desc" },
+          { createdAt: "desc" },
+          { updatedAt: "desc" },
+          { id: "desc" },
+        ],
         skip: 0,
         take: 10,
       });
@@ -208,9 +228,10 @@ describe("taskActions", () => {
           },
         },
         orderBy: [
-          { dueDate: "asc" },
+          { dueDate: { sort: "asc", nulls: "first" } },
           { priority: "desc" },
           { createdAt: "desc" },
+          { id: "desc" },
         ],
         skip: 0,
         take: 25,
@@ -245,6 +266,7 @@ describe("taskActions", () => {
           { activityType: { label: "asc" } },
           { priority: "desc" },
           { createdAt: "desc" },
+          { id: "desc" },
         ],
         skip: 0,
         take: 25,
@@ -852,6 +874,7 @@ describe("taskActions", () => {
         where: {
           createdBy: mockUser.id,
         },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
         include: {
           _count: {
             select: {

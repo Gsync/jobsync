@@ -40,9 +40,7 @@ export const getCoverLetterList = async (
             },
           },
         },
-        orderBy: {
-          createdAt: "desc",
-        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       }),
       prisma.coverLetter.count({
         where: {

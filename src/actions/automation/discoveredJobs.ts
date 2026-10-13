@@ -61,7 +61,7 @@ export async function getDiscoveredJobs(options?: {
         where,
         skip,
         take: limit,
-        orderBy: { [sortBy]: sortOrder },
+        orderBy: [{ [sortBy]: sortOrder }, { id: "desc" }],
         include: {
           automation: {
             select: { id: true, name: true },

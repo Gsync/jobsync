@@ -1,5 +1,6 @@
 import prisma from "@/lib/db";
 import { isResumeFilePath } from "@/lib/resumeFiles";
+import { ENTRY_ORDER, CERTIFICATION_ORDER } from "@/lib/jobs/resumeDetailInclude";
 
 // Not a "use server" module: it exports selects, so it stays internal to
 // src/actions/profile/ and is never imported by a client component.
@@ -63,12 +64,13 @@ export const resumeCopySelect = {
   title: true,
   ContactInfo: true,
   ResumeSections: {
+    orderBy: { id: "asc" },
     include: {
       summary: true,
-      workExperiences: true,
-      educations: true,
-      licenseOrCertifications: true,
-      others: true,
+      workExperiences: { orderBy: ENTRY_ORDER },
+      educations: { orderBy: ENTRY_ORDER },
+      licenseOrCertifications: { orderBy: CERTIFICATION_ORDER },
+      others: { orderBy: ENTRY_ORDER },
       skills: true,
     },
   },
