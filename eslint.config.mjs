@@ -8,7 +8,7 @@ const __dirname = dirname(__filename);
 const compat = new FlatCompat({ baseDirectory: __dirname });
 
 const eslintConfig = [
-  { ignores: [".next/", "coverage/", "__mocks__/"] },
+  { ignores: [".next/", "coverage/", "__mocks__/", "src/generated/", "scripts/dist/"] },
   ...compat.extends("next/core-web-vitals"),
   {
     // Playwright's fixture `use` callback is not a React hook.
