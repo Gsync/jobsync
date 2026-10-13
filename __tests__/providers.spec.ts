@@ -11,11 +11,18 @@ vi.mock("@/lib/ai/provider-registry.server", () => ({
     ollama: vi.fn(),
     gemini: vi.fn(),
   },
+  openaiCompatibleRoot: (url: string) =>
+    url.replace(/\/+$/, "").replace(/\/v1$/i, ""),
+}));
+
+vi.mock("@ai-sdk/openai", () => ({
+  createOpenAI: vi.fn(),
 }));
 
 import { getModel } from "@/lib/ai/providers";
 import { resolveApiKey } from "@/lib/api-key-resolver";
 import { PROVIDER_FACTORIES } from "@/lib/ai/provider-registry.server";
+import { createOpenAI } from "@ai-sdk/openai";
 
 describe("getModel – openrouter", () => {
   const mockModelInstance = { modelId: "openai/gpt-4o" };
@@ -85,5 +92,42 @@ describe("getModel – provider validation", () => {
     await expect(
       getModel("openrouter", "openai/gpt-4o"),
     ).resolves.toBeDefined();
+  });
+});
+
+describe("getModel – openai-compatible", () => {
+  const mockModelInstance = { modelId: "local-model" };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    const mockChat = vi.fn().mockReturnValue(mockModelInstance);
+    (createOpenAI as any).mockReturnValue({ chat: mockChat });
+    (resolveApiKey as any).mockImplementation(
+      async (_userId: string | undefined, provider: string) => {
+        if (provider === "openai-compatible") return "http://127.0.0.1:1234";
+        if (provider === "openai-compatible-key") return "sk-local";
+        return undefined;
+      },
+    );
+  });
+
+  it("builds a Chat Completions client from base URL and optional API key", async () => {
+    const result = await getModel("openai-compatible", "local-model", "user-1");
+
+    expect(createOpenAI).toHaveBeenCalledWith({
+      baseURL: "http://127.0.0.1:1234/v1",
+      apiKey: "sk-local",
+      name: "openai-compatible",
+    });
+    expect((createOpenAI as any).mock.results[0].value.chat).toHaveBeenCalledWith(
+      "local-model",
+    );
+    expect(result).toBe(mockModelInstance);
+  });
+
+  it("throws when no model is selected", async () => {
+    await expect(getModel("openai-compatible", "", "user-1")).rejects.toThrow(
+      "Select a model for the OpenAI-compatible provider",
+    );
   });
 });

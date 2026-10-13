@@ -19,9 +19,17 @@ export const PROVIDER_FACTORIES: Record<
   gemini: (apiKey, model) => createGoogleGenerativeAI({ apiKey })(model),
 };
 
+export type ProviderVerifierInput =
+  | string
+  | { baseURL: string; apiKey?: string };
+
+export function openaiCompatibleRoot(baseURL: string): string {
+  return baseURL.replace(/\/+$/, "").replace(/\/v1$/i, "");
+}
+
 export const PROVIDER_VERIFIERS: Record<
   string,
-  (key: string) => Promise<{ success: boolean; error?: string }>
+  (key: ProviderVerifierInput) => Promise<{ success: boolean; error?: string }>
 > = {
   openai: async (key) => {
     const res = await fetch("https://api.openai.com/v1/models", {
@@ -35,6 +43,28 @@ export const PROVIDER_VERIFIERS: Record<
           res.status === 401
             ? "Invalid API key"
             : `OpenAI returned ${res.status}`,
+      };
+    return { success: true };
+  },
+
+  "openai-compatible": async (key) => {
+    const params = typeof key === "object" ? key : { baseURL: key };
+    const root = openaiCompatibleRoot(params.baseURL);
+    const headers: Record<string, string> = {};
+    if (params.apiKey) {
+      headers.Authorization = `Bearer ${params.apiKey}`;
+    }
+    const res = await fetch(`${root}/v1/models`, {
+      headers,
+      signal: AbortSignal.timeout(APP_CONSTANTS.AI_VERIFY_TIMEOUT_MS),
+    });
+    if (!res.ok)
+      return {
+        success: false,
+        error:
+          res.status === 401
+            ? "Invalid API key"
+            : `OpenAI-compatible endpoint returned ${res.status}`,
       };
     return { success: true };
   },
@@ -74,7 +104,10 @@ export const PROVIDER_VERIFIERS: Record<
   },
 
   ollama: async (key) => {
-    const baseUrl = key.replace(/\/+$/, "");
+    const baseUrl = (typeof key === "string" ? key : key.baseURL).replace(
+      /\/+$/,
+      "",
+    );
     try {
       const res = await fetch(`${baseUrl}/api/tags`, {
         signal: AbortSignal.timeout(APP_CONSTANTS.AI_OLLAMA_LIST_TIMEOUT_MS),

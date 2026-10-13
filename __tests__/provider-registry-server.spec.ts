@@ -145,3 +145,35 @@ describe("PROVIDER_FACTORIES – openrouter", () => {
     );
   });
 });
+
+describe("PROVIDER_VERIFIERS – openai-compatible", () => {
+  it("verifies a base URL without an API key", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+
+    const result = await PROVIDER_VERIFIERS["openai-compatible"](
+      "http://127.0.0.1:1234",
+    );
+
+    expect(result).toEqual({ success: true });
+    expect(global.fetch).toHaveBeenCalledWith(
+      "http://127.0.0.1:1234/v1/models",
+      expect.objectContaining({ headers: {} }),
+    );
+  });
+
+  it("sends a Bearer token when given { baseURL, apiKey }", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+
+    await PROVIDER_VERIFIERS["openai-compatible"]({
+      baseURL: "http://127.0.0.1:1234/",
+      apiKey: "sk-local",
+    });
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "http://127.0.0.1:1234/v1/models",
+      expect.objectContaining({
+        headers: { Authorization: "Bearer sk-local" },
+      }),
+    );
+  });
+});

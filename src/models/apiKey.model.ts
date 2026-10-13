@@ -1,4 +1,11 @@
-export type ApiKeyProvider = "openai" | "deepseek" | "openrouter" | "ollama";
+export type ApiKeyProvider =
+  | "openai"
+  | "openai-compatible"
+  // Optional API key for openai-compatible; not a real provider, avoids a schema change.
+  | "openai-compatible-key"
+  | "deepseek"
+  | "openrouter"
+  | "ollama";
 
 export interface ApiKeyRecord {
   id: string;
