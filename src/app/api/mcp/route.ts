@@ -21,6 +21,16 @@ import {
   McpAddJobsBatchSchema,
   McpSaveMatchResultsBatchInputShape,
   McpSaveMatchResultsBatchSchema,
+  McpListTasksInputShape,
+  McpListTasksSchema,
+  McpGetTaskInputShape,
+  McpGetTaskSchema,
+  McpCreateTaskInputShape,
+  McpCreateTaskSchema,
+  McpUpdateTaskInputShape,
+  McpUpdateTaskSchema,
+  McpCompleteTaskInputShape,
+  McpCompleteTaskSchema,
 } from "@/models/mcp.schema";
 import { handleAddJob } from "@/lib/mcp/tools/addJob";
 import { handleAddQuestion } from "@/lib/mcp/tools/addQuestion";
@@ -31,6 +41,12 @@ import { handleFindJob } from "@/lib/mcp/tools/findJob";
 import { handleUpdateJob } from "@/lib/mcp/tools/updateJob";
 import { handleAddJobsBatch } from "@/lib/mcp/tools/addJobsBatch";
 import { handleSaveMatchResultsBatch } from "@/lib/mcp/tools/saveMatchResultsBatch";
+import { handleListTasks } from "@/lib/mcp/tools/listTasks";
+import { handleGetTask } from "@/lib/mcp/tools/getTask";
+import { getMcpScopeError } from "@/lib/mcp/scope";
+import { handleCreateTask } from "@/lib/mcp/tools/createTask";
+import { handleUpdateTask } from "@/lib/mcp/tools/updateTask";
+import { handleCompleteTask } from "@/lib/mcp/tools/completeTask";
 
 function isMcpEnabled(): boolean {
   const env = process.env.MCP_ENABLED;
@@ -128,6 +144,96 @@ async function handler(req: Request): Promise<Response> {
         };
       }
       return handleUpdateJob(parsed.data, userId);
+    },
+  );
+
+  server.tool(
+    "list_tasks",
+    MCP_TOOL_DESCRIPTIONS.list_tasks,
+    McpListTasksInputShape,
+    async (rawInput) => {
+      const scopeError = getMcpScopeError(auth.scopes, "tasks:read");
+      if (scopeError) return scopeError;
+      const parsed = McpListTasksSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => i.message).join("; ");
+        return {
+          content: [{ type: "text" as const, text: `Validation error: ${issues}` }],
+        };
+      }
+      return handleListTasks(parsed.data, userId);
+    },
+  );
+
+  server.tool(
+    "get_task",
+    MCP_TOOL_DESCRIPTIONS.get_task,
+    McpGetTaskInputShape,
+    async (rawInput) => {
+      const scopeError = getMcpScopeError(auth.scopes, "tasks:read");
+      if (scopeError) return scopeError;
+      const parsed = McpGetTaskSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => i.message).join("; ");
+        return {
+          content: [{ type: "text" as const, text: `Validation error: ${issues}` }],
+        };
+      }
+      return handleGetTask(parsed.data, userId);
+    },
+  );
+
+  server.tool(
+    "create_task",
+    MCP_TOOL_DESCRIPTIONS.create_task,
+    McpCreateTaskInputShape,
+    async (rawInput) => {
+      const scopeError = getMcpScopeError(auth.scopes, "tasks:write");
+      if (scopeError) return scopeError;
+      const parsed = McpCreateTaskSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => i.message).join("; ");
+        return {
+          content: [{ type: "text" as const, text: `Validation error: ${issues}` }],
+        };
+      }
+      return handleCreateTask(parsed.data, userId);
+    },
+  );
+
+  server.tool(
+    "update_task",
+    MCP_TOOL_DESCRIPTIONS.update_task,
+    McpUpdateTaskInputShape,
+    async (rawInput) => {
+      const scopeError = getMcpScopeError(auth.scopes, "tasks:write");
+      if (scopeError) return scopeError;
+      const parsed = McpUpdateTaskSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => i.message).join("; ");
+        return {
+          content: [{ type: "text" as const, text: `Validation error: ${issues}` }],
+        };
+      }
+      return handleUpdateTask(parsed.data, userId);
+    },
+  );
+
+  server.tool(
+    "complete_task",
+    MCP_TOOL_DESCRIPTIONS.complete_task,
+    McpCompleteTaskInputShape,
+    async (rawInput) => {
+      const scopeError = getMcpScopeError(auth.scopes, "tasks:write");
+      if (scopeError) return scopeError;
+      const parsed = McpCompleteTaskSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => i.message).join("; ");
+        return {
+          content: [{ type: "text" as const, text: `Validation error: ${issues}` }],
+        };
+      }
+      return handleCompleteTask(parsed.data, userId);
     },
   );
 

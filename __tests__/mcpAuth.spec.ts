@@ -113,6 +113,25 @@ describe("resolveMcpToken", () => {
     });
   });
 
+  it("does not add task scopes to an existing token", async () => {
+    (prisma.mcpAccessToken.findUnique as any).mockResolvedValue({
+      id: "legacy-token",
+      userId: "user-1",
+      scopes: JSON.stringify(["jobs:write"]),
+      name: "legacy",
+      expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+    });
+
+    const result = await resolveMcpToken(makeRequest("Bearer jsync_legacy"));
+
+    expect(result).toEqual({
+      ok: true,
+      userId: "user-1",
+      scopes: ["jobs:write"],
+      tokenName: "legacy",
+    });
+  });
+
   it("updates lastUsedAt fire-and-forget on a valid token", async () => {
     (prisma.mcpAccessToken.findUnique as any).mockResolvedValue({
       id: "t-1",

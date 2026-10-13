@@ -30,6 +30,8 @@ vi.mock("@prisma/client", () => {
     },
     activityType: {
       findMany: vi.fn(),
+      findFirst: vi.fn(),
+      upsert: vi.fn(),
     },
   };
   return { PrismaClient: vi.fn(function() { return mPrismaClient; }) };
@@ -63,6 +65,10 @@ describe("taskActions", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    (prisma.task.findFirst as any).mockResolvedValue(mockTask);
+    (prisma.activityType.findFirst as any).mockResolvedValue({
+      id: "activity-type-id",
+    });
   });
 
   describe("getTasksList", () => {
@@ -504,7 +510,11 @@ describe("taskActions", () => {
   describe("updateTaskStatus", () => {
     it("should update task status successfully", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
-      const updatedTask = { ...mockTask, status: "complete" as const };
+      const updatedTask = {
+        ...mockTask,
+        status: "complete" as const,
+        percentComplete: 100,
+      };
       (prisma.task.update as any).mockResolvedValue(updatedTask);
 
       const result = await updateTaskStatus("task-id", "complete");
@@ -520,6 +530,7 @@ describe("taskActions", () => {
         },
         data: {
           status: "complete",
+          percentComplete: 100,
         },
         include: {
           activityType: true,
