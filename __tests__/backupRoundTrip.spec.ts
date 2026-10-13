@@ -6,18 +6,19 @@ import { APP_CONSTANTS, CONTACT_ROLES, JOB_STAGES } from "@/lib/constants";
 import { buildBackupZip } from "@/lib/backup/export";
 import { importBackup } from "@/lib/backup/import";
 import { listSnapshots, readSnapshot } from "@/lib/backup/snapshot";
-import { seedAccount } from "./helpers/backupTestDb";
+import { dropTestSchema, seedAccount } from "./helpers/backupTestDb";
 
 // Async so the helper can be pulled in with a dynamic import — `require` is
 // not defined in a Vite-transformed ESM test file.
 const ctx = await vi.hoisted(async () => {
   const helpers = await import("./helpers/backupTestDb");
-  const { url, dir } = helpers.makeTestDbUrl();
-  helpers.pushSchema(url);
-  return { url, dir };
+  const db = helpers.makeTestDb();
+  if (db) helpers.pushSchema(db.url);
+  return db;
 });
 
 vi.mock("@/lib/db", async () => {
+  if (!ctx) return { default: {} };
   const { PrismaClient } = await import("@prisma/client");
   return {
     default: new PrismaClient({ datasources: { db: { url: ctx.url } } }),
@@ -27,13 +28,17 @@ vi.mock("@/lib/db", async () => {
 // Never start the cron in a test run.
 vi.mock("@/lib/scheduler", () => ({ syncSchedulerState: vi.fn() }));
 
-const prisma = new PrismaClient({ datasources: { db: { url: ctx.url } } });
+// Only dereferenced inside the skipped-when-absent describe below
+const prisma = ctx
+  ? new PrismaClient({ datasources: { db: { url: ctx.url } } })
+  : (undefined as unknown as PrismaClient);
 
 let userId: string;
 let uploadsDir: string;
 const originalUploads = APP_CONSTANTS.UPLOADS_DIR;
 
 beforeAll(async () => {
+  if (!ctx) return;
   uploadsDir = path.join(ctx.dir, "uploads");
   fs.mkdirSync(path.join(uploadsDir, "files", "resumes"), { recursive: true });
   (APP_CONSTANTS as { UPLOADS_DIR: string }).UPLOADS_DIR = uploadsDir;
@@ -43,7 +48,9 @@ beforeAll(async () => {
 }, 120_000);
 
 afterAll(async () => {
+  if (!ctx) return;
   (APP_CONSTANTS as { UPLOADS_DIR: string }).UPLOADS_DIR = originalUploads;
+  await dropTestSchema(prisma, ctx.schema);
   await prisma.$disconnect();
   fs.rmSync(ctx.dir, { recursive: true, force: true });
 });
@@ -229,7 +236,7 @@ async function seedFullAccount() {
   });
 }
 
-describe("backup round trip", () => {
+describe.skipIf(!ctx)("backup round trip", () => {
   it("restores every row, relation and file over an existing account", async () => {
     const { buffer } = await buildBackupZip(userId, "owner@example.com");
 
