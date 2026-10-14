@@ -29,11 +29,11 @@ cd "$SCRIPT_DIR"
 echo -e "${GREEN}[1/5]${NC} Current directory: $SCRIPT_DIR"
 echo ""
 
-# Detect Docker Compose (standalone v2 or plugin)
-if command -v docker-compose >/dev/null 2>&1; then
-    COMPOSE_CMD="docker-compose"
-elif docker compose version >/dev/null 2>&1; then
+# Detect Docker Compose (v2 plugin first, then the standalone binary)
+if docker compose version >/dev/null 2>&1; then
     COMPOSE_CMD="docker compose"
+elif command -v docker-compose >/dev/null 2>&1; then
+    COMPOSE_CMD="docker-compose"
 else
     echo -e "${RED}Error: Docker Compose not found${NC}"
     exit 1
@@ -45,6 +45,19 @@ echo ""
 # Check if git repository
 if [ ! -d ".git" ]; then
     echo -e "${RED}Error: Not a git repository${NC}"
+    exit 1
+fi
+
+# A local edit to docker-compose.yml blocks the pull, and discarding it to
+# get unstuck would throw away an inline ENCRYPTION_KEY. Stop and explain.
+if ! git diff --quiet HEAD -- docker-compose.yml; then
+    echo -e "${RED}docker-compose.yml has local edits, which would block this update.${NC}"
+    echo ""
+    git --no-pager diff HEAD -- docker-compose.yml
+    echo ""
+    echo -e "Copy each value you changed into ${YELLOW}.env${NC} (for example ENCRYPTION_KEY=...),"
+    echo -e "then discard the edit with: ${YELLOW}git checkout -- docker-compose.yml${NC}"
+    echo -e "${RED}Do not discard it first: without your ENCRYPTION_KEY in .env, saved API keys stop decrypting.${NC}"
     exit 1
 fi
 

@@ -7,8 +7,15 @@ if [ -z "$AUTH_SECRET" ]; then
   echo "AUTH_SECRET was not set — generated a temporary secret for this container."
 fi
 
-# Run migrations as root (before switching users)
+# Wait for Postgres; exits non-zero at once on a permanent misconfiguration
+node scripts/dist/wait-for-db.js
+
+# Apply the schema as root (before switching users)
 npx -y prisma@6.19.0 migrate deploy
+
+# One-time SQLite -> Postgres import. A no-op without a legacy dev.db, and it
+# must finish before the server (and its scheduler) starts.
+node scripts/dist/import-sqlite.js
 
 # Fix /data permissions and run app as nextjs user
 chown -R nextjs:nodejs /data

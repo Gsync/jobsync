@@ -1,4 +1,31 @@
 services:
+  db:
+    # Stock Postgres 18 plus the vector extension, which nothing enables yet
+    image: pgvector/pgvector:pg18
+    container_name: jobsync_db
+    # BUNDLED_DB=0 in .env when DATABASE_URL points at your own Postgres
+    scale: ${BUNDLED_DB:-1}
+    # No ports published. docker-compose.lan-db.yml opens 5432 on request.
+    environment:
+      - POSTGRES_USER=jobsync
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-jobsync}
+      - POSTGRES_DB=jobsync
+      # Do NOT add TZ here. DB-side timestamp defaults would then be written
+      # hours off from the ones Prisma writes. The app's TZ governs display.
+    volumes:
+      # 18+ mounts the parent directory, NOT /var/lib/postgresql/data: on
+      # that path the data lands in an anonymous volume a prune can remove.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      # For `docker compose ps` only. Startup ordering belongs to the app's
+      # wait-for-db, which also works when this service is scaled to 0, so
+      # there is deliberately no depends_on.
+      test: ["CMD-SHELL", "pg_isready -U jobsync -d jobsync"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   app:
     image: ghcr.io/gsync/jobsync:latest
     container_name: jobsync_app
@@ -7,7 +34,11 @@ services:
     environment:
       - NODE_ENV=production
       - MCP_ENABLED=${MCP_ENABLED:-true}
-      - DATABASE_URL=file:/data/dev.db
+      - DATABASE_URL=${DATABASE_URL:-postgres://jobsync:${POSTGRES_PASSWORD:-jobsync}@db:5432/jobsync}
+      - CREATE_DATABASE_IF_MISSING=${CREATE_DATABASE_IF_MISSING:-}
+      - SQLITE_LEGACY_PATH=${SQLITE_LEGACY_PATH:-/data/dev.db}
+      - SKIP_IMPORT=${SKIP_IMPORT:-}
+      - IMPORT_DRY_RUN=${IMPORT_DRY_RUN:-}
       - AUTH_SECRET=${AUTH_SECRET:-your-auth-secret}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-you-encryption-key-here}
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3737}
@@ -20,6 +51,8 @@ services:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - RAPIDAPI_KEY=${RAPIDAPI_KEY:-}
     volumes:
+      # Permanent: uploaded resumes live here, and the one-time import reads
+      # the legacy dev.db from the same mount.
       - ./jobsyncdb/data:/data
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -29,4 +62,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      # The first boot after upgrading also runs the one-time import
+      start_period: 120s
+
+volumes:
+  pgdata:
+    # Fixed, so renaming the project folder cannot orphan the data
+    name: jobsync_pgdata

@@ -52,6 +52,20 @@ if (-not (Test-Path ".git")) {
     exit 1
 }
 
+# A local edit to docker-compose.yml blocks the pull, and discarding it to
+# get unstuck would throw away an inline ENCRYPTION_KEY. Stop and explain.
+git diff --quiet HEAD -- docker-compose.yml
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "docker-compose.yml has local edits, which would block this update." -ForegroundColor Red
+    Write-Host ""
+    git --no-pager diff HEAD -- docker-compose.yml
+    Write-Host ""
+    Write-Host "Copy each value you changed into .env (for example ENCRYPTION_KEY=...)," -ForegroundColor Yellow
+    Write-Host "then discard the edit with: git checkout -- docker-compose.yml" -ForegroundColor Yellow
+    Write-Host "Do not discard it first: without your ENCRYPTION_KEY in .env, saved API keys stop decrypting." -ForegroundColor Red
+    exit 1
+}
+
 Write-Host "[2/5] Fetching latest changes from GitHub..." -ForegroundColor Green
 git fetch origin
 Assert-LastExit "git fetch failed"
