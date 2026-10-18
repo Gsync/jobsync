@@ -46,16 +46,29 @@ fi
 
 # psql on stdin, in whichever mode .env selects. ON_ERROR_STOP is required:
 # without it psql carries on past errors and still exits 0.
-if [ "$BUNDLED_DB" = "0" ]; then
-    if [ -z "$DATABASE_URL" ]; then
-        echo "BUNDLED_DB=0 is set in .env but DATABASE_URL is not: there is no database to restore into."
-        exit 1
-    fi
+# The app's rule: unset, a leftover file: or host db all mean bundled
+db_mode() {
+    case "$DATABASE_URL" in
+        postgres://*|postgresql://*) ;;
+        *) echo bundled; return ;;
+    esac
+    local host="${DATABASE_URL#*://}"
+    host="${host%%/*}"
+    host="${host##*@}"
+    host="${host%%:*}"
+    if [ "$host" = "db" ]; then echo bundled; else echo external; fi
+}
+
+if [ "$(db_mode)" = "external" ]; then
     run_psql() {
         docker run --rm -i -e DATABASE_URL --add-host=host.docker.internal:host-gateway \
             "$PG_DUMP_IMAGE" sh -c 'psql -v ON_ERROR_STOP=1 "$@" "$DATABASE_URL"' sh "$@"
     }
 else
+    if [ "$BUNDLED_DB" = "0" ]; then
+        echo "BUNDLED_DB=0 is set in .env but DATABASE_URL does not point at your own Postgres: there is no database to restore into."
+        exit 1
+    fi
     run_psql() { $COMPOSE_CMD exec -T db psql -v ON_ERROR_STOP=1 -U jobsync -d jobsync "$@"; }
 fi
 

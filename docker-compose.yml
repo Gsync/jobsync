@@ -3,7 +3,7 @@ services:
     # Stock Postgres 18 plus the vector extension, which nothing enables yet
     image: pgvector/pgvector:pg18
     container_name: jobsync_db
-    # BUNDLED_DB=0 in .env when DATABASE_URL points at your own Postgres
+    # Optional BUNDLED_DB=0 in .env stops it when using your own Postgres
     scale: ${BUNDLED_DB:-1}
     # No ports published. docker-compose.lan-db.yml opens 5432 on request.
     environment:
@@ -34,7 +34,10 @@ services:
     environment:
       - NODE_ENV=production
       - MCP_ENABLED=${MCP_ENABLED:-true}
-      - DATABASE_URL=${DATABASE_URL:-postgres://jobsync:${POSTGRES_PASSWORD:-jobsync}@db:5432/jobsync}
+      # As found; the entrypoint swaps unset or a leftover file: for bundled
+      - DATABASE_URL=${DATABASE_URL:-}
+      - BUNDLED_DATABASE_URL=postgres://jobsync:${POSTGRES_PASSWORD:-jobsync}@db:5432/jobsync
+      - BUNDLED_DB=${BUNDLED_DB:-1}
       - CREATE_DATABASE_IF_MISSING=${CREATE_DATABASE_IF_MISSING:-}
       - SQLITE_LEGACY_PATH=${SQLITE_LEGACY_PATH:-/data/dev.db}
       - SKIP_IMPORT=${SKIP_IMPORT:-}

@@ -16,14 +16,15 @@ export function checkUrl(raw: string | undefined): UrlCheck {
   if (!raw || raw.trim() === "") return { ok: false, message: "DATABASE_URL is not set." };
 
   // Checked before Prisma sees it: P1012 covers this and every other bad
-  // string, and an upgrading operator needs the specific message.
+  // string. Reached only with BUNDLED_DB=0 or an older compose file.
   if (raw.startsWith("file:")) {
     return {
       ok: false,
       message: [
         `DATABASE_URL still points at SQLite (${raw}).`,
         `This release requires Postgres — see ${UPGRADE_GUIDE_URL}.`,
-        "Delete the DATABASE_URL line from .env to use the bundled database.",
+        "Set DATABASE_URL to your own Postgres, or remove BUNDLED_DB=0",
+        "to use the bundled database.",
         "Your existing database has NOT been modified.",
       ].join("\n"),
     };

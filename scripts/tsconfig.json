@@ -11,5 +11,5 @@
     "rootDir": ".",
     "outDir": "dist"
   },
-  "files": ["wait-for-db.ts", "import-sqlite.ts"]
+  "files": ["resolve-db-url.ts", "wait-for-db.ts", "import-sqlite.ts"]
 }

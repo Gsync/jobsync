@@ -7,6 +7,11 @@ if [ -z "$AUTH_SECRET" ]; then
   echo "AUTH_SECRET was not set — generated a temporary secret for this container."
 fi
 
+# Resolve DATABASE_URL once for every step below. A separate assignment, so
+# set -e sees a failure that `export VAR="$(...)"` would hide.
+RESOLVED_DATABASE_URL="$(node scripts/dist/resolve-db-url.js)"
+export DATABASE_URL="$RESOLVED_DATABASE_URL"
+
 # Wait for Postgres; exits non-zero at once on a permanent misconfiguration
 node scripts/dist/wait-for-db.js
 

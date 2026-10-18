@@ -44,11 +44,20 @@ TMP="$(mktemp "$BACKUP_DIR/.jobsync-dump.XXXXXX")"
 ERR="$(mktemp)"
 trap 'rm -f "$TMP" "$ERR"' EXIT
 
-if [ "$BUNDLED_DB" = "0" ]; then
-    if [ -z "$DATABASE_URL" ]; then
-        echo "BUNDLED_DB=0 is set in .env but DATABASE_URL is not: there is no database to back up."
-        exit 1
-    fi
+# The app's rule: unset, a leftover file: or host db all mean bundled
+db_mode() {
+    case "$DATABASE_URL" in
+        postgres://*|postgresql://*) ;;
+        *) echo bundled; return ;;
+    esac
+    local host="${DATABASE_URL#*://}"
+    host="${host%%/*}"
+    host="${host##*@}"
+    host="${host%%:*}"
+    if [ "$host" = "db" ]; then echo bundled; else echo external; fi
+}
+
+if [ "$(db_mode)" = "external" ]; then
     echo "Backing up the external database with $PG_DUMP_IMAGE..."
     # pg_dump comes from a container: a Docker-only host has no client tools
     dump() {
@@ -56,6 +65,10 @@ if [ "$BUNDLED_DB" = "0" ]; then
             "$PG_DUMP_IMAGE" sh -c 'pg_dump "$DATABASE_URL"'
     }
 else
+    if [ "$BUNDLED_DB" = "0" ]; then
+        echo "BUNDLED_DB=0 is set in .env but DATABASE_URL does not point at your own Postgres: there is no database to back up."
+        exit 1
+    fi
     echo "Backing up the bundled database..."
     dump() { $COMPOSE_CMD exec -T db pg_dump -U jobsync jobsync; }
 fi

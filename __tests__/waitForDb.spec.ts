@@ -63,6 +63,9 @@ describe("checkUrl", () => {
     expect(result.ok).toBe(false);
     expect(result.message).toContain(`DATABASE_URL still points at SQLite (${raw}).`);
     expect(result.message).toContain(UPGRADE_GUIDE_URL);
+    // Reached only with BUNDLED_DB=0: a plain leftover falls back to bundled
+    expect(result.message).toContain("Set DATABASE_URL to your own Postgres, or remove BUNDLED_DB=0");
+    expect(result.message).not.toContain("Delete the DATABASE_URL line");
     expect(result.message).toContain("Your existing database has NOT been modified.");
   });
 
