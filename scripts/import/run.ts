@@ -1,5 +1,5 @@
 import { copyAll, type CopyClient, type CopyResult } from "./copy";
-import { checkLegacySchema, decideImport, sentinelPath } from "./decide";
+import { checkLegacySchema, decideImport, hostPath, sentinelPath } from "./decide";
 import { buildImportPlan, type DmmfModel } from "./order";
 
 export interface ImportDeps {
@@ -37,6 +37,15 @@ function report(result: CopyResult, log: (line: string) => void) {
   );
 }
 
+async function countLegacyUsers(deps: ImportDeps, legacyPath: string) {
+  const source = deps.openSource(`file:${legacyPath}`);
+  try {
+    return await source.user.count();
+  } finally {
+    await source.$disconnect?.();
+  }
+}
+
 // Returns the process exit code: 0 continue to boot, 1 stop, 2 dry run done
 export async function runImport(deps: ImportDeps): Promise<number> {
   const { env, log } = deps;
@@ -44,12 +53,21 @@ export async function runImport(deps: ImportDeps): Promise<number> {
   const sentinel = sentinelPath(legacyPath);
   const legacyFileExists = deps.fileExists(legacyPath);
   const sentinelExists = legacyFileExists && deps.fileExists(sentinel);
+  const postgresHasUsers = legacyFileExists
+    ? (await deps.target.user.count()) > 0
+    : false;
+  // Only the lost-volume case reads dev.db before deciding
+  const legacyHasUsers =
+    sentinelExists && !postgresHasUsers
+      ? (await countLegacyUsers(deps, legacyPath)) > 0
+      : true;
 
   const decision = decideImport({
     legacyPath,
     legacyFileExists,
     skipImport: env.SKIP_IMPORT === "1",
-    postgresHasUsers: legacyFileExists ? (await deps.target.user.count()) > 0 : false,
+    postgresHasUsers,
+    legacyHasUsers,
     sentinelExists,
     sentinelText: sentinelExists ? deps.readText(sentinel) : "",
   });
@@ -97,11 +115,8 @@ export async function runImport(deps: ImportDeps): Promise<number> {
     try {
       deps.writeText(sentinel, `${deps.now().toISOString()}\n`);
     } catch (error) {
-      const shown = sentinel.startsWith("/data/")
-        ? `jobsyncdb/data/${sentinel.slice("/data/".length)}`
-        : sentinel;
       log(`The import succeeded, but its record could not be written (${reason(error)}).`);
-      log(`Create an empty file named ${shown} and restart. Without it the next start cannot tell that dev.db was already imported.`);
+      log(`Create an empty file named ${hostPath(sentinel)} and restart. Without it the next start cannot tell that dev.db was already imported.`);
       return 1;
     }
     return 0;

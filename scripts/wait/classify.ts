@@ -77,11 +77,13 @@ export function redact(message: string, raw: string): string {
     return message;
   }
   if (!password) return message;
-  return message
-    .split(password)
-    .join("***")
-    .split(decodeURIComponent(password))
-    .join("***");
+  const masked = message.split(password).join("***");
+  // A stray % (p%zz) is a valid URL but not a valid escape
+  try {
+    return masked.split(decodeURIComponent(password)).join("***");
+  } catch {
+    return masked;
+  }
 }
 
 export const MALFORMED_MESSAGE = MALFORMED;

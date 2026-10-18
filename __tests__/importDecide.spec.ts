@@ -13,6 +13,7 @@ const facts = (over: Partial<ImportFacts> = {}): ImportFacts => ({
   legacyFileExists: true,
   skipImport: false,
   postgresHasUsers: false,
+  legacyHasUsers: true,
   sentinelExists: false,
   sentinelText: "",
   ...over,
@@ -46,6 +47,14 @@ describe("decideImport", () => {
     expect(message).toContain("./restore-db.sh <file>");
     expect(message).toContain("delete jobsyncdb/data/dev.db.imported-at");
     expect(message).toContain("Nothing has been modified. Exiting.");
+  });
+
+  it("skips instead of stopping when the imported dev.db had no users", () => {
+    const d = decideImport(facts({ sentinelExists: true, legacyHasUsers: false }));
+    expect(d).toEqual({
+      action: "skip",
+      message: "/data/dev.db was already imported and has no users, skipping import.",
+    });
   });
 
   it.each(["", "   \n", "not a date"])("counts sentinel text %j as present", (sentinelText) => {

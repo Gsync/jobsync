@@ -144,6 +144,12 @@ describe("NULL ordering parity", () => {
     const [call] = findManyCalls("task");
     expect(call.args.orderBy[0]).toEqual({ dueDate: { sort: "asc", nulls: "first" } });
   });
+
+  it("keeps unscored discovered jobs last", async () => {
+    await getDiscoveredJobs();
+    const [call] = findManyCalls("job");
+    expect(call.args.orderBy[0]).toEqual({ matchScore: { sort: "desc", nulls: "last" } });
+  });
 });
 
 describe("pagination tiebreaker: every paged sort ends on id", () => {

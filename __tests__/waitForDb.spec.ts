@@ -1,4 +1,4 @@
-import { checkUrl, classify, maintenanceUrl, quoteIdent, UPGRADE_GUIDE_URL } from "../scripts/wait/classify";
+import { checkUrl, classify, maintenanceUrl, quoteIdent, redact, UPGRADE_GUIDE_URL } from "../scripts/wait/classify";
 import { waitForDb, type WaitDeps } from "../scripts/wait/run";
 
 const SECRET = "s3cr@t:pa/ss#word";
@@ -102,6 +102,10 @@ describe("helpers", () => {
 
   it("quotes an identifier", () => {
     expect(quoteIdent('job"sync')).toBe('"job""sync"');
+  });
+
+  it("redacts a password whose % is not a valid escape", () => {
+    expect(redact("auth failed for p%zz", "postgres://u:p%zz@h/db")).toBe("auth failed for ***");
   });
 });
 

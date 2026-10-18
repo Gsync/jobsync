@@ -5,6 +5,7 @@ import { AgentAddJobParseSchema, AgentAddJobSchema } from "@/models/agent.schema
 import { createJobFromNames } from "@/lib/jobs/createJobFromNames";
 import { JobResolutionError } from "@/lib/jobs/resolve";
 import { log } from "@/lib/telemetry";
+import { sanitizeString } from "@/lib/postgresText";
 import type { AgentAddJobResult } from "@/models/agent.model";
 
 // The model usually reaches here having omitted jobDescription because the
@@ -53,7 +54,9 @@ export function buildAddJobTool(userId: string, pastedText?: string) {
       }
 
       const input = parsed.data;
-      const jobDescription = pastedText ?? input.jobDescription;
+      const jobDescription = sanitizeString(
+        pastedText ?? input.jobDescription ?? "",
+      );
       if (!jobDescription) return failed(NO_DESCRIPTION, NO_DESCRIPTION_DISPLAY);
 
       try {

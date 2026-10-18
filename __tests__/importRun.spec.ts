@@ -103,7 +103,14 @@ describe("runImport", () => {
     const h = harness({ files: { "/data/dev.db.imported-at": "2026-11-02T14:02:11.000Z\n" } });
     expect(await runImport(h.deps)).toBe(1);
     expect(h.log.join("\n")).toContain("The database it was imported into appears to be missing.");
-    expect(h.opened()).toBe(0);
+    expect(h.opened()).toBe(1);
+  });
+
+  it("boots when the imported dev.db had no users", async () => {
+    const h = harness({ sourceUsers: [], files: { "/data/dev.db.imported-at": "2026-11-02T14:02:11.000Z\n" } });
+    expect(await runImport(h.deps)).toBe(0);
+    expect(h.log.join("\n")).toContain("has no users, skipping import.");
+    expect(h.targetRows).toHaveLength(0);
   });
 
   it("stops on data with no sentinel", async () => {

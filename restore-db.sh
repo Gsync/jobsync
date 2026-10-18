@@ -59,7 +59,14 @@ db_mode() {
     if [ "$host" = "db" ]; then echo bundled; else echo external; fi
 }
 
+# pg_dump and psql reject Prisma-only URL options such as ?schema=public;
+# real libpq options like sslmode are kept
+libpq_url() {
+    printf '%s' "$DATABASE_URL" | sed -E 's/([?&])(schema|connection_limit|pool_timeout|pgbouncer|statement_cache_size|socket_timeout)=[^&]*/\1/g; s/\?&+/?/; s/&&+/\&/g; s/[?&]$//'
+}
+
 if [ "$(db_mode)" = "external" ]; then
+    DATABASE_URL="$(libpq_url)"
     run_psql() {
         docker run --rm -i -e DATABASE_URL --add-host=host.docker.internal:host-gateway \
             "$PG_DUMP_IMAGE" sh -c 'psql -v ON_ERROR_STOP=1 "$@" "$DATABASE_URL"' sh "$@"

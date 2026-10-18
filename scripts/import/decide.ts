@@ -11,6 +11,7 @@ export interface ImportFacts {
   legacyFileExists: boolean;
   skipImport: boolean;
   postgresHasUsers: boolean;
+  legacyHasUsers: boolean;
   sentinelExists: boolean;
   sentinelText: string;
 }
@@ -23,7 +24,7 @@ export type ImportDecision =
 export const sentinelPath = (legacyPath: string) => `${legacyPath}.imported-at`;
 
 // Operators see the bind mount, not the container path
-const hostPath = (containerPath: string) =>
+export const hostPath = (containerPath: string) =>
   containerPath.startsWith("/data/")
     ? `jobsyncdb/data/${containerPath.slice("/data/".length)}`
     : containerPath;
@@ -64,6 +65,13 @@ export function decideImport(facts: ImportFacts): ImportDecision {
   }
 
   if (!facts.postgresHasUsers && facts.sentinelExists) {
+    // An empty dev.db has nothing a lost volume could have taken
+    if (!facts.legacyHasUsers) {
+      return {
+        action: "skip",
+        message: `${legacyPath} was already imported and has no users, skipping import.`,
+      };
+    }
     return {
       action: "stop",
       message: [

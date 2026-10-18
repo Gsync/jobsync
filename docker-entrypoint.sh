@@ -20,7 +20,15 @@ npx -y prisma@6.19.0 migrate deploy
 
 # One-time SQLite -> Postgres import. A no-op without a legacy dev.db, and it
 # must finish before the server (and its scheduler) starts.
-node scripts/dist/import-sqlite.js
+IMPORT_STATUS=0
+node scripts/dist/import-sqlite.js || IMPORT_STATUS=$?
+# Exit 2 is a finished dry run: idle, or the restart policy would repeat it
+if [ "$IMPORT_STATUS" -eq 2 ]; then
+  echo "Dry run finished. Remove IMPORT_DRY_RUN from .env and restart."
+  trap 'exit 0' TERM INT
+  while :; do sleep 3600 & wait $!; done
+fi
+[ "$IMPORT_STATUS" -eq 0 ] || exit "$IMPORT_STATUS"
 
 # Fix /data permissions and run app as nextjs user
 chown -R nextjs:nodejs /data
