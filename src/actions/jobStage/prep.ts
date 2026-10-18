@@ -28,8 +28,8 @@ export const addStagePrepQuestions = async (
     assertInterviewStage(stage);
     if (owned !== ids.length) throw new Error("Question not found");
 
-    // SQLite has no skipDuplicates, so the already-linked ids are subtracted
-    // here rather than left to the unique index.
+    // The already-linked ids are subtracted here rather than left to the
+    // unique index. skipDuplicates is available now; switching is later work.
     const linked = await prisma.jobStagePrepQuestion.findMany({
       where: { stageId, questionId: { in: ids } },
       select: { questionId: true },

@@ -2,8 +2,8 @@ import { z } from "zod";
 import { McpAddJobSchema } from "@/models/mcp.schema";
 import { handleAddJob } from "@/lib/mcp/tools/addJob";
 
-// Sequential, not Promise.all: entity resolution is check-then-act, and
-// SQLite serializes writes anyway — parallelism here only buys races.
+// Sequential, not Promise.all: entity resolution is check-then-act, so
+// parallel calls naming the same new entity race to create it twice.
 export async function handleAddJobsBatch(
   input: { jobs: Array<z.infer<typeof McpAddJobSchema>> },
   userId: string,

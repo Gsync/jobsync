@@ -48,7 +48,7 @@ export const copyResume = async (
   try {
     const user = await requireUser();
 
-    // Read outside the transaction so the SQLite write lock is held briefly
+    // Read outside the transaction so it stays short
     const source = await prisma.resume.findUnique({
       where: { id: resumeId, profile: { userId: user.id } },
       select: resumeCopySelect,

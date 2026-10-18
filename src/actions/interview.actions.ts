@@ -59,9 +59,8 @@ export const getInterviewList = async (
     const where = buildInterviewWhere(user.id, search, stageTypeId, companyId);
 
     // Ordering stays in the query because the list is server-paged.
-    // Undated rounds sort last. SQLite has no NULLS LAST and
-    // Prisma's `nulls` option is unsupported there, so the dated rows are
-    // paged first and the undated ones continue the list once they run out.
+    // Undated rounds sort last: the dated rows are paged first and the undated
+    // ones continue the list. Kept from SQLite, which had no NULLS LAST.
     const and = where.AND ?? [];
     const datedWhere = { ...where, AND: [...and, { occurredAt: { not: null } }] };
     const undatedWhere = { ...where, AND: [...and, { occurredAt: null }] };

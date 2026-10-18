@@ -44,6 +44,7 @@ This project follows a [Code of Conduct](./CODE_OF_CONDUCT.md). By participating
 - Node.js 20+
 - npm
 - Git
+- A Postgres database (any reachable Postgres 17+; Docker is one way to get one, not a requirement). Prefer one with the `pgvector` extension available — the bundled `pgvector/pgvector:pg18` image has it — since resume embeddings will need it
 
 ### Local Setup
 
@@ -65,10 +66,22 @@ This project follows a [Code of Conduct](./CODE_OF_CONDUCT.md). By participating
    ```bash
    cp .env.example .env
    ```
-6. **Set up the database:**
+6. **Point the app at a Postgres database.** Set `DATABASE_URL` in `.env`. Either use a Postgres you already have:
+   ```
+   DATABASE_URL=postgres://user:password@localhost:5432/jobsync
+   ```
+   or start only the bundled database from this repo and use it:
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.lan-db.yml up -d db
+   ```
+   ```
+   DATABASE_URL=postgres://jobsync:jobsync@localhost:5432/jobsync
+   ```
+   Then create the schema:
    ```bash
    npx prisma migrate dev
    ```
+   The role needs `CREATEDB` so Prisma can make its temporary shadow database (the bundled one has it). Tests need no database: `npm test` mocks Prisma.
 7. **Start the development server:**
    ```bash
    npm run dev

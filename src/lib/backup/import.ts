@@ -429,6 +429,7 @@ export async function importBackup(
     );
     if (error instanceof BackupError) throw error;
     const message = error instanceof Error ? error.message : "";
+    // Dead on Postgres (a SQLite lock message); removed with the import shim.
     if (/database is locked|SQLITE_BUSY/i.test(message)) {
       throw new BackupError("The database is busy. Please try the import again.");
     }
