@@ -56,7 +56,7 @@ export async function copyAll(
         if (deferred.length === 0) return clean;
         const copy: Row = { ...clean };
         for (const field of deferred) {
-          if (copy[field] !== null) pending.push({ model, id: row.id, field, value: copy[field] });
+          if (copy[field] !== null && copy[field] !== undefined) pending.push({ model, id: row.id, field, value: copy[field] });
           copy[field] = null;
         }
         return copy;

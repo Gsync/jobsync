@@ -291,7 +291,11 @@ describe("Company Actions", () => {
       expect(prisma.company.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { createdBy: mockUser.id, watched: true },
-          orderBy: [{ watchedAt: "desc" }, { label: "asc" }, { id: "desc" }],
+          orderBy: [
+            { watchedAt: { sort: "desc", nulls: "last" } },
+            { label: "asc" },
+            { id: "desc" },
+          ],
         })
       );
     });
