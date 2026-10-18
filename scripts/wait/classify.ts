@@ -68,7 +68,8 @@ export function maintenanceUrl(raw: string): string {
 
 export const quoteIdent = (name: string) => `"${name.replace(/"/g, '""')}"`;
 
-// Driver messages can echo the connection string
+// Driver messages can echo the connection string. Only the :password@ form
+// is masked, since the default password "jobsync" is also the user and db name
 export function redact(message: string, raw: string): string {
   let password = "";
   try {
@@ -77,10 +78,10 @@ export function redact(message: string, raw: string): string {
     return message;
   }
   if (!password) return message;
-  const masked = message.split(password).join("***");
+  const masked = message.split(`:${password}@`).join(":***@");
   // A stray % (p%zz) is a valid URL but not a valid escape
   try {
-    return masked.split(decodeURIComponent(password)).join("***");
+    return masked.split(`:${decodeURIComponent(password)}@`).join(":***@");
   } catch {
     return masked;
   }

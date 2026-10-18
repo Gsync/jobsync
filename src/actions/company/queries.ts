@@ -43,7 +43,10 @@ export const getCompanyList = async (
       ...(watchlist
         ? {
             extraWhere: { watched: true },
-            orderBy: [{ watchedAt: "desc" }, { label: "asc" }],
+            orderBy: [
+              { watchedAt: { sort: "desc", nulls: "last" } },
+              { label: "asc" },
+            ],
           }
         : {}),
       searchFields: ["label", "atsToken"],

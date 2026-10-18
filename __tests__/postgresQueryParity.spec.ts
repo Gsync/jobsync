@@ -14,6 +14,8 @@ import { getCoverLetterList } from "@/actions/coverLetter.actions";
 import { getContactRoleList } from "@/actions/contactRole.actions";
 import { getJobStageTypeList } from "@/actions/jobStageType.actions";
 import { getJobsList, getJobsIterator } from "@/actions/job/queries";
+import { getRecentJobs } from "@/actions/dashboard/recent";
+import { getCompanyList } from "@/actions/company/queries";
 import prisma from "@/lib/db";
 
 type Call = { model: string; method: string; args: any };
@@ -150,6 +152,19 @@ describe("NULL ordering parity", () => {
     const [call] = findManyCalls("job");
     expect(call.args.orderBy[0]).toEqual({ matchScore: { sort: "desc", nulls: "last" } });
   });
+
+  it("keeps undated applied jobs last on the Recent Jobs card", async () => {
+    await getRecentJobs();
+    const [call] = findManyCalls("job");
+    expect(call.args.orderBy[0]).toEqual({ appliedDate: { sort: "desc", nulls: "last" } });
+    expect(lastKey(call.args.orderBy)).toEqual({ id: "desc" });
+  });
+
+  it("keeps undated watched companies last", async () => {
+    await getCompanyList(1, 10, undefined, undefined, "watchlist");
+    const [call] = findManyCalls("company");
+    expect(call.args.orderBy[0]).toEqual({ watchedAt: { sort: "desc", nulls: "last" } });
+  });
 });
 
 describe("pagination tiebreaker: every paged sort ends on id", () => {
@@ -186,7 +201,7 @@ describe("pagination tiebreaker: every paged sort ends on id", () => {
           userId: "user-1",
           fkField: "companyId",
           appliedRelation: "jobsApplied",
-          orderBy: [{ watchedAt: "desc" }, { label: "asc" }],
+          orderBy: [{ watchedAt: { sort: "desc", nulls: "last" } }, { label: "asc" }],
           page: 1,
           limit: 10,
         }),

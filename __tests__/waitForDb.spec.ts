@@ -105,7 +105,16 @@ describe("helpers", () => {
   });
 
   it("redacts a password whose % is not a valid escape", () => {
-    expect(redact("auth failed for p%zz", "postgres://u:p%zz@h/db")).toBe("auth failed for ***");
+    expect(redact("auth failed for postgres://u:p%zz@h/db", "postgres://u:p%zz@h/db")).toBe(
+      "auth failed for postgres://u:***@h/db",
+    );
+  });
+
+  it("keeps a default password readable where it is the user or db name", () => {
+    const raw = "postgres://jobsync:jobsync@db:5432/jobsync";
+    expect(redact(`User \`jobsync\` denied on \`jobsync.public\` via ${raw}`, raw)).toBe(
+      "User `jobsync` denied on `jobsync.public` via postgres://jobsync:***@db:5432/jobsync",
+    );
   });
 });
 

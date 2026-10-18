@@ -65,6 +65,15 @@ libpq_url() {
     printf '%s' "$DATABASE_URL" | sed -E 's/([?&])(schema|connection_limit|pool_timeout|pgbouncer|statement_cache_size|socket_timeout)=[^&]*/\1/g; s/\?&+/?/; s/&&+/\&/g; s/[?&]$//'
 }
 
+# The reset below drops public, which would hit another app's tables when
+# JobSync lives in its own schema of a shared database
+SCHEMA="$(printf '%s' "$DATABASE_URL" | sed -nE 's/.*[?&]schema=([^&]*).*/\1/p')"
+if [ -n "$SCHEMA" ] && [ "$SCHEMA" != "public" ]; then
+    echo "DATABASE_URL sets ?schema=$SCHEMA. Restore supports only the public schema."
+    echo "Nothing was changed."
+    exit 1
+fi
+
 if [ "$(db_mode)" = "external" ]; then
     DATABASE_URL="$(libpq_url)"
     run_psql() {
