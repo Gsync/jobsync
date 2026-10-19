@@ -245,8 +245,8 @@ export const APP_CONSTANTS = {
   BACKUP_MAX_UNCOMPRESSED_BYTES: 100 * 1024 * 1024,
   BACKUP_MAX_ENTRIES: 5000,
   // Pre-import snapshots retained per user. The count alone does not bound
-  // disk — nothing caps one snapshot's size — and these live on the same
-  // volume as the SQLite database, so prune on total bytes as well.
+  // disk — nothing caps one snapshot's size — and these live on the /data
+  // bind mount, alongside uploaded resumes, so prune on total bytes as well.
   BACKUP_SNAPSHOT_KEEP: 5,
   BACKUP_SNAPSHOT_MAX_TOTAL_BYTES: 250 * 1024 * 1024,
 

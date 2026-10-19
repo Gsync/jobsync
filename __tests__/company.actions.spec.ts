@@ -79,7 +79,7 @@ describe("Company Actions", () => {
         where: { createdBy: mockUser.id },
         skip: 0,
         take: 10,
-        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
       });
       expect(prisma.company.count).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
@@ -150,7 +150,7 @@ describe("Company Actions", () => {
             },
           },
         },
-        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
       });
       expect(prisma.company.count).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
@@ -191,20 +191,20 @@ describe("Company Actions", () => {
         where: {
           createdBy: mockUser.id,
           OR: [
-            { label: { contains: "Ama" } },
-            { atsToken: { contains: "Ama" } },
+            { label: { contains: "Ama", mode: "insensitive" } },
+            { atsToken: { contains: "Ama", mode: "insensitive" } },
           ],
         },
         skip: 0,
         take: 10,
-        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
       });
       expect(prisma.company.count).toHaveBeenCalledWith({
         where: {
           createdBy: mockUser.id,
           OR: [
-            { label: { contains: "Ama" } },
-            { atsToken: { contains: "Ama" } },
+            { label: { contains: "Ama", mode: "insensitive" } },
+            { atsToken: { contains: "Ama", mode: "insensitive" } },
           ],
         },
       });
@@ -237,8 +237,8 @@ describe("Company Actions", () => {
         where: {
           createdBy: mockUser.id,
           OR: [
-            { label: { contains: "Ama" } },
-            { atsToken: { contains: "Ama" } },
+            { label: { contains: "Ama", mode: "insensitive" } },
+            { atsToken: { contains: "Ama", mode: "insensitive" } },
           ],
         },
         skip: 0,
@@ -268,14 +268,14 @@ describe("Company Actions", () => {
             },
           },
         },
-        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
       });
       expect(prisma.company.count).toHaveBeenCalledWith({
         where: {
           createdBy: mockUser.id,
           OR: [
-            { label: { contains: "Ama" } },
-            { atsToken: { contains: "Ama" } },
+            { label: { contains: "Ama", mode: "insensitive" } },
+            { atsToken: { contains: "Ama", mode: "insensitive" } },
           ],
         },
       });
@@ -291,7 +291,11 @@ describe("Company Actions", () => {
       expect(prisma.company.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { createdBy: mockUser.id, watched: true },
-          orderBy: [{ watchedAt: "desc" }, { label: "asc" }],
+          orderBy: [
+            { watchedAt: { sort: "desc", nulls: "last" } },
+            { label: "asc" },
+            { id: "desc" },
+          ],
         })
       );
     });
@@ -307,7 +311,7 @@ describe("Company Actions", () => {
         where: { createdBy: mockUser.id },
         skip: 0,
         take: 10,
-        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
       });
     });
   });
@@ -327,6 +331,7 @@ describe("Company Actions", () => {
       expect(result).toEqual(mockCompanies);
       expect(prisma.company.findMany).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
+        orderBy: [{ label: "asc" }, { id: "asc" }],
       });
     });
 
@@ -352,6 +357,7 @@ describe("Company Actions", () => {
       expect(result).toEqual({ success: false, message: "Unexpected error" });
       expect(prisma.company.findMany).toHaveBeenCalledWith({
         where: { createdBy: mockUser.id },
+        orderBy: [{ label: "asc" }, { id: "asc" }],
       });
     });
   });

@@ -29,7 +29,8 @@ type StatusStageTx = Parameters<typeof promoteStage>[0] & {
 //
 // stageTypeId is an argument, never resolved here: resolveStageTypeForStatusId
 // writes through the base prisma client, and calling it inside the caller's
-// transaction contends for SQLite's write lock (D4).
+// transaction would write outside that transaction, so a rollback would not
+// undo it (D4).
 export async function appendStatusStage(
   tx: StatusStageTx,
   jobId: string,

@@ -22,6 +22,7 @@ import {
 } from "./ordering";
 import { writeSnapshot } from "./snapshot";
 import { log } from "@/lib/telemetry";
+import { sanitizeString } from "@/lib/postgresText";
 import { isResumeFilePath } from "@/lib/resumeFiles";
 import { BackupDataSchema, type BackupData, type BackupManifest } from "./schema";
 
@@ -87,7 +88,11 @@ async function readData(zip: JSZip): Promise<BackupData> {
   if (!entry) throw new BackupError("Backup is missing data.json.");
   let raw: unknown;
   try {
-    raw = JSON.parse(await entry.async("string"));
+    // A backup taken on SQLite can hold NULs, and one would fail the whole
+    // restore transaction on Postgres
+    raw = JSON.parse(await entry.async("string"), (_key, value) =>
+      typeof value === "string" ? sanitizeString(value) : value,
+    );
   } catch {
     throw new BackupError("data.json is not valid JSON.");
   }
@@ -429,6 +434,7 @@ export async function importBackup(
     );
     if (error instanceof BackupError) throw error;
     const message = error instanceof Error ? error.message : "";
+    // Dead on Postgres (a SQLite lock message); removed with the import shim.
     if (/database is locked|SQLITE_BUSY/i.test(message)) {
       throw new BackupError("The database is busy. Please try the import again.");
     }

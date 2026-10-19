@@ -1,4 +1,5 @@
 import db from "@/lib/db";
+import { resumeDetailInclude } from "@/lib/jobs/resumeDetailInclude";
 import type { Automation } from "@/models/automation.model";
 import { ATS_PROVIDERS } from "./ats/registry";
 import { AiProvider } from "@/models/ai.model";
@@ -167,28 +168,7 @@ async function runAutomationTraced(
 
     const resume = await db.resume.findUnique({
       where: { id: automation.resumeId },
-      include: {
-        ContactInfo: true,
-        ResumeSections: {
-          include: {
-            summary: true,
-            workExperiences: {
-              include: {
-                Company: true,
-                jobTitle: true,
-                location: true,
-              },
-            },
-            educations: {
-              include: {
-                location: true,
-              },
-            },
-            licenseOrCertifications: true,
-            skills: { include: { Tag: true } },
-          },
-        },
-      },
+      include: resumeDetailInclude,
     });
 
     if (!resume) {

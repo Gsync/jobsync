@@ -64,7 +64,9 @@ const JOB_DETAILS_INCLUDE = {
     },
   },
   CoverLetter: true,
-  tags: true,
+  tags: {
+    orderBy: [{ label: "asc" as const }, { id: "asc" as const }],
+  },
   contactLinks: {
     include: {
       Role: true,
@@ -155,19 +157,19 @@ const buildJobsWhereClause = (userId: string, filters: JobsListFilters) => {
   if (search) {
     const searchConditions: Record<string, any>[] = [];
     if (!titleValue) {
-      searchConditions.push({ JobTitle: { label: { contains: search } } });
+      searchConditions.push({ JobTitle: { label: { contains: search, mode: "insensitive" } } });
     }
     if (!companyValue) {
-      searchConditions.push({ Company: { label: { contains: search } } });
+      searchConditions.push({ Company: { label: { contains: search, mode: "insensitive" } } });
     }
     if (!locationValue) {
-      searchConditions.push({ Location: { label: { contains: search } } });
+      searchConditions.push({ Location: { label: { contains: search, mode: "insensitive" } } });
     }
     if (!sourceValue) {
-      searchConditions.push({ JobSource: { label: { contains: search } } });
+      searchConditions.push({ JobSource: { label: { contains: search, mode: "insensitive" } } });
     }
     searchConditions.push(
-      { description: { contains: search } },
+      { description: { contains: search, mode: "insensitive" } },
     );
     whereClause.OR = searchConditions;
   }
@@ -322,7 +324,7 @@ export async function* getJobsIterator(filter?: string, pageSize = 200) {
       select: JOB_EXPORT_SELECT,
       skip,
       take: pageSize,
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
 
     if (!chunk.length) {

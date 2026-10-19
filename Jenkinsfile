@@ -114,12 +114,18 @@ pipeline {
                     sh '''
                         set -e
 
-                        docker compose \
-                            -f docker-compose.yml \
-                            -f docker-compose.otel.yml \
-                            up -d \
-                            --force-recreate \
-                            --remove-orphans
+                        # An explicit -f overrides COMPOSE_FILE, so pass none
+                        # when .env already names the files.
+                        if grep -qE '^[[:space:]]*COMPOSE_FILE=' .env 2>/dev/null; then
+                            docker compose up -d --force-recreate --remove-orphans
+                        else
+                            docker compose \
+                                -f docker-compose.yml \
+                                -f docker-compose.otel.yml \
+                                up -d \
+                                --force-recreate \
+                                --remove-orphans
+                        fi
                     '''
                 }
             }

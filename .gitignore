@@ -53,6 +53,10 @@ next-env.d.ts
 /data/
 /jobsyncdb/
 
+# generated: the frozen SQLite snapshot client and the compiled boot scripts
+/src/generated/
+/scripts/dist/
+
 /test-results/
 /playwright-report/
 /blob-report/

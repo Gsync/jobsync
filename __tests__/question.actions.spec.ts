@@ -68,8 +68,10 @@ describe("Question Actions", () => {
           where: { createdBy: mockUser.id },
           skip: 0,
           take: 10,
-          orderBy: [{ createdAt: "desc" }],
-          include: { tags: true },
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          include: {
+            tags: { orderBy: [{ label: "asc" }, { id: "asc" }] },
+          },
         }),
       );
     });
@@ -134,8 +136,8 @@ describe("Question Actions", () => {
           where: {
             createdBy: mockUser.id,
             OR: [
-              { question: { contains: "react" } },
-              { answer: { contains: "react" } },
+              { question: { contains: "react", mode: "insensitive" } },
+              { answer: { contains: "react", mode: "insensitive" } },
             ],
           },
         }),
@@ -155,8 +157,8 @@ describe("Question Actions", () => {
             createdBy: mockUser.id,
             tags: { some: { id: "tag-1" } },
             OR: [
-              { question: { contains: "react" } },
-              { answer: { contains: "react" } },
+              { question: { contains: "react", mode: "insensitive" } },
+              { answer: { contains: "react", mode: "insensitive" } },
             ],
           },
         }),

@@ -16,29 +16,38 @@ function getTasksOrderBy(groupBy?: TaskGroupBy) {
   switch (groupBy) {
     case "dueDate":
       return [
-        { dueDate: "asc" as const },
+        // Undated tasks first, as SQLite sorted them; Postgres defaults last
+        { dueDate: { sort: "asc" as const, nulls: "first" as const } },
         { priority: "desc" as const },
         { createdAt: "desc" as const },
+        { id: "desc" as const },
       ];
     case "createdDate":
-      return [{ createdAt: "desc" as const }, { priority: "desc" as const }];
+      return [
+        { createdAt: "desc" as const },
+        { priority: "desc" as const },
+        { id: "desc" as const },
+      ];
     case "updatedDate":
       return [
         { updatedAt: "desc" as const },
         { priority: "desc" as const },
         { createdAt: "desc" as const },
+        { id: "desc" as const },
       ];
     case "activityType":
       return [
         { activityType: { label: "asc" as const } },
         { priority: "desc" as const },
         { createdAt: "desc" as const },
+        { id: "desc" as const },
       ];
     default:
       return [
         { priority: "desc" as const },
         { createdAt: "desc" as const },
         { updatedAt: "desc" as const },
+        { id: "desc" as const },
       ];
   }
 }
@@ -70,9 +79,9 @@ export const getTasksList = async (
 
     if (search) {
       whereClause.OR = [
-        { title: { contains: search } },
-        { description: { contains: search } },
-        { activityType: { label: { contains: search } } },
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { activityType: { label: { contains: search, mode: "insensitive" } } },
       ];
     }
 
@@ -140,6 +149,7 @@ export const getActivityTypesWithTaskCounts = async (): Promise<
       where: {
         createdBy: user.id,
       },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       include: {
         _count: {
           select: {

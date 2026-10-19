@@ -16,3 +16,5 @@ docs
 coverage
 __tests__
 e2e
+src/generated
+scripts/dist

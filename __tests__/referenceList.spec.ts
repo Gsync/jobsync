@@ -46,7 +46,7 @@ describe("getReferenceEntityList", () => {
       where: { createdBy: userId },
       skip: 0,
       take: 10,
-      orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }],
+      orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
     });
     expect(model.count).toHaveBeenCalledWith({ where: { createdBy: userId } });
     expect(prisma.job.groupBy).not.toHaveBeenCalled();
@@ -80,7 +80,7 @@ describe("getReferenceEntityList", () => {
           },
         },
       },
-      orderBy: [{ jobs: { _count: "desc" } }, { label: "asc" }],
+      orderBy: [{ jobs: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
     });
   });
 
@@ -206,11 +206,11 @@ describe("getReferenceEntityList", () => {
 
     expect(model.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { createdBy: userId, OR: [{ label: { contains: "Ama" } }] },
+        where: { createdBy: userId, OR: [{ label: { contains: "Ama", mode: "insensitive" } }] },
       })
     );
     expect(model.count).toHaveBeenCalledWith({
-      where: { createdBy: userId, OR: [{ label: { contains: "Ama" } }] },
+      where: { createdBy: userId, OR: [{ label: { contains: "Ama", mode: "insensitive" } }] },
     });
   });
 
@@ -320,8 +320,8 @@ describe("getReferenceEntityList", () => {
         where: {
           createdBy: userId,
           OR: [
-            { label: { contains: "acme" } },
-            { atsToken: { contains: "acme" } },
+            { label: { contains: "acme", mode: "insensitive" } },
+            { atsToken: { contains: "acme", mode: "insensitive" } },
           ],
         },
       })
@@ -343,7 +343,7 @@ describe("getReferenceEntityList", () => {
     });
 
     expect(model.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ orderBy })
+      expect.objectContaining({ orderBy: [...orderBy, { id: "desc" }] })
     );
   });
   describe("relationCounts", () => {

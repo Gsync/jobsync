@@ -30,7 +30,7 @@ export const getTagList = async (
 
     const whereClause: any = { createdBy: user.id };
     if (search) {
-      whereClause.label = { contains: search };
+      whereClause.label = { contains: search, mode: "insensitive" };
     }
 
     const [data, total] = await Promise.all([
@@ -44,7 +44,7 @@ export const getTagList = async (
           value: true,
           _count: { select: { jobs: true, questions: true, skills: true } },
         },
-        orderBy: { jobs: { _count: "desc" } },
+        orderBy: [{ jobs: { _count: "desc" } }, { id: "desc" }],
       }),
       prisma.tag.count({ where: whereClause }),
     ]);

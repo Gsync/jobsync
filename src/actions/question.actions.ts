@@ -37,8 +37,8 @@ export const getQuestionsList = async (
 
     if (search) {
       whereClause.OR = [
-        { question: { contains: search } },
-        { answer: { contains: search } },
+        { question: { contains: search, mode: "insensitive" } },
+        { answer: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -46,9 +46,9 @@ export const getQuestionsList = async (
       prisma.question.findMany({
         where: whereClause,
         include: {
-          tags: true,
+          tags: { orderBy: [{ label: "asc" }, { id: "asc" }] },
         },
-        orderBy: [{ createdAt: "desc" }],
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         skip: offset,
         take: limit,
       }),

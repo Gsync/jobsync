@@ -90,10 +90,10 @@ describe("getInterviewList", () => {
       { Job: { companyId: "co-1" } },
       {
         OR: [
-          { Job: { JobTitle: { label: { contains: "acme" } } } },
-          { Job: { Company: { label: { contains: "acme" } } } },
-          { StageType: { label: { contains: "acme" } } },
-          { interviewers: { some: { Contact: { name: { contains: "acme" } } } } },
+          { Job: { JobTitle: { label: { contains: "acme", mode: "insensitive" } } } },
+          { Job: { Company: { label: { contains: "acme", mode: "insensitive" } } } },
+          { StageType: { label: { contains: "acme", mode: "insensitive" } } },
+          { interviewers: { some: { Contact: { name: { contains: "acme", mode: "insensitive" } } } } },
         ],
       },
     ]);

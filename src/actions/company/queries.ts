@@ -43,7 +43,10 @@ export const getCompanyList = async (
       ...(watchlist
         ? {
             extraWhere: { watched: true },
-            orderBy: [{ watchedAt: "desc" }, { label: "asc" }],
+            orderBy: [
+              { watchedAt: { sort: "desc", nulls: "last" } },
+              { label: "asc" },
+            ],
           }
         : {}),
       searchFields: ["label", "atsToken"],
@@ -66,6 +69,7 @@ export const getAllCompanies = async (): Promise<any | undefined> => {
       where: {
         createdBy: user.id,
       },
+      orderBy: [{ label: "asc" }, { id: "asc" }],
     });
     return companies;
   } catch (error) {

@@ -21,6 +21,7 @@ export async function getUserApiKeys(): Promise<{
 
     const keys = await db.apiKey.findMany({
       where: { userId: user.id },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: {
         id: true,
         provider: true,

@@ -37,9 +37,9 @@ export const getActivitiesList = async (
 
     if (search) {
       whereClause.OR = [
-        { activityName: { contains: search } },
-        { description: { contains: search } },
-        { activityType: { label: { contains: search } } },
+        { activityName: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { activityType: { label: { contains: search, mode: "insensitive" } } },
       ];
     }
 
@@ -47,9 +47,7 @@ export const getActivitiesList = async (
       prisma.activity.findMany({
         where: whereClause,
         select: ACTIVITY_LIST_SELECT,
-        orderBy: {
-          createdAt: "desc",
-        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         skip: offset,
         take: limit,
       }),

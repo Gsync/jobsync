@@ -106,6 +106,20 @@ describe("importBackup guards", () => {
     expect(syncSchedulerState).toHaveBeenCalled();
   });
 
+  it("strips NULs a SQLite-era backup can carry before inserting", async () => {
+    const data = BackupDataSchema.parse({
+      Company: [{ id: "c1", label: "Acme\u0000 Corp", value: "acme corp", logoUrl: null }],
+    });
+    const zip = new JSZip();
+    zip.file("manifest.json", JSON.stringify(buildManifest(data, EMAIL)));
+    zip.file("data.json", JSON.stringify(data));
+    await importBackup(await zip.generateAsync({ type: "nodebuffer" }), "user-1", EMAIL, true);
+
+    expect(mockDb.company.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ label: "Acme Corp" }),
+    });
+  });
+
   it("wipes ChatConversation but never ApiKey or McpAccessToken", async () => {
     await importBackup(await emptyBackup(), "user-1", EMAIL, true);
     expect(mockDb.chatConversation.deleteMany).toHaveBeenCalled();

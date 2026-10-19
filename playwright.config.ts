@@ -19,8 +19,8 @@ export default defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
   /* Cap local concurrency: too many parallel contexts (workers x 3 browsers)
-     starve the single dev server + SQLite, making combobox "Create" server
-     actions slow enough to time out. */
+     starve the single dev server and its database, making combobox
+     "Create" server actions slow enough to time out. */
   workers: process.env.CI ? 1 : 4,
   /* Heavier flows (e.g. adding a resume experience makes several sequential
      server-action "Create" calls) need headroom under that load. */

@@ -72,9 +72,10 @@ describe("Dashboard Actions", () => {
           Status: true,
           Location: true,
         },
-        orderBy: {
-          appliedDate: "desc",
-        },
+        orderBy: [
+          { appliedDate: { sort: "desc", nulls: "last" } },
+          { id: "desc" },
+        ],
         take: APP_CONSTANTS.RECENT_NUM_JOBS_ACTIVITIES,
       });
     });

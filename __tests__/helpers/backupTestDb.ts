@@ -11,9 +11,16 @@ import {
   JOB_STATUSES,
 } from "@/lib/constants";
 
-export function makeTestDbUrl(): { url: string; dir: string } {
+// Opt-in: CI has no database, so without this variable the spec is skipped
+export function makeTestDb(): { url: string; schema: string; dir: string } | null {
+  const base = process.env.BACKUP_TEST_DATABASE_URL;
+  if (!base) return null;
+  const schema = `backup_test_${randomUUID().replace(/-/g, "").slice(0, 12)}`;
+  const url = new URL(base);
+  // A schema of its own, so the run never touches the database's real tables
+  url.searchParams.set("schema", schema);
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "jobsync-backup-"));
-  return { url: `file:${path.join(dir, "test.db")}`, dir };
+  return { url: url.toString(), schema, dir };
 }
 
 // db push rather than migrate deploy: the round-trip asserts against the
@@ -24,6 +31,13 @@ export function pushSchema(url: string): void {
     ["prisma", "db", "push", "--skip-generate", "--accept-data-loss"],
     { env: { ...process.env, DATABASE_URL: url }, stdio: "pipe" },
   );
+}
+
+export async function dropTestSchema(
+  prisma: PrismaClient,
+  schema: string,
+): Promise<void> {
+  await prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
 }
 
 // Mirrors what signup() seeds, so "empty account" means the same thing here as

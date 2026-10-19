@@ -47,7 +47,7 @@ Track every application, get AI resume reviews and job matches, and discover new
 - **Contacts:** Keep recruiters, interviewers and references, linked to the jobs they touched. [Details](https://github.com/Gsync/jobsync/wiki/Contacts)
 - **Company Pages:** One page per company with its jobs, people and links, plus a watchlist. [Details](https://github.com/Gsync/jobsync/wiki/Companies)
 - **Question Bank:** Build a library of interview questions and answers, tagged by skill.
-- **Data Backup & Restore:** Export everything as one zip, import it anywhere, and undo an import. [Details](https://github.com/Gsync/jobsync/wiki/Data-Backup)
+- **Data Backup & Restore:** Export everything as one zip, import it anywhere, and undo an import. [Details](https://github.com/Gsync/jobsync/wiki/Backup)
 - **AI Assistant:** A docked chat that reviews resumes, scores job matches, writes cover letters and adds jobs you paste in. [Details](#ai-assistant-in-app-chat)
 - **AI Agent Integration (MCP):** Add jobs and questions from Claude Desktop and other agents. [Details](#mcp-server-ai-agent-integration)
 
@@ -69,7 +69,7 @@ API keys for AI providers can be configured in **Settings** after signing in.
 
 ### Configuration (Optional)
 
-Environment variables can be set in `docker-compose.yml`:
+Environment variables are set in a `.env` file beside `docker-compose.yml` (copy `.env.example`). Do not edit `docker-compose.yml` itself — updates replace it.
 
 | Variable | Description |
 |---|---|
@@ -77,9 +77,12 @@ Environment variables can be set in `docker-compose.yml`:
 | `AUTH_SECRET` | Auto-generated if not set. To set manually: `openssl rand -base64 32` |
 | `ENCRYPTION_KEY` | Encrypts the API keys you save in Settings. **Set your own** (`openssl rand -base64 32`) before adding any keys, and never change it afterwards — a new value makes every stored API key unrecoverable. |
 | `NEXTAUTH_URL` | The address you open JobSync at. Defaults to `http://localhost:3737`; on a homelab server, use the server's IP or hostname. |
-| `MCP_ENABLED` | Set to `false` to turn off the [MCP server](#mcp-server-ai-agent-integration). Enabled by default in `docker-compose.yml`. |
+| `MCP_ENABLED` | Set to `false` to turn off the [MCP server](#mcp-server-ai-agent-integration). Enabled by default. |
+| `DATABASE_URL` | Leave unset to use the bundled Postgres. To use your own, set it to your server's address; optionally add `BUNDLED_DB=0` to stop the then-idle bundled container. The bundled image includes the `pgvector` extension, which an upcoming release uses for resume embeddings; your own server will need it then too. See [Upgrading to Postgres](https://github.com/Gsync/jobsync/wiki/Upgrading-To-Postgres). |
 
 ### Updating
+
+**Upgrading from a SQLite release?** Read [Upgrading to Postgres](https://github.com/Gsync/jobsync/wiki/Upgrading-To-Postgres) first — the upgrade is one-way.
 
 From the project directory, run the deploy script to pull the latest image and restart:
 
@@ -226,7 +229,7 @@ We welcome contributions! Please read our [Contributing Guidelines](./CONTRIBUTI
 - <a href="https://github.com/tailwindlabs/tailwindcss">Tailwind</a>
 - <a href="https://github.com/ueberdosis/tiptap">Tiptap</a>
 - <a href="https://github.com/plouc/nivo">Nivo</a>
-- <a href="https://github.com/sqlite/sqlite">Sqlite</a>
+- <a href="https://github.com/postgres/postgres">Postgres</a>
 - <a href="https://github.com/vercel/ai">Vercel AI-SDK</a>
 - <a href="https://github.com/ollama/ollama">Ollama</a>
 

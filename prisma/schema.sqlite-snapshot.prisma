@@ -1,0 +1,735 @@
+// FROZEN. The last SQLite-release schema, read only by scripts/import-sqlite.ts
+// to copy a legacy dev.db into Postgres. Never edit the models below; delete
+// this file when the import shim is retired (spec section 15).
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/sqlite-snapshot"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("SQLITE_SNAPSHOT_URL")
+}
+
+model User {
+  id             String           @id @default(uuid())
+  name           String
+  email          String           @unique
+  password       String
+  createdAt      DateTime         @default(now())
+  jobsApplied    Job[]
+  JobTitle       JobTitle[]
+  Location       Location[]
+  Company        Company[]
+  JobSource      JobSource[]
+  Contact        Contact[]
+  ContactRole    ContactRole[]
+  JobStageType   JobStageType[]
+  Profile        Profile[]
+  Activity       Activity[]
+  ActivityType   ActivityType[]
+  Task           Task[]
+  Automation     Automation[]
+  Settings       UserSettings?
+  ApiKey         ApiKey[]
+  Note           Note[]
+  Tag            Tag[]
+  Question       Question[]
+  McpAccessToken McpAccessToken[]
+  Notification   Notification[]
+  aiCalls        AiCall[]
+  ChatConversation ChatConversation?
+  defaultResumeId String?
+  defaultResume   Resume?          @relation("UserDefaultResume", fields: [defaultResumeId], references: [id], onDelete: SetNull)
+}
+
+model ApiKey {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  provider     String
+  encryptedKey String
+  iv           String
+  last4        String
+  label        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastUsedAt   DateTime?
+
+  @@unique([userId, provider])
+  @@index([userId])
+}
+
+model UserSettings {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  settings  String   @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Profile {
+  id           String        @id @default(uuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  resumes      Resume[]
+  coverLetters CoverLetter[]
+}
+
+model Resume {
+  id             String          @id @default(uuid())
+  profileId      String
+  title          String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  ContactInfo    ContactInfo?
+  ResumeSections ResumeSection[]
+  profile        Profile         @relation(fields: [profileId], references: [id])
+  File           File?           @relation(fields: [FileId], references: [id])
+  FileId         String?         @unique
+  Job            Job[]
+  Automation     Automation[]
+  defaultForUser User[]          @relation("UserDefaultResume")
+  reviewData     String?
+}
+
+model CoverLetter {
+  id        String   @id @default(uuid())
+  profileId String
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  profile   Profile  @relation(fields: [profileId], references: [id])
+  Job       Job[]
+}
+
+model File {
+  id         String   @id @default(uuid())
+  fileName   String
+  filePath   String
+  fileType   String
+  uploadedAt DateTime @default(now())
+  Resume     Resume?
+}
+
+model ResumeSection {
+  id                      String                   @id @default(uuid())
+  resumeId                String
+  sectionTitle            String
+  sectionType             String
+  summaryId               String?                  @unique
+  summary                 Summary?                 @relation(fields: [summaryId], references: [id])
+  workExperiences         WorkExperience[]
+  educations              Education[]
+  licenseOrCertifications LicenseOrCertification[]
+  others                  OtherSection[]
+  skills                  Skill[]
+  Resume                  Resume                   @relation(fields: [resumeId], references: [id])
+}
+
+model ContactInfo {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  resumeId  String   @unique
+  firstName String
+  lastName  String
+  headline  String
+  email     String
+  phone     String
+  address   String?
+  url1      String?
+  url1Label String?
+  url2      String?
+  url2Label String?
+  resume    Resume   @relation(fields: [resumeId], references: [id])
+}
+
+model Summary {
+  id            String         @id @default(uuid())
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  content       String
+  ResumeSection ResumeSection? @relation
+}
+
+model WorkExperience {
+  id              String         @id @default(uuid())
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  companyId       String
+  Company         Company        @relation(fields: [companyId], references: [id])
+  jobTitleId      String
+  jobTitle        JobTitle       @relation(fields: [jobTitleId], references: [id])
+  startDate       DateTime
+  endDate         DateTime?
+  description     String
+  locationId      String
+  location        Location       @relation(fields: [locationId], references: [id])
+  resumeSectionId String?
+  ResumeSection   ResumeSection? @relation(fields: [resumeSectionId], references: [id])
+}
+
+model Education {
+  id              String         @id @default(uuid())
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  institution     String
+  degree          String
+  fieldOfStudy    String
+  startDate       DateTime
+  endDate         DateTime?
+  description     String?
+  locationId      String
+  location        Location       @relation(fields: [locationId], references: [id])
+  resumeSectionId String?
+  ResumeSection   ResumeSection? @relation(fields: [resumeSectionId], references: [id])
+}
+
+model LicenseOrCertification {
+  id              String         @id @default(uuid())
+  title           String
+  organization    String
+  issueDate       DateTime?
+  expirationDate  DateTime?
+  credentialUrl   String?
+  ResumeSection   ResumeSection? @relation(fields: [resumeSectionId], references: [id])
+  resumeSectionId String?
+}
+
+model OtherSection {
+  id              String         @id @default(uuid())
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  title           String
+  content         String
+  ResumeSection   ResumeSection? @relation(fields: [resumeSectionId], references: [id])
+  resumeSectionId String?
+}
+
+model Contact {
+  id                String     @id @default(uuid())
+  name              String
+  title             String?
+  email             String?
+  phone             String?
+  linkedinUrl       String?
+
+  // Where they work now
+  companyId         String?
+  Company           Company?   @relation("ContactCompany", fields: [companyId], references: [id])
+  locationId        String?
+  Location          Location?  @relation(fields: [locationId], references: [id])
+
+  // Shared history — how you know them
+  relationship      String?
+  workedAtCompanyId String?
+  WorkedAtCompany   Company?   @relation("ContactWorkedAt", fields: [workedAtCompanyId], references: [id])
+  workedFrom        DateTime?
+  workedTo          DateTime?
+
+  // What this person generally is to you. The per-job role on JobContact wins
+  // for a specific job; this is the standing answer and the Phase 5 prefill.
+  roleId            String?
+  Role              ContactRole? @relation(fields: [roleId], references: [id])
+
+  notes             String?
+  lastContactedAt   DateTime?
+
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  createdBy         String // userId
+  user              User       @relation(fields: [createdBy], references: [id])
+
+  jobLinks          JobContact[]
+  stageLinks        JobStageInterviewer[]
+
+  @@index([createdBy])
+  @@index([companyId])
+  @@index([workedAtCompanyId])
+  @@index([roleId])
+}
+
+model ContactRole {
+  id          String       @id @default(uuid())
+  label       String
+  value       String
+  createdBy   String // userId
+  user        User         @relation(fields: [createdBy], references: [id])
+  jobContacts JobContact[]
+  contacts    Contact[]
+
+  @@unique([value, createdBy])
+}
+
+model JobContact {
+  id        String      @id @default(uuid())
+  jobId     String
+  Job       Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  contactId String
+  Contact   Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  roleId    String
+  Role      ContactRole @relation(fields: [roleId], references: [id])
+  createdAt DateTime    @default(now())
+
+  @@unique([jobId, contactId, roleId])
+  @@index([contactId])
+}
+
+model JobTitle {
+  id              String           @id @default(uuid())
+  label           String
+  value           String
+  jobs            Job[]
+  createdBy       String // userId
+  user            User             @relation(fields: [createdBy], references: [id])
+  workExperiences WorkExperience[]
+
+  @@unique([value, createdBy])
+}
+
+model JobStatus {
+  id    String @id @default(uuid())
+  label String
+  value String @unique
+  jobs  Job[]
+  stageTypes JobStageType[]
+}
+
+model Location {
+  id             String           @id @default(uuid())
+  label          String
+  value          String
+  stateProv      String?
+  country        String?
+  jobsApplied    Job[]
+  createdBy      String // userId
+  user           User             @relation(fields: [createdBy], references: [id])
+  educations     Education[]
+  workExperience WorkExperience[]
+  contacts       Contact[]
+
+  @@unique([value, createdBy])
+}
+
+model Company {
+  id              String           @id @default(uuid())
+  label           String
+  value           String
+  jobsApplied     Job[]
+  logoUrl         String? // field is optional
+  createdBy       String // userId
+  user            User             @relation(fields: [createdBy], references: [id])
+  workExperiences WorkExperience[]
+
+  contacts         Contact[]        @relation("ContactCompany")
+  formerColleagues Contact[]        @relation("ContactWorkedAt")
+
+  // Watch intent — independent of whether a board is linked
+  watched         Boolean          @default(false)
+  watchedAt       DateTime?
+
+  // Board coordinates; atsHost is Lever-only
+  atsProvider     String?
+  atsToken        String?
+  atsHost         String?
+
+  // Company attributes, unrelated to boards
+  websiteUrl      String?
+  careersUrl      String?
+  industry        String?
+  linkedinUrl     String?
+  size            String?
+  notes           String?
+
+  @@unique([value, createdBy])
+  @@unique([createdBy, atsProvider, atsToken])
+  @@index([createdBy, watched])
+}
+
+model JobSource {
+  id          String @id @default(uuid())
+  label       String
+  value       String
+  jobsApplied Job[]
+  createdBy   String // userId
+  user        User   @relation(fields: [createdBy], references: [id])
+
+  @@unique([value, createdBy])
+}
+
+// The kind of stage. Mirrors ContactRole in ownership and resolution, and
+// JobSource in being user-extensible. statusId is both the derived-status
+// source and the interview-kind discriminator (spec decisions 3 and 10).
+model JobStageType {
+  id        String     @id @default(uuid())
+  label     String
+  value     String
+  statusId  String
+  Status    JobStatus  @relation(fields: [statusId], references: [id])
+  sortOrder Int        @default(0)
+  createdBy String // userId
+  user      User       @relation(fields: [createdBy], references: [id])
+  stages    JobStage[]
+
+  @@unique([value, createdBy])
+  @@index([createdBy])
+}
+
+// One entry in a job's timeline. No ownership column: a stage has no meaning
+// apart from its job, so ownership traverses Job: { userId }.
+model JobStage {
+  id            String                 @id @default(uuid())
+  jobId         String
+  Job           Job                    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  stageTypeId   String
+  StageType     JobStageType           @relation(fields: [stageTypeId], references: [id])
+  occurredAt    DateTime?
+  isCurrent     Boolean                @default(false)
+  outcome       String?
+  notes         String?
+  durationMins  Int?
+  format        String?
+  location      String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  interviewers  JobStageInterviewer[]
+  prepQuestions JobStagePrepQuestion[]
+
+  @@index([jobId])
+  @@index([stageTypeId])
+  // Also has a hand-written partial unique index (not expressible here):
+  // UNIQUE(jobId) WHERE isCurrent = 1
+  // See migrations/20260919000000_job_stages_timeline
+}
+
+model JobStageInterviewer {
+  id        String   @id @default(uuid())
+  stageId   String
+  Stage     JobStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  contactId String
+  Contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([stageId, contactId])
+  @@index([contactId])
+}
+
+// questionId is deliberately NOT cascading: erasing the record that a question
+// was asked in a real interview is worse than a delete that fails loudly.
+model JobStagePrepQuestion {
+  id         String    @id @default(uuid())
+  stageId    String
+  Stage      JobStage  @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  questionId String
+  Question   Question  @relation(fields: [questionId], references: [id])
+  asked      Boolean   @default(false)
+  askedAt    DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@unique([stageId, questionId])
+  @@index([questionId])
+}
+
+model Job {
+  id          String      @id @default(uuid())
+  userId      String
+  User        User        @relation(fields: [userId], references: [id])
+  jobUrl      String?
+  description String
+  jobType     String
+  workplaceType String?
+  createdAt   DateTime
+  applied     Boolean     @default(false)
+  appliedDate DateTime?
+  dueDate     DateTime?
+  statusId    String
+  Status      JobStatus   @relation(fields: [statusId], references: [id])
+  JobTitle    JobTitle    @relation(fields: [jobTitleId], references: [id])
+  jobTitleId  String
+  Company     Company     @relation(fields: [companyId], references: [id])
+  companyId   String
+  JobSource   JobSource?  @relation(fields: [jobSourceId], references: [id])
+  jobSourceId String?
+  salaryRange String?
+  Location    Location?   @relation(fields: [locationId], references: [id])
+  locationId  String?
+  Resume        Resume?      @relation(fields: [resumeId], references: [id])
+  resumeId      String?
+  CoverLetter   CoverLetter? @relation(fields: [coverLetterId], references: [id])
+  coverLetterId String?
+  Notes         Note[]
+  tags        Tag[]
+  contactLinks  JobContact[]
+  stages        JobStage[]
+
+  // Automation discovery fields
+  automationId    String?
+  automation      Automation? @relation(fields: [automationId], references: [id], onDelete: SetNull)
+  matchScore      Int?
+  matchData       String?
+  discoveryStatus String?
+  discoveredAt    DateTime?
+
+  // MCP provenance: which agent/token created this job (null = UI or automation)
+  createdVia      String?
+  // Word-count classification of `description` at write time:
+  // "title-only" | "partial" | "full". Null for pre-existing/UI jobs.
+  descriptionCompleteness String?
+
+  @@index([userId, automationId])
+  @@index([userId, discoveryStatus])
+  // Also has a hand-written partial unique index (not expressible here):
+  // UNIQUE(userId, jobUrl) WHERE automationId IS NOT NULL
+  // See migrations/20260710000002_job_automation_url_unique
+}
+
+model ActivityType {
+  id          String   @id @default(uuid())
+  label       String
+  value       String
+  description String?
+  createdBy   String // userId
+  user        User     @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  Activities Activity[]
+  Tasks      Task[]
+
+  @@unique([value, createdBy])
+}
+
+model Activity {
+  id           String    @id @default(uuid())
+  userId       String
+  User         User      @relation(fields: [userId], references: [id])
+  activityName String
+  startTime    DateTime
+  endTime      DateTime?
+  duration     Int?
+  // Completed break time in minutes. Existing rows default to 0, so
+  // duration keeps meaning (endTime - startTime) for everything already saved.
+  breakMinutes     Int       @default(0)
+  // Set only while a break is open — this is the on-break flag.
+  breakStartedAt   DateTime?
+  // Drives the countdown ring only; never the arithmetic.
+  breakPlannedMins Int?
+  description  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  activityType   ActivityType @relation(fields: [activityTypeId], references: [id])
+  activityTypeId String
+
+  taskId String?
+  task   Task?   @relation(fields: [taskId], references: [id])
+}
+
+model Task {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  title           String
+  description     String?
+  status          String    @default("in-progress")
+  priority        Int       @default(5)
+  percentComplete Int       @default(0)
+  dueDate         DateTime?
+
+  activityTypeId String?
+  activityType   ActivityType? @relation(fields: [activityTypeId], references: [id])
+
+  activities Activity[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([userId, activityTypeId])
+  @@index([userId, dueDate])
+}
+
+model Automation {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  name           String
+  jobBoard       String
+  keywords       String
+  location       String
+  sourceConfig   String? // JSON; per-source params (Greenhouse watchlist, titles)
+  resumeId       String
+  resume         Resume @relation(fields: [resumeId], references: [id])
+  matchThreshold Int    @default(80)
+
+  scheduleHour Int
+  nextRunAt    DateTime?
+  lastRunAt    DateTime?
+
+  status String @default("active")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  runs           AutomationRun[]
+  discoveredJobs Job[]
+  notifications  Notification[]
+
+  @@index([userId])
+  @@index([status, nextRunAt])
+}
+
+model AutomationRun {
+  id           String     @id @default(uuid())
+  automationId String
+  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+  jobsSearched     Int @default(0)
+  jobsDeduplicated Int @default(0)
+  jobsProcessed    Int @default(0)
+  jobsMatched      Int @default(0)
+  jobsSaved        Int @default(0)
+
+  status        String  @default("running")
+  errorMessage  String?
+  blockedReason String?
+  funnelStats   String? // JSON: ordered per-source funnel for the run summary
+
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([automationId])
+  @@index([startedAt])
+  // Also has a hand-written partial unique index (not expressible here):
+  // UNIQUE(automationId) WHERE status IN ('running', 'cancelling')
+  // See migrations/20260710000001_automation_run_single_active
+}
+
+model Notification {
+  id           String     @id @default(uuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  automationId String
+  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  runId        String? // last run that produced/refreshed it; plain id, no FK
+
+  kind        String // "run" | "error" | "board"
+  boardToken  String? // set only for kind "board"; the D2 refresh key
+  payload     String // JSON, shape per kind in notification.model.ts
+  occurrences Int     @default(1)
+
+  occurredAt  DateTime  @default(now())
+  readAt      DateTime?
+  dismissedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, occurredAt])
+  @@index([userId, readAt])
+  @@index([automationId, kind, boardToken])
+}
+
+model AiCall {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  feature      String // AiUsageFeature in aiUsage.model.ts
+  provider     String
+  model        String
+  status       String // AiCallStatus in aiUsage.model.ts
+  inputTokens  Int?
+  outputTokens Int?
+  durationMs   Int
+  firstTokenMs Int?
+  numCtx       Int? // Ollama only, and only where the app passes num_ctx
+  startedAt    DateTime @default(now())
+
+  @@index([userId, startedAt])
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([jobId])
+  @@index([userId])
+}
+
+model Tag {
+  id        String @id @default(uuid())
+  label     String
+  value     String
+  createdBy String
+  user      User   @relation(fields: [createdBy], references: [id])
+  jobs      Job[]
+  questions Question[]
+  skills    Skill[]
+
+  @@unique([value, createdBy])
+}
+
+model Skill {
+  id              String        @id @default(uuid())
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  category        String?
+  order           Int           @default(0)
+  tagId           String
+  Tag             Tag           @relation(fields: [tagId], references: [id])
+  resumeSectionId String
+  ResumeSection   ResumeSection @relation(fields: [resumeSectionId], references: [id])
+
+  @@index([resumeSectionId])
+}
+
+model Question {
+  id         String   @id @default(uuid())
+  question   String
+  answer     String?
+  createdBy  String
+  user       User     @relation(fields: [createdBy], references: [id])
+  tags       Tag[]
+  prepLinks  JobStagePrepQuestion[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdVia String? // MCP provenance: which agent/token created this, mirrors Job.createdVia
+
+  @@index([createdBy])
+}
+
+model McpAccessToken {
+  id          String    @id @default(uuid())
+  userId      String
+  User        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  tokenHash   String    @unique
+  tokenPrefix String
+  scopes      String    // JSON array string; new tokens are always ["jobs:write","questions:write","resume:write"]
+  expiresAt   DateTime
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model ChatConversation {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  messages  String   // JSON-serialized UIMessage[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

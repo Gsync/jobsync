@@ -44,7 +44,7 @@ describe("contactRole actions", () => {
         skip: 0,
         take: 10,
         include: { _count: { select: { jobContacts: true, contacts: true } } },
-        orderBy: [{ label: "asc" }],
+        orderBy: [{ label: "asc" }, { id: "desc" }],
       }),
     );
   });
@@ -57,7 +57,7 @@ describe("contactRole actions", () => {
 
     expect(db.contactRole.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { createdBy: user.id, label: { contains: "recr" } },
+        where: { createdBy: user.id, label: { contains: "recr", mode: "insensitive" } },
       }),
     );
   });

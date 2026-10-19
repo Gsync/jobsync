@@ -31,7 +31,7 @@ export const getJobStageTypeList = async (
     const user = await requireUser();
     const whereClause: any = { createdBy: user.id };
     if (search) {
-      whereClause.label = { contains: search };
+      whereClause.label = { contains: search, mode: "insensitive" };
     }
 
     const [data, total] = await Promise.all([
@@ -40,7 +40,7 @@ export const getJobStageTypeList = async (
         skip: (page - 1) * limit,
         take: limit,
         include: { Status: true, _count: { select: { stages: true } } },
-        orderBy: [{ sortOrder: "asc" }, { label: "asc" }],
+        orderBy: [{ sortOrder: "asc" }, { label: "asc" }, { id: "desc" }],
       }),
       prisma.jobStageType.count({ where: whereClause }),
     ]);

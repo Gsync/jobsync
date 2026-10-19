@@ -131,6 +131,7 @@ describe("copyResume", () => {
             startDate: new Date("2020-01-01"),
             endDate: null,
             description: "<p>Work</p>",
+            createdAt: new Date("2024-03-01T10:00:00Z"),
           },
         ],
         educations: [],
@@ -209,6 +210,8 @@ describe("copyResume", () => {
         startDate: new Date("2020-01-01"),
         endDate: null,
         description: "<p>Work</p>",
+        // Kept so the copy lists entries in the source's order
+        createdAt: new Date("2024-03-01T10:00:00Z"),
       },
     ]);
   });

@@ -175,7 +175,7 @@ export async function updateJobFromNames(
   }
 
   // D4: this resolve can create a row and writes through the base client, so
-  // it must not run while the transaction below holds SQLite's write lock.
+  // it stays outside the transaction below, which could not roll it back.
   const stageTypeId = statusId
     ? await resolveStageTypeForStatusId(statusId, userId)
     : null;
