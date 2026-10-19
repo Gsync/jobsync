@@ -39,7 +39,6 @@ services:
       - BUNDLED_DATABASE_URL=postgres://jobsync:${POSTGRES_PASSWORD:-jobsync}@db:5432/jobsync
       - BUNDLED_DB=${BUNDLED_DB:-1}
       - CREATE_DATABASE_IF_MISSING=${CREATE_DATABASE_IF_MISSING:-}
-      - SQLITE_LEGACY_PATH=${SQLITE_LEGACY_PATH:-/data/dev.db}
       - SKIP_IMPORT=${SKIP_IMPORT:-}
       - IMPORT_DRY_RUN=${IMPORT_DRY_RUN:-}
       - AUTH_SECRET=${AUTH_SECRET:-your-auth-secret}
