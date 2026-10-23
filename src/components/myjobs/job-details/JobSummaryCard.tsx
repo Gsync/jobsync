@@ -53,7 +53,7 @@ export function JobSummaryCard({
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Job Type</p>
-            <p className="mt-1 font-medium">
+            <p className="mt-1 text-sm font-medium">
               {getJobTypeLabel(job.jobType)}
               {job.workplaceType &&
                 ` · ${getWorkplaceTypeLabel(job.workplaceType)}`}
@@ -61,15 +61,15 @@ export function JobSummaryCard({
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Salary Range</p>
-            <p className="mt-1 font-medium">{job.salaryRange || "-"}</p>
+            <p className="mt-1 text-sm font-medium">{job.salaryRange || "-"}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Source</p>
-            <p className="mt-1 font-medium">{job.JobSource?.label ?? "-"}</p>
+            <p className="mt-1 text-sm font-medium">{job.JobSource?.label ?? "-"}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Applied</p>
-            <p className="mt-1 font-medium">
+            <p className="mt-1 text-sm font-medium">
               {job.appliedDate
                 ? format(new Date(job.appliedDate), "PP")
                 : job.applied
@@ -89,12 +89,12 @@ export function JobSummaryCard({
                 )}
               </div>
             ) : (
-              <p className="mt-1 font-medium">Not matched</p>
+              <p className="mt-1 text-sm font-medium">Not matched</p>
             )}
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Resume</p>
-            <div className="mt-1 font-medium">
+            <div className="mt-1 text-sm font-medium">
               {job.Resume?.File?.filePath ? (
                 DownloadFileButton(
                   job.Resume.id!,
@@ -118,7 +118,7 @@ export function JobSummaryCard({
           <div>
             <p className="text-sm text-muted-foreground">Added</p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
-              <span className="font-medium">
+              <span className="text-sm font-medium">
                 {job.createdAt ? format(new Date(job.createdAt), "PP") : "-"}
               </span>
               {job.createdVia && (

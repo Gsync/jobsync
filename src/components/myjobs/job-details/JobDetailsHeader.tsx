@@ -63,17 +63,17 @@ export function JobDetailsHeader({
 
   return (
     <div className="flex flex-col gap-4 @5xl/main:flex-row @5xl/main:items-center">
-      <div className="flex flex-1 min-w-0 items-center gap-4">
+      <div className="flex flex-1 min-w-0 items-center gap-3">
         <Button title="Go Back" variant="ghost" size="icon" onClick={onBack}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <CompanyLogo
           logoUrl={job.Company?.logoUrl}
-          className="h-10 w-10 min-w-10"
+          className="h-8 w-8 min-w-8"
         />
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold">{job.JobTitle?.label}</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-lg font-semibold">{job.JobTitle?.label}</h1>
+          <p className="text-sm text-muted-foreground">
             {job.Company?.label && (
               <Link
                 href={`/dashboard/admin/companies/${job.Company.id}`}
