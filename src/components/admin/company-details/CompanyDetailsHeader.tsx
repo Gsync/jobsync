@@ -59,7 +59,7 @@ export function CompanyDetailsHeader({
 
   return (
     <div className="flex flex-col gap-4 @5xl/main:flex-row @5xl/main:items-center">
-      <div className="flex flex-1 min-w-0 items-center gap-4">
+      <div className="flex flex-1 min-w-0 items-center gap-3">
         <Button
           variant="ghost"
           size="icon"
@@ -71,11 +71,11 @@ export function CompanyDetailsHeader({
         </Button>
         <CompanyLogo
           logoUrl={company.logoUrl}
-          className="h-10 w-10 min-w-10"
+          className="h-8 w-8 min-w-8"
         />
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold">{company.label}</h1>
-          {subtitle && <p className="text-muted-foreground">{subtitle}</p>}
+          <h1 className="text-lg font-semibold">{company.label}</h1>
+          {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
         </div>
       </div>
       <div className="flex flex-wrap justify-end gap-2">
