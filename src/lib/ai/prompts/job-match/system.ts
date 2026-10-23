@@ -3,7 +3,9 @@
  * Free-form markdown analysis with a small machine-readable scores header.
  */
 
-export const JOB_MATCH_SYSTEM_PROMPT = `You are an expert recruiter assessing candidate-job fit. Your role is to provide accurate, actionable analysis comparing a resume against a job description.
+import { ANALYSIS_LANGUAGE_RULE } from "../language";
+
+const JOB_MATCH_SYSTEM_PROMPT_BASE = `You are an expert recruiter assessing candidate-job fit. Your role is to provide accurate, actionable analysis comparing a resume against a job description.
 
 ## ANALYSIS APPROACH
 - Match SPECIFIC requirements from the JD against the resume
@@ -53,3 +55,5 @@ Critical missing requirements that may disqualify (mandatory certifications, lic
 A short list of specific resume changes, each naming the section and the change.
 
 Be specific and reference actual content from both documents. Keep each section tight and don't repeat the same point across sections. Prioritize the few changes that most improve fit. Do NOT output JSON. Do NOT wrap the whole response in code fences. Be honest about gaps.`;
+
+export const JOB_MATCH_SYSTEM_PROMPT = `${JOB_MATCH_SYSTEM_PROMPT_BASE}\n\n${ANALYSIS_LANGUAGE_RULE}`;
