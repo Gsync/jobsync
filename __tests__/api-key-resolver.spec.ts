@@ -123,3 +123,38 @@ describe("resolveApiKey", () => {
     expect(mockFindUnique).not.toHaveBeenCalled();
   });
 });
+
+describe("resolveApiKey – openai-compatible-key", () => {
+  const OLD_ENV = process.env;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env = { ...OLD_ENV };
+    delete process.env.OPENAI_COMPAT_API_KEY;
+  });
+
+  afterAll(() => {
+    process.env = OLD_ENV;
+  });
+
+  it("returns a stored key", async () => {
+    mockFindUnique.mockResolvedValue({
+      id: "k-compat",
+      encryptedKey: "cipher",
+      iv: "saltiv",
+    });
+
+    const result = await resolveApiKey("user-1", "openai-compatible-key");
+
+    expect(result).toBe("decrypted(cipher,saltiv)");
+  });
+
+  it("falls back to OPENAI_COMPAT_API_KEY", async () => {
+    mockFindUnique.mockResolvedValue(null);
+    process.env.OPENAI_COMPAT_API_KEY = "env-compat-key";
+
+    const result = await resolveApiKey("user-1", "openai-compatible-key");
+
+    expect(result).toBe("env-compat-key");
+  });
+});

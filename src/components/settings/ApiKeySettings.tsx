@@ -68,6 +68,7 @@ function ApiKeySettings() {
     null,
   );
   const [inputValue, setInputValue] = useState("");
+  const [openaiCompatApiKey, setOpenaiCompatApiKey] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [ollamaConnected, setOllamaConnected] = useState<boolean | null>(null);
@@ -119,10 +120,14 @@ function ApiKeySettings() {
 
     setVerifying(true);
     try {
+      const verifyBody =
+        provider === "openai-compatible"
+          ? { provider, key: inputValue, apiKey: openaiCompatApiKey || undefined }
+          : { provider, key: inputValue };
       const verifyRes = await fetch("/api/settings/api-keys/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider, key: inputValue }),
+        body: JSON.stringify(verifyBody),
       });
       const verifyData = await verifyRes.json();
 
@@ -136,18 +141,32 @@ function ApiKeySettings() {
       }
 
       const providerConfig = PROVIDERS.find((p) => p.id === provider);
-      const saveResult = await saveApiKey({
+      const saveBaseResult = await saveApiKey({
         provider,
         key: inputValue,
         sensitive: providerConfig?.sensitive ?? true,
       });
-      if (saveResult.success) {
+
+      let saveKeyResult: { success: boolean; message?: string } | null = null;
+      if (provider === "openai-compatible" && openaiCompatApiKey.trim()) {
+        saveKeyResult = await saveApiKey({
+          provider: "openai-compatible-key",
+          key: openaiCompatApiKey,
+          sensitive: true,
+        });
+      }
+
+      if (saveBaseResult.success && (!saveKeyResult || saveKeyResult.success)) {
         toastSuccess(`${PROVIDERS.find((p) => p.id === provider)?.name} key verified and saved.`, "API key saved");
         setEditingProvider(null);
         setInputValue("");
+        setOpenaiCompatApiKey("");
         await fetchKeys();
       } else {
-        toastError(saveResult.message || "Failed to save API key", "Save failed");
+        toastError(
+          saveBaseResult.message || saveKeyResult?.message || "Failed to save API key",
+          "Save failed",
+        );
       }
     } catch (error) {
       console.error("Error saving API key:", error);
@@ -160,12 +179,17 @@ function ApiKeySettings() {
   const handleDelete = async (provider: ApiKeyProvider) => {
     setDeleting(provider);
     try {
-      const result = await deleteApiKey(provider);
-      if (result.success) {
+      const results = await Promise.all([
+        deleteApiKey(provider),
+        ...(provider === "openai-compatible"
+          ? [deleteApiKey("openai-compatible-key")]
+          : []),
+      ]);
+      if (results.every((r) => r.success)) {
         toastSuccess(`${PROVIDERS.find((p) => p.id === provider)?.name} key removed.`, "API key deleted");
         await fetchKeys();
       } else {
-        toastError(result.message || "Failed to delete API key");
+        toastError("Failed to delete API key");
       }
     } catch (error) {
       console.error("Error deleting API key:", error);
@@ -177,6 +201,7 @@ function ApiKeySettings() {
   const handleCancel = () => {
     setEditingProvider(null);
     setInputValue("");
+    setOpenaiCompatApiKey("");
   };
 
   if (isLoading) {
@@ -237,6 +262,18 @@ function ApiKeySettings() {
                   ) : (
                     <Badge variant="secondary">Not configured</Badge>
                   )}
+                  {provider.id === "openai-compatible" && (
+                    <div className="ml-2">
+                      {keys.find((k) => k.provider === "openai-compatible-key") ? (
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          API Key
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">No API Key</Badge>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardHeader>
               {provider.id === "ollama" && (
@@ -290,6 +327,21 @@ function ApiKeySettings() {
                         className="mt-1"
                       />
                     </div>
+                    {provider.id === "openai-compatible" && (
+                      <div>
+                        <Label htmlFor={`key-${provider.id}-api`}>
+                          API Key (optional)
+                        </Label>
+                        <Input
+                          id={`key-${provider.id}-api`}
+                          type="password"
+                          placeholder="sk-..."
+                          value={openaiCompatApiKey}
+                          onChange={(e) => setOpenaiCompatApiKey(e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <Button
                         size="sm"
