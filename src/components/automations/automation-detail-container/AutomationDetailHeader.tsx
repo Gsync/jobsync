@@ -48,14 +48,14 @@ export function AutomationDetailHeader({
 }: AutomationDetailHeaderProps) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-      <div className="flex flex-1 min-w-0 items-center gap-4">
+      <div className="flex flex-1 min-w-0 items-center gap-3">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/dashboard/automations">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold">{automation.name}</h1>
+          <h1 className="text-lg font-semibold">{automation.name}</h1>
           {retired && (
             <p className="flex items-center gap-2 text-amber-600 text-sm">
               <AlertTriangle className="h-4 w-4 shrink-0" />
@@ -64,7 +64,7 @@ export function AutomationDetailHeader({
             </p>
           )}
           {(automation.keywords || automation.location) && (
-            <p className="text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {[automation.keywords, automation.location]
                 .filter(Boolean)
                 .join(" in ")}
