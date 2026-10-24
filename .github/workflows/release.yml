@@ -38,13 +38,18 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
+
+      # Here rather than only in publish, so a missing fragment fails in
+      # seconds instead of after the build.
+      - name: Check release notes
+        run: node scripts/release-notes.mjs > /dev/null
 
       - name: Resolve next version
         id: bump
@@ -77,9 +82,9 @@ jobs:
     needs: prepare
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: "npm"
@@ -111,9 +116,9 @@ jobs:
             slug: arm64
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
 
@@ -124,9 +129,9 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: npm version "$VERSION" --no-git-tag-version --allow-same-version
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -134,7 +139,7 @@ jobs:
 
       - name: Build and push by digest
         id: build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: ${{ matrix.platform }}
@@ -149,7 +154,7 @@ jobs:
           mkdir -p /tmp/digests
           touch "/tmp/digests/${DIGEST#sha256:}"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: digest-${{ matrix.slug }}
           path: /tmp/digests/*
@@ -163,23 +168,23 @@ jobs:
       contents: write
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: /tmp/digests
           pattern: digest-*
           merge-multiple: true
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -196,43 +201,13 @@ jobs:
           TODAY=$(date +%Y-%m-%d)
           if [ -n "$PREV_TAG" ]; then
             COMPARE_URL="https://github.com/${GITHUB_REPOSITORY}/compare/${PREV_TAG}...${TAG}"
-            LOG_RANGE="${PREV_TAG}..HEAD"
           else
             COMPARE_URL=""
-            LOG_RANGE=""
           fi
 
-          SECTIONS=""
-
-          FEATURES=""
-          FIXES=""
-          OTHER=""
-
-          while IFS= read -r line; do
-            [ -z "$line" ] && continue
-            if echo "$line" | grep -qiE '^feat'; then
-              msg=$(echo "$line" | sed -E 's/^feat(\([^)]*\))?:\s*//')
-              FEATURES="${FEATURES}* ${msg}"$'\n'
-            elif echo "$line" | grep -qiE '^fix'; then
-              msg=$(echo "$line" | sed -E 's/^fix(\([^)]*\))?:\s*//')
-              FIXES="${FIXES}* ${msg}"$'\n'
-            else
-              cleaned=$(echo "$line" | sed -E 's/^[a-z]+(\([^)]*\))?:\s*//')
-              OTHER="${OTHER}* ${cleaned}"$'\n'
-            fi
-          done < <(git log ${LOG_RANGE} --pretty=format:"%s" --no-merges)
-
-          if [ -n "$FEATURES" ]; then
-            SECTIONS="${SECTIONS}"$'\n'"### Features"$'\n'$'\n'"${FEATURES}"
-          fi
-
-          if [ -n "$FIXES" ]; then
-            SECTIONS="${SECTIONS}"$'\n'"### Bug Fixes"$'\n'$'\n'"${FIXES}"
-          fi
-
-          if [ -n "$OTHER" ]; then
-            SECTIONS="${SECTIONS}"$'\n'"### Other Changes"$'\n'$'\n'"${OTHER}"
-          fi
+          # $(...) strips the trailing newline, so add it back for the layout.
+          NOTES=$(node scripts/release-notes.mjs)
+          SECTIONS=$'\n'"${NOTES}"$'\n'
 
           CHANGELOG_ENTRY="## [$VERSION]($COMPARE_URL) ($TODAY)"$'\n'$'\n'"${SECTIONS}"
 
@@ -260,6 +235,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package.json package-lock.json CHANGELOG.md
+          git rm -q -- $(git ls-files 'changes/*.md' ':!:changes/README.md')
           git commit -m "chore(release): $VERSION"
           git tag -a "$TAG" -m "Release $TAG"
           git push --atomic origin HEAD:main "refs/tags/$TAG"
@@ -284,8 +260,9 @@ jobs:
             -t "$IMAGE:latest" \
             $(printf "$IMAGE@sha256:%s " *)
 
-      # Notes come from the CHANGELOG step, not --generate-notes: that builds
-      # its body from merged PRs, and dev is merged to main directly.
+      # Notes are the changes/ fragments rendered by the CHANGELOG step, not
+      # --generate-notes: that builds its body from merged PRs, and dev is
+      # merged to main directly.
       # If this step alone fails, the tag is already pushed: run
       # `gh release create <tag> --notes-file <file>` rather than re-running.
       - name: Create GitHub Release

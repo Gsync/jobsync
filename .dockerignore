@@ -13,6 +13,7 @@ jobsyncdb/
 # Not needed by the build; excluded so edits here don't bust layer cache
 evals
 docs
+changes
 coverage
 __tests__
 e2e

@@ -18,6 +18,7 @@
     "test:e2e": "npx playwright test --project=chromium",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "release:notes": "node scripts/release-notes.mjs",
     "eval:resume-review": "npm --prefix evals run eval:resume-review",
     "eval:job-match": "npm --prefix evals run eval:job-match",
     "eval:automation-match": "npm --prefix evals run eval:automation-match",
