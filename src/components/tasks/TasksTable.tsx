@@ -279,7 +279,7 @@ function TasksTable({
           className="w-[110px] whitespace-nowrap justify-center"
         />
       </TableCell>
-      <TableCell className="hidden md:table-cell py-1 px-2">
+      <TableCell className="hidden md:table-cell py-1 px-2 text-center">
         {(() => {
           const level = getPriorityLevel(task.priority);
           const config = priorityConfig[level];
@@ -391,13 +391,13 @@ function TasksTable({
           <span className="sr-only">Complete</span>
         </TableHead>
         <TableHead className="h-9 px-2">Title</TableHead>
-        <TableHead className="h-9 px-2">Activity Type</TableHead>
+        <TableHead className="h-9 px-2">Type (Project)</TableHead>
         <TableHead className="hidden md:table-cell h-9 px-2">Status</TableHead>
         <TableHead className="hidden md:table-cell h-9 px-2 text-center">
           Priority
         </TableHead>
         <TableHead className="hidden md:table-cell h-9 px-2 text-center">
-          % Complete
+          Progress
         </TableHead>
         <TableHead className="h-9 px-1">
           <span className="sr-only">Actions</span>
