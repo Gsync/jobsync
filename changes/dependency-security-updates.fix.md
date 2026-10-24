@@ -1,1 +1,1 @@
-Update dependencies to fix critical security vulnerabilities in proxy-addr and the MCP SDK.
+Update dependencies to fix security vulnerabilities, including a critical remote code execution flaw in Next.js image optimization and issues in proxy-addr, the MCP SDK, markdown-it, sharp and the rich-text editor.
