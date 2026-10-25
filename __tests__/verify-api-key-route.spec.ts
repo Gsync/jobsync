@@ -18,6 +18,9 @@ vi.mock("@/lib/ai/provider-registry.server", () => ({
     get openai() {
       return mockVerifier;
     },
+    get "openai-compatible"() {
+      return mockVerifier;
+    },
   },
 }));
 
@@ -105,5 +108,22 @@ describe("POST /api/settings/api-keys/verify", () => {
     expect(data.success).toBe(false);
     expect(data.error).toBe("Invalid API key");
     expect(data.reason).toBeUndefined();
+  });
+
+  it("passes openai-compatible credentials as { baseURL, apiKey }", async () => {
+    mockVerifier.mockResolvedValue({ success: true });
+
+    await POST(
+      req({
+        provider: "openai-compatible",
+        key: "http://127.0.0.1:1234",
+        apiKey: "sk-local",
+      }),
+    );
+
+    expect(mockVerifier).toHaveBeenCalledWith({
+      baseURL: "http://127.0.0.1:1234",
+      apiKey: "sk-local",
+    });
   });
 });

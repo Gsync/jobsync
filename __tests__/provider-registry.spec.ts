@@ -5,15 +5,16 @@ describe("AI_PROVIDERS", () => {
     expect(AI_PROVIDERS).toContain("openrouter");
   });
 
-  it("contains exactly 5 providers", () => {
-    expect(AI_PROVIDERS).toHaveLength(5);
+  it("contains exactly 6 providers", () => {
+    expect(AI_PROVIDERS).toHaveLength(6);
   });
 
-  it("contains ollama, openai, deepseek, openrouter, gemini", () => {
+  it("contains ollama, openai, openai-compatible, deepseek, openrouter, gemini", () => {
     expect(AI_PROVIDERS).toEqual(
       expect.arrayContaining([
         "ollama",
         "openai",
+        "openai-compatible",
         "deepseek",
         "openrouter",
         "gemini",
@@ -132,5 +133,21 @@ describe("PROVIDER_REGISTRY – openrouter entry", () => {
         "meta-llama/llama-3-8b",
       ]);
     });
+  });
+});
+
+describe("PROVIDER_REGISTRY – openai-compatible entry", () => {
+  const entry = PROVIDER_REGISTRY["openai-compatible"];
+
+  it("uses a non-sensitive base URL", () => {
+    expect(entry.credentialType).toBe("base-url");
+    expect(entry.keyConfig.sensitive).toBe(false);
+    expect(entry.modelsEndpoint).toBe("openai-compatible/models");
+  });
+
+  it("parses OpenAI-style model lists", () => {
+    expect(
+      entry.parseModelsResponse!({ data: [{ id: "local-model" }] }),
+    ).toEqual(["local-model"]);
   });
 });
