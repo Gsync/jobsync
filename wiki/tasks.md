@@ -27,7 +27,7 @@ Click **New Task** in the Tasks card header, or **Task** at the bottom of the Da
 
 ## Why don't I see all my tasks?
 
-Because the list starts filtered to **In Progress** and **Needs Attention**, so completed and cancelled tasks are hidden. Click **Status** in the card header and tick **Complete** or **Cancelled** to bring them back. The filter goes back to its default when you reload the page.
+Because the list starts filtered to **In Progress** and **Needs Attention**, so completed and cancelled tasks are hidden. Click the filter button (the sliders icon) in the card header and, under **Filter by Status**, tick **Complete** or **Cancelled** to bring them back. The filter goes back to its default when you reload the page.
 
 Two other things narrow the list. The search box matches a task's title, description and activity type. The **Activity Types** panel on the left limits the list to one type, and that choice is kept in the address bar; pick **All** to clear it. The panel's counts include only tasks that are not complete or cancelled, whatever the Status filter says, and it lists only types that have such tasks. On a narrow screen the panel is hidden, and the arrow on its edge collapses it on a wide one.
 
@@ -35,7 +35,7 @@ Two other things narrow the list. The search box matches a task's title, descrip
 
 Highest priority first, then newest. The priority badge colours the number: 0–3 is Low, 4–6 Medium, 7–8 High and 9–10 Critical.
 
-**Group by** in the card header splits the list into headed sections, each with a count:
+**Group by**, in the same filter menu, splits the list into headed sections, each with a count:
 
 - **Due Date** — Overdue, Today, Tomorrow, This Week, Later and No Due Date, in that order.
 - **Created Date** and **Updated Date** — one section per day, newest first.

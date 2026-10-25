@@ -169,7 +169,7 @@ test.describe("Tasks Management", () => {
     await navigateToTasks(page);
 
     await page
-      .getByRole("button", { name: "Status", exact: true })
+      .getByRole("button", { name: "Filter tasks" })
       .click({ force: true });
     await expect(page.getByText("Filter by Status")).toBeVisible();
 
@@ -363,7 +363,7 @@ test.describe("Tasks Management", () => {
 
       // Add Complete status to filter to see completed tasks
       await page
-        .getByRole("button", { name: "Status", exact: true })
+        .getByRole("button", { name: "Filter tasks" })
         .click({ force: true });
       await page
         .getByRole("menuitemcheckbox", { name: "Complete" })

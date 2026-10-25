@@ -714,7 +714,7 @@ describe("TasksContainer Component", () => {
     });
 
     it("should toggle status filter", async () => {
-      const filterButton = screen.getByRole("button", { name: /status/i });
+      const filterButton = screen.getByRole("button", { name: "Filter tasks" });
       await user.click(filterButton);
 
       const inProgressCheckbox = screen.getByRole("menuitemcheckbox", {
@@ -732,15 +732,13 @@ describe("TasksContainer Component", () => {
     });
 
     it("should change grouping option", async () => {
-      const groupBySelect = screen.getByRole("combobox");
-      await user.click(groupBySelect);
+      const filterButton = screen.getByRole("button", { name: "Filter tasks" });
+      await user.click(filterButton);
 
-      const dueDateOption = screen.getByRole("option", { name: "Due Date" });
-      await user.click(dueDateOption);
-
-      await waitFor(() => {
-        expect(groupBySelect).toHaveTextContent("Due Date");
+      const dueDateOption = screen.getByRole("menuitemradio", {
+        name: "Due Date",
       });
+      await user.click(dueDateOption);
 
       await waitFor(() => {
         expect(getTasksList).toHaveBeenLastCalledWith(1, 25, "type-1", [
@@ -1012,7 +1010,7 @@ describe("TasksContainer Component", () => {
       });
 
       // Toggle status filter first
-      const filterButton = screen.getByRole("button", { name: /status/i });
+      const filterButton = screen.getByRole("button", { name: "Filter tasks" });
       await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).click(
         filterButton
       );
