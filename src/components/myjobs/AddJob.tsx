@@ -53,7 +53,6 @@ import { redirect, useRouter, useSearchParams } from "next/navigation";
 import { Combobox } from "../ComboBox";
 import { NotesCollapsibleSection } from "./NotesCollapsibleSection";
 import { CoverLetter, Resume } from "@/models/profile.model";
-import CreateResume from "../profile/CreateResume";
 import { getResumeList } from "@/actions/profile.actions";
 import { getCoverLetterList } from "@/actions/coverLetter.actions";
 import { TagInput } from "./TagInput";
@@ -98,7 +97,6 @@ export function AddJob({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [dialogOpen, setDialogOpen] = useState(initialOpen ?? false);
-  const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [coverLetters, setCoverLetters] = useState<CoverLetter[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>(tags);
@@ -209,12 +207,6 @@ export function AddJob({
     loadCoverLetters();
   }, [dialogOpen, loadResumes, loadCoverLetters]);
 
-  const setNewResumeId = (id: string) => {
-    setTimeout(() => {
-      setValue("resume", id);
-    }, 500);
-  };
-
   function onSubmit(data: z.infer<typeof AddJobFormSchema>) {
     const selected = resumes.find((r) => r.id === data.resume);
     if (selected && !hasMinResumeSections(selected._count?.ResumeSections)) {
@@ -286,10 +278,6 @@ export function AddJob({
   };
 
   const closeDialog = () => setDialogOpen(false);
-
-  const createResume = () => {
-    setResumeDialogOpen(true);
-  };
 
   return (
     <>
@@ -579,7 +567,7 @@ export function AddJob({
                 </div>
 
                 {/* Resume */}
-                <div className="flex items-end">
+                <div>
                   <FormField
                     control={form.control}
                     name="resume"
@@ -602,15 +590,6 @@ export function AddJob({
                         <FormMessage />
                       </FormItem>
                     )}
-                  />
-                  <Button variant="link" type="button" onClick={createResume}>
-                    Add New
-                  </Button>
-                  <CreateResume
-                    resumeDialogOpen={resumeDialogOpen}
-                    setResumeDialogOpen={setResumeDialogOpen}
-                    reloadResumes={loadResumes}
-                    setNewResumeId={setNewResumeId}
                   />
                 </div>
 
