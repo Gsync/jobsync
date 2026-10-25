@@ -26,6 +26,7 @@ import {
 } from "@/lib/telemetry";
 import { formatError } from "./shared";
 
+import { supportsTemperature, withModelTemperature } from "@/lib/ai/model-params";
 // Runs an on-demand LLM match for an un-analyzed discovered job using the
 // resume tied to its automation and the user's AI settings (no model picker —
 // mirrors the automation runner). Upgrades matchData with analyzed: true.
@@ -89,14 +90,15 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
       resumePre.data.normalizedText,
       jobPre.data.normalizedText,
     );
+    const jobMatchModelName = ai.model || "qwen3.5:9b";
 
     const result = await withSpan(
       "automation.analyze",
       {
         ...genAiRequestAttrs({
           provider: ai.provider,
-          model: ai.model || "qwen3.5:9b",
-          temperature: 0.3,
+          model: jobMatchModelName,
+          temperature: supportsTemperature(jobMatchModelName) ? 0.3 : undefined,
           numCtx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
           surface: SURFACES.JOB_MATCH,
           system: JOB_MATCH_SYSTEM_PROMPT,
@@ -123,7 +125,7 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
             model,
             system: JOB_MATCH_SYSTEM_PROMPT,
             prompt: promptText,
-            temperature: 0.3,
+            ...withModelTemperature(jobMatchModelName, { temperature: 0.3 }),
           });
         } catch (error) {
           void tracker.finish({ error });

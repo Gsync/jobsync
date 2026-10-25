@@ -49,6 +49,7 @@ import {
 import { addJobSettled, AGENT_CHAT_TERMINAL_TOOLS } from "@/models/agent.model";
 import { startAiCall, usageOfSteps, type TokenUsage } from "@/lib/aiUsage/tracker";
 
+import { supportsTemperature, withModelTemperature } from "@/lib/ai/model-params";
 // The one terminal tool whose stop condition is not "was it called" — see
 // addJobSettled.
 const addJobSettledStop: StopCondition<any> = ({ steps }) =>
@@ -229,7 +230,7 @@ export const POST = async (req: NextRequest) => {
     ...genAiRequestAttrs({
       provider,
       model: modelName,
-      temperature: TEMPERATURES.ANALYSIS,
+      temperature: supportsTemperature(modelName) ? TEMPERATURES.ANALYSIS : undefined,
       numCtx: APP_CONSTANTS.AGENT_CHAT_NUM_CTX,
       surface: SURFACES.AGENT_CHAT,
       system: AGENT_CHAT_SYSTEM_PROMPT,
@@ -290,7 +291,7 @@ export const POST = async (req: NextRequest) => {
             ),
           ],
           // Argument extraction wants determinism.
-          temperature: TEMPERATURES.ANALYSIS,
+          ...withModelTemperature(modelName, { temperature: TEMPERATURES.ANALYSIS }),
           abortSignal: turnSignal,
           providerOptions: {
             // qwen3.5 is a hybrid-reasoning model and the provider defaults

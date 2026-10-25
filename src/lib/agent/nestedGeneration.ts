@@ -14,6 +14,7 @@ import {
 import { startAiCall } from "@/lib/aiUsage/tracker";
 import { FEATURE_BY_NESTED_LABEL } from "@/models/aiUsage.model";
 
+import { supportsTemperature, withModelTemperature } from "@/lib/ai/model-params";
 export type NestedGenerationResult =
   | { status: "ok"; text: string }
   | { status: "incomplete" }
@@ -74,7 +75,7 @@ export async function runNestedGeneration({
     ...genAiRequestAttrs({
       provider,
       model: modelName,
-      temperature,
+      temperature: supportsTemperature(modelName) ? temperature : undefined,
       numCtx,
       surface: SURFACE_BY_NESTED_LABEL[label] ?? SURFACES.AGENT_CHAT,
       system,
@@ -114,7 +115,7 @@ export async function runNestedGeneration({
         model,
         system,
         prompt,
-        temperature,
+        ...withModelTemperature(modelName, { temperature }),
         abortSignal: signal,
         // Deliberately no think:true. These sub-calls have no tools, so
         // reasoning buys nothing and costs 30s. The chat loop enables it.

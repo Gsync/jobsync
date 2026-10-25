@@ -30,6 +30,7 @@ import {
 } from "@/lib/telemetry";
 import { startAiCall } from "@/lib/aiUsage/tracker";
 
+import { supportsTemperature, withModelTemperature } from "@/lib/ai/model-params";
 export const POST = async (req: NextRequest) => {
   const session = await auth();
   const userId = session?.user?.id;
@@ -142,7 +143,7 @@ export const POST = async (req: NextRequest) => {
       ...genAiRequestAttrs({
         provider: selectedModel.provider,
         model: selectedModel.model,
-        temperature: TEMPERATURES.ANALYSIS,
+        temperature: supportsTemperature(selectedModel.model) ? TEMPERATURES.ANALYSIS : undefined,
         numCtx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
         surface: SURFACES.RESUME_IMPORT,
         system: RESUME_IMPORT_SYSTEM_PROMPT,
@@ -172,7 +173,7 @@ export const POST = async (req: NextRequest) => {
         output: Output.object({ schema: ResumeImportSchema }),
         system: RESUME_IMPORT_SYSTEM_PROMPT,
         prompt: buildResumeImportPrompt(preprocessResult.data.normalizedText),
-        temperature: TEMPERATURES.ANALYSIS,
+        ...withModelTemperature(selectedModel.model, { temperature: TEMPERATURES.ANALYSIS }),
         abortSignal: controller.signal,
         providerOptions: {
           ollama: { options: { num_ctx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX } },
