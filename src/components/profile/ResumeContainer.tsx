@@ -71,7 +71,7 @@ function ResumeContainer({
     importMode,
     aiModel,
     aiReady,
-    ollamaConnected,
+    localProviderConnected,
     connectionError,
     isStructuring,
     handleAcceptCard,
@@ -247,7 +247,7 @@ function ResumeContainer({
       {showStructureWithAI && (
         <StructureWithAiCard
           aiModel={aiModel}
-          ollamaConnected={ollamaConnected}
+          localProviderConnected={localProviderConnected}
           connectionError={connectionError}
           isStructuring={isStructuring}
           onStructure={handleStructureWithAI}

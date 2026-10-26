@@ -29,15 +29,14 @@ import {
   getUserApiKeys,
   saveApiKey,
   deleteApiKey,
-  getDefaultOllamaBaseUrl,
+  getProviderDefaultBaseUrl,
 } from "@/actions/apiKey.actions";
 import type {
   ApiKeyClientResponse,
   ApiKeyProvider,
 } from "@/models/apiKey.model";
-import { getAiProviders } from "@/lib/ai/provider-registry";
-import { AiProvider } from "@/models/ai.model";
-import { checkOllamaConnection } from "@/utils/ai.utils";
+import { getAiProviders, PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
+import { checkLocalProviderConnection } from "@/utils/ai.utils";
 import { getUserSettings } from "@/actions/userSettings.actions";
 
 interface ProviderConfig {
@@ -58,36 +57,51 @@ const PROVIDERS: ProviderConfig[] = getAiProviders().map((entry) => ({
   sensitive: entry.keyConfig.sensitive,
 }));
 
+const LOCAL_PROVIDERS = getAiProviders().filter(
+  (entry) => entry.category === "local",
+);
+
 function ApiKeySettings() {
   const [keys, setKeys] = useState<ApiKeyClientResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [defaultOllamaUrl, setDefaultOllamaUrl] = useState(
-    "http://127.0.0.1:11434",
-  );
+  const [defaultBaseUrls, setDefaultBaseUrls] = useState<
+    Record<string, string>
+  >({});
   const [editingProvider, setEditingProvider] = useState<ApiKeyProvider | null>(
     null,
   );
   const [inputValue, setInputValue] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [ollamaConnected, setOllamaConnected] = useState<boolean | null>(null);
-  const [ollamaChecking, setOllamaChecking] = useState(false);
+  const [localConnected, setLocalConnected] = useState<
+    Record<string, boolean | null>
+  >({});
+  const [localChecking, setLocalChecking] = useState<Record<string, boolean>>(
+    {},
+  );
 
-  const recheckOllamaConnection = async () => {
-    setOllamaChecking(true);
-    const result = await checkOllamaConnection(AiProvider.OLLAMA);
-    setOllamaConnected(result.isConnected);
-    setOllamaChecking(false);
+  const recheckLocalConnection = async (providerId: string) => {
+    setLocalChecking((prev) => ({ ...prev, [providerId]: true }));
+    const result = await checkLocalProviderConnection(providerId);
+    setLocalConnected((prev) => ({ ...prev, [providerId]: result.isConnected }));
+    setLocalChecking((prev) => ({ ...prev, [providerId]: false }));
   };
 
   useEffect(() => {
     fetchKeys();
-    getDefaultOllamaBaseUrl().then(setDefaultOllamaUrl);
+    LOCAL_PROVIDERS.forEach((entry) => {
+      getProviderDefaultBaseUrl(entry.id).then((url) =>
+        setDefaultBaseUrls((prev) => ({ ...prev, [entry.id]: url })),
+      );
+    });
     // Probing on mount for someone who picked another provider reads as the
-    // app overriding their choice, so only auto-check when Ollama is selected.
+    // app overriding their choice, so only auto-check the one they selected.
     getUserSettings().then((result) => {
-      if (result?.success && result.data?.settings?.ai?.provider === AiProvider.OLLAMA) {
-        recheckOllamaConnection();
+      const provider = result?.success
+        ? result.data?.settings?.ai?.provider
+        : undefined;
+      if (provider && PROVIDER_REGISTRY[provider]?.category === "local") {
+        recheckLocalConnection(provider);
       }
     });
   }, []);
@@ -222,7 +236,7 @@ function ApiKeySettings() {
                       {provider.description}
                       {isBaseUrl && (
                         <span className="block text-xs text-muted-foreground/70 mt-0.5">
-                          Default: {provider.id === "ollama" ? defaultOllamaUrl : provider.placeholder}
+                          Default: {defaultBaseUrls[provider.id] ?? provider.placeholder}
                         </span>
                       )}
                     </CardDescription>
@@ -239,33 +253,33 @@ function ApiKeySettings() {
                   )}
                 </div>
               </CardHeader>
-              {provider.id === "ollama" && (
+              {PROVIDER_REGISTRY[provider.id]?.category === "local" && (
                 <div className="px-6 pb-3">
                   <div className="flex items-center gap-2">
-                    {ollamaChecking ? (
+                    {localChecking[provider.id] ? (
                       <div className="flex items-center gap-1 text-muted-foreground text-sm">
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         <span>Checking...</span>
                       </div>
-                    ) : ollamaConnected === true ? (
+                    ) : localConnected[provider.id] === true ? (
                       <div className="flex items-center gap-1 text-green-600 text-sm">
                         <CheckCircle className="h-3.5 w-3.5 shrink-0" />
-                        <span>Ollama is running</span>
+                        <span>{provider.name} is running</span>
                       </div>
-                    ) : ollamaConnected === false ? (
+                    ) : localConnected[provider.id] === false ? (
                       <div className="flex items-center gap-1 text-red-600 text-sm">
                         <XCircle className="h-3.5 w-3.5 shrink-0" />
-                        <span>Ollama is not running</span>
+                        <span>{provider.name} is not running</span>
                       </div>
                     ) : null}
                     <Button
                       size="sm"
                       variant="ghost"
                       className="h-6 w-6 p-0"
-                      onClick={recheckOllamaConnection}
-                      disabled={ollamaChecking}
+                      onClick={() => recheckLocalConnection(provider.id)}
+                      disabled={localChecking[provider.id]}
                     >
-                      <RefreshCw className={`h-3.5 w-3.5 ${ollamaChecking ? "animate-spin" : ""}`} />
+                      <RefreshCw className={`h-3.5 w-3.5 ${localChecking[provider.id] ? "animate-spin" : ""}`} />
                     </Button>
                   </div>
                 </div>
@@ -281,8 +295,8 @@ function ApiKeySettings() {
                         id={`key-${provider.id}`}
                         type={provider.inputType}
                         placeholder={
-                          isBaseUrl && provider.id === "ollama"
-                            ? defaultOllamaUrl
+                          isBaseUrl
+                            ? defaultBaseUrls[provider.id] ?? provider.placeholder
                             : provider.placeholder
                         }
                         value={inputValue}
@@ -354,9 +368,7 @@ function ApiKeySettings() {
                                 <>
                                   Clear the saved {provider.name} base URL?
                                   JobSync will use the server default,{" "}
-                                  {provider.id === "ollama"
-                                    ? defaultOllamaUrl
-                                    : provider.placeholder}
+                                  {defaultBaseUrls[provider.id] ?? provider.placeholder}
                                   .
                                 </>
                               ) : (

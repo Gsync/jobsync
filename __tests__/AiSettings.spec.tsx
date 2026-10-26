@@ -13,7 +13,7 @@ vi.mock("@/components/agent/AgentChatProvider", () => ({
 }));
 
 vi.mock("@/utils/ai.utils", () => ({
-  checkOllamaConnection: vi.fn().mockResolvedValue({ isConnected: true }),
+  checkLocalProviderConnection: vi.fn().mockResolvedValue({ isConnected: true }),
 }));
 
 vi.mock("@/lib/toast", () => ({ toastSuccess: vi.fn(), toastError: vi.fn() }));

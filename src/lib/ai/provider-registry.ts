@@ -115,9 +115,29 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
       sensitive: true,
     },
   },
+
+  strata: {
+    id: "strata",
+    displayName: "Strata",
+    credentialType: "base-url",
+    category: "local",
+    envVar: "STRATA_BASE_URL",
+    defaultCredential: "http://127.0.0.1:8080",
+    modelsEndpoint: "strata/models",
+    parseModelsResponse: (data) =>
+      (data.data?.map((m: any) => m.id) ?? []).sort(),
+    requiresRunningCheck: false,
+    supportsKeepAlive: false,
+    keyConfig: {
+      placeholder: "http://127.0.0.1:8080",
+      inputType: "text",
+      description: "Base URL for your local Strata server",
+      sensitive: false,
+    },
+  },
 };
 
-export const AI_PROVIDERS = ["ollama", "openai", "deepseek", "openrouter", "gemini"] as const;
+export const AI_PROVIDERS = ["ollama", "openai", "deepseek", "openrouter", "gemini", "strata"] as const;
 export type AiProviderId = (typeof AI_PROVIDERS)[number];
 
 export function getAiProviders(): ProviderRegistryEntry[] {

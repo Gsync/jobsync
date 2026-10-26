@@ -2,10 +2,10 @@ import db from "@/lib/db";
 import { resumeDetailInclude } from "@/lib/jobs/resumeDetailInclude";
 import type { Automation } from "@/models/automation.model";
 import { ATS_PROVIDERS } from "./ats/registry";
-import { AiProvider } from "@/models/ai.model";
 import { automationLogger } from "@/lib/automation-logger";
+import { PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
 import { PROVIDER_VERIFIERS } from "@/lib/ai/provider-registry.server";
-import { getOllamaBaseUrl } from "@/actions/apiKey.actions";
+import { resolveApiKey } from "@/lib/api-key-resolver";
 import { log, withSpan } from "@/lib/telemetry";
 import type { ResumeWithSections, RunnerResult } from "./automation-run/types";
 import { getUserAiSettings } from "./automation-run/aiSettings";
@@ -141,14 +141,19 @@ async function runAutomationTraced(
     // Checked here (not just in the manual /run route) so scheduled/cron
     // runs also fail fast instead of silently completing with 0 matches.
     const aiSettings = await getUserAiSettings(automation.userId);
-    if (aiSettings.provider === AiProvider.OLLAMA) {
-      const ollamaCheck = await PROVIDER_VERIFIERS.ollama(
-        await getOllamaBaseUrl(automation.userId),
+    const aiEntry = PROVIDER_REGISTRY[aiSettings.provider];
+    if (aiEntry?.category === "local") {
+      const credential = await resolveApiKey(
+        automation.userId,
+        aiSettings.provider,
       );
-      if (!ollamaCheck.success) {
+      const localCheck = await PROVIDER_VERIFIERS[aiSettings.provider](
+        credential ?? "",
+      );
+      if (!localCheck.success) {
         const message =
-          ollamaCheck.error ||
-          "Ollama is not available. Please make sure Ollama is running.";
+          localCheck.error ||
+          `${aiEntry.displayName} is not available. Please make sure ${aiEntry.displayName} is running.`;
         automationLogger.log(automation.id, "error", message);
         automationLogger.endRun(automation.id);
 

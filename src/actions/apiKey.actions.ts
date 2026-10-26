@@ -6,6 +6,7 @@ import { requireUser } from "./shared";
 import { handleError } from "@/lib/utils";
 import { encrypt, getLast4 } from "@/lib/encryption";
 import { apiKeySaveSchema } from "@/models/apiKey.schema";
+import { PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
 import type {
   ApiKeyClientResponse,
   ApiKeyProvider,
@@ -157,8 +158,17 @@ export async function deleteApiKey(provider: string): Promise<{
   }
 }
 
-export async function getDefaultOllamaBaseUrl(): Promise<string> {
-  return process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
+// The server-configured default for any base-url ("local") provider —
+// its env var if set, else the registry's hardcoded fallback.
+export async function getProviderDefaultBaseUrl(
+  provider: string,
+): Promise<string> {
+  const entry = PROVIDER_REGISTRY[provider];
+  if (entry?.envVar) {
+    const value = process.env[entry.envVar];
+    if (value) return value;
+  }
+  return entry?.defaultCredential ?? "";
 }
 
 // userId is optional and only needed for callers with no request-scoped

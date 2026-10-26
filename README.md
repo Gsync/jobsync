@@ -19,7 +19,7 @@
 
 Track every application, get AI resume reviews and job matches, and discover new openings automatically — **free, open source, and your data never leaves your server.**
 
-🔒 Self-hosted · 🤖 Local AI via Ollama or any cloud provider · 🔌 MCP server for Claude Desktop, Hermes, etc
+🔒 Self-hosted · 🤖 Local AI via Ollama, Strata or any cloud provider · 🔌 MCP server for Claude Desktop, Hermes, etc
 
 ![AI Job Match](./screenshots/jobsync-ai-jobmatch.gif)
 
@@ -32,7 +32,7 @@ Track every application, get AI resume reviews and job matches, and discover new
 - **One place for your whole search:** applications, resumes, contacts, interviews, tasks and AI help in a single source of truth, instead of scattered spreadsheets, notes and tabs.
 - **Free forever:** no subscription and no paywalled tiers.
 - **Private:** self-hosted, so your resumes and applications stay on your own server.
-- **Local AI, no API costs:** run models on your own machine with Ollama, or bring a cloud provider key.
+- **Local AI, no API costs:** run models on your own machine with Ollama or Strata, or bring a cloud provider key.
 
 ## Key Features
 
@@ -251,6 +251,18 @@ Works with [Ollama](https://ollama.com) to run AI models locally on your machine
 - **Recommended:** Increase the Ollama context length from the default 4k to 16k — this helps automated job matching avoid truncating longer resume/job description prompts. The AI Assistant, resume review, job match and cover letter features aren't affected: they ask Ollama for the context size they need on every call, so raising this setting won't change them. Don't raise it much further either — a very large default costs you noticeably slower responses for no benefit
 - No API key required — runs entirely on your hardware
 - If you are running jobsync on a homelab server, you can expose ollama to network from Ollama settings on your local machine. Also make sure your ollama base url is pointed to your local system IP under API keys section of settings.
+
+</details>
+
+<details>
+<summary><strong>Strata (Local)</strong></summary>
+
+Works with [Strata](https://github.com/niko1221/strata) — a local inference server with an OpenAI-compatible API — to run AI models on your own hardware.
+
+- Install and start Strata (`strata launch`); by default it serves on `http://127.0.0.1:8080`
+- Set the base URL under **Settings > API Keys** (or `STRATA_BASE_URL`) if it's running somewhere other than the default
+- AI settings will show whatever model Strata reports as loaded via its `/v1/models` endpoint
+- No API key required for local use — runs entirely on your hardware
 
 </details>
 
