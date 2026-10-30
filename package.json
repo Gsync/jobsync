@@ -121,11 +121,11 @@
     "vitest": "^4.1.12"
   },
   "overrides": {
-    "picomatch": ">=2.3.2",
-    "effect": ">=3.20.0",
+    "picomatch@^2": "^2.3.2",
+    "effect": ">=3.20.0 <4",
     "sharp": ">=0.35.5 <0.36",
     "postcss": "^8.5.12",
-    "proxy-addr": ">=2.0.8",
+    "proxy-addr": ">=2.0.8 <3",
     "vite": ">=8.1.6 <9"
   }
 }
