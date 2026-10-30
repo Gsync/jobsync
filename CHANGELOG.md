@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.2.0](https://github.com/Gsync/jobsync/compare/v1.1.22...v1.2.0) (2026-10-30)
+
+
+### Breaking Changes
+
+* JobSync now stores its data in Postgres: Docker installs run a bundled Postgres 18 database and copy an existing SQLite database into it on first start, and an external Postgres can be used by setting DATABASE_URL (see the Postgres upgrade guide).
+
+### Features
+
+* The Add Job form is regrouped into sections with one-click Status, Workplace and Job type choices, a footer listing the required fields still empty, and Ctrl/⌘+Enter to save.
+* Add a Generate mock data button and a development-only Clear all data button to the Developer page.
+* Add backup-db.sh and restore-db.sh to back up and restore the whole database instance.
+* Show a caret on the status badge in the jobs table, so it is clear the status can be changed from there.
+
+### Bug Fixes
+
+* Agent chat now tells you when no API key is set for the selected provider, or when the selected model is not available to your key, instead of showing a generic error.
+* Update dependencies to fix security vulnerabilities, including a critical remote code execution flaw in Next.js image optimization and issues in proxy-addr, the MCP SDK, markdown-it, sharp and the rich-text editor.
+* OpenAI GPT-6 and GPT-6.1 models now work for chat, resume review, job matching, cover letters, resume import and automations instead of failing with an "Unsupported parameter: temperature" error.
+* The Greenhouse company picker in the automation wizard now covers employers across the whole alphabet (about 2,400 live boards, up from 602), and boards that no longer exist have been removed.
+* Fix the dashboard jumping when switching the Recent card between Jobs and Activities.
+
+### Other Changes
+
+* The Add Job form no longer has an "Add New" resume link, since a resume created there could not be selected until it had enough sections; create resumes from the Profile page instead.
+* Use a smaller header and summary values on the job, automation and company details pages.
+* Rename the Activities and Tasks table headers to "Type (Project)" and "Progress", and center the task Priority badge under its header.
+* The Tasks page's Status filter and Group by menu are now one filter button, matching the Jobs page.
+
+
 ## [1.1.22](https://github.com/Gsync/jobsync/compare/v1.1.21...v1.1.22) (2026-10-11)
 
 

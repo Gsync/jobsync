@@ -1,1 +1,0 @@
-JobSync now stores its data in Postgres: Docker installs run a bundled Postgres 18 database and copy an existing SQLite database into it on first start, and an external Postgres can be used by setting DATABASE_URL (see the Postgres upgrade guide).
