@@ -8,9 +8,9 @@ import {
   getUserAiSettings,
   AutomationAlreadyRunningError,
 } from "@/lib/scraper";
+import { PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
 import { PROVIDER_VERIFIERS } from "@/lib/ai/provider-registry.server";
-import { getOllamaBaseUrl } from "@/actions/apiKey.actions";
-import { AiProvider } from "@/models/ai.model";
+import { resolveApiKey } from "@/lib/api-key-resolver";
 import { isRetiredBoard, type JobBoard } from "@/models/automation.model";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { log } from "@/lib/telemetry";
@@ -93,16 +93,19 @@ export async function POST(
     }
 
     const aiSettings = await getUserAiSettings(userId);
-    if (aiSettings.provider === AiProvider.OLLAMA) {
-      const baseUrl = await getOllamaBaseUrl(userId);
-      const ollamaCheck = await PROVIDER_VERIFIERS.ollama(baseUrl);
-      if (!ollamaCheck.success) {
+    const aiEntry = PROVIDER_REGISTRY[aiSettings.provider];
+    if (aiEntry?.category === "local") {
+      const credential = await resolveApiKey(userId, aiSettings.provider);
+      const localCheck = await PROVIDER_VERIFIERS[aiSettings.provider](
+        credential ?? "",
+      );
+      if (!localCheck.success) {
         return NextResponse.json(
           {
             success: false,
             message:
-              ollamaCheck.error ||
-              "Ollama is not available. Please make sure Ollama is running.",
+              localCheck.error ||
+              `${aiEntry.displayName} is not available. Please make sure ${aiEntry.displayName} is running.`,
           },
           { status: 503 }
         );
@@ -110,7 +113,7 @@ export async function POST(
     }
 
     // Rate-limited last, right before the run actually launches, so failed
-    // preflight checks above (missing resume, already running, Ollama down)
+    // preflight checks above (missing resume, already running, local AI down)
     // don't burn the user's hourly manual-run quota.
     if (!checkRateLimit(userId)) {
       return NextResponse.json(

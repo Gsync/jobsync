@@ -7,7 +7,7 @@ import { AgentChatEmptyState } from "@/components/agent/AgentChatEmptyState";
 import { AgentChatInput } from "@/components/agent/AgentChatInput";
 import { AgentChatMessages } from "@/components/agent/AgentChatMessages";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
-import { AiProvider } from "@/models/ai.model";
+import { PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
 
 export function AgentChatPanel() {
   const {
@@ -26,7 +26,7 @@ export function AgentChatPanel() {
   // surfaces use for their provider preflight.
   const statusIcon = !preflight.checked ? (
     <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
-  ) : preflight.provider === AiProvider.OLLAMA ? (
+  ) : preflight.provider && PROVIDER_REGISTRY[preflight.provider]?.category === "local" ? (
     preflight.ok ? (
       <CheckCircle className="h-3.5 w-3.5 shrink-0 text-green-500" />
     ) : (

@@ -3,16 +3,17 @@ import ApiKeySettings from "@/components/settings/ApiKeySettings";
 import { AiProvider } from "@/models/ai.model";
 
 const getUserApiKeys = vi.fn();
-const getDefaultOllamaBaseUrl = vi.fn();
+const getProviderDefaultBaseUrl = vi.fn();
 const deleteApiKey = vi.fn();
 const getUserSettings = vi.fn();
-const checkOllamaConnection = vi.fn();
+const checkLocalProviderConnection = vi.fn();
 
 vi.mock("@/actions/apiKey.actions", () => ({
   getUserApiKeys: () => getUserApiKeys(),
   saveApiKey: vi.fn(),
   deleteApiKey: (provider: string) => deleteApiKey(provider),
-  getDefaultOllamaBaseUrl: () => getDefaultOllamaBaseUrl(),
+  getProviderDefaultBaseUrl: (provider: string) =>
+    getProviderDefaultBaseUrl(provider),
 }));
 
 vi.mock("@/actions/userSettings.actions", () => ({
@@ -20,8 +21,8 @@ vi.mock("@/actions/userSettings.actions", () => ({
 }));
 
 vi.mock("@/utils/ai.utils", () => ({
-  checkOllamaConnection: (provider: AiProvider) =>
-    checkOllamaConnection(provider),
+  checkLocalProviderConnection: (provider: AiProvider) =>
+    checkLocalProviderConnection(provider),
 }));
 
 vi.mock("@/lib/toast", () => ({
@@ -36,21 +37,26 @@ function settingsFor(provider: AiProvider) {
   };
 }
 
-describe("ApiKeySettings — Ollama connection probe", () => {
+describe("ApiKeySettings — local provider connection probe", () => {
   beforeEach(() => {
     getUserApiKeys.mockResolvedValue({ success: true, data: [] });
-    getDefaultOllamaBaseUrl.mockResolvedValue("http://127.0.0.1:11434");
-    checkOllamaConnection.mockResolvedValue({ isConnected: true });
+    getProviderDefaultBaseUrl.mockImplementation((provider: string) =>
+      Promise.resolve(
+        provider === "ollama" ? "http://127.0.0.1:11434" : "http://127.0.0.1:8080",
+      ),
+    );
+    checkLocalProviderConnection.mockResolvedValue({ isConnected: true });
   });
 
-  it("does not probe Ollama when another provider is selected", async () => {
+  it("does not probe any local provider when a cloud provider is selected", async () => {
     getUserSettings.mockResolvedValue(settingsFor(AiProvider.OPENROUTER));
 
     render(<ApiKeySettings />);
 
     await waitFor(() => expect(getUserSettings).toHaveBeenCalled());
-    expect(checkOllamaConnection).not.toHaveBeenCalled();
+    expect(checkLocalProviderConnection).not.toHaveBeenCalled();
     expect(screen.queryByText(/Ollama is (not )?running/)).toBeNull();
+    expect(screen.queryByText(/Strata is (not )?running/)).toBeNull();
   });
 
   it("probes Ollama when it is the selected provider", async () => {
@@ -61,7 +67,24 @@ describe("ApiKeySettings — Ollama connection probe", () => {
     await waitFor(() =>
       expect(screen.getByText("Ollama is running")).toBeInTheDocument(),
     );
-    expect(checkOllamaConnection).toHaveBeenCalledWith(AiProvider.OLLAMA);
+    expect(checkLocalProviderConnection).toHaveBeenCalledWith(
+      AiProvider.OLLAMA,
+    );
+  });
+
+  it("probes Strata when it is the selected provider", async () => {
+    getUserSettings.mockResolvedValue(settingsFor(AiProvider.STRATA));
+
+    render(<ApiKeySettings />);
+
+    await waitFor(() =>
+      expect(screen.getByText("Strata is running")).toBeInTheDocument(),
+    );
+    expect(checkLocalProviderConnection).toHaveBeenCalledWith(
+      AiProvider.STRATA,
+    );
+    // Ollama's own indicator stays unprobed and independent of Strata's.
+    expect(screen.queryByText(/Ollama is (not )?running/)).toBeNull();
   });
 });
 
@@ -81,9 +104,9 @@ describe("ApiKeySettings — clearing a stored base URL", () => {
         },
       ],
     });
-    getDefaultOllamaBaseUrl.mockResolvedValue("http://127.0.0.1:11434");
+    getProviderDefaultBaseUrl.mockResolvedValue("http://127.0.0.1:11434");
     getUserSettings.mockResolvedValue(settingsFor(AiProvider.OPENROUTER));
-    checkOllamaConnection.mockResolvedValue({ isConnected: false });
+    checkLocalProviderConnection.mockResolvedValue({ isConnected: false });
   });
 
   it("offers a labelled reset that names the server default", async () => {

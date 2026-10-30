@@ -29,7 +29,7 @@ vi.mock("@/actions/userSettings.actions", () => ({
   getUserSettings: vi.fn(async () => ({ success: false })),
 }));
 vi.mock("@/utils/ai.utils", () => ({
-  checkOllamaConnection: vi.fn(async () => ({ isConnected: false })),
+  checkLocalProviderConnection: vi.fn(async () => ({ isConnected: false })),
 }));
 
 // Unrelated to the Review button — stub out so its own heavy dialogs and

@@ -37,7 +37,7 @@ vi.mock("@/actions/userSettings.actions", () => ({
   })),
 }));
 vi.mock("@/utils/ai.utils", () => ({
-  checkOllamaConnection: vi.fn(async () => ({ isConnected: true })),
+  checkLocalProviderConnection: vi.fn(async () => ({ isConnected: true })),
 }));
 
 import {
@@ -51,7 +51,7 @@ import {
   saveChatConversation,
 } from "@/actions/agentChat.actions";
 import { getUserSettings } from "@/actions/userSettings.actions";
-import { checkOllamaConnection } from "@/utils/ai.utils";
+import { checkLocalProviderConnection } from "@/utils/ai.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 
 function Probe() {
@@ -355,7 +355,7 @@ describe("AgentChatProvider", () => {
   });
 
   it("preflights Ollama on open and reports a failure", async () => {
-    (checkOllamaConnection as any).mockResolvedValue({
+    (checkLocalProviderConnection as any).mockResolvedValue({
       isConnected: false,
       error: "Ollama is not reachable.",
     });
@@ -376,7 +376,7 @@ describe("AgentChatProvider", () => {
       await userEvent.click(screen.getByText("open"));
     });
     expect(screen.getByTestId("state").textContent).toMatch(/false$/);
-    expect(checkOllamaConnection).not.toHaveBeenCalled();
+    expect(checkLocalProviderConnection).not.toHaveBeenCalled();
   });
 
   it("puts the page context in the request body", () => {

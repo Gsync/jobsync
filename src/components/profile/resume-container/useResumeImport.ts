@@ -7,7 +7,8 @@ import { resolveImportCard } from "@/actions/resumeImport.actions";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { AiModel, defaultModel } from "@/models/ai.model";
 import type { Resume } from "@/models/profile.model";
-import { checkOllamaConnection } from "@/utils/ai.utils";
+import { checkLocalProviderConnection } from "@/utils/ai.utils";
+import { PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
 import { streamResumeImport } from "@/utils/resumeImportStream.utils";
 import {
   buildPendingCards,
@@ -32,7 +33,9 @@ export function useResumeImport(resume: Resume) {
   // AI availability for "Structure with AI" button
   const [aiModel, setAiModel] = useState<AiModel>(defaultModel);
   const [aiReady, setAiReady] = useState(false);
-  const [ollamaConnected, setOllamaConnected] = useState<boolean | null>(
+  const [localProviderConnected, setLocalProviderConnected] = useState<
+    boolean | null
+  >(
     null,
   );
   const [connectionError, setConnectionError] = useState<string>("");
@@ -159,14 +162,15 @@ export function useResumeImport(resume: Resume) {
           };
           setAiModel(model);
           setAiReady(true);
-          if (model.provider === "ollama") {
-            setOllamaConnected(null);
+          if (PROVIDER_REGISTRY[model.provider]?.category === "local") {
+            setLocalProviderConnected(null);
             setConnectionError("");
-            checkOllamaConnection(model.provider).then((result) => {
-              setOllamaConnected(result.isConnected);
+            checkLocalProviderConnection(model.provider).then((result) => {
+              setLocalProviderConnected(result.isConnected);
               if (!result.isConnected) {
                 setConnectionError(
-                  result.error || "Ollama is not reachable.",
+                  result.error ||
+                    `${PROVIDER_REGISTRY[model.provider].displayName} is not reachable.`,
                 );
               }
             });
@@ -215,7 +219,7 @@ export function useResumeImport(resume: Resume) {
     importMode,
     aiModel,
     aiReady,
-    ollamaConnected,
+    localProviderConnected,
     connectionError,
     isStructuring,
     handleAcceptCard,

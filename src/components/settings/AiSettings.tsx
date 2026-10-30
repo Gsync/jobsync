@@ -24,7 +24,7 @@ import { Label } from "../ui/label";
 import { Button } from "../ui/button";
 import { toastSuccess, toastError } from "@/lib/toast";
 import { XCircle, Loader2, RefreshCw } from "lucide-react";
-import { checkOllamaConnection } from "@/utils/ai.utils";
+import { checkLocalProviderConnection } from "@/utils/ai.utils";
 import { getUserSettings, updateAiSettings } from "@/actions/userSettings.actions";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
 
@@ -111,11 +111,11 @@ function AiSettings() {
       (async () => {
         try {
           if (entry.category === "local") {
-            const connResult = await checkOllamaConnection(provider);
+            const connResult = await checkLocalProviderConnection(provider);
             if (!connResult.isConnected) {
               if (!cancelled) {
                 setFetchedModels(fallback);
-                setConnectionError(connResult.error || "Ollama is not reachable.");
+                setConnectionError(connResult.error || `${entry.displayName} is not reachable.`);
               }
               return;
             }

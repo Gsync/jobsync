@@ -5,11 +5,11 @@ describe("AI_PROVIDERS", () => {
     expect(AI_PROVIDERS).toContain("openrouter");
   });
 
-  it("contains exactly 5 providers", () => {
-    expect(AI_PROVIDERS).toHaveLength(5);
+  it("contains exactly 6 providers", () => {
+    expect(AI_PROVIDERS).toHaveLength(6);
   });
 
-  it("contains ollama, openai, deepseek, openrouter, gemini", () => {
+  it("contains ollama, openai, deepseek, openrouter, gemini, strata", () => {
     expect(AI_PROVIDERS).toEqual(
       expect.arrayContaining([
         "ollama",
@@ -17,6 +17,7 @@ describe("AI_PROVIDERS", () => {
         "deepseek",
         "openrouter",
         "gemini",
+        "strata",
       ]),
     );
   });
@@ -131,6 +132,66 @@ describe("PROVIDER_REGISTRY – openrouter entry", () => {
         "google/gemini-pro",
         "meta-llama/llama-3-8b",
       ]);
+    });
+  });
+});
+
+describe("PROVIDER_REGISTRY – strata entry", () => {
+  const entry = PROVIDER_REGISTRY.strata;
+
+  it("exists in the registry", () => {
+    expect(entry).toBeDefined();
+  });
+
+  it("has id 'strata'", () => {
+    expect(entry.id).toBe("strata");
+  });
+
+  it("has displayName 'Strata'", () => {
+    expect(entry.displayName).toBe("Strata");
+  });
+
+  it("uses base-url credential type", () => {
+    expect(entry.credentialType).toBe("base-url");
+  });
+
+  it("is categorized as local", () => {
+    expect(entry.category).toBe("local");
+  });
+
+  it("uses STRATA_BASE_URL env var", () => {
+    expect(entry.envVar).toBe("STRATA_BASE_URL");
+  });
+
+  it("has correct modelsEndpoint", () => {
+    expect(entry.modelsEndpoint).toBe("strata/models");
+  });
+
+  it("has a localhost defaultCredential", () => {
+    expect(entry.defaultCredential).toBe("http://127.0.0.1:8080");
+  });
+
+  it("has text input type", () => {
+    expect(entry.keyConfig.inputType).toBe("text");
+  });
+
+  it("does not mark the credential as sensitive", () => {
+    expect(entry.keyConfig.sensitive).toBe(false);
+  });
+
+  describe("parseModelsResponse", () => {
+    it("maps model ids and sorts alphabetically", () => {
+      const data = {
+        data: [{ id: "qwen3.8-flash-next" }, { id: "deepseek41" }],
+      };
+      expect(entry.parseModelsResponse!(data)).toEqual([
+        "deepseek41",
+        "qwen3.8-flash-next",
+      ]);
+    });
+
+    it("returns empty array when data property is missing", () => {
+      expect(entry.parseModelsResponse!({})).toEqual([]);
     });
   });
 });
