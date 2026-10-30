@@ -44,6 +44,8 @@ Track every application, get AI resume reviews and job matches, and discover new
 - **Resume Management:** Store resumes, export them as PDFs, and import existing PDF or Word files with AI.
 - **Automated Job Discovery:** Schedule searches over company job boards and AI-match each listing to your resume. [Details](#automated-job-discovery)
 - **Task & Activity Management:** Track tasks and time your activities. [Tasks](https://github.com/Gsync/jobsync/wiki/Tasks) · [Activities](https://github.com/Gsync/jobsync/wiki/Activities)
+- **Job Timeline:** Record each stage of a job's hiring process — when it happened, who interviewed you and which questions they asked. [Details](https://github.com/Gsync/jobsync/wiki/Timeline)
+- **Interviews:** One list of every interview round across all your jobs, upcoming and past, with its interviewers, prep questions and outcome. [Details](https://github.com/Gsync/jobsync/wiki/Interviews)
 - **Contacts:** Keep recruiters, interviewers and references, linked to the jobs they touched. [Details](https://github.com/Gsync/jobsync/wiki/Contacts)
 - **Company Pages:** One page per company with its jobs, people and links, plus a watchlist. [Details](https://github.com/Gsync/jobsync/wiki/Companies)
 - **Question Bank:** Build a library of interview questions and answers, tagged by skill.
@@ -131,7 +133,7 @@ Import an existing resume from a PDF or Word (.docx) file. AI extracts structure
 
 Set up automations that search for new jobs on a schedule and AI-match them against your resume, so relevant openings come to you.
 
-- **Greenhouse** — track specific companies by name from a built-in directory (or by pasting a board URL). Each run pulls every published role from those companies' Greenhouse boards, ranks them against your target titles, skills, and resume with a fast local relevance score, and runs the AI match on only the top candidates to keep costs bounded. No API key required.
+- **Greenhouse** — track specific companies by name from a built-in directory of 2,400+ companies (or by pasting a board URL). Each run pulls every published role from those companies' Greenhouse boards, ranks them against your target titles, skills, and resume with a fast local relevance score, and runs the AI match on only the top candidates to keep costs bounded. No API key required.
 
 - **Lever** — same company-tracking workflow as Greenhouse, backed by a built-in directory of 1,160+ companies (or paste a board URL). Automatically resolves the right regional API (`lever.co` or `eu.lever.co`) per company and carries full remote/hybrid/onsite signal from the listing. No API key required.
 
@@ -214,7 +216,7 @@ Clients that support `streamable-http` natively can connect directly without `mc
 
 ## Help
 
-In-app usage guides — getting started, jobs, automations, and MCP access — live in the [GitHub Wiki](https://github.com/Gsync/jobsync/wiki).
+Usage guides for every feature — from getting started and tracking jobs to interviews, automations, backups, MCP access and upgrading to Postgres — live in the [GitHub Wiki](https://github.com/Gsync/jobsync/wiki).
 
 ## Contributing
 
