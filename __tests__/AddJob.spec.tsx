@@ -2,7 +2,7 @@ import { AddJob } from "@/components/myjobs/AddJob";
 import { JOB_SOURCES } from "@/lib/data/jobSourcesData";
 import { JOB_STATUSES } from "@/lib/data/jobStatusesData";
 import { getMockJobDetails, getMockList } from "@/lib/mock.utils";
-import { screen, render, waitFor } from "@testing-library/react";
+import { screen, render, waitFor, fireEvent } from "@testing-library/react";
 import { getCurrentUser } from "@/utils/user.utils";
 import userEvent from "@testing-library/user-event";
 import { format } from "date-fns";
@@ -85,6 +85,7 @@ describe("AddJob Component", () => {
     const mockJobTitles = (await getMockList(1, 10, "jobTitles")).data;
     const mockLocations = (await getMockList(1, 10, "locations")).data;
     vi.clearAllMocks();
+    localStorage.clear();
     render(
       <AddJob
         jobStatuses={mockJobStatuses}
@@ -108,16 +109,69 @@ describe("AddJob Component", () => {
     expect(dialogTitle).toBeInTheDocument();
     expect(dialogTitle).toHaveTextContent("Add Job");
   });
+  it("renders the four section headings", () => {
+    expect(
+      screen.getByRole("heading", { name: "Role details" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Tracking" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Skills & documents" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Job Description")).toBeInTheDocument();
+  });
   it("moves a Draft job to Applied when a date applied is picked", async () => {
-    const status = screen.getByLabelText("Status");
-    expect(status).toHaveTextContent("Draft");
+    expect(screen.getByRole("radio", { name: "Draft" })).toBeChecked();
     await user.click(screen.getByLabelText("Date Applied"));
     const days = screen
       .getAllByRole("gridcell")
       .map((cell) => cell.querySelector("button"))
       .filter((b): b is HTMLButtonElement => !!b && !b.disabled);
     await user.click(days[0]);
-    expect(status).toHaveTextContent("Applied");
+    expect(screen.getByRole("radio", { name: "Applied" })).toBeChecked();
+  });
+  it("lists the empty required fields in the footer and jumps to one", async () => {
+    expect(screen.getByText(/4 required left/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Company" }));
+    expect(document.getElementById("add-job-field-company")).toContainElement(
+      document.activeElement as HTMLElement,
+    );
+  });
+  it("shows the due date relative to today", () => {
+    expect(screen.getByText("In 3 days")).toBeInTheDocument();
+  });
+  it("explains an auto-filled date applied and drops the hint when status reverts", async () => {
+    await user.click(screen.getByRole("radio", { name: "Applied" }));
+    expect(
+      screen.getByText("Set to today when you marked it Applied"),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("radio", { name: "Draft" }));
+    expect(
+      screen.queryByText("Set to today when you marked it Applied"),
+    ).not.toBeInTheDocument();
+  });
+  it("does not show the auto-fill hint for a date the user picked", async () => {
+    await user.click(screen.getByLabelText("Date Applied"));
+    const days = screen
+      .getAllByRole("gridcell")
+      .map((cell) => cell.querySelector("button"))
+      .filter((b): b is HTMLButtonElement => !!b && !b.disabled);
+    await user.click(days[0]);
+    expect(screen.getByRole("radio", { name: "Applied" })).toBeChecked();
+    expect(
+      screen.queryByText("Set to today when you marked it Applied"),
+    ).not.toBeInTheDocument();
+  });
+  it.each([
+    ["Ctrl", { ctrlKey: true }],
+    ["⌘", { metaKey: true }],
+  ])("submits on %s+Enter from the description editor", async (_, mod) => {
+    fireEvent.keyDown(screen.getByLabelText("Job Description"), {
+      key: "Enter",
+      ...mod,
+    });
+    expect(
+      await screen.findByText("Job title is required."),
+    ).toBeInTheDocument();
   });
   it("should open the dialog when clicked on add job button with title 'Edit Job'", async () => {
     // TODO: To be tested with job container and jobs table component
@@ -208,8 +262,7 @@ describe("AddJob Component", () => {
     );
   });
   const pickStatus = async (label: string) => {
-    await user.click(screen.getByLabelText("Status"));
-    await user.click(screen.getByRole("option", { name: label }));
+    await user.click(screen.getByRole("radio", { name: label }));
   };
   it("fills today's date on Applied and takes it back on a non-applying status", async () => {
     const dateApplied = screen.getByLabelText("Date Applied");
@@ -230,12 +283,13 @@ describe("AddJob Component", () => {
       );
     },
   );
-  it("should load and show the status select list", async () => {
-    const statusSelect = screen.getByLabelText("Status");
-    await user.click(statusSelect);
-    const options = screen.getAllByRole("option");
-    expect(options.length).toBeGreaterThan(0);
-    expect(options[0].textContent).toBe("Draft");
+  it("shows the primary statuses as segments and the rest under More", () => {
+    // The fixture has no "new" status, so four primary segments
+    expect(
+      screen.getAllByRole("radio", { name: /^(New|Draft|Applied|Interview|Offer)$/ })
+        .map((r) => r.textContent),
+    ).toEqual(["Draft", "Applied", "Interview", "Offer"]);
+    expect(screen.getByRole("button", { name: "More" })).toBeInTheDocument();
   });
   it("should closes the dialog and submit to save job when clicked on save button", async () => {
     const jobTitleInput = screen.getByRole("combobox", {
@@ -348,6 +402,7 @@ describe("AddJob Component - Last Used Location/Source", () => {
 
     expect(screen.getByLabelText("Job Location")).toHaveTextContent("Remote");
     expect(screen.getByLabelText("Job Source")).toHaveTextContent("Indeed");
+    expect(screen.getAllByText("last used")).toHaveLength(2);
   });
 
   it("ignores a last-used id that no longer exists, e.g. the entity was deleted", async () => {
@@ -367,6 +422,7 @@ describe("AddJob Component - Last Used Location/Source", () => {
     expect(screen.getByLabelText("Job Source")).toHaveTextContent(
       "Select source",
     );
+    expect(screen.queryByText("last used")).not.toBeInTheDocument();
   });
 
   it("saves the selected location and source to localStorage after a successful save", async () => {
@@ -459,13 +515,28 @@ describe("AddJob Component - Edit Mode", () => {
     expect(screen.getByLabelText("Company")).toHaveTextContent("Amazon");
     expect(screen.getByLabelText("Job Location")).toHaveTextContent("Remote");
     expect(screen.getByLabelText("Job Source")).toHaveTextContent("Indeed");
-    expect(screen.getByLabelText("Status")).toHaveTextContent("Applied");
+    expect(screen.getByRole("radio", { name: "Applied" })).toBeChecked();
     expect(screen.getByLabelText("Job URL")).toHaveValue(
       "https://example.com/job",
     );
     expect(screen.getByLabelText("Salary Range")).toHaveTextContent(
       "100,000 - 110,000",
     );
+    expect(screen.queryByText("last used")).not.toBeInTheDocument();
+  });
+
+  it("leaves ⌘+Enter in the note editor to the note", async () => {
+    await renderEditMode();
+    const user = userEvent.setup({ skipHover: true });
+    await user.click(screen.getByRole("button", { name: /new note/i }));
+    const noteEditor = document.querySelector(
+      "[data-job-notes] [contenteditable]",
+    ) as HTMLElement;
+    expect(noteEditor).toBeInTheDocument();
+    fireEvent.keyDown(noteEditor, { key: "Enter", metaKey: true });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(updateJob).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
   it("pre-fills a free-text salary that matches no suggestion", async () => {
@@ -621,10 +692,8 @@ describe("AddJob Component - Status Order", () => {
     );
     await user.click(screen.getByTestId("add-job-btn"));
 
-    const status = screen.getByLabelText("Status");
-    expect(status).toHaveTextContent("Draft");
-    await user.click(status);
-    await user.click(screen.getByRole("option", { name: "Applied" }));
+    expect(screen.getByRole("radio", { name: "Draft" })).toBeChecked();
+    await user.click(screen.getByRole("radio", { name: "Applied" }));
     expect(screen.getByLabelText("Date Applied")).toHaveTextContent(
       format(new Date(), "PP"),
     );

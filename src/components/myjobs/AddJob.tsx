@@ -6,19 +6,12 @@ import {
   DialogHeader,
   DialogOverlay,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { addJob, updateJob } from "@/actions/job.actions";
-import { Loader, PlusCircle } from "lucide-react";
+import { Link, PlusCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { useForm } from "react-hook-form";
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -43,12 +36,15 @@ import {
   FormLabel,
   FormMessage,
 } from "../ui/form";
-import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import SelectFormCtrl from "../Select";
 import { DatePicker } from "../DatePicker";
 import { SALARY_RANGES } from "@/lib/data/salaryRangeData";
 import TiptapEditor from "../TiptapEditor";
-import { Input } from "../ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "../ui/input-group";
 import { redirect, useRouter, useSearchParams } from "next/navigation";
 import { Combobox } from "../ComboBox";
 import { NotesCollapsibleSection } from "./NotesCollapsibleSection";
@@ -66,6 +62,15 @@ import {
   getFromLocalStorage,
   saveToLocalStorage,
 } from "@/utils/localstorage.utils";
+import { FormSection } from "./add-job/FormSection";
+import { SegmentedRadio } from "./add-job/SegmentedRadio";
+import { StatusSegment } from "./add-job/StatusSegment";
+import { AddJobFooter } from "./add-job/AddJobFooter";
+import {
+  dueDateHint,
+  missingRequiredFields,
+  RequiredField,
+} from "./add-job/addJobHints";
 
 type AddJobProps = {
   jobStatuses: JobStatus[];
@@ -123,6 +128,8 @@ export function AddJob({
     APP_CONSTANTS.LAST_JOB_SOURCE_STORAGE_KEY,
     null,
   );
+  const lastUsedLocation = locations.find((l) => l.id === lastLocationId)?.id;
+  const lastUsedSource = jobSources.find((s) => s.id === lastSourceId)?.id;
   // By value, not position: the list's order is not guaranteed.
   const draftStatusId = jobStatuses.find((s) => s.value === "draft")?.id;
   const appliedStatusId = jobStatuses.find((s) => s.value === "applied")?.id;
@@ -135,8 +142,8 @@ export function AddJob({
     salaryRange: "",
     jobUrl: "",
     jobDescription: "N/A",
-    location: locations.find((l) => l.id === lastLocationId)?.id,
-    source: jobSources.find((s) => s.id === lastSourceId)?.id,
+    location: lastUsedLocation,
+    source: lastUsedSource,
   };
 
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
@@ -147,7 +154,7 @@ export function AddJob({
   const { setValue, reset } = form;
 
   // The date the form filled in itself, so it can take it back again.
-  const autoFilledDate = useRef<Date | null>(null);
+  const [autoFilledDate, setAutoFilledDate] = useState<Date | null>(null);
 
   const loadResumes = useCallback(async () => {
     try {
@@ -196,7 +203,7 @@ export function AddJob({
           return incoming.length > 0 ? [...prev, ...incoming] : prev;
         });
       }
-      autoFilledDate.current = null;
+      setAutoFilledDate(null);
       setDialogOpen(true);
     }
   }, [editJob, reset]);
@@ -235,13 +242,18 @@ export function AddJob({
   }
 
   const pageTitle = editJob ? "Edit Job" : "Add Job";
-  const pageDescription = editJob
-    ? "Update the details of this job application."
-    : "Track a new job application.";
+  const pageDescription = editJob ? (
+    "Update the details of this job application."
+  ) : (
+    <>
+      Track a new job application. Fields marked{" "}
+      <span className="text-destructive">*</span> are required.
+    </>
+  );
 
   const addJobForm = () => {
     reset(newJobDefaultValues);
-    autoFilledDate.current = null;
+    setAutoFilledDate(null);
     resetEditJob();
     setDialogOpen(true);
   };
@@ -251,22 +263,23 @@ export function AddJob({
     const value = jobStatuses.find((s) => s.id === statusId)?.value ?? "";
     const date = form.getValues("dateApplied");
     if (value === "applied" && !date) {
-      autoFilledDate.current = new Date();
-      setValue("dateApplied", autoFilledDate.current);
+      const today = new Date();
+      setAutoFilledDate(today);
+      setValue("dateApplied", today);
     } else if (
       !APPLIED_STATUS_VALUES.includes(value) &&
       date &&
       // react-hook-form stores a copy, so compare by time, not identity
-      date.getTime() === autoFilledDate.current?.getTime()
+      date.getTime() === autoFilledDate?.getTime()
     ) {
-      autoFilledDate.current = null;
+      setAutoFilledDate(null);
       setValue("dateApplied", undefined);
     }
   };
 
   // A date the user picks means they applied, as the old toggle did.
   const dateAppliedChange = (date?: Date) => {
-    autoFilledDate.current = null;
+    setAutoFilledDate(null);
     const status = form.getValues("status");
     if (
       date &&
@@ -278,6 +291,49 @@ export function AddJob({
   };
 
   const closeDialog = () => setDialogOpen(false);
+
+  const [title, company, location, source, dueDate, dateApplied] = form.watch([
+    "title",
+    "company",
+    "location",
+    "source",
+    "dueDate",
+    "dateApplied",
+  ]);
+  const missing = missingRequiredFields({ title, company, location, source });
+  const isAutoFilledDate =
+    !!dateApplied &&
+    !!autoFilledDate &&
+    dateApplied.getTime() === autoFilledDate.getTime();
+  // Validation runs before the transition starts, so isPending alone is late
+  const isSaving = form.formState.isSubmitting || isPending;
+  const lastUsedHint = (
+    <span className="ml-auto text-xs leading-none text-muted-foreground">last used</span>
+  );
+
+  // Combobox does not forward field.ref, so focus via the wrapper instead
+  const jumpToField = (f: RequiredField) => {
+    const el = document.getElementById(`add-job-field-${f}`);
+    el?.scrollIntoView({ block: "center" });
+    el?.querySelector<HTMLElement>("button, input")?.focus();
+  };
+
+  // Capture phase runs before Tiptap's own Mod-Enter hard break
+  const submitOnModEnter = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key !== "Enter" || !(e.metaKey || e.ctrlKey)) return;
+    // Saving the job from a note would drop the unsaved note
+    if ((e.target as HTMLElement).closest("[data-job-notes]")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.repeat || isSaving) return;
+    form.handleSubmit(onSubmit)();
+  };
+
+  const requiredMark = (
+    <span className="text-sm leading-none text-destructive" aria-hidden="true">
+      *
+    </span>
+  );
 
   return (
     <>
@@ -297,8 +353,8 @@ export function AddJob({
       )}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogOverlay>
-          <DialogContent className="h-full xl:h-[85vh] lg:h-[95vh] lg:max-w-screen-lg lg:max-h-screen overflow-y-scroll">
-            <DialogHeader>
+          <DialogContent className="flex max-h-[95vh] flex-col gap-0 p-0 lg:max-w-[880px]">
+            <DialogHeader className="px-8 pt-6 pb-5">
               <DialogTitle data-testid="add-job-dialog-title">
                 {pageTitle}
               </DialogTitle>
@@ -307,342 +363,368 @@ export function AddJob({
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4"
+                onKeyDownCapture={submitOnModEnter}
+                className="flex min-h-0 flex-1 flex-col"
               >
-                {/* Job Title */}
-                <div>
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Job Title</FormLabel>
-                        <FormControl>
-                          <Combobox
-                            options={jobTitles}
-                            field={field}
-                            creatable
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Job URL */}
-                <div>
-                  <FormField
-                    control={form.control}
-                    name="jobUrl"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Job URL</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Copy and paste job link here"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                {/* Company */}
-                <div>
-                  <FormField
-                    control={form.control}
-                    name="company"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Company</FormLabel>
-                        <FormControl>
-                          <Combobox
-                            options={companies}
-                            field={field}
-                            creatable
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                {/* Location */}
-                <div>
-                  <FormField
-                    control={form.control}
-                    name="location"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Job Location</FormLabel>
-                        <FormControl>
-                          <Combobox
-                            options={locations}
-                            field={field}
-                            creatable
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                {/* Job Type */}
-                <div>
-                  <FormField
-                    control={form.control}
-                    name="type"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel className="mb-2">Job Type</FormLabel>
-                        <RadioGroup
-                          name="type"
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className="flex space-y-1"
-                        >
-                          {Object.entries(JOB_TYPES).map(([key, value]) => (
-                            <FormItem
-                              key={key}
-                              className="flex items-center space-x-3 space-y-0"
-                            >
+                <div className="flex-1 space-y-7 overflow-y-auto px-8 py-6">
+                  <FormSection id="add-job-role" title="Role details">
+                    {/* Job URL */}
+                    <FormField
+                      control={form.control}
+                      name="jobUrl"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <div className="flex items-baseline gap-1">
+                            <FormLabel>Job URL</FormLabel>
+                            <span className="text-xs leading-none text-muted-foreground">
+                              · optional, keeps the posting one click away
+                            </span>
+                          </div>
+                          <InputGroup>
+                            <InputGroupAddon align="inline-start">
+                              <Link aria-hidden="true" />
+                            </InputGroupAddon>
+                            <FormControl>
+                              <InputGroupInput
+                                placeholder="Copy and paste job link here"
+                                {...field}
+                              />
+                            </FormControl>
+                          </InputGroup>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      {/* Job Title */}
+                      <div id="add-job-field-title">
+                        <FormField
+                          control={form.control}
+                          name="title"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <div className="flex items-baseline gap-1">
+                                <FormLabel>Job Title</FormLabel>
+                                {requiredMark}
+                              </div>
                               <FormControl>
-                                <RadioGroupItem value={key} />
+                                <Combobox
+                                  options={jobTitles}
+                                  field={field}
+                                  creatable
+                                  fullWidth
+                                />
                               </FormControl>
-                              <FormLabel className="font-normal">
-                                {value}
-                              </FormLabel>
+                              <FormMessage />
                             </FormItem>
-                          ))}
-                        </RadioGroup>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                {/* Workplace Type */}
-                <div>
-                  <FormField
-                    control={form.control}
-                    name="workplaceType"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel className="mb-2">Workplace Type</FormLabel>
-                        <RadioGroup
-                          name="workplaceType"
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className="flex space-y-1"
-                        >
-                          {Object.entries(WORKPLACE_TYPES).map(
-                            ([key, value]) => (
-                              <FormItem
-                                key={key}
-                                className="flex items-center space-x-3 space-y-0"
-                              >
-                                <FormControl>
-                                  <RadioGroupItem value={key} />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                  {value}
-                                </FormLabel>
-                              </FormItem>
-                            ),
                           )}
-                        </RadioGroup>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                {/* Job Source */}
-                <div>
-                  <FormField
-                    control={form.control}
-                    name="source"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Job Source</FormLabel>
-                        <Combobox
-                          options={jobSources}
-                          field={field}
-                          creatable
                         />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                      </div>
+                      {/* Company */}
+                      <div id="add-job-field-company">
+                        <FormField
+                          control={form.control}
+                          name="company"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <div className="flex items-baseline gap-1">
+                                <FormLabel>Company</FormLabel>
+                                {requiredMark}
+                              </div>
+                              <FormControl>
+                                <Combobox
+                                  options={companies}
+                                  field={field}
+                                  creatable
+                                  fullWidth
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      {/* Location */}
+                      <div id="add-job-field-location">
+                        <FormField
+                          control={form.control}
+                          name="location"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <div className="flex items-baseline gap-1">
+                                <FormLabel>Job Location</FormLabel>
+                                {requiredMark}
+                                {!editJob &&
+                                  location &&
+                                  location === lastUsedLocation &&
+                                  lastUsedHint}
+                              </div>
+                              <FormControl>
+                                <Combobox
+                                  options={locations}
+                                  field={field}
+                                  creatable
+                                  fullWidth
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      {/* Salary Range */}
+                      <FormField
+                        control={form.control}
+                        name="salaryRange"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <FormLabel>Salary Range</FormLabel>
+                            <Combobox
+                              options={SALARY_RANGES}
+                              field={field}
+                              creatable
+                              freeText
+                              label="Salary Range"
+                              fullWidth
+                            />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      {/* Workplace Type */}
+                      <FormField
+                        control={form.control}
+                        name="workplaceType"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <FormLabel>Workplace Type</FormLabel>
+                            <SegmentedRadio
+                              aria-label="Workplace Type"
+                              options={Object.entries(WORKPLACE_TYPES).map(
+                                ([value, label]) => ({ value, label }),
+                              )}
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      {/* Job Type */}
+                      <FormField
+                        control={form.control}
+                        name="type"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <div className="flex items-baseline gap-1">
+                              <FormLabel>Job Type</FormLabel>
+                              {requiredMark}
+                            </div>
+                            <SegmentedRadio
+                              aria-label="Job Type"
+                              options={Object.entries(JOB_TYPES).map(
+                                ([value, label]) => ({ value, label }),
+                              )}
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </FormSection>
 
-                {/* Status */}
-                <div>
-                  <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Status</FormLabel>
-                        <SelectFormCtrl
-                          label="Job Status"
-                          options={jobStatuses}
-                          field={{
-                            ...field,
-                            onChange: (id: string) => {
+                  <FormSection id="add-job-tracking" title="Tracking" muted>
+                    {/* Status */}
+                    <FormField
+                      control={form.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <div className="flex items-baseline gap-1">
+                            <FormLabel>Status</FormLabel>
+                            {requiredMark}
+                          </div>
+                          <StatusSegment
+                            statuses={jobStatuses}
+                            value={field.value}
+                            onValueChange={(id) => {
                               field.onChange(id);
                               jobStatusChange(id);
-                            },
-                          }}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Date Applied */}
-                <div className="flex flex-col">
-                  <FormField
-                    control={form.control}
-                    name="dateApplied"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Date Applied</FormLabel>
-                        <DatePicker
-                          field={{
-                            ...field,
-                            onChange: (date?: Date) => {
-                              field.onChange(date);
-                              dateAppliedChange(date);
-                            },
-                          }}
-                          presets={false}
-                          isEnabled={true}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Due Date */}
-                <div>
-                  <FormField
-                    control={form.control}
-                    name="dueDate"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Due Date</FormLabel>
-                        <DatePicker
-                          field={field}
-                          presets={true}
-                          isEnabled={true}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Salary Range */}
-                <div>
-                  <FormField
-                    control={form.control}
-                    name="salaryRange"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Salary Range</FormLabel>
-                        <Combobox
-                          options={SALARY_RANGES}
-                          field={field}
-                          creatable
-                          freeText
-                          label="Salary Range"
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Resume */}
-                <div>
-                  <FormField
-                    control={form.control}
-                    name="resume"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Resume</FormLabel>
-                        <SelectFormCtrl
-                          label="Resume"
-                          options={resumes?.map((r) =>
-                            hasMinResumeSections(r._count?.ResumeSections)
-                              ? r
-                              : {
-                                  ...r,
-                                  disabled: true,
-                                  suffix: <IncompleteResumeHint />,
-                                },
-                          )}
-                          field={field}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Cover Letter */}
-                <div className="flex items-end self-start">
-                  <FormField
-                    control={form.control}
-                    name="coverLetter"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Cover Letter</FormLabel>
-                        <SelectFormCtrl
-                          label="Cover Letter"
-                          options={coverLetters}
-                          field={field}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Add Skill Tags */}
-                <div>
-                  <FormField
-                    control={form.control}
-                    name="tags"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Add Skill</FormLabel>
-                        <FormControl>
-                          <TagInput
-                            availableTags={availableTags}
-                            selectedTagIds={field.value ?? []}
-                            onChange={(ids) => field.onChange(ids)}
+                            }}
                           />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                      {/* Date Applied */}
+                      <FormField
+                        control={form.control}
+                        name="dateApplied"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <FormLabel>Date Applied</FormLabel>
+                            <DatePicker
+                              field={{
+                                ...field,
+                                onChange: (date?: Date) => {
+                                  field.onChange(date);
+                                  dateAppliedChange(date);
+                                },
+                              }}
+                              presets={false}
+                              isEnabled={true}
+                              fullWidth
+                            />
+                            {isAutoFilledDate && (
+                              <p className="text-xs text-primary">
+                                Set to today when you marked it Applied
+                              </p>
+                            )}
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      {/* Due Date */}
+                      <FormField
+                        control={form.control}
+                        name="dueDate"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <div className="flex items-baseline gap-1">
+                              <FormLabel>Due Date</FormLabel>
+                              {requiredMark}
+                            </div>
+                            <DatePicker
+                              field={field}
+                              presets={true}
+                              isEnabled={true}
+                              fullWidth
+                            />
+                            {dueDate && (
+                              <p className="text-xs text-muted-foreground">
+                                {dueDateHint(dueDate, new Date())}
+                              </p>
+                            )}
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      {/* Job Source */}
+                      <div id="add-job-field-source">
+                        <FormField
+                          control={form.control}
+                          name="source"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <div className="flex items-baseline gap-1">
+                                <FormLabel>Job Source</FormLabel>
+                                {requiredMark}
+                                {!editJob &&
+                                  source &&
+                                  source === lastUsedSource &&
+                                  lastUsedHint}
+                              </div>
+                              <Combobox
+                                options={jobSources}
+                                field={field}
+                                creatable
+                                fullWidth
+                              />
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </FormSection>
 
-                {/* Job Description */}
-                <div className="md:col-span-2">
+                  <FormSection id="add-job-docs" title="Skills & documents">
+                    {/* Add Skill Tags */}
+                    <FormField
+                      control={form.control}
+                      name="tags"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Add Skill</FormLabel>
+                          <FormControl>
+                            <TagInput
+                              availableTags={availableTags}
+                              selectedTagIds={field.value ?? []}
+                              onChange={(ids) => field.onChange(ids)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      {/* Resume */}
+                      <FormField
+                        control={form.control}
+                        name="resume"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <div className="flex items-baseline gap-1">
+                              <FormLabel>Resume</FormLabel>
+                              <span className="text-xs leading-none text-muted-foreground">
+                                · Resumes are built on your Profile
+                              </span>
+                            </div>
+                            <SelectFormCtrl
+                              label="Resume"
+                              fullWidth
+                              options={resumes?.map((r) =>
+                                hasMinResumeSections(r._count?.ResumeSections)
+                                  ? r
+                                  : {
+                                      ...r,
+                                      disabled: true,
+                                      suffix: <IncompleteResumeHint />,
+                                    },
+                              )}
+                              field={field}
+                            />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      {/* Cover Letter */}
+                      <FormField
+                        control={form.control}
+                        name="coverLetter"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <FormLabel>Cover Letter</FormLabel>
+                            <SelectFormCtrl
+                              label="Cover Letter"
+                              fullWidth
+                              options={coverLetters}
+                              field={field}
+                            />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </FormSection>
+
+                  {/* Job Description */}
                   <FormField
                     control={form.control}
                     name="jobDescription"
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
-                        <FormLabel id="job-description-label">
-                          Job Description
-                        </FormLabel>
+                        <div className="flex items-baseline justify-between gap-2">
+                          <FormLabel id="job-description-label">
+                            Job Description
+                          </FormLabel>
+                          <span className="text-xs leading-none text-muted-foreground">
+                            Paste the full posting · powers Job Match
+                          </span>
+                        </div>
                         <FormControl>
                           <TiptapEditor field={field} />
                         </FormControl>
@@ -650,30 +732,19 @@ export function AddJob({
                       </FormItem>
                     )}
                   />
-                </div>
-                {editJob && <NotesCollapsibleSection jobId={editJob.id} />}
-                <div className="md:col-span-2">
-                  <DialogFooter
-                  // className="md:col-span
-                  >
-                    <div>
-                      <Button
-                        type="reset"
-                        variant="outline"
-                        className="mt-2 md:mt-0 w-full"
-                        onClick={closeDialog}
-                      >
-                        Cancel
-                      </Button>
+                  {editJob && (
+                    <div data-job-notes>
+                      <NotesCollapsibleSection jobId={editJob.id} />
                     </div>
-                    <Button type="submit" data-testid="save-job-btn">
-                      Save
-                      {isPending && (
-                        <Loader className="h-4 w-4 shrink-0 spinner" />
-                      )}
-                    </Button>
-                  </DialogFooter>
+                  )}
                 </div>
+                <AddJobFooter
+                  missing={missing}
+                  onJump={jumpToField}
+                  onCancel={closeDialog}
+                  isPending={isPending}
+                  saveDisabled={isSaving}
+                />
               </form>
             </Form>
           </DialogContent>

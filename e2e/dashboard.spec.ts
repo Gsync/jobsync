@@ -123,8 +123,7 @@ test.describe("Dashboard page", () => {
     const jobText = uniqueName("dashboard applied job");
     await createNewJob(page, jobText, cleanup, {
       beforeSave: async (page) => {
-        await page.getByLabel("Select Job Status").click();
-        await page.getByRole("option", { name: "Applied", exact: true }).click();
+        await page.getByRole("radio", { name: "Applied", exact: true }).click();
       },
     });
     await expect(page.getByRole("row", { name: jobText }).first()).toBeVisible();
