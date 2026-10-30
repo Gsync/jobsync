@@ -1,4 +1,5 @@
 import { mapAgentError } from "@/lib/agent/errors";
+import { MissingCredentialError } from "@/lib/ai";
 import {
   NoSuchToolError,
   InvalidToolInputError,
@@ -20,6 +21,35 @@ describe("mapAgentError", () => {
     const mapped = mapAgentError(new Error(`Request failed: ${marker}`));
     expect(mapped).not.toContain(marker);
     expect(mapped.length).toBeGreaterThan(0);
+  });
+
+  it("tells the user to add a key when the credential is missing", () => {
+    const mapped = mapAgentError(new MissingCredentialError("OpenAI"), {
+      provider: "openai",
+    });
+    expect(mapped).toMatch(/openai/i);
+    expect(mapped).toMatch(/key/i);
+    expect(mapped).toMatch(/settings/i);
+  });
+
+  it("tells the user to pick another model when the provider returns 404", () => {
+    const mapped = mapAgentError(
+      apiCallError(
+        404,
+        "The model `gpt-4` does not exist or you do not have access to it.",
+      ),
+      { provider: "openai", model: "gpt-4" },
+    );
+    expect(mapped).toMatch(/openai \/ gpt-4/);
+    expect(mapped).toMatch(/settings/i);
+  });
+
+  it("keeps the tool-support message for OpenRouter's 404", () => {
+    const mapped = mapAgentError(
+      apiCallError(404, "No endpoints found that support tool use."),
+      { provider: "openrouter", model: "m" },
+    );
+    expect(mapped).toMatch(/cannot use tools/i);
   });
 
   it("names the provider when the service is unreachable", () => {

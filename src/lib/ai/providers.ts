@@ -1,6 +1,7 @@
 import { resolveApiKey } from "@/lib/api-key-resolver";
 import { PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
 import { PROVIDER_FACTORIES } from "@/lib/ai/provider-registry.server";
+import { MissingCredentialError } from "@/lib/ai/tools/errors";
 
 export type ProviderType = "openai" | "ollama" | "deepseek" | "openrouter" | "gemini";
 
@@ -17,7 +18,7 @@ export async function getModel(
 
   const credential = await resolveApiKey(userId, provider);
   if (!credential)
-    throw new Error(`${entry.displayName} credential not configured`);
+    throw new MissingCredentialError(entry.displayName);
 
   return factory(credential, modelName);
 }

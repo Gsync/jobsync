@@ -6,7 +6,7 @@ import {
   RetryError,
   ToolCallNotFoundForApprovalError,
 } from "ai";
-import { AIUnavailableError } from "@/lib/ai";
+import { AIUnavailableError, MissingCredentialError } from "@/lib/ai";
 import { log } from "@/lib/telemetry";
 
 type ErrorContext = { provider?: string; model?: string };
@@ -53,6 +53,10 @@ export function mapAgentError(
 
   if (error instanceof AIUnavailableError) return error.message;
 
+  if (error instanceof MissingCredentialError) {
+    return `No API key is set for ${provider}. Add one in Settings, or switch provider.`;
+  }
+
   if (
     name === "AbortError" ||
     name === "TimeoutError" ||
@@ -90,6 +94,11 @@ export function mapAgentError(
     )
   ) {
     return `${provider}${model ? ` / ${model}` : ""} cannot use tools, so it cannot review a resume, match a job, write a cover letter or add a job. Pick a tool-capable model in Settings.`;
+  }
+
+  // After the tool check: OpenRouter's no-tools answer is also a 404
+  if (status === 404) {
+    return `${provider}${model ? ` / ${model}` : ""} isn't available to your API key. Pick another model in Settings.`;
   }
 
   if (NoSuchToolError.isInstance?.(error) || /NoSuchTool/i.test(name)) {
