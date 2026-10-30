@@ -80,7 +80,7 @@ Environment variables are set in a `.env` file beside `docker-compose.yml` (copy
 | `ENCRYPTION_KEY` | Encrypts the API keys you save in Settings. **Set your own** (`openssl rand -base64 32`) before adding any keys, and never change it afterwards — a new value makes every stored API key unrecoverable. |
 | `NEXTAUTH_URL` | The address you open JobSync at. Defaults to `http://localhost:3737`; on a homelab server, use the server's IP or hostname. |
 | `MCP_ENABLED` | Set to `false` to turn off the [MCP server](#mcp-server-ai-agent-integration). Enabled by default. |
-| `DATABASE_URL` | Leave unset to use the bundled Postgres. To use your own, set it to your server's address; optionally add `BUNDLED_DB=0` to stop the then-idle bundled container. The bundled image includes the `pgvector` extension, which an upcoming release uses for resume embeddings; your own server will need it then too. See [Upgrading to Postgres](https://github.com/Gsync/jobsync/wiki/Upgrading-To-Postgres). |
+| `DATABASE_URL` | Leave unset to use the bundled Postgres. To use your own, set it to your server's address and also set `BUNDLED_DB=0`; without it an unused bundled database container still starts. The bundled image includes the `pgvector` extension, which an upcoming release uses for resume embeddings; your own server will need it then too. See [Upgrading to Postgres](https://github.com/Gsync/jobsync/wiki/Upgrading-To-Postgres). |
 
 ### Updating
 

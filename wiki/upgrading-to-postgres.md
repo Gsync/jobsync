@@ -54,7 +54,7 @@ In a Docker volume named `jobsync_pgdata`, under Docker's own storage, not in `j
 
 ## How do I use my own Postgres instead of the bundled one?
 
-Set `DATABASE_URL` in `.env` to your server's address; never edit `docker-compose.yml`. That alone switches the app and the backup scripts to your server. The bundled container then sits idle; add `BUNDLED_DB=0` to `.env` if you want it stopped. Point `DATABASE_URL` at a dedicated, empty database. JobSync creates the database if it is missing and the role is allowed to; check the "created it" line on first start, because a typo in the name creates a new empty database rather than an error. Set `CREATE_DATABASE_IF_MISSING=0` to make a missing database an error instead. When a start-up message tells you to empty the Postgres database, drop and recreate that database on your server; the `docker volume rm` command it shows applies to the bundled database only.
+Set `DATABASE_URL` in `.env` to your server's address; never edit `docker-compose.yml`. That alone switches the app and the backup scripts to your server. Also add `BUNDLED_DB=0` to `.env`; without it an unused bundled database container still starts. Point `DATABASE_URL` at a dedicated, empty database. JobSync creates the database if it is missing and the role is allowed to; check the "created it" line on first start, because a typo in the name creates a new empty database rather than an error. Set `CREATE_DATABASE_IF_MISSING=0` to make a missing database an error instead. When a start-up message tells you to empty the Postgres database, drop and recreate that database on your server; the `docker volume rm` command it shows applies to the bundled database only.
 
 Checklist for your server:
 
