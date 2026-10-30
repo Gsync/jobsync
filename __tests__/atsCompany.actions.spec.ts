@@ -165,9 +165,9 @@ describe("searchAtsCompanies / getAtsCompanyCount", () => {
   });
 
   it("searches the Greenhouse seed", async () => {
-    const { companies } = await searchAtsCompanies("greenhouse", "genomics");
+    const { companies } = await searchAtsCompanies("greenhouse", "lyft");
     expect(
-      companies.some((c) => c.name.toLowerCase().includes("genomics")),
+      companies.some((c) => c.name.toLowerCase().includes("lyft")),
     ).toBe(true);
   });
 

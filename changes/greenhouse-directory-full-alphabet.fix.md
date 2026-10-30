@@ -1,0 +1,1 @@
+The Greenhouse company picker in the automation wizard now covers employers across the whole alphabet (about 2,400 live boards, up from 602), and boards that no longer exist have been removed.
