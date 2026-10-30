@@ -11,10 +11,11 @@ set -euo pipefail
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
-# Last uncommented NAME=value line in .env, with surrounding quotes removed
+# Last uncommented NAME=value line in .env, with surrounding quotes removed.
+# tr, not sed \r: BSD sed on macOS reads \r as a literal r.
 env_value() {
     [ -f .env ] || return 0
-    { grep -E "^[[:space:]]*$1=" .env || true; } | tail -n 1 | cut -d= -f2- \
+    { grep -E "^[[:space:]]*$1=" .env || true; } | tail -n 1 | tr -d '\r' | cut -d= -f2- \
         | sed -e 's/^["'\'']//' -e 's/["'\'']$//'
 }
 

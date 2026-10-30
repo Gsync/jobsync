@@ -19,7 +19,7 @@ cd "$SCRIPT_DIR"
 
 env_value() {
     [ -f .env ] || return 0
-    { grep -E "^[[:space:]]*$1=" .env || true; } | tail -n 1 | cut -d= -f2- \
+    { grep -E "^[[:space:]]*$1=" .env || true; } | tail -n 1 | tr -d '\r' | cut -d= -f2- \
         | sed -e 's/^["'\'']//' -e 's/["'\'']$//'
 }
 

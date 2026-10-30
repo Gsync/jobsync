@@ -1,0 +1,2 @@
+# Shell scripts run in Linux containers, WSL and Git Bash, which reject CRLF
+*.sh text eol=lf
