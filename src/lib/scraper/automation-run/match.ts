@@ -22,6 +22,7 @@ import type { ResumeWithSections } from "./types";
 import { getDefaultModelForProvider } from "./aiSettings";
 import { convertResumeForMatch } from "./resumeText";
 import { startAiCall } from "@/lib/aiUsage/tracker";
+import { supportsTemperature, withModelTemperature } from "@/lib/ai/model-params";
 
 export interface MatchResult {
   success: boolean;
@@ -62,7 +63,7 @@ ${removeHtmlTags(job.description)}
         ...genAiRequestAttrs({
           provider,
           model: modelName,
-          temperature: 0.3,
+          temperature: supportsTemperature(modelName) ? 0.3 : undefined,
           numCtx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
           surface: SURFACES.AUTOMATION_MATCH,
           system: AUTOMATION_JOB_MATCH_SYSTEM_PROMPT,
@@ -89,7 +90,7 @@ ${removeHtmlTags(job.description)}
             model,
             system: AUTOMATION_JOB_MATCH_SYSTEM_PROMPT,
             prompt: promptText,
-            temperature: 0.3,
+            ...withModelTemperature(modelName, { temperature: 0.3 }),
             abortSignal: signal,
           });
         } catch (error) {
