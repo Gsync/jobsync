@@ -54,11 +54,15 @@ DATE RULES (applies to both experience and education, every entry):
   If a date is genuinely not stated in the document, use an empty string "".
 - Return the exact string from the document (e.g. "Jan 2020", "2019", "Present").
 - If an entry is ongoing (no end date given, or words like "Present"/"Current"),
-  set endDate to "Present".
+  set endDate to "Present". This applies in any language: "Présent", "Actuel",
+  "Heute", "Actualidad", "現在" and similar all become "Present".
 
 DESCRIPTION FIELD RULES (applies to both experience and education):
 - The description field is REQUIRED. Populate it whenever the entry has bullet
   points or details; use "" only if none exist.
+- The document may be in any language. Copy every text value in its original
+  language and never translate it. Only the JSON keys and the "Present" marker
+  are fixed English.
 - Copy bullet points VERBATIM, in order, without summarizing or dropping any.
 - Preserve bullet symbols (•) at the start of each line. Join lines with newlines.
 - Do not use HTML or markdown.
