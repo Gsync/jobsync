@@ -6,6 +6,7 @@ import { requireUser } from "./shared";
 import { handleError } from "@/lib/utils";
 import { encrypt, getLast4 } from "@/lib/encryption";
 import { apiKeySaveSchema } from "@/models/apiKey.schema";
+import { resolveOllamaApiKey } from "@/lib/api-key-resolver";
 import type {
   ApiKeyClientResponse,
   ApiKeyProvider,
@@ -183,4 +184,11 @@ export async function getOllamaBaseUrl(userId?: string): Promise<string> {
     // Fall through to defaults
   }
   return process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
+}
+
+// Bearer token for Ollama instances that sit behind an authenticated proxy
+// (e.g. https://myllm.oscarpoudel.com.np). Resolved from the server environment
+// via the provider registry OLLAMA_API_KEY entry.
+export async function getOllamaApiKey(): Promise<string | undefined> {
+  return resolveOllamaApiKey();
 }

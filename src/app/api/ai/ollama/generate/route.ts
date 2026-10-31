@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getOllamaBaseUrl } from "@/actions/apiKey.actions";
+import { getOllamaApiKey, getOllamaBaseUrl } from "@/actions/apiKey.actions";
 import { NextResponse } from "next/server";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { log } from "@/lib/telemetry";
@@ -13,9 +13,13 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const baseUrl = await getOllamaBaseUrl();
+    const apiKey = await getOllamaApiKey();
     const response = await fetch(`${baseUrl}/api/generate`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+      },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(APP_CONSTANTS.AI_OLLAMA_GENERATE_TIMEOUT_MS),
     });

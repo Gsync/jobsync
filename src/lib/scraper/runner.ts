@@ -4,7 +4,7 @@ import { ATS_PROVIDERS } from "./ats/registry";
 import { AiProvider } from "@/models/ai.model";
 import { automationLogger } from "@/lib/automation-logger";
 import { PROVIDER_VERIFIERS } from "@/lib/ai/provider-registry.server";
-import { getOllamaBaseUrl } from "@/actions/apiKey.actions";
+import { getOllamaApiKey, getOllamaBaseUrl } from "@/actions/apiKey.actions";
 import { log, withSpan } from "@/lib/telemetry";
 import type { ResumeWithSections, RunnerResult } from "./automation-run/types";
 import { getUserAiSettings } from "./automation-run/aiSettings";
@@ -143,6 +143,7 @@ async function runAutomationTraced(
     if (aiSettings.provider === AiProvider.OLLAMA) {
       const ollamaCheck = await PROVIDER_VERIFIERS.ollama(
         await getOllamaBaseUrl(automation.userId),
+        { apiKey: await getOllamaApiKey() },
       );
       if (!ollamaCheck.success) {
         const message =
