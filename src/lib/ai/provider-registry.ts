@@ -7,6 +7,9 @@ export interface ProviderRegistryEntry {
   credentialType: CredentialType;
   category: ProviderCategory;
   envVar?: string;
+  // Env var holding the bearer token for providers whose credential is a
+  // base URL but which may sit behind an authenticated proxy (e.g. Ollama).
+  apiKeyEnvVar?: string;
   defaultCredential?: string;
   modelsEndpoint?: string;
   parseModelsResponse?: (data: any) => string[];
@@ -20,6 +23,11 @@ export interface ProviderRegistryEntry {
   };
 }
 
+export function getApiKeyEnvVar(provider: string): string | undefined {
+  const entry = PROVIDER_REGISTRY[provider as keyof typeof PROVIDER_REGISTRY];
+  return entry?.apiKeyEnvVar;
+}
+
 export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
   ollama: {
     id: "ollama",
@@ -27,6 +35,8 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     credentialType: "base-url",
     category: "local",
     envVar: "OLLAMA_BASE_URL",
+    // Bearer token for Ollama instances sitting behind an authenticated proxy
+    apiKeyEnvVar: "OLLAMA_API_KEY",
     defaultCredential: "http://127.0.0.1:11434",
     modelsEndpoint: "ollama/tags",
     parseModelsResponse: (data) => data.models?.map((m: any) => m.name) ?? [],
@@ -35,7 +45,8 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     keyConfig: {
       placeholder: "http://127.0.0.1:11434",
       inputType: "text",
-      description: "Base URL for your Ollama instance",
+      description:
+        "Base URL for your Ollama instance. Add an API key if your Ollama instance is behind an authenticated proxy.",
       sensitive: false,
     },
   },

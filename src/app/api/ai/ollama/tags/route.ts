@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getOllamaBaseUrl } from "@/actions/apiKey.actions";
+import { getOllamaApiKey, getOllamaBaseUrl } from "@/actions/apiKey.actions";
 import { NextResponse } from "next/server";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { log } from "@/lib/telemetry";
@@ -12,7 +12,9 @@ export async function GET() {
     }
 
     const baseUrl = await getOllamaBaseUrl();
+    const apiKey = await getOllamaApiKey();
     const response = await fetch(`${baseUrl}/api/tags`, {
+      ...(apiKey ? { headers: { Authorization: `Bearer ${apiKey}` } } : {}),
       signal: AbortSignal.timeout(APP_CONSTANTS.AI_OLLAMA_LIST_TIMEOUT_MS),
     });
 

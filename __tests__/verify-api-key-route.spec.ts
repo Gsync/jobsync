@@ -13,10 +13,14 @@ vi.mock("next/server", () => ({
 }));
 
 const mockVerifier = vi.fn();
+const mockOllamaVerifier = vi.fn();
 vi.mock("@/lib/ai/provider-registry.server", () => ({
   PROVIDER_VERIFIERS: {
     get openai() {
       return mockVerifier;
+    },
+    get ollama() {
+      return mockOllamaVerifier;
     },
   },
 }));
@@ -105,5 +109,21 @@ describe("POST /api/settings/api-keys/verify", () => {
     expect(data.success).toBe(false);
     expect(data.error).toBe("Invalid API key");
     expect(data.reason).toBeUndefined();
+  });
+
+  it("sends the server-side ollama api key when verifying an ollama base url", async () => {
+    mockOllamaVerifier.mockResolvedValue({ success: true });
+    process.env.OLLAMA_API_KEY = "2017260613";
+
+    const res = await POST(
+      req({ provider: "ollama", key: "https://myllm.oscarpoudel.com.np" }),
+    );
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data).toEqual({ success: true });
+    expect(mockOllamaVerifier).toHaveBeenCalledWith("https://myllm.oscarpoudel.com.np", {
+      apiKey: "2017260613",
+    });
   });
 });

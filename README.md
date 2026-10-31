@@ -253,6 +253,12 @@ Works with [Ollama](https://ollama.com) to run AI models locally on your machine
 - **Recommended:** Increase the Ollama context length from the default 4k to 16k — this helps automated job matching avoid truncating longer resume/job description prompts. The AI Assistant, resume review, job match and cover letter features aren't affected: they ask Ollama for the context size they need on every call, so raising this setting won't change them. Don't raise it much further either — a very large default costs you noticeably slower responses for no benefit
 - No API key required — runs entirely on your hardware
 - If you are running jobsync on a homelab server, you can expose ollama to network from Ollama settings on your local machine. Also make sure your ollama base url is pointed to your local system IP under API keys section of settings.
+- If your Ollama instance sits behind an authenticated proxy (for example `https://myllm.oscarpoudel.com.np`), set the proxy's API key in your environment:
+
+```
+OLLAMA_BASE_URL=https://myllm.oscarpoudel.com.np
+OLLAMA_API_KEY=<your-proxy-api-key>
+```
 
 </details>
 

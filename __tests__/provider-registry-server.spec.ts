@@ -145,3 +145,45 @@ describe("PROVIDER_FACTORIES – openrouter", () => {
     );
   });
 });
+
+describe("PROVIDER_FACTORIES – ollama", () => {
+  it("creates the ollama provider with the base url", () => {
+    const mockChainFn = vi.fn().mockReturnValue({});
+    (createOllama as any).mockReturnValue(mockChainFn);
+
+    PROVIDER_FACTORIES.ollama("http://127.0.0.1:11434", "qwen3.5:9b");
+
+    expect(createOllama).toHaveBeenCalledWith({
+      baseURL: "http://127.0.0.1:11434/api",
+    });
+    expect(mockChainFn).toHaveBeenCalledWith("qwen3.5:9b");
+  });
+
+  it("adds the bearer auth header when an api key is configured", () => {
+    const mockChainFn = vi.fn().mockReturnValue({});
+    (createOllama as any).mockReturnValue(mockChainFn);
+
+    PROVIDER_FACTORIES.ollama("https://myllm.oscarpoudel.com.np", "qwen3.5:9b", {
+      apiKey: "2017260613",
+    });
+
+    expect(createOllama).toHaveBeenCalledWith({
+      baseURL: "https://myllm.oscarpoudel.com.np/api",
+      headers: { Authorization: "Bearer 2017260613" },
+    });
+  });
+
+  it("omits the auth header when no api key is configured", () => {
+    const mockChainFn = vi.fn().mockReturnValue({});
+    (createOllama as any).mockReturnValue(mockChainFn);
+
+    PROVIDER_FACTORIES.ollama("http://127.0.0.1:11434", "qwen3.5:9b");
+
+    expect(createOllama).toHaveBeenCalledWith({
+      baseURL: "http://127.0.0.1:11434/api",
+    });
+    expect(createOllama).not.toHaveBeenCalledWith(
+      expect.objectContaining({ headers: expect.anything() }),
+    );
+  });
+});

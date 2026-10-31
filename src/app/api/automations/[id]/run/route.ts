@@ -9,7 +9,7 @@ import {
   AutomationAlreadyRunningError,
 } from "@/lib/scraper";
 import { PROVIDER_VERIFIERS } from "@/lib/ai/provider-registry.server";
-import { getOllamaBaseUrl } from "@/actions/apiKey.actions";
+import { getOllamaApiKey, getOllamaBaseUrl } from "@/actions/apiKey.actions";
 import { AiProvider } from "@/models/ai.model";
 import { isRetiredBoard, type JobBoard } from "@/models/automation.model";
 import { APP_CONSTANTS } from "@/lib/constants";
@@ -95,7 +95,9 @@ export async function POST(
     const aiSettings = await getUserAiSettings(userId);
     if (aiSettings.provider === AiProvider.OLLAMA) {
       const baseUrl = await getOllamaBaseUrl(userId);
-      const ollamaCheck = await PROVIDER_VERIFIERS.ollama(baseUrl);
+      const ollamaCheck = await PROVIDER_VERIFIERS.ollama(baseUrl, {
+        apiKey: await getOllamaApiKey(),
+      });
       if (!ollamaCheck.success) {
         return NextResponse.json(
           {
