@@ -22,6 +22,7 @@
     "eval:resume-review": "npm --prefix evals run eval:resume-review",
     "eval:job-match": "npm --prefix evals run eval:job-match",
     "eval:automation-match": "npm --prefix evals run eval:automation-match",
+    "eval:multilingual": "npm --prefix evals run eval:multilingual",
     "eval:resume-import": "npm --prefix evals run eval:resume-import",
     "eval:mcp-tools": "npm --prefix evals run eval:mcp-tools",
     "eval:agent-chat": "npm --prefix evals run eval:agent-chat",

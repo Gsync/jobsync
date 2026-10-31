@@ -1,0 +1,15 @@
+Développeur ou développeuse backend senior — Plateforme infonuagique
+
+Nous sommes une entreprise montréalaise en forte croissance qui offre une plateforme de facturation à des milliers de PME. Nous cherchons une personne d'expérience pour renforcer notre équipe backend.
+
+Responsabilités
+• Concevoir et maintenir des services Go à haute disponibilité
+• Optimiser les performances des bases de données PostgreSQL
+• Déployer et exploiter les services sur Kubernetes et AWS
+• Participer aux revues de code et encadrer les développeurs juniors
+
+Exigences
+• Au moins 5 ans d'expérience en développement backend
+• Maîtrise de Go et de PostgreSQL
+• Expérience avec Kubernetes et un fournisseur infonuagique
+• Capacité à travailler en français et en anglais; le français est la langue de travail de l'équipe
