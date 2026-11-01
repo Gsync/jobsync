@@ -237,3 +237,54 @@ export const McpSaveMatchResultsBatchSchema = z.object({
 export type McpSaveMatchResultsBatchInput = z.infer<
   typeof McpSaveMatchResultsBatchSchema
 >;
+
+// list_jobs — agent-friendly filtering of the caller's saved jobs.
+export const McpListJobsInputShape = {
+  search: z.string().optional().describe("Free-text search across title, company, location, source and description."),
+  status: z.string().optional().describe("Filter by application status (case-insensitive contains), e.g. 'applied', 'draft'."),
+  company: z.string().optional().describe("Filter by company name (contains)."),
+  applied: z.boolean().optional().describe("Filter by applied flag."),
+  limit: z.number().int().min(1).max(100).optional().describe("Max results per page (default 25, max 100)."),
+  offset: z.number().int().min(0).optional().describe("Pagination offset (default 0)."),
+};
+
+export const McpListJobsSchema = z.object(McpListJobsInputShape);
+export type McpListJobsInput = z.infer<typeof McpListJobsSchema>;
+
+// get_job — full details for one job by id.
+export const McpGetJobInputShape = {
+  jobId: z.string().min(1).describe("The id of the job to fetch, as returned by list_jobs or add_job."),
+};
+
+export const McpGetJobSchema = z.object(McpGetJobInputShape);
+export type McpGetJobInput = z.infer<typeof McpGetJobSchema>;
+
+// delete_job — remove a job created via MCP.
+export const McpDeleteJobInputShape = {
+  jobId: z.string().min(1).describe("The id of the job to delete."),
+};
+
+export const McpDeleteJobSchema = z.object(McpDeleteJobInputShape);
+export type McpDeleteJobInput = z.infer<typeof McpDeleteJobSchema>;
+
+// list_companies — list the caller's companies.
+export const McpListCompaniesInputShape = {
+  search: z.string().optional().describe("Free-text search across company name and ATS token."),
+  limit: z.number().int().min(1).max(200).optional().describe("Max results (default 50, max 200)."),
+  offset: z.number().int().min(0).optional().describe("Pagination offset (default 0)."),
+};
+
+export const McpListCompaniesSchema = z.object(McpListCompaniesInputShape);
+export type McpListCompaniesInput = z.infer<typeof McpListCompaniesSchema>;
+
+// list_resumes — list the caller's resumes (id + title), marking the default.
+export const McpListResumesInputShape = {};
+
+export const McpListResumesSchema = z.object(McpListResumesInputShape);
+export type McpListResumesInput = z.infer<typeof McpListResumesSchema>;
+
+// get_job_stats — aggregate counts by status.
+export const McpGetJobStatsInputShape = {};
+
+export const McpGetJobStatsSchema = z.object(McpGetJobStatsInputShape);
+export type McpGetJobStatsInput = z.infer<typeof McpGetJobStatsSchema>;

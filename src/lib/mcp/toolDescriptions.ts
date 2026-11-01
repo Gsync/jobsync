@@ -21,6 +21,18 @@ export const MCP_TOOL_DESCRIPTIONS = {
     "Fetch the user's default resume so you can review it. Returns the normalized resume text plus a directive — produce the review yourself, then call save_resume_review with the result.",
   save_resume_review:
     "Persist a resume review (produced by you, the agent) against the resume previously handed to you by review_resume. Call this after review_resume hands you a review directive.",
+  list_jobs:
+    "List the user's saved jobs with optional filters (search, status, company, applied) and pagination. Returns compact one-line summaries with ids, status, location, match score, tags and url. Use get_job for full details. Use this to browse/search the job list before acting.",
+  get_job:
+    "Fetch the full record for a single saved job by id (description, tags, contacts, stages, match data, resume/cover letter, url). Use after list_jobs or add_job to read or enrich a posting.",
+  delete_job:
+    "Delete a job previously created via MCP (createdVia set). Jobs created in the web app cannot be deleted through MCP — delete them there instead.",
+  list_companies:
+    "List the user's companies (with job counts and watchlist/ATS info). Supports free-text search and pagination. Use to resolve company names or inspect the company list.",
+  list_resumes:
+    "List the user's resumes (id + title), marking the default one. Use to pick a resumeId for save_match_result / review_resume flows.",
+  get_job_stats:
+    "Aggregate counts of the user's jobs by status plus total and applied counts. Use for a quick pipeline overview.",
 } as const;
 
 export type McpToolName = keyof typeof MCP_TOOL_DESCRIPTIONS;

@@ -21,6 +21,18 @@ import {
   McpAddJobsBatchSchema,
   McpSaveMatchResultsBatchInputShape,
   McpSaveMatchResultsBatchSchema,
+  McpListJobsInputShape,
+  McpListJobsSchema,
+  McpGetJobInputShape,
+  McpGetJobSchema,
+  McpDeleteJobInputShape,
+  McpDeleteJobSchema,
+  McpListCompaniesInputShape,
+  McpListCompaniesSchema,
+  McpListResumesInputShape,
+  McpListResumesSchema,
+  McpGetJobStatsInputShape,
+  McpGetJobStatsSchema,
 } from "@/models/mcp.schema";
 import { handleAddJob } from "@/lib/mcp/tools/addJob";
 import { handleAddQuestion } from "@/lib/mcp/tools/addQuestion";
@@ -31,6 +43,12 @@ import { handleFindJob } from "@/lib/mcp/tools/findJob";
 import { handleUpdateJob } from "@/lib/mcp/tools/updateJob";
 import { handleAddJobsBatch } from "@/lib/mcp/tools/addJobsBatch";
 import { handleSaveMatchResultsBatch } from "@/lib/mcp/tools/saveMatchResultsBatch";
+import { handleListJobs } from "@/lib/mcp/tools/listJobs";
+import { handleGetJob } from "@/lib/mcp/tools/getJob";
+import { handleDeleteJob } from "@/lib/mcp/tools/deleteJob";
+import { handleListCompanies } from "@/lib/mcp/tools/listCompanies";
+import { handleListResumes } from "@/lib/mcp/tools/listResumes";
+import { handleGetJobStats } from "@/lib/mcp/tools/getJobStats";
 
 function isMcpEnabled(): boolean {
   const env = process.env.MCP_ENABLED;
@@ -262,6 +280,100 @@ async function handler(req: Request): Promise<Response> {
         };
       }
       return handleSaveResumeReview(parsed.data, userId, tokenName);
+    },
+  );
+
+  server.tool(
+    "list_jobs",
+    MCP_TOOL_DESCRIPTIONS.list_jobs,
+    McpListJobsInputShape,
+    async (rawInput) => {
+      if (!auth.scopes.includes("jobs:write")) {
+        return {
+          content: [{ type: "text" as const, text: "Insufficient scope. Required: jobs:write" }],
+        };
+      }
+      const parsed = McpListJobsSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => i.message).join("; ");
+        return { content: [{ type: "text" as const, text: `Validation error: ${issues}` }] };
+      }
+      return handleListJobs(parsed.data, userId);
+    },
+  );
+
+  server.tool(
+    "get_job",
+    MCP_TOOL_DESCRIPTIONS.get_job,
+    McpGetJobInputShape,
+    async (rawInput) => {
+      if (!auth.scopes.includes("jobs:write")) {
+        return {
+          content: [{ type: "text" as const, text: "Insufficient scope. Required: jobs:write" }],
+        };
+      }
+      const parsed = McpGetJobSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => i.message).join("; ");
+        return { content: [{ type: "text" as const, text: `Validation error: ${issues}` }] };
+      }
+      return handleGetJob(parsed.data, userId);
+    },
+  );
+
+  server.tool(
+    "delete_job",
+    MCP_TOOL_DESCRIPTIONS.delete_job,
+    McpDeleteJobInputShape,
+    async (rawInput) => {
+      if (!auth.scopes.includes("jobs:write")) {
+        return {
+          content: [{ type: "text" as const, text: "Insufficient scope. Required: jobs:write" }],
+        };
+      }
+      const parsed = McpDeleteJobSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => i.message).join("; ");
+        return { content: [{ type: "text" as const, text: `Validation error: ${issues}` }] };
+      }
+      return handleDeleteJob(parsed.data, userId);
+    },
+  );
+
+  server.tool(
+    "list_companies",
+    MCP_TOOL_DESCRIPTIONS.list_companies,
+    McpListCompaniesInputShape,
+    async (rawInput) => {
+      if (!auth.scopes.includes("jobs:write")) {
+        return {
+          content: [{ type: "text" as const, text: "Insufficient scope. Required: jobs:write" }],
+        };
+      }
+      const parsed = McpListCompaniesSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => i.message).join("; ");
+        return { content: [{ type: "text" as const, text: `Validation error: ${issues}` }] };
+      }
+      return handleListCompanies(parsed.data, userId);
+    },
+  );
+
+  server.tool(
+    "list_resumes",
+    MCP_TOOL_DESCRIPTIONS.list_resumes,
+    McpListResumesInputShape,
+    async () => {
+      return handleListResumes(userId);
+    },
+  );
+
+  server.tool(
+    "get_job_stats",
+    MCP_TOOL_DESCRIPTIONS.get_job_stats,
+    McpGetJobStatsInputShape,
+    async () => {
+      return handleGetJobStats(userId);
     },
   );
 
