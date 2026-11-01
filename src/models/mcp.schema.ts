@@ -240,9 +240,9 @@ export type McpSaveMatchResultsBatchInput = z.infer<
 
 // list_jobs — agent-friendly filtering of the caller's saved jobs.
 export const McpListJobsInputShape = {
-  search: z.string().optional().describe("Free-text search across title, company, location, source and description."),
-  status: z.string().optional().describe("Filter by application status (case-insensitive contains), e.g. 'applied', 'draft'."),
-  company: z.string().optional().describe("Filter by company name (contains)."),
+  search: z.string().optional().describe("Free-text search (case-insensitive contains) across job title, company, location, source and description. Use to find jobs by keyword, e.g. 'React', 'remote', 'engineer'."),
+  status: z.string().optional().describe("Filter by application status (case-insensitive contains). Possible values: new, draft, applied, interview, offer, offer-accepted, offer-declined, rejected, expired, archived, withdrawn. E.g. 'applied', 'draft', 'interview'."),
+  company: z.string().optional().describe("Filter by company name (case-insensitive contains), e.g. 'Google', 'Acme'."),
   applied: z.boolean().optional().describe("Filter by applied flag."),
   limit: z.number().int().min(1).max(100).optional().describe("Max results per page (default 25, max 100)."),
   offset: z.number().int().min(0).optional().describe("Pagination offset (default 0)."),
@@ -253,7 +253,7 @@ export type McpListJobsInput = z.infer<typeof McpListJobsSchema>;
 
 // get_job — full details for one job by id.
 export const McpGetJobInputShape = {
-  jobId: z.string().min(1).describe("The id of the job to fetch, as returned by list_jobs or add_job."),
+  jobId: z.string().min(1).describe("The id of the job, as returned by list_jobs or add_job (a UUID). Use list_jobs first if you only have a title/company."),
 };
 
 export const McpGetJobSchema = z.object(McpGetJobInputShape);

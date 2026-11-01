@@ -22,17 +22,17 @@ export const MCP_TOOL_DESCRIPTIONS = {
   save_resume_review:
     "Persist a resume review (produced by you, the agent) against the resume previously handed to you by review_resume. Call this after review_resume hands you a review directive.",
   list_jobs:
-    "List the user's saved jobs with optional filters (search, status, company, applied) and pagination. Returns compact one-line summaries with ids, status, location, match score, tags and url. Use get_job for full details. Use this to browse/search the job list before acting.",
+    "List/search the user's saved jobs. Optional filters: search (free text across title, company, location, source, description), status (application status, case-insensitive contains, e.g. 'applied', 'draft', 'interview'), company (contains), applied (boolean). Paginate with limit (default 25, max 100) and offset. Returns one compact line per job: title, company, id, status, location, applied, match score, tags, url, plus total count and a 'more available' hint. Use get_job with an id for the full record (description, contacts, stages, match data). Use this to browse the job list, find a jobId, or check whether a role was already saved before adding it.",
   get_job:
-    "Fetch the full record for a single saved job by id (description, tags, contacts, stages, match data, resume/cover letter, url). Use after list_jobs or add_job to read or enrich a posting.",
+    "Fetch the full record for one saved job by id: title, company, status, location, source, type, workplace, salary, applied/appliedDate, dueDate, match score, tags, contacts, interview stages, resume/cover letter, url, createdVia, and the full job description. Use after list_jobs or add_job to read, review, or enrich a posting. Only returns jobs owned by the caller.",
   delete_job:
-    "Delete a job previously created via MCP (createdVia set). Jobs created in the web app cannot be deleted through MCP — delete them there instead.",
+    "Delete a job by id. Only jobs created through MCP (createdVia set) can be deleted this way; jobs created in the web app cannot be removed via MCP — tell the user to delete them in the app. Returns a confirmation with the job title/company.",
   list_companies:
-    "List the user's companies (with job counts and watchlist/ATS info). Supports free-text search and pagination. Use to resolve company names or inspect the company list.",
+    "List the user's companies with job counts, watchlist flag and ATS board info. Supports free-text search (name or ATS token) and pagination (limit default 50, max 200; offset). Use to resolve a company name to an id, inspect the company list, or check which boards are linked before running an automation.",
   list_resumes:
-    "List the user's resumes (id + title), marking the default one. Use to pick a resumeId for save_match_result / review_resume flows.",
+    "List the user's resumes (id + title + last-updated), marking the default one. Use to pick a resumeId for save_match_result / review_resume, or to confirm which resume exists before reviewing. Returns 'No resumes found' if none exist.",
   get_job_stats:
-    "Aggregate counts of the user's jobs by status plus total and applied counts. Use for a quick pipeline overview.",
+    "Aggregate pipeline overview: total jobs, applied count, and counts grouped by application status (new, draft, applied, interview, offer, rejected, etc.). Use for a quick summary of the job pipeline before deciding what to work on.",
 } as const;
 
 export type McpToolName = keyof typeof MCP_TOOL_DESCRIPTIONS;
