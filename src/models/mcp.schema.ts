@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { APP_CONSTANTS, JOB_STATUS_VALUES } from "@/lib/constants";
-import { WORKPLACE_TYPES, matchEnumEntry } from "@/models/job.model";
+import { WORKPLACE_TYPES, JOB_CATEGORIES, matchEnumEntry } from "@/models/job.model";
 
 // An enum rather than a described string, for the same reason status is one:
 // a small local model fills an enum-constrained slot and ignores prose hints.
@@ -18,6 +18,13 @@ const workplaceTypeField = z
   .optional()
   .describe(`Work arrangement stated in the posting. One of: ${Object.values(WORKPLACE_TYPES).join(", ")}.`);
 
+const jobCategoryField = z
+  .preprocess(
+    (v) => (typeof v === "string" ? (matchEnumEntry(JOB_CATEGORIES, v)?.[1] ?? v) : v),
+    z.enum(JOB_CATEGORIES),
+  )
+  .describe(`Compulsory classification of the posting. One of: ${Object.values(JOB_CATEGORIES).join(", ")}.`);
+
 // Raw input shape for MCP tool registration (no transforms — SDK uses this for JSON schema)
 export const McpAddJobInputShape = {
   company: z.string().min(1, "company is required"),
@@ -29,6 +36,7 @@ export const McpAddJobInputShape = {
   source: z.string().optional().describe("Job board or site the listing came from, e.g. 'LinkedIn', 'Indeed', 'company website'. If not stated explicitly, infer it from the job posting's URL/domain when possible instead of leaving it blank."),
   jobType: z.string().optional().describe("Employment type: 'Full-time', 'Part-time', or 'Contract'"),
   workplaceType: workplaceTypeField,
+  jobCategory: jobCategoryField,
   // Lowercased before the enum check so a caller sending "Applied"/"Draft"
   // (capitalized, like the old free-text field silently tolerated via
   // resolveJobStatus's case-insensitive DB lookup) still validates instead
@@ -170,6 +178,7 @@ export const McpUpdateJobInputShape = {
   source: z.string().optional(),
   jobType: z.string().optional().describe("Employment type: 'Full-time', 'Part-time', or 'Contract'"),
   workplaceType: workplaceTypeField,
+  jobCategory: jobCategoryField.optional(),
   // Same lowercase-preprocess treatment as add_job's status (Task 1) — the
   // SDK validates against this exact shape, so the case-insensitivity has to
   // live here too, not just on the transformed McpUpdateJobSchema.

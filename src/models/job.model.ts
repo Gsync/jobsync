@@ -22,6 +22,7 @@ export interface JobForm {
   jobUrl?: string;
   applied: boolean;
   workplaceType?: string | null;
+  jobCategory?: string;
 }
 
 export interface Tag {
@@ -46,6 +47,7 @@ export interface JobResponse {
   JobSource: JobSource | null;
   jobType: string;
   workplaceType?: string | null;
+  jobCategory?: string;
   createdAt: Date;
   appliedDate: Date;
   dueDate: Date;
@@ -165,6 +167,28 @@ export enum WORKPLACE_TYPES {
   REMOTE = "Remote",
   HYBRID = "Hybrid",
   ONSITE = "Onsite",
+}
+
+// Compulsory classification of a posting: academic vs. industry (civil vs. others).
+// Stored as a code (like jobType) and rendered through getJobCategoryLabel.
+export enum JOB_CATEGORIES {
+  ACADEMIC = "academic",
+  INDUSTRY_CIVIL = "industry_civil",
+  INDUSTRY_OTHERS = "industry_others",
+}
+
+export const JOB_CATEGORY_LABELS: Record<string, string> = {
+  ACADEMIC: "Academic",
+  INDUSTRY_CIVIL: "Industry - Civil",
+  INDUSTRY_OTHERS: "Industry - Others",
+};
+
+export function getJobCategoryLabel(
+  code?: string | null,
+  fallback: string = "Not specified",
+): string {
+  if (!code) return fallback;
+  return JOB_CATEGORY_LABELS[code] ?? (JOB_CATEGORIES as any)[code] ?? fallback;
 }
 
 // Jobs-page popover filters. Values are stored codes (FT, REMOTE) and status

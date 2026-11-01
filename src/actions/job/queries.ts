@@ -22,6 +22,7 @@ const JOB_LIST_SELECT = {
   JobTitle: true,
   jobType: true,
   workplaceType: true,
+  jobCategory: true,
   salaryRange: true,
   Company: true,
   Status: true,

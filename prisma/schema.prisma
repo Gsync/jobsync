@@ -442,6 +442,7 @@ model Job {
   description String
   jobType     String
   workplaceType String?
+  jobCategory   String    @default("INDUSTRY_OTHERS")
   createdAt   DateTime
   applied     Boolean     @default(false)
   appliedDate DateTime?

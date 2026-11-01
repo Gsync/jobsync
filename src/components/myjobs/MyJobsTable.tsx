@@ -18,6 +18,7 @@ import {
   JobStatus,
   getJobTypeLabel,
   getWorkplaceTypeLabel,
+  getJobCategoryLabel,
 } from "@/models/job.model";
 import type { SortState } from "@/models/sort.model";
 import { SortableTableHead } from "../SortableTableHead";
@@ -154,6 +155,9 @@ function MyJobsTable({
                       getJobTypeLabel(job.jobType),
                       job.workplaceType
                         ? getWorkplaceTypeLabel(job.workplaceType)
+                        : null,
+                      job.jobCategory
+                        ? getJobCategoryLabel(job.jobCategory)
                         : null,
                     ]
                       .filter(Boolean)

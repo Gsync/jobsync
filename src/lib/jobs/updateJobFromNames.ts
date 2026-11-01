@@ -11,6 +11,7 @@ import {
   resolveJobSource,
   resolveJobType,
   resolveWorkplaceType,
+  resolveJobCategory,
   resolveJobStatus,
   resolveTags,
   resolveStageTypeForStatusId,
@@ -31,6 +32,7 @@ export interface UpdateJobFromNamesInput {
   source?: string;
   jobType?: string;
   workplaceType?: string;
+  jobCategory?: string;
   status?: string;
   // Not `| null`: McpUpdateJobSchema's transform can only produce
   // Date | undefined, never null, so there's no reachable "clear the date"
@@ -87,6 +89,10 @@ export async function updateJobFromNames(
     input.workplaceType !== undefined
       ? resolveWorkplaceType(input.workplaceType)
       : undefined;
+  const jobCategoryValue =
+    input.jobCategory !== undefined
+      ? resolveJobCategory(input.jobCategory)
+      : undefined;
 
   const [
     resolvedCompany,
@@ -122,6 +128,7 @@ export async function updateJobFromNames(
   if (statusId) data.statusId = statusId;
   if (jobTypeValue !== undefined) data.jobType = jobTypeValue;
   if (workplaceTypeValue !== undefined) data.workplaceType = workplaceTypeValue;
+  if (jobCategoryValue !== undefined) data.jobCategory = jobCategoryValue;
   if (input.salaryRange !== undefined) data.salaryRange = input.salaryRange;
   if (input.dueDate !== undefined) data.dueDate = input.dueDate;
   if (input.jobUrl !== undefined) data.jobUrl = normalizeJobUrl(input.jobUrl);

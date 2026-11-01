@@ -1,4 +1,5 @@
 import prisma from "@/lib/db";
+import { getJobCategoryLabel } from "@/models/job.model";
 import { checkMcpRateLimit } from "@/lib/mcp/rate-limit";
 
 // Fetch the full record for a single job by id, scoped to the caller. Returns
@@ -70,6 +71,7 @@ export async function handleGetJob(
       `source: ${source}`,
       `job type: ${j.jobType ?? "—"}`,
       `workplace: ${j.workplaceType ?? "—"}`,
+      `category: ${j.jobCategory ? getJobCategoryLabel(j.jobCategory) : "—"}`,
       `salary: ${j.salaryRange ?? "—"}`,
       `applied: ${j.applied}${j.appliedDate ? ` (${new Date(j.appliedDate).toISOString()})` : ""}`,
       `due date: ${j.dueDate ? new Date(j.dueDate).toISOString() : "—"}`,

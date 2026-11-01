@@ -31,6 +31,8 @@ import {
   JobTitle,
   Tag,
   WORKPLACE_TYPES,
+  JOB_CATEGORIES,
+  JOB_CATEGORY_LABELS,
 } from "@/models/job.model";
 import { addDays } from "date-fns";
 import { z } from "zod";
@@ -132,6 +134,7 @@ export function AddJob({
   const newJobDefaultValues = {
     type: Object.keys(JOB_TYPES)[0],
     workplaceType: "ONSITE",
+    jobCategory: Object.keys(JOB_CATEGORIES)[0],
     dueDate: addDays(new Date(), APP_CONSTANTS.DEFAULT_JOB_DUE_DAYS),
     status: draftStatusId,
     salaryRange: "",
@@ -179,6 +182,7 @@ export function AddJob({
         location: editJob.Location?.id,
         type: editJob.jobType,
         workplaceType: editJob.workplaceType ?? undefined,
+        jobCategory: editJob.jobCategory ?? undefined,
         source: editJob.JobSource?.id,
         status: editJob.Status.id,
         dueDate: editJob.dueDate,
@@ -469,7 +473,42 @@ export function AddJob({
                     )}
                   />
                 </div>
-                {/* Job Source */}
+                                {/* Job Category */}
+                <div>
+                  <FormField
+                    control={form.control}
+                    name="jobCategory"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel className="mb-2">Job Category</FormLabel>
+                        <RadioGroup
+                          name="jobCategory"
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex space-y-1"
+                        >
+                          {Object.entries(JOB_CATEGORIES).map(
+                            ([key, value]) => (
+                              <FormItem
+                                key={key}
+                                className="flex items-center space-x-3 space-y-0"
+                              >
+                                <FormControl>
+                                  <RadioGroupItem value={key} />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  {JOB_CATEGORY_LABELS[key] ?? value}
+                                </FormLabel>
+                              </FormItem>
+                            ),
+                          )}
+                        </RadioGroup>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+{/* Job Source */}
                 <div>
                   <FormField
                     control={form.control}

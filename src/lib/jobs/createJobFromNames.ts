@@ -14,6 +14,7 @@ import {
   resolveJobSource,
   resolveJobType,
   resolveWorkplaceType,
+  resolveJobCategory,
   resolveJobStatus,
   resolveTags,
   type ResolvedEntity,
@@ -31,6 +32,7 @@ export interface CreateJobFromNamesInput {
   source?: string;
   jobType?: string;
   workplaceType?: string;
+  jobCategory?: string;
   status?: string;
   dueDate?: Date | null;
   applied?: boolean;
@@ -63,6 +65,7 @@ export async function createJobFromNames(
     source,
     jobType,
     workplaceType,
+    jobCategory,
     status,
     dueDate = addDays(new Date(), APP_CONSTANTS.DEFAULT_JOB_DUE_DAYS),
     applied = false,
@@ -78,6 +81,7 @@ export async function createJobFromNames(
   // invalid jobType/workplaceType can't orphan already-started promises.
   const jobTypeValue = resolveJobType(jobType);
   const workplaceTypeValue = resolveWorkplaceType(workplaceType);
+  const jobCategoryValue = resolveJobCategory(jobCategory);
 
   // Resolve Bucket A and B in parallel where possible
   const [
@@ -142,6 +146,7 @@ export async function createJobFromNames(
     description: md.render(jobDescription),
     jobType: jobTypeValue,
     workplaceType: workplaceTypeValue,
+    jobCategory: jobCategoryValue,
     userId,
     jobUrl: jobUrl ? normalizeJobUrl(jobUrl) : null,
     applied,

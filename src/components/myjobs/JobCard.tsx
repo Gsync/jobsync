@@ -18,6 +18,7 @@ import {
   JobStatus,
   getJobTypeLabel,
   getWorkplaceTypeLabel,
+  getJobCategoryLabel,
 } from "@/models/job.model";
 import { JobStatusBadge } from "./JobStatusBadge";
 import { JobActionsMenu } from "./JobActionsMenu";
@@ -124,6 +125,7 @@ export function JobCard({
             {[
               getJobTypeLabel(job.jobType),
               job.workplaceType ? getWorkplaceTypeLabel(job.workplaceType) : null,
+              job.jobCategory ? getJobCategoryLabel(job.jobCategory) : null,
             ]
               .filter(Boolean)
               .join(" · ")}

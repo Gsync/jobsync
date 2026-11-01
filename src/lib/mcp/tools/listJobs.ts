@@ -1,5 +1,6 @@
 import prisma from "@/lib/db";
 import { checkMcpRateLimit } from "@/lib/mcp/rate-limit";
+import { getJobCategoryLabel } from "@/models/job.model";
 
 // Compact, agent-friendly listing of the caller's saved jobs. Supports free-text
 // search across title/company/location/description and filters on status,
@@ -65,6 +66,7 @@ export async function handleListJobs(
           Location: { select: { label: true } },
           jobType: true,
           workplaceType: true,
+          jobCategory: true,
           applied: true,
           appliedDate: true,
           dueDate: true,
@@ -94,11 +96,12 @@ export async function handleListJobs(
       const status = j.Status?.value ?? "unknown";
       const location = j.Location?.label ?? "—";
       const match = j.matchScore != null ? `${j.matchScore}%` : "—";
+      const category = j.jobCategory ? getJobCategoryLabel(j.jobCategory) : "—";
       const tags = j.tags?.length
         ? j.tags.map((t: any) => t.label).join(", ")
         : "none";
       const url = j.jobUrl ? ` url: ${j.jobUrl}` : "";
-      return `- ${title} @ ${company} (id: ${j.id}) — status: ${status}, location: ${location}, applied: ${j.applied}, match: ${match}, tags: ${tags}${url}`;
+      return `- ${title} @ ${company} (id: ${j.id}) — status: ${status}, category: ${category}, location: ${location}, applied: ${j.applied}, match: ${match}, tags: ${tags}${url}`;
     });
 
     let text = `Found ${jobs.length} of ${total} job(s) (offset ${offset}):\n${lines.join("\n")}`;
