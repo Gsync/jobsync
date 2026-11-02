@@ -211,3 +211,53 @@ describe("resolveEntity — empty label guard", () => {
     expect(prisma.location.create).not.toHaveBeenCalled();
   });
 });
+
+describe("resolveEntity entity decoding", () => {
+  const userId = "user-1";
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (prisma.jobTitle.findUnique as any).mockResolvedValue(null);
+    (prisma.jobTitle.create as any).mockImplementation(({ data }: any) =>
+      Promise.resolve({ id: `title-${data.value}`, label: data.label }),
+    );
+  });
+
+  it("stores a decoded label and value when the name carries HTML entities", async () => {
+    const result = await resolveJobTitle("Research &amp; Development Engineer", userId);
+
+    expect(prisma.jobTitle.create).toHaveBeenCalledWith({
+      data: {
+        label: "Research & Development Engineer",
+        value: "research & development engineer",
+        createdBy: userId,
+      },
+    });
+    expect(result.label).toBe("Research & Development Engineer");
+  });
+
+  it("reuses the clean record when the encoded name matches it", async () => {
+    (prisma.jobTitle.findUnique as any).mockResolvedValue({
+      id: "existing-title",
+      label: "Research & Development Engineer",
+    });
+
+    const result = await resolveJobTitle("Research &amp; Development Engineer", userId);
+
+    expect(prisma.jobTitle.findUnique).toHaveBeenCalledWith({
+      where: {
+        value_createdBy: { value: "research & development engineer", createdBy: userId },
+      },
+    });
+    expect(prisma.jobTitle.create).not.toHaveBeenCalled();
+    expect(result.id).toBe("existing-title");
+  });
+
+  it("trims whitespace that only appears after decoding", async () => {
+    await resolveJobTitle("&nbsp;Engineer&nbsp;", userId);
+
+    expect(prisma.jobTitle.create).toHaveBeenCalledWith({
+      data: { label: "Engineer", value: "engineer", createdBy: userId },
+    });
+  });
+});

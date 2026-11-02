@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { classifyDescriptionCompleteness } from "@/lib/jobs/descriptionCompleteness";
+import { decodeHtml } from "@/lib/scraper/html";
 
 type Respond = (r: { id: string; approved: boolean; reason?: string }) => void;
 
@@ -30,6 +31,12 @@ function text(value: unknown): string | undefined {
   return typeof value === "string" && value ? value : undefined;
 }
 
+// Mirrors resolveEntity, so the card shows the name that will be saved.
+function entityName(value: unknown): string | undefined {
+  const name = text(value);
+  return name && decodeHtml(name);
+}
+
 function AddJobBody({
   input,
   pastedText,
@@ -46,10 +53,10 @@ function AddJobBody({
 
   return (
     <div>
-      <Row label="Company" value={text(input.company)} />
-      <Row label="Job title" value={text(input.jobTitle)} />
-      <Row label="Location" value={text(input.location)} />
-      <Row label="Source" value={text(input.source)} />
+      <Row label="Company" value={entityName(input.company)} />
+      <Row label="Job title" value={entityName(input.jobTitle)} />
+      <Row label="Location" value={entityName(input.location)} />
+      <Row label="Source" value={entityName(input.source)} />
       <Row label="URL" value={text(input.jobUrl)} />
       <Row label="Salary" value={text(input.salaryRange)} />
       <Row label="Tags" value={tags} />

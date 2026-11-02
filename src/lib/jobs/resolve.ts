@@ -1,5 +1,6 @@
 import prisma from "@/lib/db";
 import { JOB_TYPES, WORKPLACE_TYPES, matchEnumEntry } from "@/models/job.model";
+import { decodeHtml } from "@/lib/scraper/html";
 import { canonicalizeEntityValue } from "./canonicalize";
 
 export interface ResolvedEntity {
@@ -42,7 +43,7 @@ async function resolveEntity(
   userId: string,
   opts: { stripLegalSuffix?: boolean } = {},
 ): Promise<ResolvedEntity> {
-  const trimmed = label.trim();
+  const trimmed = decodeHtml(label).trim();
   const value = canonicalizeEntityValue(trimmed, opts);
   if (!value) throw new Error("A non-empty label is required");
   const existing = await delegate.findUnique({

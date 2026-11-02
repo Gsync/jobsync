@@ -146,3 +146,35 @@ describe("AgentApprovalCard", () => {
     expect(container).toBeEmptyDOMElement();
   });
 });
+
+describe("AgentApprovalCard entity decoding", () => {
+  it("shows resolved names decoded, matching what the resolver saves", () => {
+    render(
+      <AgentApprovalCard
+        part={part({
+          input: {
+            company: "AT&amp;T",
+            jobTitle: "Research &amp; Development Engineer",
+            location: "Calgary &amp; Remote",
+            source: "Jobs &amp; More",
+          },
+        })}
+        onRespond={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("AT&T")).toBeInTheDocument();
+    expect(screen.getByText("Research & Development Engineer")).toBeInTheDocument();
+    expect(screen.getByText("Calgary & Remote")).toBeInTheDocument();
+    expect(screen.getByText("Jobs & More")).toBeInTheDocument();
+  });
+
+  it("leaves fields the resolver does not touch as sent", () => {
+    render(
+      <AgentApprovalCard
+        part={part({ input: { company: "Acme", jobTitle: "Dev", salaryRange: "$1 &amp; up" } })}
+        onRespond={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("$1 &amp; up")).toBeInTheDocument();
+  });
+});
