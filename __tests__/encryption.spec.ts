@@ -105,3 +105,25 @@ describe("getLast4", () => {
     expect(getLast4("ab")).toBe("ab");
   });
 });
+
+describe("records written on Node 20", () => {
+  const plaintext = "sk-written-on-node-20";
+
+  it("decrypts a per-record-salt record", () => {
+    expect(
+      decrypt(
+        "DCDuZXBX4uS2hRSehjFtTRhxnAsh4gN4YXlZZDm3ibATPCh1Gg==",
+        "AKu649tgHONibZVwwOq7gQ==.H6ioeUvYOxqvZx0q",
+      ),
+    ).toBe(plaintext);
+  });
+
+  it("decrypts a legacy static-salt record", () => {
+    expect(
+      decrypt(
+        "wm4UmMqw29TaUD14cKWWaWk2NOnReam+tlauqZ7ajOV3POJfXw==",
+        "VTfTiyvxaZDH5Rtj",
+      ),
+    ).toBe(plaintext);
+  });
+});
