@@ -1,5 +1,5 @@
 // Renders changes/ fragments as release notes; run by release.yml and `npm run release:notes`.
-// Plain .mjs because the release jobs run Node 20, which has no type stripping.
+// Plain .mjs: the release jobs run it directly, with no build step.
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";

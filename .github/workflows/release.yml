@@ -44,7 +44,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
 
       # Here rather than only in publish, so a missing fragment fails in
       # seconds instead of after the build.
@@ -86,7 +86,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
           cache: "npm"
 
       - run: npm ci
@@ -120,7 +120,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
 
       # The version is imported by SupportDialog and backup/manifest, so it has
       # to be in the build context even though it is not committed yet.
@@ -174,7 +174,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
 
       - uses: actions/download-artifact@v8
         with:

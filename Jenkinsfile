@@ -44,7 +44,7 @@ pipeline {
                         docker run -d --name ${CI_CONTAINER} \
                             -v "$PWD":/app -w /app \
                             -v ${NPM_CACHE_DIR}:/root/.npm \
-                            node:20.20.2-alpine tail -f /dev/null
+                            node:24.22.2-alpine tail -f /dev/null
 
                         docker exec ${CI_CONTAINER} sh -c '
                             set -e

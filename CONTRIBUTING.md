@@ -41,7 +41,7 @@ This project follows a [Code of Conduct](./CODE_OF_CONDUCT.md). By participating
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 24+
 - npm
 - Git
 - A Postgres database (any reachable Postgres 17+; Docker is one way to get one, not a requirement). Prefer one with the `pgvector` extension available — the bundled `pgvector/pgvector:pg18` image has it — since resume embeddings will need it
