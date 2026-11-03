@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/gsync-jobsync-badge.png)](https://mseep.ai/app/gsync-jobsync)
+
 # JobSync
 
 <p align="center"><strong>The self-hosted job search assistant with AI-powered resume review, job matching, and automated discovery</strong></p>
