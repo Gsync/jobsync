@@ -151,7 +151,7 @@ function CreateResume({
       }
 
       const newResumeId: string | undefined =
-        response.data?.id ?? response.data?.resumes?.[0]?.id;
+        response.data?.resumes?.[0]?.id ?? response.data?.id;
 
       // Auto-fill with AI: hand the chosen model to the editor and navigate
       // immediately so the import streams in live there, rather than blocking
