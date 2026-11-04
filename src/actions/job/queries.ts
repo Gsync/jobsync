@@ -90,6 +90,7 @@ const JOB_DETAILS_INCLUDE = {
 type JobsListFilters = JobListScope & {
   facets?: JobFacets;
   search?: string;
+  jobCategories?: string[];
 };
 
 const buildJobsWhereClause = (userId: string, filters: JobsListFilters) => {
@@ -101,6 +102,7 @@ const buildJobsWhereClause = (userId: string, filters: JobsListFilters) => {
     locationValue,
     sourceValue,
   } = filters;
+  const jobCategories = filters.jobCategories;
   const facets = normalizeJobFacets(filters.facets);
   const and: Record<string, any>[] = [];
 
@@ -125,6 +127,9 @@ const buildJobsWhereClause = (userId: string, filters: JobsListFilters) => {
   if (facets.jobTypes.length) {
     and.push({ jobType: { in: facets.jobTypes } });
   }
+  if (facets.jobCategories.length) {
+    and.push({ jobCategory: { in: facets.jobCategories } });
+  }
   if (facets.workplaces.length) {
     and.push({ workplaceType: { in: facets.workplaces } });
   }
@@ -145,6 +150,10 @@ const buildJobsWhereClause = (userId: string, filters: JobsListFilters) => {
 
   if (sourceValue) {
     whereClause.JobSource = { value: sourceValue };
+  }
+
+  if (jobCategories && jobCategories.length) {
+    whereClause.jobCategory = { in: jobCategories };
   }
 
   if (appliedOnly) {

@@ -197,6 +197,7 @@ export type JobFacets = {
   statuses: string[];
   acceptedDiscovered: boolean;
   jobTypes: string[];
+  jobCategories: string[];
   workplaces: string[];
   includeDismissed: boolean;
 };

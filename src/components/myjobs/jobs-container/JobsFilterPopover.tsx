@@ -13,10 +13,12 @@ import {
 } from "@/lib/jobs/jobFacets";
 import {
   JOB_TYPES,
+  JOB_CATEGORIES,
   JobFacets,
   JobListScope,
   JobStatus,
   WORKPLACE_TYPES,
+  getJobCategoryLabel,
 } from "@/models/job.model";
 import { useJobFilterCounts } from "./useJobFilterCounts";
 
@@ -210,6 +212,23 @@ export function JobsFilterPopover({
                 ...d,
                 workplaces: toggleIn(d.workplaces, code),
               })),
+            )}
+          </div>
+          <div className="flex flex-col gap-2.5 border-b px-4 py-3">
+            <span className={SECTION_LABEL}>Job category</span>
+            {segmented(
+              Object.fromEntries(
+                Object.keys(JOB_CATEGORIES).map((code) => [
+                  code,
+                  getJobCategoryLabel(code),
+                ]),
+              ),
+              draft.jobCategories,
+              (code) =>
+                setDraft((d) => ({
+                  ...d,
+                  jobCategories: toggleIn(d.jobCategories, code),
+                })),
             )}
           </div>
           <label className="flex cursor-pointer items-center gap-2 border-b px-4 py-3 text-[13px]">
