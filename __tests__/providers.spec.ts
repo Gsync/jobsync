@@ -10,6 +10,7 @@ vi.mock("@/lib/ai/provider-registry.server", () => ({
     deepseek: vi.fn(),
     ollama: vi.fn(),
     gemini: vi.fn(),
+    strata: vi.fn(),
   },
 }));
 
@@ -65,6 +66,35 @@ describe("getModel – openrouter", () => {
       "sk-or-key",
       "anthropic/claude-3-opus",
     );
+  });
+});
+
+describe("getModel – strata", () => {
+  const mockModelInstance = { modelId: "qwen3.8-flash-next" };
+
+  beforeEach(() => {
+    (PROVIDER_FACTORIES.strata as any).mockReturnValue(mockModelInstance);
+  });
+
+  it("resolves the base URL credential and returns a model instance", async () => {
+    (resolveApiKey as any).mockResolvedValue("http://127.0.0.1:8080");
+
+    const result = await getModel("strata", "qwen3.8-flash-next", "user-1");
+
+    expect(resolveApiKey).toHaveBeenCalledWith("user-1", "strata");
+    expect(PROVIDER_FACTORIES.strata).toHaveBeenCalledWith(
+      "http://127.0.0.1:8080",
+      "qwen3.8-flash-next",
+    );
+    expect(result).toBe(mockModelInstance);
+  });
+
+  it("throws when Strata credential is not configured", async () => {
+    (resolveApiKey as any).mockResolvedValue(undefined);
+
+    await expect(
+      getModel("strata", "qwen3.8-flash-next", "user-1"),
+    ).rejects.toThrow("Strata credential not configured");
   });
 });
 

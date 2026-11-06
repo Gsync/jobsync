@@ -20,6 +20,7 @@ export enum AiProvider {
   DEEPSEEK = "deepseek",
   GEMINI = "gemini",
   OPENROUTER = "openrouter",
+  STRATA = "strata",
 }
 
 // Default models per provider

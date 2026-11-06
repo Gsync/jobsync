@@ -145,3 +145,77 @@ describe("PROVIDER_FACTORIES – openrouter", () => {
     );
   });
 });
+
+describe("PROVIDER_VERIFIERS – strata", () => {
+  it("returns { success: true } when /health responds ok", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true });
+
+    const result = await PROVIDER_VERIFIERS.strata("http://127.0.0.1:8080");
+
+    expect(result).toEqual({ success: true });
+    expect(global.fetch).toHaveBeenCalledWith(
+      "http://127.0.0.1:8080/health",
+      { signal: expect.any(AbortSignal) },
+    );
+  });
+
+  it("strips a trailing slash from the base URL", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true });
+
+    await PROVIDER_VERIFIERS.strata("http://127.0.0.1:8080/");
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "http://127.0.0.1:8080/health",
+      expect.any(Object),
+    );
+  });
+
+  it("returns a descriptive error when the server responds not-ok", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: false });
+
+    const result = await PROVIDER_VERIFIERS.strata("http://127.0.0.1:8080");
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("Cannot connect to Strata");
+  });
+
+  it("returns a descriptive error when fetch throws", async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+
+    const result = await PROVIDER_VERIFIERS.strata("http://127.0.0.1:8080");
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("Strata");
+  });
+});
+
+describe("PROVIDER_FACTORIES – strata", () => {
+  it("uses createOpenAI with the server's /v1 baseURL", () => {
+    const mockModelInstance = { modelId: "qwen3.8-flash-next" };
+    const mockChainFn = vi.fn().mockReturnValue(mockModelInstance);
+    (createOpenAI as any).mockReturnValue(mockChainFn);
+
+    const result = PROVIDER_FACTORIES.strata(
+      "http://127.0.0.1:8080",
+      "qwen3.8-flash-next",
+    );
+
+    expect(createOpenAI).toHaveBeenCalledWith({
+      apiKey: "strata-local",
+      baseURL: "http://127.0.0.1:8080/v1",
+    });
+    expect(mockChainFn).toHaveBeenCalledWith("qwen3.8-flash-next");
+    expect(result).toBe(mockModelInstance);
+  });
+
+  it("strips a trailing slash from the base URL before appending /v1", () => {
+    const mockChainFn = vi.fn().mockReturnValue({});
+    (createOpenAI as any).mockReturnValue(mockChainFn);
+
+    PROVIDER_FACTORIES.strata("http://127.0.0.1:8080/", "some-model");
+
+    expect(createOpenAI).toHaveBeenCalledWith(
+      expect.objectContaining({ baseURL: "http://127.0.0.1:8080/v1" }),
+    );
+  });
+});

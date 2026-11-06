@@ -17,6 +17,11 @@ export const PROVIDER_FACTORIES: Record<
   ollama: (baseURL, model) =>
     createOllama({ baseURL: baseURL + "/api" })(model),
   gemini: (apiKey, model) => createGoogleGenerativeAI({ apiKey })(model),
+  strata: (baseURL, model) =>
+    createOpenAI({
+      apiKey: "strata-local",
+      baseURL: baseURL.replace(/\/+$/, "") + "/v1",
+    })(model),
 };
 
 export const PROVIDER_VERIFIERS: Record<
@@ -122,5 +127,40 @@ export const PROVIDER_VERIFIERS: Record<
             : `Gemini returned ${res.status}`,
       };
     return { success: true };
+  },
+
+  strata: async (key) => {
+    const baseUrl = key.replace(/\/+$/, "");
+    try {
+      const res = await fetch(`${baseUrl}/health`, {
+        signal: AbortSignal.timeout(APP_CONSTANTS.AI_VERIFY_TIMEOUT_MS),
+      });
+      if (!res.ok)
+        return {
+          success: false,
+          error: `Cannot connect to Strata at ${baseUrl}`,
+        };
+      return { success: true };
+    } catch (error) {
+      if (error instanceof Error && error.name === "TimeoutError") {
+        return {
+          success: false,
+          error: `Strata at ${baseUrl} did not respond in time. Please make sure Strata is running.`,
+        };
+      }
+      if (
+        error instanceof TypeError &&
+        /failed to parse url/i.test(error.message)
+      ) {
+        return {
+          success: false,
+          error: `Invalid Strata URL: ${baseUrl}`,
+        };
+      }
+      return {
+        success: false,
+        error: `Cannot connect to Strata at ${baseUrl}. Please make sure Strata is running.`,
+      };
+    }
   },
 };

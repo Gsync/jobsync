@@ -13,11 +13,11 @@ import {
   type AiSettings,
 } from "@/models/userSettings.model";
 
-// Ollama serializes on the GPU, so it must process matches one at a time;
-// other providers can fan out concurrently.
+// Ollama and Strata each serialize on a single local GPU, so they must
+// process matches one at a time; cloud providers can fan out concurrently.
 export function getAutomationMatchLimit(provider: AiProvider) {
   const concurrency =
-    provider === AiProvider.OLLAMA
+    provider === AiProvider.OLLAMA || provider === AiProvider.STRATA
       ? 1
       : APP_CONSTANTS.AUTOMATION_MATCH_CONCURRENCY;
   return pLimit(concurrency);
@@ -35,6 +35,10 @@ export function getDefaultModelForProvider(provider: AiProvider): string {
       return GeminiModel.GEMINI_2_0_FLASH;
     case AiProvider.OPENROUTER:
       return "anthropic/claude-3.5-sonnet";
+    case AiProvider.STRATA:
+      // No fixed default: Strata serves whatever single model the user
+      // launched, discovered dynamically via its /v1/models endpoint.
+      return "";
   }
 }
 
