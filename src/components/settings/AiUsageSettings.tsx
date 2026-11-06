@@ -22,9 +22,14 @@ export default function AiUsageSettings() {
   const [loading, setLoading] = useState(true);
   const failuresRef = useRef<HTMLElement>(null);
 
+  const [prevRange, setPrevRange] = useState(range);
+  if (range !== prevRange) {
+    setPrevRange(range);
+    setLoading(true);
+  }
+
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     // Local midnight of the oldest day: only the browser knows its calendar.
     const since = startOfDay(subDays(new Date(), range - 1));
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;

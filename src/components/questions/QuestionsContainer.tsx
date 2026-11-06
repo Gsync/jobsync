@@ -43,24 +43,37 @@ function QuestionsContainer({
   const [page, setPage] = useState(1);
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [editQuestion, setEditQuestion] = useState<Question | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [stageLabel, setStageLabel] = useState<string | null>(null);
+  // Tagged with its stage id so a label never outlives its filter.
+  const [fetchedLabel, setFetchedLabel] = useState<{
+    stageId: string;
+    label: string;
+  } | null>(null);
   const stageId = searchParams.get("stage") ?? undefined;
+  const stageLabel =
+    stageId && fetchedLabel?.stageId === stageId ? fetchedLabel.label : null;
   const hasSearched = useRef(false);
-  const autoOpenHandled = useRef(false);
+  const [deepLinkHandled, setDeepLinkHandled] = useState(false);
 
-  const loadQuestions = useCallback(
-    async (pageNum: number, filter?: string, search?: string) => {
-      setLoading(true);
-      const result = await getQuestionsList(
+  const fetchQuestions = useCallback(
+    (pageNum: number, filter?: string, search?: string) =>
+      getQuestionsList(
         pageNum,
         APP_CONSTANTS.RECORDS_PER_PAGE,
         filter,
         search,
         stageId,
-      );
+      ),
+    [stageId],
+  );
+
+  const applyQuestions = useCallback(
+    (
+      pageNum: number,
+      result: Awaited<ReturnType<typeof getQuestionsList>>,
+    ) => {
       if (result?.success && result.data) {
         setQuestions((prev) =>
           pageNum === 1 ? result.data : [...prev, ...result.data],
@@ -72,8 +85,24 @@ function QuestionsContainer({
       }
       setLoading(false);
     },
-    [stageId],
+    [],
   );
+
+  const loadQuestions = useCallback(
+    async (pageNum: number, filter?: string, search?: string) => {
+      setLoading(true);
+      applyQuestions(pageNum, await fetchQuestions(pageNum, filter, search));
+    },
+    [fetchQuestions, applyQuestions],
+  );
+
+  // A filter or stage change re-raises the spinner the mount load starts with.
+  const listKey = `${filterKey}\0${stageId}`;
+  const [prevListKey, setPrevListKey] = useState(listKey);
+  if (listKey !== prevListKey) {
+    setPrevListKey(listKey);
+    setLoading(true);
+  }
 
   const reloadQuestions = useCallback(async () => {
     await loadQuestions(1, filterKey, searchTerm || undefined);
@@ -103,29 +132,30 @@ function QuestionsContainer({
     setDialogOpen(true);
   };
 
+  const deepLinked = searchParams.get("add-question") === "true";
+  if (deepLinked && !deepLinkHandled) {
+    setDeepLinkHandled(true);
+    setDialogOpen(true);
+  }
   useEffect(() => {
-    if (autoOpenHandled.current) return;
-    if (searchParams.get("add-question") === "true") {
-      autoOpenHandled.current = true;
-      setDialogOpen(true);
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("add-question");
-      const newPath = params.toString()
-        ? `?${params.toString()}`
-        : window.location.pathname;
-      router.replace(newPath);
-    }
-  }, [router, searchParams]);
+    if (!deepLinked) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("add-question");
+    const newPath = params.toString()
+      ? `?${params.toString()}`
+      : window.location.pathname;
+    router.replace(newPath);
+  }, [deepLinked, router, searchParams]);
 
   useEffect(() => {
-    if (!stageId) {
-      setStageLabel(null);
-      return;
-    }
+    if (!stageId) return;
     getPrepStageLabel(stageId).then((result) => {
       if (result?.success) {
         const { jobTitle, company, round } = result.data;
-        setStageLabel(`${jobTitle} · ${company} — ${round}`);
+        setFetchedLabel({
+          stageId,
+          label: `${jobTitle} · ${company} — ${round}`,
+        });
       }
     });
   }, [stageId]);
@@ -140,9 +170,11 @@ function QuestionsContainer({
   };
 
   useEffect(() => {
-    loadQuestions(1, filterKey, searchTerm || undefined);
+    fetchQuestions(1, filterKey, searchTerm || undefined).then((result) =>
+      applyQuestions(1, result),
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadQuestions, filterKey]);
+  }, [fetchQuestions, applyQuestions, filterKey]);
 
   // Debounced search
   useEffect(() => {

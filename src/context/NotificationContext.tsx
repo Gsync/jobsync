@@ -22,14 +22,20 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [summary, setSummary] = useState<NotificationSummary>(EMPTY);
   const pathname = usePathname();
 
+  const applySummary = useCallback(
+    (res: Awaited<ReturnType<typeof getNotificationSummary>>) => {
+      if (res.success && "data" in res) setSummary(res.data);
+    },
+    [],
+  );
+
   const refresh = useCallback(async () => {
-    const res = await getNotificationSummary();
-    if (res.success && "data" in res) setSummary(res.data);
-  }, []);
+    applySummary(await getNotificationSummary());
+  }, [applySummary]);
 
   useEffect(() => {
-    refresh();
-  }, [pathname, refresh]);
+    getNotificationSummary().then(applySummary);
+  }, [pathname, applySummary]);
 
   useEffect(() => {
     const onVisible = () => {

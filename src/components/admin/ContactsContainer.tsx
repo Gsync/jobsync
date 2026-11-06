@@ -29,6 +29,8 @@ function ContactsContainer() {
   const pickersRequested = useRef(false);
 
   const list = useContactsList(searchTerm, roleId);
+  // Pulled out so the ref is not read through `list` during render.
+  const { hasMore, loadingMore, sentinelRef } = list;
 
   // Roles feed the role filter beside the search box, so the tab needs them
   useEffect(() => {
@@ -103,9 +105,9 @@ function ContactsContainer() {
               editContact={onEditContact}
             />
           )}
-          {list.hasMore && (
-            <div ref={list.sentinelRef} className="flex justify-center p-4">
-              {list.loadingMore && (
+          {hasMore && (
+            <div ref={sentinelRef} className="flex justify-center p-4">
+              {loadingMore && (
                 <Loader className="h-5 w-5 animate-spin text-blue-500" />
               )}
             </div>

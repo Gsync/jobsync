@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { parseJobFacets, writeJobFacets } from "@/lib/jobs/jobFacets";
 import {
@@ -93,18 +93,16 @@ export function useJobFilters({
     router.push(pathname);
   };
 
-  useEffect(() => {
-    const cp = queryParams.get("company");
-    const tp = queryParams.get("title");
-    const lp = queryParams.get("location");
-    const sp = queryParams.get("source");
-    const ap = queryParams.get("applied") === "true";
-    setCompanyFilter(cp);
-    setTitleFilter(tp);
-    setLocationFilter(lp);
-    setSourceFilter(sp);
-    setAppliedFilter(ap);
-  }, [queryParams]);
+  const queryKey = queryParams.toString();
+  const [prevQueryKey, setPrevQueryKey] = useState(queryKey);
+  if (queryKey !== prevQueryKey) {
+    setPrevQueryKey(queryKey);
+    setCompanyFilter(queryParams.get("company"));
+    setTitleFilter(queryParams.get("title"));
+    setLocationFilter(queryParams.get("location"));
+    setSourceFilter(queryParams.get("source"));
+    setAppliedFilter(queryParams.get("applied") === "true");
+  }
 
   return {
     queryParams,

@@ -103,21 +103,30 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
     return true; // Timer started successfully
   }, [stopTimer]);
 
-  const refreshCurrentActivity = useCallback(async (): Promise<
-    Activity | undefined
-  > => {
-    const { activity, success } = await getCurrentActivity();
-    if (!isMountedRef.current) return undefined;
+  const applyCurrentActivity = useCallback(
+    ({
+      activity,
+      success,
+    }: Awaited<ReturnType<typeof getCurrentActivity>>): Activity | undefined => {
+      if (!isMountedRef.current) return undefined;
 
-    if (success && activity) {
-      setCurrentActivity(activity);
-      return activity;
-    }
+      if (success && activity) {
+        setCurrentActivity(activity);
+        return activity;
+      }
 
-    setCurrentActivity(undefined);
-    stopTimer();
-    return undefined;
-  }, [stopTimer]);
+      setCurrentActivity(undefined);
+      stopTimer();
+      return undefined;
+    },
+    [stopTimer],
+  );
+
+  const refreshCurrentActivity = useCallback(
+    async (): Promise<Activity | undefined> =>
+      applyCurrentActivity(await getCurrentActivity()),
+    [applyCurrentActivity],
+  );
 
   const stopActivity = useCallback(
     async (autoStop: boolean = false): Promise<boolean> => {
@@ -245,17 +254,21 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
     [currentActivity, refreshCurrentActivity],
   );
 
-  // Handle timer when currentActivity changes
+  // Handle timer when currentActivity changes. Deferred a macrotask so the
+  // first tick (and the max-duration auto-stop) is not in the effect body.
   useEffect(() => {
-    if (currentActivity) {
-      const timerStarted = startTimer(currentActivity.startTime);
-      if (!timerStarted) {
-        // Activity exceeded max duration, auto-stop it
-        stopActivity(true);
+    const first = setTimeout(() => {
+      if (currentActivity) {
+        const timerStarted = startTimer(currentActivity.startTime);
+        if (!timerStarted) {
+          // Activity exceeded max duration, auto-stop it
+          stopActivity(true);
+        }
+      } else {
+        stopTimer();
       }
-    } else {
-      stopTimer();
-    }
+    }, 0);
+    return () => clearTimeout(first);
   }, [currentActivity, startTimer, stopTimer, stopActivity]);
 
   // Handle visibility change to sync timer when tab becomes visible
@@ -293,13 +306,13 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
   // Fetch current activity on mount and cleanup
   useEffect(() => {
     isMountedRef.current = true;
-    refreshCurrentActivity();
+    getCurrentActivity().then(applyCurrentActivity);
 
     return () => {
       isMountedRef.current = false;
       stopTimer();
     };
-  }, [refreshCurrentActivity, stopTimer]);
+  }, [applyCurrentActivity, stopTimer]);
 
   return (
     <ActivityContext.Provider

@@ -55,6 +55,16 @@ function CountGrid({ counts }: { counts: Record<string, number> }) {
   );
 }
 
+async function fetchSnapshots(): Promise<SnapshotInfo[] | null> {
+  try {
+    const res = await fetch("/api/backup/snapshots");
+    return res.ok ? ((await res.json()) as SnapshotInfo[]) : null;
+  } catch {
+    // A failed list is not worth a toast — the card just stays empty.
+    return null;
+  }
+}
+
 export default function DataSettings() {
   const fileInput = useRef<HTMLInputElement>(null);
   const [selected, setSelected] = useState<File | null>(null);
@@ -64,18 +74,17 @@ export default function DataSettings() {
   const [snapshots, setSnapshots] = useState<SnapshotInfo[]>([]);
   const [restoring, setRestoring] = useState<SnapshotInfo | null>(null);
 
-  const loadSnapshots = useCallback(async () => {
-    try {
-      const res = await fetch("/api/backup/snapshots");
-      if (res.ok) setSnapshots((await res.json()) as SnapshotInfo[]);
-    } catch {
-      // A failed list is not worth a toast — the card just stays empty.
-    }
+  const applySnapshots = useCallback((list: SnapshotInfo[] | null) => {
+    if (list) setSnapshots(list);
   }, []);
 
+  const loadSnapshots = useCallback(async () => {
+    applySnapshots(await fetchSnapshots());
+  }, [applySnapshots]);
+
   useEffect(() => {
-    void loadSnapshots();
-  }, [loadSnapshots]);
+    fetchSnapshots().then(applySnapshots);
+  }, [applySnapshots]);
 
   const runRollback = async () => {
     if (!restoring) return;

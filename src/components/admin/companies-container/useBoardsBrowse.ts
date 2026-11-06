@@ -61,9 +61,21 @@ export function useBoardsBrowse(provider: JobBoard | null, searchTerm: string) {
     };
   }, [provider]);
 
+  // A provider or search change empties the list before the new page lands;
+  // only a provider change drops the seed total.
+  const [prevProvider, setPrevProvider] = useState(provider);
+  const [prevSearch, setPrevSearch] = useState(searchTerm);
+  if (provider !== prevProvider || searchTerm !== prevSearch) {
+    setPrevProvider(provider);
+    setPrevSearch(searchTerm);
+    if (provider) {
+      setRows([]);
+      if (provider !== prevProvider) setSeedTotal(undefined);
+    }
+  }
+
   useEffect(() => {
     if (!provider) return;
-    setSeedTotal(undefined);
     getAtsCompanyCount(provider)
       .then(setSeedTotal)
       .catch(() => {});
@@ -71,7 +83,6 @@ export function useBoardsBrowse(provider: JobBoard | null, searchTerm: string) {
 
   useEffect(() => {
     if (!provider) return;
-    setRows([]);
     const timer = setTimeout(() => load(0, searchTerm), searchTerm ? 300 : 0);
     return () => clearTimeout(timer);
   }, [provider, searchTerm, load]);

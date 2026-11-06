@@ -1,18 +1,32 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useHydrated } from "@/hooks/useHydrated";
 import {
   getFromLocalStorage,
   saveToLocalStorage,
 } from "@/utils/localstorage.utils";
 
 type Options<T> = {
-  /** Module-level constant at every call site — it is an effect dependency. */
+  /** Module-level constant at every call site. */
   defaults: T;
-  /** Module-level function at every call site, for the same reason. */
+  /** Module-level function at every call site. */
   coerce: (stored: unknown) => T;
   storageKey: string;
   open: boolean;
 };
+
+function readStored<T>(
+  storageKey: string,
+  coerce: (stored: unknown) => T,
+  defaults: T,
+): T {
+  try {
+    return coerce(getFromLocalStorage(storageKey, null));
+  } catch {
+    // getFromLocalStorage calls JSON.parse unguarded.
+    return defaults;
+  }
+}
 
 // Reads on open rather than at mount: localStorage is unavailable during SSR,
 // and `ready` holds the preview back one commit so it generates once, with
@@ -25,22 +39,14 @@ export function useExportSettings<T>({
 }: Options<T>) {
   const [settings, setSettings] = useState<T>(defaults);
   const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    if (!open) {
-      setReady(false);
-      return;
-    }
-    let next: T;
-    try {
-      next = coerce(getFromLocalStorage(storageKey, null));
-    } catch {
-      // getFromLocalStorage calls JSON.parse unguarded.
-      next = defaults;
-    }
-    setSettings(next);
-    setReady(true);
-  }, [open, storageKey, defaults, coerce]);
+  const hydrated = useHydrated();
+  const active = open && hydrated;
+  const [prevActive, setPrevActive] = useState(false);
+  if (active !== prevActive) {
+    setPrevActive(active);
+    setReady(active);
+    if (active) setSettings(readStored(storageKey, coerce, defaults));
+  }
 
   const update = (next: T) => {
     setSettings(next);

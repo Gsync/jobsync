@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -39,7 +40,6 @@ import {
   isNestedTool,
   type AgentAddJobResult,
   type AgentNestedStreamData,
-  type PageContext,
 } from "@/models/agent.model";
 
 export const AGENT_CHAT_PANEL_ID = "chat";
@@ -79,7 +79,7 @@ function createdJobToolCallIds(messages: UIMessage[]): string[] {
 function useAgentChatValue(initialMessages: UIMessage[]) {
   const router = useRouter();
   const pathname = usePathname();
-  const { holder, requestOpen, close: releaseRail } = useRightRail();
+  const { requestOpen, close: releaseRail } = useRightRail();
   const { expanded: sidebarExpanded, collapse: collapseSidebar } = useSidebar();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -117,11 +117,6 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     ok: true,
   });
 
-  const pageContextRef = useRef<PageContext>(pageContextFor(pathname));
-  useEffect(() => {
-    pageContextRef.current = pageContextFor(pathname);
-  }, [pathname]);
-
   // Transient data parts never land in message.parts — the SDK hands them to
   // onData and drops them — so a nested tool's streaming text lives here,
   // keyed by toolCallId so two nested calls cannot collide.
@@ -145,8 +140,13 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     messages: initialMessages,
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
+      // Read at send time: no basePath is configured, so this is the
+      // pathname usePathname would report.
       prepareSendMessagesRequest: ({ messages }) => ({
-        body: { messages, pageContext: pageContextRef.current },
+        body: {
+          messages,
+          pageContext: pageContextFor(window.location.pathname),
+        },
       }),
     }),
     // Without this the approval is resolved client-side and nothing ever
@@ -213,9 +213,13 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     router.refresh();
   }, [chat.messages, router]);
 
-  const streamingRef = useRef(false);
-  streamingRef.current =
-    chat.status === "streaming" || chat.status === "submitted";
+  const streaming = chat.status === "streaming" || chat.status === "submitted";
+  // For the callbacks below, which must see the latest status without being
+  // recreated on every token.
+  const streamingRef = useRef(streaming);
+  useLayoutEffect(() => {
+    streamingRef.current = streaming;
+  });
 
   // Every close path funnels through here — the X button, Escape, rail
   // eviction, and the Header trigger toggling it shut. That is what
@@ -267,18 +271,14 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     });
   }, []);
 
-  // Collapsing the rail buys the docked panel ~140px of page width.
+  // Collapsing the rail buys the docked panel ~140px of page width. Losing
+  // the rail to another panel is a close, with the same abort.
   const open = useCallback(() => {
     collapseSidebar();
-    requestOpen(AGENT_CHAT_PANEL_ID);
+    requestOpen(AGENT_CHAT_PANEL_ID, close);
     setIsOpen(true);
     void runPreflight();
-  }, [collapseSidebar, requestOpen, runPreflight]);
-
-  // Losing the rail to another panel is a close, with the same abort.
-  useEffect(() => {
-    if (isOpen && holder !== AGENT_CHAT_PANEL_ID) close();
-  }, [holder, isOpen, close]);
+  }, [collapseSidebar, requestOpen, close, runPreflight]);
 
   // A signal, not a value: the composer's textarea is uncontrolled, so
   // remounting it on the nonce is the only thing that empties it.
@@ -368,11 +368,22 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
   // instant sendAutomaticallyWhen fires the POST that executes the approved
   // tool, so releasing on that alone would race it and cut the tool off
   // mid-execution; status is what proves the connection is actually free.
-  useEffect(() => {
-    if (!queued || approvalPending || chat.status !== "ready") return;
+  // Released in render; the send itself is the effect below. Wrapped so each
+  // release is a new object even if the same message is queued twice.
+  const [released, setReleased] = useState<{ message: QueuedMessage }>();
+  if (queued && !approvalPending && chat.status === "ready") {
+    setReleased({ message: queued });
     setQueued(undefined);
-    void dispatch(queued);
-  }, [queued, approvalPending, chat.status, dispatch]);
+    setInterruptedTurn(false);
+  }
+  // `chat` is a new object every render; the ref keeps a re-run from
+  // sending the same release twice.
+  const sentRef = useRef<{ message: QueuedMessage }>(undefined);
+  useEffect(() => {
+    if (!released || sentRef.current === released) return;
+    sentRef.current = released;
+    void chat.sendMessage(released.message);
+  }, [released, chat]);
 
   const regenerate = useCallback(() => {
     if (streamingRef.current) return;
@@ -387,7 +398,7 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
   // A turn in flight, or one parked on an approval. Read by every surface
   // that starts a chat from outside the panel, so a second one cannot clear
   // the conversation the first is still streaming into.
-  const busy = streamingRef.current || approvalPending;
+  const busy = streaming || approvalPending;
 
   return {
     isOpen,

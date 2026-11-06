@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { getJobStages } from "@/actions/jobStage.actions";
 import { sortStages } from "@/lib/jobs/sortStages";
 import type { JobStage } from "@/models/jobStage.model";
@@ -11,7 +11,7 @@ export function useJobStages(jobId: string, initial: JobStage[]) {
   // and could not usefully have one (D2) — without this every job opens with
   // a scrambled Stage History list until the first write triggers a refetch.
   const [stages, setStages] = useState<JobStage[]>(() => sortStages(initial));
-  const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
+  const [chosenStageId, setSelectedStageId] = useState<string | null>(null);
 
   const currentStage = useMemo(
     () => stages.find((s) => s.isCurrent) ?? null,
@@ -20,10 +20,10 @@ export function useJobStages(jobId: string, initial: JobStage[]) {
 
   // Selection defaults to the current stage, and re-homes when the selected
   // stage is deleted rather than leaving the panel pointed at nothing.
-  useEffect(() => {
-    if (selectedStageId && stages.some((s) => s.id === selectedStageId)) return;
-    setSelectedStageId(currentStage?.id ?? stages[0]?.id ?? null);
-  }, [stages, selectedStageId, currentStage]);
+  const selectedStageId =
+    chosenStageId && stages.some((s) => s.id === chosenStageId)
+      ? chosenStageId
+      : (currentStage?.id ?? stages[0]?.id ?? null);
 
   const selectedStage = useMemo(
     () => stages.find((s) => s.id === selectedStageId) ?? null,

@@ -9,12 +9,17 @@ import type { JobBoard, LeverCompany } from "@/models/automation.model";
 // carries for the Library's Browse view are not wizard state.
 export function useWatchedBoards(provider: JobBoard, enabled: boolean) {
   const [watched, setWatched] = useState<LeverCompany[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(enabled);
+  const key = `${enabled}\0${provider}`;
+  const [prevKey, setPrevKey] = useState(key);
+  if (key !== prevKey) {
+    setPrevKey(key);
+    if (enabled) setLoading(true);
+  }
 
   useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
-    setLoading(true);
     getWatchedBoards(provider)
       .then((boards) => {
         if (cancelled) return;

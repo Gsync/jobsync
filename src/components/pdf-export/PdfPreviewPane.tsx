@@ -5,6 +5,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Toggle } from "@/components/ui/toggle";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { useHydrated } from "@/hooks/useHydrated";
 import {
   getFromLocalStorage,
   saveToLocalStorage,
@@ -38,6 +39,20 @@ function isRenderCancelled(error: unknown): boolean {
   );
 }
 
+function readSavedFitMode(): FitMode {
+  let saved: unknown = null;
+  try {
+    saved = getFromLocalStorage(
+      APP_CONSTANTS.RESUME_PREVIEW_FIT_STORAGE_KEY,
+      null,
+    );
+  } catch {
+    // getFromLocalStorage calls JSON.parse unguarded; a corrupt value
+    // would otherwise throw out of render and kill the dialog.
+  }
+  return saved === "page" || saved === "width" ? saved : "page";
+}
+
 function pageLabel(count: number): string {
   return `${count} ${count === 1 ? "page" : "pages"}`;
 }
@@ -61,23 +76,11 @@ export function PdfPreviewPane({
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [pageCount, setPageCount] = useState(0);
   const [renderFailed, setRenderFailed] = useState(false);
-  const [fitMode, setFitMode] = useState<FitMode>("page");
-
-  // Read after mount: localStorage is unavailable during SSR, so seeding the
-  // initial state from it would cause a hydration mismatch.
-  useEffect(() => {
-    let saved: unknown = null;
-    try {
-      saved = getFromLocalStorage(
-        APP_CONSTANTS.RESUME_PREVIEW_FIT_STORAGE_KEY,
-        null,
-      );
-    } catch {
-      // getFromLocalStorage calls JSON.parse unguarded; a corrupt value
-      // would otherwise throw out of this effect and kill the dialog.
-    }
-    if (saved === "page" || saved === "width") setFitMode(saved);
-  }, []);
+  const hydrated = useHydrated();
+  const [chosenFitMode, setFitMode] = useState<FitMode | null>(null);
+  // Read after hydration: localStorage is unavailable during SSR, so reading
+  // it in the first render would cause a hydration mismatch.
+  const fitMode = chosenFitMode ?? (hydrated ? readSavedFitMode() : "page");
 
   const onChangeFitMode = (mode: FitMode) => {
     setFitMode(mode);
@@ -130,6 +133,13 @@ export function PdfPreviewPane({
     };
   }, []);
 
+  // A stale failure must not suppress the next attempt's spinner.
+  const [drawn, setDrawn] = useState({ blob, size, fitMode });
+  if (blob !== drawn.blob || size !== drawn.size || fitMode !== drawn.fitMode) {
+    setDrawn({ blob, size, fitMode });
+    if (blob && size.width > 0 && size.height > 0) setRenderFailed(false);
+  }
+
   useEffect(() => {
     const { width, height } = size;
     if (!blob || width <= 0 || height <= 0) return;
@@ -137,9 +147,6 @@ export function PdfPreviewPane({
     let cancelled = false;
     let renderTask: { cancel: () => void } | null = null;
     let document_: { destroy: () => Promise<void> } | null = null;
-
-    // A stale failure must not suppress this attempt's spinner.
-    setRenderFailed(false);
 
     const draw = async () => {
       try {
