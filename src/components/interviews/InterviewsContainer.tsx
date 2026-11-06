@@ -39,6 +39,8 @@ function InterviewsContainer({
   const router = useRouter();
 
   const list = useInterviewsList(searchTerm, stageTypeId, companyId);
+  // Pulled out so the ref is not read through `list` during render.
+  const { hasMore, loadingMore, sentinelRef } = list;
 
   const filtered = !!searchTerm || !!stageTypeId || !!companyId;
 
@@ -99,12 +101,12 @@ function InterviewsContainer({
                 onEdit={setEditTarget}
                 onChanged={onChanged}
               />
-              {list.hasMore && (
+              {hasMore && (
                 <div
-                  ref={list.sentinelRef}
+                  ref={sentinelRef}
                   className="flex justify-center py-4"
                 >
-                  {list.loadingMore && (
+                  {loadingMore && (
                     <Loader className="h-4 w-4 animate-spin text-muted-foreground" />
                   )}
                 </div>

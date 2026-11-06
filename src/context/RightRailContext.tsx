@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 // There is one right rail. Opening any panel closes whichever holds it, so
 // two panels never collide over stacking, scrim and pointer-events. It was
@@ -9,7 +16,7 @@ import { createContext, useCallback, useContext, useMemo, useState } from "react
 // costs nothing and the next rail-holding panel inherits it.
 type RightRail = {
   holder: string | null;
-  requestOpen: (id: string) => void;
+  requestOpen: (id: string, onEvict?: () => void) => void;
   close: (id: string) => void;
 };
 
@@ -17,12 +24,21 @@ const RightRailContext = createContext<RightRail | null>(null);
 
 export function RightRailProvider({ children }: { children: React.ReactNode }) {
   const [holder, setHolder] = useState<string | null>(null);
+  // Who holds the rail and how to tell them they lost it. Read only in the
+  // callbacks below, so eviction happens in the claim, not in an effect.
+  const claimRef = useRef<{ id: string; onEvict?: () => void } | null>(null);
 
   // Unconditional: no busy state, no refusal, no veto. The collisions this
   // exists for are collisions of presence.
-  const requestOpen = useCallback((id: string) => setHolder(id), []);
+  const requestOpen = useCallback((id: string, onEvict?: () => void) => {
+    const previous = claimRef.current;
+    claimRef.current = { id, onEvict };
+    setHolder(id);
+    if (previous && previous.id !== id) previous.onEvict?.();
+  }, []);
 
   const close = useCallback((id: string) => {
+    if (claimRef.current?.id === id) claimRef.current = null;
     setHolder((current) => (current === id ? null : current));
   }, []);
 

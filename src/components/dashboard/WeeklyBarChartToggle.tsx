@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { ResponsiveBar } from "@nivo/bar";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -13,6 +13,14 @@ import {
   OTHER_SLICE_ID,
   otherBucketLabel,
 } from "./jobsActivityChart";
+
+const SMALL_SCREEN_QUERY = "(max-width: 640px)";
+
+function subscribeSmallScreen(onChange: () => void) {
+  const mq = window.matchMedia(SMALL_SCREEN_QUERY);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+}
 
 type ChartConfig = {
   label: string;
@@ -34,7 +42,11 @@ export default function WeeklyBarChartToggle({
     APP_CONSTANTS.DASHBOARD_WEEKLY_CHART_STORAGE_KEY,
     charts.map((chart) => chart.label),
   );
-  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const isSmallScreen = useSyncExternalStore(
+    subscribeSmallScreen,
+    () => window.matchMedia(SMALL_SCREEN_QUERY).matches,
+    () => false,
+  );
   const { resolvedTheme } = useTheme();
   const theme = resolvedTheme === "light" ? "light" : "dark";
   const current = charts[activeIndex];
@@ -50,14 +62,6 @@ export default function WeeklyBarChartToggle({
       ),
     [current.keys, theme],
   );
-
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 640px)");
-    setIsSmallScreen(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsSmallScreen(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
 
   const roundedData = current.data.map((item) => {
     const newItem: any = { ...item };

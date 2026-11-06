@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
 import { PlusCircle, SlidersHorizontal } from "lucide-react";
 import { Button } from "../../ui/button";
+import { useHydrated } from "@/hooks/useHydrated";
 import { CardTitle } from "../../ui/card";
 import { ResponsiveCardHeader } from "../../ResponsiveCardHeader";
 import { SearchInput } from "../../SearchInput";
@@ -51,12 +51,8 @@ export function TasksToolbar({
   onGroupByChange: (value: string) => void;
   onAddTask: () => void;
 }) {
-  const [mounted, setMounted] = useState(false);
-
   // Avoid hydration mismatch with Radix UI components
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useHydrated();
 
   return (
     <ResponsiveCardHeader>

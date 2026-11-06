@@ -69,9 +69,16 @@ function AddContactInfo({
 
   const { reset, formState } = form;
 
+  const [prevContactInfo, setPrevContactInfo] = useState<
+    ContactInfo | null | undefined
+  >(undefined);
+  if (contactInfoToEdit !== prevContactInfo) {
+    setPrevContactInfo(contactInfoToEdit);
+    if (contactInfoToEdit) setShowLink2(!!contactInfoToEdit.url2);
+  }
+
   useEffect(() => {
     if (contactInfoToEdit) {
-      setShowLink2(!!contactInfoToEdit.url2);
       reset(
         {
           id: contactInfoToEdit.id,

@@ -189,4 +189,73 @@ describe("useResumePdfPreview", () => {
     expect(result.current.blob).toBeNull();
     expect(result.current.isGenerating).toBe(false);
   });
+
+  it("shows a cached configuration instantly, without generating", async () => {
+    const { result, rerender } = renderHook(
+      ({ settings }: { settings: ResumeExportSettings }) =>
+        useResumePdfPreview(resume, settings, true),
+      { initialProps: { settings: simple } },
+    );
+    await flush();
+    rerender({ settings: professional });
+    await flush(250);
+
+    rerender({ settings: simple });
+    expect(result.current.filename).toBe("My Resume - simple.pdf");
+    expect(result.current.isGenerating).toBe(false);
+  });
+
+  it("drops a stale run's result", async () => {
+    let finishFirst!: (value: unknown) => void;
+    generateResumePdfBlob.mockImplementationOnce(
+      () => new Promise((resolve) => (finishFirst = resolve)),
+    );
+    const { result, rerender } = renderHook(
+      ({ settings }: { settings: ResumeExportSettings }) =>
+        useResumePdfPreview(resume, settings, true),
+      { initialProps: { settings: simple } },
+    );
+    await flush();
+    rerender({ settings: professional });
+    await flush(250);
+    expect(result.current.filename).toBe("My Resume - professional.pdf");
+
+    await act(async () => {
+      finishFirst({ blob: new Blob(["old"]), filename: "stale.pdf" });
+    });
+    expect(result.current.filename).toBe("My Resume - professional.pdf");
+  });
+
+  it("never shows the previous opening's preview after an edit", async () => {
+    const { result, rerender } = renderHook(
+      ({ settings, open }: { settings: ResumeExportSettings; open: boolean }) =>
+        useResumePdfPreview(resume, settings, open),
+      { initialProps: { settings: simple, open: true } },
+    );
+    await flush();
+    rerender({ settings: simple, open: false });
+    rerender({ settings: professional, open: true });
+    expect(result.current.blob).toBeNull();
+    expect(result.current.isGenerating).toBe(true);
+    await flush();
+    expect(result.current.filename).toBe("My Resume - professional.pdf");
+  });
+
+  it("keeps the cache-hit preview on screen while the next one generates", async () => {
+    const modern: ResumeExportSettings = { ...simple, fontSize: 12 };
+    const { result, rerender } = renderHook(
+      ({ settings }: { settings: ResumeExportSettings }) =>
+        useResumePdfPreview(resume, settings, true),
+      { initialProps: { settings: simple } },
+    );
+    await flush();
+    rerender({ settings: professional });
+    await flush(250);
+    rerender({ settings: simple });
+    expect(result.current.filename).toBe("My Resume - simple.pdf");
+
+    rerender({ settings: modern });
+    await flush(100);
+    expect(result.current.filename).toBe("My Resume - simple.pdf");
+  });
 });

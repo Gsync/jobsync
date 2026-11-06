@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   RightRailProvider,
+  useRightRail,
   useRightRailPanel,
 } from "@/context/RightRailContext";
 
@@ -58,5 +59,46 @@ describe("RightRailContext", () => {
     await userEvent.click(screen.getByText("open chat"));
     await userEvent.click(screen.getByText("close review"));
     expect(screen.getByText("chat is open")).toBeInTheDocument();
+  });
+
+  describe("onEvict", () => {
+    const onEvict = vi.fn();
+
+    function Claimer({ id }: { id: string }) {
+      const { requestOpen } = useRightRail();
+      return (
+        <button
+          onClick={() => requestOpen(id, id === "chat" ? onEvict : undefined)}
+        >
+          claim {id}
+        </button>
+      );
+    }
+
+    const setupClaimers = () =>
+      render(
+        <RightRailProvider>
+          <Claimer id="chat" />
+          <Claimer id="review" />
+        </RightRailProvider>,
+      );
+
+    beforeEach(() => onEvict.mockClear());
+
+    it("tells the previous holder once when another id claims the rail", async () => {
+      setupClaimers();
+      await userEvent.click(screen.getByText("claim chat"));
+      await userEvent.click(screen.getByText("claim review"));
+      expect(onEvict).toHaveBeenCalledTimes(1);
+      await userEvent.click(screen.getByText("claim review"));
+      expect(onEvict).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not evict on a re-claim by the same id", async () => {
+      setupClaimers();
+      await userEvent.click(screen.getByText("claim chat"));
+      await userEvent.click(screen.getByText("claim chat"));
+      expect(onEvict).not.toHaveBeenCalled();
+    });
   });
 });

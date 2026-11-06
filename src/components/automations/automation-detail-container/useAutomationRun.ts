@@ -48,11 +48,14 @@ export function useAutomationRun({
 
   // Subscribe to the live log/status stream at the page level so it persists
   // across tab switches. runKey bumps on Run Now to follow the new run.
+  const [prevRunKey, setPrevRunKey] = useState(runKey);
+  if (runKey !== prevRunKey) {
+    setPrevRunKey(runKey);
+    if (runKey > 0) setLogData({ logs: [], isRunning: true });
+  }
+
   useEffect(() => {
-    if (runKey > 0) {
-      setLogData({ logs: [], isRunning: true });
-      seenRunningRef.current = false;
-    }
+    if (runKey > 0) seenRunningRef.current = false;
 
     const eventSource = new EventSource(
       `/api/automations/${automationId}/logs`,

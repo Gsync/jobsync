@@ -1,6 +1,6 @@
 // Contract tests: every session-guarded API route must reject anonymous
 // requests. This locks in the defense-in-depth `auth()` check each handler
-// performs on top of the middleware matcher (see src/middleware.ts).
+// performs on top of the proxy matcher (see src/proxy.ts).
 
 vi.mock("@/auth", () => ({
   auth: vi.fn(),

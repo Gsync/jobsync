@@ -51,9 +51,13 @@ export function BreakModal({ open, onClose }: BreakModalProps) {
       return;
     }
 
-    setNow(Date.now());
+    // First tick a macrotask later, not in the effect body itself.
+    const first = setTimeout(() => setNow(Date.now()), 0);
     const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
+    return () => {
+      clearTimeout(first);
+      clearInterval(timer);
+    };
   }, [breakStartedMs]);
 
   // Until the user presses play there is no break record, so the length lives

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { XIcon } from "lucide-react";
 import type { TextUIPart, UIMessage } from "ai";
 import {
@@ -127,11 +127,14 @@ export function AgentChatInput() {
 
   // Clearing the conversation clears the composer with it. The textarea empties
   // by remounting on the same nonce below — nothing else resets it.
-  useEffect(() => {
-    if (!composerNonce) return;
-    setText("");
-    setChip(undefined);
-  }, [composerNonce]);
+  const [prevNonce, setPrevNonce] = useState(composerNonce);
+  if (composerNonce !== prevNonce) {
+    setPrevNonce(composerNonce);
+    if (composerNonce) {
+      setText("");
+      setChip(undefined);
+    }
+  }
 
   const onStop = useCallback(() => {
     void stop();

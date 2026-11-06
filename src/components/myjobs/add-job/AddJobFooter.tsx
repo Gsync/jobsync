@@ -1,7 +1,8 @@
 "use client";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment } from "react";
 import { Loader } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useHydrated } from "@/hooks/useHydrated";
 import { REQUIRED_FIELD_LABELS, RequiredField } from "./addJobHints";
 
 type AddJobFooterProps = {
@@ -19,11 +20,10 @@ export function AddJobFooter({
   isPending,
   saveDisabled,
 }: AddJobFooterProps) {
-  const [shortcut, setShortcut] = useState("Ctrl↵");
-  // Read after mount so server and client render the same text
-  useEffect(() => {
-    if (/Mac|iPhone|iPad/.test(navigator.userAgent)) setShortcut("⌘↵");
-  }, []);
+  // Read after hydration so server and client render the same text
+  const hydrated = useHydrated();
+  const shortcut =
+    hydrated && /Mac|iPhone|iPad/.test(navigator.userAgent) ? "⌘↵" : "Ctrl↵";
 
   return (
     <div className="flex flex-wrap items-center gap-2 border-t bg-muted/40 px-8 py-3.5">

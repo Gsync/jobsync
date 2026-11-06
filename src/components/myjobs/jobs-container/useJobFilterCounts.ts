@@ -20,12 +20,13 @@ export function useJobFilterCounts({
   const requestSeq = useRef(0);
   const key = JSON.stringify([facets, search, scope]);
 
+  // A reopen must not show totals for the draft that was just discarded,
+  // including a reply still in flight.
+  if (!enabled && counts !== null) setCounts(null);
+
   useEffect(() => {
     if (!enabled) {
-      // A reopen must not show totals for the draft that was just discarded,
-      // including a reply still in flight.
       requestSeq.current++;
-      setCounts(null);
       return;
     }
     const timer = setTimeout(async () => {
@@ -39,5 +40,5 @@ export function useJobFilterCounts({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, key]);
 
-  return counts;
+  return enabled ? counts : null;
 }
