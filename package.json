@@ -94,7 +94,6 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.5",
     "@playwright/test": "^1.49.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/dom": "^10.4.1",
@@ -112,7 +111,6 @@
     "@vitest/coverage-v8": "^4.1.12",
     "eslint": "^9.39.4",
     "eslint-config-next": "16.4.5",
-    "eslint-plugin-react-hooks": "^5.2.0",
     "jsdom": "^26.1.0",
     "postcss": "^8.5.12",
     "prisma": "^6.19.0",

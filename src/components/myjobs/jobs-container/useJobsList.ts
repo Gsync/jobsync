@@ -121,14 +121,24 @@ export function useJobsList({
     [],
   );
 
-  const loadJobs = useCallback(
-    async (page: number, search?: string) => {
+  // Sets state only on reply, so the effects below may call it directly.
+  const fetchPage = useCallback(
+    (page: number, search?: string) => {
       const request = ++requestSeq.current;
-      if (page === 1) setInitialLoading(true);
-      else setLoadingMore(true);
-      applyJobsPage(request, page, await fetchJobsPage(page, search));
+      return fetchJobsPage(page, search).then((result) =>
+        applyJobsPage(request, page, result),
+      );
     },
     [fetchJobsPage, applyJobsPage],
+  );
+
+  const loadJobs = useCallback(
+    async (page: number, search?: string) => {
+      if (page === 1) setInitialLoading(true);
+      else setLoadingMore(true);
+      await fetchPage(page, search);
+    },
+    [fetchPage],
   );
 
   // A filter change or an agent write refetches page 1 (effects below), so
@@ -153,24 +163,18 @@ export function useJobsList({
   }, [loadJobs, searchTerm]);
 
   useEffect(() => {
-    const request = ++requestSeq.current;
-    fetchJobsPage(1, searchTerm || undefined).then((result) =>
-      applyJobsPage(request, 1, result),
-    );
+    fetchPage(1, searchTerm || undefined);
     // Search has its own debounced effect below; keying on it here too
     // would fire a second, undebounced request per keystroke.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchJobsPage, applyJobsPage]);
+  }, [fetchPage]);
 
   // The agent saves server-side, so only this counter tells us a row appeared
   // or a match score landed. Deps are the counter alone: the fetch changes
   // with every filter and keystroke, and the effects above already cover those.
   useEffect(() => {
     if (jobWrites === 0) return;
-    const request = ++requestSeq.current;
-    fetchJobsPage(1, searchTerm || undefined).then((result) =>
-      applyJobsPage(request, 1, result),
-    );
+    fetchPage(1, searchTerm || undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobWrites]);
 

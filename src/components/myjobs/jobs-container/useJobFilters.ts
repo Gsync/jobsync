@@ -93,10 +93,9 @@ export function useJobFilters({
     router.push(pathname);
   };
 
-  const queryKey = queryParams.toString();
-  const [prevQueryKey, setPrevQueryKey] = useState(queryKey);
-  if (queryKey !== prevQueryKey) {
-    setPrevQueryKey(queryKey);
+  const [prevQueryString, setPrevQueryString] = useState(queryString);
+  if (queryString !== prevQueryString) {
+    setPrevQueryString(queryString);
     setCompanyFilter(queryParams.get("company"));
     setTitleFilter(queryParams.get("title"));
     setLocationFilter(queryParams.get("location"));

@@ -11,15 +11,18 @@ export function useJobStages(jobId: string, initial: JobStage[]) {
   // and could not usefully have one (D2) — without this every job opens with
   // a scrambled Stage History list until the first write triggers a refetch.
   const [stages, setStages] = useState<JobStage[]>(() => sortStages(initial));
-  const [chosenStageId, setSelectedStageId] = useState<string | null>(null);
+  // Pinned at mount so a later stage add or status change doesn't move it.
+  const [chosenStageId, setSelectedStageId] = useState<string | null>(
+    () => (stages.find((s) => s.isCurrent) ?? stages[0])?.id ?? null,
+  );
 
   const currentStage = useMemo(
     () => stages.find((s) => s.isCurrent) ?? null,
     [stages],
   );
 
-  // Selection defaults to the current stage, and re-homes when the selected
-  // stage is deleted rather than leaving the panel pointed at nothing.
+  // Re-homes when the selected stage is deleted rather than leaving the
+  // panel pointed at nothing.
   const selectedStageId =
     chosenStageId && stages.some((s) => s.id === chosenStageId)
       ? chosenStageId
