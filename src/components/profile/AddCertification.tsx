@@ -232,6 +232,7 @@ function AddCertification({
                       presets={false}
                       isEnabled={!noExpirationValue}
                       captionLayout={true}
+                      futureYears={10}
                     />
                     <FormMessage />
                   </FormItem>
