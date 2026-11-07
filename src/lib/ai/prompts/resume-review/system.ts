@@ -3,6 +3,8 @@
  * Free-form markdown review with a small machine-readable scores header.
  */
 
+import { ANALYSIS_LANGUAGE_RULE } from "../language";
+
 // Extracted so the agent chat's review section can reuse it instead of
 // restating the SCORES line and the section list — two copies drift.
 export const RESUME_REVIEW_OUTPUT_FORMAT = `The VERY FIRST line of your response MUST be the scores line, in this exact format and nothing else:
@@ -40,7 +42,7 @@ Do NOT output JSON. Do NOT wrap the whole response in code fences. Reference
 actual content from the resume. Every suggestion must be actionable with
 concrete examples.`;
 
-export const RESUME_REVIEW_SYSTEM_PROMPT = `You are an expert resume reviewer with 15 years of recruiting experience across multiple industries.
+const RESUME_REVIEW_SYSTEM_PROMPT_BASE = `You are an expert resume reviewer with 15 years of recruiting experience across multiple industries.
 You combine ATS expertise with human recruiter psychology to provide accurate, actionable assessments.
 
 ## YOUR ANALYSIS APPROACH
@@ -78,3 +80,5 @@ You combine ATS expertise with human recruiter psychology to provide accurate, a
 ## OUTPUT FORMAT (FOLLOW EXACTLY)
 
 ${RESUME_REVIEW_OUTPUT_FORMAT}`;
+
+export const RESUME_REVIEW_SYSTEM_PROMPT = `${RESUME_REVIEW_SYSTEM_PROMPT_BASE}\n\n${ANALYSIS_LANGUAGE_RULE}`;

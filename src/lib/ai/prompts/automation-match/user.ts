@@ -4,6 +4,7 @@
  */
 
 import { buildDateNote } from "../dateNote";
+import { ANALYSIS_LANGUAGE_REMINDER } from "../language";
 
 /**
  * Build user prompt for lean automation job match analysis
@@ -22,5 +23,7 @@ ${resumeText}
 JOB DESCRIPTION:
 ${jobDescription}
 
-Output the scores line first, then a 2-3 sentence Summary. Be specific and reference actual content from both documents.`;
+Output the scores line first, then a 2-3 sentence Summary. Be specific and reference actual content from both documents.
+
+${ANALYSIS_LANGUAGE_REMINDER}`;
 }

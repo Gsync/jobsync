@@ -1,0 +1,103 @@
+description: Multilingual output - French resume and French posting must yield French output
+
+providers:
+  - id: openai:chat:deepseek-v4-flash
+    label: deepseek-v4-flash
+    config:
+      apiBaseUrl: https://api.deepseek.com
+      apiKeyEnvar: DEEPSEEK_API_KEY
+      showThinking: false
+      temperature: 0
+      max_tokens: 8192
+
+  # Local Ollama via its OpenAI-compatible endpoint. reasoning_effort goes in
+  # passthrough to clear promptfoo's reasoning-model name check; disabling
+  # thinking matches the app, where ollama-ai-provider-v2 sets think:false.
+  - id: openai:chat:qwen3.5:9b
+    label: ollama-qwen3.5-9b
+    config:
+      apiBaseUrl: http://localhost:11434/v1
+      apiKey: ollama
+      temperature: 0
+      max_tokens: 8192
+      passthrough:
+        reasoning_effort: "none"
+
+prompts:
+  - file://./prompt.ts
+
+# Grading provider for every llm-rubric below. Declared once here rather than
+# inline per assertion, so a new rubric can't silently inherit promptfoo's
+# defaults for these two settings:
+#   max_tokens — the default 1024 is a shared budget, and DeepSeek's reasoning
+#     can consume all of it, leaving zero content and a "No output" grade.
+#   showThinking — defaults true, which prepends "Thinking: ...\n\n" to the
+#     grade and breaks llm-rubric's JSON extraction.
+defaultTest:
+  options:
+    provider:
+      id: openai:chat:deepseek-v4-flash
+      config:
+        apiBaseUrl: https://api.deepseek.com
+        apiKeyEnvar: DEEPSEEK_API_KEY
+        showThinking: false
+        temperature: 0
+        max_tokens: 4096
+
+tests:
+  - description: Resume review of a French resume is written in French
+    vars:
+      task: review
+      expectedLanguage: fr
+      resumeText: file://./fixtures/resume-fr.txt
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertLanguage
+      - type: javascript
+        value: file://./assertions.ts:assertParsedTokensEnglish
+
+  - description: Job match of a French resume against a French posting is written in French
+    vars:
+      task: match
+      expectedLanguage: fr
+      resumeText: file://./fixtures/resume-fr.txt
+      jobDescription: file://./fixtures/job-fr.txt
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertLanguage
+      - type: javascript
+        value: file://./assertions.ts:assertParsedTokensEnglish
+
+  - description: Cover letter for a French posting is French, salutation and sign-off included
+    vars:
+      task: cover-letter
+      expectedLanguage: fr
+      resumeText: file://./fixtures/resume-fr.txt
+      jobDescription: file://./fixtures/job-fr.txt
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertLanguage
+      - type: javascript
+        value: file://./assertions.ts:assertLocalizedLetterFraming
+      - type: llm-rubric
+        value: >-
+          The letter is written entirely in French, including the salutation and
+          the sign-off. Fail if any full sentence is in English.
+
+  - description: Chat answers a French message in French
+    vars:
+      task: chat
+      expectedLanguage: fr
+      message: Peux-tu m'expliquer ce que tu peux faire pour m'aider avec mes candidatures?
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertLanguage
+
+  - description: Chat still answers an English message in English
+    vars:
+      task: chat
+      expectedLanguage: en
+      message: What can you help me with for my job applications?
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertLanguage

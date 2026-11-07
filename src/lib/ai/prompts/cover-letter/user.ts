@@ -2,6 +2,8 @@
  * Cover Letter User Prompts
  */
 
+import { COVER_LETTER_LANGUAGE_REMINDER } from "../language";
+
 export function buildCoverLetterPrompt(
   resumeText: string,
   jobText: string,
@@ -19,5 +21,5 @@ ${resumeText}
 JOB DESCRIPTION:
 ${jobText}${guidanceBlock}
 
-Output only the letter, starting with the salutation.`;
+Output only the letter, starting with the salutation. ${COVER_LETTER_LANGUAGE_REMINDER}`;
 }

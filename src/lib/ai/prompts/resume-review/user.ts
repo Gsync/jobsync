@@ -4,6 +4,7 @@
  */
 
 import { buildDateNote } from "../dateNote";
+import { ANALYSIS_LANGUAGE_REMINDER } from "../language";
 
 export function buildResumeReviewPrompt(resumeText: string): string {
   return `Review the following resume.
@@ -16,5 +17,7 @@ IMPORTANT: The resume below is a structured-text serialization of the candidate'
 ${resumeText}
 </resume>
 
-Start with the SCORES line, then the Markdown review, exactly as described in your instructions.`;
+Start with the SCORES line, then the Markdown review, exactly as described in your instructions.
+
+${ANALYSIS_LANGUAGE_REMINDER}`;
 }
