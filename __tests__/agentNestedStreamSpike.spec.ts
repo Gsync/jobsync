@@ -25,7 +25,7 @@ function toolCallingModel() {
             toolName: "slow_tool",
             input: "{}",
           },
-          { type: "finish", finishReason: "tool-calls", usage },
+          { type: "finish", finishReason: { unified: "tool-calls", raw: undefined }, usage },
         ] as any,
         chunkDelayInMs: 1,
       }),

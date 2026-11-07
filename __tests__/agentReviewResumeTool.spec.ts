@@ -2,8 +2,7 @@ import { buildReviewResumeTool } from "@/lib/agent/tools/reviewResume";
 import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 import { saveResumeReviewResult } from "@/actions/profile.actions";
-import { APP_CONSTANTS } from "@/lib/constants";
-import { TEMPERATURES } from "@/lib/ai/config";
+import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import {
   RESUME_REVIEW_SYSTEM_PROMPT,
   buildResumeReviewPrompt,
