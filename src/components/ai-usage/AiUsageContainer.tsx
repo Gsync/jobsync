@@ -6,16 +6,16 @@ import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAiUsage } from "@/actions/aiUsage.actions";
 import type { AiUsageRange, AiUsageSummary } from "@/models/aiUsage.model";
-import UsageSummaryCards from "./ai-usage-settings/UsageSummaryCards";
-import DailyTokensChart from "./ai-usage-settings/DailyTokensChart";
-import ProviderModelTable from "./ai-usage-settings/ProviderModelTable";
-import FeatureBreakdown from "./ai-usage-settings/FeatureBreakdown";
-import FailuresCard from "./ai-usage-settings/FailuresCard";
-import RecentCallsTable from "./ai-usage-settings/RecentCallsTable";
+import UsageSummaryCards from "./UsageSummaryCards";
+import DailyTokensChart from "./DailyTokensChart";
+import ProviderModelTable from "./ProviderModelTable";
+import FeatureBreakdown from "./FeatureBreakdown";
+import FailuresCard from "./FailuresCard";
+import RecentCallsTable from "./RecentCallsTable";
 
 const RANGES: AiUsageRange[] = [7, 30];
 
-export default function AiUsageSettings() {
+export default function AiUsageContainer() {
   const [range, setRange] = useState<AiUsageRange>(30);
   const [summary, setSummary] = useState<AiUsageSummary | null>(null);
   const [failed, setFailed] = useState(false);
@@ -52,7 +52,6 @@ export default function AiUsageSettings() {
   }, [range]);
 
   return (
-    // Named: @container/main also spans the settings sidebar.
     <div className="@container/ai-usage flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">

@@ -9,6 +9,7 @@ import {
   ArrowUpCircle,
   ExternalLink,
   Bell,
+  BarChart3,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -115,6 +116,12 @@ export function ProfileDropdown({
                   {summary.unread}
                 </span>
               )}
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard/ai-usage" className="cursor-pointer">
+              <BarChart3 className="w-5 mr-2" />
+              AI Usage
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem

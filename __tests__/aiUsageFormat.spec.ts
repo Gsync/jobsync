@@ -5,7 +5,7 @@ import {
   formatSeconds,
   formatTokens,
   providerLabel,
-} from "@/components/settings/ai-usage-settings/format";
+} from "@/components/ai-usage/format";
 
 it.each([
   [3_650_000, "3.65M"],
