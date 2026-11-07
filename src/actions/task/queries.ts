@@ -16,8 +16,8 @@ function getTasksOrderBy(groupBy?: TaskGroupBy) {
   switch (groupBy) {
     case "dueDate":
       return [
-        // Undated tasks first, as SQLite sorted them; Postgres defaults last
-        { dueDate: { sort: "asc" as const, nulls: "first" as const } },
+        // Undated last, matching the "No Due Date" group shown last
+        { dueDate: { sort: "asc" as const, nulls: "last" as const } },
         { priority: "desc" as const },
         { createdAt: "desc" as const },
         { id: "desc" as const },
@@ -64,6 +64,8 @@ export const getTasksList = async (
     const user = await requireUser();
 
     const offset = (page - 1) * limit;
+    // Due-date groups aren't in a sortable order, so that view loads every task
+    const loadAll = groupBy === "dueDate";
 
     const whereClause: any = {
       userId: user.id,
@@ -90,8 +92,8 @@ export const getTasksList = async (
         where: whereClause,
         include: TASK_WITH_ACTIVITIES_INCLUDE,
         orderBy: getTasksOrderBy(groupBy),
-        skip: offset,
-        take: limit,
+        skip: loadAll ? undefined : offset,
+        take: loadAll ? undefined : limit,
       }),
       prisma.task.count({
         where: whereClause,

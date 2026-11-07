@@ -141,10 +141,10 @@ describe("search parity: user search is case-insensitive", () => {
 });
 
 describe("NULL ordering parity", () => {
-  it("keeps undated tasks first in the due-date grouping", async () => {
+  it("keeps undated tasks last in the due-date grouping", async () => {
     await getTasksList(1, 10, undefined, undefined, undefined, "dueDate");
     const [call] = findManyCalls("task");
-    expect(call.args.orderBy[0]).toEqual({ dueDate: { sort: "asc", nulls: "first" } });
+    expect(call.args.orderBy[0]).toEqual({ dueDate: { sort: "asc", nulls: "last" } });
   });
 
   it("keeps unscored discovered jobs last", async () => {

@@ -447,11 +447,11 @@ function TasksTable({
   if (groupBy === "dueDate") {
     const groupedTasks = groupTasksByDate(tasks);
     const groupOrder: DateGroup[] = [
-      "Overdue",
       "Today",
       "Tomorrow",
       "This Week",
       "Later",
+      "Overdue",
       "No Due Date",
     ];
 
