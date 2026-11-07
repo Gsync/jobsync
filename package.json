@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "next dev -p 3737",
     "dev:webpack": "next dev --webpack -p 3737",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",
