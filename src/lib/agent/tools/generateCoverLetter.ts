@@ -1,8 +1,7 @@
 import "server-only";
 
 import { tool, type LanguageModel, type UIMessageStreamWriter } from "ai";
-import { TEMPERATURES } from "@/lib/ai/config";
-import { APP_CONSTANTS } from "@/lib/constants";
+import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
 import { AgentCoverLetterSchema } from "@/models/agent.schema";
 import { resolveJobForAgent } from "@/lib/agent/jobLookup";

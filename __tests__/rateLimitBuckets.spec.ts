@@ -1,6 +1,5 @@
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
-import { RATE_LIMITS } from "@/lib/ai/config";
-import { APP_CONSTANTS } from "@/lib/constants";
+import { APP_CONSTANTS, RATE_LIMITS } from "@/lib/constants";
 
 // The limiter holds module-level state, so every test uses its own user id.
 describe("checkRateLimit buckets", () => {

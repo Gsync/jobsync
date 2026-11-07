@@ -16,8 +16,7 @@ import {
 } from "ai";
 import { getModel, type ProviderType } from "@/lib/ai/providers";
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
-import { TEMPERATURES } from "@/lib/ai/config";
-import { APP_CONSTANTS } from "@/lib/constants";
+import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import { AgentChatRequestSchema } from "@/models/agent.schema";
 import {
   AGENT_CHAT_SYSTEM_PROMPT,
@@ -144,7 +143,7 @@ export const POST = async (req: NextRequest) => {
 
   const pastedText = resolvePastedText(messages);
 
-  // Async in ai@6 (correction #5), and the messages array is client-supplied
+  // Async since ai@6 (correction #5), and the messages array is client-supplied
   // — a shape z.array(z.any()) let through can reject the conversion, and
   // that is a bad request, not a server crash.
   const windowed = windowMessages(messages);
@@ -168,6 +167,7 @@ export const POST = async (req: NextRequest) => {
   // reasoning_content on every assistant message after that boundary, so a
   // reasoning-free reply from two turns ago 400'd the whole request. No
   // provider is special-cased here: the transcript is simply true again.
+  // (@ai-sdk/deepseek 3 now sends "" for missing V4 reasoning_content.)
   // The paste context message below is what actually carries the posting.
   modelMessages = modelMessages.flatMap((message) => {
     if (!(Array.isArray(message.content) && message.content.length === 0)) {

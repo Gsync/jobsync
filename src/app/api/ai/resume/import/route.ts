@@ -7,13 +7,12 @@ import path from "path";
 import fs from "fs";
 import { getModel } from "@/lib/ai/providers";
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
-import { TEMPERATURES } from "@/lib/ai/config";
 import { preprocessText } from "@/lib/ai";
 import { extractText } from "@/lib/ai/import/extract-text";
 import { ResumeImportSchema } from "@/models/resumeImport.schema";
 import { AiModel } from "@/models/ai.model";
 import prisma from "@/lib/db";
-import { APP_CONSTANTS } from "@/lib/constants";
+import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import { isResumeFilePath } from "@/lib/resumeFiles";
 import {
   RESUME_IMPORT_SYSTEM_PROMPT,

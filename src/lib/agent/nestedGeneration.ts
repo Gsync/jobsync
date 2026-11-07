@@ -134,8 +134,8 @@ export async function runNestedGeneration({
 
       // The stream running out is not the generation finishing, and neither
       // case throws: an abort ends textStream cleanly and rejects this
-      // promise, and a body that stops without Ollama's done chunk resolves
-      // to "other".
+      // promise, and a body that stops without its done chunk resolves to
+      // "other" (Ollama) or "interrupted" (DeepSeek, OpenAI).
       const finishReason = await sub.finishReason;
       // Defensively: an aborted stream rejects this, the same trap the
       // finishReason guard exists for.
