@@ -153,7 +153,6 @@ function MyJobsTable({
                   </div>
                   <span className="block truncate text-xs font-normal text-muted-foreground">
                     {[
-                      getJobTypeLabel(job.jobType),
                       job.workplaceType
                         ? getWorkplaceTypeLabel(job.workplaceType)
                         : null,
