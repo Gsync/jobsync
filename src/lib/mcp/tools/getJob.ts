@@ -33,6 +33,7 @@ export async function handleGetJob(
           include: { Contact: true, Role: true },
         },
         stages: { include: { StageType: true } },
+        attachments: { select: { id: true, fileName: true, fileType: true, uploadedAt: true } },
       },
     });
 
@@ -81,6 +82,7 @@ export async function handleGetJob(
       `stages: ${stages}`,
       `resume: ${j.Resume?.title ?? "none"} (${j.resumeId ?? "—"})`,
       `cover letter: ${j.CoverLetter?.title ?? "none"}`,
+      `attachments: ${j.attachments?.length ? j.attachments.map((a: any) => `${a.fileName} (${a.id})`).join(", ") : "none"}`,
       `created via: ${j.createdVia ?? "web app"}`,
       `created at: ${new Date(j.createdAt).toISOString()}`,
       `url: ${j.jobUrl ?? "—"}`,

@@ -43,6 +43,10 @@ export interface UpdateJobFromNamesInput {
   jobUrl?: string;
   salaryRange?: string;
   tags?: string[];
+  emailSubject?: string;
+  emailContent?: string;
+  emailLink?: string;
+  emailReceivedAt?: Date;
 }
 
 export interface UpdateJobFromNamesResult {
@@ -130,6 +134,10 @@ export async function updateJobFromNames(
   if (workplaceTypeValue !== undefined) data.workplaceType = workplaceTypeValue;
   if (jobCategoryValue !== undefined) data.jobCategory = jobCategoryValue;
   if (input.salaryRange !== undefined) data.salaryRange = input.salaryRange;
+  if (input.emailSubject !== undefined) data.emailSubject = input.emailSubject;
+  if (input.emailContent !== undefined) data.emailContent = input.emailContent;
+  if (input.emailLink !== undefined) data.emailLink = input.emailLink;
+  if (input.emailReceivedAt !== undefined) data.emailReceivedAt = input.emailReceivedAt;
   if (input.dueDate !== undefined) data.dueDate = input.dueDate;
   if (input.jobUrl !== undefined) data.jobUrl = normalizeJobUrl(input.jobUrl);
   if (input.applied !== undefined) data.applied = input.applied;

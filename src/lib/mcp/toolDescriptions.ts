@@ -31,8 +31,12 @@ export const MCP_TOOL_DESCRIPTIONS = {
     "List the user's companies with job counts, watchlist flag and ATS board info. Supports free-text search (name or ATS token) and pagination (limit default 50, max 200; offset). Use to resolve a company name to an id, inspect the company list, or check which boards are linked before running an automation.",
   list_resumes:
     "List the user's resumes (id + title + last-updated), marking the default one. Use to pick a resumeId for save_match_result / review_resume, or to confirm which resume exists before reviewing. Returns 'No resumes found' if none exist.",
+  get_resume:
+    "Read the full normalized text of one of the user's resumes. Pass resumeId (from list_resumes) or resumeTitle; omit both to read the default resume. Returns the resume text so you can answer questions about it, match it against a job, or review it. Use this when you need to see resume content, not just its title.",
   get_job_stats:
     "Aggregate pipeline overview: total jobs, applied count, and counts grouped by application status (new, draft, applied, interview, offer, rejected, etc.). Use for a quick summary of the job pipeline before deciding what to work on.",
+  get_analytics:
+    "Richer pipeline analytics: totals, applied count, jobs added in the last 30 days, counts by status, top companies and top sources. Use for deeper insights into where applications are going and how the pipeline is trending.",
 } as const;
 
 export type McpToolName = keyof typeof MCP_TOOL_DESCRIPTIONS;

@@ -15,6 +15,25 @@ export function resumesDir(): string {
   return path.resolve(APP_CONSTANTS.UPLOADS_DIR, "files", "resumes");
 }
 
+export function attachmentsDir(): string {
+  return path.resolve(APP_CONSTANTS.UPLOADS_DIR, "files", "attachments");
+}
+
+export function isAttachmentFilePath(filePath: string): boolean {
+  return path.resolve(filePath).startsWith(attachmentsDir() + path.sep);
+}
+
+export async function saveAttachmentUpload(
+  fileName: string,
+  bytes: Uint8Array,
+): Promise<ResumeUpload> {
+  const dir = attachmentsDir();
+  await fs.mkdir(dir, { recursive: true });
+  const filePath = path.join(dir, getTimestampedFileName(fileName));
+  await fs.writeFile(filePath, bytes);
+  return { fileName, filePath };
+}
+
 // The trailing separator keeps a sibling such as resumes-old from passing
 export function isResumeFilePath(filePath: string): boolean {
   return path.resolve(filePath).startsWith(resumesDir() + path.sep);

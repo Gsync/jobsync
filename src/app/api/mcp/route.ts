@@ -31,8 +31,12 @@ import {
   McpListCompaniesSchema,
   McpListResumesInputShape,
   McpListResumesSchema,
+  McpGetResumeInputShape,
+  McpGetResumeSchema,
   McpGetJobStatsInputShape,
   McpGetJobStatsSchema,
+  McpGetAnalyticsInputShape,
+  McpGetAnalyticsSchema,
 } from "@/models/mcp.schema";
 import { handleAddJob } from "@/lib/mcp/tools/addJob";
 import { handleAddQuestion } from "@/lib/mcp/tools/addQuestion";
@@ -48,6 +52,8 @@ import { handleGetJob } from "@/lib/mcp/tools/getJob";
 import { handleDeleteJob } from "@/lib/mcp/tools/deleteJob";
 import { handleListCompanies } from "@/lib/mcp/tools/listCompanies";
 import { handleListResumes } from "@/lib/mcp/tools/listResumes";
+import { handleGetResume } from "@/lib/mcp/tools/getResume";
+import { handleGetAnalytics } from "@/lib/mcp/tools/getAnalytics";
 import { handleGetJobStats } from "@/lib/mcp/tools/getJobStats";
 
 function isMcpEnabled(): boolean {
@@ -369,11 +375,34 @@ async function handler(req: Request): Promise<Response> {
   );
 
   server.tool(
+    "get_resume",
+    MCP_TOOL_DESCRIPTIONS.get_resume,
+    McpGetResumeInputShape,
+    async (rawInput) => {
+      const parsed = McpGetResumeSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => i.message).join("; ");
+        return { content: [{ type: "text" as const, text: `Validation error: ${issues}` }] };
+      }
+      return handleGetResume(parsed.data, userId);
+    },
+  );
+
+  server.tool(
     "get_job_stats",
     MCP_TOOL_DESCRIPTIONS.get_job_stats,
     McpGetJobStatsInputShape,
     async () => {
       return handleGetJobStats(userId);
+    },
+  );
+
+  server.tool(
+    "get_analytics",
+    MCP_TOOL_DESCRIPTIONS.get_analytics,
+    McpGetAnalyticsInputShape,
+    async () => {
+      return handleGetAnalytics(userId);
     },
   );
 

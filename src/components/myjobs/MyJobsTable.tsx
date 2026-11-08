@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { Pencil, StickyNote, Trash } from "lucide-react";
+import { Pencil, StickyNote, Trash, Mail } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { format } from "date-fns";
@@ -107,6 +107,7 @@ function MyJobsTable({
             >
               Source
             </SortableTableHead>
+            <TableHead className="hidden md:table-cell">Email</TableHead>
             <TableHead>
               <span className="sr-only">Actions</span>
             </TableHead>
@@ -201,6 +202,29 @@ function MyJobsTable({
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {job.JobSource?.label}
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {job.emailReceivedAt ? (
+                    <a
+                      href={job.emailLink || "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`inline-flex items-center gap-1 text-xs ${
+                        !job.emailSeenAt ||
+                        new Date(job.emailReceivedAt) > new Date(job.emailSeenAt)
+                          ? "animate-pulse text-primary font-semibold"
+                          : "text-muted-foreground"
+                      }`}
+                      title={job.emailSubject || "Email received"}
+                    >
+                      <Mail className="h-4 w-4" />
+                      {job.emailSubject
+                        ? job.emailSubject.slice(0, 18)
+                        : "Received"}
+                    </a>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">

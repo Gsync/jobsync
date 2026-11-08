@@ -113,6 +113,8 @@ model File {
   fileType   String
   uploadedAt DateTime @default(now())
   Resume     Resume?
+  Job        Job?     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId      String?
 }
 
 model ResumeSection {
@@ -463,6 +465,7 @@ model Job {
   CoverLetter   CoverLetter? @relation(fields: [coverLetterId], references: [id])
   coverLetterId String?
   Notes         Note[]
+  attachments   File[]
   tags        Tag[]
   contactLinks  JobContact[]
   stages        JobStage[]
@@ -480,6 +483,14 @@ model Job {
   // Word-count classification of `description` at write time:
   // "title-only" | "partial" | "full". Null for pre-existing/UI jobs.
   descriptionCompleteness String?
+
+  // Email tracking: an agent (Claude/Hermes/OpenClaw) found an email about
+  // this job in the user's inbox and attached it here.
+  emailSubject    String?
+  emailContent    String?
+  emailLink       String?
+  emailReceivedAt DateTime?
+  emailSeenAt     DateTime?
 
   @@index([userId, automationId])
   @@index([userId, discoveryStatus])

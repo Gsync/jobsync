@@ -67,6 +67,12 @@ export interface JobResponse {
   createdVia?: string | null;
   discoveryStatus?: string | null;
   descriptionCompleteness?: DescriptionCompleteness | null;
+  emailSubject?: string | null;
+  emailContent?: string | null;
+  emailLink?: string | null;
+  emailReceivedAt?: Date | null;
+  emailSeenAt?: Date | null;
+  attachments?: { id: string; fileName: string; fileType: string; uploadedAt: Date }[];
   _count?: { Notes?: number };
 }
 

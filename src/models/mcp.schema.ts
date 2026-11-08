@@ -200,12 +200,19 @@ export const McpUpdateJobInputShape = {
     .describe(
       "Skills required for the job, e.g. ['React', 'TypeScript']. Replaces the job's existing tags wholesale rather than merging, so include the tags returned by find_job that should be kept (max 10 applied).",
     ),
+  // Email tracking fields — agents (Claude/Hermes/OpenClaw) attach an email
+  // they found in the user's inbox to a saved job.
+  emailSubject: z.string().optional().describe("Subject line of an email received about this job (confirmation, interview, rejection, etc.)."),
+  emailContent: z.string().optional().describe("Body/snippet of the email received about this job."),
+  emailLink: z.string().url().optional().describe("Permalink or message id link to the email in the user's mailbox."),
+  emailReceivedAt: z.string().datetime({ offset: true }).optional().describe("When the email was received (ISO-8601)."),
 };
 
 export const McpUpdateJobSchema = z.object({
   ...McpUpdateJobInputShape,
   dueDate: z.string().datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
   appliedDate: z.string().datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
+  emailReceivedAt: z.string().datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
 });
 
 export type McpUpdateJobInput = z.infer<typeof McpUpdateJobSchema>;
@@ -292,8 +299,21 @@ export const McpListResumesInputShape = {};
 export const McpListResumesSchema = z.object(McpListResumesInputShape);
 export type McpListResumesInput = z.infer<typeof McpListResumesSchema>;
 
+// get_resume — read the full normalized text of one resume (by id, or the default).
+export const McpGetResumeInputShape = {
+  resumeId: z.string().min(1).optional().describe("The id of the resume to read, as returned by list_resumes. Omit to read the default resume (or the only one if there is just one)."),
+  resumeTitle: z.string().optional().describe("The title of the resume to read, as the user referred to it. Used only when resumeId is omitted."),
+};
+export const McpGetResumeSchema = z.object(McpGetResumeInputShape);
+export type McpGetResumeInput = z.infer<typeof McpGetResumeSchema>;
+
 // get_job_stats — aggregate counts by status.
 export const McpGetJobStatsInputShape = {};
 
 export const McpGetJobStatsSchema = z.object(McpGetJobStatsInputShape);
 export type McpGetJobStatsInput = z.infer<typeof McpGetJobStatsSchema>;
+
+// get_analytics — richer pipeline analytics.
+export const McpGetAnalyticsInputShape = {};
+export const McpGetAnalyticsSchema = z.object(McpGetAnalyticsInputShape);
+export type McpGetAnalyticsInput = z.infer<typeof McpGetAnalyticsSchema>;
