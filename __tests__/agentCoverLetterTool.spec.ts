@@ -1,4 +1,5 @@
 import { buildGenerateCoverLetterTool } from "@/lib/agent/tools/generateCoverLetter";
+import { buildAgentTools } from "@/lib/agent/tools";
 import { resolveJobForAgent } from "@/lib/agent/jobLookup";
 import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
@@ -105,8 +106,7 @@ describe("generate_cover_letter agent tool", () => {
     expect(buildGenerateCoverLetterTool(ctx()).needsApproval).toBeUndefined();
   });
 
-  it("is registered in the tool registry", async () => {
-    const { buildAgentTools } = await import("@/lib/agent/tools");
+  it("is registered in the tool registry", () => {
     const tools = buildAgentTools({
       ...ctx(),
       pageContext: { jobId: "job-1" },

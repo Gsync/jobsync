@@ -1,4 +1,5 @@
 import { buildReviewResumeTool } from "@/lib/agent/tools/reviewResume";
+import { buildAgentTools } from "@/lib/agent/tools";
 import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 import { saveResumeReviewResult } from "@/actions/profile.actions";
@@ -77,8 +78,7 @@ describe("review_resume agent tool", () => {
     expect(buildReviewResumeTool(ctx()).needsApproval).toBeUndefined();
   });
 
-  it("is registered in the tool registry", async () => {
-    const { buildAgentTools } = await import("@/lib/agent/tools");
+  it("is registered in the tool registry", () => {
     const tools = buildAgentTools({ ...ctx(), nestedGuard: ctx().guard });
     expect(Object.keys(tools)).toContain("review_resume");
   });

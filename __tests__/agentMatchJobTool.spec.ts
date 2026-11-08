@@ -1,4 +1,5 @@
 import { buildMatchJobTool } from "@/lib/agent/tools/matchJob";
+import { buildAgentTools } from "@/lib/agent/tools";
 import { resolveJobForAgent } from "@/lib/agent/jobLookup";
 import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
@@ -94,8 +95,7 @@ describe("match_job agent tool", () => {
     expect(buildMatchJobTool(ctx()).needsApproval).toBeUndefined();
   });
 
-  it("is registered in the tool registry", async () => {
-    const { buildAgentTools } = await import("@/lib/agent/tools");
+  it("is registered in the tool registry", () => {
     const tools = buildAgentTools({ ...ctx(), pageContext: { jobId: "job-1" } } as any);
     expect(Object.keys(tools)).toContain("match_job");
   });
