@@ -203,14 +203,16 @@ function MyJobsTable({
                   {job.JobSource?.label}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {job.emailReceivedAt ? (
+                  {job.emailReceivedAt || job.emailSubject || job.emailLink || job.emailContent ? (
                     <a
                       href={job.emailLink || "#"}
                       target="_blank"
                       rel="noreferrer"
                       className={`inline-flex items-center gap-1 text-xs ${
                         !job.emailSeenAt ||
-                        new Date(job.emailReceivedAt) > new Date(job.emailSeenAt)
+                        (job.emailReceivedAt
+                          ? new Date(job.emailReceivedAt) > new Date(job.emailSeenAt)
+                          : true)
                           ? "animate-pulse text-primary font-semibold"
                           : "text-muted-foreground"
                       }`}

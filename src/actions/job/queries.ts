@@ -35,6 +35,11 @@ const JOB_LIST_SELECT = {
   matchScore: true,
   matchData: true,
   discoveryStatus: true,
+  emailSubject: true,
+  emailContent: true,
+  emailLink: true,
+  emailReceivedAt: true,
+  emailSeenAt: true,
   _count: { select: { Notes: true } },
 };
 
