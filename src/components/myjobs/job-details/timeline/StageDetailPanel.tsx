@@ -166,7 +166,7 @@ export function StageDetailPanel({
               Overview
             </TabsTrigger>
             <TabsTrigger value="interviewer" className={TAB_TRIGGER}>
-              Interviewer
+              Interviewer{" "}
               {stage.interviewers.length > 0 && (
                 <span className="ml-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
                   {stage.interviewers.length}
@@ -174,7 +174,7 @@ export function StageDetailPanel({
               )}
             </TabsTrigger>
             <TabsTrigger value="prep" className={TAB_TRIGGER}>
-              Prep List
+              Prep List{" "}
               {total > 0 && (
                 <span className="ml-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
                   {asked} of {total}
