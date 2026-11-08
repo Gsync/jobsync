@@ -124,6 +124,13 @@ export async function updateJobFromNames(
     ...(resolvedTagsResult ? resolvedTagsResult.resolved : []),
   ];
 
+  // Track whether an email is being attached so we can append a chain entry.
+  const emailAttached =
+    input.emailSubject !== undefined ||
+    input.emailContent !== undefined ||
+    input.emailLink !== undefined ||
+    input.emailReceivedAt !== undefined;
+
   const data: Record<string, unknown> = {};
   if (resolvedCompany) data.companyId = resolvedCompany.id;
   if (resolvedTitle) data.jobTitleId = resolvedTitle.id;
@@ -206,6 +213,17 @@ export async function updateJobFromNames(
         where: { id: jobId, userId, createdVia: { not: null } },
         data,
       });
+      if (emailAttached) {
+        await tx.jobEmail.create({
+          data: {
+            jobId,
+            subject: input.emailSubject ?? null,
+            content: input.emailContent ?? null,
+            link: input.emailLink ?? null,
+            receivedAt: input.emailReceivedAt ?? null,
+          },
+        });
+      }
     });
   } catch (error: any) {
     if (error?.code === "P2025") {

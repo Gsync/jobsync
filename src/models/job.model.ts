@@ -73,6 +73,7 @@ export interface JobResponse {
   emailReceivedAt?: Date | null;
   emailSeenAt?: Date | null;
   attachments?: { id: string; fileName: string; fileType: string; uploadedAt: Date }[];
+  emails?: { id: string; subject: string | null; content: string | null; link: string | null; receivedAt: Date | null; createdAt: Date }[];
   _count?: { Notes?: number };
 }
 

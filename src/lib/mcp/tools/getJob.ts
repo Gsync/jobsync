@@ -34,6 +34,7 @@ export async function handleGetJob(
         },
         stages: { include: { StageType: true } },
         attachments: { select: { id: true, fileName: true, fileType: true, uploadedAt: true } },
+        emails: { orderBy: { receivedAt: "desc" } },
       },
     });
 

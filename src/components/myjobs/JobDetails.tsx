@@ -12,7 +12,7 @@ import { TipTapContentViewer } from "../TipTapContentViewer";
 import { Badge } from "../ui/badge";
 import { Card } from "../ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTabQueryParam } from "@/hooks/useTabQueryParam";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
@@ -55,6 +55,7 @@ const JOB_DETAIL_TABS = [
   "letter",
   "contacts",
   "notes",
+  "email",
 ] as const;
 
 type JobDetailsProps = {
@@ -259,6 +260,14 @@ function JobDetails({
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="email">
+              Email
+              {job.emails && job.emails.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {job.emails.length}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="notes">
               Notes
               {notesCount > 0 && (
@@ -311,6 +320,47 @@ function JobDetails({
                 blockedReason={coverLetterBlockedReason}
                 onGenerate={onCoverLetter}
               />
+            </Card>
+          </TabsContent>
+          <TabsContent value="email" className="mt-4">
+            <Card className="p-6 space-y-4">
+              {job.emails && job.emails.length > 0 ? (
+                job.emails.map((e: any) => (
+                  <div key={e.id} className="border-b pb-3 last:border-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-sm">
+                        {e.subject || "(no subject)"}
+                      </span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {e.receivedAt
+                          ? new Date(e.receivedAt).toLocaleString()
+                          : new Date(e.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    {e.link && (
+                      <a
+                        href={e.link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-primary underline"
+                      >
+                        Open email
+                      </a>
+                    )}
+                    {e.content && (
+                      <p className="mt-1 text-sm whitespace-pre-wrap text-muted-foreground">
+                        {e.content}
+                      </p>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <JobTabEmptyState
+                  icon={Mail}
+                  title="No emails yet"
+                  description="When an agent finds an email about this job in your inbox, it will appear here."
+                />
+              )}
             </Card>
           </TabsContent>
           {/* forceMount keeps ⋮ → Add a Note and the count badge working off-tab. */}

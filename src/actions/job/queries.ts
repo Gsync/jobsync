@@ -71,6 +71,7 @@ const JOB_DETAILS_INCLUDE = {
   },
   CoverLetter: true,
   tags: true,
+  emails: { orderBy: { receivedAt: "desc" } },
   contactLinks: {
     include: {
       Role: true,

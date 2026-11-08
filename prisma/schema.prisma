@@ -117,6 +117,20 @@ model File {
   jobId      String?
 }
 
+model JobEmail {
+  id          String   @id @default(uuid())
+  jobId       String
+  Job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  subject     String?
+  content     String?
+  link        String?
+  receivedAt  DateTime?
+  seenAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([jobId, receivedAt])
+}
+
 model ResumeSection {
   id                      String                   @id @default(uuid())
   resumeId                String
@@ -466,6 +480,7 @@ model Job {
   coverLetterId String?
   Notes         Note[]
   attachments   File[]
+  emails        JobEmail[]
   tags        Tag[]
   contactLinks  JobContact[]
   stages        JobStage[]
