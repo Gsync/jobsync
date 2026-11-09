@@ -1,20 +1,17 @@
 import prisma from "@/lib/db";
 import { SectionType } from "@/models/profile.model";
+import { isPresentMarker, parseNamedMonthYear } from "./dates";
 
 // Not a "use server" module: shared across src/actions/resumeImport/ modules,
 // so it must stay importable without becoming a callable server-action endpoint.
 
 export function parseImportDate(s: string | undefined | null): Date | null {
   if (!s) return null;
-  const t = s.trim().toLowerCase();
-  if (["present", "current", "now", "ongoing", "-"].includes(t)) return null;
+  if (isPresentMarker(s)) return null;
 
-  // "Jan 2020" / "January 2020"
-  const monthYear = /^([a-z]+)\s+(\d{4})$/i.exec(s.trim());
-  if (monthYear) {
-    const d = new Date(`${monthYear[1]} 1, ${monthYear[2]}`);
-    if (!isNaN(d.getTime())) return d;
-  }
+  // "Jan 2020" / "janvier 2020" / "Januar 2020" — any locale Intl knows
+  const named = parseNamedMonthYear(s);
+  if (named) return named;
 
   // "2020"
   if (/^\d{4}$/.test(s.trim())) {
@@ -25,6 +22,12 @@ export function parseImportDate(s: string | undefined | null): Date | null {
   const mmyyyy = /^(\d{1,2})[/-](\d{4})$/.exec(s.trim());
   if (mmyyyy) {
     return new Date(parseInt(mmyyyy[2]), parseInt(mmyyyy[1]) - 1, 1);
+  }
+
+  // YYYY-MM or YYYY/MM
+  const yyyymm = /^(\d{4})[/-](\d{1,2})$/.exec(s.trim());
+  if (yyyymm) {
+    return new Date(parseInt(yyyymm[1]), parseInt(yyyymm[2]) - 1, 1);
   }
 
   const d = new Date(s);
