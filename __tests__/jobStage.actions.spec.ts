@@ -9,6 +9,7 @@ import {
 import { getCurrentUser } from "@/utils/user.utils";
 import prisma from "@/lib/db";
 import { resolveJobStageType } from "@/lib/jobs/resolve";
+import { setJobCurrentStage } from "@/lib/jobs/timeline";
 
 vi.mock("@/lib/db", () => {
   const jobStage = {
@@ -34,6 +35,10 @@ vi.mock("@/utils/user.utils", () => ({ getCurrentUser: vi.fn() }));
 vi.mock("@/lib/jobs/resolve", () => ({
   resolveJobStageType: vi.fn(),
   resolveStageTypeForStatusId: vi.fn(),
+}));
+vi.mock("@/lib/jobs/timeline", async (importOriginal) => ({
+  ...((await importOriginal()) as object),
+  setJobCurrentStage: vi.fn(),
 }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
@@ -159,14 +164,10 @@ describe("addJobStage", () => {
     expect(data.location).toBeNull();
   });
 
-  it("clears the old current stage and rewrites the job status when set as current", async () => {
+  it("calls setJobCurrentStage with the new stage when set as current", async () => {
     db.jobStageType.findFirst.mockResolvedValue(interviewType);
     db.jobStage.create.mockResolvedValue({ id: "st2" });
-    db.jobStage.findFirst.mockResolvedValue({
-      id: "st2",
-      occurredAt: null,
-      StageType: { statusId: "s-int", Status: { value: "interview" } },
-    });
+    db.jobStage.findFirst.mockResolvedValue({ id: "st2" });
 
     const res = await addJobStage({
       jobId: "j1",
@@ -175,19 +176,10 @@ describe("addJobStage", () => {
     } as any);
 
     expect(res.success).toBe(true);
-    // D8: promoteStage names the owner in both of its updateMany calls.
-    expect(db.jobStage.updateMany).toHaveBeenCalledWith({
-      where: {
-        jobId: "j1",
-        isCurrent: true,
-        NOT: { id: "st2" },
-        Job: { userId: user.id },
-      },
-      data: { isCurrent: false },
-    });
-    expect(db.job.update.mock.calls[0][0].data).toEqual({
-      statusId: "s-int",
-      applied: true,
+    expect(setJobCurrentStage).toHaveBeenCalledWith(expect.anything(), {
+      jobId: "j1",
+      stageId: "st2",
+      userId: user.id,
     });
   });
 
@@ -208,52 +200,20 @@ describe("addJobStage", () => {
     } as any);
 
     expect(res.success).toBe(true);
-    expect(db.jobStage.updateMany).not.toHaveBeenCalled();
+    expect(setJobCurrentStage).not.toHaveBeenCalled();
     expect(db.job.update).not.toHaveBeenCalled();
-  });
-
-  it("sets appliedDate from a backdated applied stage", async () => {
-    const backdated = at("2026-08-12T00:00:00Z");
-    db.jobStageType.findFirst.mockResolvedValue({
-      id: "t-app",
-      label: "Applied",
-      statusId: "s-app",
-      Status: { value: "applied" },
-    });
-    db.jobStage.create.mockResolvedValue({ id: "st4" });
-    db.jobStage.findFirst.mockResolvedValue({
-      id: "st4",
-      occurredAt: backdated,
-      StageType: { statusId: "s-app", Status: { value: "applied" } },
-    });
-
-    await addJobStage({
-      jobId: "j1",
-      stageTypeId: "t-app",
-      date: backdated,
-      setAsCurrent: true,
-    } as any);
-
-    expect(db.job.update.mock.calls[0][0].data.appliedDate).toEqual(backdated);
   });
 });
 
 describe("deleteJobStage", () => {
   it("promotes the previous stage and rewrites the status when deleting the current one", async () => {
-    db.jobStage.findFirst
-      // assertStageOwned
-      .mockResolvedValueOnce({
-        id: "st-cur",
-        jobId: "j1",
-        occurredAt: null,
-        isCurrent: true,
-        StageType: interviewType,
-      })
-      // syncJobFromCurrentStage's own scoped read
-      .mockResolvedValue({
-        occurredAt: at("2026-09-03T00:00:00Z"),
-        StageType: { statusId: "s-app", Status: { value: "applied" } },
-      });
+    db.jobStage.findFirst.mockResolvedValueOnce({
+      id: "st-cur",
+      jobId: "j1",
+      occurredAt: null,
+      isCurrent: true,
+      StageType: interviewType,
+    });
     db.jobStage.findMany.mockResolvedValue([
       { id: "st-prev", occurredAt: at("2026-09-03T00:00:00Z"), createdAt: at("2026-09-03T00:00:00Z") },
     ]);
@@ -262,28 +222,23 @@ describe("deleteJobStage", () => {
 
     expect(res.success).toBe(true);
     expect(db.jobStage.delete).toHaveBeenCalledWith({ where: { id: "st-cur" } });
-    expect(db.jobStage.updateMany).toHaveBeenCalledWith({
-      where: { id: "st-prev", Job: { userId: user.id } },
-      data: { isCurrent: true },
+    expect(setJobCurrentStage).toHaveBeenCalledWith(expect.anything(), {
+      jobId: "j1",
+      stageId: "st-prev",
+      userId: user.id,
     });
-    expect(db.job.update.mock.calls[0][0].data.statusId).toBe("s-app");
   });
 
   // Undated stages sort last, so the tail of the sorted list is the wrong
   // successor whenever the job holds a dateless stage.
   it("promotes the furthest-along dated stage, not a dateless one", async () => {
-    db.jobStage.findFirst
-      .mockResolvedValueOnce({
-        id: "st-cur",
-        jobId: "j1",
-        occurredAt: at("2026-10-01T00:00:00Z"),
-        isCurrent: true,
-        StageType: interviewType,
-      })
-      .mockResolvedValue({
-        occurredAt: at("2026-09-03T00:00:00Z"),
-        StageType: { statusId: "s-app", Status: { value: "applied" } },
-      });
+    db.jobStage.findFirst.mockResolvedValueOnce({
+      id: "st-cur",
+      jobId: "j1",
+      occurredAt: at("2026-10-01T00:00:00Z"),
+      isCurrent: true,
+      StageType: interviewType,
+    });
     db.jobStage.findMany.mockResolvedValue([
       { id: "st-applied", occurredAt: at("2026-09-03T00:00:00Z"), createdAt: at("2026-09-03T00:00:00Z"), StageType: { sortOrder: 2 } },
       { id: "st-undated", occurredAt: null, createdAt: at("2026-09-20T00:00:00Z"), StageType: { sortOrder: 3 } },
@@ -291,9 +246,10 @@ describe("deleteJobStage", () => {
 
     await deleteJobStage("st-cur");
 
-    expect(db.jobStage.updateMany).toHaveBeenCalledWith({
-      where: { id: "st-applied", Job: { userId: user.id } },
-      data: { isCurrent: true },
+    expect(setJobCurrentStage).toHaveBeenCalledWith(expect.anything(), {
+      jobId: "j1",
+      stageId: "st-applied",
+      userId: user.id,
     });
   });
 
@@ -310,7 +266,7 @@ describe("deleteJobStage", () => {
     const res = await deleteJobStage("st-only");
 
     expect(res.success).toBe(true);
-    expect(db.job.update).not.toHaveBeenCalled();
+    expect(setJobCurrentStage).not.toHaveBeenCalled();
   });
 
   it("leaves the status untouched when deleting a non-current stage", async () => {
@@ -326,7 +282,7 @@ describe("deleteJobStage", () => {
 
     expect(res.success).toBe(true);
     expect(db.jobStage.findMany).not.toHaveBeenCalled();
-    expect(db.job.update).not.toHaveBeenCalled();
+    expect(setJobCurrentStage).not.toHaveBeenCalled();
   });
 
   it("refuses a stage the caller does not own", async () => {
@@ -340,36 +296,23 @@ describe("deleteJobStage", () => {
 });
 
 describe("setCurrentJobStage", () => {
-  it("promotes the stage and rewrites the job status from its type", async () => {
-    db.jobStage.findFirst
-      // assertStageOwned
-      .mockResolvedValueOnce({
-        id: "st9",
-        jobId: "j1",
-        occurredAt: null,
-        isCurrent: false,
-        StageType: interviewType,
-      })
-      // syncJobFromCurrentStage's own scoped read
-      .mockResolvedValue({
-        occurredAt: null,
-        StageType: { statusId: "s-int", Status: { value: "interview" } },
-      });
+  it("delegates to setJobCurrentStage for the owned stage", async () => {
+    db.jobStage.findFirst.mockResolvedValueOnce({
+      id: "st9",
+      jobId: "j1",
+      occurredAt: null,
+      isCurrent: false,
+      StageType: interviewType,
+    });
 
     const res = await setCurrentJobStage("st9");
 
     expect(res.success).toBe(true);
-    // D8: every stage write names the owner, so this is updateMany with the
-    // ownership chain, not a bare update by id.
-    expect(db.jobStage.updateMany).toHaveBeenCalledWith({
-      where: { id: "st9", Job: { userId: user.id } },
-      data: { isCurrent: true },
-    });
-    expect(db.job.update.mock.calls[0][0].where).toEqual({
-      id: "j1",
+    expect(setJobCurrentStage).toHaveBeenCalledWith(expect.anything(), {
+      jobId: "j1",
+      stageId: "st9",
       userId: user.id,
     });
-    expect(db.job.update.mock.calls[0][0].data.statusId).toBe("s-int");
   });
 });
 

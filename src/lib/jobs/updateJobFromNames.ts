@@ -13,11 +13,9 @@ import {
   resolveWorkplaceType,
   resolveJobStatus,
   resolveTags,
-  resolveStageTypeForStatusId,
   type ResolvedEntity,
 } from "./resolve";
-import { appendStatusStage } from "@/actions/job/shared";
-import { jobFieldsForStage } from "@/actions/jobStage/shared";
+import { changeJobStatus, JobNotFoundError } from "./timeline";
 
 // Same renderer config as createJobFromNames — html:false escapes raw HTML.
 const md = new MarkdownIt({ html: false, linkify: false, breaks: true });
@@ -139,17 +137,6 @@ export async function updateJobFromNames(
   ) {
     data.appliedDate = new Date();
   }
-  if (statusId && input.status !== undefined) {
-    Object.assign(
-      data,
-      jobFieldsForStage(
-        input.status.toLowerCase(),
-        statusId,
-        null,
-        (data.appliedDate as Date | undefined) ?? existing.appliedDate,
-      ),
-    );
-  }
   if (resolvedTagsResult) {
     data.tags = { set: resolvedTagsResult.resolved.map((t) => ({ id: t.id })) };
   }
@@ -174,26 +161,24 @@ export async function updateJobFromNames(
     };
   }
 
-  // D4: this resolve can create a row and writes through the base client, so
-  // it stays outside the transaction below, which could not roll it back.
-  const stageTypeId = statusId
-    ? await resolveStageTypeForStatusId(statusId, userId)
-    : null;
-
   try {
-    await prisma.$transaction(async (tx: any) => {
-      // D9: the sixth write path to Job.statusId. Without this an agent can
-      // move a job's status while its timeline stays where it was.
-      if (statusId && stageTypeId) {
-        await appendStatusStage(tx, jobId, statusId, stageTypeId, userId);
-      }
-      await tx.job.update({
+    // D9: the sixth write path to Job.statusId goes through the timeline
+    if (statusId) {
+      await changeJobStatus({
+        jobId,
+        userId,
+        statusId,
+        jobFields: data,
+        requireCreatedVia: true,
+      });
+    } else {
+      await prisma.job.update({
         where: { id: jobId, userId, createdVia: { not: null } },
         data,
       });
-    });
+    }
   } catch (error: any) {
-    if (error?.code === "P2025") {
+    if (error?.code === "P2025" || error instanceof JobNotFoundError) {
       return {
         updated: false,
         jobId,

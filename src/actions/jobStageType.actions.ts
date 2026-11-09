@@ -5,7 +5,7 @@ import { requireUser } from "./shared";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { resolveJobStageType } from "@/lib/jobs/resolve";
 import { canonicalizeEntityValue } from "@/lib/jobs/canonicalize";
-import { jobFieldsForStage } from "./jobStage/shared";
+import { changeStageTypeStatus } from "@/lib/jobs/timeline";
 
 export const getAllJobStageTypes = async (): Promise<any | undefined> => {
   try {
@@ -108,7 +108,7 @@ export const updateJobStageType = async (
 ): Promise<any | undefined> => {
   try {
     const user = await requireUser();
-    const status = await assertStatusExists(statusId);
+    await assertStatusExists(statusId);
 
     const existing = await prisma.jobStageType.findFirst({
       where: { id, createdBy: user.id },
@@ -125,40 +125,21 @@ export const updateJobStageType = async (
 
     // value is left alone on rename: it is the reverse-lookup key that a
     // status resolves through, and rewriting it would orphan the mapping.
+    if (statusChanged) {
+      await changeStageTypeStatus({
+        stageTypeId: id,
+        userId: user.id,
+        statusId,
+        label: label.trim(),
+        sortOrder,
+      });
+      return { success: true };
+    }
+
     await prisma.jobStageType.update({
       where: { id, createdBy: user.id },
       data: { label: label.trim(), statusId, sortOrder },
     });
-
-    // A job's status is derived from its current stage's type, so retargeting
-    // a type in use has to re-derive every job now sitting on it.
-    if (statusChanged) {
-      const affected = await prisma.job.findMany({
-        where: {
-          userId: user.id,
-          stages: { some: { stageTypeId: id, isCurrent: true } },
-        },
-        select: {
-          id: true,
-          appliedDate: true,
-          stages: {
-            where: { stageTypeId: id, isCurrent: true },
-            select: { occurredAt: true },
-          },
-        },
-      });
-      for (const job of affected) {
-        await prisma.job.update({
-          where: { id: job.id, userId: user.id },
-          data: jobFieldsForStage(
-            status.value,
-            statusId,
-            job.stages[0]?.occurredAt ?? null,
-            job.appliedDate,
-          ),
-        });
-      }
-    }
 
     return { success: true };
   } catch (error) {

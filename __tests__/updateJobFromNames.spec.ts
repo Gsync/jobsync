@@ -8,8 +8,8 @@ import {
   resolveWorkplaceType,
   resolveJobStatus,
   resolveTags,
-  resolveStageTypeForStatusId,
 } from "@/lib/jobs/resolve";
+import { changeJobStatus, JobNotFoundError } from "@/lib/jobs/timeline";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -17,10 +17,7 @@ const prisma = new PrismaClient();
 vi.mock("@prisma/client", () => {
   const mPrismaClient: any = {
     job: { findFirst: vi.fn(), update: vi.fn() },
-    jobStage: { findFirst: vi.fn(), create: vi.fn(), updateMany: vi.fn() },
-    $transaction: vi.fn(),
   };
-  mPrismaClient.$transaction.mockImplementation((fn: any) => fn(mPrismaClient));
   return { PrismaClient: vi.fn(function () { return mPrismaClient; }) };
 });
 
@@ -33,7 +30,11 @@ vi.mock("@/lib/jobs/resolve", () => ({
   resolveWorkplaceType: vi.fn(),
   resolveJobStatus: vi.fn(),
   resolveTags: vi.fn(),
-  resolveStageTypeForStatusId: vi.fn(),
+}));
+
+vi.mock("@/lib/jobs/timeline", async (importOriginal) => ({
+  ...((await importOriginal()) as object),
+  changeJobStatus: vi.fn(),
 }));
 
 const userId = "user-1";
@@ -55,10 +56,7 @@ describe("updateJobFromNames", () => {
     (resolveJobType as any).mockReturnValue("FT");
     (resolveWorkplaceType as any).mockReturnValue("REMOTE");
     (resolveTags as any).mockResolvedValue({ resolved: [], dropped: [] });
-    (resolveStageTypeForStatusId as any).mockResolvedValue("t-offer");
-    (prisma as any).$transaction.mockImplementation((fn: any) => fn(prisma));
-    (prisma as any).jobStage.create.mockResolvedValue({ id: "st-new" });
-    (prisma as any).jobStage.updateMany.mockResolvedValue({ count: 1 });
+    (changeJobStatus as any).mockResolvedValue({ id: "job-1" });
   });
 
   it("returns updated:false when the job is not the caller's MCP-created job", async () => {
@@ -165,20 +163,35 @@ describe("updateJobFromNames", () => {
     expect(data).toEqual({ appliedDate, applied: true });
   });
 
-  it("marks the job applied when the status moves to Applied", async () => {
-    await updateJobFromNames({ jobId: "job-1", status: "Applied" }, userId);
+  it("calls changeJobStatus with requireCreatedVia and the patch when status is sent", async () => {
+    await updateJobFromNames(
+      { jobId: "job-1", status: "Applied", salaryRange: "$1" },
+      userId,
+    );
 
-    const data = (prisma.job.update as any).mock.calls[0][0].data;
-    expect(data.applied).toBe(true);
-    expect(data.appliedDate).toBeInstanceOf(Date);
+    expect(changeJobStatus).toHaveBeenCalledWith({
+      jobId: "job-1",
+      userId,
+      statusId: "status-1",
+      jobFields: expect.objectContaining({
+        salaryRange: "$1",
+        statusId: "status-1",
+      }),
+      requireCreatedVia: true,
+    });
+    expect(prisma.job.update).not.toHaveBeenCalled();
   });
 
-  it("leaves applied alone for a status that doesn't imply applying", async () => {
-    await updateJobFromNames({ jobId: "job-1", status: "archived" }, userId);
+  it("returns updated:false when the module throws JobNotFoundError", async () => {
+    (changeJobStatus as any).mockRejectedValue(new JobNotFoundError());
 
-    expect((prisma.job.update as any).mock.calls[0][0].data).not.toHaveProperty(
-      "applied",
+    const result = await updateJobFromNames(
+      { jobId: "job-1", status: "offer" },
+      userId,
     );
+
+    expect(result.updated).toBe(false);
+    expect(result.message).toContain("not found");
   });
 
   it("returns updated:false with a not-found message on P2025", async () => {
@@ -201,42 +214,10 @@ describe("updateJobFromNames", () => {
     expect(prisma.job.update).not.toHaveBeenCalled();
   });
 
-  // D9: the sixth write path to Job.statusId keeps the timeline in step.
-  it("appends a current stage when MCP changes the job's status", async () => {
-    (resolveJobStatus as any).mockResolvedValue("s-offer");
-    (prisma as any).jobStage.findFirst.mockResolvedValue({
-      id: "st-int",
-      StageType: { statusId: "s-int", Status: { value: "interview" } },
-    });
-
-    await updateJobFromNames({ jobId: "job-1", status: "offer" }, userId);
-
-    expect((prisma as any).jobStage.create.mock.calls[0][0].data).toMatchObject({
-      jobId: "job-1",
-      stageTypeId: "t-offer",
-      occurredAt: expect.any(Date),
-    });
-  });
-
-  // Decision 16's rule, reached through MCP: the comparison is on parent
-  // status, so re-sending a status the job already holds is a no-op.
-  it("appends nothing when the current stage already carries that status", async () => {
-    (resolveJobStatus as any).mockResolvedValue("s-int");
-    (prisma as any).jobStage.findFirst.mockResolvedValue({
-      id: "st-tech",
-      StageType: { statusId: "s-int", Status: { value: "interview" } },
-    });
-
-    await updateJobFromNames({ jobId: "job-1", status: "interview" }, userId);
-
-    expect((prisma as any).jobStage.create).not.toHaveBeenCalled();
-  });
-
   it("leaves the timeline alone when no status field was sent", async () => {
     await updateJobFromNames({ jobId: "job-1", salaryRange: "100k" }, userId);
 
-    expect(resolveStageTypeForStatusId).not.toHaveBeenCalled();
-    expect((prisma as any).jobStage.create).not.toHaveBeenCalled();
+    expect(changeJobStatus).not.toHaveBeenCalled();
   });
 
   // D5, now covering the MCP path as well.

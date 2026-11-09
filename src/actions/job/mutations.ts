@@ -6,10 +6,7 @@ import { AddJobFormSchema } from "@/models/addJobForm.schema";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "../shared";
-import { appendStatusStage } from "./shared";
-import { jobFieldsForStage } from "../jobStage/shared";
-import { resolveStageTypeForStatusId } from "@/lib/jobs/resolve";
-import { APPLIED_STATUS_VALUES } from "@/lib/constants";
+import { changeJobStatus } from "@/lib/jobs/timeline";
 
 type JobRefs = {
   jobTitleId?: string | null;
@@ -186,62 +183,27 @@ export const updateJob = async (
       tagIds: tagIds.filter((tagId) => !currentTagIds.has(tagId)),
     });
 
-    // Same D4 rule: resolve before the transaction opens.
-    const stageTypeId = await resolveStageTypeForStatusId(status, user.id);
-    const statusRow = await prisma.jobStatus.findUnique({
-      where: { id: status },
-      select: { value: true },
-    });
-    // Clearing the date un-applies the job, unless its status or an earlier
-    // stage says it was applied to (Offer then Rejected keeps it applied).
-    const applied =
-      !!dateApplied ||
-      APPLIED_STATUS_VALUES.includes(statusRow?.value ?? "") ||
-      (await prisma.jobStage.count({
-        where: {
-          jobId: id,
-          Job: { userId: user.id },
-          StageType: { Status: { value: { in: [...APPLIED_STATUS_VALUES] } } },
-        },
-      })) > 0;
-
-    const job = await prisma.$transaction(async (tx: any) => {
-      // The Edit Job dialog's Status field is the fourth entry point into the
-      // timeline; without this a job and its stages go permanently out of step.
-      await appendStatusStage(tx, id, status, stageTypeId, user.id);
-      return tx.job.update({
-        where: {
-          id,
-          userId: user.id,
-        },
-        data: {
-          jobTitleId: title,
-          companyId: company,
-          locationId: location,
-          statusId: status,
-          jobSourceId: source,
-          salaryRange: salaryRange || null,
-          createdAt: new Date(),
-          dueDate: dueDate,
-          appliedDate: dateApplied ?? null,
-          description: jobDescription,
-          jobType: type,
-          workplaceType,
-          jobUrl,
-          resumeId: resume,
-          coverLetterId: coverLetter,
-          tags: { set: tagIds.map((id) => ({ id })) },
-          // Stamp today only on a move to Applied, never on an unrelated save.
-          ...(status !== current.statusId &&
-            jobFieldsForStage(
-              statusRow?.value ?? "",
-              status,
-              null,
-              dateApplied ?? null,
-            )),
-          applied,
-        },
-      });
+    const job = await changeJobStatus({
+      jobId: id,
+      userId: user.id,
+      statusId: status,
+      jobFields: {
+        jobTitleId: title,
+        companyId: company,
+        locationId: location,
+        jobSourceId: source,
+        salaryRange: salaryRange || null,
+        createdAt: new Date(),
+        dueDate: dueDate,
+        description: jobDescription,
+        jobType: type,
+        workplaceType,
+        jobUrl,
+        resumeId: resume,
+        coverLetterId: coverLetter,
+        tags: { set: tagIds.map((id) => ({ id })) },
+      },
+      appliedDateFromUser: dateApplied ?? null,
     });
     revalidatePath("/dashboard");
     return { success: true, data: job };

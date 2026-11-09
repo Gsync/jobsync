@@ -8,6 +8,7 @@ import {
 import { getCurrentUser } from "@/utils/user.utils";
 import prisma from "@/lib/db";
 import { resolveJobStageType } from "@/lib/jobs/resolve";
+import { changeStageTypeStatus } from "@/lib/jobs/timeline";
 
 vi.mock("@/lib/db", () => ({
   default: {
@@ -20,10 +21,10 @@ vi.mock("@/lib/db", () => ({
     },
     jobStage: { count: vi.fn() },
     jobStatus: { findUnique: vi.fn(), findMany: vi.fn() },
-    job: { findMany: vi.fn(), update: vi.fn() },
   },
 }));
 vi.mock("@/utils/user.utils", () => ({ getCurrentUser: vi.fn() }));
+vi.mock("@/lib/jobs/timeline", () => ({ changeStageTypeStatus: vi.fn() }));
 vi.mock("@/lib/jobs/resolve", () => ({ resolveJobStageType: vi.fn() }));
 
 const db = prisma as any;
@@ -44,7 +45,6 @@ beforeEach(() => {
     { label: "Interview" },
   ]);
   db.jobStageType.findFirst.mockResolvedValue(null);
-  db.job.findMany.mockResolvedValue([]);
 });
 
 describe("getAllJobStageTypes", () => {
@@ -124,23 +124,22 @@ describe("updateJobStageType", () => {
     expect(db.jobStageType.update).not.toHaveBeenCalled();
   });
 
-  it("re-derives the jobs sitting on a custom type it moves", async () => {
+  it("delegates to changeStageTypeStatus when the status changes", async () => {
     db.jobStageType.findFirst.mockResolvedValue({
       value: "take-home",
       statusId: "s-app",
     });
-    db.job.findMany.mockResolvedValue([
-      {
-        id: "j1",
-        appliedDate: null,
-        stages: [{ occurredAt: new Date("2026-09-01T00:00:00Z") }],
-      },
-    ]);
 
-    const res = await updateJobStageType("t1", "Take-home", "s-int", 3);
+    const res = await updateJobStageType("t1", " Take-home ", "s-int", 3);
 
     expect(res.success).toBe(true);
-    expect(db.job.update.mock.calls[0][0].data.statusId).toBe("s-int");
+    expect(changeStageTypeStatus).toHaveBeenCalledWith({
+      stageTypeId: "t1",
+      userId: user.id,
+      statusId: "s-int",
+      label: "Take-home",
+      sortOrder: 3,
+    });
   });
 
   it("leaves jobs alone when only the label and order change", async () => {
@@ -152,7 +151,7 @@ describe("updateJobStageType", () => {
     const res = await updateJobStageType("t1", "Take-home Task", "s-int", 4);
 
     expect(res.success).toBe(true);
-    expect(db.job.findMany).not.toHaveBeenCalled();
+    expect(changeStageTypeStatus).not.toHaveBeenCalled();
   });
 });
 

@@ -258,7 +258,7 @@ export function AddJob({
     setDialogOpen(true);
   };
 
-  // Mirrors jobFieldsForStage: only Applied stamps today's date.
+  // Mirrors src/lib/jobs/timeline/derive.ts: only Applied stamps today's date.
   const jobStatusChange = (statusId: string) => {
     const value = jobStatuses.find((s) => s.id === statusId)?.value ?? "";
     const date = form.getValues("dateApplied");
