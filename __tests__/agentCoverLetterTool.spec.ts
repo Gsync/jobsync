@@ -100,11 +100,6 @@ describe("generate_cover_letter agent tool", () => {
     });
   });
 
-  // The gate exists to stop unseen writes. The user watches the whole letter
-  // stream before it lands, and it lands in their own documents.
-  it("has no approval gate", () => {
-    expect(buildGenerateCoverLetterTool(ctx()).needsApproval).toBeUndefined();
-  });
 
   it("is registered in the tool registry", () => {
     const tools = buildAgentTools({
@@ -175,7 +170,7 @@ describe("generate_cover_letter agent tool", () => {
   it("generates with the retired route's prompt, temperature and context", async () => {
     await execute(buildGenerateCoverLetterTool(ctx()), {});
     const args = streamText.mock.calls[0][0];
-    expect(args.system).toBe(COVER_LETTER_SYSTEM_PROMPT);
+    expect(args.instructions).toBe(COVER_LETTER_SYSTEM_PROMPT);
     expect(args.temperature).toBe(TEMPERATURES.FEEDBACK);
     expect(args.providerOptions.ollama.options.num_ctx).toBe(
       APP_CONSTANTS.AI_OLLAMA_NUM_CTX,

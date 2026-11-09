@@ -40,7 +40,7 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
   return tool({
     description: AGENT_TOOL_DESCRIPTIONS.review_resume,
     inputSchema: AgentReviewResumeSchema,
-    // No needsApproval: this writes only the caller's own reviewData, and
+    // Not in toolApproval: this writes only the caller's own reviewData, and
     // they watch the whole thing stream before it lands.
     execute: async (raw, { toolCallId, abortSignal }): Promise<AgentReviewResumeResult> => {
       const lookup = await resolveResumeForAgent(ctx.userId, {

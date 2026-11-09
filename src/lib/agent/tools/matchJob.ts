@@ -41,7 +41,7 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
   return tool({
     description: AGENT_TOOL_DESCRIPTIONS.match_job,
     inputSchema: AgentMatchJobSchema,
-    // No needsApproval: this writes only matchData on the caller's own job,
+    // Not in toolApproval: this writes only matchData on the caller's own job,
     // and they watch the whole thing stream before it lands.
     execute: async (raw, { toolCallId, abortSignal }): Promise<AgentMatchJobResult> => {
       const jobLookup = await resolveJobForAgent(ctx.userId, ctx.pageJobId);

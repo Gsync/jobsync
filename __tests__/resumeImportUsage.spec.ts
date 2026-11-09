@@ -64,7 +64,7 @@ describe("resume import usage", () => {
 
   it("finishes with usage on completion, and error on a stream error", async () => {
     await POST(req());
-    options.onFinish({ totalUsage: { inputTokens: 3000, outputTokens: 900 }, finishReason: "stop" });
+    options.onEnd({ usage: { inputTokens: 3000, outputTokens: 900 }, finishReason: "stop" });
     expect(finish).toHaveBeenCalledWith({ usage: { inputTokens: 3000, outputTokens: 900 }, finishReason: "stop" });
     const err = new Error("boom");
     options.onError({ error: err });

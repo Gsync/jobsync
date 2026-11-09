@@ -42,7 +42,7 @@ export function buildGenerateCoverLetterTool(ctx: CoverLetterContext) {
   return tool({
     description: AGENT_TOOL_DESCRIPTIONS.generate_cover_letter,
     inputSchema: AgentCoverLetterSchema,
-    // No needsApproval: the letter lands in the caller's own documents and
+    // Not in toolApproval: the letter lands in the caller's own documents and
     // they watch the whole thing stream before it does.
     execute: async (raw, { toolCallId, abortSignal }): Promise<AgentCoverLetterResult> => {
       const jobLookup = await resolveJobForAgent(ctx.userId, ctx.pageJobId);

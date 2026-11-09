@@ -26,26 +26,27 @@ vi.mock("@/lib/aiUsage/tracker", async (importOriginal) => {
 
 // The route merges this into createUIMessageStream now. An immediately
 // closed stream is enough — these tests assert on the streamText ARGS.
-const toUIMessageStream = vi.fn(
-  () =>
-    new ReadableStream({
-      start(controller) {
-        controller.close();
-      },
-    }),
-);
-const streamText = vi.fn((..._args: any[]) => ({ toUIMessageStream }));
+const closedStream = () =>
+  new ReadableStream({
+    start(controller) {
+      controller.close();
+    },
+  });
+const toUIMessageStream = vi.fn((..._args: any[]) => closedStream());
+const fakeStream = closedStream();
+const streamText = vi.fn((..._args: any[]) => ({ stream: fakeStream }));
 const streamArgs = (): any => streamText.mock.calls[0]![0];
-// The turn's write-back lives in onFinish, which only fires once the stream is
+// The turn's write-back lives in onEnd, which only fires once the stream is
 // consumed. Captured here so the abort branch can be driven directly.
-let capturedOnFinish: ((arg: any) => Promise<void>) | undefined;
+let capturedOnEnd: ((arg: any) => Promise<void>) | undefined;
 vi.mock("ai", async (importOriginal) => {
   const actual = await importOriginal<typeof import("ai")>();
   return {
     ...actual,
     streamText: (...args: unknown[]) => streamText(...(args as [])),
+    toUIMessageStream: (...args: unknown[]) => toUIMessageStream(...(args as [])),
     createUIMessageStream: (options: any) => {
-      capturedOnFinish = options.onFinish;
+      capturedOnEnd = options.onEnd;
       return actual.createUIMessageStream(options);
     },
   };
@@ -132,13 +133,13 @@ describe("POST /api/ai/chat", () => {
     expect(saveOrder).toBeLessThan(streamOrder);
   });
 
-  // Clear deletes the conversation row and the cancelled turn's onFinish fires
+  // Clear deletes the conversation row and the cancelled turn's onEnd fires
   // afterwards — writing there would restore exactly what was just deleted.
   it("does not write the turn back when it was cancelled", async () => {
     await POST(req({ messages: [pasteMessage("posting")] }));
     const afterReceipt = (saveChatConversation as any).mock.calls.length;
 
-    await capturedOnFinish!({
+    await capturedOnEnd!({
       messages: [pasteMessage("posting")],
       responseMessage: undefined,
       isAborted: true,
@@ -150,7 +151,7 @@ describe("POST /api/ai/chat", () => {
     await POST(req({ messages: [pasteMessage("posting")] }));
     const afterReceipt = (saveChatConversation as any).mock.calls.length;
 
-    await capturedOnFinish!({
+    await capturedOnEnd!({
       messages: [pasteMessage("posting")],
       responseMessage: undefined,
       isAborted: false,
@@ -166,7 +167,7 @@ describe("POST /api/ai/chat", () => {
   it("logs a status-carrying result from an unrecognised tool by its status", async () => {
     const info = vi.spyOn(console, "info").mockImplementation(() => {});
     await POST(req({ messages: [pasteMessage("posting")] }));
-    await capturedOnFinish!({
+    await capturedOnEnd!({
       messages: [],
       responseMessage: {
         id: "a1",
@@ -190,7 +191,7 @@ describe("POST /api/ai/chat", () => {
   it("still logs add_job's create/duplicate outcome, which carries no status", async () => {
     const info = vi.spyOn(console, "info").mockImplementation(() => {});
     await POST(req({ messages: [pasteMessage("posting")] }));
-    await capturedOnFinish!({
+    await capturedOnEnd!({
       messages: [],
       responseMessage: {
         id: "a1",
@@ -294,7 +295,7 @@ describe("POST /api/ai/chat", () => {
   it("configures the loop bounds the design specifies", async () => {
     await POST(req({ messages: [pasteMessage("posting")] }));
     const args = streamArgs();
-    // stepCountIs plus one hasToolCall per terminal tool.
+    // isStepCount plus one hasToolCall per terminal tool.
     expect(args.stopWhen).toHaveLength(AGENT_CHAT_TERMINAL_TOOLS.length + 1);
     expect(args.temperature).toBe(0.1);
     expect(args.abortSignal).toBeDefined();
@@ -302,6 +303,39 @@ describe("POST /api/ai/chat", () => {
     // qwen3.5 deliberates in the content channel when thinking is off, and
     // content and a tool call are mutually exclusive. Measured 1/7 vs 7/7.
     expect(args.providerOptions.ollama.think).toBe(true);
+  });
+
+  // v7 runs only onEnd when both are set, and that is where usage is recorded.
+  it("passes only the current AI SDK option names", async () => {
+    await POST(req({ messages: [pasteMessage("posting")] }));
+    const args = streamArgs();
+    expect(args.instructions).toEqual(expect.any(String));
+    expect(args.onEnd).toEqual(expect.any(Function));
+    expect(args).not.toHaveProperty("system");
+    expect(args).not.toHaveProperty("onFinish");
+  });
+
+  // add_job is the only approval-gated tool; a bare boolean status would
+  // normalize to none and let it run unasked.
+  it("gates only add_job, by status, through toolApproval", async () => {
+    await POST(req({ messages: [{ id: "m1", role: "user", parts: [{ type: "text", text: "hi" }] }] }));
+    const { toolApproval } = streamArgs();
+    expect(Object.keys(toolApproval)).toEqual(["add_job"]);
+    expect(toolApproval.add_job({ company: "Acme", jobTitle: "Engineer", jobDescription: "d" })).toBe("user-approval");
+    expect(toolApproval.add_job({ company: "Acme", jobTitle: "Engineer" })).toBe("not-applicable");
+  });
+
+  it("gates a pasted posting even when the model sent no description", async () => {
+    await POST(req({ messages: [pasteMessage("posting")] }));
+    expect(streamArgs().toolApproval.add_job({ company: "Acme", jobTitle: "Engineer" })).toBe("user-approval");
+  });
+
+  it("streams the UI from result.stream with the turn's tools", async () => {
+    await POST(req({ messages: [pasteMessage("posting")] }));
+    const [options] = toUIMessageStream.mock.calls[0]!;
+    expect(options.stream).toBe(fakeStream);
+    expect(options.tools).toBe(streamArgs().tools);
+    expect(options.onError).toEqual(expect.any(Function));
   });
 
   // Without this the client aborting its fetch — stop(), Clear, closing the
@@ -416,7 +450,7 @@ describe("POST /api/ai/chat", () => {
 
   describe("usage", () => {
     const finishTurn = (isAborted = false) =>
-      capturedOnFinish!({ messages: [pasteMessage("posting")], responseMessage: undefined, isAborted });
+      capturedOnEnd!({ messages: [pasteMessage("posting")], responseMessage: undefined, isAborted });
 
     it("starts one agent_chat call with the chat num_ctx", async () => {
       await POST(req({ messages: [pasteMessage("posting")] }));
@@ -444,7 +478,7 @@ describe("POST /api/ai/chat", () => {
 
     it("records a finished turn with its total usage", async () => {
       await POST(req({ messages: [pasteMessage("posting")] }));
-      streamArgs().onFinish({ totalUsage: { inputTokens: 5000, outputTokens: 200 }, finishReason: "stop" });
+      streamArgs().onEnd({ usage: { inputTokens: 5000, outputTokens: 200 }, finishReason: "stop" });
       await finishTurn();
       const arg = finish.mock.calls[0][0];
       expect(arg).toMatchObject({
@@ -471,12 +505,12 @@ describe("POST /api/ai/chat", () => {
       await POST(req({ messages: [pasteMessage("posting")] }));
       const { nestedGuard } = (buildAgentTools as any).mock.calls[0][0];
       nestedGuard.elapsedMs = 90_000;
-      streamArgs().onFinish({ totalUsage: {}, finishReason: "stop" });
+      streamArgs().onEnd({ usage: {}, finishReason: "stop" });
       await finishTurn();
       expect(finish.mock.calls[0][0].excludeMs).toBe(90_000);
     });
 
-    // A doStream throw (Ollama down, bad key) skips streamText's onFinish and
+    // A doStream throw (Ollama down, bad key) skips streamText's onEnd and
     // reaches the route only as an error part through toUIMessageStream.
     const streamError = (error: unknown) =>
       (toUIMessageStream.mock.calls as any)[0][0].onError(error);
@@ -490,7 +524,7 @@ describe("POST /api/ai/chat", () => {
 
     it("records an error after a finished tool step as error, not ok", async () => {
       await POST(req({ messages: [pasteMessage("posting")] }));
-      streamArgs().onFinish({ totalUsage: { inputTokens: 900, outputTokens: 30 }, finishReason: "tool-calls" });
+      streamArgs().onEnd({ usage: { inputTokens: 900, outputTokens: 30 }, finishReason: "tool-calls" });
       streamError(new Error("connect ECONNREFUSED 127.0.0.1:11434"));
       await finishTurn();
       expect(statusOf(finish.mock.calls[0][0])).toBe("error");

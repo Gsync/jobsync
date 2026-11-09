@@ -10,7 +10,7 @@ function stubStreamText(chunks: string[], finishReason: string) {
       for (const chunk of chunks) yield chunk;
     })(),
     finishReason: Promise.resolve(finishReason),
-    totalUsage: Promise.resolve({
+    usage: Promise.resolve({
       inputTokens: 7000,
       inputTokenDetails: {},
       outputTokens: 900,

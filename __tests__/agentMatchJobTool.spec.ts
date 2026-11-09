@@ -89,11 +89,6 @@ describe("match_job agent tool", () => {
     save.mockResolvedValue({ success: true });
   });
 
-  // The gate exists to stop unseen writes. This writes only matchData on the
-  // caller's own job, and they watch it stream.
-  it("has no approval gate", () => {
-    expect(buildMatchJobTool(ctx()).needsApproval).toBeUndefined();
-  });
 
   it("is registered in the tool registry", () => {
     const tools = buildAgentTools({ ...ctx(), pageContext: { jobId: "job-1" } } as any);
@@ -141,7 +136,7 @@ describe("match_job agent tool", () => {
   it("generates with the retired route's prompt, temperature and context", async () => {
     await execute(buildMatchJobTool(ctx()), {});
     const args = streamText.mock.calls[0][0];
-    expect(args.system).toBe(JOB_MATCH_SYSTEM_PROMPT);
+    expect(args.instructions).toBe(JOB_MATCH_SYSTEM_PROMPT);
     expect(args.prompt).toBe(buildJobMatchPrompt(RESUME_TEXT, JOB_TEXT));
     expect(args.temperature).toBe(TEMPERATURES.FEEDBACK);
     expect(args.providerOptions.ollama.options.num_ctx).toBe(
