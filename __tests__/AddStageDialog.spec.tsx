@@ -15,6 +15,7 @@ vi.mock("@/lib/toast", () => ({
 
 // jsdom lacks scrollIntoView, which cmdk calls when selecting an item
 Element.prototype.scrollIntoView = vi.fn();
+HTMLElement.prototype.hasPointerCapture = vi.fn();
 
 const stageTypes = [
   { id: "t-off", label: "Offer", value: "offer", statusId: "s-off", sortOrder: 7, Status: { id: "s-off", label: "Offer", value: "offer" } },
@@ -83,6 +84,39 @@ describe("AddStageDialog", () => {
     );
 
     expect(screen.getByText(/PARENT STATUS/i)).toBeInTheDocument();
+  });
+
+  it("updates interview fields when switching between standard and custom stages", async () => {
+    render(<AddStageDialog {...props} />);
+    expect(screen.queryByText("DURATION (MIN)")).not.toBeInTheDocument();
+
+    await openStageTypePicker();
+    await userEvent.click(screen.getByRole("option", { name: "Final / Onsite Interview" }));
+    expect(screen.getByText("DURATION (MIN)")).toBeInTheDocument();
+
+    const customName = screen.getByPlaceholderText("e.g. Panel Interview, Reference Check…");
+    await userEvent.type(customName, "Panel Interview");
+    expect(screen.queryByText("DURATION (MIN)")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("combobox", { name: "Select status" }));
+    await userEvent.click(screen.getByRole("option", { name: "Interview" }));
+    expect(screen.getByText("DURATION (MIN)")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("combobox", { name: "Select status" }));
+    await userEvent.click(screen.getByRole("option", { name: "Offer" }));
+    expect(screen.queryByText("DURATION (MIN)")).not.toBeInTheDocument();
+    await userEvent.clear(customName);
+    expect(screen.getByText("DURATION (MIN)")).toBeInTheDocument();
+  });
+
+  it("clears conditional fields when the mounted add dialog reopens", async () => {
+    const { rerender } = render(<AddStageDialog {...props} />);
+    await openStageTypePicker();
+    await userEvent.click(screen.getByRole("option", { name: "Final / Onsite Interview" }));
+    expect(screen.getByText("DURATION (MIN)")).toBeInTheDocument();
+
+    rerender(<AddStageDialog {...props} open={false} />);
+    rerender(<AddStageDialog {...props} />);
+    expect(screen.queryByText("DURATION (MIN)")).not.toBeInTheDocument();
   });
 
   // Adding a stage records something that just happened, so the date and time

@@ -1,8 +1,8 @@
 "use client";
 import { AddExperienceFormSchema } from "@/models/addExperienceForm.schema";
 import { ResumeSection, WorkExperience } from "@/models/profile.model";
-import { useCallback, useEffect, useState, useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useState, useTransition } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -56,17 +56,6 @@ function AddExperience({
     ? "Update this work experience on your resume."
     : "Add a work experience to your resume.";
   const [isPending, startTransition] = useTransition();
-  const getTitleCompanyAndLocationData = useCallback(async () => {
-    const [_companies, _titles, _locations] = await Promise.all([
-      getAllCompanies(),
-      getAllJobTitles(),
-      getAllJobLocations(),
-    ]);
-    setCompanies(_companies);
-    setLocations(_locations);
-    setJobTitles(_titles);
-  }, []);
-
   const form = useForm<z.infer<typeof AddExperienceFormSchema>>({
     resolver: zodResolver(AddExperienceFormSchema),
     defaultValues: {
@@ -76,13 +65,21 @@ function AddExperience({
     },
   });
 
-  const { watch, reset, formState, setValue } = form;
+  const { reset, formState, setValue } = form;
 
-  const currentJobValue = watch("currentJob");
+  const currentJobValue = useWatch({ control: form.control, name: "currentJob" });
 
   useEffect(() => {
     if (!dialogOpen) return;
-    getTitleCompanyAndLocationData();
+    Promise.all([
+      getAllCompanies(),
+      getAllJobTitles(),
+      getAllJobLocations(),
+    ]).then(([_companies, _titles, _locations]) => {
+      setCompanies(_companies);
+      setLocations(_locations);
+      setJobTitles(_titles);
+    });
     if (experienceToEdit) {
       const experience: WorkExperience =
         experienceToEdit.workExperiences?.at(0)!;
@@ -108,7 +105,6 @@ function AddExperience({
     }
   }, [
     dialogOpen,
-    getTitleCompanyAndLocationData,
     experienceToEdit,
     reset,
     resumeId,

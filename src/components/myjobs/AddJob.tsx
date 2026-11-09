@@ -10,8 +10,8 @@ import {
 import { addJob, updateJob } from "@/actions/job.actions";
 import { Link, PlusCircle } from "lucide-react";
 import { Button } from "../ui/button";
-import { useForm } from "react-hook-form";
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { useEffect, useState, useTransition } from "react";
 import { AddJobFormSchema } from "@/models/addJobForm.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -155,24 +155,23 @@ export function AddJob({
 
   // The date the form filled in itself, so it can take it back again.
   const [autoFilledDate, setAutoFilledDate] = useState<Date | null>(null);
+  const [previousEditJob, setPreviousEditJob] = useState<
+    JobResponse | null | undefined
+  >(null);
 
-  const loadResumes = useCallback(async () => {
-    try {
-      const resumes = await getResumeList(1, APP_CONSTANTS.RESUME_PICKER_LIMIT);
-      setResumes(resumes.data ?? []);
-    } catch (error) {
-      console.error("Failed to load resumes:", error);
+  if (previousEditJob !== editJob) {
+    setPreviousEditJob(editJob);
+    if (editJob) {
+      // Merge any tags from editJob into the local pool so they're selectable
+      if (editJob.tags && editJob.tags.length > 0) {
+        const existing = new Set(availableTags.map((t) => t.id));
+        const incoming = editJob.tags.filter((t) => !existing.has(t.id));
+        if (incoming.length > 0) setAvailableTags([...availableTags, ...incoming]);
+      }
+      setAutoFilledDate(null);
+      setDialogOpen(true);
     }
-  }, [setResumes]);
-
-  const loadCoverLetters = useCallback(async () => {
-    try {
-      const result = await getCoverLetterList(1, 100);
-      setCoverLetters(result.data);
-    } catch (error) {
-      console.error("Failed to load cover letters:", error);
-    }
-  }, [setCoverLetters]);
+  }
 
   useEffect(() => {
     if (editJob) {
@@ -195,24 +194,18 @@ export function AddJob({
         coverLetter: editJob.CoverLetter?.id ?? undefined,
         tags: editJob.tags?.map((t) => t.id) ?? [],
       });
-      // Merge any tags from editJob into the local pool so they're selectable
-      if (editJob.tags && editJob.tags.length > 0) {
-        setAvailableTags((prev) => {
-          const existing = new Set(prev.map((t) => t.id));
-          const incoming = editJob.tags!.filter((t) => !existing.has(t.id));
-          return incoming.length > 0 ? [...prev, ...incoming] : prev;
-        });
-      }
-      setAutoFilledDate(null);
-      setDialogOpen(true);
     }
   }, [editJob, reset]);
 
   useEffect(() => {
     if (!dialogOpen) return;
-    loadResumes();
-    loadCoverLetters();
-  }, [dialogOpen, loadResumes, loadCoverLetters]);
+    getResumeList(1, APP_CONSTANTS.RESUME_PICKER_LIMIT)
+      .then((resumes) => setResumes(resumes.data ?? []))
+      .catch((error) => console.error("Failed to load resumes:", error));
+    getCoverLetterList(1, 100)
+      .then((result) => setCoverLetters(result.data))
+      .catch((error) => console.error("Failed to load cover letters:", error));
+  }, [dialogOpen]);
 
   function onSubmit(data: z.infer<typeof AddJobFormSchema>) {
     const selected = resumes.find((r) => r.id === data.resume);
@@ -292,14 +285,10 @@ export function AddJob({
 
   const closeDialog = () => setDialogOpen(false);
 
-  const [title, company, location, source, dueDate, dateApplied] = form.watch([
-    "title",
-    "company",
-    "location",
-    "source",
-    "dueDate",
-    "dateApplied",
-  ]);
+  const [title, company, location, source, dueDate, dateApplied] = useWatch({
+    control: form.control,
+    name: ["title", "company", "location", "source", "dueDate", "dateApplied"],
+  });
   const missing = missingRequiredFields({ title, company, location, source });
   const isAutoFilledDate =
     !!dateApplied &&

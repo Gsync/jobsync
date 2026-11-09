@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PlusCircle } from "lucide-react";
 import { Button } from "./ui/button";
@@ -113,7 +113,7 @@ function AddContact({
   const { reset } = form;
 
   // The shared-history fields only make sense for a reference
-  const roleId = form.watch("contactRole");
+  const roleId = useWatch({ control: form.control, name: "contactRole" });
   const isReference = roles.some(
     (role) => role.id === roleId && role.value === REFERENCE_ROLE_VALUE,
   );
