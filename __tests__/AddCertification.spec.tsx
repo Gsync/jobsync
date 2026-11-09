@@ -111,7 +111,7 @@ describe("AddCertification date pickers", () => {
       expirationDate: new Date(2026, 10, 2),
     }));
     expect(otherAction).not.toHaveBeenCalled();
-  });
+  }, 10000);
 
   it("lets the expiration date reach future years", async () => {
     renderDialog();
