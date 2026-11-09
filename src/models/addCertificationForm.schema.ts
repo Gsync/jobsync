@@ -1,3 +1,4 @@
+import { startOfDay } from "date-fns";
 import { z } from "zod";
 
 export const AddCertificationFormSchema = z.object({
@@ -19,4 +20,15 @@ export const AddCertificationFormSchema = z.object({
   expirationDate: z.date().nullable().optional(),
   credentialUrl: z.string().nullable().optional(),
   noExpiration: z.boolean().default(false).optional(),
-});
+}).refine(
+  (data) => {
+    if (data.noExpiration === true || !data.issueDate || !data.expirationDate) {
+      return true;
+    }
+    return startOfDay(data.expirationDate) >= startOfDay(data.issueDate);
+  },
+  {
+    error: "Expiration date must be on or after the issue date",
+    path: ["expirationDate"],
+  },
+);

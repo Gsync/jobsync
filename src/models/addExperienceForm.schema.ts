@@ -1,3 +1,4 @@
+import { startOfDay } from "date-fns";
 import { z } from "zod";
 
 export const AddExperienceFormSchema = z.object({
@@ -33,4 +34,13 @@ export const AddExperienceFormSchema = z.object({
   startDate: z.date(),
   endDate: z.date().nullable().optional(),
   currentJob: z.boolean().default(false).optional(),
-});
+}).refine(
+  (data) => {
+    if (data.currentJob === true || !data.endDate) return true;
+    return startOfDay(data.endDate) >= startOfDay(data.startDate);
+  },
+  {
+    error: "End date must be on or after the start date",
+    path: ["endDate"],
+  },
+);

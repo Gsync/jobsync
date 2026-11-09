@@ -1,5 +1,6 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { ResumeSection } from "@/models/profile.model";
 import AddEducation from "@/components/profile/AddEducation";
 import { addEducation, updateEducation } from "@/actions/profile.actions";
 import { getAllJobLocations } from "@/actions/jobLocation.actions";
@@ -84,6 +85,73 @@ describe("AddEducation Component", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (getAllJobLocations as any).mockResolvedValue(mockLocations);
+  });
+
+
+  it.each(["add", "edit"])("shows the date-order error under the ending picker and saves after correction (%s)", async (mode) => {
+    vi.mocked(addEducation).mockReset();
+    vi.mocked(updateEducation).mockReset();
+    const saveAction = mode === "add" ? addEducation : updateEducation;
+    const otherAction = mode === "add" ? updateEducation : addEducation;
+    vi.mocked(saveAction).mockResolvedValue({ success: true });
+    const section: ResumeSection = {
+      id: mockSectionId,
+      resumeId: mockResumeId,
+      sectionTitle: "Education",
+      sectionType: "education" as any,
+      educations: [{
+        id: "edu-1",
+        institution: "MIT",
+        degree: "BSc",
+        fieldOfStudy: "CS",
+        location: mockLocations[0] as any,
+        startDate: new Date(2020, 8, 1),
+        endDate: new Date(2024, 5, 1),
+        description: "Studied computer science",
+      }],
+    };
+
+    render(
+      <AddEducation
+        resumeId={mockResumeId}
+        sectionId={mockSectionId}
+        dialogOpen={true}
+        setDialogOpen={mockSetDialogOpen}
+        educationToEdit={mode === "edit" ? section : undefined}
+      />
+    );
+    await waitFor(() => {
+      expect(within(screen.getByTestId("combobox-location")).getAllByRole("option")).toHaveLength(3);
+    });
+    if (mode === "add") {
+      await user.type(screen.getByPlaceholderText("Ex: Stanford"), "MIT");
+      await user.type(screen.getByPlaceholderText("Ex: Bachelor's"), "BSc");
+      await user.type(screen.getByPlaceholderText("Ex: Computer Science"), "CS");
+      await user.selectOptions(screen.getByTestId("combobox-location"), "location-1");
+    }
+    fireEvent.change(screen.getByTestId("datepicker-startDate"), { target: { value: "2026-11-01" } });
+    fireEvent.change(screen.getByTestId("datepicker-endDate"), { target: { value: "2014-11-12" } });
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    const item = screen.getByText("End Date").closest("div")!;
+    const message = "End date must be on or after the start date";
+    expect(await within(item).findByText(message)).toBeInTheDocument();
+    expect(addEducation).not.toHaveBeenCalled();
+    expect(updateEducation).not.toHaveBeenCalled();
+    expect(mockSetDialogOpen).not.toHaveBeenCalledWith(false);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(toastSuccess).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByTestId("datepicker-endDate"), { target: { value: "2026-11-02" } });
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => expect(mockSetDialogOpen).toHaveBeenCalledWith(false));
+    expect(screen.queryByText(message)).not.toBeInTheDocument();
+    expect(saveAction).toHaveBeenCalledTimes(1);
+    expect(saveAction).toHaveBeenCalledWith(expect.objectContaining({
+      endDate: new Date("2026-11-02"),
+    }));
+    expect(otherAction).not.toHaveBeenCalled();
   });
 
   it("should render Add Education dialog with correct title", async () => {

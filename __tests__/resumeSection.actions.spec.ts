@@ -15,6 +15,10 @@ import {
 import { SectionType } from "@/models/profile.model";
 import { getCurrentUser } from "@/utils/user.utils";
 import { PrismaClient } from "@prisma/client";
+import { revalidatePath } from "next/cache";
+import { AddExperienceFormSchema } from "@/models/addExperienceForm.schema";
+import { AddEducationFormSchema } from "@/models/AddEductionForm.schema";
+import { AddCertificationFormSchema } from "@/models/addCertificationForm.schema";
 
 const prisma = new PrismaClient();
 
@@ -142,6 +146,164 @@ describe("Resume section actions", () => {
       expect(calls[0][0].data).toEqual({ sectionTitle: "Profile" });
       expect(calls[1][0].data).toEqual({
         summary: { update: { content: "<p>Updated</p>" } },
+      });
+    });
+  });
+
+  describe.each([
+    {
+      feature: "Experience",
+      schema: AddExperienceFormSchema,
+      add: addExperience,
+      update: updateExperience,
+      entryUpdate: prisma.workExperience.update,
+      relation: "workExperiences",
+      start: "startDate",
+      end: "endDate",
+      toggle: "currentJob",
+      active: false,
+      required: "title",
+      message: "End date must be on or after the start date",
+      form: {
+        sectionTitle: "Experience",
+        title: "title-1",
+        company: "company-1",
+        location: "location-1",
+        jobDescription: "Developed application features",
+      },
+    },
+    {
+      feature: "Education",
+      schema: AddEducationFormSchema,
+      add: addEducation,
+      update: updateEducation,
+      entryUpdate: prisma.education.update,
+      relation: "educations",
+      start: "startDate",
+      end: "endDate",
+      toggle: "degreeCompleted",
+      active: true,
+      required: "institution",
+      message: "End date must be on or after the start date",
+      form: {
+        sectionTitle: "Education",
+        institution: "MIT",
+        degree: "BSc",
+        fieldOfStudy: "CS",
+        location: "location-1",
+      },
+    },
+    {
+      feature: "Certification",
+      schema: AddCertificationFormSchema,
+      add: addCertification,
+      update: updateCertification,
+      entryUpdate: prisma.licenseOrCertification.update,
+      relation: "licenseOrCertifications",
+      start: "issueDate",
+      end: "expirationDate",
+      toggle: "noExpiration",
+      active: false,
+      required: "title",
+      message: "Expiration date must be on or after the issue date",
+      form: { sectionTitle: "Certifications", title: "AWS SAA", organization: "Amazon" },
+    },
+  ])("$feature date guards", (feature) => {
+    describe.each([
+      { mode: "add with a new section", isAdd: true, sectionId: undefined },
+      { mode: "add with an existing section", isAdd: true, sectionId: "section-1" },
+      { mode: "update", isAdd: false, sectionId: "section-1" },
+    ])("$mode", ({ isAdd, sectionId }) => {
+      const action = isAdd ? feature.add : feature.update;
+      const form = {
+        ...feature.form,
+        resumeId: "resume-1",
+        sectionId,
+        ...(isAdd ? {} : { id: "entry-1" }),
+        [feature.start]: new Date(2026, 10, 1),
+        [feature.end]: new Date(2014, 10, 12),
+        [feature.toggle]: feature.active,
+      };
+
+      function expectNoSideEffects() {
+        for (const method of [
+          prisma.resume.findUnique,
+          prisma.resumeSection.create,
+          prisma.resumeSection.update,
+          prisma.workExperience.update,
+          prisma.education.update,
+          prisma.licenseOrCertification.update,
+          revalidatePath,
+        ]) {
+          expect(method).not.toHaveBeenCalled();
+        }
+      }
+
+      function storedPayload() {
+        if (!isAdd) return vi.mocked(feature.entryUpdate).mock.calls[0][0].data;
+        return (prisma.resumeSection.update as any).mock.calls[0][0].data[
+          feature.relation
+        ].create;
+      }
+
+      beforeEach(() => ownsResume());
+
+      it("rejects reversed dates before accessing Prisma", async () => {
+        expect(await action(form as any)).toEqual({ success: false, message: feature.message });
+        expectNoSideEffects();
+      });
+
+      it("rejects reversed dates when the toggle is omitted", async () => {
+        const input = { ...form };
+        Reflect.deleteProperty(input, feature.toggle);
+
+        expect(await action(input as any)).toEqual({ success: false, message: feature.message });
+        expectNoSideEffects();
+      });
+
+      it("accepts the same day without normalizing stored timestamps", async () => {
+        const start = new Date(2026, 10, 1, 15, 30);
+        const end = new Date(2026, 10, 1);
+
+        expect((await action({ ...form, [feature.start]: start, [feature.end]: end } as any)).success).toBe(true);
+        expect(storedPayload()).toEqual(expect.objectContaining({
+          [feature.start]: start,
+          [feature.end]: end,
+        }));
+      });
+
+      it("accepts an inactive range with a stale reversed ending date", async () => {
+        expect((await action({ ...form, [feature.toggle]: !feature.active } as any)).success).toBe(true);
+        const clearsDate = feature.feature === "Education" || (!isAdd && feature.feature === "Certification");
+        expect(storedPayload()).toEqual(expect.objectContaining({
+          [feature.start]: new Date(2026, 10, 1),
+          [feature.end]: clearsDate ? null : new Date(2014, 10, 12),
+        }));
+      });
+
+      it.each([
+        { field: feature.start, value: "2026-11-01" },
+        { field: feature.start, value: new Date(NaN) },
+        { field: feature.end, value: "2026-11-02" },
+        { field: feature.end, value: new Date(NaN) },
+        { field: feature.required, value: undefined },
+      ])("returns the first schema issue for malformed input ($field: $value)", async ({ field, value }) => {
+        const input = { ...form, [feature.end]: new Date(2026, 10, 2), [field]: value };
+        const parsed = feature.schema.safeParse(input);
+        if (parsed.success) throw new Error("Expected malformed fixture to fail validation");
+
+        expect(await action(input as any)).toEqual({
+          success: false,
+          message: parsed.error.issues[0].message,
+        });
+        expectNoSideEffects();
+      });
+
+      it("keeps authentication ahead of validation", async () => {
+        (getCurrentUser as any).mockResolvedValue(null);
+
+        expect(await action(form as any)).toEqual({ success: false, message: "Not authenticated" });
+        expectNoSideEffects();
       });
     });
   });
@@ -279,6 +441,36 @@ describe("Resume section actions", () => {
   });
 
   describe("addEducation", () => {
+    const datedEducation = {
+      id: "edu-1",
+      resumeId: "resume-1",
+      sectionTitle: "Education",
+      institution: "MIT",
+      degree: "BSc",
+      fieldOfStudy: "CS",
+      location: "location-1",
+      startDate: new Date(2020, 8, 1),
+      endDate: new Date(2024, 5, 1),
+    };
+
+    it("clears an incomplete degree's stale end date", async () => {
+      ownsResume();
+      const result = await addEducation({ ...datedEducation, degreeCompleted: false });
+
+      expect(result.success).toBe(true);
+      expect((prisma.resumeSection.update as any).mock.calls[0][0].data.educations.create.endDate).toBeNull();
+    });
+
+    it.each([true, undefined])("preserves an ending date when completion is true or omitted (%s)", async (degreeCompleted) => {
+      ownsResume();
+      const input = { ...datedEducation, degreeCompleted };
+      if (degreeCompleted === undefined) Reflect.deleteProperty(input, "degreeCompleted");
+      const result = await addEducation(input);
+
+      expect(result.success).toBe(true);
+      expect((prisma.resumeSection.update as any).mock.calls[0][0].data.educations.create.endDate).toEqual(datedEducation.endDate);
+    });
+
     const form = {
       resumeId: "resume-1",
       sectionTitle: "Education",
@@ -339,6 +531,36 @@ describe("Resume section actions", () => {
   });
 
   describe("updateEducation", () => {
+    const datedEducation = {
+      id: "edu-1",
+      resumeId: "resume-1",
+      sectionTitle: "Education",
+      institution: "MIT",
+      degree: "BSc",
+      fieldOfStudy: "CS",
+      location: "location-1",
+      startDate: new Date(2020, 8, 1),
+      endDate: new Date(2024, 5, 1),
+    };
+
+    it("clears an incomplete degree's stale end date", async () => {
+      ownsResume();
+      const result = await updateEducation({ ...datedEducation, degreeCompleted: false });
+
+      expect(result.success).toBe(true);
+      expect((prisma.education.update as any).mock.calls[0][0].data.endDate).toBeNull();
+    });
+
+    it.each([true, undefined])("preserves an ending date when completion is true or omitted (%s)", async (degreeCompleted) => {
+      ownsResume();
+      const input = { ...datedEducation, degreeCompleted };
+      if (degreeCompleted === undefined) Reflect.deleteProperty(input, "degreeCompleted");
+      const result = await updateEducation(input);
+
+      expect(result.success).toBe(true);
+      expect((prisma.education.update as any).mock.calls[0][0].data.endDate).toEqual(datedEducation.endDate);
+    });
+
     it("scopes the update through section -> resume -> profile", async () => {
       (prisma.education.update as any).mockResolvedValue({ id: "edu-1" });
 

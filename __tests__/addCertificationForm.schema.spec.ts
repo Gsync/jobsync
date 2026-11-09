@@ -111,3 +111,117 @@ describe("AddCertificationFormSchema", () => {
     });
   });
 });
+
+describe("AddCertificationFormSchema date ordering", () => {
+  const reversed = {
+    title: "AWS SAA",
+    organization: "Amazon",
+    issueDate: new Date(2026, 10, 1),
+    expirationDate: new Date(2014, 10, 12),
+    noExpiration: false,
+  };
+
+  it("rejects a reversed active date range on the ending field", () => {
+    const result = AddCertificationFormSchema.safeParse(reversed);
+
+    expect(result.success).toBe(false);
+    if (result.success) throw new Error("Expected date-order validation to fail");
+    expect(result.error.issues).toEqual([
+      expect.objectContaining({
+        path: ["expirationDate"],
+        message: "Expiration date must be on or after the issue date",
+      }),
+    ]);
+  });
+
+  it("accepts the same calendar day with a later starting time", () => {
+    const issueDate = new Date(2026, 10, 1, 15, 30);
+    const expirationDate = new Date(2026, 10, 1);
+    const result = AddCertificationFormSchema.safeParse({ ...reversed, issueDate, expirationDate });
+
+    expect(result.success).toBe(true);
+    if (!result.success) throw result.error;
+    expect(result.data.issueDate).toEqual(issueDate);
+    expect(result.data.expirationDate).toEqual(expirationDate);
+  });
+
+  it("accepts an ending date after the starting date", () => {
+    expect(AddCertificationFormSchema.safeParse({
+      ...reversed,
+      expirationDate: new Date(2026, 10, 2),
+    }).success).toBe(true);
+  });
+
+  it("ignores a stale reversed date when the range is inactive", () => {
+    expect(AddCertificationFormSchema.safeParse({
+      ...reversed,
+      noExpiration: true,
+    }).success).toBe(true);
+  });
+
+  it.each([null, undefined])("accepts absent optional dates (%s)", (date) => {
+    expect(AddCertificationFormSchema.safeParse({
+      ...reversed,
+      expirationDate: date,
+    }).success).toBe(true);
+  });
+
+  it("accepts an omitted ending date", () => {
+    const input = { ...reversed };
+    Reflect.deleteProperty(input, "expirationDate");
+    expect(AddCertificationFormSchema.safeParse(input).success).toBe(true);
+  });
+
+  it("enforces ordering with an omitted toggle", () => {
+    const input = { ...reversed };
+    Reflect.deleteProperty(input, "noExpiration");
+    const result = AddCertificationFormSchema.safeParse(input);
+
+    expect(result.success).toBe(false);
+    if (result.success) throw new Error("Expected date-order validation to fail");
+    expect(result.error.issues).toEqual([
+      expect.objectContaining({
+        path: ["expirationDate"],
+        message: "Expiration date must be on or after the issue date",
+      }),
+    ]);
+  });
+
+  describe.each(["issueDate", "expirationDate"])("invalid %s", (field) => {
+    it.each([new Date(NaN), "2026-11-01"])(
+      "rejects invalid date values even when the range is inactive (%s)",
+      (date) => {
+        const result = AddCertificationFormSchema.safeParse({
+          ...reversed,
+          noExpiration: true,
+          [field]: date,
+        });
+
+        expect(result.success).toBe(false);
+        if (result.success) throw new Error("Expected invalid date to fail");
+        expect(result.error.issues).toEqual([
+          expect.objectContaining({ path: [field] }),
+        ]);
+      },
+    );
+  });
+
+  it.each([null, undefined])("accepts absent issue dates (%s)", (issueDate) => {
+    expect(AddCertificationFormSchema.safeParse({
+      ...reversed,
+      issueDate,
+    }).success).toBe(true);
+    expect(AddCertificationFormSchema.safeParse({
+      ...reversed,
+      issueDate,
+      expirationDate: issueDate,
+    }).success).toBe(true);
+  });
+
+  it("accepts both dates omitted", () => {
+    expect(AddCertificationFormSchema.safeParse({
+      title: "AWS SAA",
+      organization: "Amazon",
+    }).success).toBe(true);
+  });
+});
