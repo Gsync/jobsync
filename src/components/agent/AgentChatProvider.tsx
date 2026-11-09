@@ -288,7 +288,7 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
   // replaces it, which is what the composer did before this moved up.
   const [queued, setQueued] = useState<QueuedMessage | undefined>();
 
-  // stop() before the delete is load-bearing: the route skips its onFinish
+  // stop() before the delete is load-bearing: the route skips its onEnd
   // write when the turn was aborted, and that is what stops a late save from
   // restoring the conversation this just deleted.
   const clear = useCallback(async () => {

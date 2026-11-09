@@ -1,6 +1,13 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { createUIMessageStream, stepCountIs, streamText, tool } from "ai";
-import { MockLanguageModelV3, simulateReadableStream } from "ai/test";
+import {
+  createUIMessageStream,
+  isStepCount,
+  simulateReadableStream,
+  streamText,
+  tool,
+  toUIMessageStream,
+} from "ai";
+import { MockLanguageModelV4 } from "ai/test";
 import { z } from "zod";
 
 // The feature's main deliverable rests on this: a tool's execute, driven by
@@ -15,7 +22,7 @@ const usage = {
 } as any;
 
 function toolCallingModel() {
-  return new MockLanguageModelV3({
+  return new MockLanguageModelV4({
     doStream: async () => ({
       stream: simulateReadableStream({
         chunks: [
@@ -48,7 +55,7 @@ async function drain(stream: ReadableStream<any>): Promise<void> {
 describe("telemetry context propagation through createUIMessageStream", () => {
   it("a tool execute sees the ambient span established around execute()", async () => {
     let seenInTool: string | undefined = "NOT_SET";
-    let seenInOnFinish: string | undefined = "NOT_SET";
+    let seenInOnEnd: string | undefined = "NOT_SET";
 
     const stream = createUIMessageStream({
       execute: ({ writer }) =>
@@ -56,7 +63,7 @@ describe("telemetry context propagation through createUIMessageStream", () => {
           const result = streamText({
             model: toolCallingModel(),
             prompt: "go",
-            stopWhen: [stepCountIs(1)],
+            stopWhen: [isStepCount(1)],
             tools: {
               nested_tool: tool({
                 description: "records the ambient span",
@@ -67,18 +74,18 @@ describe("telemetry context propagation through createUIMessageStream", () => {
                 },
               }),
             },
-            onFinish: () => {
-              seenInOnFinish = als.getStore()?.spanId;
+            onEnd: () => {
+              seenInOnEnd = als.getStore()?.spanId;
             },
           });
-          writer.merge(result.toUIMessageStream());
+          writer.merge(toUIMessageStream({ stream: result.stream }));
         }),
     });
 
     await drain(stream);
 
     expect(seenInTool).toBe("turn-span");
-    expect(seenInOnFinish).toBe("turn-span");
+    expect(seenInOnEnd).toBe("turn-span");
   });
 });
 
@@ -104,7 +111,7 @@ describe("real span parenting through the stream boundary", () => {
           const result = streamText({
             model: toolCallingModel(),
             prompt: "go",
-            stopWhen: [stepCountIs(1)],
+            stopWhen: [isStepCount(1)],
             tools: {
               nested_tool: tool({
                 description: "starts a nested span",
@@ -119,7 +126,7 @@ describe("real span parenting through the stream boundary", () => {
               }),
             },
           });
-          writer.merge(result.toUIMessageStream());
+          writer.merge(toUIMessageStream({ stream: result.stream }));
         }),
     });
 

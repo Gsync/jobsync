@@ -112,7 +112,7 @@ export async function runNestedGeneration({
     try {
       const sub = streamText({
         model,
-        system,
+        instructions: system,
         prompt,
         temperature,
         abortSignal: signal,
@@ -139,7 +139,7 @@ export async function runNestedGeneration({
       const finishReason = await sub.finishReason;
       // Defensively: an aborted stream rejects this, the same trap the
       // finishReason guard exists for.
-      const tokens = await Promise.resolve(sub.totalUsage).catch(() => undefined);
+      const tokens = await Promise.resolve(sub.usage).catch(() => undefined);
       void tracker.finish({ usage: tokens, finishReason });
       if (finishReason !== "stop") {
         span.setError(new Error(`finishReason=${finishReason}`));

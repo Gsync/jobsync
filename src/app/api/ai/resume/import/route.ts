@@ -169,7 +169,7 @@ export const POST = async (req: NextRequest) => {
       streamText({
         model,
         output: Output.object({ schema: ResumeImportSchema }),
-        system: RESUME_IMPORT_SYSTEM_PROMPT,
+        instructions: RESUME_IMPORT_SYSTEM_PROMPT,
         prompt: buildResumeImportPrompt(preprocessResult.data.normalizedText),
         temperature: TEMPERATURES.ANALYSIS,
         abortSignal: controller.signal,
@@ -181,11 +181,11 @@ export const POST = async (req: NextRequest) => {
           // it as guidance.
           openai: { strictJsonSchema: false },
         },
-        onFinish: ({ totalUsage, finishReason }) => {
+        onEnd: ({ usage, finishReason }) => {
           clearTimeout(timer);
-          void importUsage.finish({ usage: totalUsage, finishReason });
+          void importUsage.finish({ usage, finishReason });
           importSpan.end(
-            genAiResponseAttrs({ usage: totalUsage, finishReason }),
+            genAiResponseAttrs({ usage, finishReason }),
           );
         },
         onError: ({ error }) => {

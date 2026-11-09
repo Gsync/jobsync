@@ -4,9 +4,9 @@ import { DAILY_GOALS } from "@/lib/constants";
 const wholeNumber = (min: number, max: number) =>
   z
     .number({ error: "Enter a number." })
-    .int({ message: "Use a whole number." })
-    .min(min, { message: `Must be at least ${min}.` })
-    .max(max, { message: `Must be at most ${max}.` });
+    .int({ error: "Use a whole number." })
+    .min(min, { error: `Must be at least ${min}.` })
+    .max(max, { error: `Must be at most ${max}.` });
 
 export const GoalTargetsSchema = z.object({
   jobs: wholeNumber(DAILY_GOALS.JOBS_MIN, DAILY_GOALS.JOBS_MAX),

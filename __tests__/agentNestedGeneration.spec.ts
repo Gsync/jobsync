@@ -17,14 +17,14 @@ vi.mock("@/lib/aiUsage/tracker", () => ({
 function textStreamOf(
   chunks: string[],
   finishReason: unknown = "stop",
-  totalUsage: unknown = { inputTokens: 700, outputTokens: 300 },
+  usage: unknown = { inputTokens: 700, outputTokens: 300 },
 ) {
   return {
     textStream: (async function* () {
       for (const chunk of chunks) yield chunk;
     })(),
     finishReason: Promise.resolve(finishReason),
-    totalUsage: Promise.resolve(totalUsage),
+    usage: Promise.resolve(usage),
   };
 }
 
@@ -55,7 +55,7 @@ describe("runNestedGeneration", () => {
   it("passes the five varying inputs straight through", async () => {
     await runNestedGeneration(args());
     const call = streamText.mock.calls[0][0];
-    expect(call.system).toBe("SYSTEM");
+    expect(call.instructions).toBe("SYSTEM");
     expect(call.prompt).toBe("PROMPT");
     expect(call.temperature).toBe(0.4);
     expect(call.providerOptions.ollama.options.num_ctx).toBe(
@@ -193,7 +193,7 @@ describe("runNestedGeneration usage", () => {
       get finishReason() {
         return Promise.reject(new Error("aborted"));
       },
-      get totalUsage() {
+      get usage() {
         return Promise.reject(new Error("aborted"));
       },
     }));

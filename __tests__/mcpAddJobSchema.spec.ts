@@ -2,7 +2,7 @@ import { z } from "zod";
 import { McpAddJobInputShape, McpUpdateJobInputShape } from "@/models/mcp.schema";
 import { AgentAddJobSchema } from "@/models/agent.schema";
 
-const workplaceType = (shape: Record<string, z.ZodTypeAny>) =>
+const workplaceType = (shape: Record<string, z.ZodType>) =>
   z.object({ workplaceType: shape.workplaceType });
 
 describe("workplaceType schema", () => {

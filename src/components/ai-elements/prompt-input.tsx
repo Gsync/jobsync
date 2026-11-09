@@ -55,8 +55,8 @@ import type {
   ChangeEventHandler,
   ClipboardEventHandler,
   ComponentProps,
-  FormEvent,
-  FormEventHandler,
+  SubmitEvent,
+  SubmitEventHandler,
   HTMLAttributes,
   KeyboardEventHandler,
   PropsWithChildren,
@@ -507,7 +507,7 @@ export type PromptInputProps = Omit<
   }) => void;
   onSubmit: (
     message: PromptInputMessage,
-    event: FormEvent<HTMLFormElement>
+    event: SubmitEvent<HTMLFormElement>
   ) => void | Promise<void>;
 };
 
@@ -841,7 +841,7 @@ export const PromptInput = ({
     [referencedSources, clearReferencedSources]
   );
 
-  const handleSubmit: FormEventHandler<HTMLFormElement> = useCallback(
+  const handleSubmit: SubmitEventHandler<HTMLFormElement> = useCallback(
     async (event) => {
       event.preventDefault();
 

@@ -24,6 +24,22 @@ function failed(validationError: string, displayError?: string): AgentAddJobResu
 }
 
 /**
+ * Approval is asked for every call that could write, and skipped only for one
+ * that execute is already certain to reject. The card renders before execute
+ * runs, so a doomed call otherwise spends a Confirm and the retry spends a
+ * second one — the user confirms the same job twice. This stays in lockstep
+ * with the jobDescription check in execute below: widening it to any other
+ * condition would let a write reach the database unapproved. The chat route
+ * maps it to a toolApproval status.
+ */
+export function addJobNeedsApproval(
+  input: { jobDescription?: string },
+  pastedText?: string,
+): boolean {
+  return Boolean(pastedText ?? input.jobDescription);
+}
+
+/**
  * userId and pastedText are captured from the route's authenticated session
  * and message array. Anything with those names inside the model's input is
  * ignored — this is the IDOR boundary and it has a dedicated test.
@@ -34,14 +50,6 @@ export function buildAddJobTool(userId: string, pastedText?: string) {
     // Date transforms are deferred here so this schema doubles as the JSON
     // schema the model reads — see src/models/agent.schema.ts.
     inputSchema: AgentAddJobSchema,
-    // Approval is asked for every call that could write, and skipped only for
-    // one that execute is already certain to reject. The card renders before
-    // execute runs, so a doomed call otherwise spends a Confirm and the retry
-    // spends a second one — the user confirms the same job twice. This stays
-    // in lockstep with the jobDescription check below: widening it to any
-    // other condition would let a write reach the database unapproved.
-    needsApproval: (input: { jobDescription?: string }) =>
-      Boolean(pastedText ?? input?.jobDescription),
     execute: async (raw): Promise<AgentAddJobResult> => {
       const parsed = AgentAddJobParseSchema.safeParse(raw);
       if (!parsed.success) {

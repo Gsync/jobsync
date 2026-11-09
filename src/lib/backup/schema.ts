@@ -362,7 +362,7 @@ const UserSettings = z.object({
   updatedAt: dt,
 });
 
-const group = <T extends z.ZodTypeAny>(schema: T) =>
+const group = <T extends z.ZodType>(schema: T) =>
   z.array(schema).default([]);
 
 export const BackupDataSchema = z.object({

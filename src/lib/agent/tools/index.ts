@@ -1,7 +1,7 @@
-import type { LanguageModel, ToolSet, UIMessageStreamWriter } from "ai";
+import type { LanguageModel, ToolApprovalStatus, ToolSet, UIMessageStreamWriter } from "ai";
 import type { PageContext } from "@/models/agent.model";
 import type { NestedGenerationGuard } from "@/lib/agent/nestedGeneration";
-import { buildAddJobTool } from "./addJob";
+import { addJobNeedsApproval, buildAddJobTool } from "./addJob";
 import { buildGetResumeTool } from "./getResume";
 import { buildReviewResumeTool } from "./reviewResume";
 import { buildMatchJobTool } from "./matchJob";
@@ -51,6 +51,15 @@ export function buildAgentTools(ctx: {
       writer: ctx.writer,
       guard: ctx.nestedGuard,
     }),
+  };
+}
+
+// The only approval gate in the app. A status, never a boolean: a bare true
+// normalizes to no status and the tool runs unasked.
+export function buildAgentToolApproval(pastedText?: string) {
+  return {
+    add_job: (input: { jobDescription?: string }): ToolApprovalStatus =>
+      addJobNeedsApproval(input, pastedText) ? "user-approval" : "not-applicable",
   };
 }
 

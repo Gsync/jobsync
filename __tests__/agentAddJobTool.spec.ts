@@ -1,4 +1,4 @@
-import { buildAddJobTool } from "@/lib/agent/tools/addJob";
+import { addJobNeedsApproval, buildAddJobTool } from "@/lib/agent/tools/addJob";
 import { buildAgentTools } from "@/lib/agent/tools";
 import { createJobFromNames } from "@/lib/jobs/createJobFromNames";
 import { JobResolutionError } from "@/lib/jobs/resolve";
@@ -34,19 +34,16 @@ describe("add_job agent tool", () => {
     (createJobFromNames as any).mockResolvedValue(created);
   });
 
-  const needsApproval = (tool: any, input: any) =>
-    tool.needsApproval(input, { toolCallId: "c", messages: [] });
-
   it("requires approval — a mutating tool can never execute unapproved", () => {
-    expect(needsApproval(buildAddJobTool("user-1"), { company: "Acme", jobTitle: "Engineer", jobDescription: longDescription })).toBe(true);
-    expect(needsApproval(buildAddJobTool("user-1", "posting"), { company: "Acme", jobTitle: "Engineer" })).toBe(true);
+    expect(addJobNeedsApproval({ jobDescription: longDescription })).toBe(true);
+    expect(addJobNeedsApproval({}, "posting")).toBe(true);
   });
 
   // The card renders before execute runs, so asking for a call execute is
   // already certain to reject spends a Confirm, and the retry spends a second
   // one — the user confirms the same job twice.
   it("skips approval only for a call that cannot write", () => {
-    expect(needsApproval(buildAddJobTool("user-1"), { company: "Acme", jobTitle: "Engineer" })).toBe(false);
+    expect(addJobNeedsApproval({})).toBe(false);
   });
 
   it("passes the SESSION userId, never one supplied by the model", async () => {
