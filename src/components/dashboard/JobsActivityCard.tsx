@@ -104,7 +104,7 @@ export default function JobsActivityCard({ data }: JobsActivityCardProps) {
     <Card className="@lg:col-span-2">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-lg text-green-600 min-w-0 truncate">
+          <CardTitle className="text-lg text-green-700 dark:text-green-600 min-w-0 truncate">
             Jobs &amp; Activity
           </CardTitle>
           <div

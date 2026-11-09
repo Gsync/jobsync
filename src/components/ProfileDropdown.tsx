@@ -50,9 +50,9 @@ export function ProfileDropdown({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                aria-label="User menu"
                 className="navlink h-10 w-full text-muted-foreground hover:text-foreground"
               >
+                <span className="sr-only">User menu, </span>
                 <span className="relative flex h-full w-14 shrink-0 items-center justify-center">
                   <UserAvatar user={user} />
                   {summary.unread > 0 ? (

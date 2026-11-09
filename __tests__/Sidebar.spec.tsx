@@ -139,7 +139,7 @@ describe("Sidebar", () => {
 
     expect(screen.getByText(testUser.email)).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "User menu" }));
+    await user.click(screen.getByRole("button", { name: /User menu/ }));
 
     // Radix gives the menu item role="menuitem" rather than "link".
     expect(
@@ -170,7 +170,7 @@ describe("Sidebar", () => {
     expect(
       sidebar.queryByRole("button", { name: "Collapse sidebar" })
     ).toBeNull();
-    expect(sidebar.getByRole("button", { name: "User menu" })).toBeInTheDocument();
+    expect(sidebar.getByRole("button", { name: /User menu/ })).toBeInTheDocument();
   });
 });
 

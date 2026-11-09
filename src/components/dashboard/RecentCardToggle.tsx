@@ -83,7 +83,7 @@ export default function RecentCardToggle({
     <Card className="mb-2 @3xl/main:mb-0">
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-lg text-green-600 min-w-0 truncate">
+          <CardTitle className="text-lg text-green-700 dark:text-green-600 min-w-0 truncate">
             Recent {tabs[activeIndex]}
           </CardTitle>
           <div

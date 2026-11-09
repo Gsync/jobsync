@@ -281,6 +281,7 @@ function AddContactInfo({
                     type="button"
                     variant="ghost"
                     size="icon"
+                    aria-label="Remove link 2"
                     className="h-6 w-6 text-muted-foreground"
                     onClick={() => {
                       form.setValue("url2", "", { shouldDirty: true });

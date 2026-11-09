@@ -79,7 +79,7 @@ async function openChat(page: Page) {
     route.fulfill({ contentType: "application/json", body: "{}" }),
   );
   await page.goto("/dashboard/myjobs");
-  await page.getByRole("button", { name: "Open assistant" }).click();
+  await page.getByRole("button", { name: "Chat AI" }).click();
   // A shared user can carry a transcript in from another run or a manual
   // pass, so start from Clear. Then reload: clear() calls setMessages([])
   // only after the server action resolves, and waiting on the HTTP response
@@ -94,7 +94,7 @@ async function openChat(page: Page) {
     page.getByRole("button", { name: "Clear" }).click(),
   ]);
   await page.reload();
-  await page.getByRole("button", { name: "Open assistant" }).click();
+  await page.getByRole("button", { name: "Chat AI" }).click();
   await expect(page.getByText(/I can add a job to your tracker/)).toBeVisible();
 }
 
@@ -119,7 +119,7 @@ test.describe("agent chat", () => {
     await page.getByRole("button", { name: "Close chat" }).click();
     await expect(page.getByRole("button", { name: "Clear" })).toBeHidden();
     await expect(
-      page.getByRole("button", { name: "Open assistant" }),
+      page.getByRole("button", { name: "Chat AI" }),
     ).toBeVisible();
   });
 
@@ -142,7 +142,7 @@ test.describe("agent chat", () => {
     await expect(page.getByText("I can add a job for you.")).toBeVisible();
 
     await page.getByRole("button", { name: "Close chat" }).click();
-    await page.getByRole("button", { name: "Open assistant" }).click();
+    await page.getByRole("button", { name: "Chat AI" }).click();
     await expect(page.getByText("hello there")).toBeVisible();
     await expect(page.getByText("I can add a job for you.")).toBeVisible();
   });

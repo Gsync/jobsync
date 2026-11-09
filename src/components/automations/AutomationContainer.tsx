@@ -92,7 +92,7 @@ export function AutomationContainer({ resumes }: AutomationContainerProps) {
         <ResponsiveCardHeader>
           <CardTitle>Automations</CardTitle>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="icon" onClick={loadAutomations}>
+            <Button variant="outline" size="icon" onClick={loadAutomations} aria-label="Refresh">
               <RefreshCw className="h-4 w-4" />
             </Button>
             <Button variant="outline" onClick={() => setWizardOpen(true)}>

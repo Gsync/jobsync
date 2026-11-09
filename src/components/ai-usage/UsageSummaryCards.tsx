@@ -50,7 +50,7 @@ export default function UsageSummaryCards({
             className={cn(
               "text-xs",
               change.up
-                ? "text-green-600 dark:text-green-400"
+                ? "text-green-700 dark:text-green-400"
                 : "text-muted-foreground",
             )}
           >
