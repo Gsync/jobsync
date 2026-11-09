@@ -31,8 +31,7 @@ import {
   windowMessages,
 } from "@/lib/agent/paste";
 import { truncateForModel } from "@/lib/agent/paste.server";
-import { buildAgentTools } from "@/lib/agent/tools";
-import { addJobNeedsApproval } from "@/lib/agent/tools/addJob";
+import { buildAgentToolApproval, buildAgentTools } from "@/lib/agent/tools";
 import type { NestedGenerationGuard } from "@/lib/agent/nestedGeneration";
 import { measureTurnPrefix, type TurnPrefixMetrics } from "@/lib/agent/turnMetrics";
 import { mapAgentError } from "@/lib/agent/errors";
@@ -283,12 +282,7 @@ export const POST = async (req: NextRequest) => {
           instructions: AGENT_CHAT_SYSTEM_PROMPT,
           messages: modelMessages,
           tools,
-          // The only approval gate in the app. A status, never a boolean: a
-          // bare true normalizes to no status and the tool runs unasked.
-          toolApproval: {
-            add_job: (input) =>
-              addJobNeedsApproval(input, pastedText) ? "user-approval" : "not-applicable",
-          },
+          toolApproval: buildAgentToolApproval(pastedText),
           // Which tools end the turn — and why — lives beside the tool metadata
           // in agent.model.ts, where a new tool is registered.
           stopWhen: [

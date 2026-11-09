@@ -45,7 +45,7 @@ export const AddJobFormSchema = z.object({
   dueDate: z.date(),
   /**
    * Note: Timezone offsets can be allowed by setting the offset option to true.
-   * z.string().datetime({ offset: true });
+   * z.iso.datetime({ offset: true });
    */
   //
   dateApplied: z.date().optional(),

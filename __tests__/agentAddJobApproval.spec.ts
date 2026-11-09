@@ -1,6 +1,7 @@
 import { isStepCount, simulateReadableStream, streamText, type ModelMessage } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
-import { addJobNeedsApproval, buildAddJobTool } from "@/lib/agent/tools/addJob";
+import { buildAddJobTool } from "@/lib/agent/tools/addJob";
+import { buildAgentToolApproval } from "@/lib/agent/tools";
 import { createJobFromNames } from "@/lib/jobs/createJobFromNames";
 
 vi.mock("@/lib/jobs/createJobFromNames", () => ({ createJobFromNames: vi.fn() }));
@@ -55,10 +56,7 @@ function run(model: MockLanguageModelV4, opts: { pastedText?: string; messages?:
     model,
     messages: opts.messages ?? [{ role: "user", content: "add this job" }],
     tools: { add_job: { ...tool, execute } },
-    toolApproval: {
-      add_job: (input) =>
-        addJobNeedsApproval(input, opts.pastedText) ? "user-approval" : "not-applicable",
-    },
+    toolApproval: buildAgentToolApproval(opts.pastedText),
     stopWhen: isStepCount(1),
   });
   return { result, execute };

@@ -325,6 +325,15 @@ describe("POST /api/ai/chat", () => {
     expect(toolApproval.add_job({ company: "Acme", jobTitle: "Engineer" })).toBe("not-applicable");
   });
 
+  // ai@7 still falls back to a tool's deprecated needsApproval when
+  // toolApproval has no entry, so a stray one would gate a tool unseen.
+  it("leaves the gate to toolApproval: no built tool sets needsApproval", async () => {
+    await POST(req({ messages: [{ id: "m1", role: "user", parts: [{ type: "text", text: "hi" }] }] }));
+    const tools = (buildAgentTools as any).mock.results[0].value;
+    const gated = Object.keys(tools).filter((name) => tools[name].needsApproval != null);
+    expect(gated).toEqual([]);
+  });
+
   it("gates a pasted posting even when the model sent no description", async () => {
     await POST(req({ messages: [pasteMessage("posting")] }));
     expect(streamArgs().toolApproval.add_job({ company: "Acme", jobTitle: "Engineer" })).toBe("user-approval");

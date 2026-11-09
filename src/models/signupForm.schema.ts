@@ -8,9 +8,6 @@ export const SignupFormSchema = z.object({
     .email({
       error: (issue) =>
         issue.code === "invalid_type" ? "Email is required." : "Please enter a valid email.",
-    })
-    .min(3, {
-      error: "Email must be at least 3 characters.",
     }),
   password: z
     .string({

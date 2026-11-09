@@ -33,10 +33,10 @@ function failed(validationError: string, displayError?: string): AgentAddJobResu
  * maps it to a toolApproval status.
  */
 export function addJobNeedsApproval(
-  input: { jobDescription?: string } | undefined,
+  input: { jobDescription?: string },
   pastedText?: string,
 ): boolean {
-  return Boolean(pastedText ?? input?.jobDescription);
+  return Boolean(pastedText ?? input.jobDescription);
 }
 
 /**
