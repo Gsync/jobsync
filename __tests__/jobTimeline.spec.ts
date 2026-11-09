@@ -185,6 +185,26 @@ describe("changeJobStatus", () => {
     expect(fake.rows.job[0].appliedDate).toEqual(backdated);
   });
 
+  it("dates the new Applied stage from jobFields.appliedDate", async () => {
+    const { fake } = setup(withJob({}, [stage()]));
+
+    await call("s-applied", { jobFields: { appliedDate: backdated } });
+
+    expect(fake.rows.jobStage[1].occurredAt).toEqual(backdated);
+  });
+
+  it("dates a new Applied stage now, not from a stored appliedDate", async () => {
+    const { fake } = setup(
+      withJob({ appliedDate: backdated, applied: true }, [stage()]),
+    );
+
+    await call("s-applied");
+
+    const added = fake.rows.jobStage[1];
+    expect(Math.abs(added.occurredAt!.getTime() - Date.now())).toBeLessThan(1000);
+    expect(fake.rows.job[0].appliedDate).toEqual(backdated);
+  });
+
   it("leaves applied alone for a status that doesn't imply applying", async () => {
     const { fake } = setup(withJob({}, [stage()]));
 
@@ -269,6 +289,59 @@ describe("changeJobStatus", () => {
 
       expect(fake.rows.job[0].applied).toBe(true);
       expect(fake.rows.job[0].appliedDate).toBeInstanceOf(Date);
+    });
+
+    it("dates the new Applied stage from the form's Date Applied", async () => {
+      const { fake } = setup(withJob({}, [stage()]));
+
+      await edit("s-applied", backdated);
+
+      const added = fake.rows.jobStage[1];
+      expect(added).toMatchObject({ stageTypeId: "t-applied", isCurrent: true });
+      expect(added.occurredAt).toEqual(backdated);
+      expect(fake.rows.job[0].appliedDate).toEqual(backdated);
+    });
+
+    it("dates a new Interview stage now even with a Date Applied", async () => {
+      const { fake } = setup(withJob({}, [stage()]));
+
+      await edit("s-interview", backdated);
+
+      const added = fake.rows.jobStage[1];
+      expect(Math.abs(added.occurredAt!.getTime() - Date.now())).toBeLessThan(1000);
+    });
+
+    it("dates the new Applied stage now when the date is cleared", async () => {
+      const { fake } = setup(withJob({}, [stage()]));
+
+      await edit("s-applied", null);
+
+      const added = fake.rows.jobStage[1];
+      expect(Math.abs(added.occurredAt!.getTime() - Date.now())).toBeLessThan(1000);
+    });
+
+    it("moves no stage when only the Date Applied changes", async () => {
+      const later = new Date("2026-02-01T00:00:00Z");
+      const { fake } = setup(
+        withJob({ statusId: "s-applied", applied: true, appliedDate: backdated }, [
+          stage({ stageTypeId: "t-applied" }),
+        ]),
+      );
+
+      await edit("s-applied", later);
+
+      expect(fake.rows.jobStage).toHaveLength(1);
+      expect(fake.rows.jobStage[0].occurredAt).toEqual(backdated);
+      expect(fake.rows.job[0].appliedDate).toEqual(later);
+    });
+
+    it("dates a stage-less job's first stage from the Date Applied", async () => {
+      const { fake } = setup(withJob());
+
+      await edit("s-applied", backdated);
+
+      expect(fake.rows.jobStage).toHaveLength(1);
+      expect(fake.rows.jobStage[0].occurredAt).toEqual(backdated);
     });
   });
 });
@@ -508,5 +581,31 @@ describe("initialTimelineForNewJob", () => {
     });
 
     expect(jobFields).toEqual({ statusId: "s-new" });
+  });
+
+  it("dates an Applied first stage at the given appliedDate", async () => {
+    setup();
+
+    const result = await initialTimelineForNewJob({
+      statusId: "s-applied",
+      userId: "u1",
+      occurredAt: when,
+      appliedDate: backdated,
+    });
+
+    expect(result.stages.create.occurredAt).toEqual(backdated);
+  });
+
+  it("keeps occurredAt for a non-Applied first stage with an appliedDate", async () => {
+    setup();
+
+    const result = await initialTimelineForNewJob({
+      statusId: "s-interview",
+      userId: "u1",
+      occurredAt: when,
+      appliedDate: backdated,
+    });
+
+    expect(result.stages.create.occurredAt).toEqual(when);
   });
 });

@@ -1384,6 +1384,17 @@ describe("jobActions", () => {
       expect(data.applied).toBe(true);
       expect(data.appliedDate).toEqual(expect.any(Date));
     });
+    it("dates an Applied job's first stage from its Date Applied", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma as any).jobStatus.findUnique.mockResolvedValue({ value: "applied" });
+      (prisma.job.create as any).mockResolvedValue(jobData);
+      const dateApplied = new Date("2026-01-05T00:00:00Z");
+
+      await addJob({ ...jobData, dateApplied });
+
+      const data = (prisma.job.create as any).mock.calls[0][0].data;
+      expect(data.stages.create.occurredAt).toEqual(dateApplied);
+    });
     it("marks an Offer job applied without inventing a date", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
       (prisma as any).jobStatus.findUnique.mockResolvedValue({ value: "offer" });
@@ -1566,6 +1577,15 @@ describe("jobActions", () => {
 
       expect(result).toStrictEqual({ data: jobData, success: true });
       expect(changeJobStatus).toHaveBeenCalledTimes(1);
+    });
+    it("leaves the job's createdAt out of an edit", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (changeJobStatus as any).mockResolvedValue(jobData);
+
+      await updateJob(jobData);
+
+      const { jobFields } = (changeJobStatus as any).mock.calls[0][0];
+      expect(jobFields).not.toHaveProperty("createdAt");
     });
     it("delegates with jobFields and appliedDateFromUser", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);

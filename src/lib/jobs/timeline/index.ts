@@ -69,6 +69,16 @@ function defaultData(
   };
 }
 
+// A new Applied stage carries the applied date this save brings, if any.
+function newStageDate(input: ChangeJobStatusInput, value: string): Date {
+  if (value !== "applied") return new Date();
+  return (
+    input.appliedDateFromUser ??
+    (input.jobFields?.appliedDate as Date | null | undefined) ??
+    new Date()
+  );
+}
+
 export async function changeJobStatus(
   input: ChangeJobStatusInput,
 ): Promise<Job> {
@@ -112,7 +122,13 @@ export async function changeJobStatus(
             },
           });
 
-    await appendStatusStage(tx, jobId, statusId, stageTypeId, userId);
+    await appendStatusStage(tx, {
+      jobId,
+      statusId,
+      stageTypeId,
+      userId,
+      occurredAt: newStageDate(input, value),
+    });
     const data =
       appliedDateFromUser === undefined
         ? defaultData(input, value, stored.appliedDate)
@@ -197,10 +213,14 @@ export async function initialTimelineForNewJob(input: {
     where: { id: statusId },
     select: { value: true },
   });
+  const value = status?.value ?? "";
+  const stageDate = value === "applied" && appliedDate ? appliedDate : occurredAt;
   return {
-    stages: { create: { stageTypeId, occurredAt, isCurrent: true as const } },
+    stages: {
+      create: { stageTypeId, occurredAt: stageDate, isCurrent: true as const },
+    },
     jobFields: jobFieldsForStage(
-      status?.value ?? "",
+      value,
       statusId,
       null,
       appliedDate ?? null,

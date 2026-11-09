@@ -193,7 +193,6 @@ export const updateJob = async (
         locationId: location,
         jobSourceId: source,
         salaryRange: salaryRange || null,
-        createdAt: new Date(),
         dueDate: dueDate,
         description: jobDescription,
         jobType: type,

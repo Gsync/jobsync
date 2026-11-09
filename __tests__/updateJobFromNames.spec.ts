@@ -182,6 +182,18 @@ describe("updateJobFromNames", () => {
     expect(prisma.job.update).not.toHaveBeenCalled();
   });
 
+  it("hands the appliedDate to changeJobStatus with the status", async () => {
+    const appliedDate = new Date("2026-01-05T00:00:00Z");
+
+    await updateJobFromNames({ jobId: "job-1", status: "Applied", appliedDate }, userId);
+
+    expect(changeJobStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobFields: expect.objectContaining({ appliedDate }),
+      }),
+    );
+  });
+
   it("returns updated:false when the module throws JobNotFoundError", async () => {
     (changeJobStatus as any).mockRejectedValue(new JobNotFoundError());
 

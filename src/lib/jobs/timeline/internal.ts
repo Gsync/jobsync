@@ -86,11 +86,15 @@ export async function syncJobFromCurrentStage(
 // undo it (D4).
 export async function appendStatusStage(
   tx: TimelineTx,
-  jobId: string,
-  statusId: string,
-  stageTypeId: string,
-  userId: string,
+  input: {
+    jobId: string;
+    statusId: string;
+    stageTypeId: string;
+    userId: string;
+    occurredAt: Date;
+  },
 ): Promise<void> {
+  const { jobId, statusId, stageTypeId, userId, occurredAt } = input;
   const current = await tx.jobStage.findFirst({
     where: { jobId, isCurrent: true, Job: { userId } },
     select: {
@@ -112,7 +116,7 @@ export async function appendStatusStage(
   if (held === statusId) return;
 
   const stage = await tx.jobStage.create({
-    data: { jobId, stageTypeId, occurredAt: new Date(), isCurrent: false },
+    data: { jobId, stageTypeId, occurredAt, isCurrent: false },
   });
   await promoteStage(tx, jobId, stage.id, userId);
 }
