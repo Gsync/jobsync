@@ -115,7 +115,7 @@
     "prisma": "^6.19.0",
     "tailwindcss": "^4.3.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5",
+    "typescript": "~6.0.3",
     "vitest": "^5.0.5"
   },
   "overrides": {
