@@ -65,7 +65,9 @@ describe("SignupForm Component", () => {
     });
   });
 
-  it("should display email minimum length error", async () => {
+  // z.email() checks format before .min(3), so a short email gets the format
+  // message (accepted 2026-11-09).
+  it("shows the format error for a too-short email", async () => {
     fireEvent.change(screen.getByLabelText("Full Name"), {
       target: { value: "John Doe" },
     });
@@ -77,7 +79,7 @@ describe("SignupForm Component", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("Email must be at least 3 characters."),
+        screen.getByText("Please enter a valid email."),
       ).toBeInTheDocument();
     });
   });

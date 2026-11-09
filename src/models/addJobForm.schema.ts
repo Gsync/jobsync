@@ -9,21 +9,21 @@ export const AddJobFormSchema = z.object({
       error: "Job title is required.",
     })
     .min(2, {
-      message: "Job title must be at least 2 characters.",
+      error: "Job title must be at least 2 characters.",
     }),
   company: z
     .string({
       error: "Company name is required.",
     })
     .min(2, {
-      message: "Company name must be at least 2 characters.",
+      error: "Company name must be at least 2 characters.",
     }),
   location: z
     .string({
       error: "Location is required.",
     })
     .min(2, {
-      message: "Location name must be at least 2 characters.",
+      error: "Location name must be at least 2 characters.",
     }),
   type: z.string().min(1),
   workplaceType: z.string().optional(),
@@ -32,14 +32,14 @@ export const AddJobFormSchema = z.object({
       error: "Source is required.",
     })
     .min(2, {
-      message: "Source name must be at least 2 characters.",
+      error: "Source name must be at least 2 characters.",
     }),
   status: z
     .string({
       error: "Status is required.",
     })
     .min(2, {
-      message: "Status must be at least 2 characters.",
+      error: "Status must be at least 2 characters.",
     })
     .default("draft"),
   dueDate: z.date(),
@@ -55,7 +55,7 @@ export const AddJobFormSchema = z.object({
       error: "Job description is required.",
     })
     .refine((val) => val === "N/A" || val.length >= 10, {
-      message: "Job description must be at least 10 characters.",
+      error: "Job description must be at least 10 characters.",
     }),
   jobUrl: z.string().optional(),
   resume: z.string().optional(),

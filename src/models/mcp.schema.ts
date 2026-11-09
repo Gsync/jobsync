@@ -45,10 +45,10 @@ export const McpAddJobInputShape = {
     .describe(
       `Application status. One of: ${JOB_STATUS_VALUES.join(", ")}. Defaults to '${APP_CONSTANTS.MCP_DEFAULT_STATUS}'.`,
     ),
-  dueDate: z.string().datetime({ offset: true }).optional().describe("Application deadline as an ISO-8601 datetime string. Defaults to 3 days from now if omitted."),
+  dueDate: z.iso.datetime({ offset: true }).optional().describe("Application deadline as an ISO-8601 datetime string. Defaults to 3 days from now if omitted."),
   applied: z.boolean().optional().describe("Set true if you have already submitted the application"),
-  appliedDate: z.string().datetime({ offset: true }).optional().describe("Date the application was submitted as an ISO-8601 datetime string"),
-  jobUrl: z.string().url().optional().describe("Direct URL to the job posting"),
+  appliedDate: z.iso.datetime({ offset: true }).optional().describe("Date the application was submitted as an ISO-8601 datetime string"),
+  jobUrl: z.url().optional().describe("Direct URL to the job posting"),
   salaryRange: z.string().optional().describe("Salary range as a free-form string, e.g. '$120k–$150k' or '100,000 CAD'"),
   tags: z.array(z.string()).optional().describe("Skills required for the job (max 10 applied, extras are dropped). Tags are created if they don't exist. e.g. ['React', 'TypeScript', 'Node.js']"),
   allowDuplicate: z
@@ -68,8 +68,8 @@ export const McpAddJobInputShape = {
 // Full schema with transforms for parsing raw MCP input in the handler
 export const McpAddJobSchema = z.object({
   ...McpAddJobInputShape,
-  dueDate: z.string().datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
-  appliedDate: z.string().datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
+  dueDate: z.iso.datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
+  appliedDate: z.iso.datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
 });
 
 export type McpAddJobInput = z.infer<typeof McpAddJobSchema>;
@@ -138,7 +138,6 @@ export type McpSaveResumeReviewInput = z.infer<
 // reliably has from a job board, and it's what add_job dedupes on.
 export const McpFindJobInputShape = {
   jobUrl: z
-    .string()
     .url()
     .describe(
       "Direct URL to the job posting. Matched against saved jobs using the same canonical key as add_job's duplicate detection, so tracking parameters and host casing don't matter.",
@@ -180,10 +179,10 @@ export const McpUpdateJobInputShape = {
     )
     .optional()
     .describe(`Application status. One of: ${JOB_STATUS_VALUES.join(", ")}.`),
-  dueDate: z.string().datetime({ offset: true }).optional(),
+  dueDate: z.iso.datetime({ offset: true }).optional(),
   applied: z.boolean().optional(),
-  appliedDate: z.string().datetime({ offset: true }).optional(),
-  jobUrl: z.string().url().optional(),
+  appliedDate: z.iso.datetime({ offset: true }).optional(),
+  jobUrl: z.url().optional(),
   salaryRange: z.string().optional(),
   tags: z
     .array(z.string())
@@ -195,8 +194,8 @@ export const McpUpdateJobInputShape = {
 
 export const McpUpdateJobSchema = z.object({
   ...McpUpdateJobInputShape,
-  dueDate: z.string().datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
-  appliedDate: z.string().datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
+  dueDate: z.iso.datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
+  appliedDate: z.iso.datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
 });
 
 export type McpUpdateJobInput = z.infer<typeof McpUpdateJobSchema>;
