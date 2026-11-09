@@ -57,10 +57,9 @@ async function handler(req: Request): Promise<Response> {
 
   const server = new McpServer({ name: "jobsync", version: "1.0.0" });
 
-  server.tool(
+  server.registerTool(
     "add_job",
-    MCP_TOOL_DESCRIPTIONS.add_job,
-    McpAddJobInputShape,
+    { description: MCP_TOOL_DESCRIPTIONS.add_job, inputSchema: McpAddJobInputShape },
     async (rawInput) => {
       if (!auth.scopes.includes("jobs:write")) {
         return {
@@ -85,10 +84,9 @@ async function handler(req: Request): Promise<Response> {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "find_job",
-    MCP_TOOL_DESCRIPTIONS.find_job,
-    McpFindJobInputShape,
+    { description: MCP_TOOL_DESCRIPTIONS.find_job, inputSchema: McpFindJobInputShape },
     async (rawInput) => {
       if (!auth.scopes.includes("jobs:write")) {
         return {
@@ -108,10 +106,9 @@ async function handler(req: Request): Promise<Response> {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "update_job",
-    MCP_TOOL_DESCRIPTIONS.update_job,
-    McpUpdateJobInputShape,
+    { description: MCP_TOOL_DESCRIPTIONS.update_job, inputSchema: McpUpdateJobInputShape },
     async (rawInput) => {
       if (!auth.scopes.includes("jobs:write")) {
         return {
@@ -131,10 +128,9 @@ async function handler(req: Request): Promise<Response> {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "add_question",
-    MCP_TOOL_DESCRIPTIONS.add_question,
-    McpAddQuestionInputShape,
+    { description: MCP_TOOL_DESCRIPTIONS.add_question, inputSchema: McpAddQuestionInputShape },
     async (rawInput) => {
       if (!auth.scopes.includes("questions:write")) {
         return {
@@ -159,10 +155,9 @@ async function handler(req: Request): Promise<Response> {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "save_match_result",
-    MCP_TOOL_DESCRIPTIONS.save_match_result,
-    McpSaveMatchResultInputShape,
+    { description: MCP_TOOL_DESCRIPTIONS.save_match_result, inputSchema: McpSaveMatchResultInputShape },
     async (rawInput) => {
       if (!auth.scopes.includes("jobs:write")) {
         return {
@@ -187,10 +182,9 @@ async function handler(req: Request): Promise<Response> {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "add_jobs_batch",
-    MCP_TOOL_DESCRIPTIONS.add_jobs_batch,
-    McpAddJobsBatchInputShape,
+    { description: MCP_TOOL_DESCRIPTIONS.add_jobs_batch, inputSchema: McpAddJobsBatchInputShape },
     async (rawInput) => {
       if (!auth.scopes.includes("jobs:write")) {
         return {
@@ -210,10 +204,9 @@ async function handler(req: Request): Promise<Response> {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "save_match_results_batch",
-    MCP_TOOL_DESCRIPTIONS.save_match_results_batch,
-    McpSaveMatchResultsBatchInputShape,
+    { description: MCP_TOOL_DESCRIPTIONS.save_match_results_batch, inputSchema: McpSaveMatchResultsBatchInputShape },
     async (rawInput) => {
       if (!auth.scopes.includes("jobs:write")) {
         return {
@@ -238,19 +231,17 @@ async function handler(req: Request): Promise<Response> {
   // this feature shipped don't have that scope and must keep working (see
   // docs/plans/feature-mcp-resume-review.md, "Locked decisions"). Do not add
   // one without also backfilling existing tokens.
-  server.tool(
+  server.registerTool(
     "review_resume",
-    MCP_TOOL_DESCRIPTIONS.review_resume,
-    McpReviewResumeInputShape,
+    { description: MCP_TOOL_DESCRIPTIONS.review_resume, inputSchema: McpReviewResumeInputShape },
     async () => {
       return handleReviewResume(userId);
     },
   );
 
-  server.tool(
+  server.registerTool(
     "save_resume_review",
-    MCP_TOOL_DESCRIPTIONS.save_resume_review,
-    McpSaveResumeReviewInputShape,
+    { description: MCP_TOOL_DESCRIPTIONS.save_resume_review, inputSchema: McpSaveResumeReviewInputShape },
     async (rawInput) => {
       const parsed = McpSaveResumeReviewSchema.safeParse(rawInput);
       if (!parsed.success) {
