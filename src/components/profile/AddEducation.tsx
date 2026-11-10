@@ -64,6 +64,7 @@ function AddEducation({
       resumeId,
       sectionId,
       degreeCompleted: true,
+      showDates: true,
       sectionTitle: "",
       institution: "",
       degree: "",
@@ -91,6 +92,7 @@ function AddEducation({
           endDate: education?.endDate,
           description: education?.description,
           degreeCompleted: !!education?.endDate,
+          showDates: education?.showDates !== false,
         },
         { keepDefaultValues: true },
       );
@@ -103,6 +105,7 @@ function AddEducation({
           institution: "",
           degree: "",
           fieldOfStudy: "",
+          showDates: true,
         },
         { keepDefaultValues: true },
       );
@@ -290,6 +293,7 @@ function AddEducation({
                 render={({ field }) => (
                   <FormItem className="flex flex-row">
                     <Switch
+                      aria-label="Degree completed"
                       checked={field.value}
                       onCheckedChange={(c) => {
                         field.onChange(c);
@@ -298,6 +302,30 @@ function AddEducation({
                     />
                     <FormLabel className="flex items-center ml-4 mb-2">
                       {field.value ? "Degree Completed" : "Currently Studying"}
+                    </FormLabel>
+
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* SHOW DATES */}
+            <div className="flex items-center">
+              <FormField
+                control={form.control}
+                name="showDates"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row">
+                    <FormControl>
+                      <Switch
+                        aria-label="Show dates"
+                        checked={field.value ?? true}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel className="flex items-center ml-4 mb-2">
+                      Show dates
                     </FormLabel>
 
                     <FormMessage />

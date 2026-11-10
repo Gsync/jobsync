@@ -150,7 +150,8 @@ export function SimpleResumeDocument({
                     </Text>
                     <Text style={styles.entryMeta}>
                       {formatDate(exp.startDate)} – {formatDate(exp.endDate)}
-                      {formatLocation(exp.location.label) &&
+                      {exp.showLocation !== false &&
+                        formatLocation(exp.location.label) &&
                         ` · ${formatLocation(exp.location.label)}`}
                     </Text>
                   </View>
@@ -172,12 +173,22 @@ export function SimpleResumeDocument({
                     <Text style={styles.entryMeta}>
                       {[edu.degree, edu.fieldOfStudy].filter(Boolean).join(", ")}
                     </Text>
-                    <Text style={styles.entryMeta}>
-                      {formatDate(edu.startDate)} –{" "}
-                      {edu.endDate ? formatDate(edu.endDate) : "Present"}
-                      {formatLocation(edu.location.label) &&
-                        ` · ${formatLocation(edu.location.label)}`}
-                    </Text>
+                    {(edu.showDates !== false ||
+                      formatLocation(edu.location.label)) && (
+                      <Text style={styles.entryMeta}>
+                        {edu.showDates !== false
+                          ? `${formatDate(edu.startDate)} – ${
+                              edu.endDate
+                                ? formatDate(edu.endDate)
+                                : "Present"
+                            }`
+                          : ""}
+                        {formatLocation(edu.location.label) &&
+                          `${edu.showDates !== false ? " · " : ""}${formatLocation(
+                            edu.location.label,
+                          )}`}
+                      </Text>
+                    )}
                   </View>
                   {htmlNodes.educations[i]}
                 </View>

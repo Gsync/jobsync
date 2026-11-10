@@ -33,4 +33,5 @@ export const AddExperienceFormSchema = z.object({
   startDate: z.date(),
   endDate: z.date().nullable().optional(),
   currentJob: z.boolean().default(false).optional(),
+  showLocation: z.boolean().default(true).optional(),
 });

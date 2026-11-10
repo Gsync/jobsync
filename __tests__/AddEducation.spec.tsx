@@ -274,7 +274,9 @@ describe("AddEducation Component", () => {
       expect(screen.getByText(/degree completed/i)).toBeInTheDocument();
     });
 
-    const degreeCompletedSwitch = screen.getByRole("switch");
+    const degreeCompletedSwitch = screen.getByRole("switch", {
+      name: "Degree completed",
+    });
     await user.click(degreeCompletedSwitch);
 
     await waitFor(() => {

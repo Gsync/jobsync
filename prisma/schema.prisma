@@ -169,6 +169,7 @@ model WorkExperience {
   description     String
   locationId      String
   location        Location       @relation(fields: [locationId], references: [id])
+  showLocation    Boolean        @default(true)
   resumeSectionId String?
   ResumeSection   ResumeSection? @relation(fields: [resumeSectionId], references: [id])
 }
@@ -185,6 +186,7 @@ model Education {
   description     String?
   locationId      String
   location        Location       @relation(fields: [locationId], references: [id])
+  showDates       Boolean        @default(true)
   resumeSectionId String?
   ResumeSection   ResumeSection? @relation(fields: [resumeSectionId], references: [id])
 }

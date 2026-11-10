@@ -210,6 +210,7 @@ describe("copyResume", () => {
         startDate: new Date("2020-01-01"),
         endDate: null,
         description: "<p>Work</p>",
+        showLocation: undefined,
         // Kept so the copy lists entries in the source's order
         createdAt: new Date("2024-03-01T10:00:00Z"),
       },
