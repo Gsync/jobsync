@@ -110,6 +110,7 @@ export interface WorkExperience {
   endDate: Date;
   currentJob?: Boolean;
   description: string;
+  showLocation?: boolean;
 }
 
 export interface Education {
@@ -123,6 +124,7 @@ export interface Education {
   endDate?: Date;
   description?: string;
   location: JobLocation;
+  showDates?: boolean;
 }
 
 export interface CoverLetter {

@@ -45,6 +45,7 @@ export const addEducation = async (
             startDate: data.startDate,
             endDate: data.degreeCompleted === false ? null : data.endDate,
             description: data.description,
+            showDates: data.showDates ?? true,
           },
         },
       },
@@ -81,6 +82,7 @@ export const updateEducation = async (
         startDate: data.startDate,
         endDate: data.degreeCompleted === false ? null : data.endDate,
         description: data.description,
+        showDates: data.showDates ?? true,
       },
     });
     revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);

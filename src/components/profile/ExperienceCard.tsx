@@ -35,6 +35,7 @@ function ExperienceCard({
           startDate,
           endDate,
           description,
+          showLocation,
         }) => (
           <Card key={id}>
             <CardHeader className="p-2 pb-0 flex-row justify-between relative">
@@ -55,8 +56,12 @@ function ExperienceCard({
               <CardDescription>
                 {format(startDate, "MMM yyyy")} -{" "}
                 {endDate ? format(endDate, "MMM yyyy") : "Present"}
-                <br />
-                {location.label}
+                {showLocation !== false && (
+                  <>
+                    <br />
+                    {location.label}
+                  </>
+                )}
               </CardDescription>
               <div className="pt-2">
                 <TipTapContentViewer content={description} />

@@ -35,6 +35,7 @@ function EducationCard({
           startDate,
           endDate,
           description,
+          showDates,
         }) => (
           <Card key={id}>
             <CardHeader className="p-2 pb-0 flex-row justify-between relative">
@@ -55,9 +56,13 @@ function EducationCard({
                 {degree}, {fieldOfStudy}
               </h3>
               <CardDescription>
-                {format(startDate, "MMM yyyy")} -{" "}
-                {endDate ? format(endDate, "MMM yyyy") : "Present"}
-                <br />
+                {showDates !== false && (
+                  <>
+                    {format(startDate, "MMM yyyy")} -{" "}
+                    {endDate ? format(endDate, "MMM yyyy") : "Present"}
+                    <br />
+                  </>
+                )}
                 {label}
               </CardDescription>
               {description && (

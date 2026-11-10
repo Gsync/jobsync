@@ -62,6 +62,7 @@ function AddExperience({
       resumeId,
       sectionId,
       sectionTitle: "",
+      showLocation: true,
     },
   });
 
@@ -92,6 +93,7 @@ function AddExperience({
         endDate: experience?.endDate,
         jobDescription: experience?.description,
         currentJob: !!!experience?.endDate,
+        showLocation: experience?.showLocation !== false,
       });
     } else {
       reset(
@@ -99,6 +101,7 @@ function AddExperience({
           resumeId,
           sectionId,
           sectionTitle: "",
+          showLocation: true,
         },
         { keepDefaultValues: true },
       );
@@ -248,6 +251,7 @@ function AddExperience({
                 render={({ field }) => (
                   <FormItem className="flex flex-row">
                     <Switch
+                      aria-label="Current job"
                       checked={field.value ?? false}
                       onCheckedChange={(c) => {
                         field.onChange(c);
@@ -278,6 +282,30 @@ function AddExperience({
                       isEnabled={!currentJobValue!}
                       captionLayout={true}
                     />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* SHOW LOCATION */}
+            <div className="flex items-center">
+              <FormField
+                control={form.control}
+                name="showLocation"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row">
+                    <FormControl>
+                      <Switch
+                        aria-label="Show location"
+                        checked={field.value ?? true}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel className="flex items-center ml-4 mb-2">
+                      Show location
+                    </FormLabel>
+
                     <FormMessage />
                   </FormItem>
                 )}

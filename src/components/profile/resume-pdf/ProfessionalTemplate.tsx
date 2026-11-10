@@ -241,7 +241,8 @@ export function ProfessionalResumeDocument({
                     </View>
                     <Text style={s.entryMeta}>
                       {exp.Company.label}
-                      {formatLocation(exp.location?.label) &&
+                      {exp.showLocation !== false &&
+                        formatLocation(exp.location?.label) &&
                         ` · ${formatLocation(exp.location?.label)}`}
                     </Text>
                   </View>
@@ -268,8 +269,9 @@ export function ProfessionalResumeDocument({
                       </View>
                       <Text style={s.entryMeta}>
                         {exp.Company.label}
-                        {formatLocation(exp.location?.label) &&
-                        ` · ${formatLocation(exp.location?.label)}`}
+                        {exp.showLocation !== false &&
+                          formatLocation(exp.location?.label) &&
+                          ` · ${formatLocation(exp.location?.label)}`}
                       </Text>
                     </View>
                   </View>
@@ -298,9 +300,11 @@ export function ProfessionalResumeDocument({
                           <Text style={s.entryTitle}>
                             {[edu.degree, edu.fieldOfStudy].filter(Boolean).join(", ")}
                           </Text>
-                          <Text style={s.entryDate}>
-                            {yearRange(edu.startDate, edu.endDate)}
-                          </Text>
+                          {edu.showDates !== false && (
+                            <Text style={s.entryDate}>
+                              {yearRange(edu.startDate, edu.endDate)}
+                            </Text>
+                          )}
                         </View>
                         <Text style={s.entryMeta}>{edu.institution}</Text>
                       </View>

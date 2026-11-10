@@ -48,6 +48,7 @@ export const addExperience = async (
             startDate: data.startDate,
             endDate: data.endDate,
             description: data.jobDescription,
+            showLocation: data.showLocation ?? true,
           },
         },
       },
@@ -83,6 +84,7 @@ export const updateExperience = async (
         startDate: data.startDate,
         endDate: data.endDate,
         description: data.jobDescription,
+        showLocation: data.showLocation ?? true,
       },
     });
     revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);

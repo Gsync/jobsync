@@ -122,6 +122,7 @@ export const copyResume = async (
                 startDate: w.startDate,
                 endDate: w.endDate,
                 description: w.description,
+                showLocation: w.showLocation,
                 createdAt: w.createdAt,
               })),
             });
@@ -138,6 +139,7 @@ export const copyResume = async (
                 startDate: e.startDate,
                 endDate: e.endDate,
                 description: e.description,
+                showDates: e.showDates,
                 createdAt: e.createdAt,
               })),
             });
