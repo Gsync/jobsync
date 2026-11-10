@@ -35,7 +35,6 @@ export const AddExperienceFormSchema = z.object({
   endDate: z.date().nullable().optional(),
   currentJob: z.boolean().default(false).optional(),
   showLocation: z.boolean().default(true).optional(),
-});
 }).refine(
   (data) => {
     if (data.currentJob === true || !data.endDate) return true;

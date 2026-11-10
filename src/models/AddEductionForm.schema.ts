@@ -34,7 +34,6 @@ export const AddEducationFormSchema = z.object({
   endDate: z.date().nullable().optional(),
   degreeCompleted: z.boolean().default(true).optional(),
   showDates: z.boolean().default(true).optional(),
-});
 }).refine(
   (data) => {
     if (data.degreeCompleted === false || !data.endDate) return true;
