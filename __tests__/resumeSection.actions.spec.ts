@@ -215,6 +215,7 @@ describe("Resume section actions", () => {
         startDate: form.startDate,
         endDate: form.endDate,
         description: "<p>Built things</p>",
+        showLocation: true,
       });
     });
 
@@ -311,6 +312,7 @@ describe("Resume section actions", () => {
         startDate: form.startDate,
         endDate: form.endDate,
         description: "<p>Studied</p>",
+        showDates: true,
       });
     });
 

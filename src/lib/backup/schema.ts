@@ -119,6 +119,7 @@ const WorkExperience = z.object({
   endDate: optDt,
   description: str,
   locationId: id,
+  showLocation: z.boolean().optional(),
   resumeSectionId: optId,
 });
 
@@ -133,6 +134,7 @@ const Education = z.object({
   endDate: optDt,
   description: optStr,
   locationId: id,
+  showDates: z.boolean().optional(),
   resumeSectionId: optId,
 });
 

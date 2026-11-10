@@ -318,10 +318,10 @@ describe("AddExperience Component", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("switch")).toBeInTheDocument();
+      expect(screen.getByRole("switch", { name: "Current job" })).toBeInTheDocument();
     });
 
-    const currentJobSwitch = screen.getByRole("switch");
+    const currentJobSwitch = screen.getByRole("switch", { name: "Current job" });
     const endDateInput = screen.getByTestId(
       "datepicker-endDate"
     ) as HTMLInputElement;
@@ -349,7 +349,7 @@ describe("AddExperience Component", () => {
       expect(screen.getByText(/job ended/i)).toBeInTheDocument();
     });
 
-    const currentJobSwitch = screen.getByRole("switch");
+    const currentJobSwitch = screen.getByRole("switch", { name: "Current job" });
     await user.click(currentJobSwitch);
 
     await waitFor(() => {
@@ -530,7 +530,7 @@ describe("AddExperience Component", () => {
       expect(screen.getByText(/job ended/i)).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("switch"));
+    await user.click(screen.getByRole("switch", { name: "Current job" }));
 
     await waitFor(() => {
       const saveButton = screen.getByRole("button", { name: /save/i });
