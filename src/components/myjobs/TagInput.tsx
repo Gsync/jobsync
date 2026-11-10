@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { X, ChevronsUpDown, CirclePlus, Loader } from "lucide-react";
 import {
   Popover,
@@ -49,7 +49,9 @@ export function TagInput({
   // availableTags can load after mount (e.g. fetched once the dialog opens).
   // Merge new tags into the local pool so chips and options reflect the prop,
   // while preserving tags created locally during this session.
-  useEffect(() => {
+  const [prevAvailableTags, setPrevAvailableTags] = useState(availableTags);
+  if (availableTags !== prevAvailableTags) {
+    setPrevAvailableTags(availableTags);
     setLocalTags((prev) => {
       const ids = new Set(prev.map((t) => t.id));
       const merged = [...prev];
@@ -58,7 +60,7 @@ export function TagInput({
       }
       return merged;
     });
-  }, [availableTags]);
+  }
 
   // Map over the ids, not the pool: the pool arrives sorted by label, so
   // filtering it would render chips alphabetically instead of in the order the

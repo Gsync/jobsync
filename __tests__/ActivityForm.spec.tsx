@@ -97,6 +97,18 @@ async function setEndTimeToStartOfDay() {
 }
 
 describe("ActivityForm", () => {
+  it("does not show duration until a date or time is changed", async () => {
+    await renderForm();
+    expect(screen.queryByText(/\(5 min\)/)).not.toBeInTheDocument();
+  });
+
+  it("does not validate untouched times on mount near midnight", async () => {
+    vi.setSystemTime(new Date(2026, 7, 12, 23, 58));
+    await renderForm();
+    expect(screen.queryByText("End time must be after the start time"))
+      .not.toBeInTheDocument();
+  });
+
   it("saves the combined date/time and duration", async () => {
     const { onClose, reloadActivities } = await renderForm();
     vi.mocked(createActivity).mockResolvedValue({
@@ -153,6 +165,22 @@ describe("ActivityForm", () => {
     expect(
       await screen.findByText("End time must be after the start time")
     ).toBeInTheDocument();
+    expect(createActivity).not.toHaveBeenCalled();
+  });
+
+  it("revalidates the end time when only the start time changes", async () => {
+    await renderForm();
+    const later = screen.getAllByRole("button", { name: "5 minutes later" });
+    const earlier = screen.getAllByRole("button", { name: "5 minutes earlier" });
+
+    await user.click(later[0]);
+    expect(await screen.findByText("End time must be after the start time"))
+      .toBeInTheDocument();
+
+    await user.click(earlier[0]);
+    await waitFor(() => expect(screen.queryByText("End time must be after the start time"))
+      .not.toBeInTheDocument());
+    expect(screen.getByText(/\(5 min\)/)).toBeInTheDocument();
     expect(createActivity).not.toHaveBeenCalled();
   });
 });

@@ -1,11 +1,11 @@
 import { buildMatchJobTool } from "@/lib/agent/tools/matchJob";
+import { buildAgentTools } from "@/lib/agent/tools";
 import { resolveJobForAgent } from "@/lib/agent/jobLookup";
 import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 import { preprocessJob } from "@/lib/ai/tools/preprocessing-job";
 import { saveJobMatchResult } from "@/actions/job.actions";
-import { APP_CONSTANTS } from "@/lib/constants";
-import { TEMPERATURES } from "@/lib/ai/config";
+import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import {
   JOB_MATCH_SYSTEM_PROMPT,
   buildJobMatchPrompt,
@@ -89,14 +89,8 @@ describe("match_job agent tool", () => {
     save.mockResolvedValue({ success: true });
   });
 
-  // The gate exists to stop unseen writes. This writes only matchData on the
-  // caller's own job, and they watch it stream.
-  it("has no approval gate", () => {
-    expect(buildMatchJobTool(ctx()).needsApproval).toBeUndefined();
-  });
 
-  it("is registered in the tool registry", async () => {
-    const { buildAgentTools } = await import("@/lib/agent/tools");
+  it("is registered in the tool registry", () => {
     const tools = buildAgentTools({ ...ctx(), pageContext: { jobId: "job-1" } } as any);
     expect(Object.keys(tools)).toContain("match_job");
   });
@@ -142,7 +136,7 @@ describe("match_job agent tool", () => {
   it("generates with the retired route's prompt, temperature and context", async () => {
     await execute(buildMatchJobTool(ctx()), {});
     const args = streamText.mock.calls[0][0];
-    expect(args.system).toBe(JOB_MATCH_SYSTEM_PROMPT);
+    expect(args.instructions).toBe(JOB_MATCH_SYSTEM_PROMPT);
     expect(args.prompt).toBe(buildJobMatchPrompt(RESUME_TEXT, JOB_TEXT));
     expect(args.temperature).toBe(TEMPERATURES.FEEDBACK);
     expect(args.providerOptions.ollama.options.num_ctx).toBe(

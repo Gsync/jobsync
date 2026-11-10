@@ -1,8 +1,7 @@
 import "server-only";
 
 import { tool, type LanguageModel, type UIMessageStreamWriter } from "ai";
-import { TEMPERATURES } from "@/lib/ai/config";
-import { APP_CONSTANTS } from "@/lib/constants";
+import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
 import { AgentCoverLetterSchema } from "@/models/agent.schema";
 import { resolveJobForAgent } from "@/lib/agent/jobLookup";
@@ -43,7 +42,7 @@ export function buildGenerateCoverLetterTool(ctx: CoverLetterContext) {
   return tool({
     description: AGENT_TOOL_DESCRIPTIONS.generate_cover_letter,
     inputSchema: AgentCoverLetterSchema,
-    // No needsApproval: the letter lands in the caller's own documents and
+    // Not in toolApproval: the letter lands in the caller's own documents and
     // they watch the whole thing stream before it does.
     execute: async (raw, { toolCallId, abortSignal }): Promise<AgentCoverLetterResult> => {
       const jobLookup = await resolveJobForAgent(ctx.userId, ctx.pageJobId);

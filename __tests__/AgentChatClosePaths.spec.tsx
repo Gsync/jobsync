@@ -62,7 +62,7 @@ const setup = (initialMessages: any[] = []) =>
 
 const openPanel = async () => {
   await act(async () => {
-    await userEvent.click(screen.getByRole("button", { name: /open assistant/i }));
+    await userEvent.click(screen.getByRole("button", { name: "Chat AI" }));
   });
 };
 
@@ -150,7 +150,7 @@ describe("agent chat close paths", () => {
     setup();
     expect(screen.queryByLabelText("Approval pending")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /open assistant/i }).textContent,
+      screen.getByRole("button", { name: "Chat AI" }).textContent,
     ).toBe("Chat AI");
   });
 

@@ -440,6 +440,7 @@ export const NOTIFICATION_CONSTANTS = {
   RETENTION_DAYS: 30,
   POPOVER_LIMIT: 20,
   PAGE_SIZE: 50,
+  PASSIVE_REFRESH_THROTTLE_MS: 5000,
 } as const;
 
 export const AI_USAGE_CONSTANTS = {
@@ -460,4 +461,26 @@ export const DAILY_GOALS = {
   HOURS_MAX: 24,
   // Months browsable before the current one
   MONTHS_BACK: 11,
+} as const;
+
+// AI rate limiting
+export const RATE_LIMITS = {
+  /** Time window for rate limiting in milliseconds */
+  WINDOW_MS: 60 * 1000, // 1 minute
+  /** Maximum requests per user per window */
+  MAX_REQUESTS: 5,
+  /** Maximum chat requests per user per window. A conversational surface
+   *  spends several requests per exchange (each approval response is its own
+   *  POST), so it cannot share the 5/min analysis budget. */
+  CHAT_MAX_REQUESTS: 30,
+  /** Maximum entries in rate limit store before cleanup */
+  STORE_CLEANUP_THRESHOLD: 1000,
+} as const;
+
+// AI temperatures
+export const TEMPERATURES = {
+  /** Temperature for analysis agents (low for consistency) */
+  ANALYSIS: 0.1,
+  /** Temperature for feedback agents (slightly higher for creativity) */
+  FEEDBACK: 0.3,
 } as const;

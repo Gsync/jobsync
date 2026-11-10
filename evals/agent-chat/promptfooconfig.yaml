@@ -164,7 +164,7 @@ tests:
   # 96 chars, so the composer never makes a chip for it: it arrives inline,
   # carrying a company and a title but no description of the role at all.
   # add_job is unreachable — execute rejects a call with no description, and
-  # needsApproval is false for it, so the model does not even spend a
+  # toolApproval leaves it ungated, so the model does not even spend a
   # confirmation card learning that. The only correct turn is to ask, and the
   # capabilities clause says to ask for all three fields together.
   - description: Title-only stub, no description - asks for all three

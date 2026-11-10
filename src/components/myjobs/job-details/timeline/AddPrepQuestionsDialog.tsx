@@ -67,13 +67,18 @@ export function AddPrepQuestionsDialog({
     })();
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    setSearch("");
-    setSelected([]);
-    setNewQuestion("");
-    setNewTagIds([]);
-  }, [open, stage]);
+  const [prevOpen, setPrevOpen] = useState(false);
+  const [prevStage, setPrevStage] = useState(stage);
+  if (open !== prevOpen || stage !== prevStage) {
+    setPrevOpen(open);
+    setPrevStage(stage);
+    if (open) {
+      setSearch("");
+      setSelected([]);
+      setNewQuestion("");
+      setNewTagIds([]);
+    }
+  }
 
   if (!stage) return null;
 

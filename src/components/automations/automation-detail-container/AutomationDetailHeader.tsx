@@ -49,7 +49,7 @@ export function AutomationDetailHeader({
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
       <div className="flex flex-1 min-w-0 items-center gap-3">
-        <Button variant="ghost" size="icon" asChild>
+        <Button variant="ghost" size="icon" asChild aria-label="Back to automations">
           <Link href="/dashboard/automations">
             <ArrowLeft className="h-4 w-4" />
           </Link>
@@ -73,7 +73,7 @@ export function AutomationDetailHeader({
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="icon" onClick={onRefresh}>
+        <Button variant="outline" size="icon" onClick={onRefresh} aria-label="Refresh">
           <RefreshCw className="h-4 w-4" />
         </Button>
         {!retired && (

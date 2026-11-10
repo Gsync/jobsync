@@ -1,11 +1,11 @@
 import { buildGenerateCoverLetterTool } from "@/lib/agent/tools/generateCoverLetter";
+import { buildAgentTools } from "@/lib/agent/tools";
 import { resolveJobForAgent } from "@/lib/agent/jobLookup";
 import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 import { preprocessJob } from "@/lib/ai/tools/preprocessing-job";
 import { generateCoverLetterForJob } from "@/actions/coverLetter.actions";
-import { APP_CONSTANTS } from "@/lib/constants";
-import { TEMPERATURES } from "@/lib/ai/config";
+import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import {
   COVER_LETTER_SYSTEM_PROMPT,
   buildCoverLetterPrompt,
@@ -100,14 +100,8 @@ describe("generate_cover_letter agent tool", () => {
     });
   });
 
-  // The gate exists to stop unseen writes. The user watches the whole letter
-  // stream before it lands, and it lands in their own documents.
-  it("has no approval gate", () => {
-    expect(buildGenerateCoverLetterTool(ctx()).needsApproval).toBeUndefined();
-  });
 
-  it("is registered in the tool registry", async () => {
-    const { buildAgentTools } = await import("@/lib/agent/tools");
+  it("is registered in the tool registry", () => {
     const tools = buildAgentTools({
       ...ctx(),
       pageContext: { jobId: "job-1" },
@@ -176,7 +170,7 @@ describe("generate_cover_letter agent tool", () => {
   it("generates with the retired route's prompt, temperature and context", async () => {
     await execute(buildGenerateCoverLetterTool(ctx()), {});
     const args = streamText.mock.calls[0][0];
-    expect(args.system).toBe(COVER_LETTER_SYSTEM_PROMPT);
+    expect(args.instructions).toBe(COVER_LETTER_SYSTEM_PROMPT);
     expect(args.temperature).toBe(TEMPERATURES.FEEDBACK);
     expect(args.providerOptions.ollama.options.num_ctx).toBe(
       APP_CONSTANTS.AI_OLLAMA_NUM_CTX,

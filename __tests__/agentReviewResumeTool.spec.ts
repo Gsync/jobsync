@@ -1,9 +1,9 @@
 import { buildReviewResumeTool } from "@/lib/agent/tools/reviewResume";
+import { buildAgentTools } from "@/lib/agent/tools";
 import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 import { saveResumeReviewResult } from "@/actions/profile.actions";
-import { APP_CONSTANTS } from "@/lib/constants";
-import { TEMPERATURES } from "@/lib/ai/config";
+import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import {
   RESUME_REVIEW_SYSTEM_PROMPT,
   buildResumeReviewPrompt,
@@ -72,14 +72,8 @@ describe("review_resume agent tool", () => {
     save.mockResolvedValue({ success: true });
   });
 
-  // The gate exists to stop unseen writes. This writes only to the caller's
-  // own reviewData, and they watch it stream.
-  it("has no approval gate", () => {
-    expect(buildReviewResumeTool(ctx()).needsApproval).toBeUndefined();
-  });
 
-  it("is registered in the tool registry", async () => {
-    const { buildAgentTools } = await import("@/lib/agent/tools");
+  it("is registered in the tool registry", () => {
     const tools = buildAgentTools({ ...ctx(), nestedGuard: ctx().guard });
     expect(Object.keys(tools)).toContain("review_resume");
   });
@@ -104,7 +98,7 @@ describe("review_resume agent tool", () => {
   it("generates with the dedicated route's prompt, temperature and context", async () => {
     await execute(buildReviewResumeTool(ctx()), {});
     const args = streamText.mock.calls[0][0];
-    expect(args.system).toBe(RESUME_REVIEW_SYSTEM_PROMPT);
+    expect(args.instructions).toBe(RESUME_REVIEW_SYSTEM_PROMPT);
     expect(args.prompt).toBe(buildResumeReviewPrompt(LONG_RESUME));
     expect(args.temperature).toBe(TEMPERATURES.FEEDBACK);
     expect(args.providerOptions.ollama.options.num_ctx).toBe(

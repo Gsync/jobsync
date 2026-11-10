@@ -1,3 +1,4 @@
+import { startOfDay } from "date-fns";
 import { z } from "zod";
 
 export const AddExperienceFormSchema = z.object({
@@ -11,27 +12,37 @@ export const AddExperienceFormSchema = z.object({
       error: "Job title is required.",
     })
     .min(2, {
-      message: "Job title must be at least 2 characters.",
+      error: "Job title must be at least 2 characters.",
     }),
   company: z
     .string({
       error: "Company name is required.",
     })
     .min(2, {
-      message: "Company name must be at least 2 characters.",
+      error: "Company name must be at least 2 characters.",
     }),
   location: z
     .string({
       error: "Location is required.",
     })
     .min(2, {
-      message: "Location name must be at least 2 characters.",
+      error: "Location name must be at least 2 characters.",
     }),
   jobDescription: z.string().min(10, {
-    message: "Job description must be at least 10 characters.",
+    error: "Job description must be at least 10 characters.",
   }),
   startDate: z.date(),
   endDate: z.date().nullable().optional(),
   currentJob: z.boolean().default(false).optional(),
   showLocation: z.boolean().default(true).optional(),
 });
+}).refine(
+  (data) => {
+    if (data.currentJob === true || !data.endDate) return true;
+    return startOfDay(data.endDate) >= startOfDay(data.startDate);
+  },
+  {
+    error: "End date must be on or after the start date",
+    path: ["endDate"],
+  },
+);

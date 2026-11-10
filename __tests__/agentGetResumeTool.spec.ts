@@ -35,11 +35,6 @@ describe("get_resume agent tool", () => {
     });
   });
 
-  // A read of the user's own data, shown only to that user. The gate exists
-  // to stop unseen writes; there is no write here.
-  it("has no approval gate", () => {
-    expect(buildGetResumeTool("user-1").needsApproval).toBeUndefined();
-  });
 
   it("is registered in the tool registry", () => {
     const tools = buildAgentTools(toolCtx);

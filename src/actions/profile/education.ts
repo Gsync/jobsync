@@ -13,6 +13,11 @@ export const addEducation = async (
   try {
     const user = await requireUser();
 
+    const result = AddEducationFormSchema.safeParse(data);
+    if (!result.success) {
+      return { success: false, message: result.error.issues[0].message };
+    }
+
     await assertResumeOwnership(data.resumeId!, user.id);
 
     const section = !data.sectionId
@@ -38,7 +43,7 @@ export const addEducation = async (
             fieldOfStudy: data.fieldOfStudy,
             locationId: data.location,
             startDate: data.startDate,
-            endDate: data.endDate,
+            endDate: data.degreeCompleted === false ? null : data.endDate,
             description: data.description,
             showDates: data.showDates ?? true,
           },
@@ -59,6 +64,11 @@ export const updateEducation = async (
   try {
     const user = await requireUser();
 
+    const result = AddEducationFormSchema.safeParse(data);
+    if (!result.success) {
+      return { success: false, message: result.error.issues[0].message };
+    }
+
     const summary = await prisma.education.update({
       where: {
         id: data.id,
@@ -70,7 +80,7 @@ export const updateEducation = async (
         fieldOfStudy: data.fieldOfStudy,
         locationId: data.location,
         startDate: data.startDate,
-        endDate: data.endDate,
+        endDate: data.degreeCompleted === false ? null : data.endDate,
         description: data.description,
         showDates: data.showDates ?? true,
       },

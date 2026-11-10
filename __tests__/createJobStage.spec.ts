@@ -1,4 +1,4 @@
-import { createJobRecord, createFirstStage } from "@/lib/jobs/createJobRecord";
+import { createJobRecord } from "@/lib/jobs/createJobRecord";
 import prisma from "@/lib/db";
 import { resolveStageTypeForStatusId } from "@/lib/jobs/resolve";
 
@@ -20,24 +20,6 @@ beforeEach(() => {
   (resolveStageTypeForStatusId as any).mockResolvedValue("t-draft");
   db.jobStatus.findUnique.mockResolvedValue({ value: "draft" });
   db.job.create.mockResolvedValue({ id: "j1", createdAt: new Date("2026-09-19T00:00:00Z") });
-});
-
-describe("createFirstStage", () => {
-  it("writes one current stage dated at the job's creation", async () => {
-    const created = new Date("2026-09-19T00:00:00Z");
-
-    await createFirstStage(db, "j1", "s-draft", "u1", created);
-
-    expect(resolveStageTypeForStatusId).toHaveBeenCalledWith("s-draft", "u1");
-    expect(db.jobStage.create).toHaveBeenCalledWith({
-      data: {
-        jobId: "j1",
-        stageTypeId: "t-draft",
-        occurredAt: created,
-        isCurrent: true,
-      },
-    });
-  });
 });
 
 describe("createJobRecord", () => {

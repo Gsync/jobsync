@@ -1,7 +1,7 @@
 "use client";
 import { AddCertificationFormSchema } from "@/models/addCertificationForm.schema";
 import { LicenseOrCertification, ResumeSection } from "@/models/profile.model";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -62,8 +62,11 @@ function AddCertification({
     },
   });
 
-  const { watch, reset, formState, resetField } = form;
-  const noExpirationValue = watch("noExpiration");
+  const { reset, formState, resetField } = form;
+  const noExpirationValue = useWatch({
+    control: form.control,
+    name: "noExpiration",
+  });
 
   useEffect(() => {
     if (certificationToEdit) {

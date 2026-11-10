@@ -1,5 +1,5 @@
 import { sortStages } from "@/lib/jobs/sortStages";
-import { jobFieldsForStage } from "@/actions/jobStage/shared";
+import { jobFieldsForStage } from "@/lib/jobs/timeline/derive";
 
 const at = (iso: string) => new Date(iso);
 

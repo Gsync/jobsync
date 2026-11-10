@@ -66,6 +66,22 @@ describe("CreateResume Component", () => {
     expect(titleInput).toHaveValue("");
   });
 
+  it("updates the derived title when the uploaded file is replaced", async () => {
+    renderComponent();
+    const input = document.querySelector('input[type="file"]')!;
+    fireEvent.change(input, {
+      target: { files: [new File(["%PDF"], "frontend_resume.pdf", { type: "application/pdf" })] },
+    });
+    await waitFor(() => expect(screen.getByTestId("resume-title-input"))
+      .toHaveValue("frontend resume"));
+
+    fireEvent.change(input, {
+      target: { files: [new File(["%PDF"], "senior-engineer.pdf", { type: "application/pdf" })] },
+    });
+    await waitFor(() => expect(screen.getByTestId("resume-title-input"))
+      .toHaveValue("senior engineer"));
+  });
+
   it("should call setResumeDialogOpen with false when cancel button is clicked", () => {
     renderComponent();
 

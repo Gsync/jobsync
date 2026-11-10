@@ -18,7 +18,7 @@ vi.mock("@prisma/client", () => {
     company: { findUnique: vi.fn(), create: vi.fn() },
     jobSource: { findUnique: vi.fn(), create: vi.fn() },
     jobStatus: { findFirst: vi.fn(), findUnique: vi.fn(), create: vi.fn() },
-    // A saved job gets its first timeline stage here too (createFirstStage).
+    // A saved job gets its first timeline stage here too (initialTimelineForNewJob).
     jobStageType: { findUnique: vi.fn(), aggregate: vi.fn(), create: vi.fn() },
     jobStage: { create: vi.fn() },
   };

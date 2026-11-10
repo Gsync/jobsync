@@ -12,10 +12,9 @@ import {
 import {
   STAGE_DETAIL_INCLUDE,
   assertStageOwned,
-  promoteStage,
   sortStages,
-  syncJobFromCurrentStage,
 } from "./shared";
+import { setJobCurrentStage } from "@/lib/jobs/timeline";
 
 // Either the picked type (checked for ownership) or a resolved custom name.
 // The parent status rides back out because format, duration and location are
@@ -79,8 +78,11 @@ export const addJobStage = async (
         },
       });
       if (parsed.setAsCurrent) {
-        await promoteStage(tx, parsed.jobId, stage.id, user.id);
-        await syncJobFromCurrentStage(tx, parsed.jobId, stage.id, user.id);
+        await setJobCurrentStage(tx, {
+          jobId: parsed.jobId,
+          stageId: stage.id,
+          userId: user.id,
+        });
       }
       return tx.jobStage.findFirst({
         where: { id: stage.id },
@@ -135,13 +137,14 @@ export const updateJobStage = async (
         where: { id: values.id },
         data: stageDataFrom(parsed, stageType.id, stageType.isInterview),
       });
-      if (parsed.setAsCurrent) {
-        await promoteStage(tx, existing.jobId, values.id!, user.id);
-      }
       // A current stage whose type or date changed re-derives the job's
       // status, so editing the type of the current stage is a status change.
       if (parsed.setAsCurrent || existing.isCurrent) {
-        await syncJobFromCurrentStage(tx, existing.jobId, values.id!, user.id);
+        await setJobCurrentStage(tx, {
+          jobId: existing.jobId,
+          stageId: values.id!,
+          userId: user.id,
+        });
       }
       return tx.jobStage.findFirst({
         where: { id: values.id },
@@ -192,8 +195,11 @@ export const deleteJobStage = async (
       const successor = dated[dated.length - 1] ?? remaining[remaining.length - 1];
       if (!successor) return;
 
-      await promoteStage(tx, stage.jobId, successor.id, user.id);
-      await syncJobFromCurrentStage(tx, stage.jobId, successor.id, user.id);
+      await setJobCurrentStage(tx, {
+        jobId: stage.jobId,
+        stageId: successor.id,
+        userId: user.id,
+      });
     });
 
     revalidatePath("/dashboard");
@@ -211,8 +217,11 @@ export const setCurrentJobStage = async (
     const stage = await assertStageOwned(stageId, user.id);
 
     await prisma.$transaction(async (tx: any) => {
-      await promoteStage(tx, stage.jobId, stageId, user.id);
-      await syncJobFromCurrentStage(tx, stage.jobId, stageId, user.id);
+      await setJobCurrentStage(tx, {
+        jobId: stage.jobId,
+        stageId,
+        userId: user.id,
+      });
     });
 
     revalidatePath("/dashboard");
@@ -226,7 +235,7 @@ export const setCurrentJobStage = async (
 // save in place (Task 5.3). Its own action rather than updateJobStage: that
 // one parses the whole Add Stage form, so a notes-only save would have to
 // reconstruct a stage type, a date and a set-as-current flag it is not
-// changing — and re-running promoteStage as a side effect of typing a note.
+// changing — and re-running setJobCurrentStage as a side effect of typing a note.
 export const setStageNotes = async (
   stageId: string,
   notes: string,
@@ -249,7 +258,7 @@ export const setStageNotes = async (
 
 // The Interviews list sets an outcome from a row menu. Its own action for the
 // same reason setStageNotes has one: updateJobStage parses the whole Add Stage
-// form and would re-run promoteStage as a side effect of one field.
+// form and would re-run setJobCurrentStage as a side effect of one field.
 export const setStageOutcome = async (
   stageId: string,
   outcome: string | null,

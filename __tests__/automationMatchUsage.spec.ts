@@ -30,7 +30,7 @@ describe("automation match usage", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("records an automations call with no num_ctx", async () => {
-    generateText.mockResolvedValue({ text: "x", totalUsage: { inputTokens: 2000, outputTokens: 150 }, finishReason: "stop" });
+    generateText.mockResolvedValue({ text: "x", usage: { inputTokens: 2000, outputTokens: 150 }, finishReason: "stop" });
     await run();
     expect(startAiCall).toHaveBeenCalledWith({ userId: "user-1", feature: "automations", provider: "ollama", model: "qwen3.5:9b" });
     expect(finish).toHaveBeenCalledWith({ usage: { inputTokens: 2000, outputTokens: 150 }, finishReason: "stop" });

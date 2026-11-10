@@ -539,6 +539,39 @@ describe("AddJob Component - Edit Mode", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
+  it("reopens for a changed edit job and merges its selected skills", async () => {
+    localStorage.clear();
+    const companies = (await getMockList(1, 10, "companies")).data;
+    const jobTitles = (await getMockList(1, 10, "jobTitles")).data;
+    const locations = (await getMockList(1, 10, "locations")).data;
+    const props = {
+      jobStatuses: mockJobStatuses, companies, jobTitles, locations,
+      jobSources: mockJobSources, tags: [], resetEditJob: mockResetEditJob,
+    };
+    const first = {
+      ...editJob,
+      tags: [{ id: "skill-react", label: "React", value: "react", createdBy: "user-id" }],
+    };
+    const second = {
+      ...editJob,
+      id: "job-edit-2",
+      jobUrl: "https://example.com/second-job",
+      tags: [{ id: "skill-ts", label: "TypeScript", value: "typescript", createdBy: "user-id" }],
+    };
+    const user = userEvent.setup({ skipHover: true });
+    const { rerender } = render(<AddJob {...props} editJob={first} />);
+    expect(screen.getByRole("button", { name: "Remove React" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    rerender(<AddJob {...props} editJob={second} />);
+    expect(screen.getByLabelText("Job URL")).toHaveValue("https://example.com/second-job");
+    expect(screen.getByRole("button", { name: "Remove TypeScript" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Remove React" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("combobox", { name: "Search or add a skill..." }));
+    expect(await screen.findByRole("option", { name: "React" })).toBeInTheDocument();
+  });
+
   it("pre-fills a free-text salary that matches no suggestion", async () => {
     await renderEditMode({ salaryRange: "$190k – $220k" } as Partial<JobResponse>);
 

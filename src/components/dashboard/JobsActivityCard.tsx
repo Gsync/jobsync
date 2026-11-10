@@ -1,6 +1,6 @@
 "use client";
 
-import { RefObject, useMemo, useRef } from "react";
+import { createContext, useContext } from "react";
 import { Pie, PieSvgProps } from "@nivo/pie";
 import { animated } from "@react-spring/web";
 import { useTheme } from "next-themes";
@@ -40,37 +40,38 @@ const FULL_TOTAL_HOLE = 96;
 
 // nivo renders an arc link label as one <text>, so stacking the hours under
 // the name needs a custom component rather than a label formatter.
-// The budget arrives by ref because a new component type would remount the
-// whole label subtree on every frame the card resizes.
-function makeArcLinkLabel(maxChars: RefObject<number>) {
-  return function ArcLinkLabel({ datum, style }: ArcLinkLabelProps) {
-    const [name, hours] = arcLabelLines(datum.data, maxChars.current);
+// The budget arrives by context because a new component type would remount
+// the whole label subtree on every frame the card resizes.
+const MaxLabelCharsContext = createContext(0);
 
-    return (
-      <animated.g opacity={style.opacity}>
-        <animated.path
-          fill="none"
-          stroke={style.linkColor}
-          strokeWidth={style.thickness}
-          d={style.path}
-        />
-        <animated.text
-          transform={style.textPosition}
-          textAnchor={style.textAnchor}
-          dominantBaseline="central"
-          fill={style.textColor}
-          fontSize={11}
-        >
-          <tspan x={0} dy="-0.5em">
-            {name}
-          </tspan>
-          <tspan x={0} dy="1.15em" fontWeight={600}>
-            {hours}
-          </tspan>
-        </animated.text>
-      </animated.g>
-    );
-  };
+function ArcLinkLabel({ datum, style }: ArcLinkLabelProps) {
+  const maxChars = useContext(MaxLabelCharsContext);
+  const [name, hours] = arcLabelLines(datum.data, maxChars);
+
+  return (
+    <animated.g opacity={style.opacity}>
+      <animated.path
+        fill="none"
+        stroke={style.linkColor}
+        strokeWidth={style.thickness}
+        d={style.path}
+      />
+      <animated.text
+        transform={style.textPosition}
+        textAnchor={style.textAnchor}
+        dominantBaseline="central"
+        fill={style.textColor}
+        fontSize={11}
+      >
+        <tspan x={0} dy="-0.5em">
+          {name}
+        </tspan>
+        <tspan x={0} dy="1.15em" fontWeight={600}>
+          {hours}
+        </tspan>
+      </animated.text>
+    </animated.g>
+  );
 }
 
 export default function JobsActivityCard({ data }: JobsActivityCardProps) {
@@ -98,18 +99,12 @@ export default function JobsActivityCard({ data }: JobsActivityCardProps) {
   );
   const layout = donutLayout(chartWidth);
   const roomyTotal = layout.holeDiameter >= FULL_TOTAL_HOLE;
-  const maxLabelChars = useRef(layout.maxLabelChars);
-  maxLabelChars.current = layout.maxLabelChars;
-  const arcLinkLabelComponent = useMemo(
-    () => makeArcLinkLabel(maxLabelChars),
-    [],
-  );
 
   return (
     <Card className="@lg:col-span-2">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-lg text-green-600 min-w-0 truncate">
+          <CardTitle className="text-lg text-green-700 dark:text-green-600 min-w-0 truncate">
             Jobs &amp; Activity
           </CardTitle>
           <div
@@ -146,65 +141,67 @@ export default function JobsActivityCard({ data }: JobsActivityCardProps) {
             </div>
           ) : (
             chartWidth > 0 && (
-              <Pie
-                data={slices}
-                // Sized from the card's own measurement rather than a second
-                // one of nivo's: two observers on this box update a frame
-                // apart, and the frame where the new gutters met the old
-                // width collapsed the donut to half its radius.
-                width={chartWidth}
-                height={CHART_HEIGHT}
-                // Width changes land on every frame of the panel's 200ms
-                // transition, so the donut tracks them instead of springing
-                // toward each one in turn.
-                animate={false}
-                margin={{
-                  top: 26,
-                  right: layout.gutter,
-                  bottom: 26,
-                  left: layout.gutter,
-                }}
-                innerRadius={0.72}
-                padAngle={2}
-                cornerRadius={2}
-                activeOuterRadiusOffset={4}
-                colors={{ datum: "data.color" }}
-                borderWidth={0}
-                enableArcLabels={false}
-                enableArcLinkLabels
-                arcLinkLabelComponent={arcLinkLabelComponent}
-                arcLinkLabelsThickness={2}
-                arcLinkLabelsDiagonalLength={10}
-                arcLinkLabelsStraightLength={12}
-                arcLinkLabelsTextOffset={4}
-                arcLinkLabelsColor={{ from: "data.color" }}
-                arcLinkLabelsTextColor={ARC_LABEL_TEXT_COLOR[theme]}
-                theme={{
-                  text: { fontSize: 11 },
-                  tooltip: {
-                    container: { background: "#1e293b", color: "#fff" },
-                  },
-                }}
-                tooltip={({ datum }) => (
-                  <div
-                    style={{
-                      background: "#1e293b",
-                      color: "#fff",
-                      padding: "6px 12px",
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    <strong>{datum.data.label}</strong> — {datum.value}h
-                    {datum.data.breakdown?.map((activity: TopActivityType) => (
-                      <div key={activity.label}>
-                        {activity.label} — {activity.hours}h
-                      </div>
-                    ))}
-                  </div>
-                )}
-              />
+              <MaxLabelCharsContext.Provider value={layout.maxLabelChars}>
+                <Pie
+                  data={slices}
+                  // Sized from the card's own measurement rather than a second
+                  // one of nivo's: two observers on this box update a frame
+                  // apart, and the frame where the new gutters met the old
+                  // width collapsed the donut to half its radius.
+                  width={chartWidth}
+                  height={CHART_HEIGHT}
+                  // Width changes land on every frame of the panel's 200ms
+                  // transition, so the donut tracks them instead of springing
+                  // toward each one in turn.
+                  animate={false}
+                  margin={{
+                    top: 26,
+                    right: layout.gutter,
+                    bottom: 26,
+                    left: layout.gutter,
+                  }}
+                  innerRadius={0.72}
+                  padAngle={2}
+                  cornerRadius={2}
+                  activeOuterRadiusOffset={4}
+                  colors={{ datum: "data.color" }}
+                  borderWidth={0}
+                  enableArcLabels={false}
+                  enableArcLinkLabels
+                  arcLinkLabelComponent={ArcLinkLabel}
+                  arcLinkLabelsThickness={2}
+                  arcLinkLabelsDiagonalLength={10}
+                  arcLinkLabelsStraightLength={12}
+                  arcLinkLabelsTextOffset={4}
+                  arcLinkLabelsColor={{ from: "data.color" }}
+                  arcLinkLabelsTextColor={ARC_LABEL_TEXT_COLOR[theme]}
+                  theme={{
+                    text: { fontSize: 11 },
+                    tooltip: {
+                      container: { background: "#1e293b", color: "#fff" },
+                    },
+                  }}
+                  tooltip={({ datum }) => (
+                    <div
+                      style={{
+                        background: "#1e293b",
+                        color: "#fff",
+                        padding: "6px 12px",
+                        borderRadius: "4px",
+                        fontSize: "12px",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <strong>{datum.data.label}</strong> — {datum.value}h
+                      {datum.data.breakdown?.map((activity: TopActivityType) => (
+                        <div key={activity.label}>
+                          {activity.label} — {activity.hours}h
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                />
+              </MaxLabelCharsContext.Provider>
             )
           )}
           <div

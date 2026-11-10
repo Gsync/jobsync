@@ -37,8 +37,8 @@ export const AgentAddJobInputShape = AgentAddJobSchema.shape;
 
 // Parsed inside execute, after the model's input has been validated.
 export const AgentAddJobParseSchema = AgentAddJobSchema.extend({
-  dueDate: z.string().datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
-  appliedDate: z.string().datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
+  dueDate: z.iso.datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
+  appliedDate: z.iso.datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
 });
 
 export type AgentAddJobInput = z.infer<typeof AgentAddJobParseSchema>;

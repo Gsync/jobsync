@@ -71,6 +71,13 @@ function Probe() {
       >
         sendMessage
       </button>
+      <button
+        onClick={() =>
+          void c.sendMessage({ parts: [{ type: "text", text: "second" }] } as any)
+        }
+      >
+        sendSecond
+      </button>
       <button onClick={() => c.seedExchange("Add a job posting", "canned")}>
         seedExchange
       </button>
@@ -260,6 +267,39 @@ describe("AgentChatProvider", () => {
     expect(screen.getByTestId("queued").textContent).toBe("");
   });
 
+  it("dispatches the held message exactly once across later renders", async () => {
+    chat.status = "streaming";
+    const { rerender } = setup();
+    await userEvent.click(screen.getByText("sendMessage"));
+
+    chat.status = "ready";
+    await act(async () => {
+      rerender(tree());
+    });
+    await act(async () => {
+      rerender(tree());
+    });
+    await act(async () => {
+      rerender(tree());
+    });
+    expect(chat.sendMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it("replaces a held message with a newer one and sends only that", async () => {
+    chat.status = "streaming";
+    const { rerender } = setup();
+    await userEvent.click(screen.getByText("sendMessage"));
+    await userEvent.click(screen.getByText("sendSecond"));
+    expect(screen.getByTestId("queued").textContent).toBe("second");
+
+    chat.status = "ready";
+    await act(async () => {
+      rerender(tree());
+    });
+    expect(chat.sendMessage).toHaveBeenCalledTimes(1);
+    expect(chat.sendMessage.mock.calls[0][0].parts[0].text).toBe("second");
+  });
+
   it("holds a send while an approval is pending", async () => {
     chat.messages = [approvalMessage];
     setup([approvalMessage]);
@@ -380,6 +420,7 @@ describe("AgentChatProvider", () => {
   });
 
   it("puts the page context in the request body", () => {
+    window.history.pushState({}, "", "/dashboard/myjobs");
     render(
       <SidebarProvider initialExpanded>
         <RightRailProvider>
@@ -396,6 +437,22 @@ describe("AgentChatProvider", () => {
     const transport = chatInit().transport as any;
     const { body } = transport.prepareSendMessagesRequest({ messages: [] });
     expect(body.pageContext).toEqual({ route: "/dashboard/myjobs" });
+  });
+
+  it("sends the page context current at send time, after a navigation", async () => {
+    window.history.pushState({}, "", "/dashboard/myjobs");
+    const { rerender } = setup();
+    currentPathname = "/dashboard/profile/resume/r9";
+    window.history.pushState({}, "", currentPathname);
+    await act(async () => {
+      rerender(tree());
+    });
+    const transport = chatInit().transport as any;
+    const { body } = transport.prepareSendMessagesRequest({ messages: [] });
+    expect(body.pageContext).toEqual({
+      route: "/dashboard/profile/resume/r9",
+      resumeId: "r9",
+    });
   });
 
   const reviewToolMessage = {

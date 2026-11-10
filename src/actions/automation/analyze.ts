@@ -121,7 +121,7 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
         try {
           generated = await generateText({
             model,
-            system: JOB_MATCH_SYSTEM_PROMPT,
+            instructions: JOB_MATCH_SYSTEM_PROMPT,
             prompt: promptText,
             temperature: 0.3,
           });
@@ -130,12 +130,12 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
           throw error;
         }
         void tracker.finish({
-          usage: generated.totalUsage,
+          usage: generated.usage,
           finishReason: generated.finishReason,
         });
         span.setAttrs(
           genAiResponseAttrs({
-            usage: generated.totalUsage,
+            usage: generated.usage,
             finishReason: generated.finishReason,
             text: generated.text,
           }),

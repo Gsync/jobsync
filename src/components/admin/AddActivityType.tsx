@@ -28,9 +28,9 @@ import { createActivityType } from "@/actions/activity.actions";
 const AddActivityTypeFormSchema = z.object({
   label: z
     .string({ error: "Activity type label is required." })
-    .min(1, { message: "Activity type label cannot be empty." })
+    .min(1, { error: "Activity type label cannot be empty." })
     .max(60, {
-      message: "Activity type label must be 60 characters or fewer.",
+      error: "Activity type label must be 60 characters or fewer.",
     }),
 });
 

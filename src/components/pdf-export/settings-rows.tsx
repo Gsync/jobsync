@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ChevronDown, ChevronRight, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -84,9 +84,11 @@ export function StepperRow({
 
   // Resyncs when the value moves without the input being touched: Reset,
   // or the first read from storage.
-  useEffect(() => {
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
     setDraft(String(value));
-  }, [value]);
+  }
 
   const stepBy = (direction: 1 | -1) =>
     onCommit(clampNumericField(field, value + direction * spec.step));

@@ -1,0 +1,502 @@
+[
+  {
+    "name": "add_job",
+    "description": "Add a job application to JobSync. Resolves or creates company, job title, location, and source by name. Returns a transparency report of what was matched vs. created.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "company": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jobTitle": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jobDescription": {
+          "type": "string",
+          "description": "The complete job posting text, copied in full — do not summarize, shorten, or paraphrase it. Markdown-formatted is supported; plain text also works. Use 'N/A' only if no description is available at all."
+        },
+        "location": {
+          "description": "City, province/state, country, or 'Remote' — e.g. 'Calgary, AB'. Do not include a street address.",
+          "type": "string"
+        },
+        "source": {
+          "description": "Job board or site the listing came from, e.g. 'LinkedIn', 'Indeed', 'company website'. If not stated explicitly, infer it from the job posting's URL/domain when possible instead of leaving it blank.",
+          "type": "string"
+        },
+        "jobType": {
+          "description": "Employment type: 'Full-time', 'Part-time', or 'Contract'",
+          "type": "string"
+        },
+        "workplaceType": {
+          "description": "Work arrangement stated in the posting. One of: Remote, Hybrid, Onsite.",
+          "type": "string",
+          "enum": [
+            "Remote",
+            "Hybrid",
+            "Onsite"
+          ]
+        },
+        "status": {
+          "description": "Application status. One of: new, draft, applied, interview, offer, offer-accepted, offer-declined, rejected, expired, archived, withdrawn. Defaults to 'draft'.",
+          "type": "string",
+          "enum": [
+            "new",
+            "draft",
+            "applied",
+            "interview",
+            "offer",
+            "offer-accepted",
+            "offer-declined",
+            "rejected",
+            "expired",
+            "archived",
+            "withdrawn"
+          ]
+        },
+        "dueDate": {
+          "description": "Application deadline as an ISO-8601 datetime string. Defaults to 3 days from now if omitted.",
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        },
+        "applied": {
+          "description": "Set true if you have already submitted the application",
+          "type": "boolean"
+        },
+        "appliedDate": {
+          "description": "Date the application was submitted as an ISO-8601 datetime string",
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        },
+        "jobUrl": {
+          "description": "Direct URL to the job posting",
+          "type": "string",
+          "format": "uri"
+        },
+        "salaryRange": {
+          "description": "Salary range as a free-form string, e.g. '$120k–$150k' or '100,000 CAD'",
+          "type": "string"
+        },
+        "tags": {
+          "description": "Skills required for the job (max 10 applied, extras are dropped). Tags are created if they don't exist. e.g. ['React', 'TypeScript', 'Node.js']",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowDuplicate": {
+          "description": "Force-create even if a matching job already exists. Prefer upsert:true for re-runs of the same search; use this only for a genuinely different posting.",
+          "type": "boolean"
+        },
+        "upsert": {
+          "description": "If this posting is already saved, update it with the fields supplied here instead of reporting a duplicate. A posting counts as already saved when it matches on URL, or on company+title within the dedupe window — so this works for postings with no URL at all. Set this on every re-run of a saved or scheduled search, whether or not you have a URL.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "company",
+        "jobTitle",
+        "jobDescription"
+      ]
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "find_job",
+    "description": "Look up whether a job posting is already saved in JobSync, by URL. Call this before add_job when re-running a search. With no URL to look up, use add_job's upsert instead of skipping dedupe.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "jobUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "Direct URL to the job posting. Matched against saved jobs using the same canonical key as add_job's duplicate detection, so tracking parameters and host casing don't matter."
+        }
+      },
+      "required": [
+        "jobUrl"
+      ]
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "update_job",
+    "description": "Correct or enrich a job previously added through MCP. Only the fields you supply change. Supplying a fuller jobDescription re-classifies the posting and requests a fresh match analysis — use this instead of re-adding with allowDuplicate.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The id of the job to update, as returned by add_job or find_job. Only jobs created through MCP can be updated."
+        },
+        "company": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jobTitle": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jobDescription": {
+          "description": "The complete job posting text, copied in full — do not summarize. Supplying this re-classifies the job's description completeness and, if it is now substantive enough, a fresh match analysis is requested.",
+          "type": "string",
+          "minLength": 10
+        },
+        "location": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "jobType": {
+          "description": "Employment type: 'Full-time', 'Part-time', or 'Contract'",
+          "type": "string"
+        },
+        "workplaceType": {
+          "description": "Work arrangement stated in the posting. One of: Remote, Hybrid, Onsite.",
+          "type": "string",
+          "enum": [
+            "Remote",
+            "Hybrid",
+            "Onsite"
+          ]
+        },
+        "status": {
+          "description": "Application status. One of: new, draft, applied, interview, offer, offer-accepted, offer-declined, rejected, expired, archived, withdrawn.",
+          "type": "string",
+          "enum": [
+            "new",
+            "draft",
+            "applied",
+            "interview",
+            "offer",
+            "offer-accepted",
+            "offer-declined",
+            "rejected",
+            "expired",
+            "archived",
+            "withdrawn"
+          ]
+        },
+        "dueDate": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        },
+        "applied": {
+          "type": "boolean"
+        },
+        "appliedDate": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        },
+        "jobUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "salaryRange": {
+          "type": "string"
+        },
+        "tags": {
+          "description": "Skills required for the job, e.g. ['React', 'TypeScript']. Replaces the job's existing tags wholesale rather than merging, so include the tags returned by find_job that should be kept (max 10 applied).",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "jobId"
+      ]
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "add_question",
+    "description": "Add an entry to the Question Bank. Resolves or creates tags by name. Returns a transparency report of what was matched vs. created.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "question": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 500
+        },
+        "answer": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 5000,
+          "description": "Markdown-formatted answer/notes (required). Plain text also works."
+        },
+        "tags": {
+          "description": "Skill/topic tags (max 10 applied, extras dropped). Created if they don't exist.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "question",
+        "answer"
+      ]
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "save_match_result",
+    "description": "Persist a job-fit match analysis (produced by you, the agent) against a job previously created with add_job. Call this after add_job hands you a match directive.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The id of the job returned by add_job."
+        },
+        "resumeId": {
+          "description": "The id of the resume this match was scored against, exactly as given in the add_job directive. Omit only if the directive had none.",
+          "type": "string",
+          "minLength": 1
+        },
+        "matchText": {
+          "type": "string",
+          "minLength": 20,
+          "description": "Your full match analysis: a leading 'SCORES: match=<0-100> recommendation=<strong|good|partial|weak>' line, then a markdown body."
+        }
+      },
+      "required": [
+        "jobId",
+        "matchText"
+      ]
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "add_jobs_batch",
+    "description": "Add several jobs in one call. Same per-item behaviour as add_job (including upsert and the match directive); returns one labelled result per item. Use this for scheduled runs instead of N sequential add_job calls.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "jobs": {
+          "minItems": 1,
+          "maxItems": 10,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "company": {
+                "type": "string",
+                "minLength": 1
+              },
+              "jobTitle": {
+                "type": "string",
+                "minLength": 1
+              },
+              "jobDescription": {
+                "type": "string",
+                "description": "The complete job posting text, copied in full — do not summarize, shorten, or paraphrase it. Markdown-formatted is supported; plain text also works. Use 'N/A' only if no description is available at all."
+              },
+              "location": {
+                "description": "City, province/state, country, or 'Remote' — e.g. 'Calgary, AB'. Do not include a street address.",
+                "type": "string"
+              },
+              "source": {
+                "description": "Job board or site the listing came from, e.g. 'LinkedIn', 'Indeed', 'company website'. If not stated explicitly, infer it from the job posting's URL/domain when possible instead of leaving it blank.",
+                "type": "string"
+              },
+              "jobType": {
+                "description": "Employment type: 'Full-time', 'Part-time', or 'Contract'",
+                "type": "string"
+              },
+              "workplaceType": {
+                "description": "Work arrangement stated in the posting. One of: Remote, Hybrid, Onsite.",
+                "type": "string",
+                "enum": [
+                  "Remote",
+                  "Hybrid",
+                  "Onsite"
+                ]
+              },
+              "status": {
+                "description": "Application status. One of: new, draft, applied, interview, offer, offer-accepted, offer-declined, rejected, expired, archived, withdrawn. Defaults to 'draft'.",
+                "type": "string",
+                "enum": [
+                  "new",
+                  "draft",
+                  "applied",
+                  "interview",
+                  "offer",
+                  "offer-accepted",
+                  "offer-declined",
+                  "rejected",
+                  "expired",
+                  "archived",
+                  "withdrawn"
+                ]
+              },
+              "dueDate": {
+                "description": "Application deadline as an ISO-8601 datetime string. Defaults to 3 days from now if omitted.",
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "applied": {
+                "description": "Set true if you have already submitted the application",
+                "type": "boolean"
+              },
+              "appliedDate": {
+                "description": "Date the application was submitted as an ISO-8601 datetime string",
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "jobUrl": {
+                "description": "Direct URL to the job posting",
+                "type": "string",
+                "format": "uri"
+              },
+              "salaryRange": {
+                "description": "Salary range as a free-form string, e.g. '$120k–$150k' or '100,000 CAD'",
+                "type": "string"
+              },
+              "tags": {
+                "description": "Skills required for the job (max 10 applied, extras are dropped). Tags are created if they don't exist. e.g. ['React', 'TypeScript', 'Node.js']",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "allowDuplicate": {
+                "description": "Force-create even if a matching job already exists. Prefer upsert:true for re-runs of the same search; use this only for a genuinely different posting.",
+                "type": "boolean"
+              },
+              "upsert": {
+                "description": "If this posting is already saved, update it with the fields supplied here instead of reporting a duplicate. A posting counts as already saved when it matches on URL, or on company+title within the dedupe window — so this works for postings with no URL at all. Set this on every re-run of a saved or scheduled search, whether or not you have a URL.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "company",
+              "jobTitle",
+              "jobDescription"
+            ]
+          },
+          "description": "Up to 10 jobs, each with the same fields as add_job. Processed in order; each item consumes one unit of the MCP rate-limit budget."
+        }
+      },
+      "required": [
+        "jobs"
+      ]
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "save_match_results_batch",
+    "description": "Persist several job-fit match analyses in one call. Same per-item behaviour as save_match_result; returns one labelled result per item.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "results": {
+          "minItems": 1,
+          "maxItems": 10,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "jobId": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The id of the job returned by add_job."
+              },
+              "resumeId": {
+                "description": "The id of the resume this match was scored against, exactly as given in the add_job directive. Omit only if the directive had none.",
+                "type": "string",
+                "minLength": 1
+              },
+              "matchText": {
+                "type": "string",
+                "minLength": 20,
+                "description": "Your full match analysis: a leading 'SCORES: match=<0-100> recommendation=<strong|good|partial|weak>' line, then a markdown body."
+              }
+            },
+            "required": [
+              "jobId",
+              "matchText"
+            ]
+          },
+          "description": "Up to 10 match analyses, each with the same fields as save_match_result."
+        }
+      },
+      "required": [
+        "results"
+      ]
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "review_resume",
+    "description": "Fetch the user's default resume so you can review it. Returns the normalized resume text plus a directive — produce the review yourself, then call save_resume_review with the result.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {}
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "save_resume_review",
+    "description": "Persist a resume review (produced by you, the agent) against the resume previously handed to you by review_resume. Call this after review_resume hands you a review directive.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "resumeId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The id of the resume this review was produced for, exactly as given in the review_resume directive."
+        },
+        "reviewText": {
+          "type": "string",
+          "minLength": 20,
+          "description": "Your full resume review: a leading 'SCORES: overall=<0-100> impact=<0-100> clarity=<0-100> ats=<0-100>' line, then a markdown body."
+        }
+      },
+      "required": [
+        "resumeId",
+        "reviewText"
+      ]
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  }
+]

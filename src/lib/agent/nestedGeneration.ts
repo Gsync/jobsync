@@ -112,7 +112,7 @@ export async function runNestedGeneration({
     try {
       const sub = streamText({
         model,
-        system,
+        instructions: system,
         prompt,
         temperature,
         abortSignal: signal,
@@ -134,12 +134,12 @@ export async function runNestedGeneration({
 
       // The stream running out is not the generation finishing, and neither
       // case throws: an abort ends textStream cleanly and rejects this
-      // promise, and a body that stops without Ollama's done chunk resolves
-      // to "other".
+      // promise, and a body that stops without its done chunk resolves to
+      // "other" (Ollama) or "interrupted" (DeepSeek, OpenAI).
       const finishReason = await sub.finishReason;
       // Defensively: an aborted stream rejects this, the same trap the
       // finishReason guard exists for.
-      const tokens = await Promise.resolve(sub.totalUsage).catch(() => undefined);
+      const tokens = await Promise.resolve(sub.usage).catch(() => undefined);
       void tracker.finish({ usage: tokens, finishReason });
       if (finishReason !== "stop") {
         span.setError(new Error(`finishReason=${finishReason}`));

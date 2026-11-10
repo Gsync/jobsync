@@ -1,5 +1,12 @@
-import { createUIMessageStream, stepCountIs, streamText, tool } from "ai";
-import { MockLanguageModelV3, simulateReadableStream } from "ai/test";
+import {
+  createUIMessageStream,
+  isStepCount,
+  simulateReadableStream,
+  streamText,
+  tool,
+  toUIMessageStream,
+} from "ai";
+import { MockLanguageModelV4 } from "ai/test";
 import { z } from "zod";
 
 // The whole review design rests on this: a writer.write() issued from inside
@@ -11,7 +18,7 @@ const usage = {
 } as any;
 
 function toolCallingModel() {
-  return new MockLanguageModelV3({
+  return new MockLanguageModelV4({
     doStream: async () => ({
       stream: simulateReadableStream({
         chunks: [
@@ -25,7 +32,7 @@ function toolCallingModel() {
             toolName: "slow_tool",
             input: "{}",
           },
-          { type: "finish", finishReason: "tool-calls", usage },
+          { type: "finish", finishReason: { unified: "tool-calls", raw: undefined }, usage },
         ] as any,
         chunkDelayInMs: 1,
       }),
@@ -51,7 +58,7 @@ describe("nested generation stream plumbing", () => {
         const result = streamText({
           model: toolCallingModel(),
           prompt: "go",
-          stopWhen: [stepCountIs(1)],
+          stopWhen: [isStepCount(1)],
           tools: {
             slow_tool: tool({
               description: "writes while it runs",
@@ -71,7 +78,7 @@ describe("nested generation stream plumbing", () => {
             }),
           },
         });
-        writer.merge(result.toUIMessageStream());
+        writer.merge(toUIMessageStream({ stream: result.stream }));
       },
     });
 

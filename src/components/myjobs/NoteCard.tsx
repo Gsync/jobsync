@@ -27,6 +27,7 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
             size="icon"
             className="h-7 w-7"
             onClick={() => onEdit(note)}
+            aria-label="Edit note"
           >
             <Pencil className="h-3.5 w-3.5" />
           </Button>
@@ -35,6 +36,7 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
             size="icon"
             className="h-7 w-7 text-destructive"
             onClick={() => onDelete(note.id)}
+            aria-label="Delete note"
           >
             <Trash className="h-3.5 w-3.5" />
           </Button>

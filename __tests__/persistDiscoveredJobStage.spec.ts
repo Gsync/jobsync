@@ -5,7 +5,11 @@ import { resolveStageTypeForStatusId } from "@/lib/jobs/resolve";
 import { UNANALYZED_MATCH_MARKER } from "@/actions/job/shared";
 
 vi.mock("@/lib/db", () => ({
-  default: { job: { create: vi.fn() }, jobStage: { create: vi.fn() } },
+  default: {
+    job: { create: vi.fn() },
+    jobStage: { create: vi.fn() },
+    jobStatus: { findUnique: vi.fn() },
+  },
 }));
 vi.mock("@/lib/scraper/mapper", () => ({ mapScrapedJobToJobRecord: vi.fn() }));
 vi.mock("@/lib/jobs/resolve", () => ({
@@ -27,6 +31,7 @@ const job = {
 beforeEach(() => {
   vi.clearAllMocks();
   (resolveStageTypeForStatusId as any).mockResolvedValue("t-new");
+  mockDb.jobStatus.findUnique.mockResolvedValue({ value: "new" });
   (mapScrapedJobToJobRecord as any).mockResolvedValue({
     statusId: "s-new",
     createdAt,

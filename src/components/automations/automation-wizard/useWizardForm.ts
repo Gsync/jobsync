@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CreateAutomationSchema,
@@ -38,6 +38,15 @@ export function useWizardForm({
 }: UseWizardFormArgs) {
   const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previousInputs, setPreviousInputs] = useState({ open, editAutomation });
+
+  if (
+    previousInputs.open !== open ||
+    previousInputs.editAutomation !== editAutomation
+  ) {
+    setPreviousInputs({ open, editAutomation });
+    if (open) setStep(0);
+  }
 
   const form = useForm<CreateAutomationInput>({
     resolver: zodResolver(CreateAutomationSchema),
@@ -66,11 +75,41 @@ export function useWizardForm({
         matchThreshold: editAutomation?.matchThreshold ?? 80,
         scheduleHour: editAutomation?.scheduleHour ?? 8,
       });
-      setStep(0);
     }
   }, [open, editAutomation, form]);
 
-  const formValues = form.watch();
+  const [
+    name,
+    jobBoard,
+    keywords,
+    location,
+    sourceConfig,
+    resumeId,
+    matchThreshold,
+    scheduleHour,
+  ] = useWatch({
+    control: form.control,
+    name: [
+      "name",
+      "jobBoard",
+      "keywords",
+      "location",
+      "sourceConfig",
+      "resumeId",
+      "matchThreshold",
+      "scheduleHour",
+    ],
+  });
+  const formValues: CreateAutomationInput = {
+    name,
+    jobBoard,
+    keywords,
+    location,
+    sourceConfig,
+    resumeId,
+    matchThreshold,
+    scheduleHour,
+  };
 
   const onSubmit = async (data: CreateAutomationInput) => {
     setIsSubmitting(true);

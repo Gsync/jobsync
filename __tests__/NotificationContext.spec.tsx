@@ -38,8 +38,20 @@ it("refetches on navigation and on focus, never on a timer", async () => {
   rerender(<NotificationProvider><Probe /></NotificationProvider>);
   await waitFor(() => expect(getNotificationSummary).toHaveBeenCalledTimes(2));
 
+  await act(async () => { vi.advanceTimersByTime(6000); });
   await act(async () => { window.dispatchEvent(new Event("focus")); });
   await waitFor(() => expect(getNotificationSummary).toHaveBeenCalledTimes(3));
+  vi.useRealTimers();
+});
+
+it("skips passive refetches within 5s of the last fetch", async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  render(<NotificationProvider><Probe /></NotificationProvider>);
+  await waitFor(() => expect(getNotificationSummary).toHaveBeenCalledTimes(1));
+
+  await act(async () => { window.dispatchEvent(new Event("focus")); });
+  await act(async () => { window.dispatchEvent(new Event("focus")); });
+  expect(getNotificationSummary).toHaveBeenCalledTimes(1);
   vi.useRealTimers();
 });
 

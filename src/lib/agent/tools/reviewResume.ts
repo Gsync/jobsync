@@ -1,8 +1,7 @@
 import "server-only";
 
 import { tool, type LanguageModel, type UIMessageStreamWriter } from "ai";
-import { TEMPERATURES } from "@/lib/ai/config";
-import { APP_CONSTANTS } from "@/lib/constants";
+import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
 import { AgentReviewResumeSchema } from "@/models/agent.schema";
 import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
@@ -41,7 +40,7 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
   return tool({
     description: AGENT_TOOL_DESCRIPTIONS.review_resume,
     inputSchema: AgentReviewResumeSchema,
-    // No needsApproval: this writes only the caller's own reviewData, and
+    // Not in toolApproval: this writes only the caller's own reviewData, and
     // they watch the whole thing stream before it lands.
     execute: async (raw, { toolCallId, abortSignal }): Promise<AgentReviewResumeResult> => {
       const lookup = await resolveResumeForAgent(ctx.userId, {

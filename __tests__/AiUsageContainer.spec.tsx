@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import AiUsageSettings from "@/components/settings/AiUsageSettings";
+import AiUsageContainer from "@/components/ai-usage/AiUsageContainer";
 import { getAiUsage } from "@/actions/aiUsage.actions";
 import type { AiUsageSummary } from "@/models/aiUsage.model";
 
@@ -49,14 +49,14 @@ const summary = (over: Partial<AiUsageSummary> = {}): AiUsageSummary => ({
   ...over,
 });
 
-describe("AiUsageSettings", () => {
+describe("AiUsageContainer", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (getAiUsage as any).mockResolvedValue({ success: true, data: summary() });
   });
 
   it("loads 30 days by default with the viewer's timezone", async () => {
-    render(<AiUsageSettings />);
+    render(<AiUsageContainer />);
     await screen.findByText("3.65M");
     const arg = (getAiUsage as any).mock.calls[0][0];
     expect(arg.rangeDays).toBe(30);
@@ -65,7 +65,7 @@ describe("AiUsageSettings", () => {
   });
 
   it("renders the stat cards from the design, without a thinking line", async () => {
-    render(<AiUsageSettings />);
+    render(<AiUsageContainer />);
     expect(await screen.findByText("3.02M input · 0.63M output")).toBeInTheDocument();
     expect(screen.queryByText(/thinking/i)).not.toBeInTheDocument();
     expect(screen.getByText("837")).toBeInTheDocument();
@@ -76,7 +76,7 @@ describe("AiUsageSettings", () => {
   });
 
   it("shows the four failure kinds and the stopped footer", async () => {
-    render(<AiUsageSettings />);
+    render(<AiUsageContainer />);
     await screen.findByText("Provider error");
     expect(screen.getAllByText("Timed out").length).toBeGreaterThan(0);
     expect(screen.getByText("13 of 837 calls")).toBeInTheDocument();
@@ -84,19 +84,19 @@ describe("AiUsageSettings", () => {
   });
 
   it("flags models near their context limit", async () => {
-    render(<AiUsageSettings />);
+    render(<AiUsageContainer />);
     expect(await screen.findByText("9 calls near context limit")).toBeInTheDocument();
   });
 
   it("collapses a provider's models", async () => {
-    render(<AiUsageSettings />);
+    render(<AiUsageContainer />);
     const toggle = await screen.findByRole("button", { name: /Ollama/ });
     await userEvent.click(toggle);
     expect(screen.queryByText("9 calls near context limit")).not.toBeInTheDocument();
   });
 
   it("refetches when switching to 7 days", async () => {
-    render(<AiUsageSettings />);
+    render(<AiUsageContainer />);
     await screen.findByText("3.65M");
     await userEvent.click(screen.getByRole("button", { name: "7 days" }));
     await waitFor(() => expect((getAiUsage as any).mock.calls.at(-1)[0].rangeDays).toBe(7));
@@ -104,7 +104,7 @@ describe("AiUsageSettings", () => {
 
   it("hides the change line when the previous period was empty", async () => {
     (getAiUsage as any).mockResolvedValue({ success: true, data: summary({ totals: { ...summary().totals, previousCalls: 0 } }) });
-    render(<AiUsageSettings />);
+    render(<AiUsageContainer />);
     await screen.findByText("837");
     expect(screen.queryByText(/vs previous/)).not.toBeInTheDocument();
   });
@@ -114,19 +114,19 @@ describe("AiUsageSettings", () => {
       success: true,
       data: summary({ totals: { ...summary().totals, calls: 0 }, providers: [], features: [], recent: [] }),
     });
-    render(<AiUsageSettings />);
+    render(<AiUsageContainer />);
     expect(await screen.findByText("No AI calls in the last 30 days.")).toBeInTheDocument();
   });
 
   it("shows an inline error when loading fails", async () => {
     (getAiUsage as any).mockResolvedValue({ success: false, message: "boom" });
-    render(<AiUsageSettings />);
+    render(<AiUsageContainer />);
     expect(await screen.findByText("Couldn't load AI usage.")).toBeInTheDocument();
   });
 
   it("shows the inline error, not a spinner, when the action throws", async () => {
     (getAiUsage as any).mockRejectedValue(new Error("fetch failed"));
-    render(<AiUsageSettings />);
+    render(<AiUsageContainer />);
     expect(await screen.findByText("Couldn't load AI usage.")).toBeInTheDocument();
   });
 });

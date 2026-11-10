@@ -7,13 +7,12 @@ import path from "path";
 import fs from "fs";
 import { getModel } from "@/lib/ai/providers";
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
-import { TEMPERATURES } from "@/lib/ai/config";
 import { preprocessText } from "@/lib/ai";
 import { extractText } from "@/lib/ai/import/extract-text";
 import { ResumeImportSchema } from "@/models/resumeImport.schema";
 import { AiModel } from "@/models/ai.model";
 import prisma from "@/lib/db";
-import { APP_CONSTANTS } from "@/lib/constants";
+import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import { isResumeFilePath } from "@/lib/resumeFiles";
 import {
   RESUME_IMPORT_SYSTEM_PROMPT,
@@ -170,7 +169,7 @@ export const POST = async (req: NextRequest) => {
       streamText({
         model,
         output: Output.object({ schema: ResumeImportSchema }),
-        system: RESUME_IMPORT_SYSTEM_PROMPT,
+        instructions: RESUME_IMPORT_SYSTEM_PROMPT,
         prompt: buildResumeImportPrompt(preprocessResult.data.normalizedText),
         temperature: TEMPERATURES.ANALYSIS,
         abortSignal: controller.signal,
@@ -182,11 +181,11 @@ export const POST = async (req: NextRequest) => {
           // it as guidance.
           openai: { strictJsonSchema: false },
         },
-        onFinish: ({ totalUsage, finishReason }) => {
+        onEnd: ({ usage, finishReason }) => {
           clearTimeout(timer);
-          void importUsage.finish({ usage: totalUsage, finishReason });
+          void importUsage.finish({ usage, finishReason });
           importSpan.end(
-            genAiResponseAttrs({ usage: totalUsage, finishReason }),
+            genAiResponseAttrs({ usage, finishReason }),
           );
         },
         onError: ({ error }) => {

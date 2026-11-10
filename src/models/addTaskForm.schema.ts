@@ -5,10 +5,10 @@ export const AddTaskFormSchema = z.object({
   userId: z.string().optional(),
   title: z
     .string({ error: "Title is required." })
-    .min(2, { message: "Title must be at least 2 characters." }),
+    .min(2, { error: "Title must be at least 2 characters." }),
   description: z
     .string()
-    .max(2000, { message: "Description cannot exceed 2000 characters." })
+    .max(2000, { error: "Description cannot exceed 2000 characters." })
     .optional()
     .nullable(),
   status: z.enum(["in-progress", "complete", "needs-attention", "cancelled"]),
@@ -25,7 +25,7 @@ export const AddTaskFormSchema = z.object({
         today.setHours(0, 0, 0, 0);
         return date >= today;
       },
-      { message: "Due date cannot be in the past." }
+      { error: "Due date cannot be in the past." }
     ),
   activityTypeId: z.string().optional().nullable(),
 });

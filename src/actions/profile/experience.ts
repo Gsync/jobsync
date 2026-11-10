@@ -13,6 +13,11 @@ export const addExperience = async (
   try {
     const user = await requireUser();
 
+    const result = AddExperienceFormSchema.safeParse(data);
+    if (!result.success) {
+      return { success: false, message: result.error.issues[0].message };
+    }
+
     await assertResumeOwnership(data.resumeId!, user.id);
 
     if (!data.sectionId && !data.sectionTitle) {
@@ -61,6 +66,11 @@ export const updateExperience = async (
 ): Promise<any | undefined> => {
   try {
     const user = await requireUser();
+
+    const result = AddExperienceFormSchema.safeParse(data);
+    if (!result.success) {
+      return { success: false, message: result.error.issues[0].message };
+    }
 
     const summary = await prisma.workExperience.update({
       where: {

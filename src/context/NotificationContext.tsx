@@ -1,8 +1,9 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { getNotificationSummary } from "@/actions/notification.actions";
+import { NOTIFICATION_CONSTANTS } from "@/lib/constants";
 import type { NotificationSummary } from "@/models/notification.model";
 
 interface NotificationContextValue {
@@ -21,27 +22,41 @@ const NotificationContext = createContext<NotificationContextValue>({
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [summary, setSummary] = useState<NotificationSummary>(EMPTY);
   const pathname = usePathname();
+  const lastFetch = useRef(0);
+
+  const applySummary = useCallback(
+    (res: Awaited<ReturnType<typeof getNotificationSummary>>) => {
+      if (res.success && "data" in res) setSummary(res.data);
+    },
+    [],
+  );
 
   const refresh = useCallback(async () => {
-    const res = await getNotificationSummary();
-    if (res.success && "data" in res) setSummary(res.data);
-  }, []);
+    lastFetch.current = Date.now();
+    applySummary(await getNotificationSummary());
+  }, [applySummary]);
+
+  // Passive triggers (navigation, focus) skip if a fetch just ran.
+  const refreshIfStale = useCallback(() => {
+    if (Date.now() - lastFetch.current < NOTIFICATION_CONSTANTS.PASSIVE_REFRESH_THROTTLE_MS) return;
+    refresh();
+  }, [refresh]);
 
   useEffect(() => {
-    refresh();
-  }, [pathname, refresh]);
+    refreshIfStale();
+  }, [pathname, refreshIfStale]);
 
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === "visible") refresh();
+      if (document.visibilityState === "visible") refreshIfStale();
     };
-    window.addEventListener("focus", refresh);
+    window.addEventListener("focus", refreshIfStale);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
-      window.removeEventListener("focus", refresh);
+      window.removeEventListener("focus", refreshIfStale);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [refresh]);
+  }, [refreshIfStale]);
 
   return (
     <NotificationContext.Provider value={{ summary, refresh }}>

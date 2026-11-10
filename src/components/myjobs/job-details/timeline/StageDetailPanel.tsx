@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { CalendarDays, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -49,9 +49,11 @@ export function StageDetailPanel({
   // Selecting another stage re-renders this component rather than remounting
   // it, so the tab has to follow the id or an interview tab survives onto a
   // stage that has none.
-  useEffect(() => {
+  const [prevStageId, setPrevStageId] = useState(stage.id);
+  if (stage.id !== prevStageId) {
+    setPrevStageId(stage.id);
     setTab("overview");
-  }, [stage.id]);
+  }
 
   // Both joins cascade with the stage, so the confirmation names what goes.
   const interviewerCount = stage.interviewers?.length ?? 0;
@@ -164,7 +166,7 @@ export function StageDetailPanel({
               Overview
             </TabsTrigger>
             <TabsTrigger value="interviewer" className={TAB_TRIGGER}>
-              Interviewer
+              Interviewer{" "}
               {stage.interviewers.length > 0 && (
                 <span className="ml-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
                   {stage.interviewers.length}
@@ -172,7 +174,7 @@ export function StageDetailPanel({
               )}
             </TabsTrigger>
             <TabsTrigger value="prep" className={TAB_TRIGGER}>
-              Prep List
+              Prep List{" "}
               {total > 0 && (
                 <span className="ml-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
                   {asked} of {total}

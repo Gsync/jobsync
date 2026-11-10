@@ -161,14 +161,20 @@ export default function McpAccessSettings() {
       ? `${window.location.origin}/api/mcp`
       : "/api/mcp";
 
-  const fetchTokens = async () => {
-    setIsLoading(true);
-    const result = await listMcpTokens();
+  const applyTokens = (result: PublicTokenMeta[]) => {
     setTokens(result);
     setIsLoading(false);
   };
 
-  useEffect(() => { fetchTokens(); }, []);
+  const fetchTokens = async () => {
+    setIsLoading(true);
+    applyTokens(await listMcpTokens());
+  };
+
+  // isLoading starts true, so the mount load needs no setState of its own.
+  useEffect(() => {
+    listMcpTokens().then(applyTokens);
+  }, []);
 
   const handleGenerate = async () => {
     if (!tokenName.trim()) return;

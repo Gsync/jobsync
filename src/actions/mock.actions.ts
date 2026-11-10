@@ -2,7 +2,7 @@
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { requireUser } from "./shared";
-import { createFirstStage } from "@/lib/jobs/createJobRecord";
+import { initialTimelineForNewJob } from "@/lib/jobs/timeline";
 import { generateMockActivities } from "@/lib/mock.utils";
 import {
   mockActivityTypes,
@@ -598,12 +598,16 @@ export const generateMockJobsAction = async (): Promise<any> => {
       };
     });
 
-    // A loop rather than createMany: createMany returns only a count, so it
-    // cannot feed createFirstStage the new ids. Dev-only, tens of rows.
+    // A loop rather than createMany: createMany cannot nest the first stage.
+    // Dev-only, tens of rows. The mock keeps its own applied fields.
     let count = 0;
     for (const data of jobsData) {
-      const job = await prisma.job.create({ data });
-      await createFirstStage(prisma, job.id, data.statusId, user.id, data.createdAt);
+      const { stages } = await initialTimelineForNewJob({
+        statusId: data.statusId,
+        userId: user.id,
+        occurredAt: data.createdAt,
+      });
+      await prisma.job.create({ data: { ...data, stages } });
       count += 1;
     }
 

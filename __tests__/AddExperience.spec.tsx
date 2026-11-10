@@ -3,7 +3,7 @@ import { addExperience, updateExperience } from "@/actions/profile.actions";
 import { getAllCompanies } from "@/actions/company.actions";
 import { getAllJobTitles } from "@/actions/jobtitle.actions";
 import { getAllJobLocations } from "@/actions/jobLocation.actions";
-import { screen, render, waitFor } from "@testing-library/react";
+import { screen, render, waitFor, within, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ResumeSection } from "@/models/profile.model";
 import { toastSuccess, toastError } from "@/lib/toast";
@@ -110,6 +110,72 @@ describe("AddExperience Component", () => {
     (getAllCompanies as any).mockResolvedValue(mockCompanies);
     (getAllJobTitles as any).mockResolvedValue(mockJobTitles);
     (getAllJobLocations as any).mockResolvedValue(mockLocations);
+  });
+
+
+  it.each(["add", "edit"])("shows the date-order error under the ending picker and saves after correction (%s)", async (mode) => {
+    vi.mocked(addExperience).mockReset();
+    vi.mocked(updateExperience).mockReset();
+    const saveAction = mode === "add" ? addExperience : updateExperience;
+    const otherAction = mode === "add" ? updateExperience : addExperience;
+    vi.mocked(saveAction).mockResolvedValue({ success: true });
+    const section: ResumeSection = {
+      id: mockSectionId,
+      resumeId: mockResumeId,
+      sectionTitle: "Experience",
+      sectionType: "experience" as any,
+      workExperiences: [{
+        id: "exp-1",
+        Company: mockCompanies[0] as any,
+        jobTitle: mockJobTitles[0] as any,
+        location: mockLocations[0] as any,
+        startDate: new Date(2020, 0, 1),
+        endDate: new Date(2022, 11, 31),
+        description: "Developed application features",
+      }],
+    };
+
+    render(
+      <AddExperience
+        resumeId={mockResumeId}
+        sectionId={mockSectionId}
+        dialogOpen={true}
+        setDialogOpen={mockSetDialogOpen}
+        experienceToEdit={mode === "edit" ? section : undefined}
+      />
+    );
+    await waitFor(() => {
+      expect(within(screen.getByTestId("combobox-location")).getAllByRole("option")).toHaveLength(3);
+    });
+    if (mode === "add") {
+      await user.selectOptions(screen.getByTestId("combobox-title"), "title-1");
+      await user.selectOptions(screen.getByTestId("combobox-company"), "company-1");
+      await user.selectOptions(screen.getByTestId("combobox-location"), "location-1");
+      await user.type(screen.getByTestId("tiptap-editor"), "Developed application features");
+    }
+    fireEvent.change(screen.getByTestId("datepicker-startDate"), { target: { value: "2026-11-01" } });
+    fireEvent.change(screen.getByTestId("datepicker-endDate"), { target: { value: "2014-11-12" } });
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    const item = screen.getByText("End Date").closest("div")!;
+    const message = "End date must be on or after the start date";
+    expect(await within(item).findByText(message)).toBeInTheDocument();
+    expect(addExperience).not.toHaveBeenCalled();
+    expect(updateExperience).not.toHaveBeenCalled();
+    expect(mockSetDialogOpen).not.toHaveBeenCalledWith(false);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(toastSuccess).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByTestId("datepicker-endDate"), { target: { value: "2026-11-02" } });
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => expect(mockSetDialogOpen).toHaveBeenCalledWith(false));
+    expect(screen.queryByText(message)).not.toBeInTheDocument();
+    expect(saveAction).toHaveBeenCalledTimes(1);
+    expect(saveAction).toHaveBeenCalledWith(expect.objectContaining({
+      endDate: new Date("2026-11-02"),
+    }));
+    expect(otherAction).not.toHaveBeenCalled();
   });
 
   it("should render Add Experience dialog with correct title", async () => {

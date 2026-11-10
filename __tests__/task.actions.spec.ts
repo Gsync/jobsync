@@ -210,7 +210,7 @@ describe("taskActions", () => {
       });
     });
 
-    it("should order by dueDate when grouping by due date", async () => {
+    it("should load every task by dueDate when grouping by due date", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
 
       const mockTasks = [mockTask];
@@ -228,13 +228,11 @@ describe("taskActions", () => {
           },
         },
         orderBy: [
-          { dueDate: { sort: "asc", nulls: "first" } },
+          { dueDate: { sort: "asc", nulls: "last" } },
           { priority: "desc" },
           { createdAt: "desc" },
           { id: "desc" },
         ],
-        skip: 0,
-        take: 25,
       });
     });
 

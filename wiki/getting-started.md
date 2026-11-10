@@ -25,7 +25,7 @@ Nothing AI-powered works until a provider *and* a model are both set — resume 
 
 ## How do I see how much AI I'm using?
 
-Open **Settings → AI Usage**. It shows the last 7 or 30 days: total tokens, how many AI calls were made, typical response time and time to the first visible word, and how many calls failed — broken down by provider, model and feature (Agent chat, Job match, Automations, Resume review, Cover letter, Resume import), with the last 50 calls at the bottom. A chat message counts as one call; a review, match or cover letter it starts is counted separately under its own feature, and its time is not added to the chat's. Failures are split into provider errors, timeouts, truncated answers and interrupted streams; calls you stopped yourself are shown but never counted as failures. An amber "near context limit" badge on an Ollama model means those calls filled at least 90% of the model's context window, where Ollama silently drops the oldest text. History is kept for 90 days and is not part of the data backup.
+Open the avatar menu at the bottom of the sidebar and choose **AI Usage**. It shows the last 7 or 30 days: total tokens, how many AI calls were made, typical response time and time to the first visible word, and how many calls failed — broken down by provider, model and feature (Agent chat, Job match, Automations, Resume review, Cover letter, Resume import), with the last 50 calls at the bottom. A chat message counts as one call; a review, match or cover letter it starts is counted separately under its own feature, and its time is not added to the chat's. Failures are split into provider errors, timeouts, truncated answers and interrupted streams; calls you stopped yourself are shown but never counted as failures. An amber "near context limit" badge on an Ollama model means those calls filled at least 90% of the model's context window, where Ollama silently drops the oldest text. History is kept for 90 days and is not part of the data backup.
 
 ## How do I add my first job?
 
@@ -61,7 +61,7 @@ Click the ⚙ button (Set goals) at the bottom right of the Daily Goals calendar
 - **Profile** — your resumes, contact information and the profile the AI features read from.
 - **Library** — the shared reference lists behind the dropdowns: Companies, Job Titles, Locations, Sources, Skills and Activity Types.
 
-**Settings is not one of the entries above.** Open the avatar menu at the bottom of the sidebar instead, below the navigation list, and choose **Settings**. It holds AI Provider, AI Usage, API Keys, Appearance, MCP Access and Data (backup, export and import). That same menu also has Support and Logout.
+**Settings is not one of the entries above.** Open the avatar menu at the bottom of the sidebar instead, below the navigation list, and choose **Settings**. It holds AI Provider, API Keys, Appearance, MCP Access and Data (backup, export and import). That same menu also has Notifications, AI Usage, Support and Logout.
 
 ## Where do I find installation and Docker instructions?
 
