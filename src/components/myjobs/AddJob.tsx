@@ -8,7 +8,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { addJob, updateJob } from "@/actions/job.actions";
-import { Link, PlusCircle } from "lucide-react";
+import { resolveLinkedInJobForForm } from "@/actions/linkedin.actions";
+import { Link, Loader2, PlusCircle, Search } from "lucide-react";
 import { Button } from "../ui/button";
 import { useForm } from "react-hook-form";
 import { useCallback, useEffect, useState, useTransition } from "react";
@@ -27,7 +28,11 @@ import {
 } from "@/models/job.model";
 import { addDays } from "date-fns";
 import { z } from "zod";
-import { toastActionResult, toastError } from "@/lib/toast";
+import {
+  toastActionResult,
+  toastError,
+  toastSuccess,
+} from "@/lib/toast";
 import {
   Form,
   FormControl,
@@ -85,6 +90,34 @@ type AddJobProps = {
   hideTrigger?: boolean;
   redirectPath?: string;
 };
+
+type ImportedOption = { id: string; label: string };
+type SelectOption = ImportedOption & { value?: string };
+
+// The Combobox renders the label by looking up the selected id in its options
+// prop. A LinkedIn import resolves (or creates) an entity that may not have
+// been in the original list, so merge it into the rendered options instead of
+// mutating the prop (which would leak between renders and tests).
+function withImportedOptions<T extends SelectOption>(
+  options: T[],
+  imported: ImportedOption[],
+): T[] {
+  if (imported.length === 0) return options;
+  const existing = new Set(options.map((option) => option.id));
+  const additions = imported
+    .filter((option) => !existing.has(option.id))
+    .map((option) => ({ ...option, value: option.label } as T));
+  return additions.length > 0 ? [...additions, ...options] : options;
+}
+
+function addImportedOption(
+  options: ImportedOption[],
+  option: ImportedOption,
+): ImportedOption[] {
+  return options.some((item) => item.id === option.id)
+    ? options
+    : [option, ...options];
+}
 
 export function AddJob({
   jobStatuses,
@@ -155,6 +188,16 @@ export function AddJob({
 
   // The date the form filled in itself, so it can take it back again.
   const [autoFilledDate, setAutoFilledDate] = useState<Date | null>(null);
+  const [isImportingLinkedIn, setIsImportingLinkedIn] = useState(false);
+  // Tiptap reads its initial content once, so remount it when an import (or a
+  // reset between Add and Edit) replaces the description from outside.
+  const [descriptionVersion, setDescriptionVersion] = useState(0);
+  const [importedOptions, setImportedOptions] = useState<{
+    titles: ImportedOption[];
+    companies: ImportedOption[];
+    locations: ImportedOption[];
+    sources: ImportedOption[];
+  }>({ titles: [], companies: [], locations: [], sources: [] });
 
   const loadResumes = useCallback(async () => {
     try {
@@ -195,6 +238,7 @@ export function AddJob({
         coverLetter: editJob.CoverLetter?.id ?? undefined,
         tags: editJob.tags?.map((t) => t.id) ?? [],
       });
+      setDescriptionVersion((version) => version + 1);
       // Merge any tags from editJob into the local pool so they're selectable
       if (editJob.tags && editJob.tags.length > 0) {
         setAvailableTags((prev) => {
@@ -253,6 +297,7 @@ export function AddJob({
 
   const addJobForm = () => {
     reset(newJobDefaultValues);
+    setDescriptionVersion((version) => version + 1);
     setAutoFilledDate(null);
     resetEditJob();
     setDialogOpen(true);
@@ -291,6 +336,85 @@ export function AddJob({
   };
 
   const closeDialog = () => setDialogOpen(false);
+
+  const importFromLinkedIn = async () => {
+    const jobUrl = form.getValues("jobUrl")?.trim();
+    if (!jobUrl) {
+      toastError("Paste a LinkedIn job URL first.");
+      return;
+    }
+
+    setIsImportingLinkedIn(true);
+    try {
+      const result = await resolveLinkedInJobForForm(jobUrl);
+      if (!result?.success || !result.data) {
+        toastError(result?.message ?? "Could not read this LinkedIn posting.");
+        return;
+      }
+
+      const data = result.data as {
+        jobUrl: string;
+        titleId: string;
+        titleLabel: string;
+        companyId: string;
+        companyLabel: string;
+        locationId: string;
+        locationLabel: string;
+        sourceId: string;
+        sourceLabel: string;
+        jobType?: string;
+        workplaceType?: string | null;
+        salaryRange?: string;
+        descriptionHtml: string;
+      };
+
+      setImportedOptions((previous) => ({
+        titles: addImportedOption(previous.titles, {
+          id: data.titleId,
+          label: data.titleLabel,
+        }),
+        companies: addImportedOption(previous.companies, {
+          id: data.companyId,
+          label: data.companyLabel,
+        }),
+        locations: addImportedOption(previous.locations, {
+          id: data.locationId,
+          label: data.locationLabel,
+        }),
+        sources: addImportedOption(previous.sources, {
+          id: data.sourceId,
+          label: data.sourceLabel,
+        }),
+      }));
+
+      setValue("title", data.titleId, { shouldValidate: true });
+      setValue("company", data.companyId, { shouldValidate: true });
+      setValue("location", data.locationId, { shouldValidate: true });
+      setValue("source", data.sourceId, { shouldValidate: true });
+      setValue("jobUrl", data.jobUrl, { shouldValidate: true });
+      setValue("jobDescription", data.descriptionHtml, {
+        shouldValidate: true,
+      });
+      setDescriptionVersion((version) => version + 1);
+      if (data.jobType) {
+        setValue("type", data.jobType, { shouldValidate: true });
+      }
+      if (data.workplaceType) {
+        setValue("workplaceType", data.workplaceType, {
+          shouldValidate: true,
+        });
+      }
+      if (data.salaryRange) {
+        setValue("salaryRange", data.salaryRange, { shouldValidate: true });
+      }
+
+      toastSuccess("Imported from LinkedIn. Review the details before saving.");
+    } catch {
+      toastError("Could not read this LinkedIn posting.");
+    } finally {
+      setIsImportingLinkedIn(false);
+    }
+  };
 
   const [title, company, location, source, dueDate, dateApplied] = form.watch([
     "title",
@@ -391,6 +515,31 @@ export function AddJob({
                               />
                             </FormControl>
                           </InputGroup>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={importFromLinkedIn}
+                              disabled={
+                                isImportingLinkedIn ||
+                                !field.value ||
+                                !field.value.trim()
+                              }
+                              data-testid="import-linkedin-btn"
+                            >
+                              {isImportingLinkedIn ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Search className="h-4 w-4" />
+                              )}
+                              Import from LinkedIn
+                            </Button>
+                            <span className="text-xs leading-none text-muted-foreground">
+                              Fills the title, company, location and description
+                              from a LinkedIn job link.
+                            </span>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -409,7 +558,10 @@ export function AddJob({
                               </div>
                               <FormControl>
                                 <Combobox
-                                  options={jobTitles}
+                                  options={withImportedOptions(
+                                    jobTitles,
+                                    importedOptions.titles,
+                                  )}
                                   field={field}
                                   creatable
                                   fullWidth
@@ -433,7 +585,10 @@ export function AddJob({
                               </div>
                               <FormControl>
                                 <Combobox
-                                  options={companies}
+                                  options={withImportedOptions(
+                                    companies,
+                                    importedOptions.companies,
+                                  )}
                                   field={field}
                                   creatable
                                   fullWidth
@@ -461,7 +616,10 @@ export function AddJob({
                               </div>
                               <FormControl>
                                 <Combobox
-                                  options={locations}
+                                  options={withImportedOptions(
+                                    locations,
+                                    importedOptions.locations,
+                                  )}
                                   field={field}
                                   creatable
                                   fullWidth
@@ -628,7 +786,10 @@ export function AddJob({
                                   lastUsedHint}
                               </div>
                               <Combobox
-                                options={jobSources}
+                                options={withImportedOptions(
+                                  jobSources,
+                                  importedOptions.sources,
+                                )}
                                 field={field}
                                 creatable
                                 fullWidth
@@ -713,6 +874,7 @@ export function AddJob({
 
                   {/* Job Description */}
                   <FormField
+                    key={`job-description-${descriptionVersion}`}
                     control={form.control}
                     name="jobDescription"
                     render={({ field }) => (

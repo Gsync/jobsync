@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/utils/user.utils";
 import userEvent from "@testing-library/user-event";
 import { format } from "date-fns";
 import { addJob, updateJob } from "@/actions/job.actions";
+import { resolveLinkedInJobForForm } from "@/actions/linkedin.actions";
 import { toastActionResult } from "@/lib/toast";
 import type { JobResponse } from "@/models/job.model";
 import { APP_CONSTANTS } from "@/lib/constants";
@@ -17,6 +18,10 @@ vi.mock("@/utils/user.utils", () => ({
 vi.mock("@/actions/job.actions", () => ({
   addJob: vi.fn().mockResolvedValue({ success: true }),
   updateJob: vi.fn().mockResolvedValue({ success: true }),
+}));
+
+vi.mock("@/actions/linkedin.actions", () => ({
+  resolveLinkedInJobForForm: vi.fn(),
 }));
 
 vi.mock("@/actions/profile.actions", () => ({
@@ -34,6 +39,8 @@ vi.mock("@/lib/toast", () => ({
   toastActionResult: vi.fn((result, opts) => {
     if (result?.success) opts.onSuccess?.(result.data);
   }),
+  toastError: vi.fn(),
+  toastSuccess: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -118,6 +125,45 @@ describe("AddJob Component", () => {
       screen.getByRole("heading", { name: "Skills & documents" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Job Description")).toBeInTheDocument();
+  });
+  it("imports a LinkedIn posting into the form", async () => {
+    (resolveLinkedInJobForForm as any).mockResolvedValue({
+      success: true,
+      data: {
+        jobUrl: "https://www.linkedin.com/jobs/view/1234567890",
+        titleId: "title-1",
+        titleLabel: "Staff Engineer",
+        companyId: "company-1",
+        companyLabel: "Acme",
+        locationId: "location-1",
+        locationLabel: "Toronto, ON",
+        sourceId: "source-1",
+        sourceLabel: "LinkedIn",
+        jobType: "Full-time",
+        workplaceType: "Hybrid",
+        salaryRange: "$100,000",
+        descriptionHtml: "<p>Build things.</p>",
+      },
+    });
+
+    await user.type(
+      screen.getByLabelText("Job URL"),
+      "https://www.linkedin.com/jobs/view/1234567890",
+    );
+    await user.click(screen.getByTestId("import-linkedin-btn"));
+
+    await waitFor(() =>
+      expect(resolveLinkedInJobForForm).toHaveBeenCalledWith(
+        "https://www.linkedin.com/jobs/view/1234567890",
+      ),
+    );
+    expect(screen.getByLabelText("Job Title")).toHaveTextContent(
+      "Staff Engineer",
+    );
+    expect(screen.getByLabelText("Company")).toHaveTextContent("Acme");
+    expect(screen.getByLabelText("Job Description")).toHaveTextContent(
+      "Build things.",
+    );
   });
   it("moves a Draft job to Applied when a date applied is picked", async () => {
     expect(screen.getByRole("radio", { name: "Draft" })).toBeChecked();

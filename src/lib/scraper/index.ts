@@ -10,6 +10,23 @@ export type { LeverPosting, LeverCompany, LeverHost } from "./lever/types";
 export { fetchAshbyBoardJobs, searchAshbyJobs } from "./ashby";
 export { mapAshbyJob } from "./ashby/mapper";
 export type { AshbyJob, AshbyCompany } from "./ashby/types";
+export {
+  fetchLinkedInJob,
+  fetchLinkedInSearchResults,
+} from "./linkedin";
+export {
+  isLinkedInJobUrl,
+  isLinkedInSearchUrl,
+  parseLinkedInJobId,
+  parseLinkedInSearchUrl,
+  canonicalLinkedInJobUrl,
+} from "./linkedin/url";
+export type {
+  LinkedInJobDetails,
+  LinkedInSearchPage,
+  LinkedInSearchResult,
+} from "./linkedin/types";
+
 export { ATS_PROVIDERS } from "./ats/registry";
 export type { AtsProvider, AtsHost } from "./ats/types";
 export { scoreJob, passesFloor, locationMatches } from "./ats/rank";

@@ -9,6 +9,7 @@ import {
   Zap,
   BookOpen,
   CalendarCheck,
+  Search,
 } from "lucide-react";
 
 export const APP_CONSTANTS = {
@@ -142,6 +143,16 @@ export const APP_CONSTANTS = {
   ASHBY_JOB_URL: "https://jobs.ashbyhq.com", // public board page (not API)
   ASHBY_FETCH_TIMEOUT_MS: 25_000, // per-board AbortController timeout
   ASHBY_FETCH_CONCURRENCY: 5,
+
+  // LinkedIn public (guest) endpoints. These are the same pages a logged-out
+  // visitor sees; no session cookie or LinkedIn account is used.
+  LINKEDIN_BASE_URL: "https://www.linkedin.com",
+  LINKEDIN_FETCH_TIMEOUT_MS: 20_000,
+  // LinkedIn's public search endpoint returns 10 cards per request.
+  LINKEDIN_SEARCH_PAGE_SIZE: 10,
+  LINKEDIN_MAX_SEARCH_RESULTS: 100,
+  LINKEDIN_USER_AGENT:
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
 
   // MCP server settings
   MCP_DUPLICATE_WINDOW_DAYS: 30,
@@ -392,6 +403,11 @@ export const SIDEBAR_LINKS = [
     icon: BriefcaseBusiness,
     route: "/dashboard/myjobs",
     label: "Jobs",
+  },
+  {
+    icon: Search,
+    route: "/dashboard/linkedin",
+    label: "LinkedIn",
   },
   {
     icon: CalendarCheck,

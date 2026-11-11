@@ -40,6 +40,7 @@ model User {
   Notification   Notification[]
   aiCalls        AiCall[]
   ChatConversation ChatConversation?
+  LinkedInSearch LinkedInSearch[]
   defaultResumeId String?
   defaultResume   Resume?          @relation("UserDefaultResume", fields: [defaultResumeId], references: [id], onDelete: SetNull)
 }
@@ -359,6 +360,25 @@ model JobSource {
   user        User   @relation(fields: [createdBy], references: [id])
 
   @@unique([value, createdBy])
+}
+
+// A LinkedIn jobs search URL saved by the user. LinkedIn does not expose
+// account saved searches to third parties, so this stores the URL the user
+// copied from LinkedIn and JobSync re-runs it through the public guest
+// listings endpoint. No LinkedIn credentials are stored.
+model LinkedInSearch {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  url       String
+  keywords  String
+  location  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, url])
+  @@index([userId])
 }
 
 // The kind of stage. Mirrors ContactRole in ownership and resolution, and
