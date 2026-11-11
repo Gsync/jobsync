@@ -43,6 +43,7 @@ Track every application, get AI resume reviews and job matches, and discover new
 - **Monitoring Dashboard:** See your search progress, activity and daily goals at a glance.
 - **Resume Management:** Store resumes, export them as PDFs, and import existing PDF or Word files with AI.
 - **Automated Job Discovery:** Schedule searches over company job boards and AI-match each listing to your resume. [Details](#automated-job-discovery)
+- **LinkedIn Import:** Paste a LinkedIn job link into Add Job to fill in the posting, or save search URLs to browse public results and add jobs in one click.
 - **Task & Activity Management:** Track tasks and time your activities. [Tasks](https://github.com/Gsync/jobsync/wiki/Tasks) · [Activities](https://github.com/Gsync/jobsync/wiki/Activities)
 - **Job Timeline:** Record each stage of a job's hiring process — when it happened, who interviewed you and which questions they asked. [Details](https://github.com/Gsync/jobsync/wiki/Timeline)
 - **Interviews:** One list of every interview round across all your jobs, upcoming and past, with its interviewers, prep questions and outcome. [Details](https://github.com/Gsync/jobsync/wiki/Interviews)
