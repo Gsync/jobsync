@@ -18,9 +18,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Postgres client; needs no DATABASE_URL
-RUN npx -y prisma@6.19.0 generate
+RUN npx -y prisma@7.10.1 generate
 
-# Boot scripts (resolve-db-url, wait-for-db), compiled to plain CommonJS
+# Boot scripts (resolve-db-url, wait-for-db, migrate-deploy), compiled to plain CommonJS
 RUN npx tsc -p scripts/tsconfig.json
 
 RUN npm run build

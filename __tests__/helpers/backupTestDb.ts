@@ -3,7 +3,7 @@ import os from "os";
 import path from "path";
 import { execFileSync } from "child_process";
 import { randomUUID } from "crypto";
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@/generated/prisma/client";
 import {
   CONTACT_ROLES,
   JOB_SOURCES,
@@ -28,7 +28,7 @@ export function makeTestDb(): { url: string; schema: string; dir: string } | nul
 export function pushSchema(url: string): void {
   execFileSync(
     "npx",
-    ["prisma", "db", "push", "--skip-generate", "--accept-data-loss"],
+    ["prisma", "db", "push", "--accept-data-loss"],
     { env: { ...process.env, DATABASE_URL: url }, stdio: "pipe" },
   );
 }

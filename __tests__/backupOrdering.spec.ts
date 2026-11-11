@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import {
   MODEL_SPECS,
   INSERT_ORDER,

@@ -9,12 +9,12 @@ import {
   getActivityTypesWithTaskCounts,
 } from "@/actions/task.actions";
 import { getCurrentUser } from "@/utils/user.utils";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@/generated/prisma/client";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({} as never);
 
 // Mock the Prisma Client
-vi.mock("@prisma/client", () => {
+vi.mock("@/generated/prisma/client", () => {
   const mPrismaClient = {
     task: {
       findMany: vi.fn(),

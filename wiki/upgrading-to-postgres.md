@@ -82,6 +82,7 @@ Checklist for your server:
 - Postgres 17 or newer.
 - A role that can log in and either owns the database or has `GRANT ALL ON SCHEMA public`.
 - Managed providers usually need `?sslmode=require`, and the direct endpoint rather than a pooled one.
+- JobSync treats `sslmode=require` as full certificate verification. With a private or self-signed certificate, use `?uselibpqcompat=true&sslmode=require`, or install the provider's CA.
 - From inside the container use `host.docker.internal`, not `localhost`, for a Postgres on the same machine.
 - Percent-encode a password containing `@`, `:`, `/` or `#`.
 - If your server is newer than Postgres 18, set `PG_DUMP_IMAGE` in `.env` to its version, for example `postgres:19`, so backups work.

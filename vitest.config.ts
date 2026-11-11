@@ -8,10 +8,6 @@ export default defineConfig({
     alias: [
       { find: "@", replacement: path.resolve(__dirname, "./src") },
       {
-        find: "@prisma/client",
-        replacement: path.resolve(__dirname, "./node_modules/@prisma/client"),
-      },
-      {
         find: "next-auth/providers/credentials",
         replacement: path.resolve(
           __dirname,

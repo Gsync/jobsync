@@ -1,10 +1,10 @@
 import { createAutomation, updateAutomation } from "@/actions/automation.actions";
 import { getCurrentUser } from "@/utils/user.utils";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@/generated/prisma/client";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({} as never);
 
-vi.mock("@prisma/client", () => {
+vi.mock("@/generated/prisma/client", () => {
   const mPrismaClient = {
     automation: {
       count: vi.fn(),

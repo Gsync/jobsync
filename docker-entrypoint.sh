@@ -39,8 +39,8 @@ export DATABASE_URL="$RESOLVED_DATABASE_URL"
 # Wait for Postgres; exits non-zero at once on a permanent misconfiguration
 node scripts/dist/wait-for-db.js
 
-# Apply the schema as root (before switching users)
-npx -y prisma@6.19.0 migrate deploy
+# Apply pending migrations as root (before switching users); no network needed
+node scripts/dist/migrate-deploy.js
 
 # Fix /data permissions and run app as nextjs user
 chown -R nextjs:nodejs /data

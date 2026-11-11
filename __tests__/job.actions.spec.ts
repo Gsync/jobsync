@@ -18,11 +18,11 @@ import { JobResponse } from "@/models/job.model";
 import { getCurrentUser } from "@/utils/user.utils";
 import { resolveStageTypeForStatusId } from "@/lib/jobs/resolve";
 import { changeJobStatus } from "@/lib/jobs/timeline";
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+import { PrismaClient } from "@/generated/prisma/client";
+const prisma = new PrismaClient({} as never);
 
 // Mock the Prisma Client
-vi.mock("@prisma/client", () => {
+vi.mock("@/generated/prisma/client", () => {
   const mPrismaClient = {
     jobStatus: {
       findMany: vi.fn(),

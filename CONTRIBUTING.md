@@ -80,6 +80,7 @@ This project follows a [Code of Conduct](./CODE_OF_CONDUCT.md). By participating
    Then create the schema:
    ```bash
    npx prisma migrate dev
+   npx prisma generate
    ```
    The role needs `CREATEDB` so Prisma can make its temporary shadow database (the bundled one has it). Tests need no database: `npm test` mocks Prisma.
 7. **Start the development server:**
@@ -219,7 +220,7 @@ Before submitting, verify:
 - [ ] PR description explains **what** and **why**
 - [ ] Relevant tests have been added or updated
 - [ ] Documentation is updated if behavior changes
-- [ ] `npx prisma generate` and a migration have been added for any schema changes
+- [ ] A migration has been added (`npx prisma migrate dev`, then `npx prisma generate`) for any schema changes
 
 ### PR Description Template
 
@@ -258,7 +259,7 @@ Key conventions:
 - **Naming:** PascalCase for components, camelCase for functions/variables, kebab-case for files.
 - **Types:** All types live in `src/models/*.model.ts`; Zod schemas in `src/models/*.schema.ts`.
 - **Server actions:** Always validate auth with `getCurrentUser()` and return via `handleError()`.
-- **Database:** Run `npx prisma generate` then `npx prisma migrate dev` after any schema change.
+- **Database:** Run `npx prisma migrate dev` then `npx prisma generate` after any schema change.
 - **Files over 200 lines:** Break into a directory with focused modules and a barrel `index.ts`.
 - **Comments:** Minimal; explain "why" not "what"; no decorative separator comments.
 

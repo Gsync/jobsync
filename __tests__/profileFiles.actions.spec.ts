@@ -1,14 +1,14 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@/generated/prisma/client";
 import { deleteFile } from "@/actions/profile.actions";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({} as never);
 
-vi.mock("@prisma/client", () => {
+vi.mock("@/generated/prisma/client", () => {
   const mPrismaClient = {
     file: { findFirst: vi.fn(), delete: vi.fn() },
   };

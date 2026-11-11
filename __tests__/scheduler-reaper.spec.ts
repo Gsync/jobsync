@@ -1,8 +1,8 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@/generated/prisma/client";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({} as never);
 
-vi.mock("@prisma/client", () => {
+vi.mock("@/generated/prisma/client", () => {
   const m = {
     automationRun: { updateMany: vi.fn() },
     automation: { count: vi.fn() },

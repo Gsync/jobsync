@@ -13,8 +13,7 @@ import {
 
 export interface WaitDeps {
   env: Record<string, string | undefined>;
-  // Must reject with the driver error untouched: errorCode is only present
-  // when the failure came from $connect(), never from a lazy first query.
+  // Must reject with the pg error untouched, so its code survives
   connect(url: string): Promise<void>;
   createDatabase(maintenanceUrl: string, quotedName: string): Promise<void>;
   resolves(host: string): Promise<boolean>;
@@ -50,7 +49,7 @@ export async function waitForDb(deps: WaitDeps): Promise<number> {
       deps.log(`Database reachable at ${where}/${target.database}.`);
       return 0;
     } catch (error) {
-      const verdict = classify((error as { errorCode?: string }).errorCode);
+      const verdict = classify((error as { code?: string }).code);
 
       if (verdict === "auth") {
         deps.log(authMessage(target));

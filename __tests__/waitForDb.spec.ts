@@ -4,7 +4,7 @@ import { waitForDb, type WaitDeps } from "../scripts/wait/run";
 const SECRET = "s3cr@t:pa/ss#word";
 const URL_OK = `postgres://jobsync:${encodeURIComponent(SECRET)}@db.example.internal:5433/jobsync`;
 
-const failure = (errorCode?: string, message = "boom") => Object.assign(new Error(message), { errorCode });
+const failure = (code?: string, message = "boom") => Object.assign(new Error(message), { code });
 
 function harness(over: {
   url?: string;
@@ -80,13 +80,13 @@ describe("checkUrl", () => {
 
 describe("classify", () => {
   it.each([
-    ["P1000", "auth"],
-    ["P1003", "missing-database"],
-    ["P1012", "bad-url"],
-    ["P1001", "retry"],
-    ["P1002", "retry"],
-    ["P1017", "retry"],
-    ["P9999", "retry"],
+    ["28P01", "auth"],
+    ["28000", "auth"],
+    ["3D000", "missing-database"],
+    ["ERR_INVALID_URL", "bad-url"],
+    ["57P03", "retry"],
+    ["ECONNREFUSED", "retry"],
+    ["P1000", "retry"],
     [undefined, "retry"],
   ])("%s -> %s", (code, verdict) => {
     expect(classify(code)).toBe(verdict);
@@ -126,21 +126,21 @@ describe("waitForDb", () => {
   });
 
   it("retries a starting database and then succeeds", async () => {
-    const h = harness({ attempts: [failure("P1001"), failure("P1002"), null] });
+    const h = harness({ attempts: [failure("ECONNREFUSED"), failure("57P03"), null] });
     expect(await waitForDb(h.deps)).toBe(0);
     expect(h.connects()).toBe(3);
     expect(h.text()).toContain("waiting for database at db.example.internal:5433");
   });
 
   it("retries an unknown error code within the window, then gives up", async () => {
-    const h = harness({ attempts: [failure("P7777")] });
+    const h = harness({ attempts: [failure("XX000")] });
     expect(await waitForDb(h.deps)).toBe(1);
     expect(h.connects()).toBeGreaterThan(5);
     expect(h.text()).toContain("Could not reach the database at db.example.internal:5433 within 60 seconds.");
   });
 
   it("exits at once on an auth failure, with the external causes", async () => {
-    const h = harness({ attempts: [failure("P1000")] });
+    const h = harness({ attempts: [failure("28P01")] });
     expect(await waitForDb(h.deps)).toBe(1);
     expect(h.connects()).toBe(1);
     expect(h.text()).toContain("percent-encoded");
@@ -148,7 +148,7 @@ describe("waitForDb", () => {
   });
 
   it("names password rotation for the bundled database", async () => {
-    const h = harness({ url: "postgres://jobsync:jobsync@db:5432/jobsync", attempts: [failure("P1000")] });
+    const h = harness({ url: "postgres://jobsync:jobsync@db:5432/jobsync", attempts: [failure("28P01")] });
     expect(await waitForDb(h.deps)).toBe(1);
     expect(h.text()).toContain("POSTGRES_PASSWORD was changed after the database volume was created");
   });
@@ -162,7 +162,7 @@ describe("waitForDb", () => {
   });
 
   it("creates a missing database, says so, and continues", async () => {
-    const h = harness({ attempts: [failure("P1003"), null] });
+    const h = harness({ attempts: [failure("3D000"), null] });
     expect(await waitForDb(h.deps)).toBe(0);
     expect(h.created).toEqual([
       { url: `postgres://jobsync:${encodeURIComponent(SECRET)}@db.example.internal:5433/postgres`, name: '"jobsync"' },
@@ -173,7 +173,7 @@ describe("waitForDb", () => {
 
   it("falls back to the manual SQL when creation is refused", async () => {
     const h = harness({
-      attempts: [failure("P1003")],
+      attempts: [failure("3D000")],
       createFails: new Error("permission denied to create database"),
     });
     expect(await waitForDb(h.deps)).toBe(1);
@@ -184,14 +184,14 @@ describe("waitForDb", () => {
   });
 
   it("does not create when CREATE_DATABASE_IF_MISSING=0", async () => {
-    const h = harness({ attempts: [failure("P1003")], env: { CREATE_DATABASE_IF_MISSING: "0" } });
+    const h = harness({ attempts: [failure("3D000")], env: { CREATE_DATABASE_IF_MISSING: "0" } });
     expect(await waitForDb(h.deps)).toBe(1);
     expect(h.created).toEqual([]);
     expect(h.text()).toContain("CREATE DATABASE jobsync OWNER <role>;");
   });
 
   it("does not loop when the database is still missing after creating it", async () => {
-    const h = harness({ attempts: [failure("P1003")] });
+    const h = harness({ attempts: [failure("3D000")] });
     expect(await waitForDb(h.deps)).toBe(1);
     expect(h.created).toHaveLength(1);
   });
@@ -199,7 +199,7 @@ describe("waitForDb", () => {
   it("explains an unresolvable bundled host", async () => {
     const h = harness({
       url: "postgres://jobsync:jobsync@db:5432/jobsync",
-      attempts: [failure("P1001")],
+      attempts: [failure("ECONNREFUSED")],
       dbResolves: false,
     });
     expect(await waitForDb(h.deps)).toBe(1);
@@ -209,12 +209,12 @@ describe("waitForDb", () => {
 
   it("never logs the password", async () => {
     const cases = [
-      { attempts: [failure("P1000")] },
-      { attempts: [failure("P1012")] },
-      { attempts: [failure("P1001", `Can't reach ${URL_OK}`)] },
-      { attempts: [failure("P1003")], createFails: new Error(`denied for ${URL_OK}`) },
-      { attempts: [failure("P1003"), null] },
-      { url: `postgres://jobsync:${SECRET}@host/db`, attempts: [failure("P1000")] },
+      { attempts: [failure("28P01")] },
+      { attempts: [failure("ERR_INVALID_URL")] },
+      { attempts: [failure("ECONNREFUSED", `Can't reach ${URL_OK}`)] },
+      { attempts: [failure("3D000")], createFails: new Error(`denied for ${URL_OK}`) },
+      { attempts: [failure("3D000"), null] },
+      { url: `postgres://jobsync:${SECRET}@host/db`, attempts: [failure("28P01")] },
     ];
     for (const c of cases) {
       const h = harness(c);

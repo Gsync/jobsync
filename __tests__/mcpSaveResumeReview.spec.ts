@@ -1,10 +1,10 @@
 import { handleSaveResumeReview } from "@/lib/mcp/tools/saveResumeReview";
 import { checkMcpRateLimit } from "@/lib/mcp/rate-limit";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@/generated/prisma/client";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({} as never);
 
-vi.mock("@prisma/client", () => {
+vi.mock("@/generated/prisma/client", () => {
   const mPrismaClient = {
     resume: { update: vi.fn() },
   };

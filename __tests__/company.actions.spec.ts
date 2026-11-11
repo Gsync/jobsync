@@ -8,12 +8,12 @@ import {
 } from "@/actions/company.actions";
 import { getCurrentUser } from "@/utils/user.utils";
 import { revalidatePath } from "next/cache";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@/generated/prisma/client";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({} as never);
 
 // Mock the Prisma Client
-vi.mock("@prisma/client", () => {
+vi.mock("@/generated/prisma/client", () => {
   const mPrismaClient = {
     company: {
       findMany: vi.fn(),

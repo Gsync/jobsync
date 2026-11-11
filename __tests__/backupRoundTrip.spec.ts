@@ -1,7 +1,8 @@
 // @vitest-environment node
 import fs from "fs";
 import path from "path";
-import { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@/generated/prisma/client";
+import { createPrismaClient } from "@/lib/db";
 import { APP_CONSTANTS, CONTACT_ROLES, JOB_STAGES } from "@/lib/constants";
 import { buildBackupZip } from "@/lib/backup/export";
 import { importBackup } from "@/lib/backup/import";
@@ -18,11 +19,9 @@ const ctx = await vi.hoisted(async () => {
 });
 
 vi.mock("@/lib/db", async () => {
-  if (!ctx) return { default: {} };
-  const { PrismaClient } = await import("@prisma/client");
-  return {
-    default: new PrismaClient({ datasources: { db: { url: ctx.url } } }),
-  };
+  const { createPrismaClient } =
+    await vi.importActual<typeof import("@/lib/db")>("@/lib/db");
+  return { default: ctx ? createPrismaClient(ctx.url) : {}, createPrismaClient };
 });
 
 // Never start the cron in a test run.
@@ -30,7 +29,7 @@ vi.mock("@/lib/scheduler", () => ({ syncSchedulerState: vi.fn() }));
 
 // Only dereferenced inside the skipped-when-absent describe below
 const prisma = ctx
-  ? new PrismaClient({ datasources: { db: { url: ctx.url } } })
+  ? createPrismaClient(ctx.url)
   : (undefined as unknown as PrismaClient);
 
 let userId: string;

@@ -1,27 +1,28 @@
 import { lookup } from "node:dns/promises";
-import { PrismaClient } from "@prisma/client";
+import { Client } from "pg";
 import { waitForDb } from "./wait/run";
 
-const client = (url: string) => new PrismaClient({ datasources: { db: { url } } });
+// Built inside the async callers, so a URL parse error becomes a rejection
+const client = (url: string) => new Client({ connectionString: url, connectionTimeoutMillis: 5_000 });
 
 waitForDb({
   env: process.env,
-  // $connect(), never a throwaway query: a lazy first query loses errorCode
   connect: async (url) => {
-    const prisma = client(url);
+    const pg = client(url);
     try {
-      await prisma.$connect();
+      await pg.connect();
     } finally {
-      await prisma.$disconnect().catch(() => {});
+      await pg.end().catch(() => {});
     }
   },
   // One standalone statement: CREATE DATABASE cannot run in a transaction
   createDatabase: async (url, quotedName) => {
-    const prisma = client(url);
+    const pg = client(url);
     try {
-      await prisma.$executeRawUnsafe(`CREATE DATABASE ${quotedName}`);
+      await pg.connect();
+      await pg.query(`CREATE DATABASE ${quotedName}`);
     } finally {
-      await prisma.$disconnect().catch(() => {});
+      await pg.end().catch(() => {});
     }
   },
   resolves: (host) =>
