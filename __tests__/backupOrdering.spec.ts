@@ -1,3 +1,5 @@
+// @vitest-environment node
+import { Prisma } from "@prisma/client";
 import {
   MODEL_SPECS,
   INSERT_ORDER,
@@ -6,6 +8,17 @@ import {
   EMPTINESS_MODELS,
   type BackupModel,
 } from "@/lib/backup/ordering";
+
+// Models the backup deliberately never carries; see docs/architecture/data-backup.md
+const NOT_BACKED_UP = [
+  "User",             // only defaultResumeId travels, handled outside MODEL_SPECS
+  "JobStatus",        // global lookup, seeded, never exported
+  "ApiKey",           // secrets stay on the instance
+  "McpAccessToken",   // secrets stay on the instance
+  "ChatConversation", // wiped on import, never exported
+  "Notification",     // deliberately not in the data backup
+  "AiCall",           // deliberately not in the data backup
+];
 
 describe("backup ordering", () => {
   it("lists every model in MODEL_SPECS exactly once in INSERT_ORDER", () => {
@@ -168,5 +181,16 @@ describe("emptiness models", () => {
 
   it("includes Profile, so an import cannot add a second one", () => {
     expect(EMPTINESS_MODELS).toContain("Profile");
+  });
+});
+
+describe("backup model coverage", () => {
+  it("covers every Prisma model in MODEL_SPECS or names it as excluded", () => {
+    const covered = [...Object.keys(MODEL_SPECS), ...NOT_BACKED_UP].sort();
+    expect(covered).toEqual(Object.values(Prisma.ModelName).sort());
+  });
+
+  it("does not exclude a model that MODEL_SPECS also lists", () => {
+    for (const name of NOT_BACKED_UP) expect(MODEL_SPECS).not.toHaveProperty(name);
   });
 });

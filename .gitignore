@@ -41,7 +41,7 @@ release.sh
 *.tsbuildinfo
 next-env.d.ts
 
-# sqlite databases (prisma dev + docker volume), incl. WAL sidecars
+# leftover sqlite databases, incl. WAL sidecars
 *.db
 *.db-journal
 *.db-wal
@@ -49,11 +49,11 @@ next-env.d.ts
 *.sqlite
 *.sqlite3
 
-# local user data: uploaded resumes and the docker sqlite bind mount
+# local user data: uploaded resumes and the docker bind mount
 /data/
 /jobsyncdb/
 
-# generated: the frozen SQLite snapshot client and the compiled boot scripts
+# generated: the Prisma client and the compiled boot scripts
 /src/generated/
 /scripts/dist/
 
