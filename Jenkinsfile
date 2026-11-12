@@ -97,6 +97,10 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 dir("${APP_DIR}") {
+                    // Empty on a first build; the tag moves once the build finishes
+                    script {
+                        env.OLD_IMAGE_ID = sh(returnStdout: true, script: 'docker image inspect -f "{{.Id}}" ${IMAGE} 2>/dev/null || true').trim()
+                    }
                     sh '''
                         set -e
 
@@ -149,6 +153,23 @@ pipeline {
                         done
                     '''
                 }
+            }
+        }
+
+        stage('Remove Old Image') {
+            steps {
+                sh '''
+                    set -e
+
+                    NEW_IMAGE_ID=$(docker image inspect -f '{{.Id}}' ${IMAGE})
+                    if [ -z "${OLD_IMAGE_ID}" ] || [ "${OLD_IMAGE_ID}" = "$NEW_IMAGE_ID" ]; then
+                        echo "No old image to remove."
+                        exit 0
+                    fi
+
+                    # No -f: an image a container still uses is refused, not forced
+                    docker rmi "${OLD_IMAGE_ID}" || echo "Old image still in use; left in place."
+                '''
             }
         }
 
