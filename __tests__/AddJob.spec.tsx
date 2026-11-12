@@ -23,6 +23,10 @@ vi.mock("@/actions/profile.actions", () => ({
   getResumeList: vi.fn().mockResolvedValue({ success: true, data: [] }),
 }));
 
+vi.mock("@/actions/coverLetter.actions", () => ({
+  getCoverLetterList: vi.fn().mockResolvedValue({ success: true, data: [] }),
+}));
+
 vi.mock("@/actions/note.actions", () => ({
   getNotesByJobId: vi.fn().mockResolvedValue({ success: true, data: [] }),
   addNote: vi.fn(),

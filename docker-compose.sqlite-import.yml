@@ -1,0 +1,8 @@
+# One-off: run 1.2.0 once so it imports a SQLite dev.db, then deploy as usual.
+# docker compose -f docker-compose.yml -f docker-compose.sqlite-import.yml up -d
+services:
+  app:
+    image: ghcr.io/gsync/jobsync:1.2.0
+    environment:
+      - SKIP_IMPORT=${SKIP_IMPORT:-}
+      - IMPORT_DRY_RUN=${IMPORT_DRY_RUN:-}

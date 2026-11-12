@@ -15,8 +15,8 @@ const MALFORMED =
 export function checkUrl(raw: string | undefined): UrlCheck {
   if (!raw || raw.trim() === "") return { ok: false, message: "DATABASE_URL is not set." };
 
-  // Checked before Prisma sees it: P1012 covers this and every other bad
-  // string. Reached only with BUNDLED_DB=0 or an older compose file.
+  // Checked before pg sees it, which would only throw ERR_INVALID_URL.
+  // Reached only with BUNDLED_DB=0 or an older compose file.
   if (raw.startsWith("file:")) {
     return {
       ok: false,
@@ -45,15 +45,19 @@ export function checkUrl(raw: string | undefined): UrlCheck {
 
 export type Verdict = "retry" | "auth" | "missing-database" | "bad-url";
 
-// Anything unlisted retries: the window is bounded, so an unknown code still
-// ends in a non-zero exit, only with a coherent log.
-export function classify(errorCode: string | undefined): Verdict {
-  switch (errorCode) {
-    case "P1000":
+// Postgres SQLSTATEs (the ones the adapter maps to P1000 and P1003), plus
+// Node's code for a URL pg cannot parse. Anything unlisted retries: the window
+// is bounded, so an unknown code still ends in a non-zero exit.
+export function classify(code: string | undefined, message?: string): Verdict {
+  // pg's own SCRAM checks (e.g. no password in the URL) throw without a code
+  if (message?.startsWith("SASL:")) return "auth";
+  switch (code) {
+    case "28P01":
+    case "28000":
       return "auth";
-    case "P1003":
+    case "3D000":
       return "missing-database";
-    case "P1012":
+    case "ERR_INVALID_URL":
       return "bad-url";
     default:
       return "retry";

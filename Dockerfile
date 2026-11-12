@@ -17,12 +17,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Two clients: the Postgres runtime client, and the frozen SQLite snapshot
-# client that only the one-time import reads. Neither needs DATABASE_URL.
-RUN npx -y prisma@6.19.0 generate \
- && npx -y prisma@6.19.0 generate --schema=prisma/schema.sqlite-snapshot.prisma
+# Postgres client; needs no DATABASE_URL
+RUN npx -y prisma@7.10.1 generate
 
-# Boot scripts (wait-for-db, import-sqlite), compiled to plain CommonJS
+# Boot scripts (resolve-db-url, wait-for-db, migrate-deploy), compiled to plain CommonJS
 RUN npx tsc -p scripts/tsconfig.json
 
 RUN npm run build
@@ -49,9 +47,8 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/scripts/dist ./scripts/dist
-# Nothing in the app imports the snapshot client, so Next's standalone trace
-# never includes it or its SQLite engine binary: copy it explicitly.
-COPY --from=builder /app/src/generated/sqlite-snapshot ./src/generated/sqlite-snapshot
+# pg reaches the boot scripts only via Next's standalone trace; fail if missing
+RUN node -e "require.resolve('pg', { paths: ['/app/scripts/dist'] })"
 
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh

@@ -1,4 +1,4 @@
-import type { Job } from "@prisma/client";
+import type { Job } from "@/generated/prisma/client";
 import prisma from "@/lib/db";
 import { APPLIED_STATUS_VALUES } from "@/lib/constants";
 import { resolveStageTypeForStatusId } from "@/lib/jobs/resolve";

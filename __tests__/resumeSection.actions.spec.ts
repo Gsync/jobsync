@@ -14,15 +14,15 @@ import {
 } from "@/actions/profile.actions";
 import { SectionType } from "@/models/profile.model";
 import { getCurrentUser } from "@/utils/user.utils";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { AddExperienceFormSchema } from "@/models/addExperienceForm.schema";
 import { AddEducationFormSchema } from "@/models/AddEductionForm.schema";
 import { AddCertificationFormSchema } from "@/models/addCertificationForm.schema";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({} as never);
 
-vi.mock("@prisma/client", () => {
+vi.mock("@/generated/prisma/client", () => {
   const mPrismaClient = {
     resume: { findUnique: vi.fn() },
     resumeSection: {

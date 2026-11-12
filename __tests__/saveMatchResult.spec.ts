@@ -1,10 +1,10 @@
 import { handleSaveMatchResult } from "@/lib/mcp/tools/saveMatchResult";
 import { checkMcpRateLimit } from "@/lib/mcp/rate-limit";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@/generated/prisma/client";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({} as never);
 
-vi.mock("@prisma/client", () => {
+vi.mock("@/generated/prisma/client", () => {
   const mPrismaClient = {
     job: { update: vi.fn(), findFirst: vi.fn() },
     user: { findUnique: vi.fn() },

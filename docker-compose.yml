@@ -39,8 +39,6 @@ services:
       - BUNDLED_DATABASE_URL=postgres://jobsync:${POSTGRES_PASSWORD:-jobsync}@db:5432/jobsync
       - BUNDLED_DB=${BUNDLED_DB:-1}
       - CREATE_DATABASE_IF_MISSING=${CREATE_DATABASE_IF_MISSING:-}
-      - SKIP_IMPORT=${SKIP_IMPORT:-}
-      - IMPORT_DRY_RUN=${IMPORT_DRY_RUN:-}
       - AUTH_SECRET=${AUTH_SECRET:-your-auth-secret}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-you-encryption-key-here}
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3737}
@@ -53,8 +51,7 @@ services:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - RAPIDAPI_KEY=${RAPIDAPI_KEY:-}
     volumes:
-      # Permanent: uploaded resumes live here, and the one-time import reads
-      # the legacy dev.db from the same mount.
+      # Permanent: uploaded resumes live here.
       - ./jobsyncdb/data:/data
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -64,7 +61,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      # The first boot after upgrading also runs the one-time import
+      # The first boot after upgrading also applies the schema
       start_period: 120s
 
 volumes:

@@ -1,10 +1,10 @@
 import { resolveMcpToken } from "@/lib/mcp/auth";
 import { hashToken } from "@/lib/mcp/tokens";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@/generated/prisma/client";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({} as never);
 
-vi.mock("@prisma/client", () => {
+vi.mock("@/generated/prisma/client", () => {
   const mPrismaClient = {
     mcpAccessToken: { findUnique: vi.fn(), update: vi.fn() },
   };
