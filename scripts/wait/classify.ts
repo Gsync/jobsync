@@ -48,7 +48,9 @@ export type Verdict = "retry" | "auth" | "missing-database" | "bad-url";
 // Postgres SQLSTATEs (the ones the adapter maps to P1000 and P1003), plus
 // Node's code for a URL pg cannot parse. Anything unlisted retries: the window
 // is bounded, so an unknown code still ends in a non-zero exit.
-export function classify(code: string | undefined): Verdict {
+export function classify(code: string | undefined, message?: string): Verdict {
+  // pg's own SCRAM checks (e.g. no password in the URL) throw without a code
+  if (message?.startsWith("SASL:")) return "auth";
   switch (code) {
     case "28P01":
     case "28000":

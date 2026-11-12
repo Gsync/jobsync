@@ -49,7 +49,8 @@ export async function waitForDb(deps: WaitDeps): Promise<number> {
       deps.log(`Database reachable at ${where}/${target.database}.`);
       return 0;
     } catch (error) {
-      const verdict = classify((error as { code?: string }).code);
+      const { code, message } = error as { code?: string; message?: string };
+      const verdict = classify(code, message);
 
       if (verdict === "auth") {
         deps.log(authMessage(target));

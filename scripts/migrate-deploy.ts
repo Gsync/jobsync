@@ -24,7 +24,9 @@ async function main(url: string): Promise<number> {
     await client.connect();
     return await migrateDeploy({ url, client, migrations, uuid: randomUUID, log: console.log });
   } finally {
-    await client.end().catch(() => {});
+    await client.end().catch((error: Error) => {
+      console.error(`Closing the database connection failed: ${redact(error.message, url)}`);
+    });
   }
 }
 

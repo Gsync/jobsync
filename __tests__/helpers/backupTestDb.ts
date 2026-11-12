@@ -28,7 +28,7 @@ export function makeTestDb(): { url: string; schema: string; dir: string } | nul
 export function pushSchema(url: string): void {
   execFileSync(
     "npx",
-    ["prisma", "db", "push", "--accept-data-loss"],
+    ["-y", "prisma@7.10.1", "db", "push", "--accept-data-loss"],
     { env: { ...process.env, DATABASE_URL: url }, stdio: "pipe" },
   );
 }

@@ -165,6 +165,20 @@ describe("migrateDeploy", () => {
     expect(joined).not.toContain("hunter2");
   });
 
+  it("logs the migration error even when ROLLBACK fails", async () => {
+    const broken = { ...INIT, sql: "CREATE TABLE a (id int) BROKEN;" };
+    const client = fakeClient({ failOn: "BROKEN" });
+    const query = client.query;
+    client.query = async (text: string, values?: unknown[]) => {
+      if (text === "ROLLBACK") throw new Error("Connection terminated");
+      return query(text, values);
+    };
+    const log: string[] = [];
+    const deploy = migrateDeploy({ url: URL, client, migrations: [broken], uuid: () => "uuid", log: (line) => log.push(line) });
+    await expect(deploy).rejects.toThrow("Connection terminated");
+    expect(log.join("\n")).toContain("syntax error at BROKEN");
+  });
+
   it("stops on a half-finished row", async () => {
     const rows = [{ migration_name: INIT.name, finished_at: null, rolled_back_at: null }];
     const { code, log, texts } = await run({ rows });
@@ -203,6 +217,13 @@ describe("migrateDeploy", () => {
     expect(after[0]).toEqual({ text: expect.stringContaining("pg_namespace"), values: ["my-schema"] });
     expect(after[1].text).toBe('CREATE SCHEMA "my-schema"');
     expect(after[2].text).toBe('SET search_path TO "my-schema"');
+  });
+
+  it("treats a blank ?schema= as public", async () => {
+    const { calls, texts } = await run({ url: `${URL}?schema=` });
+    const after = calls.slice(calls.findIndex((c) => c.text === "RESET lock_timeout") + 1);
+    expect(after[0].values).toEqual(["public"]);
+    expect(has(texts, "CREATE SCHEMA")).toBe(false);
   });
 
   it("does not re-create an existing ?schema= schema", async () => {

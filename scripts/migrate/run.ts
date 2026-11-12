@@ -73,9 +73,10 @@ async function applyOne(deps: MigrateDeps, migration: MigrationFile): Promise<bo
     await client.query(INSERT_ROW, [deps.uuid(), checksum(migration.sql), migration.name]);
     await client.query("COMMIT");
   } catch (error) {
+    // Logged first: a ROLLBACK on a dead connection would throw over it
+    deps.log(redact(errorText(error), deps.url));
     await client.query("ROLLBACK");
     deps.log(`Migration ${migration.name} failed and was rolled back; the database is unchanged.`);
-    deps.log(redact(errorText(error), deps.url));
     return false;
   }
   deps.log(`Applied ${migration.name}.`);
@@ -84,7 +85,7 @@ async function applyOne(deps: MigrateDeps, migration: MigrationFile): Promise<bo
 
 async function applyPending(deps: MigrateDeps): Promise<number> {
   const { client } = deps;
-  await selectSchema(client, schemaFromUrl(deps.url) ?? "public");
+  await selectSchema(client, schemaFromUrl(deps.url) || "public");
   await client.query(CREATE_MIGRATIONS_TABLE);
   const recorded = await client.query(
     'SELECT migration_name, finished_at, rolled_back_at FROM "_prisma_migrations"',

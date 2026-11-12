@@ -91,6 +91,11 @@ describe("classify", () => {
   ])("%s -> %s", (code, verdict) => {
     expect(classify(code)).toBe(verdict);
   });
+
+  it("treats pg's codeless client-side SASL errors as auth", () => {
+    expect(classify(undefined, "SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string")).toBe("auth");
+    expect(classify(undefined, "Connection terminated unexpectedly")).toBe("retry");
+  });
 });
 
 describe("helpers", () => {

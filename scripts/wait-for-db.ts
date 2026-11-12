@@ -12,6 +12,7 @@ waitForDb({
     try {
       await pg.connect();
     } finally {
+      // Ignored: after a failed attempt it can reject, and retries would spam it
       await pg.end().catch(() => {});
     }
   },
@@ -22,6 +23,7 @@ waitForDb({
       await pg.connect();
       await pg.query(`CREATE DATABASE ${quotedName}`);
     } finally {
+      // Ignored: the outcome is already decided and the process moves on
       await pg.end().catch(() => {});
     }
   },

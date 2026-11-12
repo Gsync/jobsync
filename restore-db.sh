@@ -60,9 +60,10 @@ db_mode() {
 }
 
 # pg_dump and psql reject Prisma-only URL options such as ?schema=public;
-# real libpq options like sslmode are kept
+# real libpq options like sslmode are kept. uselibpqcompat is pg-only: libpq
+# already treats sslmode=require as no certificate check
 libpq_url() {
-    printf '%s' "$DATABASE_URL" | sed -E 's/([?&])(schema|connection_limit|pool_timeout|pgbouncer|statement_cache_size|socket_timeout)=[^&]*/\1/g; s/\?&+/?/; s/&&+/\&/g; s/[?&]$//'
+    printf '%s' "$DATABASE_URL" | sed -E 's/([?&])(schema|connection_limit|pool_timeout|pgbouncer|statement_cache_size|socket_timeout|uselibpqcompat)=[^&]*/\1/g; s/\?&+/?/; s/&&+/\&/g; s/[?&]$//'
 }
 
 # The reset below drops public, which would hit another app's tables when
