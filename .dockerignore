@@ -15,7 +15,6 @@ evals
 docs
 changes
 coverage
-__tests__
-e2e
+tests
 src/generated
 scripts/dist
