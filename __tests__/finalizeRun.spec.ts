@@ -56,3 +56,25 @@ it("does not return boardErrors in the RunnerResult", async () => {
   const result = await finalizeRun("run-1", data);
   expect(result).not.toHaveProperty("boardErrors");
 });
+
+describe("next run hour", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 0, 15, 12));
+  });
+  afterEach(() => vi.useRealTimers());
+  const nextRunAt = () => db.automation.update.mock.calls[0][0].data.nextRunAt as Date;
+
+  it("keeps a midnight schedule at midnight", async () => {
+    db.automation.findUnique.mockResolvedValue({ scheduleHour: 0 });
+    await finalizeRun("run-1", data);
+    expect(nextRunAt().getHours()).toBe(0);
+    expect(nextRunAt().getDate()).toBe(16);
+  });
+
+  it("falls back to 08:00 when the lookup returns null", async () => {
+    db.automation.findUnique.mockResolvedValue(null);
+    await finalizeRun("run-1", data);
+    expect(nextRunAt().getHours()).toBe(8);
+  });
+});

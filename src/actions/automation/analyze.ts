@@ -16,6 +16,7 @@ import { getResumeById } from "@/actions/profile.actions";
 import { getJobDetails } from "@/actions/job.actions";
 import { defaultUserSettings } from "@/models/userSettings.model";
 import { automationLogger } from "@/lib/automation-logger";
+import { getDefaultModelForProvider } from "@/lib/scraper/automation-run/aiSettings";
 import { APP_CONSTANTS } from "@/lib/constants";
 import {
   genAiRequestAttrs,
@@ -83,7 +84,8 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
       return { success: false, message: "Failed to prepare match inputs" };
     }
 
-    const model = await getModel(ai.provider, ai.model || "qwen3.5:9b", user.id);
+    const modelName = ai.model || getDefaultModelForProvider(ai.provider);
+    const model = await getModel(ai.provider, modelName, user.id);
 
     const promptText = buildJobMatchPrompt(
       resumePre.data.normalizedText,
@@ -95,7 +97,7 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
       {
         ...genAiRequestAttrs({
           provider: ai.provider,
-          model: ai.model || "qwen3.5:9b",
+          model: modelName,
           temperature: 0.3,
           numCtx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
           surface: SURFACES.JOB_MATCH,
@@ -115,7 +117,7 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
           userId: user.id,
           feature: "automations",
           provider: ai.provider,
-          model: ai.model || "qwen3.5:9b",
+          model: modelName,
         });
         let generated;
         try {
