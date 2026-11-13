@@ -36,10 +36,12 @@ Track every application, get AI resume reviews and job matches, and discover new
 
 ## Key Features
 
-- **Application Tracker:** Record every application with its company, title, dates and current status.
+- **Application Tracker:** Record every application with its company, title, dates and current status, and classify each one as Academic, Industry-Civil or Industry-Others.
 
   ![Jobs Applied List](./screenshots/jobsync-jobs.png?raw=true "Jobsync Jobs Page")
 
+- **Job Categories & Filters:** Filter the jobs list by category alongside status, job type and workplace.
+- **Email Tracking:** Each job has an Email tab for messages your AI agent links to that application, and the jobs list flags newly received email.
 - **Monitoring Dashboard:** See your search progress, activity and daily goals at a glance.
 - **Resume Management:** Store resumes, export them as PDFs, and import existing PDF or Word files with AI.
 - **Automated Job Discovery:** Schedule searches over company job boards and AI-match each listing to your resume. [Details](#automated-job-discovery)
@@ -48,7 +50,7 @@ Track every application, get AI resume reviews and job matches, and discover new
 - **Company Pages:** One page per company with its jobs, people and links, plus a watchlist. [Details](https://github.com/Gsync/jobsync/wiki/Companies)
 - **Question Bank:** Build a library of interview questions and answers, tagged by skill.
 - **Data Backup & Restore:** Export everything as one zip, import it anywhere, and undo an import. [Details](https://github.com/Gsync/jobsync/wiki/Data-Backup)
-- **AI Assistant:** A docked chat that reviews resumes, scores job matches, writes cover letters and adds jobs you paste in. [Details](#ai-assistant-in-app-chat)
+- **AI Assistant:** A docked chat that reviews resumes, scores job matches, writes cover letters and adds jobs from a pasted posting or a link. [Details](#ai-assistant-in-app-chat)
 - **AI Agent Integration (MCP):** Add jobs and questions from Claude Desktop and other agents. [Details](#mcp-server-ai-agent-integration)
 
 ## Quick Start
@@ -108,11 +110,13 @@ What you can ask for:
 - **Resume review** — a full review of any of your resumes, with scores and written feedback, saved to the resume so you can come back to it.
 - **Job match** — how well one of your resumes fits the job you're currently viewing, with a match score, a recommendation, and a write-up, saved to the job. Open the job first; the assistant scores the job on the page.
 - **Cover letter** — a tailored letter for the job you're viewing, written from your resume and the job description (and any guidance from an earlier match), saved to your documents. Ask again and you get a new letter rather than losing the old one.
-- **Add a job from a posting** — paste a job posting into the chat and ask it to add the job. It picks out the company, title, location, salary, tags and the rest, and shows you all of it on a confirmation card before anything is written. The description is saved exactly as you pasted it, not as a summary. Nothing reaches your database until you press Confirm.
+- **Add a job from a posting or link** — paste a job posting into the chat, or give the assistant the posting's URL, and ask it to add the job. For a link, the app reads the page itself and extracts the company, title, location, salary, employment type, workplace type and tags. It shows you everything it found on a confirmation card before anything is written. A pasted description is saved exactly as you pasted it, not as a summary; a linked posting is saved with its full page description. Nothing reaches your database until you press Confirm.
 
 The reviews, matches and letters are the same analyses the dedicated panels used to produce — the chat is a new way in, not a lighter-weight version.
 
-The assistant is deliberately narrow about what it can see: it reads your resumes and the single job you're looking at, and nothing else. It can't list or search your jobs, and it can't see tasks or activities. Pasted postings are also treated as untrusted text, so instructions hidden inside a posting can't make the assistant act on your data.
+The composer keeps a history of what you've sent. Press **↑** to recall your last prompt — including any attached posting chip — and keep pressing to walk further back; **↓** moves forward again and restores the draft you were typing. **Ctrl+C** (or **Cmd+C** on macOS) with nothing selected clears the chat window, terminal-style.
+
+The assistant is deliberately narrow about what it can see: it reads your resumes and the single job you're looking at, and nothing else. It can't list or search your jobs, and it can't see tasks or activities. Pasted postings and scraped job pages are treated as untrusted text, so instructions hidden inside them can't make the assistant act on your data.
 
 Pick a model under **Settings > AI Settings** before using the panel — it needs one that supports tool calling, and it will tell you rather than guessing if none is set. See [known-good models](#supported-ai-model-providers) for the ones that have been tested, including a fully local option.
 
