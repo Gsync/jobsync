@@ -15,6 +15,7 @@ export function errorReason(error: ScraperError): string {
       return "rate limited";
     case "network":
     case "parse":
+    case "too_large":
       return error.message;
   }
 }

@@ -2,9 +2,11 @@ import { buildAddJobTool } from "@/lib/agent/tools/addJob";
 import { buildAgentTools } from "@/lib/agent/tools";
 import { createJobFromNames } from "@/lib/jobs/createJobFromNames";
 import { JobResolutionError } from "@/lib/jobs/resolve";
+import { scrapeJobPosting } from "@/lib/scraper/jobPosting";
 import { addJobSettled } from "@/models/agent.model";
 
 vi.mock("@/lib/jobs/createJobFromNames", () => ({ createJobFromNames: vi.fn() }));
+vi.mock("@/lib/scraper/jobPosting", () => ({ scrapeJobPosting: vi.fn() }));
 
 const created = {
   created: true,
@@ -15,7 +17,31 @@ const created = {
 };
 
 const longDescription = Array.from({ length: 200 }, () => "word").join(" ");
-const execute = (tool: any, input: any) => tool.execute(input, { toolCallId: "c", messages: [] });
+// jobCategory is compulsory in the shared MCP shape, so every call needs one
+// before execute can reach the behaviour under test.
+const execute = (tool: any, input: any) =>
+  tool.execute(
+    { jobCategory: "industry_others", ...input },
+    { toolCallId: "c", messages: [] },
+  );
+
+const scrapedPosting = {
+  success: true,
+  data: {
+    title: "Senior Platform Engineer",
+    company: "Acme",
+    location: "Remote",
+    description: longDescription,
+    url: "https://example.com/jobs/1",
+    source: "Acme",
+    employmentType: "Full-time",
+    workplaceType: "Remote",
+    salary: "$180k",
+    skills: ["Go", "Kubernetes"],
+    structuredData: true,
+    warnings: undefined,
+  },
+};
 
 // review_resume needs the resolved model and the stream writer, so the
 // registry's context object is wider than a read tool's own arguments.
@@ -32,6 +58,7 @@ describe("add_job agent tool", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (createJobFromNames as any).mockResolvedValue(created);
+    (scrapeJobPosting as any).mockResolvedValue(scrapedPosting);
   });
 
   const needsApproval = (tool: any, input: any) =>
@@ -40,6 +67,8 @@ describe("add_job agent tool", () => {
   it("requires approval — a mutating tool can never execute unapproved", () => {
     expect(needsApproval(buildAddJobTool("user-1"), { company: "Acme", jobTitle: "Engineer", jobDescription: longDescription })).toBe(true);
     expect(needsApproval(buildAddJobTool("user-1", "posting"), { company: "Acme", jobTitle: "Engineer" })).toBe(true);
+    // A URL is enough for execute to write, because it can scrape the rest.
+    expect(needsApproval(buildAddJobTool("user-1"), { company: "Acme", jobTitle: "Engineer", jobUrl: "https://example.com/jobs/1" })).toBe(true);
   });
 
   // The card renders before execute runs, so asking for a call execute is
@@ -67,6 +96,112 @@ describe("add_job agent tool", () => {
     const tool = buildAddJobTool("user-1");
     await execute(tool, { company: "Acme", jobTitle: "Engineer", jobDescription: longDescription });
     expect((createJobFromNames as any).mock.calls[0][0].jobDescription).toBe(longDescription);
+  });
+
+  it("reads a supplied jobUrl and stores the full posting it finds", async () => {
+    const tool = buildAddJobTool("user-1");
+    await execute(tool, {
+      company: "Acme",
+      jobTitle: "Engineer",
+      // The model copied only a preview out of scrape_job.
+      jobDescription: "A short preview the model copied.",
+      jobUrl: "https://example.com/jobs/1",
+    });
+
+    expect(scrapeJobPosting).toHaveBeenCalledWith(
+      "https://example.com/jobs/1",
+      expect.anything(),
+    );
+    const passed = (createJobFromNames as any).mock.calls[0][0];
+    expect(passed.jobDescription).toBe(longDescription);
+    expect(passed.location).toBe("Remote");
+    expect(passed.source).toBeDefined();
+    expect(passed.salaryRange).toBe("$180k");
+    expect(passed.tags).toEqual(["Go", "Kubernetes"]);
+  });
+
+  it("marks a job whose description came from the page as scraped", async () => {
+    const result: any = await execute(buildAddJobTool("user-1"), {
+      company: "Acme",
+      jobTitle: "Engineer",
+      jobUrl: "https://example.com/jobs/1",
+    });
+    expect(result.descriptionSource).toBe("scraped");
+  });
+
+  it("keeps a better model description when the page has no structured data", async () => {
+    (scrapeJobPosting as any).mockResolvedValue({
+      ...scrapedPosting,
+      data: {
+        ...scrapedPosting.data,
+        // Same completeness, but inferred from nav-heavy page text.
+        description: `${longDescription} extra page noise`,
+        structuredData: false,
+      },
+    });
+
+    await execute(buildAddJobTool("user-1"), {
+      company: "Acme",
+      jobTitle: "Engineer",
+      jobDescription: longDescription,
+      jobUrl: "https://example.com/jobs/1",
+    });
+
+    expect((createJobFromNames as any).mock.calls[0][0].jobDescription).toBe(
+      longDescription,
+    );
+  });
+
+  it("uses the model's description when scraping fails", async () => {
+    (scrapeJobPosting as any).mockResolvedValue({
+      success: false,
+      error: { type: "blocked", reason: "The page refused the request." },
+    });
+
+    const result: any = await execute(buildAddJobTool("user-1"), {
+      company: "Acme",
+      jobTitle: "Engineer",
+      jobDescription: longDescription,
+      jobUrl: "https://example.com/jobs/1",
+    });
+
+    expect(result.created).toBe(true);
+    expect(result.descriptionSource).toBe("model");
+    expect((createJobFromNames as any).mock.calls[0][0].jobDescription).toBe(
+      longDescription,
+    );
+  });
+
+  it("reports a scrape failure when the URL was the only source of a description", async () => {
+    (scrapeJobPosting as any).mockResolvedValue({
+      success: false,
+      error: { type: "blocked", reason: "The page refused the request." },
+    });
+
+    const result: any = await execute(buildAddJobTool("user-1"), {
+      company: "Acme",
+      jobTitle: "Engineer",
+      jobUrl: "https://example.com/jobs/1",
+    });
+
+    expect(result.created).toBe(false);
+    expect(result.validationError).toMatch(/could not be read/i);
+    expect(result.displayError).toMatch(/could not be read/i);
+    expect(createJobFromNames).not.toHaveBeenCalled();
+  });
+
+  it("never scrapes over a posted text", async () => {
+    const tool = buildAddJobTool("user-1", "THE REAL PASTED POSTING");
+    await execute(tool, {
+      company: "Acme",
+      jobTitle: "Engineer",
+      jobUrl: "https://example.com/jobs/1",
+    });
+
+    expect(scrapeJobPosting).not.toHaveBeenCalled();
+    expect((createJobFromNames as any).mock.calls[0][0].jobDescription).toBe(
+      "THE REAL PASTED POSTING",
+    );
   });
 
   // An omitted dueDate must arrive as undefined so createJobFromNames'
@@ -205,6 +340,7 @@ describe("add_job agent tool", () => {
   it("registers exactly the tools the chat exposes", () => {
     expect(Object.keys(buildAgentTools(toolCtx))).toEqual([
       "add_job",
+      "scrape_job",
       "get_resume",
       "review_resume",
       "match_job",

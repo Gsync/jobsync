@@ -15,7 +15,8 @@ export type ScraperError =
   | { type: "blocked"; reason: string }
   | { type: "rate_limited"; retryAfter?: number }
   | { type: "network"; message: string }
-  | { type: "parse"; message: string };
+  | { type: "parse"; message: string }
+  | { type: "too_large"; message: string };
 
 export type ScraperResult<T> =
   | { success: true; data: T }

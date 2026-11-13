@@ -3,8 +3,12 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
 import { AgentAddJobParseSchema, AgentAddJobSchema } from "@/models/agent.schema";
 import { createJobFromNames } from "@/lib/jobs/createJobFromNames";
+import { classifyDescriptionCompleteness } from "@/lib/jobs/descriptionCompleteness";
 import { JobResolutionError } from "@/lib/jobs/resolve";
+import { scrapeJobPosting, type ScrapedJobPosting } from "@/lib/scraper/jobPosting";
+import { errorReason } from "@/lib/scraper/utils";
 import { log } from "@/lib/telemetry";
+import type { DescriptionCompleteness } from "@/models/job.model";
 import type { AgentAddJobResult } from "@/models/agent.model";
 
 // The model usually reaches here having omitted jobDescription because the
@@ -22,6 +26,37 @@ function failed(validationError: string, displayError?: string): AgentAddJobResu
   return { created: false, resolutions: [], validationError, displayError };
 }
 
+const COMPLETENESS_RANK: Record<DescriptionCompleteness, number> = {
+  "title-only": 0,
+  partial: 1,
+  full: 2,
+};
+
+function chooseDescription(
+  modelDescription: string | undefined,
+  scraped: ScrapedJobPosting | undefined,
+): { description: string | undefined; usedScraped: boolean } {
+  if (!scraped?.description) {
+    return { description: modelDescription, usedScraped: false };
+  }
+  if (!modelDescription) {
+    return { description: scraped.description, usedScraped: true };
+  }
+
+  const modelRank = COMPLETENESS_RANK[classifyDescriptionCompleteness(modelDescription)];
+  const scrapedRank = COMPLETENESS_RANK[classifyDescriptionCompleteness(scraped.description)];
+
+  // The scrape is the page's own text, so it wins a tie only when it came
+  // from structured job data. Without that signal a nav-heavy page can be
+  // longer than a good description the model already had.
+  const useScraped =
+    scrapedRank > modelRank || (scraped.structuredData && scrapedRank === modelRank);
+
+  return useScraped
+    ? { description: scraped.description, usedScraped: true }
+    : { description: modelDescription, usedScraped: false };
+}
+
 /**
  * userId and pastedText are captured from the route's authenticated session
  * and message array. Anything with those names inside the model's input is
@@ -36,12 +71,13 @@ export function buildAddJobTool(userId: string, pastedText?: string) {
     // Approval is asked for every call that could write, and skipped only for
     // one that execute is already certain to reject. The card renders before
     // execute runs, so a doomed call otherwise spends a Confirm and the retry
-    // spends a second one — the user confirms the same job twice. This stays
-    // in lockstep with the jobDescription check below: widening it to any
-    // other condition would let a write reach the database unapproved.
-    needsApproval: (input: { jobDescription?: string }) =>
-      Boolean(pastedText ?? input?.jobDescription),
-    execute: async (raw): Promise<AgentAddJobResult> => {
+    // spends a second one — the user confirms the same job twice. A jobUrl is
+    // enough to write because execute can read the posting itself. This stays
+    // in lockstep with the description check below: widening it to any other
+    // condition would let a write reach the database unapproved.
+    needsApproval: (input: { jobDescription?: string; jobUrl?: string }) =>
+      Boolean(pastedText ?? input?.jobDescription ?? input?.jobUrl),
+    execute: async (raw, { abortSignal }): Promise<AgentAddJobResult> => {
       const parsed = AgentAddJobParseSchema.safeParse(raw);
       if (!parsed.success) {
         // Returned, not thrown, so the model can see why and retry.
@@ -53,13 +89,55 @@ export function buildAddJobTool(userId: string, pastedText?: string) {
       }
 
       const input = parsed.data;
-      const jobDescription = pastedText ?? input.jobDescription;
-      if (!jobDescription) return failed(NO_DESCRIPTION, NO_DESCRIPTION_DISPLAY);
+
+      // A URL is enough to fill in what the model does not have. This also
+      // repairs a description the model truncated while copying it out of
+      // scrape_job, because the full text never has to survive the model's
+      // context window. A paste always wins over the page.
+      let scraped: ScrapedJobPosting | undefined;
+      let scrapeFailure: string | undefined;
+      if (!pastedText && input.jobUrl) {
+        const result = await scrapeJobPosting(input.jobUrl, {
+          signal: abortSignal,
+        });
+        if (result.success) {
+          scraped = result.data;
+        } else {
+          scrapeFailure = errorReason(result.error);
+        }
+      }
+
+      const chosen = chooseDescription(
+        pastedText ?? input.jobDescription,
+        scraped,
+      );
+      const jobDescription = chosen.description;
+      if (!jobDescription) {
+        const note = scrapeFailure
+          ? `The page could not be read (${scrapeFailure}). `
+          : "";
+        return failed(
+          `${note}${NO_DESCRIPTION}`,
+          `${note}${NO_DESCRIPTION_DISPLAY}`,
+        );
+      }
 
       try {
         const result = await createJobFromNames(
           {
             ...input,
+            company: input.company || scraped?.company || "",
+            jobTitle: input.jobTitle || scraped?.title || "",
+            location: input.location || scraped?.location || undefined,
+            source: input.source || scraped?.source || undefined,
+            jobType: input.jobType || scraped?.employmentType || undefined,
+            workplaceType:
+              input.workplaceType || scraped?.workplaceType || undefined,
+            salaryRange: input.salaryRange || scraped?.salary || undefined,
+            tags:
+              input.tags && input.tags.length > 0
+                ? input.tags
+                : scraped?.skills,
             jobDescription,
             createdVia: APP_CONSTANTS.AGENT_CHAT_CREATED_VIA,
           },
@@ -74,7 +152,11 @@ export function buildAddJobTool(userId: string, pastedText?: string) {
           jobId: result.jobId,
           duplicateOf: result.duplicateOf,
           resolutions: result.resolutions,
-          descriptionSource: pastedText ? "pasted" : "model",
+          descriptionSource: pastedText
+            ? "pasted"
+            : chosen.usedScraped
+              ? "scraped"
+              : "model",
           descriptionChars: jobDescription.length,
           descriptionCompleteness: result.descriptionCompleteness,
         };

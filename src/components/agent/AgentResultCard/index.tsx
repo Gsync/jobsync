@@ -2,6 +2,7 @@
 
 import { getToolName, type ToolUIPart } from "ai";
 import { AddJobResult } from "./AddJobResult";
+import { ScrapeJobResult } from "./ScrapeJobResult";
 import { GetResumeResult } from "./GetResumeResult";
 import { ReviewResumeResult } from "./ReviewResumeResult";
 import { MatchJobResult } from "./MatchJobResult";
@@ -12,6 +13,7 @@ import type {
   AgentGetResumeResult,
   AgentMatchJobResult,
   AgentReviewResumeResult,
+  AgentScrapeJobResult,
 } from "@/models/agent.model";
 
 export function AgentResultCard({ part }: { part: ToolUIPart }) {
@@ -42,6 +44,8 @@ export function AgentResultCard({ part }: { part: ToolUIPart }) {
       />
     ) : toolName === "get_resume" ? (
       <GetResumeResult output={part.output as AgentGetResumeResult} />
+    ) : toolName === "scrape_job" ? (
+      <ScrapeJobResult output={part.output as AgentScrapeJobResult} />
     ) : toolName === "review_resume" ? (
       <ReviewResumeResult output={part.output as AgentReviewResumeResult} />
     ) : toolName === "match_job" ? (
