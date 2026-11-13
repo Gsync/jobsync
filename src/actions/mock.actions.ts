@@ -46,6 +46,7 @@ export const generateMockActivitiesAction = async (): Promise<any> => {
         value: {
           in: mockActivityTypes.map((t) => t.value),
         },
+        createdBy: user.id,
       },
     });
 
@@ -72,6 +73,7 @@ export const generateMockActivitiesAction = async (): Promise<any> => {
         value: {
           in: mockActivityTypes.map((t) => t.value),
         },
+        createdBy: user.id,
       },
     });
 

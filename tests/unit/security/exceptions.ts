@@ -100,9 +100,8 @@ const calls = (
   category: SecurityException["category"],
   reason: string,
   targets: string[],
-  issue?: string,
 ): SecurityException[] =>
-  targets.map((target) => ({ file: `src/actions/${file}`, target, check, category, reason, issue }));
+  targets.map((target) => ({ file: `src/actions/${file}`, target, check, category, reason }));
 
 const ownerFirst = (file: string, targets: string[]) =>
   calls(file, "unresolved-where", "contract-exception", OWNER_FIRST, targets);
@@ -218,13 +217,6 @@ const VERIFIED_ID_EXCEPTIONS = [
   ...calls("auth.actions.ts", "owner-filter", "public", "Duplicate-email check during sign-up", ["signup:user.findUnique#1"]),
 ];
 
-const KNOWN_OWNERSHIP_GAPS = [
-  ...calls("mock.actions.ts", "owner-filter", "known-gap", "Reads every user's activity types by value", [
-    "generateMockActivitiesAction:activityType.findMany#1",
-    "generateMockActivitiesAction:activityType.findMany#2",
-  ], "docs/issues/mock-activity-types-cross-user.md"),
-];
-
 const requireUserException = (
   file: string,
   target: string,
@@ -246,5 +238,4 @@ export const ACTION_EXCEPTIONS: SecurityException[] = [
   requireUserException("profile/resume.ts", "createResumeProfile", "contract-exception", "Delegates to createResume (profile/resumeUpload.ts), which calls requireUser()"),
   ...LIST_QUERY_EXCEPTIONS,
   ...VERIFIED_ID_EXCEPTIONS,
-  ...KNOWN_OWNERSHIP_GAPS,
 ];
