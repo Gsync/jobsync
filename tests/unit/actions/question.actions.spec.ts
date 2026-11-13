@@ -23,6 +23,7 @@ vi.mock("@/generated/prisma/client", () => {
     },
     tag: {
       findMany: vi.fn(),
+      count: vi.fn(),
     },
     jobStagePrepQuestion: {
       count: vi.fn(),
@@ -51,6 +52,9 @@ describe("Question Actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (prisma.jobStagePrepQuestion.count as any).mockResolvedValue(0);
+    (prisma.tag.count as any).mockImplementation(
+      async ({ where }: any) => where.id.in.length,
+    );
   });
 
   // getQuestionsList
@@ -288,6 +292,23 @@ describe("Question Actions", () => {
       });
     });
 
+    it("should reject a tag owned by another user", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.tag.count as any).mockResolvedValue(1);
+
+      const result = await createQuestion({
+        question: "What is React?",
+        answer: "<p>A JS library</p>",
+        tagIds: ["tag-1", "foreign-tag"],
+      });
+
+      expect(result).toEqual({ success: false, message: "Tag not found" });
+      expect(prisma.tag.count).toHaveBeenCalledWith({
+        where: { id: { in: ["tag-1", "foreign-tag"] }, createdBy: mockUser.id },
+      });
+      expect(prisma.question.create).not.toHaveBeenCalled();
+    });
+
     it("should reject invalid data (null answer)", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
 
@@ -394,6 +415,24 @@ describe("Question Actions", () => {
           }),
         }),
       );
+    });
+
+    it("should reject a tag owned by another user", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.tag.count as any).mockResolvedValue(0);
+
+      const result = await updateQuestion({
+        id: "q-1",
+        question: "Updated question?",
+        answer: "<p>Updated answer</p>",
+        tagIds: ["foreign-tag"],
+      });
+
+      expect(result).toEqual({ success: false, message: "Tag not found" });
+      expect(prisma.tag.count).toHaveBeenCalledWith({
+        where: { id: { in: ["foreign-tag"] }, createdBy: mockUser.id },
+      });
+      expect(prisma.question.update).not.toHaveBeenCalled();
     });
 
     it("should return error when id is missing", async () => {

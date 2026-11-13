@@ -43,6 +43,7 @@ vi.mock("@/generated/prisma/client", () => {
       count: vi.fn(),
     },
     skill: { createMany: vi.fn(), deleteMany: vi.fn() },
+    tag: { count: vi.fn() },
     $transaction: vi.fn(),
   };
   return {
@@ -71,6 +72,9 @@ describe("Resume section actions", () => {
     (prisma.jobTitle.count as any).mockResolvedValue(1);
     (prisma.company.count as any).mockResolvedValue(1);
     (prisma.location.count as any).mockResolvedValue(1);
+    (prisma.tag.count as any).mockImplementation(
+      async ({ where }: any) => where.id.in.length,
+    );
   });
 
   describe("addResumeSummary", () => {
@@ -865,6 +869,39 @@ describe("Resume section actions", () => {
       expect(prisma.resumeSection.create).not.toHaveBeenCalled();
       expect(prisma.skill.createMany).not.toHaveBeenCalled();
     });
+
+    it("refuses a tag owned by another user before creating the section", async () => {
+      ownsResume();
+      (prisma.tag.count as any).mockResolvedValue(2);
+
+      const result = await addSkillsSection(form as any);
+
+      expect(result).toEqual({ success: false, message: "Tag not found" });
+      expect(prisma.tag.count).toHaveBeenCalledWith({
+        where: { id: { in: ["tag-1", "tag-2", "tag-3"] }, createdBy: "user-1" },
+      });
+      expect(prisma.resumeSection.create).not.toHaveBeenCalled();
+      expect(prisma.skill.createMany).not.toHaveBeenCalled();
+    });
+
+    it("counts a tag used in two categories once", async () => {
+      ownsResume();
+      (prisma.resumeSection.create as any).mockResolvedValue({ id: "skills-1" });
+
+      const result = await addSkillsSection({
+        ...form,
+        categories: [
+          { label: "Frontend", tagIds: ["tag-1", "tag-2"] },
+          { label: "Backend", tagIds: ["tag-1"] },
+        ],
+      } as any);
+
+      expect(result.success).toBe(true);
+      expect(prisma.tag.count).toHaveBeenCalledWith({
+        where: { id: { in: ["tag-1", "tag-2"] }, createdBy: "user-1" },
+      });
+      expect((prisma.skill.createMany as any).mock.calls[0][0].data).toHaveLength(3);
+    });
   });
 
   describe("updateSkillsSection", () => {
@@ -914,6 +951,23 @@ describe("Resume section actions", () => {
         message: "Section not found or access denied",
       });
       expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it("refuses a tag owned by another user", async () => {
+      (prisma.resumeSection.findFirst as any).mockResolvedValue({
+        id: "skills-1",
+        resumeId: "resume-1",
+      });
+      (prisma.tag.count as any).mockResolvedValue(0);
+
+      const result = await updateSkillsSection(form as any);
+
+      expect(result).toEqual({ success: false, message: "Tag not found" });
+      expect(prisma.tag.count).toHaveBeenCalledWith({
+        where: { id: { in: ["tag-9"] }, createdBy: "user-1" },
+      });
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.skill.deleteMany).not.toHaveBeenCalled();
     });
   });
 
