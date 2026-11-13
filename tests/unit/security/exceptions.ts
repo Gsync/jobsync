@@ -33,19 +33,10 @@ export function applyExceptions<F extends FindingKey>(
   return { unexcepted, stale };
 }
 
-const MODEL_ROUTE_GAP = "docs/issues/api-model-route-auth-guards.md";
 const NEXTAUTH = "src/app/api/auth/[...nextauth]/route.ts";
 const MCP = "src/app/api/mcp/route.ts";
 
 export const ROUTE_EXCEPTIONS: SecurityException[] = [
-  ...["openai", "gemini", "deepseek"].map((provider) => ({
-    file: `src/app/api/ai/${provider}/models/route.ts`,
-    target: "GET",
-    check: "status-401",
-    category: "known-gap" as const,
-    reason: "Reads the session but never rejects an absent one",
-    issue: MODEL_ROUTE_GAP,
-  })),
   {
     file: "src/app/api/automations/[id]/logs/route.ts",
     target: "GET",

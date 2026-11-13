@@ -99,14 +99,14 @@ describe("GET /api/ai/openrouter/models", () => {
     expect(response.status).toBe(500);
   });
 
-  it("handles missing session by passing undefined userId to resolveApiKey", async () => {
+  it("rejects a missing session before resolving a key", async () => {
     (auth as any).mockResolvedValue(null);
     (resolveApiKey as any).mockResolvedValue(undefined);
 
     const response = await GET();
 
     expect(response.status).toBe(401);
-    expect(resolveApiKey).toHaveBeenCalledWith(undefined, "openrouter");
+    expect(resolveApiKey).not.toHaveBeenCalled();
   });
 
   it("resolves the API key using the authenticated user's id", async () => {
