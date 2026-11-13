@@ -34,8 +34,8 @@ Next.js route folders such as `[id]` are mirrored as-is; quote those paths in zs
 
 ## Environments and setup
 
-- Unit and component both default to jsdom and load `setup/polyfills.ts` then `setup/dom.ts` (jest-dom, observer stubs). Some DOM-dependent utilities are unit specs for that reason.
-- A spec that needs Node declares `// @vitest-environment node` on its first line; keep that directive when moving a spec.
+- Unit defaults to node and component to jsdom; both load `setup/polyfills.ts` then `setup/dom.ts` (jest-dom, observer stubs).
+- A unit spec that needs a DOM (`localStorage`, `DOMParser`, HTML parsing) declares `// @vitest-environment jsdom` on its first line; keep that directive when moving a spec.
 - Unit and component alias `next-auth`, `next-auth/providers/credentials` and `server-only` to the stubs in `mocks/`.
 - Integration runs in Node with only the `@` and `server-only` aliases and no setup files.
 

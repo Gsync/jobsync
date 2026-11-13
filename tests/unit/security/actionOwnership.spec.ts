@@ -1,4 +1,3 @@
-// @vitest-environment node
 // Structural guardrail for server action auth and Prisma ownership (root
 // CLAUDE.md, Server Actions and Ownership). Flags departures, it does not
 // prove authorization: an owner key in a `where` says nothing about control

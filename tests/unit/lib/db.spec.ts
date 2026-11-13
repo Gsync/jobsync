@@ -1,4 +1,3 @@
-// @vitest-environment node
 const { PrismaPg, PrismaClient } = vi.hoisted(() => ({
   PrismaPg: vi.fn(function () {}),
   PrismaClient: vi.fn(function () {}),

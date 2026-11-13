@@ -1,4 +1,3 @@
-// @vitest-environment node
 import { checksum, planMigrations, schemaFromUrl, type MigrationFile, type RecordedRow } from "../../../scripts/migrate/plan";
 import { migrateDeploy } from "../../../scripts/migrate/run";
 

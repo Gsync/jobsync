@@ -1,4 +1,3 @@
-// @vitest-environment node
 import { Prisma } from "@/generated/prisma/client";
 import {
   MODEL_SPECS,

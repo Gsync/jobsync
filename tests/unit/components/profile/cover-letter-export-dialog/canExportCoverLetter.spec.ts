@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { canExportCoverLetter } from "@/components/profile/cover-letter-export-dialog/canExportCoverLetter";
 

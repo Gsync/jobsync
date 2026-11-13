@@ -1,4 +1,3 @@
-// @vitest-environment node
 // Tests for POST /api/profile/resume: the route builds the upload path itself
 // and never forwards a client-supplied fileId.
 

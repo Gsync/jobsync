@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
 import { sanitizeFilename } from "@/components/pdf-export/download";
 import { RESUME_LAYOUT_LABELS } from "@/models/resumeExport.model";

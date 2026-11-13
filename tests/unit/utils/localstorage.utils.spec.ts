@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 // Tests for the localStorage helpers with their SSR guard.
 
 import {

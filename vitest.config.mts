@@ -22,7 +22,7 @@ const browserAliases = [
   { find: "server-only", replacement: serverOnlyStub },
 ];
 
-// Unit and component share runtime and setup; only the include differs.
+// Unit runs in node (DOM specs opt in per file); component runs in jsdom.
 const jsdomProject = (name: string) => ({
   plugins: [react()],
   resolve: { alias: browserAliases },
@@ -30,7 +30,7 @@ const jsdomProject = (name: string) => ({
     name,
     include: [`tests/${name}/**/*.spec.{ts,tsx}`],
     globals: true,
-    environment: "jsdom",
+    environment: name === "unit" ? "node" : "jsdom",
     environmentOptions: {
       jsdom: {
         url: "http://localhost:3737",

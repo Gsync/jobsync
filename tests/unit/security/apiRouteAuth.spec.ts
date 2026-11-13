@@ -1,4 +1,3 @@
-// @vitest-environment node
 // Structural guardrail for API route auth (root CLAUDE.md, Authentication).
 // Flags departures, it does not prove auth: an auth() call and a 401 in the
 // same handler do not show the 401 rejects the session. Runtime 401 checks
