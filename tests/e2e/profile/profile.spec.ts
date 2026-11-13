@@ -341,15 +341,14 @@ async function addEducation(
   await page.getByLabel("Start Date").click();
   // Wait for calendar popover to open
   await page.waitForTimeout(1000);
-  // Click on any available date in the calendar
-  const startDateCell = page.getByRole("gridcell", { name: "15" }).first();
+  // Match the day ordinal so the year cannot satisfy the date selector.
+  const startDateCell = page.getByRole("button", { name: /\b15th\b/ });
   await startDateCell.waitFor({ state: "visible", timeout: 5000 });
   await startDateCell.click();
   await page.getByLabel("End Date").click();
   // Wait for calendar popover to open
   await page.waitForTimeout(1000);
-  // Click on any available date in the calendar
-  const endDateCell = page.getByRole("gridcell", { name: "20" }).first();
+  const endDateCell = page.getByRole("button", { name: /\b20th\b/ });
   await endDateCell.waitFor({ state: "visible", timeout: 5000 });
   await endDateCell.click();
   await page.locator("div:nth-child(2) > .tiptap").click();
