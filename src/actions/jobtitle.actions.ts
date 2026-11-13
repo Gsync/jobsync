@@ -77,6 +77,7 @@ export const deleteJobTitleById = async (
     const experiences = await prisma.workExperience.count({
       where: {
         jobTitleId,
+        ResumeSection: { Resume: { profile: { userId: user.id } } },
       },
     });
     if (experiences > 0) {

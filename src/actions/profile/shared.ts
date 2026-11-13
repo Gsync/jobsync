@@ -21,6 +21,35 @@ export const assertResumeOwnership = async (
   if (!owned) throw new Error("Resume not found or access denied");
 };
 
+type ResumeEntryRefs = {
+  jobTitleId?: string;
+  companyId?: string;
+  locationId?: string;
+};
+
+// Foreign keys prove a row exists, not that the caller owns it
+export const assertResumeRefsOwned = async (
+  userId: string,
+  refs: ResumeEntryRefs,
+) => {
+  const owned = { createdBy: userId };
+  const [title, company, location] = await Promise.all([
+    refs.jobTitleId
+      ? prisma.jobTitle.count({ where: { id: refs.jobTitleId, ...owned } })
+      : 1,
+    refs.companyId
+      ? prisma.company.count({ where: { id: refs.companyId, ...owned } })
+      : 1,
+    refs.locationId
+      ? prisma.location.count({ where: { id: refs.locationId, ...owned } })
+      : 1,
+  ]);
+
+  if (title === 0) throw new Error("Job title not found");
+  if (company === 0) throw new Error("Company not found");
+  if (location === 0) throw new Error("Location not found");
+};
+
 // db is the transaction client when the caller swaps a resume's file
 export const createFileEntry = async (
   fileName: string | undefined,

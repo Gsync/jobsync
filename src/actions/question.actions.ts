@@ -2,7 +2,7 @@
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { AddQuestionFormSchema } from "@/models/addQuestionForm.schema";
-import { requireUser } from "./shared";
+import { assertTagsOwned, requireUser } from "./shared";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { z } from "zod";
 
@@ -125,6 +125,7 @@ export const createQuestion = async (
     const user = await requireUser();
 
     const validatedData = AddQuestionFormSchema.parse(data);
+    await assertTagsOwned(validatedData.tagIds ?? [], user.id);
 
     const question = await prisma.question.create({
       data: {
@@ -153,6 +154,7 @@ export const updateQuestion = async (
     if (!data.id) throw new Error("Question ID is required for update");
 
     const validatedData = AddQuestionFormSchema.parse(data);
+    await assertTagsOwned(validatedData.tagIds ?? [], user.id);
 
     const question = await prisma.question.update({
       where: { id: data.id, createdBy: user.id },

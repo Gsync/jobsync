@@ -276,7 +276,7 @@ npm run test -- path/to/test.test.ts   # Single file
 npm run test -- --testNamePattern="test name"  # Single test
 ```
 
-Tests live in `__tests__/` and should be co-located where possible. Mock external dependencies (AI providers, database). Focus on server actions and component behavior.
+Tests live in `tests/` (see `tests/README.md` for the unit, component and integration suites). Mock external dependencies (AI providers, database). Focus on server actions and component behavior.
 
 ### E2E Tests (Playwright)
 
@@ -284,7 +284,7 @@ Tests live in `__tests__/` and should be co-located where possible. Mock externa
 npm run test:e2e
 ```
 
-E2E tests live in `e2e/`. These require a running dev server.
+E2E tests live in `tests/e2e/`. These require a running dev server.
 
 ---
 

@@ -1,0 +1,1699 @@
+import {
+  addJob,
+  createLocation,
+  createJobSource,
+  deleteJobById,
+  getJobDetails,
+  getJobsList,
+  getJobFilterCounts,
+  getJobSourceList,
+  getStatusList,
+  saveJobMatchResult,
+  updateJob,
+  updateJobStatus,
+} from "@/actions/job.actions";
+import { getMockJobDetails, getMockJobsList } from "@/lib/mock.utils";
+import { EMPTY_JOB_FACETS } from "@/lib/jobs/jobFacets";
+import { JobResponse } from "@/models/job.model";
+import { getCurrentUser } from "@/utils/user.utils";
+import { resolveStageTypeForStatusId } from "@/lib/jobs/resolve";
+import { changeJobStatus } from "@/lib/jobs/timeline";
+import { PrismaClient } from "@/generated/prisma/client";
+const prisma = new PrismaClient({} as never);
+
+// Mock the Prisma Client
+vi.mock("@/generated/prisma/client", () => {
+  const mPrismaClient = {
+    jobStatus: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
+    jobSource: {
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      count: vi.fn(),
+    },
+    job: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      count: vi.fn(),
+      groupBy: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    location: {
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      count: vi.fn(),
+    },
+    jobTitle: { count: vi.fn() },
+    company: { count: vi.fn() },
+    resume: { count: vi.fn() },
+    coverLetter: { count: vi.fn() },
+    tag: { count: vi.fn() },
+    jobStage: {
+      findFirst: vi.fn(),
+      count: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+    },
+    $transaction: vi.fn(),
+  };
+  (mPrismaClient.$transaction as any).mockImplementation((fn: any) =>
+    fn(mPrismaClient),
+  );
+  return {
+    PrismaClient: vi.fn(function () {
+      return mPrismaClient;
+    }),
+  };
+});
+
+// Only the stage-type resolver is stubbed: the other resolvers in that module
+// are used by addJob and the reference-create actions in this same spec.
+vi.mock("@/lib/jobs/resolve", async (importOriginal) => ({
+  ...((await importOriginal()) as object),
+  resolveStageTypeForStatusId: vi.fn(),
+}));
+
+vi.mock("@/lib/jobs/timeline", async (importOriginal) => ({
+  ...((await importOriginal()) as object),
+  changeJobStatus: vi.fn(),
+}));
+
+vi.mock("@/utils/user.utils", () => ({
+  getCurrentUser: vi.fn(),
+}));
+
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}));
+
+describe("jobActions", () => {
+  const mockUser = { id: "user-id" };
+  const jobData = {
+    id: "job-id",
+    title: "job-title-id",
+    company: "company-id",
+    location: "location-id",
+    type: "FT",
+    status: "status-id",
+    source: "source-id",
+    salaryRange: "$50,000 - $70,000",
+    createdAt: expect.any(Date),
+    dueDate: new Date("2023-01-01"),
+    dateApplied: new Date("2022-12-31"),
+    jobDescription: "Job description",
+    jobUrl: "https://example.com/job",
+    applied: true,
+    userId: mockUser.id,
+    resume: "",
+    tags: [],
+  };
+  const refModels = [
+    "jobTitle",
+    "company",
+    "location",
+    "jobSource",
+    "resume",
+    "coverLetter",
+    "tag",
+  ];
+  beforeEach(() => {
+    vi.clearAllMocks();
+    for (const model of refModels) {
+      (prisma as any)[model].count.mockResolvedValue(1);
+    }
+    // Both status write paths now append a stage before updating the job.
+    (prisma as any).$transaction.mockImplementation((fn: any) => fn(prisma));
+    (prisma as any).job.count.mockResolvedValue(1);
+    (prisma as any).jobStage.create.mockResolvedValue({ id: "stage-id" });
+    (prisma as any).jobStage.updateMany.mockResolvedValue({ count: 1 });
+    (resolveStageTypeForStatusId as any).mockResolvedValue("stage-type-id");
+    (prisma as any).jobStatus.findUnique.mockResolvedValue({ value: "draft" });
+  });
+  describe("getStatusList", () => {
+    it("should return status list on successful query", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      const mockStatuses = [
+        { id: "1", label: "Pending", value: "pending" },
+        { id: "2", label: "Processing", value: "processing" },
+      ];
+      (prisma.jobStatus.findMany as any).mockResolvedValue(mockStatuses);
+
+      const result = await getStatusList();
+      expect(result).toEqual(mockStatuses);
+    });
+
+    it("should throw error on failure", async () => {
+      const mockErrorResponse = {
+        success: false,
+        message: "Failed to fetch status list.",
+      };
+      (prisma.jobStatus.findMany as any).mockRejectedValue(
+        new Error("Failed to fetch status list."),
+      );
+
+      await expect(getStatusList()).resolves.toStrictEqual(mockErrorResponse);
+    });
+
+    it("returns statuses in JOB_STATUSES order, unknown values last", async () => {
+      (prisma.jobStatus.findMany as any).mockResolvedValue([
+        { id: "1", label: "Offer Accepted", value: "offer-accepted" },
+        { id: "2", label: "Legacy", value: "legacy" },
+        { id: "3", label: "Draft", value: "draft" },
+        { id: "4", label: "New", value: "new" },
+      ]);
+
+      const result = await getStatusList();
+      expect(result.map((s: any) => s.value)).toEqual([
+        "new",
+        "draft",
+        "offer-accepted",
+        "legacy",
+      ]);
+    });
+  });
+  describe("getJobSourceList", () => {
+    it("should return job source list on successful query", async () => {
+      const mockData = [
+        { id: "1", label: "Source 1", value: "source1" },
+        { id: "2", label: "Source 2", value: "source2" },
+      ];
+      (prisma.jobSource.findMany as any).mockResolvedValue(mockData);
+
+      const result = await getJobSourceList();
+
+      expect(result).toEqual(mockData);
+      expect(prisma.jobSource.findMany).toHaveBeenCalledTimes(1);
+    });
+
+    it("should returns failure response on error", async () => {
+      (prisma.jobSource.findMany as any).mockRejectedValue(
+        new Error("Failed to fetch job source list."),
+      );
+
+      const result = await getJobSourceList();
+
+      expect(result).toEqual({
+        success: false,
+        message: "Failed to fetch job source list.",
+      });
+
+      expect(prisma.jobSource.findMany).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("getJobsList", () => {
+    it("should retrieve jobs with default parameters", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const { data, total } = await getMockJobsList(1, 10);
+      (prisma.job.findMany as any).mockResolvedValue(data);
+      (prisma.job.count as any).mockResolvedValue(total);
+
+      const result = await getJobsList();
+
+      expect(result).toEqual({
+        success: true,
+        data,
+        total,
+      });
+      expect(prisma.job.findMany).toHaveBeenCalledTimes(1);
+      expect(prisma.job.count).toHaveBeenCalledTimes(1);
+    });
+    it("should hide the pre-rank score of un-analyzed jobs and drop matchData", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.findMany as any).mockResolvedValue([
+        {
+          id: "unanalyzed",
+          matchScore: 28,
+          matchData: JSON.stringify({ prerankScore: 0.29, analyzed: false }),
+        },
+        {
+          id: "analyzed",
+          matchScore: 71,
+          matchData: JSON.stringify({ matchScore: 71, body: "## Summary" }),
+        },
+        { id: "unmatched", matchScore: null, matchData: null },
+      ]);
+      (prisma.job.count as any).mockResolvedValue(3);
+
+      const result = await getJobsList();
+
+      expect(result.data).toStrictEqual([
+        { id: "unanalyzed", matchScore: null },
+        { id: "analyzed", matchScore: 71 },
+        { id: "unmatched", matchScore: null },
+      ]);
+    });
+    it("should return error when fetching data fails", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      (prisma.job.findMany as any).mockRejectedValue(
+        new Error("Database error"),
+      );
+
+      const result = await getJobsList();
+
+      expect(result).toEqual({
+        success: false,
+        message: "Database error",
+      });
+    });
+    it("should return error when user is not authenticated", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      const result = await getJobsList();
+
+      expect(result).toEqual({
+        success: false,
+        message: "Not authenticated",
+      });
+    });
+
+    describe("sorting", () => {
+      const BASE = [{ createdAt: "desc" }, { id: "desc" }];
+      const sortArgs = (sort: any) =>
+        [1, 10, undefined, undefined, undefined, undefined, undefined, undefined, undefined, sort] as const;
+
+      beforeEach(() => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+      });
+
+      it("orders by newest added with an id tiebreaker by default", async () => {
+        await getJobsList();
+        expect(prisma.job.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({ orderBy: BASE }),
+        );
+      });
+
+      it("sorts text columns on the canonical value", async () => {
+        await getJobsList(...sortArgs({ field: "company", dir: "asc" }));
+        expect(prisma.job.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            orderBy: [{ Company: { value: "asc" } }, ...BASE],
+          }),
+        );
+        expect(prisma.job.count).toHaveBeenCalledTimes(1);
+      });
+
+      it("ignores a field outside the whitelist", async () => {
+        await getJobsList(...sortArgs({ field: "userId", dir: "asc" }));
+        expect(prisma.job.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({ orderBy: BASE }),
+        );
+      });
+
+      it("pages real match scores first, then unscored jobs by newest", async () => {
+        (prisma.job.count as any)
+          .mockResolvedValueOnce(1)
+          .mockResolvedValueOnce(1);
+        (prisma.job.findMany as any)
+          .mockResolvedValueOnce([{ id: "scored", matchScore: 80, matchData: "{}" }])
+          .mockResolvedValueOnce([{ id: "unmatched", matchScore: null, matchData: null }]);
+
+        const result = await getJobsList(...sortArgs({ field: "matchScore", dir: "desc" }));
+
+        expect(result.total).toBe(2);
+        expect(result.data.map((j: any) => j.id)).toEqual(["scored", "unmatched"]);
+        const [valuedCall, blankCall] = (prisma.job.findMany as any).mock.calls;
+        expect(valuedCall[0].orderBy).toEqual([{ matchScore: "desc" }, ...BASE]);
+        expect(blankCall[0].orderBy).toEqual(BASE);
+        // The dismissed-hiding AND survives, with the partition appended.
+        expect(valuedCall[0].where.AND).toHaveLength(2);
+        expect(valuedCall[0].where.AND[1]).toMatchObject({
+          matchScore: { not: null },
+        });
+      });
+    });
+
+    describe("facets", () => {
+      const whereOf = () => (prisma.job.findMany as any).mock.calls[0][0].where;
+
+      beforeEach(() => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+      });
+
+      it("hides dismissed discovered jobs by default", async () => {
+        await getJobsList(1, 10);
+        expect(whereOf().AND).toEqual([
+          {
+            OR: [
+              { discoveryStatus: null },
+              { discoveryStatus: { not: "dismissed" } },
+            ],
+          },
+        ]);
+      });
+
+      it("ORs statuses with accepted-discovered inside one AND entry", async () => {
+        await getJobsList(1, 10, {
+          ...EMPTY_JOB_FACETS,
+          statuses: ["applied", "interview"],
+          acceptedDiscovered: true,
+        });
+        expect(whereOf().AND).toContainEqual({
+          OR: [
+            { Status: { value: { in: ["applied", "interview"] } } },
+            { discoveryStatus: "accepted" },
+          ],
+        });
+      });
+
+      it("ANDs job type and workplace as `in` lists", async () => {
+        await getJobsList(1, 10, {
+          ...EMPTY_JOB_FACETS,
+          jobTypes: ["FT", "C"],
+          workplaces: ["REMOTE"],
+        });
+        expect(whereOf().AND).toEqual(
+          expect.arrayContaining([
+            { jobType: { in: ["FT", "C"] } },
+            { workplaceType: { in: ["REMOTE"] } },
+          ]),
+        );
+      });
+
+      it("drops the dismissed exclusion when dismissed jobs are included", async () => {
+        await getJobsList(1, 10, { ...EMPTY_JOB_FACETS, includeDismissed: true });
+        expect(whereOf().AND).toEqual([]);
+      });
+
+      it("keeps the search OR alongside the status OR", async () => {
+        await getJobsList(1, 10, { ...EMPTY_JOB_FACETS, statuses: ["applied"] }, "Developer");
+        const where = whereOf();
+        expect(where.OR).toContainEqual({ description: { contains: "Developer", mode: "insensitive" } });
+        expect(where.AND).toContainEqual({
+          OR: [{ Status: { value: { in: ["applied"] } } }],
+        });
+      });
+
+      it("ignores values outside the whitelist", async () => {
+        await getJobsList(1, 10, {
+          ...EMPTY_JOB_FACETS,
+          statuses: ["bogus"],
+          jobTypes: ["fulltime"],
+        });
+        expect(whereOf().AND).toHaveLength(1);
+      });
+
+      it("always scopes by the current user", async () => {
+        await getJobsList(1, 10, { ...EMPTY_JOB_FACETS, statuses: ["applied"] });
+        expect(whereOf().userId).toBe(mockUser.id);
+      });
+    });
+
+    describe("search functionality", () => {
+      it("should build OR clause when search parameter is provided", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        const { data, total } = await getMockJobsList(1, 10);
+        (prisma.job.findMany as any).mockResolvedValue(data);
+        (prisma.job.count as any).mockResolvedValue(total);
+
+        await getJobsList(1, 10, undefined, "Amazon");
+
+        expect(prisma.job.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              userId: mockUser.id,
+              OR: [
+                { JobTitle: { label: { contains: "Amazon", mode: "insensitive" } } },
+                { Company: { label: { contains: "Amazon", mode: "insensitive" } } },
+                { Location: { label: { contains: "Amazon", mode: "insensitive" } } },
+                { JobSource: { label: { contains: "Amazon", mode: "insensitive" } } },
+                { description: { contains: "Amazon", mode: "insensitive" } },
+              ],
+            }),
+          }),
+        );
+        expect(prisma.job.count).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              OR: [
+                { JobTitle: { label: { contains: "Amazon", mode: "insensitive" } } },
+                { Company: { label: { contains: "Amazon", mode: "insensitive" } } },
+                { Location: { label: { contains: "Amazon", mode: "insensitive" } } },
+                { JobSource: { label: { contains: "Amazon", mode: "insensitive" } } },
+                { description: { contains: "Amazon", mode: "insensitive" } },
+              ],
+            }),
+          }),
+        );
+      });
+
+      it("should exclude JobSource from search OR when sourceValue is set", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(
+          1,
+          10,
+          undefined,
+          "LinkedIn",
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "linkedin",
+        );
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.OR).not.toContainEqual({
+          JobSource: { label: { contains: "LinkedIn", mode: "insensitive" } },
+        });
+      });
+
+      it("should combine search with filter", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(
+          1,
+          10,
+          { ...EMPTY_JOB_FACETS, statuses: ["applied"] },
+          "Developer",
+        );
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          OR: expect.any(Array),
+        });
+        expect(findManyCall.where.AND).toContainEqual({
+          OR: [{ Status: { value: { in: ["applied"] } } }],
+        });
+      });
+
+      it("should not include OR clause when search is undefined", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, undefined);
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.OR).toBeUndefined();
+      });
+
+      it("should not include OR clause when search is empty string", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, "");
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.OR).toBeUndefined();
+      });
+
+      it("should return filtered results with correct pagination", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        const mockFilteredData = [
+          {
+            id: "1",
+            JobTitle: { label: "Full Stack Developer" },
+            Company: { label: "Amazon" },
+          },
+        ];
+        (prisma.job.findMany as any).mockResolvedValue(mockFilteredData);
+        (prisma.job.count as any).mockResolvedValue(1);
+
+        const result = await getJobsList(1, 10, undefined, "Amazon");
+
+        expect(result).toEqual({
+          success: true,
+          data: mockFilteredData,
+          total: 1,
+        });
+      });
+
+      it("should combine job type filter with search", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(
+          1,
+          10,
+          { ...EMPTY_JOB_FACETS, jobTypes: ["PT"] },
+          "Developer",
+        );
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          OR: expect.any(Array),
+        });
+        expect(findManyCall.where.AND).toContainEqual({
+          jobType: { in: ["PT"] },
+        });
+      });
+    });
+
+    describe("company filter", () => {
+      it("should filter by company value when companyValue is provided", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, undefined, "google");
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          Company: { value: "google" },
+        });
+      });
+
+      it("should filter by applied when appliedOnly is true", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, undefined, "google", true);
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          Company: { value: "google" },
+          applied: true,
+        });
+      });
+
+      it("should exclude Company from search OR when companyValue is set", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, "Developer", "google");
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.OR).toEqual([
+          { JobTitle: { label: { contains: "Developer", mode: "insensitive" } } },
+          { Location: { label: { contains: "Developer", mode: "insensitive" } } },
+          { JobSource: { label: { contains: "Developer", mode: "insensitive" } } },
+          { description: { contains: "Developer", mode: "insensitive" } },
+        ]);
+        expect(findManyCall.where.OR).not.toContainEqual({
+          Company: { label: { contains: "Developer", mode: "insensitive" } },
+        });
+      });
+
+      it("should include Company in search OR when companyValue is not set", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, "Developer");
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.OR).toContainEqual({
+          Company: { label: { contains: "Developer", mode: "insensitive" } },
+        });
+      });
+
+      it("should combine company filter with status filter", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(
+          1,
+          10,
+          { ...EMPTY_JOB_FACETS, statuses: ["applied"] },
+          undefined,
+          "google",
+          true,
+        );
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          Company: { value: "google" },
+          applied: true,
+        });
+        expect(findManyCall.where.AND).toContainEqual({
+          OR: [{ Status: { value: { in: ["applied"] } } }],
+        });
+      });
+
+      it("should not add Company or applied when params are undefined", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(1, 10);
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.Company).toBeUndefined();
+        expect(findManyCall.where.applied).toBeUndefined();
+      });
+    });
+
+    describe("title filter", () => {
+      it("should filter by title value when titleValue is provided", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(
+          1,
+          10,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "full stack developer",
+        );
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          JobTitle: { value: "full stack developer" },
+        });
+      });
+
+      it("should combine title filter with applied filter", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(
+          1,
+          10,
+          undefined,
+          undefined,
+          undefined,
+          true,
+          "full stack developer",
+        );
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          JobTitle: { value: "full stack developer" },
+          applied: true,
+        });
+      });
+
+      it("should exclude JobTitle from search OR when titleValue is set", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(
+          1,
+          10,
+          undefined,
+          "React",
+          undefined,
+          undefined,
+          "full stack developer",
+        );
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.OR).not.toContainEqual({
+          JobTitle: { label: { contains: "React", mode: "insensitive" } },
+        });
+      });
+
+      it("should include JobTitle in search OR when titleValue is not set", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, "React");
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.OR).toContainEqual({
+          JobTitle: { label: { contains: "React", mode: "insensitive" } },
+        });
+      });
+
+      it("should not add JobTitle when titleValue is undefined", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(1, 10);
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.JobTitle).toBeUndefined();
+      });
+    });
+
+    describe("location filter", () => {
+      it("should filter by location value when locationValue is provided", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(
+          1,
+          10,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "remote",
+        );
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          Location: { value: "remote" },
+        });
+      });
+
+      it("should combine location filter with applied filter", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(
+          1,
+          10,
+          undefined,
+          undefined,
+          undefined,
+          true,
+          undefined,
+          "remote",
+        );
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          Location: { value: "remote" },
+          applied: true,
+        });
+      });
+
+      it("should exclude Location from search OR when locationValue is set", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(
+          1,
+          10,
+          undefined,
+          "React",
+          undefined,
+          undefined,
+          undefined,
+          "remote",
+        );
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.OR).not.toContainEqual({
+          Location: { label: { contains: "React", mode: "insensitive" } },
+        });
+      });
+
+      it("should include Location in search OR when locationValue is not set", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(1, 10, undefined, "React");
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.OR).toContainEqual({
+          Location: { label: { contains: "React", mode: "insensitive" } },
+        });
+      });
+
+      it("should not add Location when locationValue is undefined", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(1, 10);
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.Location).toBeUndefined();
+      });
+    });
+
+    describe("source filter", () => {
+      it("should filter by source value when sourceValue is provided", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(
+          1,
+          10,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "indeed",
+        );
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          JobSource: { value: "indeed" },
+        });
+      });
+
+      it("should combine source filter with applied filter", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(
+          1,
+          10,
+          undefined,
+          undefined,
+          undefined,
+          true,
+          undefined,
+          undefined,
+          "indeed",
+        );
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where).toMatchObject({
+          userId: mockUser.id,
+          JobSource: { value: "indeed" },
+          applied: true,
+        });
+      });
+
+      it("should not add JobSource when sourceValue is undefined", async () => {
+        (getCurrentUser as any).mockResolvedValue(mockUser);
+        (prisma.job.findMany as any).mockResolvedValue([]);
+        (prisma.job.count as any).mockResolvedValue(0);
+
+        await getJobsList(1, 10);
+
+        const findManyCall = (prisma.job.findMany as any).mock.calls[0][0];
+        expect(findManyCall.where.JobSource).toBeUndefined();
+      });
+    });
+  });
+  describe("getJobFilterCounts", () => {
+    // Queued per test, not in beforeEach: clearMocks keeps unused Once values,
+    // so the unauthenticated test would leak them into later describes.
+    const queueCounts = () =>
+      (prisma.job.count as any)
+        .mockResolvedValueOnce(18)
+        .mockResolvedValueOnce(7);
+
+    beforeEach(() => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.groupBy as any).mockResolvedValue([
+        { statusId: "s-applied", _count: { _all: 11 } },
+        { statusId: "s-interview", _count: { _all: 4 } },
+      ]);
+    });
+
+    it("returns the total, per-status counts and the accepted count", async () => {
+      queueCounts();
+      const result = await getJobFilterCounts({
+        ...EMPTY_JOB_FACETS,
+        statuses: ["applied"],
+      });
+      expect(result).toEqual({
+        success: true,
+        data: {
+          total: 18,
+          statusCounts: { "s-applied": 11, "s-interview": 4 },
+          acceptedDiscovered: 7,
+        },
+      });
+    });
+
+    it("counts statuses without the Status section but with the others", async () => {
+      queueCounts();
+      await getJobFilterCounts({
+        ...EMPTY_JOB_FACETS,
+        statuses: ["applied"],
+        jobTypes: ["FT"],
+      });
+      const where = (prisma.job.groupBy as any).mock.calls[0][0].where;
+      expect(where.AND).toContainEqual({ jobType: { in: ["FT"] } });
+      expect(JSON.stringify(where)).not.toContain('"applied"');
+      expect((prisma.job.groupBy as any).mock.calls[0][0].by).toEqual(["statusId"]);
+    });
+
+    it("scopes counts by the deep-link filters and search", async () => {
+      queueCounts();
+      await getJobFilterCounts(EMPTY_JOB_FACETS, "Dev", {
+        companyValue: "google",
+        appliedOnly: true,
+      });
+      const totalWhere = (prisma.job.count as any).mock.calls[0][0].where;
+      expect(totalWhere).toMatchObject({
+        userId: mockUser.id,
+        Company: { value: "google" },
+        applied: true,
+      });
+      expect(totalWhere.OR).toContainEqual({ description: { contains: "Dev", mode: "insensitive" } });
+      const acceptedWhere = (prisma.job.count as any).mock.calls[1][0].where;
+      expect(acceptedWhere.AND[1]).toEqual({ discoveryStatus: "accepted" });
+      expect(acceptedWhere.AND[0].userId).toBe(mockUser.id);
+    });
+
+    it("returns Not authenticated without a session", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+      const result = await getJobFilterCounts(EMPTY_JOB_FACETS);
+      expect(result).toEqual({ success: false, message: "Not authenticated" });
+    });
+  });
+
+
+  describe("getJobDetails", () => {
+    it("should throw error when jobId is not provided", async () => {
+      await expect(getJobDetails("")).resolves.toStrictEqual({
+        success: false,
+        message: "Please provide job id",
+      });
+    });
+    it("should throw error when user is not authenticated", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      await expect(getJobDetails("job123")).resolves.toStrictEqual({
+        success: false,
+        message: "Not authenticated",
+      });
+    });
+  });
+  it("should return job details on successful query", async () => {
+    (getCurrentUser as any).mockResolvedValue(mockUser);
+    const mockJob = await getMockJobDetails("2");
+    (prisma.job.findUnique as any).mockResolvedValue(mockJob);
+
+    const result = await getJobDetails("2");
+
+    expect(result).toStrictEqual({ job: mockJob, success: true });
+    expect(prisma.job.findUnique).toHaveBeenCalledWith({
+      where: {
+        id: "2",
+        userId: "user-id",
+      },
+      include: {
+        JobSource: true,
+        JobTitle: true,
+        Company: true,
+        CoverLetter: true,
+        Status: true,
+        Location: true,
+        Resume: {
+          include: {
+            File: true,
+          },
+        },
+        tags: { orderBy: [{ label: "asc" }, { id: "asc" }] },
+        contactLinks: {
+          include: {
+            Role: true,
+            Contact: {
+              select: {
+                id: true,
+                name: true,
+                title: true,
+                email: true,
+                phone: true,
+                linkedinUrl: true,
+                lastContactedAt: true,
+                Company: { select: { id: true, label: true } },
+              },
+            },
+          },
+          orderBy: { createdAt: "asc" },
+        },
+        stages: {
+          include: {
+            StageType: { include: { Status: true } },
+            interviewers: {
+              include: {
+                Contact: {
+                  select: {
+                    id: true,
+                    name: true,
+                    title: true,
+                    email: true,
+                    phone: true,
+                    linkedinUrl: true,
+                    lastContactedAt: true,
+                    Company: { select: { id: true, label: true } },
+                  },
+                },
+              },
+              orderBy: { createdAt: "asc" },
+            },
+            prepQuestions: {
+              include: {
+                Question: {
+                  select: {
+                    id: true,
+                    question: true,
+                    answer: true,
+                    tags: true,
+                  },
+                },
+              },
+              orderBy: { createdAt: "asc" },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it("should handle unexpected errors", async () => {
+    (getCurrentUser as any).mockResolvedValue({ id: "user123" });
+
+    (prisma.job.findUnique as any).mockRejectedValue(
+      new Error("Unexpected error"),
+    );
+
+    await expect(getJobDetails("job123")).resolves.toStrictEqual({
+      success: false,
+      message: "Unexpected error",
+    });
+  });
+  describe("createLocation", () => {
+    it("should throw error when user is not authenticated", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      await expect(createLocation("location-name")).resolves.toStrictEqual({
+        success: false,
+        message: "Not authenticated",
+      });
+    });
+    it("should throw error when location name is not provided or empty", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      await expect(createLocation(" ")).resolves.toStrictEqual({
+        success: false,
+        message: "Please provide location name",
+      });
+    });
+    it("should create with valid input", async () => {
+      const label = "New Location";
+      const mockLocation = {
+        label: "New Location",
+        value: "new location",
+        createdBy: mockUser.id,
+      };
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.location.findFirst as any).mockResolvedValue(null);
+      (prisma.location.create as any).mockResolvedValue(mockLocation);
+
+      const result = await createLocation(label);
+
+      expect(prisma.location.create).toHaveBeenCalledTimes(1);
+      expect(prisma.location.create).toHaveBeenCalledWith({
+        data: mockLocation,
+      });
+      expect(result).toStrictEqual({
+        data: {
+          ...mockLocation,
+        },
+        success: true,
+      });
+    });
+    it("should handle unexpected errors", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.location.findFirst as any).mockResolvedValue(null);
+      (prisma.location.create as any).mockRejectedValue(
+        new Error("Unexpected error"),
+      );
+
+      await expect(createLocation("location-name")).resolves.toStrictEqual({
+        success: false,
+        message: "Unexpected error",
+      });
+    });
+    it("should canonicalize the value (not just lowercase) for matching", async () => {
+      // Regression guard: value computation was switched from
+      // label.trim().toLowerCase() to canonicalizeEntityValue(), which also
+      // folds diacritics and comma separators. A plain-ASCII label wouldn't
+      // catch a revert to the old behavior.
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.location.findFirst as any).mockResolvedValue(null);
+      (prisma.location.create as any).mockImplementation(({ data }: any) =>
+        Promise.resolve(data),
+      );
+
+      const result = await createLocation("São Paulo, Brazil");
+
+      expect(prisma.location.findFirst).toHaveBeenCalledWith({
+        where: { value: "sao paulo brazil", createdBy: mockUser.id },
+      });
+      expect(result.data.value).toBe("sao paulo brazil");
+    });
+  });
+  describe("createJobSource", () => {
+    it("should throw error when user is not authenticated", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      await expect(createJobSource("source-name")).resolves.toStrictEqual({
+        success: false,
+        message: "Not authenticated",
+      });
+    });
+    it("should throw error when job source name is not provided or empty", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      await expect(createJobSource(" ")).resolves.toStrictEqual({
+        success: false,
+        message: "Please provide job source name",
+      });
+    });
+    it("should create with valid input", async () => {
+      const label = "New Source";
+      const mockJobSource = {
+        label: "New Source",
+        value: "new source",
+        createdBy: mockUser.id,
+      };
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.jobSource.findFirst as any).mockResolvedValue(null);
+      (prisma.jobSource.create as any).mockResolvedValue(mockJobSource);
+
+      const result = await createJobSource(label);
+
+      expect(prisma.jobSource.create).toHaveBeenCalledTimes(1);
+      expect(prisma.jobSource.create).toHaveBeenCalledWith({
+        data: mockJobSource,
+      });
+      expect(result).toStrictEqual({
+        data: mockJobSource,
+        success: true,
+      });
+    });
+    it("should reuse an existing job source instead of creating a duplicate", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const existing = { label: "Indeed", value: "indeed", createdBy: mockUser.id };
+      (prisma.jobSource.findFirst as any).mockResolvedValue(existing);
+
+      const result = await createJobSource("Indeed");
+
+      expect(prisma.jobSource.create).not.toHaveBeenCalled();
+      expect(result).toStrictEqual({ data: existing, success: true });
+    });
+    it("should handle unexpected errors", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.jobSource.findFirst as any).mockResolvedValue(null);
+      (prisma.jobSource.create as any).mockRejectedValue(
+        new Error("Unexpected error"),
+      );
+
+      await expect(createJobSource("source-name")).resolves.toStrictEqual({
+        success: false,
+        message: "Unexpected error",
+      });
+    });
+  });
+  describe("addJob", () => {
+    it("should create a new job successfully", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.create as any).mockResolvedValue(jobData);
+
+      const result = await addJob(jobData);
+
+      expect(result).toStrictEqual({ data: jobData, success: true });
+      expect(prisma.job.create).toHaveBeenCalledTimes(1);
+      expect(prisma.job.create).toHaveBeenCalledWith({
+        data: {
+          jobTitleId: jobData.title,
+          companyId: jobData.company,
+          locationId: jobData.location,
+          statusId: jobData.status,
+          jobSourceId: jobData.source,
+          salaryRange: jobData.salaryRange,
+          createdAt: jobData.createdAt,
+          dueDate: jobData.dueDate,
+          appliedDate: jobData.dateApplied,
+          description: jobData.jobDescription,
+          jobType: jobData.type,
+          userId: mockUser.id,
+          jobUrl: jobData.jobUrl,
+          applied: jobData.applied,
+          resumeId: jobData.resume,
+          stages: {
+            create: {
+              stageTypeId: "stage-type-id",
+              occurredAt: expect.any(Date),
+              isCurrent: true,
+            },
+          },
+        },
+      });
+    });
+    it("should handle undefined values for optional fields", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.create as any).mockResolvedValue(jobData);
+
+      const result = await addJob({
+        ...jobData,
+        jobUrl: undefined,
+        dateApplied: undefined,
+      });
+
+      expect(prisma.job.create).toHaveBeenCalledTimes(1);
+      expect(prisma.job.create).toHaveBeenCalledWith({
+        data: {
+          jobTitleId: jobData.title,
+          companyId: jobData.company,
+          locationId: jobData.location,
+          statusId: jobData.status,
+          jobSourceId: jobData.source,
+          salaryRange: jobData.salaryRange,
+          createdAt: jobData.createdAt,
+          dueDate: jobData.dueDate,
+          description: jobData.jobDescription,
+          jobType: jobData.type,
+          userId: mockUser.id,
+          resumeId: jobData.resume,
+          stages: {
+            create: {
+              stageTypeId: "stage-type-id",
+              occurredAt: expect.any(Date),
+              isCurrent: true,
+            },
+          },
+        },
+      });
+      expect(result).toEqual({ data: jobData, success: true });
+    });
+    it("marks the job applied when the chosen status is Applied", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma as any).jobStatus.findUnique.mockResolvedValue({ value: "applied" });
+      (prisma.job.create as any).mockResolvedValue(jobData);
+
+      await addJob({ ...jobData, dateApplied: undefined });
+
+      const data = (prisma.job.create as any).mock.calls[0][0].data;
+      expect(data.applied).toBe(true);
+      expect(data.appliedDate).toEqual(expect.any(Date));
+    });
+    it("dates an Applied job's first stage from its Date Applied", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma as any).jobStatus.findUnique.mockResolvedValue({ value: "applied" });
+      (prisma.job.create as any).mockResolvedValue(jobData);
+      const dateApplied = new Date("2026-01-05T00:00:00Z");
+
+      await addJob({ ...jobData, dateApplied });
+
+      const data = (prisma.job.create as any).mock.calls[0][0].data;
+      expect(data.stages.create.occurredAt).toEqual(dateApplied);
+    });
+    it("marks an Offer job applied without inventing a date", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma as any).jobStatus.findUnique.mockResolvedValue({ value: "offer" });
+      (prisma.job.create as any).mockResolvedValue(jobData);
+
+      await addJob({ ...jobData, dateApplied: undefined });
+
+      const data = (prisma.job.create as any).mock.calls[0][0].data;
+      expect(data.applied).toBe(true);
+      expect(data.appliedDate).toBeUndefined();
+    });
+    it("should handle unexpected errors", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      (prisma.job.create as any).mockRejectedValue(
+        new Error("Unexpected error"),
+      );
+
+      await expect(addJob(jobData)).resolves.toStrictEqual({
+        success: false,
+        message: "Unexpected error",
+      });
+    });
+    it("should throw error when user is not authenticated", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      await expect(addJob(jobData)).resolves.toStrictEqual({
+        success: false,
+        message: "Not authenticated",
+      });
+    });
+    it("counts each referenced id against the caller", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.create as any).mockResolvedValue(jobData);
+
+      await addJob({
+        ...jobData,
+        resume: "resume-id",
+        coverLetter: "letter-id",
+        tags: ["tag-1", "tag-1"],
+      });
+
+      const db = prisma as any;
+      const owned = { createdBy: mockUser.id };
+      const inProfile = { profile: { userId: mockUser.id } };
+      expect(db.jobTitle.count).toHaveBeenCalledWith({
+        where: { id: "job-title-id", ...owned },
+      });
+      expect(db.company.count).toHaveBeenCalledWith({
+        where: { id: "company-id", ...owned },
+      });
+      expect(db.location.count).toHaveBeenCalledWith({
+        where: { id: "location-id", ...owned },
+      });
+      expect(db.jobSource.count).toHaveBeenCalledWith({
+        where: { id: "source-id", ...owned },
+      });
+      expect(db.resume.count).toHaveBeenCalledWith({
+        where: { id: "resume-id", ...inProfile },
+      });
+      expect(db.coverLetter.count).toHaveBeenCalledWith({
+        where: { id: "letter-id", ...inProfile },
+      });
+      expect(db.tag.count).toHaveBeenCalledWith({
+        where: { id: { in: ["tag-1"] }, ...owned },
+      });
+      expect(prisma.job.create).toHaveBeenCalledTimes(1);
+    });
+    it.each([
+      ["company", {}, "Company not found"],
+      ["resume", { resume: "resume-id" }, "Resume not found"],
+      ["coverLetter", { coverLetter: "letter-id" }, "Cover letter not found"],
+    ])("rejects another user's %s", async (model, overrides, message) => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma as any)[model].count.mockResolvedValue(0);
+
+      const result = await addJob({ ...jobData, ...overrides });
+
+      expect(result).toStrictEqual({ success: false, message });
+      expect(prisma.job.create).not.toHaveBeenCalled();
+    });
+    it("rejects a tag list that includes another user's tag", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      const result = await addJob({ ...jobData, tags: ["tag-1", "tag-2"] });
+
+      expect(result).toStrictEqual({ success: false, message: "Tag not found" });
+      expect(prisma.job.create).not.toHaveBeenCalled();
+    });
+    it("skips the check for a resume that was not picked", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.create as any).mockResolvedValue(jobData);
+
+      await addJob(jobData);
+
+      expect((prisma as any).resume.count).not.toHaveBeenCalled();
+      expect((prisma as any).tag.count).not.toHaveBeenCalled();
+    });
+  });
+  describe("updateJob", () => {
+    const currentRefs = {
+      jobTitleId: "job-title-id",
+      companyId: "company-id",
+      locationId: "location-id",
+      jobSourceId: "source-id",
+      resumeId: null,
+      coverLetterId: null,
+      statusId: "status-id",
+      tags: [{ id: "tag-1" }],
+    };
+    beforeEach(() => {
+      (prisma.job as any).findFirst.mockResolvedValue(currentRefs);
+    });
+    it("does not re-check ids the job already holds", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma as any).jobSource.count.mockResolvedValue(0);
+      (prisma.job.update as any).mockResolvedValue(jobData);
+
+      const result = await updateJob({ ...jobData, tags: ["tag-1"] });
+
+      expect(result.success).toBe(true);
+      expect((prisma.job as any).findFirst.mock.calls[0][0].where).toEqual({
+        id: "job-id",
+        userId: mockUser.id,
+      });
+      expect((prisma as any).jobSource.count).not.toHaveBeenCalled();
+      expect((prisma as any).company.count).not.toHaveBeenCalled();
+      expect((prisma as any).tag.count).not.toHaveBeenCalled();
+    });
+    it("rejects a newly attached company the caller does not own", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma as any).company.count.mockResolvedValue(0);
+
+      const result = await updateJob({ ...jobData, company: "other-company" });
+
+      expect(result).toStrictEqual({
+        success: false,
+        message: "Company not found",
+      });
+      expect(prisma.job.update).not.toHaveBeenCalled();
+    });
+    it.each([
+      ["resume", { resume: "resume-id" }, "Resume not found"],
+      ["coverLetter", { coverLetter: "letter-id" }, "Cover letter not found"],
+    ])("rejects another user's %s", async (model, overrides, message) => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma as any)[model].count.mockResolvedValue(0);
+
+      const result = await updateJob({ ...jobData, ...overrides });
+
+      expect(result).toStrictEqual({ success: false, message });
+      expect(prisma.job.update).not.toHaveBeenCalled();
+    });
+    it("checks only the tags being added", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma as any).tag.count.mockResolvedValue(0);
+
+      const result = await updateJob({ ...jobData, tags: ["tag-1", "tag-2"] });
+
+      expect((prisma as any).tag.count).toHaveBeenCalledWith({
+        where: { id: { in: ["tag-2"] }, createdBy: mockUser.id },
+      });
+      expect(result).toStrictEqual({ success: false, message: "Tag not found" });
+      expect(prisma.job.update).not.toHaveBeenCalled();
+    });
+    it("reports a job the caller does not own", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job as any).findFirst.mockResolvedValue(null);
+
+      const result = await updateJob(jobData);
+
+      expect(result).toStrictEqual({ success: false, message: "Job not found" });
+      expect(prisma.job.update).not.toHaveBeenCalled();
+    });
+    it("should update a job successfully", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (changeJobStatus as any).mockResolvedValue(jobData);
+
+      const result = await updateJob(jobData);
+
+      expect(result).toStrictEqual({ data: jobData, success: true });
+      expect(changeJobStatus).toHaveBeenCalledTimes(1);
+    });
+    it("leaves the job's createdAt out of an edit", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (changeJobStatus as any).mockResolvedValue(jobData);
+
+      await updateJob(jobData);
+
+      const { jobFields } = (changeJobStatus as any).mock.calls[0][0];
+      expect(jobFields).not.toHaveProperty("createdAt");
+    });
+    it("delegates with jobFields and appliedDateFromUser", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (changeJobStatus as any).mockResolvedValue(jobData);
+
+      await updateJob({ ...jobData, dateApplied: undefined });
+
+      expect(changeJobStatus).toHaveBeenCalledWith({
+        jobId: "job-id",
+        userId: mockUser.id,
+        statusId: "status-id",
+        jobFields: expect.objectContaining({
+          jobTitleId: "job-title-id",
+          salaryRange: "$50,000 - $70,000",
+        }),
+        appliedDateFromUser: null,
+      });
+    });
+    it("should handle unexpected errors", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      (changeJobStatus as any).mockRejectedValue(new Error("Unexpected error"));
+
+      await expect(updateJob(jobData)).resolves.toStrictEqual({
+        success: false,
+        message: "Unexpected error",
+      });
+    });
+    it("should throw error when user is not authenticated", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      await expect(updateJob(jobData)).resolves.toStrictEqual({
+        success: false,
+        message: "Not authenticated",
+      });
+    });
+
+    it("should return an error if the id is not provided or no user privileges", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      await expect(
+        updateJob({ ...jobData, id: undefined }),
+      ).resolves.toStrictEqual({
+        success: false,
+        message: "Job id is required",
+      });
+    });
+  });
+  describe("updateJobStatus", () => {
+    const jobData = {
+      id: "job-id",
+      title: "job-title-id",
+      company: "company-id",
+      location: "location-id",
+      type: "FT",
+      status: {
+        id: "status-id",
+        label: "Applied",
+        value: "applied",
+      },
+      source: "source-id",
+      salaryRange: "$50,000 - $70,000",
+      createdAt: expect.any(Date),
+      dueDate: new Date("2023-01-01"),
+      dateApplied: new Date("2022-12-31"),
+      jobDescription: "Job description",
+      jobUrl: "https://example.com/job",
+      applied: true,
+      userId: mockUser.id,
+    };
+    it("should handle unexpected errors", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      (changeJobStatus as any).mockRejectedValue(new Error("Unexpected error"));
+
+      await expect(
+        updateJobStatus(jobData.id, jobData.status),
+      ).resolves.toStrictEqual({
+        success: false,
+        message: "Unexpected error",
+      });
+    });
+    it("should throw error when user is not authenticated", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      await expect(
+        updateJobStatus(jobData.id, jobData.status),
+      ).resolves.toStrictEqual({
+        success: false,
+        message: "Not authenticated",
+      });
+    });
+  });
+  describe("deleteJobById", () => {
+    it("should return error when user is not authenticated", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      await expect(deleteJobById("job-id")).resolves.toStrictEqual({
+        success: false,
+        message: "Not authenticated",
+      });
+    });
+    it("should delete a job successfully", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.delete as any).mockResolvedValue(jobData);
+
+      const result = await deleteJobById("job-id");
+
+      expect(result).toStrictEqual({ res: jobData, success: true });
+      expect(prisma.job.delete).toHaveBeenCalledTimes(1);
+      expect(prisma.job.delete).toHaveBeenCalledWith({
+        where: {
+          id: "job-id",
+          userId: mockUser.id,
+        },
+      });
+    });
+    it("should handle unexpected errors", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      (prisma.job.delete as any).mockRejectedValue(
+        new Error("Unexpected error"),
+      );
+
+      await expect(deleteJobById("job-id")).resolves.toStrictEqual({
+        success: false,
+        message: "Unexpected error",
+      });
+    });
+  });
+  describe("saveJobMatchResult", () => {
+    it("should return error when user is not authenticated", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      const result = await saveJobMatchResult(
+        "job-id",
+        85,
+        '{"summary":"test"}',
+      );
+
+      expect(result).toStrictEqual({
+        success: false,
+        message: "Not authenticated",
+      });
+      expect(prisma.job.update).not.toHaveBeenCalled();
+    });
+
+    it("should save match score and data successfully", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.update as any).mockResolvedValue({});
+
+      const matchData = JSON.stringify({
+        matchScore: 85,
+        summary: "Good match",
+        resumeId: "resume-1",
+        resumeTitle: "My Resume",
+        matchedAt: "2026-03-29T00:00:00.000Z",
+      });
+
+      const result = await saveJobMatchResult("job-id", 85, matchData);
+
+      expect(result).toStrictEqual({ success: true });
+      expect(prisma.job.update).toHaveBeenCalledTimes(1);
+      expect(prisma.job.update).toHaveBeenCalledWith({
+        where: { id: "job-id", userId: mockUser.id },
+        data: { matchScore: 85, matchData },
+      });
+    });
+
+    it("should handle database errors", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.update as any).mockRejectedValue(
+        new Error("Record not found"),
+      );
+
+      const result = await saveJobMatchResult("job-id", 75, "{}");
+
+      expect(result).toStrictEqual({
+        success: false,
+        message: "Record not found",
+      });
+    });
+  });
+});

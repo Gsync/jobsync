@@ -5,7 +5,11 @@ import { AddExperienceFormSchema } from "@/models/addExperienceForm.schema";
 import { SectionType } from "@/models/profile.model";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { assertResumeOwnership, requireUser } from "./shared";
+import {
+  assertResumeOwnership,
+  assertResumeRefsOwned,
+  requireUser,
+} from "./shared";
 
 export const addExperience = async (
   data: z.infer<typeof AddExperienceFormSchema>,
@@ -19,6 +23,11 @@ export const addExperience = async (
     }
 
     await assertResumeOwnership(data.resumeId!, user.id);
+    await assertResumeRefsOwned(user.id, {
+      jobTitleId: data.title,
+      companyId: data.company,
+      locationId: data.location,
+    });
 
     if (!data.sectionId && !data.sectionTitle) {
       throw new Error("SectionTitle is required.");
@@ -70,6 +79,12 @@ export const updateExperience = async (
     if (!result.success) {
       return { success: false, message: result.error.issues[0].message };
     }
+
+    await assertResumeRefsOwned(user.id, {
+      jobTitleId: data.title,
+      companyId: data.company,
+      locationId: data.location,
+    });
 
     const summary = await prisma.workExperience.update({
       where: {
