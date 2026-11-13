@@ -259,6 +259,29 @@ describe("Tag Actions", () => {
       });
     });
 
+    it("counts only the current user's links to the tag", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.count as any).mockResolvedValue(0);
+      (prisma.question.count as any).mockResolvedValue(0);
+      (prisma.skill.count as any).mockResolvedValue(0);
+      (prisma.tag.delete as any).mockResolvedValue(mockTag);
+
+      await deleteTagById("tag-1");
+
+      expect(prisma.job.count).toHaveBeenCalledWith({
+        where: { userId: mockUser.id, tags: { some: { id: "tag-1" } } },
+      });
+      expect(prisma.question.count).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id, tags: { some: { id: "tag-1" } } },
+      });
+      expect(prisma.skill.count).toHaveBeenCalledWith({
+        where: {
+          tagId: "tag-1",
+          ResumeSection: { Resume: { profile: { userId: mockUser.id } } },
+        },
+      });
+    });
+
     it("should return error when tag is linked to jobs only", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
       (prisma.job.count as any).mockResolvedValue(3);

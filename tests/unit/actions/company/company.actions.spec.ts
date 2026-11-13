@@ -959,10 +959,7 @@ describe("Company Actions", () => {
       expect(prisma.workExperience.count).toHaveBeenCalledWith({
         where: {
           companyId: "c1",
-          OR: [
-            { ResumeSection: { Resume: { profile: { userId: mockUser.id } } } },
-            { resumeSectionId: null },
-          ],
+          ResumeSection: { Resume: { profile: { userId: mockUser.id } } },
         },
       });
     });

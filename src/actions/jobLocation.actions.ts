@@ -55,6 +55,7 @@ export const deleteJobLocationById = async (
     const experiences = await prisma.workExperience.count({
       where: {
         locationId,
+        ResumeSection: { Resume: { profile: { userId: user.id } } },
       },
     });
     if (experiences > 0) {
@@ -66,6 +67,7 @@ export const deleteJobLocationById = async (
     const educations = await prisma.education.count({
       where: {
         locationId,
+        ResumeSection: { Resume: { profile: { userId: user.id } } },
       },
     });
     if (educations > 0) {

@@ -235,6 +235,23 @@ describe("Job Location Actions", () => {
       });
     });
 
+    it("counts only the current user's resume rows using the location", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(0);
+      (prisma.education.count as any).mockResolvedValue(0);
+      (prisma.job.count as any).mockResolvedValue(0);
+      (prisma.location.delete as any).mockResolvedValue({ id: "loc-1" });
+
+      await deleteJobLocationById("loc-1");
+
+      const owned = {
+        locationId: "loc-1",
+        ResumeSection: { Resume: { profile: { userId: mockUser.id } } },
+      };
+      expect(prisma.workExperience.count).toHaveBeenCalledWith({ where: owned });
+      expect(prisma.education.count).toHaveBeenCalledWith({ where: owned });
+    });
+
     it("should return error for unauthenticated user", async () => {
       (getCurrentUser as any).mockResolvedValue(null);
 

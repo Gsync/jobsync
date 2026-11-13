@@ -287,6 +287,22 @@ describe("Job Title Actions", () => {
   });
 
   describe("deleteJobTitleById", () => {
+    it("counts only the current user's work experience rows", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(0);
+      (prisma.job.count as any).mockResolvedValue(0);
+      (prisma.jobTitle.delete as any).mockResolvedValue({ id: "title-1" });
+
+      await deleteJobTitleById("title-1");
+
+      expect(prisma.workExperience.count).toHaveBeenCalledWith({
+        where: {
+          jobTitleId: "title-1",
+          ResumeSection: { Resume: { profile: { userId: mockUser.id } } },
+        },
+      });
+    });
+
     it("should delete a job title successfully", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
       (prisma.workExperience.count as any).mockResolvedValue(0);

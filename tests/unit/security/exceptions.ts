@@ -101,7 +101,6 @@ const OWNER_FIRST = "where starts from the session owner key; later keys only na
 const VERIFIED = "Id was verified by an owner-scoped lookup earlier in the function";
 const OWNED_PARENT = "Children of a parent the function already verified as owned";
 const COLLECTED = "Ids collected by an owner-scoped query in the same function";
-const IN_USE = "docs/issues/delete-in-use-counts-unscoped.md";
 
 // One entry per `function:model.operation#ordinal` target in a file.
 const calls = (
@@ -215,9 +214,6 @@ const VERIFIED_ID_EXCEPTIONS = [
     "saveSummaryCard:summary.update#1",
     "saveSummaryCard:resumeSection.update#1",
   ]),
-  ...unscoped("company/mutations.ts", "Owner chain in OR with a null-section arm so unsectioned rows still block", [
-    "deleteCompanyById:workExperience.count#1",
-  ]),
   ...unscoped("mock.actions.ts", "profileId comes from the caller's own profile", ["generateMockProfileDataAction:resume.findFirst#1"]),
   ...unscoped("mock.actions.ts", COLLECTED, [
     "clearMockActivitiesAction:activity.deleteMany#1",
@@ -236,18 +232,6 @@ const KNOWN_OWNERSHIP_GAPS = [
     "generateMockActivitiesAction:activityType.findMany#1",
     "generateMockActivitiesAction:activityType.findMany#2",
   ], "docs/issues/mock-activity-types-cross-user.md"),
-  ...calls("tag.actions.ts", "owner-filter", "known-gap", "In-use counts run before ownership is checked", [
-    "deleteTagById:job.count#1",
-    "deleteTagById:question.count#1",
-    "deleteTagById:skill.count#1",
-  ], IN_USE),
-  ...calls("jobLocation.actions.ts", "owner-filter", "known-gap", "In-use counts are not owner-scoped", [
-    "deleteJobLocationById:workExperience.count#1",
-    "deleteJobLocationById:education.count#1",
-  ], IN_USE),
-  ...calls("jobtitle.actions.ts", "owner-filter", "known-gap", "In-use count is not owner-scoped", [
-    "deleteJobTitleById:workExperience.count#1",
-  ], IN_USE),
 ];
 
 const requireUserException = (

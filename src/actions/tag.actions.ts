@@ -79,9 +79,18 @@ export const deleteTagById = async (
     const user = await requireUser();
 
     const [jobs, questions, skills] = await Promise.all([
-      prisma.job.count({ where: { tags: { some: { id: tagId } } } }),
-      prisma.question.count({ where: { tags: { some: { id: tagId } } } }),
-      prisma.skill.count({ where: { tagId } }),
+      prisma.job.count({
+        where: { userId: user.id, tags: { some: { id: tagId } } },
+      }),
+      prisma.question.count({
+        where: { createdBy: user.id, tags: { some: { id: tagId } } },
+      }),
+      prisma.skill.count({
+        where: {
+          tagId,
+          ResumeSection: { Resume: { profile: { userId: user.id } } },
+        },
+      }),
     ]);
 
     if (jobs > 0 || questions > 0 || skills > 0) {
