@@ -5,7 +5,11 @@ import { AddEducationFormSchema } from "@/models/AddEductionForm.schema";
 import { SectionType } from "@/models/profile.model";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { assertResumeOwnership, requireUser } from "./shared";
+import {
+  assertResumeOwnership,
+  assertResumeRefsOwned,
+  requireUser,
+} from "./shared";
 
 export const addEducation = async (
   data: z.infer<typeof AddEducationFormSchema>,
@@ -19,6 +23,7 @@ export const addEducation = async (
     }
 
     await assertResumeOwnership(data.resumeId!, user.id);
+    await assertResumeRefsOwned(user.id, { locationId: data.location });
 
     const section = !data.sectionId
       ? await prisma.resumeSection.create({
@@ -67,6 +72,8 @@ export const updateEducation = async (
     if (!result.success) {
       return { success: false, message: result.error.issues[0].message };
     }
+
+    await assertResumeRefsOwned(user.id, { locationId: data.location });
 
     const summary = await prisma.education.update({
       where: {

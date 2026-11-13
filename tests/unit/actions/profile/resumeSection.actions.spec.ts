@@ -33,6 +33,9 @@ vi.mock("@/generated/prisma/client", () => {
     },
     workExperience: { update: vi.fn() },
     education: { update: vi.fn() },
+    jobTitle: { count: vi.fn() },
+    company: { count: vi.fn() },
+    location: { count: vi.fn() },
     licenseOrCertification: {
       update: vi.fn(),
       findFirst: vi.fn(),
@@ -65,6 +68,9 @@ describe("Resume section actions", () => {
       id: "section-new",
     });
     (prisma.resumeSection.update as any).mockResolvedValue({ id: "section-1" });
+    (prisma.jobTitle.count as any).mockResolvedValue(1);
+    (prisma.company.count as any).mockResolvedValue(1);
+    (prisma.location.count as any).mockResolvedValue(1);
   });
 
   describe("addResumeSummary", () => {
@@ -305,6 +311,64 @@ describe("Resume section actions", () => {
         expect(await action(form as any)).toEqual({ success: false, message: "Not authenticated" });
         expectNoSideEffects();
       });
+    });
+  });
+
+  describe("rejects another user's title, company or location", () => {
+    const experience = {
+      resumeId: "resume-1",
+      sectionId: "section-1",
+      title: "title-1",
+      company: "company-1",
+      location: "location-1",
+      jobDescription: "Developed application features",
+      startDate: new Date(2020, 0, 1),
+    };
+    const education = {
+      resumeId: "resume-1",
+      sectionId: "section-1",
+      institution: "MIT",
+      degree: "BSc",
+      fieldOfStudy: "CS",
+      location: "location-1",
+      startDate: new Date(2020, 0, 1),
+    };
+
+    it.each([
+      { name: "addExperience", action: addExperience, form: experience, model: "jobTitle", id: "title-1", message: "Job title not found" },
+      { name: "addExperience", action: addExperience, form: experience, model: "company", id: "company-1", message: "Company not found" },
+      { name: "addExperience", action: addExperience, form: experience, model: "location", id: "location-1", message: "Location not found" },
+      { name: "updateExperience", action: updateExperience, form: { ...experience, id: "exp-1" }, model: "jobTitle", id: "title-1", message: "Job title not found" },
+      { name: "updateExperience", action: updateExperience, form: { ...experience, id: "exp-1" }, model: "company", id: "company-1", message: "Company not found" },
+      { name: "updateExperience", action: updateExperience, form: { ...experience, id: "exp-1" }, model: "location", id: "location-1", message: "Location not found" },
+      { name: "addEducation", action: addEducation, form: education, model: "location", id: "location-1", message: "Location not found" },
+      { name: "updateEducation", action: updateEducation, form: { ...education, id: "edu-1" }, model: "location", id: "location-1", message: "Location not found" },
+    ])("$name rejects an unowned $model", async ({ action, form, model, id, message }) => {
+      ownsResume();
+      const count = (prisma as any)[model].count;
+      count.mockResolvedValue(0);
+
+      const result = await action(form as any);
+
+      expect(result).toEqual({ success: false, message });
+      expect(count).toHaveBeenCalledWith({ where: { id, createdBy: "user-1" } });
+      for (const write of [
+        prisma.resumeSection.create,
+        prisma.resumeSection.update,
+        prisma.workExperience.update,
+        prisma.education.update,
+      ]) {
+        expect(write).not.toHaveBeenCalled();
+      }
+    });
+
+    it("checks references before creating a new section", async () => {
+      ownsResume();
+      (prisma.company.count as any).mockResolvedValue(0);
+
+      await addExperience({ ...experience, sectionId: undefined, sectionTitle: "Experience" } as any);
+
+      expect(prisma.resumeSection.create).not.toHaveBeenCalled();
     });
   });
 
