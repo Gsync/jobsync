@@ -77,7 +77,7 @@ export function scanRouteHandlers(file: string, sourceText: string): RouteFindin
 export function extractMatcher(sourceText: string): string[] {
   const source = parse("proxy.ts", sourceText);
   for (const stmt of source.statements) {
-    if (!ts.isVariableStatement(stmt)) continue;
+    if (!ts.isVariableStatement(stmt) || !isExported(stmt)) continue;
     for (const decl of stmt.declarationList.declarations) {
       if (!ts.isIdentifier(decl.name) || decl.name.text !== "config") continue;
       if (!decl.initializer || !ts.isObjectLiteralExpression(decl.initializer)) continue;

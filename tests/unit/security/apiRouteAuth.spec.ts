@@ -163,6 +163,7 @@ describe("proxy coverage self-checks", () => {
     const source = `export const config = { matcher: ["/a", "/b/:path*"] };`;
     expect(extractMatcher(source)).toEqual(["/a", "/b/:path*"]);
     expect(() => extractMatcher(`export const config = { matcher: list };`)).toThrow();
+    expect(() => extractMatcher(`const config = { matcher: ["/a"] };`)).toThrow();
   });
 });
 

@@ -12,7 +12,7 @@ export const delegateName = (model: string) => model[0].toLowerCase() + model.sl
 // Keyed by Prisma client delegate name (`jobStage`), not model name.
 export function parseSchema(text: string): Map<string, SchemaModel> {
   const models = new Map<string, SchemaModel>();
-  for (const [, name, body] of text.matchAll(/^model (\w+) \{([^}]*)\}/gm)) {
+  for (const [, name, body] of text.matchAll(/^model (\w+) \{([\s\S]*?)^\}/gm)) {
     const fields = new Map<string, string>();
     for (const line of body.split("\n")) {
       const match = line.match(/^\s*(\w+)\s+(\w+)/);

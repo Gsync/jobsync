@@ -120,6 +120,25 @@ describe("scanActionAuth self-checks", () => {
   });
 });
 
+describe("parseSchema self-checks", () => {
+  it("reads past a brace inside a field default", () => {
+    const schema = parseSchema(`
+model UserSettings {
+  id       String @id
+  userId   String
+  settings String @default("{}")
+  updated  DateTime
+}
+`);
+    expect([...schema.get("userSettings")!.fields.keys()]).toEqual([
+      "id",
+      "userId",
+      "settings",
+      "updated",
+    ]);
+  });
+});
+
 describe("scanOwnership self-checks", () => {
   it("passes inline and compound-key owner filters with a session-derived value", () => {
     expect(
