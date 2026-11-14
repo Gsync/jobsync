@@ -1,5 +1,48 @@
 # Changelog
 
+## [1.2.1](https://github.com/Gsync/jobsync/compare/v1.2.0...v1.2.1) (2026-11-14)
+
+
+### Breaking Changes
+
+* Remove the one-time SQLite import, so instances still on a SQLite release must upgrade to 1.2.0 before upgrading to this release.
+* Require a trusted certificate when your own Postgres uses `sslmode=require`; add `uselibpqcompat=true` to `DATABASE_URL` to keep accepting a self-signed one.
+
+### Features
+
+* Move AI Usage out of Settings to its own page in the avatar menu.
+
+### Bug Fixes
+
+* Improve accessibility: icon-only buttons now have screen-reader names, green dashboard card titles and grey secondary text are easier to read, and the user menu announces unread notifications.
+* Fix job titles, companies, locations and sources added through agent chat showing text like `&amp;` instead of `&`.
+* Fix Analyze on a discovered job asking a non-Ollama provider for an Ollama model when no model is selected.
+* Fix a job's Applied stage being dated today instead of the Date Applied you entered.
+* Fix automations scheduled for midnight moving to 8 AM after their first run.
+* Certification expiration dates can now be set to future years.
+* Fix deleting a tag, location, job title or company revealing whether another user's records use it.
+* Fix editing a job resetting the date it was added to today.
+* Fix a crash after uploading your first resume with auto-fill on, and show a not-found page for links to a resume that no longer exists.
+* Fix generating mock activities linking to another account's activity types.
+* Reject unauthenticated requests to the AI model-list endpoints at the route itself, not only in the proxy.
+* Stop the Ollama base URL lookup from accepting another user's id.
+* Questions and resume skills now reject tags that belong to another account.
+* Experience, education and certification entries now reject an end date that is earlier than the start date.
+* Prevent resume experience and education entries from linking another user's job title, company or location.
+* Group tasks by due date with Today and Tomorrow first, and show every task in that view without scrolling to load more.
+
+### Other Changes
+
+* Upgraded to AI SDK 7.
+* Upgraded to Next.js 16.
+* Run JobSync on upgraded Node version 24.
+* Upgrade the database library to Prisma 7, which makes the Docker image smaller and lets the container start without downloading anything.
+* Shrink the Docker image by leaving out the unused image-optimization library.
+* Upgraded the rich-text editor to Tiptap 3.
+* Upgraded to TypeScript 6.
+* Upgraded date-fns, react-day-picker, lucide-react, markdown-it, bcryptjs, @hookform/resolvers and unpdf to their latest major versions.
+
+
 ## [1.2.0](https://github.com/Gsync/jobsync/compare/v1.1.22...v1.2.0) (2026-10-30)
 
 
