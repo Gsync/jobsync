@@ -51,6 +51,7 @@ Track every application, get AI resume reviews and job matches, and discover new
 - **Question Bank:** Build a library of interview questions and answers, tagged by skill.
 - **Data Backup & Restore:** Export everything as one zip, import it anywhere, and undo an import. [Details](https://github.com/Gsync/jobsync/wiki/Backup)
 - **AI Assistant:** A docked chat that reviews resumes, scores job matches, writes cover letters and adds jobs you paste in. [Details](#ai-assistant-in-app-chat)
+- **AI Usage:** See tokens, response times and failures for every AI call, by provider, model and feature. [Details](https://github.com/Gsync/jobsync/wiki/Getting-Started)
 - **AI Agent Integration (MCP):** Add jobs and questions from Claude Desktop and other agents. [Details](#mcp-server-ai-agent-integration)
 
 ## Quick Start
@@ -80,11 +81,11 @@ Environment variables are set in a `.env` file beside `docker-compose.yml` (copy
 | `ENCRYPTION_KEY` | Encrypts the API keys you save in Settings. **Set your own** (`openssl rand -base64 32`) before adding any keys, and never change it afterwards — a new value makes every stored API key unrecoverable. |
 | `NEXTAUTH_URL` | The address you open JobSync at. Defaults to `http://localhost:3737`; on a homelab server, use the server's IP or hostname. |
 | `MCP_ENABLED` | Set to `false` to turn off the [MCP server](#mcp-server-ai-agent-integration). Enabled by default. |
-| `DATABASE_URL` | Leave unset to use the bundled Postgres. To use your own, set it to your server's address and also set `BUNDLED_DB=0`; without it an unused bundled database container still starts. The bundled image includes the `pgvector` extension, which an upcoming release uses for resume embeddings; your own server will need it then too. See [Upgrading to Postgres](https://github.com/Gsync/jobsync/wiki/Upgrading-To-Postgres). |
+| `DATABASE_URL` | Leave unset to use the bundled Postgres. To use your own, set it to your server's address and also set `BUNDLED_DB=0`; without it an unused bundled database container still starts. The bundled image includes the `pgvector` extension, which an upcoming release uses for knowledge base and resume embeddings; your own server will need it then too. `sslmode=require` verifies the server's certificate; for a self-signed one, use `?uselibpqcompat=true&sslmode=require`. See [Upgrading to Postgres](https://github.com/Gsync/jobsync/wiki/Upgrading-To-Postgres). |
 
 ### Updating
 
-**Upgrading from a SQLite release?** Read [Upgrading to Postgres](https://github.com/Gsync/jobsync/wiki/Upgrading-To-Postgres) first — the upgrade is one-way.
+**Upgrading from a SQLite release?** Read [Upgrading to Postgres](https://github.com/Gsync/jobsync/wiki/Upgrading-To-Postgres) first — the upgrade is one-way, and a SQLite instance must run release 1.2.0 once to import its data before moving to a newer release.
 
 From the project directory, run the deploy script to pull the latest image and restart:
 
@@ -241,7 +242,7 @@ API keys for all cloud providers can be configured in **Settings > AI Settings**
 
 > **Note:** Selected models must support **structured output** and **tool calling** for AI features to work correctly — the AI Assistant panel works by calling tools, so a model without tool support will reply with text instead of doing anything.
 
-**Known-good models.** The AI Assistant has been tested end to end with `qwen3.5:9b` on Ollama (fully local), `deepseek-v4-flash`, and OpenAI `gpt-4.1`. Other tool-calling models should work, but these are the ones exercised against the full set of assistant features.
+**Known-good models.** The AI Assistant has been tested end to end with `qwen3.5:9b` on Ollama (fully local), `deepseek-v4-flash`, and OpenAI `gpt-6`. Other tool-calling models should work, but these are the ones exercised against the full set of assistant features.
 
 <details>
 <summary><strong>Ollama (Local)</strong></summary>
