@@ -213,7 +213,9 @@ tests:
   # and an approval-resume POST ends on the assistant's turn.
   - description: After Confirm - reports the save, never re-asks for confirmation
     vars:
-      userMessage: Add this job.
+      userMessage: >-
+        Add this job: Staff Data Engineer at Helio Systems — they're hiring
+        someone to own the pipelines behind their analytics platform.
       priorAddJob: created
     assert:
       - type: javascript
