@@ -17,7 +17,7 @@
     "test": "vitest run --project unit --project component",
     "test:unit": "vitest run --project unit",
     "test:component": "vitest run --project component",
-    "test:integration": "vitest run --project integration",
+    "test:integration": "node --env-file-if-exists=.env node_modules/vitest/vitest.mjs run --project integration",
     "test:e2e": "npx playwright test --project=chromium",
     "test:watch": "vitest --project unit --project component",
     "test:coverage": "vitest run --coverage --project unit --project component",

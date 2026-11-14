@@ -94,6 +94,23 @@ pipeline {
             }
         }
 
+        stage('Integration Tests') {
+            steps {
+                dir("${APP_DIR}") {
+                    sh '''
+                        set -e
+
+                        docker exec ${CI_CONTAINER} node --env-file-if-exists=.env -e '
+                            if (!process.env.BACKUP_TEST_DATABASE_URL) {
+                                throw new Error("Set BACKUP_TEST_DATABASE_URL in the homelab .env");
+                            }
+                        '
+                        docker exec ${CI_CONTAINER} npm run test:integration -- --maxWorkers=2
+                    '''
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 dir("${APP_DIR}") {

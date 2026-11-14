@@ -41,7 +41,7 @@ Next.js route folders such as `[id]` are mirrored as-is; quote those paths in zs
 
 ## Integration opt-in
 
-`integration/backup/backupRoundTrip.spec.ts` skips unless `BACKUP_TEST_DATABASE_URL` is set. When it is, the spec creates a throwaway schema on that server, pushes the Prisma schema into it and drops it afterwards. Point it at a dev database, never production's `jobsync`, and never set the variable in CI:
+`npm run test:integration` loads `.env` when present; exported shell variables take precedence. `integration/backup/backupRoundTrip.spec.ts` skips unless `BACKUP_TEST_DATABASE_URL` is set. When it is, the spec creates a throwaway schema on that server, pushes the Prisma schema into it and drops it afterwards. Point it at a dev database, never production's `jobsync`, and never set the variable in CI:
 
 ```bash
 BACKUP_TEST_DATABASE_URL=<dev Postgres URL> npm run test:integration
