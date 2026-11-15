@@ -13,7 +13,7 @@ test.describe("MCP add_job", () => {
     const company = uniqueName("mcp company");
 
     await page.goto("/dashboard/settings");
-    await page.getByText("MCP Access").click();
+    await page.getByText("Access Tokens").click();
     await page.getByRole("button", { name: "Generate" }).click();
     await page.getByPlaceholder("e.g. Claude Desktop").fill(tokenName);
     await page.getByRole("button", { name: "Generate" }).click();

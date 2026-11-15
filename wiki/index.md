@@ -18,5 +18,7 @@ JobSync tracks job applications, resumes and the work you do around them. These 
 - [Data Backup](./backup.md) — download everything as one zip, import it on any instance, and undo an import.
 - [Upgrading to Postgres](./upgrading-to-postgres.md) — what to do before upgrading from a SQLite release, running 1.2.0 once to import its data, backing up with `backup-db.sh`, and using your own Postgres.
 - [MCP Access](./mcp.md) — connect an external AI agent such as Claude Desktop, generate and revoke access tokens, and what the agent can do once connected.
+- [JobSync API](./api.md) — add jobs from your own scripts with an access token, the fields and responses, and the rate limit.
+- [Browser Extension](./browser-extension.md) — save the posting you are viewing to JobSync in one click, connect the extension, and fix a failed connection test.
 
 Installation, Docker and environment variables are in the [project README](https://github.com/Gsync/jobsync#readme).

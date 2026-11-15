@@ -14,7 +14,7 @@ const SETTINGS_SECTIONS: {
   { id: "ai-provider", label: "AI Provider", icon: Bot },
   { id: "api-keys", label: "API Keys", icon: Key },
   { id: "appearance", label: "Appearance", icon: Palette },
-  { id: "mcp-access", label: "MCP Access", icon: Plug },
+  { id: "mcp-access", label: "Access Tokens", icon: Plug },
   { id: "data", label: "Data", icon: Database },
 ];
 
