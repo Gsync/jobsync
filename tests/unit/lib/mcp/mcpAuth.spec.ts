@@ -92,12 +92,13 @@ describe("resolveMcpToken", () => {
 
   it("accepts a valid token and looks it up by its hash", async () => {
     const plaintext = "jsync_valid-token";
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
     (prisma.mcpAccessToken.findUnique as any).mockResolvedValue({
       id: "t-1",
       userId: "user-1",
       scopes: JSON.stringify(["jobs:write", "questions:write"]),
       name: "my-token",
-      expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+      expiresAt,
     });
 
     const result = await resolveMcpToken(makeRequest(`Bearer ${plaintext}`));
@@ -107,6 +108,7 @@ describe("resolveMcpToken", () => {
       userId: "user-1",
       scopes: ["jobs:write", "questions:write"],
       tokenName: "my-token",
+      expiresAt,
     });
     expect(prisma.mcpAccessToken.findUnique).toHaveBeenCalledWith({
       where: { tokenHash: hashToken(plaintext) },

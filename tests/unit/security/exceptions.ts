@@ -35,6 +35,7 @@ export function applyExceptions<F extends FindingKey>(
 
 const NEXTAUTH = "src/app/api/auth/[...nextauth]/route.ts";
 const MCP = "src/app/api/mcp/route.ts";
+const V1_PING = "src/app/api/v1/ping/route.ts";
 
 export const ROUTE_EXCEPTIONS: SecurityException[] = [
   {
@@ -78,6 +79,20 @@ export const ROUTE_EXCEPTIONS: SecurityException[] = [
     check: "proxy-coverage",
     category: "alternate-auth",
     reason: "Proxy matcher excludes /api/mcp; the route checks its own PAT",
+  },
+  {
+    file: V1_PING,
+    target: "GET",
+    check: "auth-call",
+    category: "alternate-auth",
+    reason: "PAT auth through resolveMcpToken (src/lib/apiV1/auth.ts)",
+  },
+  {
+    file: V1_PING,
+    target: "/api/v1/ping",
+    check: "proxy-coverage",
+    category: "alternate-auth",
+    reason: "Proxy matcher excludes /api/v1; the route checks its own PAT",
   },
 ];
 
