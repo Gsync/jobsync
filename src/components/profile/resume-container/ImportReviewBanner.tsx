@@ -1,5 +1,6 @@
 "use client";
 import { AlertTriangle, Loader, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "../../ui/button";
 import { Card, CardHeader } from "../../ui/card";
 import type { PendingCard } from "./pendingCards";
@@ -27,10 +28,15 @@ export function ImportReviewBanner({
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
-            <p className="text-sm font-medium flex items-center gap-2">
+            <p
+              className={cn(
+                "font-medium flex items-center",
+                isStructuring ? "text-base gap-3" : "text-sm gap-2",
+              )}
+            >
               {isStructuring ? (
                 <>
-                  <Loader className="h-4 w-4 text-blue-500 animate-spin" />
+                  <Loader className="h-8 w-8 shrink-0 text-blue-500 animate-spin" />
                   Structuring your document… you can review and accept items
                   once it finishes.
                 </>
