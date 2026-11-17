@@ -16,6 +16,7 @@ import {
   getLinkedInSearchResults,
   importLinkedInJob,
 } from "@/actions/linkedin.actions";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -38,6 +39,25 @@ import type {
 
 interface LinkedInSearchesContainerProps {
   initialSearches: LinkedInSearch[];
+}
+
+const WORKPLACE_LABELS: Record<string, string> = {
+  Remote: "Remote",
+  Hybrid: "Hybrid",
+  Onsite: "On-site",
+};
+
+function workplaceBadgeClass(type: string): string {
+  switch (type) {
+    case "Remote":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300";
+    case "Hybrid":
+      return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300";
+    case "Onsite":
+      return "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-300";
+    default:
+      return "";
+  }
 }
 
 export function LinkedInSearchesContainer({
@@ -334,6 +354,32 @@ export function LinkedInSearchesContainer({
                               .filter(Boolean)
                               .join(" · ")}
                           </p>
+                          {Boolean(
+                            result.workplaceType || result.technologies?.length,
+                          ) && (
+                            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                              {result.workplaceType && (
+                                <Badge
+                                  variant="outline"
+                                  className={workplaceBadgeClass(
+                                    result.workplaceType,
+                                  )}
+                                >
+                                  {WORKPLACE_LABELS[result.workplaceType] ??
+                                    result.workplaceType}
+                                </Badge>
+                              )}
+                              {result.technologies?.map((technology) => (
+                                <Badge
+                                  key={technology}
+                                  variant="secondary"
+                                  className="font-medium"
+                                >
+                                  {technology}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
                           {result.postedDate && (
                             <p className="text-xs text-muted-foreground">
                               {result.postedDate}

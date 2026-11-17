@@ -14,6 +14,8 @@ export interface LinkedInSearchResult {
   title: string;
   company: string;
   location: string;
+  workplaceType?: "Remote" | "Hybrid" | "Onsite";
+  technologies?: string[];
   postedDate?: string;
 }
 

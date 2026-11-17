@@ -1,7 +1,15 @@
 import { APP_CONSTANTS } from "@/lib/constants";
 import type { ScraperResult } from "../types";
-import { parseLinkedInJobHtml, parseLinkedInSearchResults } from "./parse";
-import type { LinkedInJobDetails, LinkedInSearchPage } from "./types";
+import {
+  extractTechnologies,
+  parseLinkedInJobHtml,
+  parseLinkedInSearchResults,
+} from "./parse";
+import type {
+  LinkedInJobDetails,
+  LinkedInSearchPage,
+  LinkedInSearchResult,
+} from "./types";
 import {
   buildLinkedInGuestSearchUrl,
   parseLinkedInJobId,
@@ -144,6 +152,61 @@ export async function fetchLinkedInJob(
 }
 
 /**
+ * Best-effort enrichment for search cards. The search endpoint only returns
+ * title/company/location, so fetch each posting to surface its work
+ * arrangement and the languages/frameworks named in the description. Failures
+ * leave the already-parsed card untouched.
+ */
+async function enrichSearchResults(
+  results: LinkedInSearchResult[],
+): Promise<LinkedInSearchResult[]> {
+  if (results.length === 0) return results;
+
+  const enriched = [...results];
+  let cursor = 0;
+
+  const worker = async () => {
+    while (cursor < results.length) {
+      const index = cursor++;
+      const result = results[index];
+
+      try {
+        const page = await fetchText(
+          `${APP_CONSTANTS.LINKEDIN_BASE_URL}/jobs-guest/jobs/api/jobPosting/${result.id}`,
+        );
+        if (!page.ok) continue;
+
+        const details = parseLinkedInJobHtml(page.text, result.id);
+        if (!details) continue;
+
+        const technologies = extractTechnologies(details.descriptionText);
+        enriched[index] = {
+          ...result,
+          workplaceType: details.workplaceType ?? result.workplaceType,
+          ...(technologies.length > 0 ? { technologies } : {}),
+        };
+      } catch {
+        // Enrichment is optional; keep the card from the search page.
+      }
+    }
+  };
+
+  await Promise.all(
+    Array.from(
+      {
+        length: Math.min(
+          APP_CONSTANTS.LINKEDIN_DETAIL_CONCURRENCY,
+          results.length,
+        ),
+      },
+      () => worker(),
+    ),
+  );
+
+  return enriched;
+}
+
+/**
  * Fetches one page of public LinkedIn search results. The input can be any
  * LinkedIn jobs search URL, including the URL a saved search opens.
  */
@@ -188,7 +251,9 @@ export async function fetchLinkedInSearchResults(
     };
   }
 
-  const results = parseLinkedInSearchResults(page.text);
+  const results = await enrichSearchResults(
+    parseLinkedInSearchResults(page.text),
+  );
   const pageSize = APP_CONSTANTS.LINKEDIN_SEARCH_PAGE_SIZE;
   const nextStart =
     results.length >= pageSize &&

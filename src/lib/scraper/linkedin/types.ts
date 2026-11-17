@@ -27,6 +27,10 @@ export interface LinkedInSearchResult {
   title: string;
   company: string;
   location: string;
+  /** Inferred from the card or the posting when it is enriched. */
+  workplaceType?: LinkedInJobDetails["workplaceType"];
+  /** Languages/frameworks/platforms found in the posting description. */
+  technologies?: string[];
   postedDate?: string;
 }
 

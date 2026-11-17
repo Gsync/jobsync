@@ -151,6 +151,10 @@ export const APP_CONSTANTS = {
   // LinkedIn's public search endpoint returns 10 cards per request.
   LINKEDIN_SEARCH_PAGE_SIZE: 10,
   LINKEDIN_MAX_SEARCH_RESULTS: 100,
+  // Each search card is enriched with the posting's workplace type and
+  // requirements, which costs one guest request per card. Keep this modest so
+  // a page load stays fast and does not look like abuse to LinkedIn.
+  LINKEDIN_DETAIL_CONCURRENCY: 3,
   LINKEDIN_USER_AGENT:
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
 

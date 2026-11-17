@@ -3,6 +3,7 @@ import {
   fetchLinkedInSearchResults,
 } from "@/lib/scraper/linkedin";
 import {
+  extractTechnologies,
   parseLinkedInJobHtml,
   parseLinkedInSearchResults,
   sanitizeLinkedInHtml,
@@ -26,7 +27,7 @@ const JOB_FRAGMENT = `
   <div class="description__text description__text--rich">
     <section class="show-more-less-html">
       <div class="show-more-less-html__markup show-more-less-html__markup--clamp-after-5 relative overflow-hidden">
-        Location: Toronto; hybrid schedule.<br><br><strong>Job Overview:</strong><br>Build secure APIs.
+        Location: Toronto; hybrid schedule.<br><br><strong>Job Overview:</strong><br>Build secure APIs with TypeScript, React and PostgreSQL.
         <script>alert("xss")</script>
       </div>
     </section>
@@ -130,9 +131,52 @@ describe("LinkedIn HTML parsing", () => {
       workplaceType: "Hybrid",
       postedDate: "19 hours ago",
     });
-    expect(job?.descriptionText).toContain("Build secure APIs.");
+    expect(job?.descriptionText).toContain(
+      "Build secure APIs with TypeScript, React and PostgreSQL.",
+    );
     expect(job?.descriptionHtml).not.toContain("<script");
     expect(job?.descriptionHtml).not.toContain("alert");
+  });
+
+  it("extracts languages and technologies from requirements", () => {
+    const technologies = extractTechnologies(
+      "Requirements: 5+ years with TypeScript and React Native. Experience with Node.js, PostgreSQL, Docker and AWS. Familiarity with Java is a plus. We offer a remote workspace stipend.",
+    );
+
+    expect(technologies).toEqual([
+      "TypeScript",
+      "React Native",
+      "Node.js",
+      "PostgreSQL",
+      "Docker",
+      "AWS",
+      "Java",
+    ]);
+    expect(technologies).not.toContain("React");
+  });
+
+  it("does not treat a remote workspace benefit as a remote role", () => {
+    const job = parseLinkedInJobHtml(
+      JOB_FRAGMENT.replace("hybrid schedule", "on-site schedule").replace(
+        "Build secure APIs with TypeScript, React and PostgreSQL.",
+        "Benefits include a remote workspace stipend.",
+      ),
+      "4472781721",
+    );
+
+    expect(job?.workplaceType).toBe("Onsite");
+  });
+
+  it("still detects a remote role alongside a remote workspace benefit", () => {
+    const job = parseLinkedInJobHtml(
+      JOB_FRAGMENT.replace("hybrid schedule", "on-site schedule").replace(
+        "Build secure APIs with TypeScript, React and PostgreSQL.",
+        "This is a remote role. We offer a remote workspace stipend.",
+      ),
+      "4472781721",
+    );
+
+    expect(job?.workplaceType).toBe("Remote");
   });
 
   it("removes active content from description HTML", () => {
@@ -163,6 +207,7 @@ describe("LinkedIn HTML parsing", () => {
     });
     expect(results[1].title).toBe("Backend Engineer");
     expect(results[1].location).toBe("Remote");
+    expect(results[1].workplaceType).toBe("Remote");
   });
 });
 
@@ -232,6 +277,36 @@ describe("LinkedIn fetch wrapper", () => {
     }
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("/jobs-guest/jobs/api/seeMoreJobPostings/search"),
+      expect.objectContaining({ cache: "no-store" }),
+    );
+  });
+
+  it("enriches search cards with workplace type and technologies", async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      const body = url.includes("/jobs-guest/jobs/api/jobPosting/")
+        ? JOB_FRAGMENT
+        : SEARCH_RESULTS;
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        text: async () => body,
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await fetchLinkedInSearchResults(
+      "https://www.linkedin.com/jobs/search/?keywords=engineer&location=Toronto",
+    );
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.results[0].workplaceType).toBe("Hybrid");
+      expect(result.data.results[0].technologies).toEqual(
+        expect.arrayContaining(["TypeScript", "React", "PostgreSQL"]),
+      );
+    }
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/jobs-guest/jobs/api/jobPosting/4472781721"),
       expect.objectContaining({ cache: "no-store" }),
     );
   });
