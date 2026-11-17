@@ -22,6 +22,7 @@ export async function getUserApiKeys(): Promise<{
 
     const keys = await db.apiKey.findMany({
       where: { userId: user.id },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: {
         id: true,
         provider: true,
@@ -161,17 +162,13 @@ export async function getDefaultOllamaBaseUrl(): Promise<string> {
   return process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
 }
 
-// userId is optional and only needed for callers with no request-scoped
-// session (e.g. the cron scheduler running a background automation) — it
-// bypasses getCurrentUser(), which requires an active session and always
-// resolves to null outside a request context.
-export async function getOllamaBaseUrl(userId?: string): Promise<string> {
+export async function getOllamaBaseUrl(): Promise<string> {
   try {
-    const resolvedUserId = userId ?? (await getCurrentUser())?.id;
-    if (resolvedUserId) {
+    const user = await getCurrentUser();
+    if (user) {
       const apiKey = await db.apiKey.findUnique({
         where: {
-          userId_provider: { userId: resolvedUserId, provider: "ollama" },
+          userId_provider: { userId: user.id, provider: "ollama" },
         },
       });
       if (apiKey) {
@@ -184,11 +181,4 @@ export async function getOllamaBaseUrl(userId?: string): Promise<string> {
     // Fall through to defaults
   }
   return process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
-}
-
-// Bearer token for Ollama instances that sit behind an authenticated proxy
-// (e.g. https://myllm.oscarpoudel.com.np). Resolved from the server environment
-// via the provider registry OLLAMA_API_KEY entry.
-export async function getOllamaApiKey(): Promise<string | undefined> {
-  return resolveOllamaApiKey();
 }

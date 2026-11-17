@@ -1,0 +1,1038 @@
+import {
+  addCompany,
+  deleteCompanyById,
+  getAllCompanies,
+  getCompanyById,
+  getCompanyList,
+  updateCompany,
+} from "@/actions/company.actions";
+import { getCurrentUser } from "@/utils/user.utils";
+import { revalidatePath } from "next/cache";
+import { PrismaClient } from "@/generated/prisma/client";
+
+const prisma = new PrismaClient({} as never);
+
+// Mock the Prisma Client
+vi.mock("@/generated/prisma/client", () => {
+  const mPrismaClient = {
+    company: {
+      findMany: vi.fn(),
+      count: vi.fn(),
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    workExperience: {
+      count: vi.fn(),
+    },
+    contact: {
+      count: vi.fn(),
+    },
+    job: {
+      count: vi.fn(),
+      groupBy: vi.fn(),
+    },
+  };
+  return {
+    PrismaClient: vi.fn(function () {
+      return mPrismaClient;
+    }),
+  };
+});
+
+vi.mock("@/utils/user.utils", () => ({
+  getCurrentUser: vi.fn(),
+}));
+
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}));
+
+describe("Company Actions", () => {
+  const mockUser = { id: "user-id" };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+  describe("getCompanyList", () => {
+    it("should return company list for authenticated user", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const mockData = [
+        {
+          id: "company-id",
+          label: "Company 1",
+          value: "company1",
+          logoUrl: "logo.png",
+        },
+      ];
+      const mockTotal = 1;
+
+      (prisma.company.findMany as any).mockResolvedValue(mockData);
+      (prisma.company.count as any).mockResolvedValue(mockTotal);
+
+      const result = await getCompanyList(1, 10);
+
+      expect(result).toEqual({ data: mockData, total: mockTotal });
+      expect(prisma.company.findMany).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id },
+        skip: 0,
+        take: 10,
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
+      });
+      expect(prisma.company.count).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id },
+      });
+    });
+
+    it("should throw an error for unauthenticated user", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      await expect(getCompanyList(1, 10)).resolves.toStrictEqual({
+        success: false,
+        message: "Not authenticated",
+      });
+
+      expect(prisma.company.findMany).not.toHaveBeenCalled();
+      expect(prisma.company.count).not.toHaveBeenCalled();
+    });
+
+    it("should filter by status when countBy is provided", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const mockData = [
+        {
+          id: "company-id",
+          label: "Company 1",
+          value: "company1",
+          logoUrl: "logo.png",
+        },
+      ];
+      const mockTotal = 1;
+
+      (prisma.company.findMany as any).mockResolvedValue(mockData);
+      (prisma.company.count as any).mockResolvedValue(mockTotal);
+      (prisma.job.groupBy as any).mockResolvedValue([]);
+
+      const result = await getCompanyList(1, 10, "applied");
+
+      const expectedData = mockData.map((c) => ({
+        ...c,
+        _count: { jobsRejected: 0, jobsTotal: 0 },
+      }));
+      expect(result).toEqual({ data: expectedData, total: mockTotal });
+      expect(prisma.company.findMany).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id },
+        skip: 0,
+        take: 10,
+        select: {
+          id: true,
+          label: true,
+          value: true,
+          logoUrl: true,
+          watched: true,
+          watchedAt: true,
+          atsProvider: true,
+          atsToken: true,
+          atsHost: true,
+          _count: {
+            select: {
+              jobsApplied: {
+                where: {
+                  applied: true,
+                },
+              },
+              contacts: {
+                where: {
+                  createdBy: mockUser.id,
+                },
+              },
+            },
+          },
+        },
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
+      });
+      expect(prisma.company.count).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id },
+      });
+    });
+
+    it("should handle errors", async () => {
+      (getCurrentUser as any).mockRejectedValue(new Error("Database error"));
+
+      await expect(getCompanyList(1, 10)).resolves.toStrictEqual({
+        success: false,
+        message: "Database error",
+      });
+
+      expect(prisma.company.findMany).not.toHaveBeenCalled();
+      expect(prisma.company.count).not.toHaveBeenCalled();
+    });
+
+    it("should filter companies by label when search is provided", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const mockData = [
+        {
+          id: "company-id",
+          label: "Amazon",
+          value: "amazon",
+          logoUrl: "logo.png",
+        },
+      ];
+      const mockTotal = 1;
+
+      (prisma.company.findMany as any).mockResolvedValue(mockData);
+      (prisma.company.count as any).mockResolvedValue(mockTotal);
+
+      const result = await getCompanyList(1, 10, undefined, "Ama");
+
+      expect(result).toEqual({ data: mockData, total: mockTotal });
+      expect(prisma.company.findMany).toHaveBeenCalledWith({
+        where: {
+          createdBy: mockUser.id,
+          OR: [
+            { label: { contains: "Ama", mode: "insensitive" } },
+            { atsToken: { contains: "Ama", mode: "insensitive" } },
+          ],
+        },
+        skip: 0,
+        take: 10,
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
+      });
+      expect(prisma.company.count).toHaveBeenCalledWith({
+        where: {
+          createdBy: mockUser.id,
+          OR: [
+            { label: { contains: "Ama", mode: "insensitive" } },
+            { atsToken: { contains: "Ama", mode: "insensitive" } },
+          ],
+        },
+      });
+    });
+
+    it("should combine search filter with countBy select/counts", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const mockData = [
+        {
+          id: "company-id",
+          label: "Amazon",
+          value: "amazon",
+          logoUrl: "logo.png",
+        },
+      ];
+      const mockTotal = 1;
+
+      (prisma.company.findMany as any).mockResolvedValue(mockData);
+      (prisma.company.count as any).mockResolvedValue(mockTotal);
+      (prisma.job.groupBy as any).mockResolvedValue([]);
+
+      const result = await getCompanyList(1, 10, "applied", "Ama");
+
+      const expectedData = mockData.map((c) => ({
+        ...c,
+        _count: { jobsRejected: 0, jobsTotal: 0 },
+      }));
+      expect(result).toEqual({ data: expectedData, total: mockTotal });
+      expect(prisma.company.findMany).toHaveBeenCalledWith({
+        where: {
+          createdBy: mockUser.id,
+          OR: [
+            { label: { contains: "Ama", mode: "insensitive" } },
+            { atsToken: { contains: "Ama", mode: "insensitive" } },
+          ],
+        },
+        skip: 0,
+        take: 10,
+        select: {
+          id: true,
+          label: true,
+          value: true,
+          logoUrl: true,
+          watched: true,
+          watchedAt: true,
+          atsProvider: true,
+          atsToken: true,
+          atsHost: true,
+          _count: {
+            select: {
+              jobsApplied: {
+                where: {
+                  applied: true,
+                },
+              },
+              contacts: {
+                where: {
+                  createdBy: mockUser.id,
+                },
+              },
+            },
+          },
+        },
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
+      });
+      expect(prisma.company.count).toHaveBeenCalledWith({
+        where: {
+          createdBy: mockUser.id,
+          OR: [
+            { label: { contains: "Ama", mode: "insensitive" } },
+            { atsToken: { contains: "Ama", mode: "insensitive" } },
+          ],
+        },
+      });
+    });
+
+    it("filters and sorts by watch state in the watchlist scope", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findMany as any).mockResolvedValue([]);
+      (prisma.company.count as any).mockResolvedValue(0);
+
+      await getCompanyList(1, 10, undefined, undefined, "watchlist");
+
+      expect(prisma.company.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { createdBy: mockUser.id, watched: true },
+          orderBy: [
+            { watchedAt: { sort: "desc", nulls: "last" } },
+            { label: "asc" },
+            { id: "desc" },
+          ],
+        })
+      );
+    });
+
+    it("should not apply a label filter when search is empty", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findMany as any).mockResolvedValue([]);
+      (prisma.company.count as any).mockResolvedValue(0);
+
+      await getCompanyList(1, 10, undefined, "");
+
+      expect(prisma.company.findMany).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id },
+        skip: 0,
+        take: 10,
+        orderBy: [{ jobsApplied: { _count: "desc" } }, { label: "asc" }, { id: "desc" }],
+      });
+    });
+  });
+
+  describe("getAllCompanies", () => {
+    it("should return all companies for authenticated user", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const mockCompanies = [
+        { id: "company1", name: "Company 1" },
+        { id: "company2", name: "Company 2" },
+      ];
+
+      (prisma.company.findMany as any).mockResolvedValue(mockCompanies);
+
+      const result = await getAllCompanies();
+
+      expect(result).toEqual(mockCompanies);
+      expect(prisma.company.findMany).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id },
+        orderBy: [{ label: "asc" }, { id: "asc" }],
+      });
+    });
+
+    it("should throw an error for unauthenticated user", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      await expect(getAllCompanies()).resolves.toStrictEqual({
+        success: false,
+        message: "Not authenticated",
+      });
+
+      expect(prisma.company.findMany).not.toHaveBeenCalled();
+    });
+
+    it("should handle unexpected errors", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findMany as any).mockRejectedValue(
+        new Error("Unexpected error"),
+      );
+
+      const result = await getAllCompanies();
+
+      expect(result).toEqual({ success: false, message: "Unexpected error" });
+      expect(prisma.company.findMany).toHaveBeenCalledWith({
+        where: { createdBy: mockUser.id },
+        orderBy: [{ label: "asc" }, { id: "asc" }],
+      });
+    });
+  });
+
+  describe("addCompany", () => {
+    const validData = {
+      company: "New Employer",
+      logoUrl: "http://example.com/logo.png",
+    };
+
+    it("should create a new company successfully", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findFirst as any).mockResolvedValue(null);
+      const mockCompany = {
+        id: "company-id",
+        label: "New Employer",
+        value: "new employer",
+        logoUrl: "http://example.com/logo.png",
+        createdBy: mockUser.id,
+      };
+      (prisma.company.create as any).mockResolvedValue(mockCompany);
+      // Mock revalidatePath to prevent any errors during the test
+      (revalidatePath as any).mockResolvedValue(undefined);
+
+      const result = await addCompany(validData);
+
+      expect(result).toEqual({ success: true, data: mockCompany });
+      expect(prisma.company.findFirst).toHaveBeenCalledWith({
+        where: { value: "new employer", createdBy: mockUser.id },
+      });
+      expect(prisma.company.create).toHaveBeenCalledWith({
+        data: {
+          createdBy: mockUser.id,
+          value: "new employer",
+          label: "New Employer",
+          logoUrl: "http://example.com/logo.png",
+        },
+      });
+      expect(revalidatePath).toHaveBeenCalledWith("/dashboard/myjobs", "page");
+    });
+
+    it("persists the three company attributes", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findFirst as any).mockResolvedValue(null);
+      (prisma.company.create as any).mockResolvedValue({ id: "c1" });
+
+      await addCompany({
+        company: "Acme",
+        websiteUrl: "https://acme.example.com",
+        careersUrl: "https://acme.example.com/careers",
+        industry: "Widgets",
+      } as any);
+
+      expect(prisma.company.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          websiteUrl: "https://acme.example.com",
+          careersUrl: "https://acme.example.com/careers",
+          industry: "Widgets",
+        }),
+      });
+    });
+
+    it("persists linkedinUrl, size and notes", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findFirst as any).mockResolvedValue(null);
+      (prisma.company.create as any).mockResolvedValue({ id: "c1" });
+
+      await addCompany({
+        company: "Acme",
+        linkedinUrl: "https://www.linkedin.com/company/acme",
+        size: "51-200",
+        notes: "Strong engineering culture",
+      } as any);
+
+      expect(prisma.company.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          linkedinUrl: "https://www.linkedin.com/company/acme",
+          size: "51-200",
+          notes: "Strong engineering culture",
+        }),
+      });
+    });
+
+    it("rejects a non-http LinkedIn URL", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      const res = await addCompany({
+        company: "Acme",
+        linkedinUrl: "javascript:alert(1)",
+      } as any);
+
+      expect(res.success).toBe(false);
+      expect(prisma.company.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects a size outside the listed bands", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      const res = await addCompany({ company: "Acme", size: "huge" } as any);
+
+      expect(res.success).toBe(false);
+      expect(prisma.company.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects a site-relative website URL", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      const res = await addCompany({
+        company: "Acme",
+        websiteUrl: "/careers",
+      } as any);
+
+      expect(res.success).toBe(false);
+      expect(prisma.company.create).not.toHaveBeenCalled();
+    });
+
+    it("still accepts a site-relative logo URL", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findFirst as any).mockResolvedValue(null);
+      (prisma.company.create as any).mockResolvedValue({ id: "c1" });
+
+      const res = await addCompany({
+        company: "Acme",
+        logoUrl: "/icons/logo.svg",
+      } as any);
+
+      expect(res.success).toBe(true);
+    });
+
+    it("should return an error if the user is not authenticated", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      const result = await addCompany(validData);
+
+      expect(result).toEqual({ success: false, message: "Not authenticated" });
+      expect(prisma.company.findFirst).not.toHaveBeenCalled();
+      expect(prisma.company.create).not.toHaveBeenCalled();
+    });
+
+    it("should return an error if the company already exists", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const mockExistingCompany = {
+        id: "existing-company-id",
+        ...validData,
+        value: "new employer",
+        createdBy: mockUser.id,
+      };
+      (prisma.company.findFirst as any).mockResolvedValue(mockExistingCompany);
+
+      const result = await addCompany(validData);
+
+      expect(result).toEqual({
+        success: false,
+        message: "Company already exists!",
+      });
+      expect(prisma.company.findFirst).toHaveBeenCalledWith({
+        where: { value: "new employer", createdBy: mockUser.id },
+      });
+      expect(prisma.company.create).not.toHaveBeenCalled();
+    });
+
+    it("should handle unexpected errors", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findFirst as any).mockRejectedValue(
+        new Error("Unexpected error"),
+      );
+
+      const result = await addCompany(validData);
+
+      expect(result).toEqual({ success: false, message: "Unexpected error" });
+      expect(prisma.company.findFirst).toHaveBeenCalledWith({
+        where: { value: "new employer", createdBy: mockUser.id },
+      });
+      expect(prisma.company.create).not.toHaveBeenCalled();
+    });
+
+    it("should return error if logo URL is invalid", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      const invalidData = {
+        company: "New Employer",
+        logoUrl: "javascript:alert('xss')",
+      };
+
+      const result = await addCompany(invalidData);
+
+      expect(result).toEqual({
+        success: false,
+        message: "Invalid logo URL. Only http and https protocols are allowed.",
+      });
+
+      expect(prisma.company.findFirst).not.toHaveBeenCalled();
+      expect(prisma.company.create).not.toHaveBeenCalled();
+    });
+
+    it("should return error if logo URL has data protocol", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      const invalidData = {
+        company: "New Employer",
+        logoUrl: "data:image/png;base64,iVBORw0KGgo=",
+      };
+
+      const result = await addCompany(invalidData);
+
+      expect(result).toEqual({
+        success: false,
+        message: "Invalid logo URL. Only http and https protocols are allowed.",
+      });
+
+      expect(prisma.company.create).not.toHaveBeenCalled();
+    });
+
+    it("should allow empty logo URL", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findFirst as any).mockResolvedValue(null);
+      const mockCompany = {
+        id: "company-id",
+        label: "New Employer",
+        value: "new employer",
+        logoUrl: "",
+        createdBy: mockUser.id,
+      };
+      (prisma.company.create as any).mockResolvedValue(mockCompany);
+      (revalidatePath as any).mockResolvedValue(undefined);
+
+      const result = await addCompany({
+        company: "New Employer",
+        logoUrl: "",
+      });
+
+      expect(result).toEqual({ success: true, data: mockCompany });
+      expect(prisma.company.create).toHaveBeenCalled();
+    });
+
+    it("should allow https URLs", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findFirst as any).mockResolvedValue(null);
+      const mockCompany = {
+        id: "company-id",
+        label: "New Employer",
+        value: "new employer",
+        logoUrl: "https://example.com/logo.png",
+        createdBy: mockUser.id,
+      };
+      (prisma.company.create as any).mockResolvedValue(mockCompany);
+      (revalidatePath as any).mockResolvedValue(undefined);
+
+      const result = await addCompany({
+        company: "New Employer",
+        logoUrl: "https://example.com/logo.png",
+      });
+
+      expect(result).toEqual({ success: true, data: mockCompany });
+      expect(prisma.company.create).toHaveBeenCalled();
+    });
+
+    it("strips a legal suffix so 'Acme Inc.' matches an existing 'Acme'", async () => {
+      // Regression guard: value computation now passes
+      // { stripLegalSuffix: true }, so a legal-suffix variant of an existing
+      // company is treated as a duplicate instead of creating a second row.
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const mockExistingCompany = {
+        id: "existing-company-id",
+        label: "Acme",
+        value: "acme",
+        createdBy: mockUser.id,
+      };
+      (prisma.company.findFirst as any).mockResolvedValue(mockExistingCompany);
+
+      const result = await addCompany({
+        company: "Acme Inc.",
+        logoUrl: "",
+      });
+
+      expect(prisma.company.findFirst).toHaveBeenCalledWith({
+        where: { value: "acme", createdBy: mockUser.id },
+      });
+      expect(result).toEqual({
+        success: false,
+        message: "Company already exists!",
+      });
+      expect(prisma.company.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("updateCompany", () => {
+    const validData = {
+      id: "company-id",
+      company: "Updated Employer",
+      logoUrl: "http://example.com/logo.png",
+      createdBy: "user-id",
+    };
+
+    it("should update a company successfully", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      (prisma.company.findFirst as any)
+        .mockResolvedValueOnce({
+          id: "company-id",
+          label: "Old Employer",
+          value: "old employer",
+          createdBy: mockUser.id,
+        })
+        .mockResolvedValueOnce(null);
+
+      const mockUpdatedCompany = {
+        id: "company-id",
+        value: "updated employer",
+      };
+
+      (prisma.company.update as any).mockResolvedValue(mockUpdatedCompany);
+
+      const result = await updateCompany(validData);
+
+      expect(result).toEqual({ success: true, data: mockUpdatedCompany });
+
+      expect(prisma.company.findFirst).toHaveBeenNthCalledWith(1, {
+        where: { id: "company-id", createdBy: mockUser.id },
+      });
+      expect(prisma.company.findFirst).toHaveBeenNthCalledWith(2, {
+        where: { value: "updated employer", createdBy: mockUser.id },
+      });
+
+      expect(prisma.company.update).toHaveBeenCalledWith({
+        where: { id: "company-id", createdBy: "user-id" },
+        data: {
+          value: "updated employer",
+          label: "Updated Employer",
+          logoUrl: "http://example.com/logo.png",
+        },
+      });
+    });
+
+    it("does not recompute the value or check for duplicates when the label is unchanged", async () => {
+      // Regression guard: a company whose stored `value` isn't derivable
+      // from its label (e.g. mock-seeded rows with a `__mock__` prefix)
+      // must not have its value clobbered by an unrelated logo-only save.
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      (prisma.company.findFirst as any).mockResolvedValueOnce({
+        id: "company-id",
+        label: "Amazon",
+        value: "__mock__amazon",
+        createdBy: mockUser.id,
+      });
+
+      const mockUpdatedCompany = { id: "company-id", value: "__mock__amazon" };
+      (prisma.company.update as any).mockResolvedValue(mockUpdatedCompany);
+
+      const result = await updateCompany({
+        id: "company-id",
+        company: "Amazon",
+        logoUrl: "http://example.com/logo.png",
+        createdBy: "user-id",
+      });
+
+      expect(result).toEqual({ success: true, data: mockUpdatedCompany });
+      expect(prisma.company.findFirst).toHaveBeenCalledTimes(1);
+      expect(prisma.company.update).toHaveBeenCalledWith({
+        where: { id: "company-id", createdBy: "user-id" },
+        data: {
+          value: "__mock__amazon",
+          label: "Amazon",
+          logoUrl: "http://example.com/logo.png",
+        },
+      });
+    });
+
+    it("strips a legal suffix so 'Acme Inc.' matches an existing 'Acme'", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      const mockExistingCompany = {
+        id: "other-company-id",
+        label: "Acme",
+        value: "acme",
+        createdBy: mockUser.id,
+      };
+      (prisma.company.findFirst as any)
+        .mockResolvedValueOnce({
+          id: "company-id",
+          label: "Something Else",
+          value: "something else",
+          createdBy: mockUser.id,
+        })
+        .mockResolvedValueOnce(mockExistingCompany);
+
+      const result = await updateCompany({
+        ...validData,
+        company: "Acme Inc.",
+      });
+
+      expect(prisma.company.findFirst).toHaveBeenNthCalledWith(2, {
+        where: { value: "acme", createdBy: mockUser.id },
+      });
+      expect(result).toEqual({
+        success: false,
+        message: "Company already exists!",
+      });
+      expect(prisma.company.update).not.toHaveBeenCalled();
+    });
+
+    it("should return error if user is not authenticated", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      const result = await updateCompany(validData);
+
+      expect(result).toEqual({ success: false, message: "Not authenticated" });
+
+      expect(prisma.company.findFirst).not.toHaveBeenCalled();
+      expect(prisma.company.update).not.toHaveBeenCalled();
+    });
+
+    it("should return error if company already exists", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      (prisma.company.findFirst as any).mockResolvedValue({
+        id: "existing-company-id",
+      });
+
+      const result = await updateCompany(validData);
+
+      expect(result).toEqual({
+        success: false,
+        message: "Company already exists!",
+      });
+
+      expect(prisma.company.update).not.toHaveBeenCalled();
+    });
+
+    it("should return error if id is not provided or no user privileges", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      const invalidData = { ...validData, id: "", createdBy: "other-user-id" };
+
+      const result = await updateCompany(invalidData);
+
+      expect(result).toEqual({
+        success: false,
+        message: "Company id is required",
+      });
+
+      expect(prisma.company.findFirst).not.toHaveBeenCalled();
+      expect(prisma.company.update).not.toHaveBeenCalled();
+    });
+
+    it("should return error if logo URL is invalid", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      const invalidData = {
+        ...validData,
+        logoUrl: "javascript:alert('xss')",
+      };
+
+      const result = await updateCompany(invalidData);
+
+      expect(result).toEqual({
+        success: false,
+        message: "Invalid logo URL. Only http and https protocols are allowed.",
+      });
+
+      expect(prisma.company.findFirst).not.toHaveBeenCalled();
+      expect(prisma.company.update).not.toHaveBeenCalled();
+    });
+
+    it("should return error if logo URL has data protocol", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      const invalidData = {
+        ...validData,
+        logoUrl: "data:image/png;base64,iVBORw0KGgo=",
+      };
+
+      const result = await updateCompany(invalidData);
+
+      expect(result).toEqual({
+        success: false,
+        message: "Invalid logo URL. Only http and https protocols are allowed.",
+      });
+
+      expect(prisma.company.update).not.toHaveBeenCalled();
+    });
+
+    it("should allow empty logo URL", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      (prisma.company.findFirst as any).mockResolvedValueOnce({
+        id: "company-id",
+        label: "Updated Employer",
+        value: "updated employer",
+        createdBy: mockUser.id,
+      });
+
+      const mockUpdatedCompany = {
+        id: "company-id",
+        value: "updated employer",
+      };
+
+      (prisma.company.update as any).mockResolvedValue(mockUpdatedCompany);
+
+      const result = await updateCompany({
+        ...validData,
+        logoUrl: "",
+      });
+
+      expect(result).toEqual({ success: true, data: mockUpdatedCompany });
+      expect(prisma.company.update).toHaveBeenCalled();
+    });
+  });
+
+  describe("getCompanyById", () => {
+    const mockCompanyId = "company-id";
+    const mockCompany = {
+      id: "company-id",
+      label: "Test Company",
+      value: "test-company",
+      createdBy: "user-id",
+      logoUrl: "http://example.com/logo.png",
+    };
+
+    it("should fetch company by id successfully", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      (prisma.company.findUnique as any).mockResolvedValue(mockCompany);
+
+      const result = await getCompanyById(mockCompanyId);
+
+      expect(prisma.company.findUnique).toHaveBeenCalledWith({
+        where: { id: mockCompanyId, createdBy: "user-id" },
+      });
+
+      expect(result).toEqual(mockCompany);
+    });
+
+    it("should throw error when companyId is not provided", async () => {
+      await expect(getCompanyById("")).resolves.toStrictEqual({
+        success: false,
+        message: "Please provide company id",
+      });
+
+      expect(prisma.company.findUnique).not.toHaveBeenCalled();
+    });
+
+    it("should throw error when user is not authenticated", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      await expect(getCompanyById(mockCompanyId)).resolves.toStrictEqual({
+        success: false,
+        message: "Not authenticated",
+      });
+
+      expect(prisma.company.findUnique).not.toHaveBeenCalled();
+    });
+
+    it("should handle unexpected errors", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findUnique as any).mockRejectedValue(
+        new Error("Unexpected error"),
+      );
+
+      await expect(getCompanyById(mockCompanyId)).resolves.toStrictEqual({
+        success: false,
+        message: "Unexpected error",
+      });
+
+      expect(prisma.company.findUnique).toHaveBeenCalledWith({
+        where: { id: mockCompanyId, createdBy: "user-id" },
+      });
+    });
+  });
+
+  describe("deleteCompanyById", () => {
+    beforeEach(() => {
+      (prisma.contact.count as any).mockResolvedValue(0);
+    });
+
+    it("should delete a company successfully", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(0);
+      (prisma.job.count as any).mockResolvedValue(0);
+      const mockDeleted = { id: "company-id", label: "Test Company" };
+      (prisma.company.delete as any).mockResolvedValue(mockDeleted);
+
+      const result = await deleteCompanyById("company-id");
+
+      expect(result).toEqual({ res: mockDeleted, success: true });
+      expect(prisma.company.delete).toHaveBeenCalledWith({
+        where: { id: "company-id", createdBy: mockUser.id },
+      });
+    });
+
+    it("counts only the current user's work experience rows", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(0);
+      (prisma.job.count as any).mockResolvedValue(0);
+      (prisma.company.delete as any).mockResolvedValue({ id: "c1" });
+
+      await deleteCompanyById("c1");
+
+      expect(prisma.workExperience.count).toHaveBeenCalledWith({
+        where: {
+          companyId: "c1",
+          ResumeSection: { Resume: { profile: { userId: mockUser.id } } },
+        },
+      });
+    });
+
+    it("should return error for unauthenticated user", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      const result = await deleteCompanyById("company-id");
+
+      expect(result).toEqual({ success: false, message: "Not authenticated" });
+      expect(prisma.company.delete).not.toHaveBeenCalled();
+    });
+
+    it("should prevent deletion when work experiences exist", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(1);
+
+      const result = await deleteCompanyById("company-id");
+
+      expect(result).toEqual({
+        success: false,
+        message:
+          "Company cannot be deleted due to its use in experience section of one of the resume! ",
+      });
+      expect(prisma.job.count).not.toHaveBeenCalled();
+      expect(prisma.company.delete).not.toHaveBeenCalled();
+    });
+
+    it("should prevent deletion when associated jobs exist", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(0);
+      (prisma.job.count as any).mockResolvedValue(3);
+
+      const result = await deleteCompanyById("company-id");
+
+      expect(result).toEqual({
+        success: false,
+        message:
+          "Company cannot be deleted due to 3 number of associated jobs! ",
+      });
+      expect(prisma.company.delete).not.toHaveBeenCalled();
+    });
+
+    it("refuses to delete a company that a contact points at, either way", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(0);
+      (prisma.job.count as any).mockResolvedValue(0);
+      (prisma.contact.count as any).mockResolvedValue(2);
+
+      const result = await deleteCompanyById("co1");
+
+      expect(prisma.contact.count).toHaveBeenCalledWith({
+        where: {
+          createdBy: mockUser.id,
+          OR: [{ companyId: "co1" }, { workedAtCompanyId: "co1" }],
+        },
+      });
+      expect(result.success).toBe(false);
+      expect(result.message).toContain("2");
+      expect(prisma.company.delete).not.toHaveBeenCalled();
+    });
+
+    it("should handle unexpected errors", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.workExperience.count as any).mockResolvedValue(0);
+      (prisma.job.count as any).mockResolvedValue(0);
+      (prisma.company.delete as any).mockRejectedValue(
+        new Error("Delete failed"),
+      );
+
+      const result = await deleteCompanyById("company-id");
+
+      expect(result).toEqual({ success: false, message: "Delete failed" });
+    });
+  });
+});

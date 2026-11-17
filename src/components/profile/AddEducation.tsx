@@ -1,7 +1,7 @@
 "use client";
 import { AddEducationFormSchema } from "@/models/AddEductionForm.schema";
 import { Education, ResumeSection } from "@/models/profile.model";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -24,7 +24,7 @@ import { Input } from "../ui/input";
 import { DatePicker } from "../DatePicker";
 import { Switch } from "../ui/switch";
 import TiptapEditor from "../TiptapEditor";
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toastSuccess, toastError } from "@/lib/toast";
 import { Combobox } from "../ComboBox";
 import { JobLocation } from "@/models/job.model";
@@ -53,11 +53,6 @@ function AddEducation({
   const [isPending, startTransition] = useTransition();
   const [locations, setLocations] = useState<JobLocation[]>([]);
 
-  const getLocationData = useCallback(async () => {
-    const _locations = await getAllJobLocations();
-    setLocations(_locations);
-  }, []);
-
   const form = useForm<z.infer<typeof AddEducationFormSchema>>({
     resolver: zodResolver(AddEducationFormSchema),
     defaultValues: {
@@ -71,13 +66,16 @@ function AddEducation({
     },
   });
 
-  const { watch, reset, formState, resetField } = form;
+  const { reset, formState, resetField } = form;
 
-  const degreeCompletedValue = watch("degreeCompleted");
+  const degreeCompletedValue = useWatch({
+    control: form.control,
+    name: "degreeCompleted",
+  });
 
   useEffect(() => {
     if (!dialogOpen) return;
-    getLocationData();
+    getAllJobLocations().then(setLocations);
     if (educationToEdit) {
       const education: Education = educationToEdit?.educations?.at(0)!;
       reset(
@@ -109,7 +107,6 @@ function AddEducation({
     }
   }, [
     dialogOpen,
-    getLocationData,
     educationToEdit,
     resumeId,
     sectionId,

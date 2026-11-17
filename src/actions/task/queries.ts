@@ -16,29 +16,38 @@ function getTasksOrderBy(groupBy?: TaskGroupBy) {
   switch (groupBy) {
     case "dueDate":
       return [
-        { dueDate: "asc" as const },
+        // Undated last, matching the "No Due Date" group shown last
+        { dueDate: { sort: "asc" as const, nulls: "last" as const } },
         { priority: "desc" as const },
         { createdAt: "desc" as const },
+        { id: "desc" as const },
       ];
     case "createdDate":
-      return [{ createdAt: "desc" as const }, { priority: "desc" as const }];
+      return [
+        { createdAt: "desc" as const },
+        { priority: "desc" as const },
+        { id: "desc" as const },
+      ];
     case "updatedDate":
       return [
         { updatedAt: "desc" as const },
         { priority: "desc" as const },
         { createdAt: "desc" as const },
+        { id: "desc" as const },
       ];
     case "activityType":
       return [
         { activityType: { label: "asc" as const } },
         { priority: "desc" as const },
         { createdAt: "desc" as const },
+        { id: "desc" as const },
       ];
     default:
       return [
         { priority: "desc" as const },
         { createdAt: "desc" as const },
         { updatedAt: "desc" as const },
+        { id: "desc" as const },
       ];
   }
 }
@@ -55,6 +64,8 @@ export const getTasksList = async (
     const user = await requireUser();
 
     const offset = (page - 1) * limit;
+    // Due-date groups aren't in a sortable order, so that view loads every task
+    const loadAll = groupBy === "dueDate";
 
     const whereClause: any = {
       userId: user.id,
@@ -70,9 +81,9 @@ export const getTasksList = async (
 
     if (search) {
       whereClause.OR = [
-        { title: { contains: search } },
-        { description: { contains: search } },
-        { activityType: { label: { contains: search } } },
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { activityType: { label: { contains: search, mode: "insensitive" } } },
       ];
     }
 
@@ -81,8 +92,8 @@ export const getTasksList = async (
         where: whereClause,
         include: TASK_WITH_ACTIVITIES_INCLUDE,
         orderBy: getTasksOrderBy(groupBy),
-        skip: offset,
-        take: limit,
+        skip: loadAll ? undefined : offset,
+        take: loadAll ? undefined : limit,
       }),
       prisma.task.count({
         where: whereClause,
@@ -140,6 +151,7 @@ export const getActivityTypesWithTaskCounts = async (): Promise<
       where: {
         createdBy: user.id,
       },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       include: {
         _count: {
           select: {

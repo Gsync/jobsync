@@ -2,8 +2,8 @@
 // chronology: a job is routinely added days after it was applied to, so the
 // New stage's date (when the job entered JobSync) postdates the Applied
 // stage's. Dates break ties within one sortOrder. Undated stages sort last
-// among their peers — SQLite sorts NULL first on ASC and Prisma's
-// nulls:"last" is unsupported there, so none of this can live in the query.
+// among their peers. This ordering predates Postgres and stays in JavaScript
+// so the Timeline tab can share it.
 // Both the server actions and the Timeline tab sort through this one
 // comparator: the job-details page loads stages with no orderBy at all.
 export function sortStages<

@@ -24,10 +24,8 @@ interface MatchDetailsProps {
 }
 
 export function MatchDetails({ matchData, discoveredAt }: MatchDetailsProps) {
-  const html = useMemo(
-    () => (matchData?.body ? md.render(matchData.body) : ""),
-    [matchData?.body],
-  );
+  const body = matchData?.body;
+  const html = useMemo(() => (body ? md.render(body) : ""), [body]);
 
   if (!matchData) return null;
 

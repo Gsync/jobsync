@@ -28,12 +28,13 @@ import { useActivitySwitchConfirm } from "@/hooks/useActivitySwitchConfirm";
 function ActivitiesContainer() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const autoOpenHandled = useRef(false);
+  const [deepLinkHandled, setDeepLinkHandled] = useState(false);
   const [activityFormOpen, setActivityFormOpen] = useState<boolean>(false);
   const [activitiesList, setActivitiesList] = useState<Activity[]>([]);
   const [page, setPage] = useState<number>(1);
   const [totalActivities, setTotalActivities] = useState<number>(0);
-  const [initialLoading, setInitialLoading] = useState(false);
+  // True from the start: the mount load below sets no state before its reply.
+  const [initialLoading, setInitialLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const hasSearched = useRef(false);
@@ -45,31 +46,42 @@ function ActivitiesContainer() {
 
   const closeActivityForm = () => setActivityFormOpen(false);
 
+  const applyActivities = useCallback(
+    (page: number, result: Awaited<ReturnType<typeof getActivitiesList>>) => {
+      const { data, success, message, total } = result;
+      if (success) {
+        setActivitiesList((prev) => (page === 1 ? data : [...prev, ...data]));
+        setTotalActivities(total);
+        setPage(page);
+      } else {
+        toastError(message);
+      }
+    },
+    [],
+  );
+
+  const failActivities = useCallback(() => {
+    toastError("Failed to load activities. Please try again.");
+  }, []);
+
+  const endLoading = useCallback(() => {
+    setInitialLoading(false);
+    setLoadingMore(false);
+  }, []);
+
   const loadActivities = useCallback(
     async (page: number, limit: number, search?: string) => {
       if (page === 1) setInitialLoading(true);
       else setLoadingMore(true);
       try {
-        const { data, success, message, total } = await getActivitiesList(
-          page,
-          limit,
-          search,
-        );
-        if (success) {
-          setActivitiesList((prev) => (page === 1 ? data : [...prev, ...data]));
-          setTotalActivities(total);
-          setPage(page);
-        } else {
-          toastError(message);
-        }
-      } catch (error) {
-        toastError("Failed to load activities. Please try again.");
+        applyActivities(page, await getActivitiesList(page, limit, search));
+      } catch {
+        failActivities();
       } finally {
-        setInitialLoading(false);
-        setLoadingMore(false);
+        endLoading();
       }
     },
-    [],
+    [applyActivities, failActivities, endLoading],
   );
 
   const reloadActivities = useCallback(async () => {
@@ -86,23 +98,26 @@ function ActivitiesContainer() {
     });
   };
 
+  const deepLinked = searchParams.get("add-activity") === "true";
+  if (deepLinked && !deepLinkHandled) {
+    setDeepLinkHandled(true);
+    setActivityFormOpen(true);
+  }
   useEffect(() => {
-    if (autoOpenHandled.current) return;
-    if (searchParams.get("add-activity") === "true") {
-      autoOpenHandled.current = true;
-      setActivityFormOpen(true);
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("add-activity");
-      const newPath = params.toString()
-        ? `?${params.toString()}`
-        : window.location.pathname;
-      router.replace(newPath);
-    }
-  }, [router, searchParams]);
+    if (!deepLinked) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("add-activity");
+    const newPath = params.toString()
+      ? `?${params.toString()}`
+      : window.location.pathname;
+    router.replace(newPath);
+  }, [deepLinked, router, searchParams]);
 
   useEffect(() => {
-    loadActivities(1, APP_CONSTANTS.RECORDS_PER_PAGE);
-  }, [loadActivities]);
+    getActivitiesList(1, APP_CONSTANTS.RECORDS_PER_PAGE, undefined)
+      .then((result) => applyActivities(1, result), failActivities)
+      .finally(endLoading);
+  }, [applyActivities, failActivities, endLoading]);
 
   // Reload activities when an activity is stopped (via global banner or otherwise)
   useEffect(() => {

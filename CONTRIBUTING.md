@@ -41,9 +41,10 @@ This project follows a [Code of Conduct](./CODE_OF_CONDUCT.md). By participating
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 24+
 - npm
 - Git
+- A Postgres database (any reachable Postgres 17+; Docker is one way to get one, not a requirement). Prefer one with the `pgvector` extension available — the bundled `pgvector/pgvector:pg18` image has it — since resume embeddings will need it
 
 ### Local Setup
 
@@ -65,10 +66,23 @@ This project follows a [Code of Conduct](./CODE_OF_CONDUCT.md). By participating
    ```bash
    cp .env.example .env
    ```
-6. **Set up the database:**
-   ```bash
-   npx prisma migrate dev
+6. **Point the app at a Postgres database.** Set `DATABASE_URL` in `.env`. Either use a Postgres you already have:
    ```
+   DATABASE_URL=postgres://user:password@localhost:5432/jobsync
+   ```
+   or start only the bundled database from this repo and use it:
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.lan-db.yml up -d db
+   ```
+   ```
+   DATABASE_URL=postgres://jobsync:jobsync@localhost:5432/jobsync
+   ```
+   Then create the schema:
+   ```bash
+   npx -y prisma@7.10.1 migrate dev
+   npx -y prisma@7.10.1 generate
+   ```
+   The role needs `CREATEDB` so Prisma can make its temporary shadow database (the bundled one has it). Tests need no database: `npm test` mocks Prisma.
 7. **Start the development server:**
    ```bash
    npm run dev
@@ -206,7 +220,7 @@ Before submitting, verify:
 - [ ] PR description explains **what** and **why**
 - [ ] Relevant tests have been added or updated
 - [ ] Documentation is updated if behavior changes
-- [ ] `npx prisma generate` and a migration have been added for any schema changes
+- [ ] A migration has been added (`npx -y prisma@7.10.1 migrate dev`, then `npx -y prisma@7.10.1 generate`) for any schema changes
 
 ### PR Description Template
 
@@ -245,7 +259,7 @@ Key conventions:
 - **Naming:** PascalCase for components, camelCase for functions/variables, kebab-case for files.
 - **Types:** All types live in `src/models/*.model.ts`; Zod schemas in `src/models/*.schema.ts`.
 - **Server actions:** Always validate auth with `getCurrentUser()` and return via `handleError()`.
-- **Database:** Run `npx prisma generate` then `npx prisma migrate dev` after any schema change.
+- **Database:** Run `npx -y prisma@7.10.1 migrate dev` then `npx -y prisma@7.10.1 generate` after any schema change.
 - **Files over 200 lines:** Break into a directory with focused modules and a barrel `index.ts`.
 - **Comments:** Minimal; explain "why" not "what"; no decorative separator comments.
 
@@ -262,7 +276,7 @@ npm run test -- path/to/test.test.ts   # Single file
 npm run test -- --testNamePattern="test name"  # Single test
 ```
 
-Tests live in `__tests__/` and should be co-located where possible. Mock external dependencies (AI providers, database). Focus on server actions and component behavior.
+Tests live in `tests/` (see `tests/README.md` for the unit, component and integration suites). Mock external dependencies (AI providers, database). Focus on server actions and component behavior.
 
 ### E2E Tests (Playwright)
 
@@ -270,7 +284,7 @@ Tests live in `__tests__/` and should be co-located where possible. Mock externa
 npm run test:e2e
 ```
 
-E2E tests live in `e2e/`. These require a running dev server.
+E2E tests live in `tests/e2e/`. These require a running dev server.
 
 ---
 

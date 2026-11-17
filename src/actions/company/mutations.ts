@@ -220,16 +220,11 @@ export const deleteCompanyById = async (
   try {
     const user = await requireUser();
 
-    // WorkExperience has no userId, so ownership runs through the resume
-    // chain. The null-section arm keeps unsectioned rows blocking deletion
-    // rather than letting it fail later on the foreign key.
+    // WorkExperience has no userId, so ownership runs through the resume chain
     const experiences = await prisma.workExperience.count({
       where: {
         companyId,
-        OR: [
-          { ResumeSection: { Resume: { profile: { userId: user.id } } } },
-          { resumeSectionId: null },
-        ],
+        ResumeSection: { Resume: { profile: { userId: user.id } } },
       },
     });
     if (experiences > 0) {

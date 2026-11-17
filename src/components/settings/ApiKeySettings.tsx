@@ -80,8 +80,31 @@ function ApiKeySettings() {
     setOllamaChecking(false);
   };
 
+  const applyKeys = (
+    result: Awaited<ReturnType<typeof getUserApiKeys>>,
+  ) => {
+    if (result.success && result.data) {
+      setKeys(result.data);
+    }
+  };
+
+  const fetchKeys = async () => {
+    setIsLoading(true);
+    try {
+      applyKeys(await getUserApiKeys());
+    } catch (error) {
+      console.error("Error fetching API keys:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // isLoading starts true, so the mount load needs no setState of its own.
   useEffect(() => {
-    fetchKeys();
+    getUserApiKeys()
+      .then(applyKeys)
+      .catch((error) => console.error("Error fetching API keys:", error))
+      .finally(() => setIsLoading(false));
     getDefaultOllamaBaseUrl().then(setDefaultOllamaUrl);
     // Probing on mount for someone who picked another provider reads as the
     // app overriding their choice, so only auto-check when Ollama is selected.
@@ -91,20 +114,6 @@ function ApiKeySettings() {
       }
     });
   }, []);
-
-  const fetchKeys = async () => {
-    setIsLoading(true);
-    try {
-      const result = await getUserApiKeys();
-      if (result.success && result.data) {
-        setKeys(result.data);
-      }
-    } catch (error) {
-      console.error("Error fetching API keys:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const getKeyForProvider = (provider: ApiKeyProvider) =>
     keys.find((k) => k.provider === provider);

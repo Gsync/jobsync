@@ -68,6 +68,10 @@ export const SourceConfigSchema = z.object({
   ashby: AshbySourceConfigSchema.optional(),
 });
 
+// Only a malformed id gets the custom text; a missing one keeps Zod's own.
+const invalidResume = (issue: { code: string }) =>
+  issue.code === "invalid_format" ? "Invalid resume" : undefined;
+
 export const CreateAutomationSchema = z
   .object({
     name: z.string().min(1, "Name is required").max(100),
@@ -75,7 +79,7 @@ export const CreateAutomationSchema = z
     keywords: z.string().max(200).optional(),
     location: z.string().max(100).optional(),
     sourceConfig: SourceConfigSchema.optional(),
-    resumeId: z.string().uuid("Invalid resume"),
+    resumeId: z.uuid({ error: invalidResume }),
     matchThreshold: z.number().min(0).max(100),
     scheduleHour: z.number().min(0).max(23),
   })
@@ -83,7 +87,7 @@ export const CreateAutomationSchema = z
     const companies = data.sourceConfig?.[data.jobBoard]?.companies ?? [];
     if (companies.length < 1) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["sourceConfig", data.jobBoard, "companies"],
         message: "Select at least one company",
       });
@@ -97,7 +101,7 @@ export const UpdateAutomationSchema = z
     keywords: z.string().max(200).optional(),
     location: z.string().max(100).optional(),
     sourceConfig: SourceConfigSchema.optional(),
-    resumeId: z.string().uuid("Invalid resume").optional(),
+    resumeId: z.uuid({ error: invalidResume }).optional(),
     matchThreshold: z.number().min(0).max(100).optional(),
     scheduleHour: z.number().min(0).max(23).optional(),
   })
@@ -106,7 +110,7 @@ export const UpdateAutomationSchema = z
     const companies = data.sourceConfig?.[data.jobBoard]?.companies ?? [];
     if (companies.length < 1) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["sourceConfig", data.jobBoard, "companies"],
         message: "Select at least one company",
       });

@@ -15,8 +15,8 @@ export const AddContactFormSchema = z
     id: z.string().optional(),
     name: z
       .string({ error: "Contact name is required." })
-      .min(1, { message: "Contact name cannot be empty." })
-      .max(120, { message: "Contact name must be 120 characters or fewer." }),
+      .min(1, { error: "Contact name cannot be empty." })
+      .max(120, { error: "Contact name must be 120 characters or fewer." }),
     title: optionalText(120),
     email: z
       .string()
@@ -55,12 +55,12 @@ export const AddContactFormSchema = z
           endOfToday.setHours(23, 59, 59, 999);
           return date <= endOfToday;
         },
-        { message: "Last contacted date cannot be in the future." },
+        { error: "Last contacted date cannot be in the future." },
       ),
   })
   .refine(
     (v) => !v.workedFrom || !v.workedTo || v.workedTo >= v.workedFrom,
-    { message: "The end date cannot be before the start date.", path: ["workedTo"] },
+    { error: "The end date cannot be before the start date.", path: ["workedTo"] },
   );
 
 export type ContactFormValues = z.infer<typeof AddContactFormSchema>;

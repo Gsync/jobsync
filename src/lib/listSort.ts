@@ -51,8 +51,8 @@ const withCondition = (where: Where, extra: Where): Where => {
   return { ...where, AND: [...and, extra] };
 };
 
-// SQLite has no NULLS LAST and Prisma's `nulls` option is unsupported there,
-// so valued rows page first and the list continues into the blank ones.
+// Valued rows page first and the list continues into the blank ones. Kept
+// from SQLite, which had no NULLS LAST; one nulls:"last" query is later work.
 export async function findManySorted(
   model: ListSortDelegate,
   query: { where: Where; skip: number; take: number; select?: unknown },

@@ -8,8 +8,8 @@ export type ResumeLookup =
   | { status: "needs_selection"; resumes: { id: string; title: string }[] }
   | { status: "no_resumes" };
 
-// SQLite has no `mode: "insensitive"` in Prisma, so title matching happens
-// in JS over this list. It is also exactly what the picker renders, so the
+// Title matching happens in JS over this list (it predates Postgres and
+// mode: "insensitive"). It is also exactly what the picker renders, so the
 // query is not extra work.
 async function listTitles(userId: string) {
   return prisma.resume.findMany({

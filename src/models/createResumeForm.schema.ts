@@ -12,10 +12,10 @@ export const CreateResumeFormSchema = z.object({
   file: z
     .instanceof(File)
     .refine((file) => (APP_CONSTANTS.RESUME_ALLOWED_MIME_TYPES as readonly string[]).includes(file.type), {
-      message: "Only PDF and Word documents are allowed.",
+      error: "Only PDF and Word documents are allowed.",
     })
     .refine((file) => file.size <= APP_CONSTANTS.MAX_RESUME_FILE_SIZE_BYTES, {
-      message: "File size must be less than 5MB",
+      error: "File size must be less than 5MB",
     })
     .optional(),
   fileId: z.string().optional(),

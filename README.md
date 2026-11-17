@@ -46,11 +46,14 @@ Track every application, get AI resume reviews and job matches, and discover new
 - **Resume Management:** Store resumes, export them as PDFs, and import existing PDF or Word files with AI.
 - **Automated Job Discovery:** Schedule searches over company job boards and AI-match each listing to your resume. [Details](#automated-job-discovery)
 - **Task & Activity Management:** Track tasks and time your activities. [Tasks](https://github.com/Gsync/jobsync/wiki/Tasks) · [Activities](https://github.com/Gsync/jobsync/wiki/Activities)
+- **Job Timeline:** Record each stage of a job's hiring process — when it happened, who interviewed you and which questions they asked. [Details](https://github.com/Gsync/jobsync/wiki/Timeline)
+- **Interviews:** One list of every interview round across all your jobs, upcoming and past, with its interviewers, prep questions and outcome. [Details](https://github.com/Gsync/jobsync/wiki/Interviews)
 - **Contacts:** Keep recruiters, interviewers and references, linked to the jobs they touched. [Details](https://github.com/Gsync/jobsync/wiki/Contacts)
 - **Company Pages:** One page per company with its jobs, people and links, plus a watchlist. [Details](https://github.com/Gsync/jobsync/wiki/Companies)
 - **Question Bank:** Build a library of interview questions and answers, tagged by skill.
-- **Data Backup & Restore:** Export everything as one zip, import it anywhere, and undo an import. [Details](https://github.com/Gsync/jobsync/wiki/Data-Backup)
+- **Data Backup & Restore:** Export everything as one zip, import it anywhere, and undo an import. [Details](https://github.com/Gsync/jobsync/wiki/Backup)
 - **AI Assistant:** A docked chat that reviews resumes, scores job matches, writes cover letters and adds jobs from a pasted posting or a link. [Details](#ai-assistant-in-app-chat)
+- **AI Usage:** See tokens, response times and failures for every AI call, by provider, model and feature. [Details](https://github.com/Gsync/jobsync/wiki/Getting-Started)
 - **AI Agent Integration (MCP):** Add jobs and questions from Claude Desktop and other agents. [Details](#mcp-server-ai-agent-integration)
 
 ## Quick Start
@@ -71,7 +74,7 @@ API keys for AI providers can be configured in **Settings** after signing in.
 
 ### Configuration (Optional)
 
-Environment variables can be set in `docker-compose.yml`:
+Environment variables are set in a `.env` file beside `docker-compose.yml` (copy `.env.example`). Do not edit `docker-compose.yml` itself — updates replace it.
 
 | Variable | Description |
 |---|---|
@@ -79,9 +82,12 @@ Environment variables can be set in `docker-compose.yml`:
 | `AUTH_SECRET` | Auto-generated if not set. To set manually: `openssl rand -base64 32` |
 | `ENCRYPTION_KEY` | Encrypts the API keys you save in Settings. **Set your own** (`openssl rand -base64 32`) before adding any keys, and never change it afterwards — a new value makes every stored API key unrecoverable. |
 | `NEXTAUTH_URL` | The address you open JobSync at. Defaults to `http://localhost:3737`; on a homelab server, use the server's IP or hostname. |
-| `MCP_ENABLED` | Set to `false` to turn off the [MCP server](#mcp-server-ai-agent-integration). Enabled by default in `docker-compose.yml`. |
+| `MCP_ENABLED` | Set to `false` to turn off the [MCP server](#mcp-server-ai-agent-integration). Enabled by default. |
+| `DATABASE_URL` | Leave unset to use the bundled Postgres. To use your own, set it to your server's address and also set `BUNDLED_DB=0`; without it an unused bundled database container still starts. The bundled image includes the `pgvector` extension, which an upcoming release uses for knowledge base and resume embeddings; your own server will need it then too. `sslmode=require` verifies the server's certificate; for a self-signed one, use `?uselibpqcompat=true&sslmode=require`. See [Upgrading to Postgres](https://github.com/Gsync/jobsync/wiki/Upgrading-To-Postgres). |
 
 ### Updating
+
+**Upgrading from a SQLite release?** Read [Upgrading to Postgres](https://github.com/Gsync/jobsync/wiki/Upgrading-To-Postgres) first — the upgrade is one-way, and a SQLite instance must run release 1.2.0 once to import its data before moving to a newer release.
 
 From the project directory, run the deploy script to pull the latest image and restart:
 
@@ -132,7 +138,7 @@ Import an existing resume from a PDF or Word (.docx) file. AI extracts structure
 
 Set up automations that search for new jobs on a schedule and AI-match them against your resume, so relevant openings come to you.
 
-- **Greenhouse** — track specific companies by name from a built-in directory (or by pasting a board URL). Each run pulls every published role from those companies' Greenhouse boards, ranks them against your target titles, skills, and resume with a fast local relevance score, and runs the AI match on only the top candidates to keep costs bounded. No API key required.
+- **Greenhouse** — track specific companies by name from a built-in directory of 2,400+ companies (or by pasting a board URL). Each run pulls every published role from those companies' Greenhouse boards, ranks them against your target titles, skills, and resume with a fast local relevance score, and runs the AI match on only the top candidates to keep costs bounded. No API key required.
 
 - **Lever** — same company-tracking workflow as Greenhouse, backed by a built-in directory of 1,160+ companies (or paste a board URL). Automatically resolves the right regional API (`lever.co` or `eu.lever.co`) per company and carries full remote/hybrid/onsite signal from the listing. No API key required.
 
@@ -215,7 +221,7 @@ Clients that support `streamable-http` natively can connect directly without `mc
 
 ## Help
 
-In-app usage guides — getting started, jobs, automations, and MCP access — live in the [GitHub Wiki](https://github.com/Gsync/jobsync/wiki).
+Usage guides for every feature — from getting started and tracking jobs to interviews, automations, backups, MCP access and upgrading to Postgres — live in the [GitHub Wiki](https://github.com/Gsync/jobsync/wiki).
 
 ## Contributing
 
@@ -230,7 +236,7 @@ We welcome contributions! Please read our [Contributing Guidelines](./CONTRIBUTI
 - <a href="https://github.com/tailwindlabs/tailwindcss">Tailwind</a>
 - <a href="https://github.com/ueberdosis/tiptap">Tiptap</a>
 - <a href="https://github.com/plouc/nivo">Nivo</a>
-- <a href="https://github.com/sqlite/sqlite">Sqlite</a>
+- <a href="https://github.com/postgres/postgres">Postgres</a>
 - <a href="https://github.com/vercel/ai">Vercel AI-SDK</a>
 - <a href="https://github.com/ollama/ollama">Ollama</a>
 
@@ -240,7 +246,7 @@ API keys for all cloud providers can be configured in **Settings > AI Settings**
 
 > **Note:** Selected models must support **structured output** and **tool calling** for AI features to work correctly — the AI Assistant panel works by calling tools, so a model without tool support will reply with text instead of doing anything.
 
-**Known-good models.** The AI Assistant has been tested end to end with `qwen3.5:9b` on Ollama (fully local), `deepseek-v4-flash`, and OpenAI `gpt-4.1`. Other tool-calling models should work, but these are the ones exercised against the full set of assistant features.
+**Known-good models.** The AI Assistant has been tested end to end with `qwen3.5:9b` on Ollama (fully local), `deepseek-v4-flash`, and OpenAI `gpt-6`. Other tool-calling models should work, but these are the ones exercised against the full set of assistant features.
 
 <details>
 <summary><strong>Ollama (Local)</strong></summary>

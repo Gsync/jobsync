@@ -59,10 +59,16 @@ function CopyResumeDialog({
 
   // The suggestion needs every title the user owns, which the paginated
   // table does not have — so ask the server each time the dialog opens.
+  const titleKey = open && sourceDoc?.id ? sourceDoc.id : null;
+  const [prevTitleKey, setPrevTitleKey] = useState<string | null>(null);
+  if (titleKey !== prevTitleKey) {
+    setPrevTitleKey(titleKey);
+    if (titleKey) setLoadingTitle(true);
+  }
+
   useEffect(() => {
     if (!open || !sourceDoc?.id) return;
     let cancelled = false;
-    setLoadingTitle(true);
     reset({ title: "" });
     (async () => {
       const { success, data, message } = await getResumeCopyTitleSuggestion(

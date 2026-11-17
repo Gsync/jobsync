@@ -12,6 +12,7 @@ export const getAllActivityTypes = async (): Promise<any | undefined> => {
       where: {
         createdBy: user.id,
       },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     });
     return activityTypes;
   } catch (error) {
@@ -68,6 +69,7 @@ export const getActivityTypeList = async (
     // Fetch all activity types with counts, then sort by total duration
     const allTypes = await prisma.activityType.findMany({
       where: whereClause,
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: {
         id: true,
         label: true,

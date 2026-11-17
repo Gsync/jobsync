@@ -53,7 +53,7 @@ export async function finalizeRun(
             where: { id: run.automationId },
             select: { scheduleHour: true },
           })
-        )?.scheduleHour || 8,
+        )?.scheduleHour ?? 8,
       ),
     },
   });

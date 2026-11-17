@@ -34,11 +34,11 @@ import {
 const AddJobStageTypeFormSchema = z.object({
   label: z
     .string({ error: "Stage name is required." })
-    .min(1, { message: "Stage name cannot be empty." })
-    .max(80, { message: "Stage name must be 80 characters or fewer." }),
+    .min(1, { error: "Stage name cannot be empty." })
+    .max(80, { error: "Stage name must be 80 characters or fewer." }),
   statusId: z
     .string({ error: "Parent status is required." })
-    .min(1, { message: "Pick the status this stage means." }),
+    .min(1, { error: "Pick the status this stage means." }),
 });
 
 type AddJobStageTypeProps = {

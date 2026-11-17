@@ -27,10 +27,8 @@ interface ReviewDetailsProps {
 
 export function ReviewDetails({ reviewData }: ReviewDetailsProps) {
   const [expanded, setExpanded] = useState(false);
-  const html = useMemo(
-    () => (reviewData?.body ? md.render(reviewData.body) : ""),
-    [reviewData?.body],
-  );
+  const body = reviewData?.body;
+  const html = useMemo(() => (body ? md.render(body) : ""), [body]);
 
   if (!reviewData) return null;
 

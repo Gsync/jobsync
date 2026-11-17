@@ -38,7 +38,7 @@ export const getResumeList = async (
           prisma.resume.findMany({
             where: restWhere,
             select: resumeListSelect,
-            orderBy: { createdAt: "desc" },
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
             take: limit - 1,
           }),
         ]);
@@ -47,7 +47,7 @@ export const getResumeList = async (
         rawData = await prisma.resume.findMany({
           where: restWhere,
           select: resumeListSelect,
-          orderBy: { createdAt: "desc" },
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           skip: (page - 1) * limit - 1,
           take: limit,
         });
@@ -56,7 +56,7 @@ export const getResumeList = async (
       rawData = await prisma.resume.findMany({
         where,
         select: resumeListSelect,
-        orderBy: { createdAt: "desc" },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         skip: (page - 1) * limit,
         take: limit,
       });

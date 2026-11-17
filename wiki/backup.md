@@ -19,6 +19,10 @@ Open the avatar menu at the bottom of the sidebar, choose **Settings**, then **D
 
 API keys, MCP tokens and your password. The file is safe to store anywhere for that reason, but it does contain the full text of every job description, note and resume, so keep it somewhere private.
 
+## Does a Data Backup cover my whole instance?
+
+No — it covers one account's data and leaves out accounts, API keys and MCP tokens. To back up the whole instance, including every account, run `./backup-db.sh` on the server; [Upgrading to Postgres](./upgrading-to-postgres.md) explains how it and `restore-db.sh` work.
+
 ## How do I restore a backup?
 
 Under **Settings → Data**, choose the zip in **Import a backup**. JobSync reads it and shows when it was exported, which JobSync version and account it came from, and how many of each record it holds. Click **Replace my data with this backup** to confirm.

@@ -17,7 +17,7 @@ export function buildGetResumeTool(userId: string, pageResumeId?: string) {
   return tool({
     description: AGENT_TOOL_DESCRIPTIONS.get_resume,
     inputSchema: AgentGetResumeSchema,
-    // No needsApproval: this reads the caller's own data and shows it only
+    // Not in toolApproval: this reads the caller's own data and shows it only
     // to them. The gate exists to stop writes the user has not seen.
     execute: async (raw): Promise<AgentGetResumeResult> => {
       try {

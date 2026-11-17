@@ -3,7 +3,7 @@
  * Limits requests per user per time window.
  */
 
-import { RATE_LIMITS } from "./config";
+import { RATE_LIMITS } from "@/lib/constants";
 
 interface RateLimitEntry {
   count: number;
@@ -16,8 +16,7 @@ const { WINDOW_MS, STORE_CLEANUP_THRESHOLD } = RATE_LIMITS;
 
 export type RateLimitBucket = "default" | "chat";
 
-// Per-bucket limit lookup lives inside the function so config.ts's standalone
-// MAX_REQUESTS re-export keeps its current meaning.
+// The default bucket keeps RATE_LIMITS.MAX_REQUESTS; chat gets its own budget.
 function maxRequestsFor(bucket: RateLimitBucket): number {
   return bucket === "chat"
     ? RATE_LIMITS.CHAT_MAX_REQUESTS

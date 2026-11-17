@@ -13,6 +13,11 @@ export const addCertification = async (
   try {
     const user = await requireUser();
 
+    const validation = AddCertificationFormSchema.safeParse(data);
+    if (!validation.success) {
+      return { success: false, message: validation.error.issues[0].message };
+    }
+
     await assertResumeOwnership(data.resumeId!, user.id);
 
     const section = !data.sectionId
@@ -55,6 +60,11 @@ export const updateCertification = async (
 ): Promise<any | undefined> => {
   try {
     const user = await requireUser();
+
+    const validation = AddCertificationFormSchema.safeParse(data);
+    if (!validation.success) {
+      return { success: false, message: validation.error.issues[0].message };
+    }
 
     const result = await prisma.licenseOrCertification.update({
       where: {

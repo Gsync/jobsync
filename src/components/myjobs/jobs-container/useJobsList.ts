@@ -16,6 +16,7 @@ import {
   saveToLocalStorage,
 } from "@/utils/localstorage.utils";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
+import { useHydrated } from "@/hooks/useHydrated";
 
 // Owns the job list itself: pagination, search, view mode, infinite scroll,
 // and the reload triggered when the agent chat writes job data.
@@ -38,11 +39,13 @@ export function useJobsList({
 }) {
   const { jobWrites } = useAgentChat();
   const [jobs, setJobs] = useState<JobResponse[]>([]);
-  const [viewMode, setViewMode] = useState<JobsViewMode>("table");
+  const hydrated = useHydrated();
+  const [chosenViewMode, setViewMode] = useState<JobsViewMode | null>(null);
   const [page, setPage] = useState(1);
   const [totalJobs, setTotalJobs] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
-  const [initialLoading, setInitialLoading] = useState(false);
+  // True from the start: the mount load sets no state before its reply.
+  const [initialLoading, setInitialLoading] = useState(true);
   // False until page 1 has loaded, so an empty list isn't read as "no matches"
   // before the first fetch or after a failed one.
   const [listLoaded, setListLoaded] = useState(false);
@@ -53,15 +56,13 @@ export function useJobsList({
   const sortRef = useRef(sort);
   const lastSort = useRef(sort);
 
-  // Read after mount: localStorage is unavailable during SSR, so seeding the
-  // initial state from it would cause a hydration mismatch.
-  useEffect(() => {
-    const saved = getFromLocalStorage(
-      APP_CONSTANTS.JOBS_VIEW_MODE_STORAGE_KEY,
-      null,
-    );
-    if (saved === "cards" || saved === "table") setViewMode(saved);
-  }, []);
+  // Read after hydration: localStorage is unavailable during SSR, so reading
+  // it in the first render would cause a hydration mismatch.
+  const saved = hydrated
+    ? getFromLocalStorage(APP_CONSTANTS.JOBS_VIEW_MODE_STORAGE_KEY, null)
+    : null;
+  const savedViewMode = saved === "cards" || saved === "table" ? saved : null;
+  const viewMode: JobsViewMode = chosenViewMode ?? savedViewMode ?? "table";
 
   const onChangeViewMode = (mode: JobsViewMode) => {
     setViewMode(mode);
@@ -70,14 +71,9 @@ export function useJobsList({
 
   const jobsPerPage = APP_CONSTANTS.RECORDS_PER_PAGE;
 
-  const loadJobs = useCallback(
-    async (page: number, search?: string) => {
-      // Only the newest request may write: a slower response to an older
-      // sort, search or page must not replace or extend the newer list.
-      const request = ++requestSeq.current;
-      if (page === 1) setInitialLoading(true);
-      else setLoadingMore(true);
-      const { success, data, total, message } = await getJobsList(
+  const fetchJobsPage = useCallback(
+    (page: number, search?: string) =>
+      getJobsList(
         page,
         jobsPerPage,
         hasJobFacets(facets) ? facets : undefined,
@@ -88,8 +84,28 @@ export function useJobsList({
         locationFilter || undefined,
         sourceFilter || undefined,
         sortRef.current ?? undefined,
-      );
+      ),
+    [
+      jobsPerPage,
+      facets,
+      companyFilter,
+      appliedFilter,
+      titleFilter,
+      locationFilter,
+      sourceFilter,
+    ],
+  );
+
+  // Only the newest request may write: a slower response to an older
+  // sort, search or page must not replace or extend the newer list.
+  const applyJobsPage = useCallback(
+    (
+      request: number,
+      page: number,
+      result: Awaited<ReturnType<typeof getJobsList>>,
+    ) => {
       if (request !== requestSeq.current) return;
+      const { success, data, total, message } = result;
       if (success && data) {
         setJobs((prev) => (page === 1 ? data : [...prev, ...data]));
         setTotalJobs(total);
@@ -102,34 +118,63 @@ export function useJobsList({
       setInitialLoading(false);
       setLoadingMore(false);
     },
-    [
-      jobsPerPage,
-      facets,
-      companyFilter,
-      appliedFilter,
-      titleFilter,
-      locationFilter,
-      sourceFilter,
-    ],
+    [],
   );
+
+  // Sets state only on reply, so the effects below may call it directly.
+  const fetchPage = useCallback(
+    (page: number, search?: string) => {
+      const request = ++requestSeq.current;
+      return fetchJobsPage(page, search).then((result) =>
+        applyJobsPage(request, page, result),
+      );
+    },
+    [fetchJobsPage, applyJobsPage],
+  );
+
+  const loadJobs = useCallback(
+    async (page: number, search?: string) => {
+      if (page === 1) setInitialLoading(true);
+      else setLoadingMore(true);
+      await fetchPage(page, search);
+    },
+    [fetchPage],
+  );
+
+  // A filter change or an agent write refetches page 1 (effects below), so
+  // either re-raises the spinner here.
+  const reloadKey = JSON.stringify([
+    facets,
+    companyFilter,
+    appliedFilter,
+    titleFilter,
+    locationFilter,
+    sourceFilter,
+    jobWrites,
+  ]);
+  const [prevReloadKey, setPrevReloadKey] = useState(reloadKey);
+  if (reloadKey !== prevReloadKey) {
+    setPrevReloadKey(reloadKey);
+    setInitialLoading(true);
+  }
 
   const reloadJobs = useCallback(async () => {
     await loadJobs(1, searchTerm || undefined);
   }, [loadJobs, searchTerm]);
 
   useEffect(() => {
-    (async () => await loadJobs(1, searchTerm || undefined))();
+    fetchPage(1, searchTerm || undefined);
     // Search has its own debounced effect below; keying on it here too
     // would fire a second, undebounced request per keystroke.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadJobs]);
+  }, [fetchPage]);
 
   // The agent saves server-side, so only this counter tells us a row appeared
-  // or a match score landed. Deps are the counter alone: reloadJobs changes
+  // or a match score landed. Deps are the counter alone: the fetch changes
   // with every filter and keystroke, and the effects above already cover those.
   useEffect(() => {
     if (jobWrites === 0) return;
-    void reloadJobs();
+    fetchPage(1, searchTerm || undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobWrites]);
 

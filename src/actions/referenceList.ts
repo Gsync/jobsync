@@ -64,7 +64,7 @@ export const getReferenceEntityList = async ({
   if (search) {
     const fields = searchFields ?? ["label"];
     whereClause.OR = fields.map((field) => ({
-      [field]: { contains: search },
+      [field]: { contains: search, mode: "insensitive" },
     }));
   }
 
@@ -111,10 +111,14 @@ export const getReferenceEntityList = async ({
           }
         : {}),
       // Two keys, not one: the applied-count sort alone has no tiebreak, so
-      // equal-count rows page unstably under infinite scroll.
-      orderBy: orderBy ?? [
-        { [appliedRelation]: { _count: "desc" } },
-        { label: "asc" },
+      // equal-count rows page unstably under infinite scroll. The trailing id
+      // makes the order total, which Postgres needs across OFFSET pages.
+      orderBy: [
+        ...(orderBy ?? [
+          { [appliedRelation]: { _count: "desc" } },
+          { label: "asc" },
+        ]),
+        { id: "desc" },
       ],
     }),
     model.count({

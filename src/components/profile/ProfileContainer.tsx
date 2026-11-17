@@ -32,6 +32,19 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 
+// Resumes page through infinite scroll; letters load up to 100 at once.
+const fetchDocuments = (page: number) =>
+  Promise.all([
+    getResumeList(page, APP_CONSTANTS.RECORDS_PER_PAGE),
+    getCoverLetterList(1, 100),
+  ]);
+
+// allSettled, not all: contactInfo stuck at undefined would spin the export
+// preview forever, and a failed letterhead read must not also cost the
+// default-resume pointer.
+const fetchDefaults = () =>
+  Promise.allSettled([getDefaultResumeId(), getDefaultContactInfo()]);
+
 const ProfileContainer = () => {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [coverLetters, setCoverLetters] = useState<CoverLetter[]>([]);
@@ -58,13 +71,11 @@ const ProfileContainer = () => {
   } | null>(null);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [page, setPage] = useState<number>(1);
-  const [loading, setLoading] = useState(false);
-  const loadResumes = useCallback(
-    async (page: number) => {
-      const { data, total, success, message } = await getResumeList(
-        page,
-        APP_CONSTANTS.RECORDS_PER_PAGE,
-      );
+  // True from the start: the mount load below sets no state before its reply.
+  const [loading, setLoading] = useState(true);
+  const applyResumes = useCallback(
+    (page: number, result: Awaited<ReturnType<typeof getResumeList>>) => {
+      const { data, total, success, message } = result;
       if (success && data) {
         setResumes((prev) => (page === 1 ? data : [...prev, ...data]));
         setTotalResumes(total);
@@ -76,38 +87,49 @@ const ProfileContainer = () => {
     [],
   );
 
-  const loadCoverLetters = useCallback(async () => {
-    const { data, total, success, message } = await getCoverLetterList(
-      1,
-      100,
-    );
-    if (success && data) {
-      setCoverLetters(data);
-      setTotalCoverLetters(total);
-    } else {
-      toastError(message);
-    }
-  }, []);
+  const applyCoverLetters = useCallback(
+    (result: Awaited<ReturnType<typeof getCoverLetterList>>) => {
+      const { data, total, success, message } = result;
+      if (success && data) {
+        setCoverLetters(data);
+        setTotalCoverLetters(total);
+      } else {
+        toastError(message);
+      }
+    },
+    [],
+  );
+
+  const applyDefaults = useCallback(
+    ([id, contact]: Awaited<ReturnType<typeof fetchDefaults>>) => {
+      if (id.status === "fulfilled") setDefaultResumeId(id.value);
+      setContactInfo(contact.status === "fulfilled" ? contact.value : null);
+    },
+    [],
+  );
 
   const loadDefaultResumeId = useCallback(async () => {
-    // allSettled, not all: contactInfo stuck at undefined would spin the
-    // export preview forever, and a failed letterhead read must not also
-    // cost the default-resume pointer.
-    const [id, contact] = await Promise.allSettled([
-      getDefaultResumeId(),
-      getDefaultContactInfo(),
-    ]);
-    if (id.status === "fulfilled") setDefaultResumeId(id.value);
-    setContactInfo(contact.status === "fulfilled" ? contact.value : null);
-  }, []);
+    applyDefaults(await fetchDefaults());
+  }, [applyDefaults]);
+
+  const applyDocuments = useCallback(
+    (
+      page: number,
+      [resumes, letters]: Awaited<ReturnType<typeof fetchDocuments>>,
+    ) => {
+      applyResumes(page, resumes);
+      applyCoverLetters(letters);
+      setLoading(false);
+    },
+    [applyResumes, applyCoverLetters],
+  );
 
   const loadDocuments = useCallback(
     async (page: number) => {
       setLoading(true);
-      await Promise.all([loadResumes(page), loadCoverLetters()]);
-      setLoading(false);
+      applyDocuments(page, await fetchDocuments(page));
     },
-    [loadResumes, loadCoverLetters],
+    [applyDocuments],
   );
 
   const reloadDocuments = useCallback(async () => {
@@ -115,14 +137,14 @@ const ProfileContainer = () => {
   }, [loadDocuments, loadDefaultResumeId]);
 
   useEffect(() => {
-    (async () => await loadDocuments(1))();
-  }, [loadDocuments]);
+    fetchDocuments(1).then((result) => applyDocuments(1, result));
+  }, [applyDocuments]);
 
   // The default pointer doesn't change between pages, so fetch it once on
   // mount (and again after a switch, via reloadDocuments) rather than per page.
   useEffect(() => {
-    loadDefaultResumeId();
-  }, [loadDefaultResumeId]);
+    fetchDefaults().then(applyDefaults);
+  }, [applyDefaults]);
 
   const documents: ProfileDocument[] = useMemo(() => {
     const resumeDocs: ProfileDocument[] = resumes.map((r) => ({

@@ -280,7 +280,7 @@ export function AutomationList({
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" disabled={isLoading}>
+                  <Button variant="ghost" size="icon" disabled={isLoading} aria-label="More actions">
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>

@@ -10,27 +10,27 @@ export const AddContactInfoFormSchema = z.object({
       error: "First Name is required.",
     })
     .min(2, {
-      message: "First name must be at least 2 characters.",
+      error: "First name must be at least 2 characters.",
     }),
   lastName: z
     .string({
       error: "Last Name is required.",
     })
     .min(2, {
-      message: "Last name must be at least 2 characters.",
+      error: "Last name must be at least 2 characters.",
     }),
   headline: z
     .string({
       error: "Headline is required.",
     })
     .min(2, {
-      message: "Headline must be at least 2 characters.",
+      error: "Headline must be at least 2 characters.",
     }),
   email: z
-    .string({
-      error: "Email is required!",
-    })
-    .email("Please enter a valid email!"),
+    .email({
+      error: (issue) =>
+        issue.code === "invalid_type" ? "Email is required!" : "Please enter a valid email!",
+    }),
   phone: z.string({
     error: "Phone is required!",
   }),

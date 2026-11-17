@@ -1,5 +1,78 @@
 # Changelog
 
+## [1.2.1](https://github.com/Gsync/jobsync/compare/v1.2.0...v1.2.1) (2026-11-14)
+
+
+### Breaking Changes
+
+* Remove the one-time SQLite import, so instances still on a SQLite release must upgrade to 1.2.0 before upgrading to this release.
+* Require a trusted certificate when your own Postgres uses `sslmode=require`; add `uselibpqcompat=true` to `DATABASE_URL` to keep accepting a self-signed one.
+
+### Features
+
+* Move AI Usage out of Settings to its own page in the avatar menu.
+
+### Bug Fixes
+
+* Improve accessibility: icon-only buttons now have screen-reader names, green dashboard card titles and grey secondary text are easier to read, and the user menu announces unread notifications.
+* Fix job titles, companies, locations and sources added through agent chat showing text like `&amp;` instead of `&`.
+* Fix Analyze on a discovered job asking a non-Ollama provider for an Ollama model when no model is selected.
+* Fix a job's Applied stage being dated today instead of the Date Applied you entered.
+* Fix automations scheduled for midnight moving to 8 AM after their first run.
+* Certification expiration dates can now be set to future years.
+* Fix deleting a tag, location, job title or company revealing whether another user's records use it.
+* Fix editing a job resetting the date it was added to today.
+* Fix a crash after uploading your first resume with auto-fill on, and show a not-found page for links to a resume that no longer exists.
+* Fix generating mock activities linking to another account's activity types.
+* Reject unauthenticated requests to the AI model-list endpoints at the route itself, not only in the proxy.
+* Stop the Ollama base URL lookup from accepting another user's id.
+* Questions and resume skills now reject tags that belong to another account.
+* Experience, education and certification entries now reject an end date that is earlier than the start date.
+* Prevent resume experience and education entries from linking another user's job title, company or location.
+* Group tasks by due date with Today and Tomorrow first, and show every task in that view without scrolling to load more.
+
+### Other Changes
+
+* Upgraded to AI SDK 7.
+* Upgraded to Next.js 16.
+* Run JobSync on upgraded Node version 24.
+* Upgrade the database library to Prisma 7, which makes the Docker image smaller and lets the container start without downloading anything.
+* Shrink the Docker image by leaving out the unused image-optimization library.
+* Upgraded the rich-text editor to Tiptap 3.
+* Upgraded to TypeScript 6.
+* Upgraded date-fns, react-day-picker, lucide-react, markdown-it, bcryptjs, @hookform/resolvers and unpdf to their latest major versions.
+
+
+## [1.2.0](https://github.com/Gsync/jobsync/compare/v1.1.22...v1.2.0) (2026-10-30)
+
+
+### Breaking Changes
+
+* JobSync now stores its data in Postgres: Docker installs run a bundled Postgres 18 database and copy an existing SQLite database into it on first start, and an external Postgres can be used by setting DATABASE_URL (see the Postgres upgrade guide).
+
+### Features
+
+* The Add Job form is regrouped into sections with one-click Status, Workplace and Job type choices, a footer listing the required fields still empty, and Ctrl/⌘+Enter to save.
+* Add a Generate mock data button and a development-only Clear all data button to the Developer page.
+* Add backup-db.sh and restore-db.sh to back up and restore the whole database instance.
+* Show a caret on the status badge in the jobs table, so it is clear the status can be changed from there.
+
+### Bug Fixes
+
+* Agent chat now tells you when no API key is set for the selected provider, or when the selected model is not available to your key, instead of showing a generic error.
+* Update dependencies to fix security vulnerabilities, including a critical remote code execution flaw in Next.js image optimization and issues in proxy-addr, the MCP SDK, markdown-it, sharp and the rich-text editor.
+* OpenAI GPT-6 and GPT-6.1 models now work for chat, resume review, job matching, cover letters, resume import and automations instead of failing with an "Unsupported parameter: temperature" error.
+* The Greenhouse company picker in the automation wizard now covers employers across the whole alphabet (about 2,400 live boards, up from 602), and boards that no longer exist have been removed.
+* Fix the dashboard jumping when switching the Recent card between Jobs and Activities.
+
+### Other Changes
+
+* The Add Job form no longer has an "Add New" resume link, since a resume created there could not be selected until it had enough sections; create resumes from the Profile page instead.
+* Use a smaller header and summary values on the job, automation and company details pages.
+* Rename the Activities and Tasks table headers to "Type (Project)" and "Progress", and center the task Priority badge under its header.
+* The Tasks page's Status filter and Group by menu are now one filter button, matching the Jobs page.
+
+
 ## [1.1.22](https://github.com/Gsync/jobsync/compare/v1.1.21...v1.1.22) (2026-10-11)
 
 

@@ -26,8 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 24, not the 20 that ci.yml and release.yml use: the sync script is a
-      # .mts file run through Node's built-in TypeScript type stripping.
+      # The sync script is a .mts file run through Node's built-in type stripping.
       - uses: actions/setup-node@v4
         with:
           node-version: 24

@@ -1,4 +1,4 @@
-// Read by scripts/sync-wiki.mts at build time and by __tests__/wiki.spec.ts.
+// Read by scripts/sync-wiki.mts at build time and by tests/unit/lib/wiki/wiki.spec.ts.
 // Nothing under src/app imports it yet — the help tool that will is deferred.
 // A future dead-code sweep should not delete this directory.
 //

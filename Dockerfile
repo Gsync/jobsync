@@ -1,4 +1,4 @@
-FROM node:20.20.2-alpine AS base
+FROM node:24.22.2-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -17,10 +17,11 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-ENV DATABASE_URL=file:/data/dev.db
+# Postgres client; needs no DATABASE_URL
+RUN npx -y prisma@7.10.1 generate
 
-# Generate Prisma client
-RUN npx prisma generate
+# Boot scripts (resolve-db-url, wait-for-db, migrate-deploy), compiled to plain CommonJS
+RUN npx tsc -p scripts/tsconfig.json
 
 RUN npm run build
 
@@ -45,6 +46,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder /app/scripts/dist ./scripts/dist
+# pg reaches the boot scripts only via Next's standalone trace; fail if missing
+RUN node -e "require.resolve('pg', { paths: ['/app/scripts/dist'] })"
 
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh

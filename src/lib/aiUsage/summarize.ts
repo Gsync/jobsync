@@ -23,7 +23,7 @@ export type AiCallRecord = {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-// Nearest rank, in JS: SQLite has no percentile function.
+// Nearest rank, in JS: kept engine-independent rather than percentile_cont.
 export function percentile(values: number[], p: number): number | null {
   if (values.length === 0) return null;
   const sorted = [...values].sort((a, b) => a - b);

@@ -1,7 +1,7 @@
 "use client";
 import { Loader, Sparkles } from "lucide-react";
 import { Button } from "../ui/button";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { CreateResumeFormSchema } from "@/models/createResumeForm.schema";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -72,12 +72,11 @@ function CreateResume({
 
   const {
     reset,
-    watch,
     setValue,
     formState: { errors, isValid },
   } = form;
 
-  const watchedFile = watch("file");
+  const watchedFile = useWatch({ control: form.control, name: "file" });
 
   // Populate form when editing an existing resume
   useEffect(() => {
@@ -151,7 +150,7 @@ function CreateResume({
       }
 
       const newResumeId: string | undefined =
-        response.data?.id ?? response.data?.resumes?.[0]?.id;
+        response.data?.resumes?.[0]?.id ?? response.data?.id;
 
       // Auto-fill with AI: hand the chosen model to the editor and navigate
       // immediately so the import streams in live there, rather than blocking

@@ -20,9 +20,9 @@ export const getContactList = async (
     const where: any = { createdBy: user.id };
     if (search) {
       where.OR = [
-        { name: { contains: search } },
-        { email: { contains: search } },
-        { title: { contains: search } },
+        { name: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { title: { contains: search, mode: "insensitive" } },
       ];
     }
     // Either the standing role on the person or a role they hold on some job,
@@ -41,7 +41,7 @@ export const getContactList = async (
         // Name only. The spec's cold-contact use for lastContactedAt implies a
         // sort, but a sortable header means an orderBy threaded through the
         // action and the list hook plus a nulls-last rule — deferred to v2.
-        orderBy: [{ name: "asc" }],
+        orderBy: [{ name: "asc" }, { id: "desc" }],
       }),
       prisma.contact.count({ where }),
     ]);

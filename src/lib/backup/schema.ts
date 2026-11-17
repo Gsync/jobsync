@@ -70,6 +70,9 @@ const File = z.object({
   fileType: str,
   uploadedAt: dt,
   fileMissing: z.boolean().optional(),
+  // Optional as well as nullable: a backup from before job attachments has no
+  // such key. Remapped after the Job rows exist, not during File insertion.
+  jobId: optId.optional(),
 });
 
 const Resume = z.object({
@@ -219,6 +222,17 @@ const Job = z.object({
   descriptionCompleteness: optStr,
 });
 
+const JobEmail = z.object({
+  id,
+  jobId: id,
+  subject: optStr,
+  content: optStr,
+  link: optStr,
+  receivedAt: optDt,
+  seenAt: optDt,
+  createdAt: dt,
+});
+
 const Note = z.object({
   id,
   jobId: id,
@@ -362,7 +376,7 @@ const UserSettings = z.object({
   updatedAt: dt,
 });
 
-const group = <T extends z.ZodTypeAny>(schema: T) =>
+const group = <T extends z.ZodType>(schema: T) =>
   z.array(schema).default([]);
 
 export const BackupDataSchema = z.object({
@@ -387,6 +401,7 @@ export const BackupDataSchema = z.object({
   CoverLetter: group(CoverLetter),
   Automation: group(Automation),
   Job: group(Job),
+  JobEmail: group(JobEmail),
   Note: group(Note),
   Contact: group(Contact),
   JobContact: group(JobContact),

@@ -44,7 +44,7 @@ pipeline {
                         docker run -d --name ${CI_CONTAINER} \
                             -v "$PWD":/app -w /app \
                             -v ${NPM_CACHE_DIR}:/root/.npm \
-                            node:20.20.2-alpine tail -f /dev/null
+                            node:24.22.2-alpine tail -f /dev/null
 
                         docker exec ${CI_CONTAINER} sh -c '
                             set -e
@@ -94,9 +94,30 @@ pipeline {
             }
         }
 
+        stage('Integration Tests') {
+            steps {
+                dir("${APP_DIR}") {
+                    sh '''
+                        set -e
+
+                        docker exec ${CI_CONTAINER} node --env-file-if-exists=.env -e '
+                            if (!process.env.BACKUP_TEST_DATABASE_URL) {
+                                throw new Error("Set BACKUP_TEST_DATABASE_URL in the homelab .env");
+                            }
+                        '
+                        docker exec ${CI_CONTAINER} npm run test:integration -- --maxWorkers=2
+                    '''
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 dir("${APP_DIR}") {
+                    // Empty on a first build; the tag moves once the build finishes
+                    script {
+                        env.OLD_IMAGE_ID = sh(returnStdout: true, script: 'docker image inspect -f "{{.Id}}" ${IMAGE} 2>/dev/null || true').trim()
+                    }
                     sh '''
                         set -e
 
@@ -114,12 +135,18 @@ pipeline {
                     sh '''
                         set -e
 
-                        docker compose \
-                            -f docker-compose.yml \
-                            -f docker-compose.otel.yml \
-                            up -d \
-                            --force-recreate \
-                            --remove-orphans
+                        # An explicit -f overrides COMPOSE_FILE, so pass none
+                        # when .env already names the files.
+                        if grep -qE '^[[:space:]]*COMPOSE_FILE=' .env 2>/dev/null; then
+                            docker compose up -d --force-recreate --remove-orphans
+                        else
+                            docker compose \
+                                -f docker-compose.yml \
+                                -f docker-compose.otel.yml \
+                                up -d \
+                                --force-recreate \
+                                --remove-orphans
+                        fi
                     '''
                 }
             }
@@ -143,6 +170,23 @@ pipeline {
                         done
                     '''
                 }
+            }
+        }
+
+        stage('Remove Old Image') {
+            steps {
+                sh '''
+                    set -e
+
+                    NEW_IMAGE_ID=$(docker image inspect -f '{{.Id}}' ${IMAGE})
+                    if [ -z "${OLD_IMAGE_ID}" ] || [ "${OLD_IMAGE_ID}" = "$NEW_IMAGE_ID" ]; then
+                        echo "No old image to remove."
+                        exit 0
+                    fi
+
+                    # No -f: an image a container still uses is refused, not forced
+                    docker rmi "${OLD_IMAGE_ID}" || echo "Old image still in use; left in place."
+                '''
             }
         }
 

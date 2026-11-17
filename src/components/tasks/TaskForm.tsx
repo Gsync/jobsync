@@ -12,7 +12,7 @@ import { createTask, updateTask } from "@/actions/task.actions";
 import { format } from "date-fns";
 import { Loader, PlusCircle } from "lucide-react";
 import { Button } from "../ui/button";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useEffect, useTransition } from "react";
 import { AddTaskFormSchema } from "@/models/addTaskForm.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -74,10 +74,12 @@ export function TaskForm({
     },
   });
 
-  const { reset, watch } = form;
+  const { reset } = form;
 
-  const priorityValue = watch("priority");
-  const percentCompleteValue = watch("percentComplete");
+  const [priorityValue, percentCompleteValue] = useWatch({
+    control: form.control,
+    name: ["priority", "percentComplete"],
+  });
 
   useEffect(() => {
     if (editTask) {

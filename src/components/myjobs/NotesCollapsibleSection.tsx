@@ -34,16 +34,20 @@ export function NotesCollapsibleSection({
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const applyNotes = useCallback(
+    (result: Awaited<ReturnType<typeof getNotesByJobId>>) => {
+      if (result.success) setNotes(result.data);
+    },
+    [],
+  );
+
   const loadNotes = useCallback(async () => {
-    const result = await getNotesByJobId(jobId);
-    if (result.success) {
-      setNotes(result.data);
-    }
-  }, [jobId]);
+    applyNotes(await getNotesByJobId(jobId));
+  }, [jobId, applyNotes]);
 
   useEffect(() => {
-    loadNotes();
-  }, [loadNotes]);
+    getNotesByJobId(jobId).then(applyNotes);
+  }, [jobId, applyNotes]);
 
   const handleAddNote = () => {
     setEditingNote(null);

@@ -12,10 +12,10 @@ export const AddActivityFormSchema = z
         error: "Activity name is required.",
       })
       .min(2, {
-        message: "Activity name must be at least 2 characters.",
+        error: "Activity name must be at least 2 characters.",
       }),
     activityType: z.string().min(1, {
-      message: "Activity type is required.",
+      error: "Activity type is required.",
     }),
     startDate: z.date(),
     startTime: z
@@ -39,7 +39,7 @@ export const AddActivityFormSchema = z
     description: z
       .string()
       .max(1000, {
-        message: "Description cannot be more than 1000 characters.",
+        error: "Description cannot be more than 1000 characters.",
       })
       .optional(),
   })
@@ -51,7 +51,7 @@ export const AddActivityFormSchema = z
       return startOfDay(data.endDate) >= startOfDay(data.startDate);
     },
     {
-      message: "End date must be the same as or after the start date",
+      error: "End date must be the same as or after the start date",
       path: ["endDate"], // Target the error message to `endDate`
     }
   )
@@ -67,7 +67,7 @@ export const AddActivityFormSchema = z
       return endDateTime > startDateTime; // Valid only if endDateTime is after startDateTime
     },
     {
-      message: "End time must be after the start time",
+      error: "End time must be after the start time",
       path: ["endTime"],
     }
   )
@@ -82,7 +82,7 @@ export const AddActivityFormSchema = z
       return durationInMinutes <= APP_CONSTANTS.ACTIVITY_MAX_DURATION_MINUTES; // Ensure duration is within max duration allowed
     },
     {
-      message: `The duration between start and end date/time cannot exceed ${
+      error: `The duration between start and end date/time cannot exceed ${
         APP_CONSTANTS.ACTIVITY_MAX_DURATION_MINUTES / 60
       } hours`,
       path: ["endTime"],
@@ -100,14 +100,14 @@ export const AddActivityFormSchema = z
       return durationInMinutes >= APP_CONSTANTS.ACTIVITY_MIN_DURATION_MINUTES;
     },
     {
-      message: `An activity must be at least ${APP_CONSTANTS.ACTIVITY_MIN_DURATION_MINUTES} minutes long`,
+      error: `An activity must be at least ${APP_CONSTANTS.ACTIVITY_MIN_DURATION_MINUTES} minutes long`,
       path: ["endTime"],
     }
   )
   .refine(
     (data) => combineDateAndTime(data.startDate, data.startTime) <= new Date(),
     {
-      message: "Start date/time cannot be in the future",
+      error: "Start date/time cannot be in the future",
       path: ["startTime"],
     }
   );

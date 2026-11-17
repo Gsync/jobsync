@@ -26,17 +26,23 @@ export function NotesSection({
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [noteIdToDelete, setNoteIdToDelete] = useState("");
 
+  const applyNotes = useCallback(
+    (result: Awaited<ReturnType<typeof getNotesByJobId>>) => {
+      if (result.success) {
+        setNotes(result.data);
+        onCountChange?.(result.data.length);
+      }
+    },
+    [onCountChange],
+  );
+
   const loadNotes = useCallback(async () => {
-    const result = await getNotesByJobId(jobId);
-    if (result.success) {
-      setNotes(result.data);
-      onCountChange?.(result.data.length);
-    }
-  }, [jobId, onCountChange]);
+    applyNotes(await getNotesByJobId(jobId));
+  }, [jobId, applyNotes]);
 
   useEffect(() => {
-    loadNotes();
-  }, [loadNotes]);
+    getNotesByJobId(jobId).then(applyNotes);
+  }, [jobId, applyNotes]);
 
   const handleEdit = (note: NoteResponse) => {
     setEditNote(note);

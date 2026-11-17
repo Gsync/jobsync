@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { Loader } from "lucide-react";
@@ -114,11 +114,14 @@ export function AddStageDialog({
     });
   }, [open, stage, jobId, reset]);
 
-  const customLabel = form.watch("customLabel");
+  const [customLabel, customStatusId, stageTypeId] = useWatch({
+    control: form.control,
+    name: ["customLabel", "customStatusId", "stageTypeId"],
+  });
   const isCustom = !!customLabel?.trim();
   const statusValue = isCustom
-    ? jobStatuses.find((s) => s.id === form.watch("customStatusId"))?.value
-    : stageTypes.find((t) => t.id === form.watch("stageTypeId"))?.Status?.value;
+    ? jobStatuses.find((s) => s.id === customStatusId)?.value
+    : stageTypes.find((t) => t.id === stageTypeId)?.Status?.value;
   const showInterviewFields = statusValue === "interview";
 
   // Nothing demotes a stage: stageDataFrom never writes isCurrent, so an

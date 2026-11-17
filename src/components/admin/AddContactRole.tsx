@@ -28,8 +28,8 @@ import { createContactRole } from "@/actions/contactRole.actions";
 const AddContactRoleFormSchema = z.object({
   label: z
     .string({ error: "Role name is required." })
-    .min(1, { message: "Role name cannot be empty." })
-    .max(60, { message: "Role name must be 60 characters or fewer." }),
+    .min(1, { error: "Role name cannot be empty." })
+    .max(60, { error: "Role name must be 60 characters or fewer." }),
 });
 
 type AddContactRoleProps = {

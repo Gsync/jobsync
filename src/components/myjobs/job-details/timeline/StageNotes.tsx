@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toastActionResult } from "@/lib/toast";
@@ -17,9 +17,12 @@ export function StageNotes({ stage, onChanged }: StageNotesProps) {
 
   // Selecting another stage in the history list re-renders this component
   // with a different stage, so the draft has to follow the id, not mount.
-  useEffect(() => {
+  const draftKey = `${stage.id}\0${stage.notes}`;
+  const [prevDraftKey, setPrevDraftKey] = useState(draftKey);
+  if (draftKey !== prevDraftKey) {
+    setPrevDraftKey(draftKey);
     setDraft(stage.notes ?? "");
-  }, [stage.id, stage.notes]);
+  }
 
   const dirty = draft !== (stage.notes ?? "");
 

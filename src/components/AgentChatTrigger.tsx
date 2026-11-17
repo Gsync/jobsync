@@ -11,7 +11,7 @@ export function AgentChatTrigger() {
     <Button
       variant="outline"
       className="relative"
-      aria-label={isOpen ? "Close assistant" : "Open assistant"}
+      aria-label={isOpen ? "Close assistant" : undefined}
       onClick={() => (isOpen ? close() : open())}
     >
       {isOpen ? (

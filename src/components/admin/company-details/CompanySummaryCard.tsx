@@ -18,7 +18,7 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
   return (
     <div>
       <p className="text-sm text-muted-foreground">{label}</p>
-      <div className="mt-1 font-medium">{children}</div>
+      <div className="mt-1 text-sm font-medium">{children}</div>
     </div>
   );
 }
@@ -85,7 +85,7 @@ export function CompanySummaryCard({
         {company.notes && (
           <div className="mt-4 border-t pt-4" data-testid="company-notes">
             <p className="text-sm text-muted-foreground">Notes</p>
-            <p className="mt-1 whitespace-pre-wrap">{company.notes}</p>
+            <p className="mt-1 text-sm whitespace-pre-wrap">{company.notes}</p>
           </div>
         )}
       </CardContent>

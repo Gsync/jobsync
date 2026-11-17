@@ -34,6 +34,9 @@ type LinkInterviewersDialogProps = {
 
 const EMPTY_NEW = { name: "", title: "", email: "" };
 
+const interviewerIds = (stage: JobStage | null) =>
+  (stage?.interviewers ?? []).map((iv) => iv.contactId);
+
 // createContact parses the whole contact form; the untouched optional fields
 // arrive as "" and toContactData normalises them to null.
 const contactPayload = (fields: typeof EMPTY_NEW) => ({
@@ -59,7 +62,9 @@ export function LinkInterviewersDialog({
 }: LinkInterviewersDialogProps) {
   const [contacts, setContacts] = useState<ContactRow[]>([]);
   const [search, setSearch] = useState("");
-  const [linkedIds, setLinkedIds] = useState<string[]>([]);
+  const [linkedIds, setLinkedIds] = useState<string[]>(() =>
+    interviewerIds(stage),
+  );
   const [linkedCount, setLinkedCount] = useState(0);
   const [newContact, setNewContact] = useState(EMPTY_NEW);
   const [isPending, startTransition] = useTransition();
@@ -77,18 +82,24 @@ export function LinkInterviewersDialog({
 
   // Transient state only, keyed on stage?.id: a link reloads the stages and
   // hands back a new object, which would wipe the search and the draft.
-  useEffect(() => {
-    if (!open) return;
-    setSearch("");
-    setLinkedCount(0);
-    setNewContact(EMPTY_NEW);
-  }, [open, stage?.id]);
+  const transientKey = `${open}\0${stage?.id}`;
+  const [prevTransientKey, setPrevTransientKey] = useState<string | null>(null);
+  if (transientKey !== prevTransientKey) {
+    setPrevTransientKey(transientKey);
+    if (open) {
+      setSearch("");
+      setLinkedCount(0);
+      setNewContact(EMPTY_NEW);
+    }
+  }
 
   // Re-seeded on every reload, so a link that failed server-side corrects
   // itself rather than reading as linked until the page reloads.
-  useEffect(() => {
-    setLinkedIds((stage?.interviewers ?? []).map((iv) => iv.contactId));
-  }, [stage]);
+  const [prevStage, setPrevStage] = useState(stage);
+  if (stage !== prevStage) {
+    setPrevStage(stage);
+    setLinkedIds(interviewerIds(stage));
+  }
 
   if (!stage) return null;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { ResponsiveCardHeader } from "@/components/ResponsiveCardHeader";
@@ -31,37 +31,44 @@ export function AutomationContainer({ resumes }: AutomationContainerProps) {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [editAutomation, setEditAutomation] =
     useState<AutomationWithResume | null>(null);
-  const autoOpenHandled = useRef(false);
+  const [deepLinkHandled, setDeepLinkHandled] = useState(false);
+
+  const applyAutomations = useCallback(
+    (result: Awaited<ReturnType<typeof getAutomationsList>>) => {
+      if (result.success && result.data) {
+        setAutomations(result.data);
+      } else {
+        toastError(result.message || "Failed to load automations");
+      }
+      setLoading(false);
+    },
+    [],
+  );
 
   const loadAutomations = useCallback(async () => {
     setLoading(true);
-    const result = await getAutomationsList();
+    applyAutomations(await getAutomationsList());
+  }, [applyAutomations]);
 
-    if (result.success && result.data) {
-      setAutomations(result.data);
-    } else {
-      toastError(result.message || "Failed to load automations");
-    }
-    setLoading(false);
-  }, []);
-
+  // loading starts true, so the mount load needs no setState of its own.
   useEffect(() => {
-    loadAutomations();
-  }, [loadAutomations]);
+    getAutomationsList().then(applyAutomations);
+  }, [applyAutomations]);
 
+  const deepLinked = searchParams.get("add-automation") === "true";
+  if (deepLinked && !deepLinkHandled) {
+    setDeepLinkHandled(true);
+    setWizardOpen(true);
+  }
   useEffect(() => {
-    if (autoOpenHandled.current) return;
-    if (searchParams.get("add-automation") === "true") {
-      autoOpenHandled.current = true;
-      setWizardOpen(true);
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("add-automation");
-      const newPath = params.toString()
-        ? `?${params.toString()}`
-        : window.location.pathname;
-      router.replace(newPath);
-    }
-  }, [router, searchParams]);
+    if (!deepLinked) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("add-automation");
+    const newPath = params.toString()
+      ? `?${params.toString()}`
+      : window.location.pathname;
+    router.replace(newPath);
+  }, [deepLinked, router, searchParams]);
 
   const handleEdit = (automation: AutomationWithResume) => {
     setEditAutomation(automation);
@@ -85,7 +92,7 @@ export function AutomationContainer({ resumes }: AutomationContainerProps) {
         <ResponsiveCardHeader>
           <CardTitle>Automations</CardTitle>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="icon" onClick={loadAutomations}>
+            <Button variant="outline" size="icon" onClick={loadAutomations} aria-label="Refresh">
               <RefreshCw className="h-4 w-4" />
             </Button>
             <Button variant="outline" onClick={() => setWizardOpen(true)}>

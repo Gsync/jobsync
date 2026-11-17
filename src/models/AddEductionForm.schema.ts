@@ -1,3 +1,4 @@
+import { startOfDay } from "date-fns";
 import { z } from "zod";
 
 export const AddEducationFormSchema = z.object({
@@ -26,10 +27,19 @@ export const AddEducationFormSchema = z.object({
       error: "Location is required.",
     })
     .min(2, {
-      message: "Location name must be at least 2 characters.",
+      error: "Location name must be at least 2 characters.",
     }),
   description: z.string().nullable().optional(),
   startDate: z.date(),
   endDate: z.date().nullable().optional(),
   degreeCompleted: z.boolean().default(true).optional(),
-});
+}).refine(
+  (data) => {
+    if (data.degreeCompleted === false || !data.endDate) return true;
+    return startOfDay(data.endDate) >= startOfDay(data.startDate);
+  },
+  {
+    error: "End date must be on or after the start date",
+    path: ["endDate"],
+  },
+);

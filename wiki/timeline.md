@@ -39,7 +39,7 @@ Deleting the **current** stage makes the furthest-along dated stage current, and
 
 The current stage sets the job's status: whatever parent status that stage's type carries becomes the job's status, everywhere the job is shown. Adding a stage with **Set as current stage** ticked moves the status; ticking the box on an older stage moves it back.
 
-It works the other way round too. Changing the status from **Update Status → Change status**, from a row's status badge or **⋮ → Change status** in the Jobs list, or from the Status field in the **Edit Job** dialog appends a new stage for that status and makes it current — so a status change never leaves the timeline behind. The appended stage is dated the moment you made the change; open it from the Timeline tab and edit the date if the step actually happened earlier.
+It works the other way round too. Changing the status from **Update Status → Change status**, from a row's status badge or **⋮ → Change status** in the Jobs list, or from the Status field in the **Edit Job** dialog appends a new stage for that status and makes it current — so a status change never leaves the timeline behind. The appended stage is dated the moment you made the change — an **Applied** stage takes the form's Date Applied instead — so edit it from the Timeline tab if the step happened earlier.
 
 Re-picking a status the job already holds does nothing at all. If the current stage is *2nd Technical Interview* and you pick **Interview** from a dropdown, you already are at Interview, so no second stage is added.
 

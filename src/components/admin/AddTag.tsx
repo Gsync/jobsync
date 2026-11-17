@@ -28,8 +28,8 @@ import { createTag } from "@/actions/tag.actions";
 const AddTagFormSchema = z.object({
   label: z
     .string({ error: "Skill label is required." })
-    .min(1, { message: "Skill label cannot be empty." })
-    .max(60, { message: "Skill label must be 60 characters or fewer." }),
+    .min(1, { error: "Skill label cannot be empty." })
+    .max(60, { error: "Skill label must be 60 characters or fewer." }),
 });
 
 type AddTagProps = {

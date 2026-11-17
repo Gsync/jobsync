@@ -25,7 +25,7 @@ export async function getAutomationsList(
         where: { userId: user.id },
         skip,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         include: {
           resume: {
             select: { id: true, title: true },

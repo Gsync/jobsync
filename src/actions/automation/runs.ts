@@ -37,7 +37,7 @@ export async function getAutomationRuns(
         where: { automationId },
         skip,
         take: limit,
-        orderBy: { startedAt: "desc" },
+        orderBy: [{ startedAt: "desc" }, { id: "desc" }],
       }),
       db.automationRun.count({ where: { automationId } }),
     ]);

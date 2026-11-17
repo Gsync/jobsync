@@ -94,14 +94,20 @@ export function AutomationDetailContainer({
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  // Deep link from a board-unreachable notification.
+  // Deep link from a board-unreachable notification; a fresh ?edit=1 while
+  // already on the page reopens it.
+  const editLinked = searchParams.get("edit") === "1" && !!automation;
+  const [prevEditLinked, setPrevEditLinked] = useState(false);
+  if (editLinked !== prevEditLinked) {
+    setPrevEditLinked(editLinked);
+    if (editLinked) setWizardOpen(true);
+  }
   useEffect(() => {
-    if (searchParams.get("edit") !== "1" || !automation) return;
-    setWizardOpen(true);
+    if (!editLinked) return;
     const params = new URLSearchParams(searchParams.toString());
     params.delete("edit");
     router.replace(params.size ? `${pathname}?${params}` : pathname);
-  }, [searchParams, automation, router, pathname]);
+  }, [editLinked, searchParams, router, pathname]);
 
   if (loading) {
     return (

@@ -9,7 +9,7 @@
  */
 
 // Error classes
-export { AIUnavailableError } from "./errors";
+export { AIUnavailableError, MissingCredentialError } from "./errors";
 
 // Shared text processing utilities
 export {

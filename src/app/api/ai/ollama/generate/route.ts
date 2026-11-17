@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
-import { getOllamaApiKey, getOllamaBaseUrl } from "@/actions/apiKey.actions";
+import { getOllamaBaseUrl } from "@/actions/apiKey.actions";
+import { resolveOllamaApiKey } from "@/lib/api-key-resolver";
 import { NextResponse } from "next/server";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { log } from "@/lib/telemetry";
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const baseUrl = await getOllamaBaseUrl();
-    const apiKey = await getOllamaApiKey();
+    const apiKey = await resolveOllamaApiKey();
     const response = await fetch(`${baseUrl}/api/generate`, {
       method: "POST",
       headers: {

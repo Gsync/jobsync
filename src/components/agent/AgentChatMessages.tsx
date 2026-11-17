@@ -210,7 +210,7 @@ export function AgentChatMessages() {
 
         {thinking && <AgentStatusRow label="Thinking…" />}
       </ConversationContent>
-      <ConversationScrollButton />
+      <ConversationScrollButton aria-label="Scroll to bottom" />
     </Conversation>
   );
 }

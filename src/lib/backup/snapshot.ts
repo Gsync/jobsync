@@ -86,10 +86,11 @@ export async function readSnapshot(
 }
 
 // Prunes on count and on total bytes. The count alone is not a disk bound:
-// nothing caps how large one snapshot is, these sit on the same volume as the
-// SQLite database, and an import/rollback loop writes one every time. The
-// newest is always kept, even if it alone exceeds the byte budget — dropping
-// the only record of the state a user just left is worse than overshooting.
+// nothing caps how large one snapshot is, these sit on the /data bind mount
+// alongside uploaded resumes, and an import/rollback loop writes one every
+// time. The newest is always kept, even if it alone exceeds the byte budget —
+// dropping the only record of the state a user just left is worse than
+// overshooting.
 export async function pruneSnapshots(
   userId: string,
   keep: number,

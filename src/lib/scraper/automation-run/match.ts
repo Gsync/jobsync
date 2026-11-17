@@ -87,7 +87,7 @@ ${removeHtmlTags(job.description)}
         try {
           generated = await generateText({
             model,
-            system: AUTOMATION_JOB_MATCH_SYSTEM_PROMPT,
+            instructions: AUTOMATION_JOB_MATCH_SYSTEM_PROMPT,
             prompt: promptText,
             temperature: 0.3,
             abortSignal: signal,
@@ -97,12 +97,12 @@ ${removeHtmlTags(job.description)}
           throw error;
         }
         void tracker.finish({
-          usage: generated.totalUsage,
+          usage: generated.usage,
           finishReason: generated.finishReason,
         });
         span.setAttrs(
           genAiResponseAttrs({
-            usage: generated.totalUsage,
+            usage: generated.usage,
             finishReason: generated.finishReason,
             text: generated.text,
           }),

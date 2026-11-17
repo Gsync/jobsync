@@ -13,6 +13,7 @@ export const getAllJobTitles = async (): Promise<any | undefined> => {
       where: {
         createdBy: user?.id,
       },
+      orderBy: [{ label: "asc" }, { id: "asc" }],
     });
     return list;
   } catch (error) {
@@ -76,6 +77,7 @@ export const deleteJobTitleById = async (
     const experiences = await prisma.workExperience.count({
       where: {
         jobTitleId,
+        ResumeSection: { Resume: { profile: { userId: user.id } } },
       },
     });
     if (experiences > 0) {

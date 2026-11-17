@@ -5,5 +5,5 @@ export const NoteFormSchema = z.object({
   jobId: z.string({ error: "Job ID is required." }),
   content: z
     .string({ error: "Content is required." })
-    .min(1, { message: "Content cannot be empty." }),
+    .min(1, { error: "Content cannot be empty." }),
 });

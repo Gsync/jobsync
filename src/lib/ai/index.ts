@@ -19,7 +19,7 @@ export {
 } from "./prompts";
 
 // Analysis tools
-export { AIUnavailableError } from "./tools";
+export { AIUnavailableError, MissingCredentialError } from "./tools";
 
 // Resume preprocessing
 export {

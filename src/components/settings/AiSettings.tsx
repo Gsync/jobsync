@@ -86,27 +86,35 @@ function AiSettings() {
     }
   };
 
+  // The synchronous half of a provider switch: what shows before any reply.
+  const startProvider = (provider: AiProvider) => {
+    const entry = PROVIDER_REGISTRY[provider];
+    if (!entry) return;
+
+    if (!entry.modelsEndpoint) {
+      const fallbackModels = getFallbackModels(provider);
+      setFetchedModels(fallbackModels);
+      setSelectedModel((prev) =>
+        prev.model && !fallbackModels.includes(prev.model)
+          ? { ...prev, model: undefined }
+          : prev,
+      );
+      return;
+    }
+
+    setIsLoadingModels(true);
+    setFetchError("");
+    setConnectionError("");
+  };
+
+  // The asynchronous half; returns a cancel for the effect cleanup.
   const fetchModelsForProvider = useCallback(
     (provider: AiProvider) => {
       const entry = PROVIDER_REGISTRY[provider];
-      if (!entry) return () => {};
-
-      if (!entry.modelsEndpoint) {
-        const fallbackModels = getFallbackModels(provider);
-        setFetchedModels(fallbackModels);
-        setSelectedModel((prev) =>
-          prev.model && !fallbackModels.includes(prev.model)
-            ? { ...prev, model: undefined }
-            : prev,
-        );
-        return () => {};
-      }
+      if (!entry?.modelsEndpoint) return () => {};
 
       const fallback = getFallbackModels(provider);
       let cancelled = false;
-      setIsLoadingModels(true);
-      setFetchError("");
-      setConnectionError("");
 
       (async () => {
         try {
@@ -164,12 +172,20 @@ function AiSettings() {
     [],
   );
 
+  const activeProvider = isInitialized ? selectedModel.provider : null;
+  const [prevActiveProvider, setPrevActiveProvider] = useState(activeProvider);
+  if (activeProvider !== prevActiveProvider) {
+    setPrevActiveProvider(activeProvider);
+    if (activeProvider) startProvider(activeProvider);
+  }
+
   useEffect(() => {
-    if (!isInitialized) return;
-    return fetchModelsForProvider(selectedModel.provider);
-  }, [selectedModel.provider, isInitialized, fetchModelsForProvider]);
+    if (!activeProvider) return;
+    return fetchModelsForProvider(activeProvider);
+  }, [activeProvider, fetchModelsForProvider]);
 
   const retryConnection = () => {
+    startProvider(selectedModel.provider);
     fetchModelsForProvider(selectedModel.provider);
   };
 

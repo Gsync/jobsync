@@ -60,57 +60,92 @@ export function useAutomationDetailData(automationId: string) {
     [automationId],
   );
 
+  const fetchDetail = useCallback(
+    () =>
+      Promise.all([
+        getAutomationById(automationId),
+        getAutomationRuns(automationId, {
+          page: 1,
+          limit: APP_CONSTANTS.RECORDS_PER_PAGE,
+        }),
+        fetchJobs(statusFilterRef.current),
+      ]),
+    [automationId, fetchJobs],
+  );
+
+  // False when the automation is gone and the page is navigating away; the
+  // spinner is left as it was, as before the fetch/apply split.
+  const applyDetail = useCallback(
+    ([automationResult, runsResult, jobsResult]: Awaited<
+      ReturnType<typeof fetchDetail>
+    >): boolean => {
+      if (automationResult.success && automationResult.data) {
+        setAutomation(automationResult.data);
+        setRuns(automationResult.data.runs || []);
+      } else {
+        toastError(automationResult.message || "Automation not found");
+        router.push("/dashboard/automations");
+        return false;
+      }
+
+      if (runsResult.success && runsResult.data) {
+        setRuns(runsResult.data);
+        setTotalRuns(runsResult.total ?? 0);
+        setRunsPage(1);
+      }
+
+      if (jobsResult.success && jobsResult.data) {
+        setJobs(jobsResult.data);
+        setTotalJobs(jobsResult.total ?? 0);
+        setJobsPage(1);
+        if (jobsResult.statusCounts) {
+          setJobStatusCounts(jobsResult.statusCounts);
+        }
+      }
+      return true;
+    },
+    [router],
+  );
+
+  const failDetail = useCallback(() => {
+    toastError("Failed to load automation details");
+  }, []);
+
   const loadData = useCallback(
     async (showLoading = false) => {
       if (showLoading) setLoading(true);
+      let found = true;
       try {
-        const [automationResult, runsResult, jobsResult] = await Promise.all([
-          getAutomationById(automationId),
-          getAutomationRuns(automationId, {
-            page: 1,
-            limit: APP_CONSTANTS.RECORDS_PER_PAGE,
-          }),
-          fetchJobs(statusFilterRef.current),
-        ]);
-
-        if (automationResult.success && automationResult.data) {
-          setAutomation(automationResult.data);
-          setRuns(automationResult.data.runs || []);
-        } else {
-          toastError(automationResult.message || "Automation not found");
-          router.push("/dashboard/automations");
-          return;
-        }
-
-        if (runsResult.success && runsResult.data) {
-          setRuns(runsResult.data);
-          setTotalRuns(runsResult.total ?? 0);
-          setRunsPage(1);
-        }
-
-        if (jobsResult.success && jobsResult.data) {
-          setJobs(jobsResult.data);
-          setTotalJobs(jobsResult.total ?? 0);
-          setJobsPage(1);
-          if (jobsResult.statusCounts) {
-            setJobStatusCounts(jobsResult.statusCounts);
-          }
-        }
-      } catch (error) {
-        toastError("Failed to load automation details");
+        found = applyDetail(await fetchDetail());
+      } catch {
+        failDetail();
       }
-      if (showLoading) setLoading(false);
+      if (showLoading && found) setLoading(false);
     },
-    [automationId, router, fetchJobs],
+    [fetchDetail, applyDetail, failDetail],
   );
 
+  // Only the initial load shows the full-page spinner. Background refreshes
+  // (run watcher, pause/resume, deletes) must not unmount the page — doing so
+  // remounts LogsTab while runKey is still > 0, which re-initializes its badge
+  // to "Running" and then rejects the completed SSE snapshot.
+  // `loading` starts true; another automation re-raises it here.
+  const [prevAutomationId, setPrevAutomationId] = useState(automationId);
+  if (automationId !== prevAutomationId) {
+    setPrevAutomationId(automationId);
+    setLoading(true);
+  }
+
   useEffect(() => {
-    // Only the initial load shows the full-page spinner. Background refreshes
-    // (run watcher, pause/resume, deletes) must not unmount the page — doing so
-    // remounts LogsTab while runKey is still > 0, which re-initializes its badge
-    // to "Running" and then rejects the completed SSE snapshot.
-    loadData(true);
-  }, [loadData]);
+    fetchDetail()
+      .then(applyDetail, () => {
+        failDetail();
+        return true;
+      })
+      .then((found) => {
+        if (found) setLoading(false);
+      });
+  }, [fetchDetail, applyDetail, failDetail]);
 
   const refreshJobs = useCallback(async () => {
     const jobsResult = await fetchJobs(statusFilter);

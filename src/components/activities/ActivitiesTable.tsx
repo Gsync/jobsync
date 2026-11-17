@@ -68,9 +68,7 @@ function ActivitiesTable({
             <TableHead className="hidden md:table-cell">Date</TableHead>
             <TableHead>Activity</TableHead>
             <TableHead className="whitespace-nowrap">
-              Project
-              <br />
-              (Activity Type)
+              Type (Project)
             </TableHead>
             <TableHead className="hidden md:table-cell whitespace-nowrap">
               Start Time

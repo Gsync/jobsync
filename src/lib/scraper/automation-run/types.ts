@@ -1,5 +1,5 @@
 import type { AutomationRunStatus } from "@/models/automation.model";
-import type { Resume as PrismaResume } from "@prisma/client";
+import type { Resume as PrismaResume } from "@/generated/prisma/client";
 
 export interface BoardFailure {
   token: string;

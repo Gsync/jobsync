@@ -39,7 +39,8 @@ export function statusOf(input: AiCallFinish): AiCallStatus {
     case "content-filter":
       return "error";
     default:
-      // "other" / missing: Ollama's body ended without its done chunk.
+      // "other" (Ollama) / "interrupted" (DeepSeek, OpenAI) / missing: the
+      // body ended without its done chunk.
       return "interrupted";
   }
 }

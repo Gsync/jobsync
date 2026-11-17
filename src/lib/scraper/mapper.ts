@@ -3,6 +3,7 @@ import { addDays } from "date-fns";
 import db from "@/lib/db";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { capitalize } from "@/lib/utils";
+import { sanitizeString } from "@/lib/postgresText";
 import {
   resolveCompany,
   resolveJobTitle,
@@ -99,7 +100,7 @@ export async function mapScrapedJobToJobRecord(
     userId,
     automationId,
     jobUrl: scrapedJob.sourceUrl,
-    description: scrapedJob.description,
+    description: sanitizeString(scrapedJob.description),
     jobType: normalizeJobType(scrapedJob.employmentType),
     workplaceType:
       scrapedJob.workplaceType ?? normalizeWorkplaceType(scrapedJob.isRemote),

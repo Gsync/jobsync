@@ -23,6 +23,7 @@ export type BackupModel =
   | "CoverLetter"
   | "Automation"
   | "Job"
+  | "JobEmail"
   | "Note"
   | "Contact"
   | "ContactRole"
@@ -68,9 +69,21 @@ export const MODEL_SPECS: Record<BackupModel, ModelSpec> = {
 
   Profile: { delegate: "profile", owner: "userId", fks: {}, scope: byUser },
 
-  // File holds no foreign key — Resume.FileId points at it — so it is scoped
-  // through the back-relation, matching deleteFile in profile.actions.ts.
-  File: { delegate: "file", fks: {}, scope: byResume },
+  // A File belongs to a resume, a job (attachment), or neither yet. Both
+  // chains are scoped: an attachment is owned through the job that holds it.
+  // jobId is deliberately absent from fks: Resume.FileId forces File before
+  // Resume, and Resume before Job, so the link is written as a deferred update
+  // in insertRows once the Job rows exist.
+  File: {
+    delegate: "file",
+    fks: {},
+    scope: (userId) => ({
+      OR: [
+        { Resume: { profile: { userId } } },
+        { Job: { userId } },
+      ],
+    }),
+  },
 
   Resume: {
     delegate: "resume",
@@ -140,6 +153,13 @@ export const MODEL_SPECS: Record<BackupModel, ModelSpec> = {
       automationId: "Automation",
     },
     scope: byUser,
+  },
+  // JobEmail is an email trail attached to a job, so it is scoped through it
+  // exactly like Note.
+  JobEmail: {
+    delegate: "jobEmail",
+    fks: { jobId: "Job" },
+    scope: (userId) => ({ Job: { userId } }),
   },
   Note: { delegate: "note", owner: "userId", fks: { jobId: "Job" }, scope: byUser },
   Contact: {
@@ -236,6 +256,7 @@ export const INSERT_ORDER: BackupModel[] = [
   "CoverLetter",
   "Automation",
   "Job",
+  "JobEmail",
   "Note",
   "Contact",
   "JobContact",

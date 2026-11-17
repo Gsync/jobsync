@@ -34,7 +34,7 @@ export default async function RootLayout({
     await signOut({ redirectTo: "/signin" });
   };
 
-  // The session outlived the database it was minted against: middleware still
+  // The session outlived the database it was minted against: the proxy still
   // passes the signed cookie, but the user row is gone and every scoped query
   // would read as empty rather than unauthorized.
   if (!user) {

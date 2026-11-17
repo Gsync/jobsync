@@ -1,7 +1,7 @@
 "use client";
 import { FileDown, Loader } from "lucide-react";
 import { Button } from "../ui/button";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { CoverLetterFormSchema } from "@/models/coverLetterForm.schema";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -74,10 +74,12 @@ function CreateCoverLetter({
 
   const closeDialog = () => setDialogOpen(false);
 
-  const watchedTitle = form.watch("title");
-  const watchedContent = form.watch("content");
+  const [watchedTitle, watchedContent] = useWatch({
+    control: form.control,
+    name: ["title", "content"],
+  });
 
-  // Memoized: watch() re-renders this component on every keystroke, and the
+  // Memoized: useWatch re-renders this component on every keystroke, and the
   // guard parses the whole letter.
   const canExport = useMemo(
     () => canExportCoverLetter(watchedContent),

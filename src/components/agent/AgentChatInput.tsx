@@ -253,13 +253,21 @@ export function AgentChatInput() {
 
   // Clearing the conversation clears the composer with it. The textarea empties
   // by remounting on the same nonce below — nothing else resets it.
+  const [prevNonce, setPrevNonce] = useState(composerNonce);
+  if (composerNonce !== prevNonce) {
+    setPrevNonce(composerNonce);
+    if (composerNonce) {
+      setText("");
+      setChip(undefined);
+      setHistory([]);
+      setHistoryIndex(null);
+    }
+  }
+
+  // Clearing the conversation also clears the parked draft. Kept out of the
+  // render-phase reset above because refs cannot be written during render.
   useEffect(() => {
-    if (!composerNonce) return;
-    setText("");
-    setChip(undefined);
-    setHistory([]);
-    setHistoryIndex(null);
-    draftRef.current = { text: "" };
+    if (composerNonce) draftRef.current = { text: "" };
   }, [composerNonce]);
 
   const onStop = useCallback(() => {

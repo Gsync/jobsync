@@ -7,6 +7,10 @@ export const TipTapContentViewer = ({ content }: { content: string }) => {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
+        // StarterKit 3 additions; off to keep v2 output (links stay inert)
+        link: false,
+        underline: false,
+        trailingNode: false,
         heading: {
           HTMLAttributes: {
             class: "text-xl",

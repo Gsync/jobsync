@@ -62,6 +62,24 @@ export function QuestionForm({
 
   const { reset } = form;
 
+  // Merge the question's own tags into the local pool so they're
+  // selectable/visible even if they aren't in the availableTags prop yet
+  // (e.g. just created in the Add dialog earlier in this page session).
+  const [prevEditQuestion, setPrevEditQuestion] = useState<
+    Question | null | undefined
+  >(null);
+  if (editQuestion !== prevEditQuestion) {
+    setPrevEditQuestion(editQuestion);
+    const ownTags = editQuestion?.tags ?? [];
+    if (ownTags.length > 0) {
+      setLocalAvailableTags((prev) => {
+        const existing = new Set(prev.map((t) => t.id));
+        const incoming = ownTags.filter((t) => !existing.has(t.id));
+        return incoming.length > 0 ? [...prev, ...incoming] : prev;
+      });
+    }
+  }
+
   useEffect(() => {
     if (editQuestion) {
       reset({
@@ -70,18 +88,6 @@ export function QuestionForm({
         answer: editQuestion.answer || "",
         tagIds: editQuestion.tags?.map((t) => t.id) || [],
       });
-      // Merge the question's own tags into the local pool so they're
-      // selectable/visible even if they aren't in the availableTags prop yet
-      // (e.g. just created in the Add dialog earlier in this page session).
-      if (editQuestion.tags && editQuestion.tags.length > 0) {
-        setLocalAvailableTags((prev) => {
-          const existing = new Set(prev.map((t) => t.id));
-          const incoming = editQuestion.tags!.filter(
-            (t) => !existing.has(t.id),
-          );
-          return incoming.length > 0 ? [...prev, ...incoming] : prev;
-        });
-      }
     } else {
       reset({
         question: "",

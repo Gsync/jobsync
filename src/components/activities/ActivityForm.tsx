@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { Button } from "../ui/button";
 import { DialogFooter } from "../ui/dialog";
 import { AddActivityFormSchema } from "@/models/addActivityForm.schema";
@@ -25,7 +25,7 @@ import { DatePicker } from "../DatePicker";
 import { TimePicker } from "../TimePicker";
 import TiptapEditor from "../TiptapEditor";
 import { Combobox } from "../ComboBox";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { ActivityType } from "@/models/activity.model";
 import {
   createActivity,
@@ -39,17 +39,12 @@ interface ActivityFormProps {
   reloadActivities: () => void;
 }
 
-type Duration = {
-  hours: number;
-  minutes: number;
-};
-
 const ActivityFormComponent = ({
   onClose,
   reloadActivities,
 }: ActivityFormProps) => {
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
-  const [duration, setDuration] = useState<Duration | null>(null);
+  const [hasDateTimeChanged, setHasDateTimeChanged] = useState(false);
   const defaultValues = useMemo(() => {
     const now = new Date();
     const currentTime = format(now, "hh:mm a");
@@ -73,56 +68,43 @@ const ActivityFormComponent = ({
 
   const {
     reset,
-    getValues,
     trigger,
-    watch,
     formState: { errors, isValid },
   } = form;
 
-  const loadActivityTypes = useCallback(async () => {
-    const activityTypes = await getAllActivityTypes();
-    setActivityTypes(activityTypes);
-  }, []);
+  const [startDate, startTime, endDate, endTime] = useWatch({
+    control: form.control,
+    name: ["startDate", "startTime", "endDate", "endTime"],
+  });
 
-  const calculateDuration = useCallback(() => {
-    const [startDate, startTime, endDate, endTime] = getValues([
-      "startDate",
-      "startTime",
-      "endDate",
-      "endTime",
-    ]);
+  const duration = useMemo(() => {
+    if (!hasDateTimeChanged) return null;
+
     const startDateTime =
       startDate && startTime ? combineDateAndTime(startDate, startTime) : null;
 
     const endDateTime =
-      endDate && endTime ? combineDateAndTime(endDate!, endTime!) : null;
+      endDate && endTime ? combineDateAndTime(endDate, endTime) : null;
 
-    if (startDateTime && endDateTime) {
-      const hours = differenceInHours(endDateTime, startDateTime);
-      const totalMinutes = differenceInMinutes(endDateTime, startDateTime);
-      const minutes = totalMinutes % 60;
+    if (!startDateTime || !endDateTime) return null;
 
-      setDuration({ hours, minutes });
-    } else {
-      setDuration(null);
-    }
-  }, [getValues]);
+    return {
+      hours: differenceInHours(endDateTime, startDateTime),
+      minutes: differenceInMinutes(endDateTime, startDateTime) % 60,
+    };
+  }, [hasDateTimeChanged, startDate, startTime, endDate, endTime]);
 
   useEffect(() => {
-    loadActivityTypes();
-    const subscription = watch((value, { name }) => {
-      if (
-        ["startDate", "startTime", "endDate", "endTime"].includes(name || "")
-      ) {
-        calculateDuration();
-        // Cross-field errors land on the end fields, so changing a start
-        // field would otherwise leave a stale error until submit
-        trigger(["startTime", "endDate", "endTime"]);
-      }
-    });
+    getAllActivityTypes().then(setActivityTypes);
+  }, []);
 
-    return () => subscription.unsubscribe();
-  }, [calculateDuration, loadActivityTypes, trigger, watch]);
+  const onDateTimeChange = (onChange: (value: unknown) => void, value: unknown) => {
+    onChange(value);
+    setHasDateTimeChanged(true);
+    // Cross-field errors land on the end fields, so changing a start
+    // field would otherwise leave a stale error until submit
+    trigger(["startTime", "endDate", "endTime"]);
+  };
 
   const onSubmit = async (data: z.infer<typeof AddActivityFormSchema>) => {
     const { startDate, startTime, endDate, endTime, ...rest } = data;
@@ -209,7 +191,14 @@ const ActivityFormComponent = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Start Date</FormLabel>
-                <DatePicker field={field} presets={false} isEnabled={true} />
+                <DatePicker
+                  field={{
+                    ...field,
+                    onChange: (value) => onDateTimeChange(field.onChange, value),
+                  }}
+                  presets={false}
+                  isEnabled={true}
+                />
                 <FormMessage />
               </FormItem>
             )}
@@ -224,7 +213,12 @@ const ActivityFormComponent = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Start Time</FormLabel>
-                <TimePicker field={field} />
+                <TimePicker
+                  field={{
+                    ...field,
+                    onChange: (value) => onDateTimeChange(field.onChange, value),
+                  }}
+                />
                 <FormMessage>
                   {errors.startTime && (
                     <span className="text-red-500">
@@ -245,7 +239,14 @@ const ActivityFormComponent = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>End Date</FormLabel>
-                <DatePicker field={field} presets={false} isEnabled={true} />
+                <DatePicker
+                  field={{
+                    ...field,
+                    onChange: (value) => onDateTimeChange(field.onChange, value),
+                  }}
+                  presets={false}
+                  isEnabled={true}
+                />
                 <FormMessage />
               </FormItem>
             )}
@@ -276,7 +277,12 @@ const ActivityFormComponent = ({
                     )}
                   </span>
                 </FormLabel>
-                <TimePicker field={field} />
+                <TimePicker
+                  field={{
+                    ...field,
+                    onChange: (value) => onDateTimeChange(field.onChange, value),
+                  }}
+                />
                 <FormMessage>
                   {errors.endTime && (
                     <span className="text-red-500">

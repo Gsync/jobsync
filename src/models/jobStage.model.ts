@@ -71,12 +71,12 @@ export const AddJobStageFormSchema = z
     setAsCurrent: z.boolean().default(true),
   })
   .refine((data) => !!data.stageTypeId || !!data.customLabel?.trim(), {
-    message: "Pick a stage or enter a custom stage name.",
+    error: "Pick a stage or enter a custom stage name.",
     path: ["stageTypeId"],
   })
   .refine(
     (data) => !data.customLabel?.trim() || !!data.customStatusId,
-    { message: "Pick the status this custom stage means.", path: ["customStatusId"] },
+    { error: "Pick the status this custom stage means.", path: ["customStatusId"] },
   );
 
 export type AddJobStageValues = z.infer<typeof AddJobStageFormSchema>;

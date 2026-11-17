@@ -4,7 +4,7 @@ import { buildBackupZip } from "@/lib/backup/export";
 import { log } from "@/lib/telemetry";
 
 // A route handler rather than a server action: server actions cannot return a
-// binary stream. Covered by the /api/* middleware matcher; auth() here is
+// binary stream. Covered by the /api/* proxy matcher; auth() here is
 // defense in depth.
 export async function GET() {
   const session = await auth();

@@ -1,0 +1,347 @@
+import { addJobNeedsApproval, buildAddJobTool } from "@/lib/agent/tools/addJob";
+import { buildAgentTools } from "@/lib/agent/tools";
+import { createJobFromNames } from "@/lib/jobs/createJobFromNames";
+import { JobResolutionError } from "@/lib/jobs/resolve";
+import { scrapeJobPosting } from "@/lib/scraper/jobPosting";
+import { addJobSettled } from "@/models/agent.model";
+
+vi.mock("@/lib/jobs/createJobFromNames", () => ({ createJobFromNames: vi.fn() }));
+vi.mock("@/lib/scraper/jobPosting", () => ({ scrapeJobPosting: vi.fn() }));
+
+const created = {
+  created: true,
+  jobId: "job-1",
+  resolutions: [{ id: "c1", label: "Acme", created: true }],
+  descriptionCompleteness: "full",
+  message: 'Created Acme; Matched Engineer. Job created (id: job-1).',
+};
+
+const longDescription = Array.from({ length: 200 }, () => "word").join(" ");
+// jobCategory is compulsory in the shared MCP shape, so every call needs one
+// before execute can reach the behaviour under test.
+const execute = (tool: any, input: any) =>
+  tool.execute(
+    { jobCategory: "industry_others", ...input },
+    { toolCallId: "c", messages: [] },
+  );
+
+const scrapedPosting = {
+  success: true,
+  data: {
+    title: "Senior Platform Engineer",
+    company: "Acme",
+    location: "Remote",
+    description: longDescription,
+    url: "https://example.com/jobs/1",
+    source: "Acme",
+    employmentType: "Full-time",
+    workplaceType: "Remote",
+    salary: "$180k",
+    skills: ["Go", "Kubernetes"],
+    structuredData: true,
+    warnings: undefined,
+  },
+};
+
+// review_resume needs the resolved model and the stream writer, so the
+// registry's context object is wider than a read tool's own arguments.
+const toolCtx = {
+  userId: "user-1",
+  model: {} as any,
+  provider: "ollama",
+  modelName: "qwen3.5:9b",
+  writer: { write: () => {}, merge: () => {}, onError: undefined } as any,
+  nestedGuard: { running: false, elapsedMs: 0 },
+};
+
+describe("add_job agent tool", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (createJobFromNames as any).mockResolvedValue(created);
+    (scrapeJobPosting as any).mockResolvedValue(scrapedPosting);
+  });
+
+  it("requires approval — a mutating tool can never execute unapproved", () => {
+    expect(addJobNeedsApproval({ jobDescription: longDescription })).toBe(true);
+    expect(addJobNeedsApproval({}, "posting")).toBe(true);
+    // A URL is enough for execute to write, because it can scrape the rest.
+    expect(addJobNeedsApproval({ jobUrl: "https://example.com/jobs/1" })).toBe(true);
+  });
+
+  // The card renders before execute runs, so asking for a call execute is
+  // already certain to reject spends a Confirm, and the retry spends a second
+  // one — the user confirms the same job twice.
+  it("skips approval only for a call that cannot write", () => {
+    expect(addJobNeedsApproval({})).toBe(false);
+  });
+
+  it("passes the SESSION userId, never one supplied by the model", async () => {
+    const tool = buildAddJobTool("session-user");
+    await execute(tool, { company: "Acme", jobTitle: "Engineer", jobDescription: longDescription, userId: "attacker-user" });
+    const [, userId] = (createJobFromNames as any).mock.calls[0];
+    expect(userId).toBe("session-user");
+    expect((createJobFromNames as any).mock.calls[0][0].userId).toBeUndefined();
+  });
+
+  it("splices the closure's pasted text over anything the model sent", async () => {
+    const tool = buildAddJobTool("user-1", "THE REAL PASTED POSTING");
+    await execute(tool, { company: "Acme", jobTitle: "Engineer", jobDescription: "a paraphrase the model wrote" });
+    expect((createJobFromNames as any).mock.calls[0][0].jobDescription).toBe("THE REAL PASTED POSTING");
+  });
+
+  it("falls back to the model's description when nothing was pasted", async () => {
+    const tool = buildAddJobTool("user-1");
+    await execute(tool, { company: "Acme", jobTitle: "Engineer", jobDescription: longDescription });
+    expect((createJobFromNames as any).mock.calls[0][0].jobDescription).toBe(longDescription);
+  });
+
+  it("reads a supplied jobUrl and stores the full posting it finds", async () => {
+    const tool = buildAddJobTool("user-1");
+    await execute(tool, {
+      company: "Acme",
+      jobTitle: "Engineer",
+      // The model copied only a preview out of scrape_job.
+      jobDescription: "A short preview the model copied.",
+      jobUrl: "https://example.com/jobs/1",
+    });
+
+    expect(scrapeJobPosting).toHaveBeenCalledWith(
+      "https://example.com/jobs/1",
+      expect.anything(),
+    );
+    const passed = (createJobFromNames as any).mock.calls[0][0];
+    expect(passed.jobDescription).toBe(longDescription);
+    expect(passed.location).toBe("Remote");
+    expect(passed.source).toBeDefined();
+    expect(passed.salaryRange).toBe("$180k");
+    expect(passed.tags).toEqual(["Go", "Kubernetes"]);
+  });
+
+  it("marks a job whose description came from the page as scraped", async () => {
+    const result: any = await execute(buildAddJobTool("user-1"), {
+      company: "Acme",
+      jobTitle: "Engineer",
+      jobUrl: "https://example.com/jobs/1",
+    });
+    expect(result.descriptionSource).toBe("scraped");
+  });
+
+  it("keeps a better model description when the page has no structured data", async () => {
+    (scrapeJobPosting as any).mockResolvedValue({
+      ...scrapedPosting,
+      data: {
+        ...scrapedPosting.data,
+        // Same completeness, but inferred from nav-heavy page text.
+        description: `${longDescription} extra page noise`,
+        structuredData: false,
+      },
+    });
+
+    await execute(buildAddJobTool("user-1"), {
+      company: "Acme",
+      jobTitle: "Engineer",
+      jobDescription: longDescription,
+      jobUrl: "https://example.com/jobs/1",
+    });
+
+    expect((createJobFromNames as any).mock.calls[0][0].jobDescription).toBe(
+      longDescription,
+    );
+  });
+
+  it("uses the model's description when scraping fails", async () => {
+    (scrapeJobPosting as any).mockResolvedValue({
+      success: false,
+      error: { type: "blocked", reason: "The page refused the request." },
+    });
+
+    const result: any = await execute(buildAddJobTool("user-1"), {
+      company: "Acme",
+      jobTitle: "Engineer",
+      jobDescription: longDescription,
+      jobUrl: "https://example.com/jobs/1",
+    });
+
+    expect(result.created).toBe(true);
+    expect(result.descriptionSource).toBe("model");
+    expect((createJobFromNames as any).mock.calls[0][0].jobDescription).toBe(
+      longDescription,
+    );
+  });
+
+  it("reports a scrape failure when the URL was the only source of a description", async () => {
+    (scrapeJobPosting as any).mockResolvedValue({
+      success: false,
+      error: { type: "blocked", reason: "The page refused the request." },
+    });
+
+    const result: any = await execute(buildAddJobTool("user-1"), {
+      company: "Acme",
+      jobTitle: "Engineer",
+      jobUrl: "https://example.com/jobs/1",
+    });
+
+    expect(result.created).toBe(false);
+    expect(result.validationError).toMatch(/could not be read/i);
+    expect(result.displayError).toMatch(/could not be read/i);
+    expect(createJobFromNames).not.toHaveBeenCalled();
+  });
+
+  it("never scrapes over a posted text", async () => {
+    const tool = buildAddJobTool("user-1", "THE REAL PASTED POSTING");
+    await execute(tool, {
+      company: "Acme",
+      jobTitle: "Engineer",
+      jobUrl: "https://example.com/jobs/1",
+    });
+
+    expect(scrapeJobPosting).not.toHaveBeenCalled();
+    expect((createJobFromNames as any).mock.calls[0][0].jobDescription).toBe(
+      "THE REAL PASTED POSTING",
+    );
+  });
+
+  // An omitted dueDate must arrive as undefined so createJobFromNames'
+  // 3-day default applies; a supplied one arrives parsed.
+  it("passes dueDate through, parsed, and leaves an omitted one to the default", async () => {
+    const tool = buildAddJobTool("user-1", "posting");
+    await execute(tool, { company: "Acme", jobTitle: "Engineer", dueDate: "2030-02-01T00:00:00Z" });
+    await execute(tool, { company: "Acme", jobTitle: "Engineer" });
+    const calls = (createJobFromNames as any).mock.calls;
+    expect(calls[0][0].dueDate).toEqual(new Date("2030-02-01T00:00:00Z"));
+    expect(calls[1][0].dueDate).toBeUndefined();
+  });
+
+  it('sets createdVia to "chat"', async () => {
+    await execute(buildAddJobTool("user-1", "posting"), { company: "Acme", jobTitle: "Engineer" });
+    expect((createJobFromNames as any).mock.calls[0][0].createdVia).toBe("chat");
+  });
+
+  it("never forwards allowDuplicate, even if the model invents it", async () => {
+    await execute(buildAddJobTool("user-1", "posting"), { company: "Acme", jobTitle: "Engineer", allowDuplicate: true, upsert: true });
+    const passed = (createJobFromNames as any).mock.calls[0][0];
+    expect(passed.allowDuplicate).toBeUndefined();
+    expect(passed.upsert).toBeUndefined();
+  });
+
+  it("returns structured fields and not the helper's agent-facing message", async () => {
+    const result: any = await execute(buildAddJobTool("user-1", "posting"), { company: "Acme", jobTitle: "Engineer" });
+    expect(result).toMatchObject({
+      created: true,
+      jobId: "job-1",
+      descriptionSource: "pasted",
+      descriptionCompleteness: "full",
+    });
+    expect(result.message).toBeUndefined();
+    expect(JSON.stringify(result)).not.toContain("update_job");
+    expect(JSON.stringify(result)).not.toContain("allowDuplicate");
+  });
+
+  it("reports a duplicate without creating a second job", async () => {
+    (createJobFromNames as any).mockResolvedValue({
+      created: false,
+      duplicateOf: { id: "job-9", title: "Engineer", company: "Acme" },
+      resolutions: [],
+      message: 'Duplicate detected — call update_job with jobId "job-9". Pass allowDuplicate: true ...',
+    });
+    const result: any = await execute(buildAddJobTool("user-1", "posting"), { company: "Acme", jobTitle: "Engineer" });
+    expect(result.created).toBe(false);
+    expect(result.duplicateOf.id).toBe("job-9");
+    expect(JSON.stringify(result)).not.toContain("update_job");
+  });
+
+  it("returns a validation message rather than throwing when no description exists", async () => {
+    const result: any = await execute(buildAddJobTool("user-1"), { company: "Acme", jobTitle: "Engineer" });
+    expect(result.validationError).toMatch(/description/i);
+    expect(createJobFromNames).not.toHaveBeenCalled();
+  });
+
+  // The model reaches here having omitted jobDescription because the posting
+  // looked pasted to it, so the recovery it needs is "copy it from the
+  // message", not "ask again". Asking again is what produced a paraphrase.
+  it("tells the model to copy an unchipped posting verbatim rather than summarise it", async () => {
+    const result: any = await execute(buildAddJobTool("user-1"), { company: "Acme", jobTitle: "Engineer" });
+    expect(result.validationError).toMatch(/verbatim/i);
+    expect(result.validationError).toMatch(/summar|shorten|condense/i);
+  });
+
+  // The card renders displayError when there is one, so that text is the
+  // user's whole view of this failure — it must not carry the model's
+  // instructions to itself.
+  it("gives the card its own copy, free of the model's retry instructions", async () => {
+    const result: any = await execute(buildAddJobTool("user-1"), { company: "Acme", jobTitle: "Engineer" });
+    expect(result.displayError).toMatch(/description/i);
+    expect(result.displayError).not.toMatch(/verbatim|jobDescription|add_job|call it again/i);
+  });
+
+  // Zod's messages name the field and its accepted values, so they read fine
+  // on the card as they are and deliberately set no displayError.
+  it("leaves a schema message unaltered for the card", async () => {
+    const result: any = await execute(buildAddJobTool("user-1", "posting"), { company: "Acme", jobTitle: "Engineer", dueDate: "next friday" });
+    expect(result.displayError).toBeUndefined();
+  });
+
+  it("returns a ZodError from the in-execute parse as a tool result, not a throw", async () => {
+    const result: any = await execute(buildAddJobTool("user-1", "posting"), { company: "Acme", jobTitle: "Engineer", dueDate: "next friday" });
+    expect(result.validationError).toMatch(/dueDate/);
+    expect(createJobFromNames).not.toHaveBeenCalled();
+  });
+
+  it("returns a tool result rather than throwing when the helper fails", async () => {
+    (createJobFromNames as any).mockRejectedValue(new Error("db is down"));
+    const result: any = await execute(buildAddJobTool("user-1", "posting"), { company: "Acme", jobTitle: "Engineer" });
+    expect(result.validationError).toBeTruthy();
+    expect(result.validationError).not.toContain("db is down");
+  });
+
+  // An unusable enum value is the model's mistake to fix, so it has to see
+  // which field and which values. Without this it guessed, and its guess was
+  // to drop the field — losing a value the posting actually stated.
+  it("surfaces a resolver's validation message so the model can retry", async () => {
+    (createJobFromNames as any).mockRejectedValue(
+      new JobResolutionError('Invalid workplaceType "Moon Base". Valid values: Remote, Hybrid, Onsite'),
+    );
+    const result: any = await execute(buildAddJobTool("user-1", "posting"), { company: "Acme", jobTitle: "Engineer" });
+    expect(result.created).toBe(false);
+    expect(result.validationError).toContain("workplaceType");
+    expect(result.validationError).toContain("Onsite");
+  });
+
+  // Skipping approval moves the failure into the step that made the call, so
+  // the terminal-tool stop condition has to let that one step be retried.
+  describe("addJobSettled", () => {
+    const call = [{ toolName: "add_job" }];
+
+    it("does not end the turn on a validation failure", () => {
+      expect(addJobSettled({ toolCalls: call, toolResults: [{ toolName: "add_job", output: { created: false, validationError: "no description" } }] })).toBe(false);
+    });
+
+    // An input-schema failure produces a tool-call marked invalid and no tool
+    // result, which is indistinguishable from a pending approval without it.
+    it("does not end the turn on a schema-invalid call", () => {
+      expect(addJobSettled({ toolCalls: [{ toolName: "add_job", invalid: true }], toolResults: [] })).toBe(false);
+    });
+
+    it("ends the turn on a write, a duplicate, or a pending approval", () => {
+      expect(addJobSettled({ toolCalls: call, toolResults: [{ toolName: "add_job", output: { created: true, jobId: "job-1" } }] })).toBe(true);
+      expect(addJobSettled({ toolCalls: call, toolResults: [{ toolName: "add_job", output: { created: false, duplicateOf: { id: "job-9" } } }] })).toBe(true);
+      expect(addJobSettled({ toolCalls: call, toolResults: [] })).toBe(true);
+    });
+
+    it("ignores a step that did not call add_job", () => {
+      expect(addJobSettled({ toolCalls: [{ toolName: "get_resume" }], toolResults: [] })).toBe(false);
+      expect(addJobSettled({})).toBe(false);
+    });
+  });
+
+  it("registers exactly the tools the chat exposes", () => {
+    expect(Object.keys(buildAgentTools(toolCtx))).toEqual([
+      "add_job",
+      "scrape_job",
+      "get_resume",
+      "review_resume",
+      "match_job",
+      "generate_cover_letter",
+    ]);
+  });
+});

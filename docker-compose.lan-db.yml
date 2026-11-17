@@ -1,0 +1,8 @@
+# Opt-in: publishes the bundled database on the LAN. Never on by default —
+# the bundled password is printed in this public repository.
+# Enable from .env:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.lan-db.yml
+services:
+  db:
+    ports:
+      - "5432:5432"

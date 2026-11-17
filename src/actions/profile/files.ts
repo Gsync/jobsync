@@ -8,15 +8,21 @@ import { requireUser } from "./shared";
 export const deleteFile = async (fileId: string) => {
   const user = await requireUser();
 
-  const file = await prisma.file.findFirst({
-    where: {
-      id: fileId,
-      OR: [
-        { Resume: { profile: { userId: user.id } } },
-        { Job: { userId: user.id } },
-      ],
-    },
-  });
+  // Two owner-scoped lookups rather than an OR: an OR hides which relation
+  // granted access, and the ownership guard cannot verify it.
+  const file =
+    (await prisma.file.findFirst({
+      where: {
+        id: fileId,
+        Resume: { profile: { userId: user.id } },
+      },
+    })) ??
+    (await prisma.file.findFirst({
+      where: {
+        id: fileId,
+        Job: { userId: user.id },
+      },
+    }));
 
   if (!file) {
     throw new Error("File not found or access denied");

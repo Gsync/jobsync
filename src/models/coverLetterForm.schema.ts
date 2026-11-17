@@ -7,16 +7,16 @@ export const CoverLetterFormSchema = z.object({
       error: "Cover letter title is required.",
     })
     .min(1, {
-      message: "Cover letter title is required.",
+      error: "Cover letter title is required.",
     })
     .max(100, {
-      message: "Title must be less than 100 characters.",
+      error: "Title must be less than 100 characters.",
     }),
   content: z
     .string({
       error: "Cover letter content is required.",
     })
     .min(10, {
-      message: "Cover letter content must be at least 10 characters.",
+      error: "Cover letter content must be at least 10 characters.",
     }),
 });

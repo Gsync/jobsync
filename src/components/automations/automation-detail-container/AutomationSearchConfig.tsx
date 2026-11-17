@@ -81,12 +81,12 @@ export function AutomationSearchConfig({
                 ))}
               </div>
             ) : (
-              <p className="font-medium">-</p>
+              <p className="text-sm font-medium">-</p>
             )}
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Target titles</p>
-            <p className="font-medium">
+            <p className="text-sm font-medium">
               {greenhouseConfig.targetTitles?.length
                 ? greenhouseConfig.targetTitles.join(", ")
                 : "Any"}
@@ -94,7 +94,7 @@ export function AutomationSearchConfig({
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Keywords</p>
-            <p className="font-medium">
+            <p className="text-sm font-medium">
               {greenhouseConfig.keywords?.length
                 ? greenhouseConfig.keywords.join(", ")
                 : "None"}
@@ -102,7 +102,7 @@ export function AutomationSearchConfig({
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Locations</p>
-            <p className="font-medium">
+            <p className="text-sm font-medium">
               {greenhouseConfig.locations?.length
                 ? `${greenhouseConfig.locations.join(", ")}${
                     greenhouseConfig.strictLocation ? " (strict)" : ""
@@ -114,13 +114,13 @@ export function AutomationSearchConfig({
             <p className="text-sm text-muted-foreground">
               Jobs analyzed per run
             </p>
-            <p className="font-medium">
+            <p className="text-sm font-medium">
               {greenhouseConfig.topK ?? APP_CONSTANTS.MAX_JOBS_PER_RUN}
             </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Extra listings</p>
-            <p className="font-medium">
+            <p className="text-sm font-medium">
               {greenhouseConfig.saveUnanalyzed !== false
                 ? "Saved"
                 : "Not saved"}

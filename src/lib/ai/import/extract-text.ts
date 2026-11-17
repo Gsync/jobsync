@@ -1,6 +1,7 @@
 // Text extraction from PDF and DOCX resume uploads
 
 import { APP_CONSTANTS } from "@/lib/constants";
+import { sanitizeString } from "@/lib/postgresText";
 
 // Magic bytes for file-type sniffing (Buffer — server-only, not in constants.ts)
 export const PDF_MAGIC = Buffer.from([0x25, 0x50, 0x44, 0x46]); // %PDF
@@ -86,7 +87,7 @@ async function extractPdf(buf: Buffer): Promise<ExtractedText> {
 
   const { text: pages } = await pdfExtractText(pdf, { mergePages: false });
   const pageArray = Array.isArray(pages) ? pages : [pages as string];
-  const text = pageArray.slice(0, pagesToRead).join("\n");
+  const text = sanitizeString(pageArray.slice(0, pagesToRead).join("\n"));
 
   if (!text.trim()) {
     throw Object.assign(new Error("NO_TEXT"), { code: "NO_TEXT" });
@@ -128,18 +129,19 @@ async function extractDocx(buf: Buffer): Promise<ExtractedText> {
   const mammoth = await import("mammoth");
   const result = await mammoth.extractRawText({ buffer: buf });
 
-  if (!result.value.trim()) {
+  const value = sanitizeString(result.value);
+  if (!value.trim()) {
     throw Object.assign(new Error("NO_TEXT"), { code: "NO_TEXT" });
   }
 
   const text =
-    result.value.length > APP_CONSTANTS.RESUME_IMPORT_MAX_EXTRACTED_CHARS
-      ? result.value.slice(0, APP_CONSTANTS.RESUME_IMPORT_MAX_EXTRACTED_CHARS)
-      : result.value;
+    value.length > APP_CONSTANTS.RESUME_IMPORT_MAX_EXTRACTED_CHARS
+      ? value.slice(0, APP_CONSTANTS.RESUME_IMPORT_MAX_EXTRACTED_CHARS)
+      : value;
 
   return {
     text,
-    truncated: result.value.length > APP_CONSTANTS.RESUME_IMPORT_MAX_EXTRACTED_CHARS,
+    truncated: value.length > APP_CONSTANTS.RESUME_IMPORT_MAX_EXTRACTED_CHARS,
   };
 }
 

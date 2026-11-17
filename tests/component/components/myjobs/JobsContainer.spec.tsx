@@ -1,0 +1,1147 @@
+import JobsContainer from "@/components/myjobs/JobsContainer";
+import { screen, render, waitFor, act } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import {
+  getJobsList,
+  getJobFilterCounts,
+  getJobDetails,
+  deleteJobById,
+  updateJobStatus,
+} from "@/actions/job.actions";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { EMPTY_JOB_FACETS } from "@/lib/jobs/jobFacets";
+
+vi.mock("next-auth", () => {
+  const mockAuth = vi.fn();
+  const mockSignIn = vi.fn();
+  const mockSignOut = vi.fn();
+  const mockHandlers = { GET: vi.fn(), POST: vi.fn() };
+
+  return {
+    __esModule: true,
+    default: vi.fn(() => ({
+      auth: mockAuth,
+      handlers: mockHandlers,
+      signIn: mockSignIn,
+      signOut: mockSignOut,
+    })),
+    auth: mockAuth,
+    signIn: mockSignIn,
+    signOut: mockSignOut,
+    handlers: mockHandlers,
+  };
+});
+
+vi.mock("next-auth/providers/credentials", () => ({
+  __esModule: true,
+  default: vi.fn(() => ({
+    id: "credentials",
+    name: "Credentials",
+    type: "credentials",
+  })),
+}));
+
+vi.mock("@/actions/job.actions", () => ({
+  getJobsList: vi.fn(),
+  getJobFilterCounts: vi.fn(),
+  getJobDetails: vi.fn(),
+  deleteJobById: vi.fn(),
+  updateJobStatus: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(),
+  usePathname: vi.fn(),
+  useSearchParams: vi.fn(),
+}));
+
+// useAgentChat throws outside the provider, which this spec does not mount.
+vi.mock("@/components/agent/AgentChatProvider", () => ({
+  useAgentChat: () => ({ jobWrites: 0 }),
+}));
+
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
+let intersectionCallback: IntersectionObserverCallback;
+global.IntersectionObserver = class IntersectionObserver {
+  constructor(callback: IntersectionObserverCallback) {
+    intersectionCallback = callback;
+  }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as any;
+
+document.createRange = () => {
+  const range = new Range();
+
+  range.getBoundingClientRect = vi.fn().mockReturnValue({
+    bottom: 0,
+    height: 0,
+    left: 0,
+    right: 0,
+    top: 0,
+    width: 0,
+  });
+
+  range.getClientRects = () => {
+    return {
+      item: () => null,
+      length: 0,
+      [Symbol.iterator]: vi.fn(),
+    };
+  };
+
+  return range;
+};
+
+describe("JobsContainer Search Functionality", () => {
+  const mockRouter = {
+    push: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+  };
+
+  const mockSearchParams = new URLSearchParams();
+
+  const mockStatuses = [
+    { id: "1", label: "Applied", value: "applied" },
+    { id: "2", label: "Interview", value: "interview" },
+    { id: "3", label: "Draft", value: "draft" },
+    { id: "4", label: "Rejected", value: "rejected" },
+  ];
+
+  const mockCompanies = [
+    { id: "1", label: "Amazon", value: "amazon", createdBy: "user-1" },
+    { id: "2", label: "Google", value: "google", createdBy: "user-1" },
+  ];
+
+  const mockTitles = [
+    {
+      id: "1",
+      label: "Full Stack Developer",
+      value: "full stack developer",
+      createdBy: "user-1",
+    },
+    {
+      id: "2",
+      label: "Frontend Developer",
+      value: "frontend developer",
+      createdBy: "user-1",
+    },
+  ];
+
+  const mockLocations = [
+    { id: "1", label: "Remote", value: "remote", createdBy: "user-1" },
+    {
+      id: "2",
+      label: "San Francisco",
+      value: "san francisco",
+      createdBy: "user-1",
+    },
+  ];
+
+  const mockSources = [
+    { id: "1", label: "Indeed", value: "indeed", createdBy: "user-1" },
+    { id: "2", label: "LinkedIn", value: "linkedin", createdBy: "user-1" },
+  ];
+
+  const mockJobs = [
+    {
+      id: "1",
+      userId: "user-1",
+      JobTitle: {
+        id: "1",
+        label: "Full Stack Developer",
+        value: "full stack developer",
+        createdBy: "user-1",
+      },
+      Company: {
+        id: "1",
+        label: "Amazon",
+        value: "amazon",
+        createdBy: "user-1",
+        logoUrl: "",
+      },
+      Location: {
+        id: "1",
+        label: "Remote",
+        value: "remote",
+        createdBy: "user-1",
+      },
+      Status: { id: "1", label: "Applied", value: "applied" },
+      JobSource: { id: "1", label: "Indeed", value: "indeed" },
+      jobType: "FT",
+      appliedDate: new Date("2024-06-19"),
+      dueDate: new Date("2024-06-22"),
+    },
+    {
+      id: "2",
+      userId: "user-1",
+      JobTitle: {
+        id: "2",
+        label: "Frontend Developer",
+        value: "frontend developer",
+        createdBy: "user-1",
+      },
+      Company: {
+        id: "2",
+        label: "Google",
+        value: "google",
+        createdBy: "user-1",
+        logoUrl: "",
+      },
+      Location: {
+        id: "2",
+        label: "San Francisco",
+        value: "san francisco",
+        createdBy: "user-1",
+      },
+      Status: { id: "2", label: "Interview", value: "interview" },
+      JobSource: { id: "2", label: "LinkedIn", value: "linkedin" },
+      jobType: "FT",
+      appliedDate: new Date("2024-06-20"),
+      dueDate: new Date("2024-06-25"),
+    },
+  ];
+
+  const user = userEvent.setup({ delay: null });
+  window.HTMLElement.prototype.scrollIntoView = vi.fn();
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    (useRouter as any).mockReturnValue(mockRouter);
+    (usePathname as any).mockReturnValue("/dashboard/myjobs");
+    (useSearchParams as any).mockReturnValue(mockSearchParams);
+    (getJobFilterCounts as any).mockResolvedValue({
+      success: true,
+      data: { total: 2, statusCounts: {}, acceptedDiscovered: 0 },
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const renderComponent = () => {
+    return render(
+      <JobsContainer
+        statuses={mockStatuses}
+        companies={mockCompanies}
+        titles={mockTitles}
+        locations={mockLocations}
+        sources={mockSources}
+        tags={[]}
+      />,
+    );
+  };
+
+  describe("Search Input", () => {
+    it("should debounce search input for 300ms", async () => {
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledTimes(1);
+      });
+
+      const searchInput = screen.getByPlaceholderText("Search jobs...");
+
+      await act(async () => {
+        await user.type(searchInput, "A");
+      });
+
+      // Should not have called getJobsList yet (debounce not elapsed)
+      expect(getJobsList).toHaveBeenCalledTimes(1);
+
+      // Advance timer by 300ms to trigger debounce
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
+
+      // Now search should have been triggered
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    it("should call getJobsList with search term after debounce", async () => {
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledTimes(1);
+      });
+
+      const searchInput = screen.getByPlaceholderText("Search jobs...");
+
+      await act(async () => {
+        await user.type(searchInput, "Amazon");
+      });
+
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Amazon", undefined, undefined, undefined, undefined, undefined, undefined);
+      });
+    });
+
+    it("should not trigger search on initial mount with empty search", async () => {
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledTimes(1);
+      });
+
+      // Initial call should not have search parameter
+      expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined);
+    });
+
+    it("should trigger search when clearing search term after searching", async () => {
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledTimes(1);
+      });
+
+      const searchInput = screen.getByPlaceholderText("Search jobs...");
+
+      // Type to trigger search
+      await act(async () => {
+        await user.type(searchInput, "Test");
+      });
+
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Test", undefined, undefined, undefined, undefined, undefined, undefined);
+      });
+
+      // Clear the search input
+      await act(async () => {
+        await user.clear(searchInput);
+      });
+
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
+
+      // Should call with undefined when cleared after having searched
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined);
+      });
+    });
+  });
+
+  describe("Popover filters", () => {
+    const U = undefined;
+
+    it("passes facets from the URL to getJobsList", async () => {
+      (useSearchParams as any).mockReturnValue(
+        new URLSearchParams("status=applied,interview&type=FT"),
+      );
+      (getJobsList as any).mockResolvedValue({ success: true, data: mockJobs, total: 2 });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledWith(
+          1, 25,
+          { ...EMPTY_JOB_FACETS, statuses: ["applied", "interview"], jobTypes: ["FT"] },
+          U, U, U, U, U, U, U,
+        );
+      });
+    });
+
+    it("combines URL facets with search", async () => {
+      (useSearchParams as any).mockReturnValue(new URLSearchParams("status=applied"));
+      (getJobsList as any).mockResolvedValue({ success: true, data: mockJobs, total: 2 });
+
+      renderComponent();
+      await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
+
+      await act(async () => {
+        await user.type(screen.getByPlaceholderText("Search jobs..."), "Developer");
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenLastCalledWith(
+          1, 25, { ...EMPTY_JOB_FACETS, statuses: ["applied"] },
+          "Developer", U, U, U, U, U, U,
+        );
+      });
+    });
+
+    it("writes applied facets to the URL, keeping deep-link params", async () => {
+      (useSearchParams as any).mockReturnValue(
+        new URLSearchParams("company=google&applied=true"),
+      );
+      (getJobsList as any).mockResolvedValue({ success: true, data: mockJobs, total: 2 });
+
+      renderComponent();
+      await user.click(screen.getByRole("button", { name: /^Filter jobs/ }));
+      await user.click(screen.getByRole("checkbox", { name: "Interview" }));
+      await user.click(screen.getByRole("button", { name: /^Show / }));
+
+      expect(mockRouter.push).toHaveBeenCalledWith(
+        "/dashboard/myjobs?company=google&applied=true&status=interview",
+      );
+    });
+
+    it("shows a chip per active section and clears one on its ×", async () => {
+      (useSearchParams as any).mockReturnValue(
+        new URLSearchParams("status=applied&workplace=REMOTE"),
+      );
+      (getJobsList as any).mockResolvedValue({ success: true, data: mockJobs, total: 2 });
+
+      renderComponent();
+
+      expect(screen.getByText("Filtered by")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Remove Workplace filter" }));
+      expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/myjobs?status=applied");
+    });
+
+    it("hides the chip row when no facets are active", async () => {
+      (getJobsList as any).mockResolvedValue({ success: true, data: mockJobs, total: 2 });
+      renderComponent();
+      await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
+      expect(screen.queryByText("Filtered by")).not.toBeInTheDocument();
+    });
+
+    it("keeps facets and search on reload", async () => {
+      (useSearchParams as any).mockReturnValue(new URLSearchParams("status=draft"));
+      (getJobsList as any).mockResolvedValue({ success: true, data: mockJobs, total: 2 });
+
+      renderComponent();
+      await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
+      await user.click(screen.getByRole("button", { name: "Reload jobs" }));
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenLastCalledWith(
+          1, 25, { ...EMPTY_JOB_FACETS, statuses: ["draft"] }, U, U, U, U, U, U, U,
+        );
+      });
+    });
+
+    it("does not blame the filters when the list failed to load", async () => {
+      (useSearchParams as any).mockReturnValue(new URLSearchParams("status=rejected"));
+      (getJobsList as any).mockResolvedValue({ success: false, message: "boom" });
+
+      renderComponent();
+
+      await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
+      await act(async () => {});
+      expect(screen.queryByText("No jobs match these filters.")).not.toBeInTheDocument();
+    });
+
+    it("explains an empty filtered list and offers Clear all", async () => {
+      (useSearchParams as any).mockReturnValue(new URLSearchParams("status=rejected"));
+      (getJobsList as any).mockResolvedValue({ success: true, data: [], total: 0 });
+
+      renderComponent();
+
+      expect(await screen.findByText("No jobs match these filters.")).toBeInTheDocument();
+      await user.click(screen.getAllByRole("button", { name: "Clear all" })[0]);
+      expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/myjobs");
+    });
+  });
+
+
+  describe("Search Results Display", () => {
+    it("should display filtered jobs after search", async () => {
+      const amazonJob = [mockJobs[0]];
+
+      (getJobsList as any)
+        .mockResolvedValueOnce({
+          success: true,
+          data: mockJobs,
+          total: 2,
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          data: amazonJob,
+          total: 1,
+        });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText("Amazon")).toBeInTheDocument();
+        expect(screen.getByText("Google")).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText("Search jobs...");
+      await act(async () => {
+        await user.type(searchInput, "Amazon");
+      });
+
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("Amazon")).toBeInTheDocument();
+      });
+    });
+
+    it("should show loading state during search", async () => {
+      let resolvePromise: (value: any) => void;
+      const searchPromise = new Promise((resolve) => {
+        resolvePromise = resolve;
+      });
+
+      (getJobsList as any)
+        .mockResolvedValueOnce({
+          success: true,
+          data: mockJobs,
+          total: 2,
+        })
+        .mockReturnValueOnce(searchPromise);
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText("Amazon")).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText("Search jobs...");
+      await act(async () => {
+        await user.type(searchInput, "test");
+      });
+
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
+
+      // Should show loading indicator
+      await waitFor(() => {
+        expect(screen.getByTestId("loader")).toBeInTheDocument();
+      });
+
+      // Resolve the search
+      await act(async () => {
+        resolvePromise!({
+          success: true,
+          data: [],
+          total: 0,
+        });
+      });
+    });
+  });
+
+  describe("Infinite Scroll with Search", () => {
+    it("should preserve search term when loading more via scroll", async () => {
+      (getJobsList as any)
+        .mockResolvedValueOnce({
+          success: true,
+          data: mockJobs,
+          total: 50,
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          data: mockJobs,
+          total: 50,
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          data: [
+            {
+              id: "3",
+              userId: "user-1",
+              JobTitle: {
+                id: "3",
+                label: "Backend Developer",
+                value: "backend developer",
+                createdBy: "user-1",
+              },
+              Company: {
+                id: "3",
+                label: "Meta",
+                value: "meta",
+                createdBy: "user-1",
+                logoUrl: "",
+              },
+              Location: {
+                id: "3",
+                label: "New York",
+                value: "new york",
+                createdBy: "user-1",
+              },
+              Status: { id: "1", label: "Applied", value: "applied" },
+              JobSource: { id: "1", label: "Indeed", value: "indeed" },
+              jobType: "FT",
+              appliedDate: new Date("2024-06-21"),
+              dueDate: new Date("2024-06-26"),
+            },
+          ],
+          total: 50,
+        });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText("Amazon")).toBeInTheDocument();
+      });
+
+      // Type search
+      const searchInput = screen.getByPlaceholderText("Search jobs...");
+      await act(async () => {
+        await user.type(searchInput, "Developer");
+      });
+
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "Developer", undefined, undefined, undefined, undefined, undefined, undefined);
+      });
+
+      // Simulate sentinel becoming visible
+      await act(async () => {
+        intersectionCallback(
+          [{ isIntersecting: true }] as IntersectionObserverEntry[],
+          {} as IntersectionObserver,
+        );
+      });
+
+      // Should include search term in infinite scroll call
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledWith(2, 25, undefined, "Developer", undefined, undefined, undefined, undefined, undefined, undefined);
+      });
+    });
+  });
+
+  describe("Error Handling", () => {
+    it("should handle search error gracefully", async () => {
+      (getJobsList as any)
+        .mockResolvedValueOnce({
+          success: true,
+          data: mockJobs,
+          total: 2,
+        })
+        .mockResolvedValueOnce({
+          success: false,
+          message: "Search failed",
+        });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText("Amazon")).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText("Search jobs...");
+      await act(async () => {
+        await user.type(searchInput, "test");
+      });
+
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, "test", undefined, undefined, undefined, undefined, undefined, undefined);
+      });
+    });
+  });
+
+  describe("Company Filter from URL", () => {
+    it("should pass company filter to getJobsList when URL has company param", async () => {
+      const companySearchParams = new URLSearchParams("company=google&applied=true");
+      (useSearchParams as any).mockReturnValue(companySearchParams);
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, undefined, "google", true, undefined, undefined, undefined, undefined);
+      });
+    });
+
+    it("should show company badge when company param is present", async () => {
+      const companySearchParams = new URLSearchParams("company=google&applied=true");
+      (useSearchParams as any).mockReturnValue(companySearchParams);
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText("Google")).toBeInTheDocument();
+      });
+    });
+
+    it("should clear company filter when badge is clicked", async () => {
+      const companySearchParams = new URLSearchParams("company=google&applied=true");
+      (useSearchParams as any).mockReturnValue(companySearchParams);
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText("Google")).toBeInTheDocument();
+      });
+
+      const badges = screen.getAllByText("Google");
+      const badge = badges[0].closest("button")!;
+      await act(async () => {
+        await user.click(badge);
+      });
+
+      expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/myjobs");
+    });
+
+    it("should not show company badge when no company param", async () => {
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledTimes(1);
+      });
+
+      const googleButtons = screen.queryAllByRole("button").filter(
+        (btn) => btn.textContent?.includes("Google"),
+      );
+      expect(googleButtons).toHaveLength(0);
+    });
+
+    it("should combine company filter with status facets", async () => {
+      (useSearchParams as any).mockReturnValue(
+        new URLSearchParams("company=google&applied=true&status=applied"),
+      );
+      (getJobsList as any).mockResolvedValue({ success: true, data: mockJobs, total: 2 });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledWith(
+          1, 25, { ...EMPTY_JOB_FACETS, statuses: ["applied"] },
+          undefined, "google", true, undefined, undefined, undefined, undefined,
+        );
+      });
+    });
+  });
+
+  describe("Title Filter from URL", () => {
+    it("should pass title filter to getJobsList when URL has title param", async () => {
+      const titleSearchParams = new URLSearchParams("title=full+stack+developer&applied=true");
+      (useSearchParams as any).mockReturnValue(titleSearchParams);
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, undefined, undefined, true, "full stack developer", undefined, undefined, undefined);
+      });
+    });
+
+    it("should show title badge when title param is present", async () => {
+      const titleSearchParams = new URLSearchParams("title=full+stack+developer&applied=true");
+      (useSearchParams as any).mockReturnValue(titleSearchParams);
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText("Full Stack Developer")).toBeInTheDocument();
+      });
+    });
+
+    it("should clear title filter when badge is clicked", async () => {
+      const titleSearchParams = new URLSearchParams("title=full+stack+developer&applied=true");
+      (useSearchParams as any).mockReturnValue(titleSearchParams);
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText("Full Stack Developer")).toBeInTheDocument();
+      });
+
+      const badges = screen.getAllByText("Full Stack Developer");
+      const badge = badges[0].closest("button")!;
+      await act(async () => {
+        await user.click(badge);
+      });
+
+      expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/myjobs");
+    });
+  });
+
+  describe("Location Filter from URL", () => {
+    it("should pass location filter to getJobsList when URL has location param", async () => {
+      const locationSearchParams = new URLSearchParams("location=remote&applied=true");
+      (useSearchParams as any).mockReturnValue(locationSearchParams);
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, undefined, undefined, true, undefined, "remote", undefined, undefined);
+      });
+    });
+
+    it("should show location badge when location param is present", async () => {
+      const locationSearchParams = new URLSearchParams("location=remote&applied=true");
+      (useSearchParams as any).mockReturnValue(locationSearchParams);
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText("Remote")).toBeInTheDocument();
+      });
+    });
+
+    it("should clear location filter when badge is clicked", async () => {
+      const locationSearchParams = new URLSearchParams("location=remote&applied=true");
+      (useSearchParams as any).mockReturnValue(locationSearchParams);
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText("Remote")).toBeInTheDocument();
+      });
+
+      const badges = screen.getAllByText("Remote");
+      const badge = badges[0].closest("button")!;
+      await act(async () => {
+        await user.click(badge);
+      });
+
+      expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/myjobs");
+    });
+  });
+
+  describe("Source Filter from URL", () => {
+    it("should pass source filter to getJobsList when URL has source param", async () => {
+      const sourceSearchParams = new URLSearchParams("source=indeed&applied=true");
+      (useSearchParams as any).mockReturnValue(sourceSearchParams);
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenCalledWith(1, 25, undefined, undefined, undefined, true, undefined, undefined, "indeed", undefined);
+      });
+    });
+
+    it("should show source badge when source param is present", async () => {
+      const sourceSearchParams = new URLSearchParams("source=indeed&applied=true");
+      (useSearchParams as any).mockReturnValue(sourceSearchParams);
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText("Indeed")).toBeInTheDocument();
+      });
+    });
+
+    it("should clear source filter when badge is clicked", async () => {
+      const sourceSearchParams = new URLSearchParams("source=indeed&applied=true");
+      (useSearchParams as any).mockReturnValue(sourceSearchParams);
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText("Indeed")).toBeInTheDocument();
+      });
+
+      const badges = screen.getAllByText("Indeed");
+      const badge = badges[0].closest("button")!;
+      await act(async () => {
+        await user.click(badge);
+      });
+
+      expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/myjobs");
+    });
+  });
+
+  describe("add-job query param", () => {
+    it("should open the Add Job dialog when add-job=true is in the URL", async () => {
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: [],
+        total: 0,
+      });
+      const params = new URLSearchParams("add-job=true");
+      (useSearchParams as any).mockReturnValue(params);
+
+      render(
+        <JobsContainer
+          statuses={mockStatuses}
+          companies={mockCompanies}
+          titles={mockTitles}
+          locations={mockLocations}
+          sources={mockSources}
+          tags={[]}
+        />,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId("add-job-dialog-title")).toBeInTheDocument();
+      });
+    });
+
+    it("should not open the Add Job dialog when add-job param is absent", async () => {
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: [],
+        total: 0,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("add-job-dialog-title")).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe("view mode toggle", () => {
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    it("renders the table by default and switches to cards on toggle", async () => {
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() =>
+        expect(screen.getByRole("table")).toBeInTheDocument(),
+      );
+
+      await user.click(screen.getByTestId("jobs-view-cards-btn"));
+
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      expect(localStorage.getItem("jobs-view-mode")).toBe('"cards"');
+    });
+
+    it("restores the persisted card view on mount", async () => {
+      localStorage.setItem("jobs-view-mode", '"cards"');
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+
+      renderComponent();
+
+      await waitFor(() =>
+        expect(screen.getByTestId("jobs-view-cards-btn")).toHaveAttribute(
+          "aria-pressed",
+          "true",
+        ),
+      );
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Column sorting", () => {
+    const U = undefined;
+
+    beforeEach(() => {
+      // An earlier "View mode" test persists "cards" to localStorage, which
+      // otherwise carries into these tests and hides the table entirely.
+      localStorage.clear();
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+    });
+
+    it("reloads page 1 sorted when a header is clicked", async () => {
+      renderComponent();
+      await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
+      await screen.findByRole("table");
+
+      await user.click(screen.getByRole("button", { name: /^Company/ }));
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenLastCalledWith(
+          1, 25, U, U, U, U, U, U, U, { field: "company", dir: "asc" },
+        );
+      });
+    });
+
+    it("starts date and match columns descending", async () => {
+      renderComponent();
+      await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
+      await screen.findByRole("table");
+
+      await user.click(screen.getByRole("button", { name: /^Applied/ }));
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenLastCalledWith(
+          1, 25, U, U, U, U, U, U, U, { field: "appliedDate", dir: "desc" },
+        );
+      });
+    });
+
+    it("keeps the active search when sorting", async () => {
+      renderComponent();
+      await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
+      await screen.findByRole("table");
+
+      await user.type(screen.getByPlaceholderText("Search jobs..."), "Amazon");
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
+      await user.click(screen.getByRole("button", { name: /^Company/ }));
+
+      await waitFor(() => {
+        expect(getJobsList).toHaveBeenLastCalledWith(
+          1, 25, U, "Amazon", U, U, U, U, U, { field: "company", dir: "asc" },
+        );
+      });
+    });
+
+    it("cycles natural → reversed → off", async () => {
+      renderComponent();
+      await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
+      await screen.findByRole("table");
+      const header = () => screen.getByRole("columnheader", { name: /^Title/ });
+      const button = () => screen.getByRole("button", { name: /^Title/ });
+
+      await user.click(button());
+      await waitFor(() => expect(header()).toHaveAttribute("aria-sort", "ascending"));
+
+      await user.click(button());
+      await waitFor(() => expect(header()).toHaveAttribute("aria-sort", "descending"));
+
+      await user.click(button());
+      await waitFor(() => expect(header()).not.toHaveAttribute("aria-sort"));
+      expect(getJobsList).toHaveBeenLastCalledWith(1, 25, U, U, U, U, U, U, U, U);
+    });
+
+    it("ignores a slower response to an older sort", async () => {
+      const deferred = () => {
+        let resolve!: (v: unknown) => void;
+        const promise = new Promise((r) => (resolve = r));
+        return { promise, resolve };
+      };
+      renderComponent();
+      await waitFor(() => expect(getJobsList).toHaveBeenCalledTimes(1));
+      await screen.findByRole("table");
+
+      const older = deferred();
+      const newer = deferred();
+      (getJobsList as any)
+        .mockReturnValueOnce(older.promise)
+        .mockReturnValueOnce(newer.promise);
+
+      await user.click(screen.getByRole("button", { name: /^Company/ }));
+      await user.click(screen.getByRole("button", { name: /^Company/ }));
+
+      await act(async () => {
+        newer.resolve({ success: true, data: [mockJobs[1]], total: 1 });
+      });
+      await act(async () => {
+        older.resolve({ success: true, data: [mockJobs[0]], total: 1 });
+      });
+
+      expect(screen.getByText("Frontend Developer")).toBeInTheDocument();
+      expect(screen.queryByText("Full Stack Developer")).not.toBeInTheDocument();
+    });
+  });
+});

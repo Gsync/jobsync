@@ -8,6 +8,7 @@ import {
 } from "@/models/skills.schema";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { assertTagsOwned } from "../shared";
 import { assertResumeOwnership, requireUser } from "./shared";
 
 export const addSkillsSection = async (
@@ -17,6 +18,10 @@ export const addSkillsSection = async (
     const user = await requireUser();
 
     await assertResumeOwnership(data.resumeId, user.id);
+    await assertTagsOwned(
+      data.categories.flatMap((cat) => cat.tagIds),
+      user.id,
+    );
 
     const section = await prisma.resumeSection.create({
       data: {
@@ -59,6 +64,10 @@ export const updateSkillsSection = async (
       select: { id: true, resumeId: true },
     });
     if (!section) throw new Error("Section not found or access denied");
+    await assertTagsOwned(
+      data.categories.flatMap((cat) => cat.tagIds),
+      user.id,
+    );
 
     let order = 0;
     const skillRows = data.categories.flatMap((cat) =>

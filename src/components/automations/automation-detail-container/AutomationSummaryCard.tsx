@@ -49,15 +49,15 @@ export function AutomationSummaryCard({
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Job Board</p>
-            <p className="font-medium capitalize">{automation.jobBoard}</p>
+            <p className="text-sm font-medium capitalize">{automation.jobBoard}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Match Threshold</p>
-            <p className="font-medium">{automation.matchThreshold}%</p>
+            <p className="text-sm font-medium">{automation.matchThreshold}%</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Schedule</p>
-            <p className="font-medium flex items-center gap-1">
+            <p className="text-sm font-medium flex items-center gap-1">
               <Clock className="h-4 w-4" />
               {automation.scheduleHour.toString().padStart(2, "0")}:00 daily
             </p>
@@ -72,7 +72,7 @@ export function AutomationSummaryCard({
             ) : (
               <Link
                 href={`/dashboard/profile/resume/${automation.resume.id}`}
-                className="font-medium flex items-center gap-1 hover:underline"
+                className="text-sm font-medium flex items-center gap-1 hover:underline"
               >
                 <FileText className="h-4 w-4" />
                 {automation.resume.title}
@@ -81,7 +81,7 @@ export function AutomationSummaryCard({
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Next Run</p>
-            <p className="font-medium">
+            <p className="text-sm font-medium">
               {automation.nextRunAt && automation.status === "active"
                 ? format(new Date(automation.nextRunAt), "MMM d, h:mm a")
                 : "-"}
@@ -89,7 +89,7 @@ export function AutomationSummaryCard({
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Last Run</p>
-            <p className="font-medium">
+            <p className="text-sm font-medium">
               {automation.lastRunAt
                 ? format(new Date(automation.lastRunAt), "MMM d, h:mm a")
                 : "Never"}
@@ -97,7 +97,7 @@ export function AutomationSummaryCard({
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Discovered Jobs</p>
-            <p className="font-medium">
+            <p className="text-sm font-medium">
               {totalJobs} total
               {newJobsCount > 0 && (
                 <Badge variant="secondary" className="ml-2">

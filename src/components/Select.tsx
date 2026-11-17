@@ -9,14 +9,16 @@ import {
 } from "./ui/select";
 import { FormControl } from "./ui/form";
 import { ControllerRenderProps } from "react-hook-form";
+import { cn } from "@/lib/utils";
 
 interface SelectProps {
   label: string;
   options: any[];
   field: ControllerRenderProps<any, any>;
+  fullWidth?: boolean;
 }
 
-function SelectFormCtrl({ label, options, field }: SelectProps) {
+function SelectFormCtrl({ label, options, field, fullWidth }: SelectProps) {
   return (
     <>
       <Select
@@ -27,7 +29,10 @@ function SelectFormCtrl({ label, options, field }: SelectProps) {
         <FormControl>
           <SelectTrigger
             aria-label={`Select ${label}`}
-            className="w-[200px] [&_[data-incomplete-hint]]:pointer-events-none"
+            className={cn(
+              fullWidth ? "w-full" : "w-[200px]",
+              "[&_[data-incomplete-hint]]:pointer-events-none",
+            )}
           >
             <SelectValue placeholder={`Select ${label}`} />
           </SelectTrigger>

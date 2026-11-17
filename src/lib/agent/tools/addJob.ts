@@ -8,6 +8,7 @@ import { JobResolutionError } from "@/lib/jobs/resolve";
 import { scrapeJobPosting, type ScrapedJobPosting } from "@/lib/scraper/jobPosting";
 import { errorReason } from "@/lib/scraper/utils";
 import { log } from "@/lib/telemetry";
+import { sanitizeString } from "@/lib/postgresText";
 import type { DescriptionCompleteness } from "@/models/job.model";
 import type { AgentAddJobResult } from "@/models/agent.model";
 
@@ -58,6 +59,23 @@ function chooseDescription(
 }
 
 /**
+ * Approval is asked for every call that could write, and skipped only for one
+ * that execute is already certain to reject. The card renders before execute
+ * runs, so a doomed call otherwise spends a Confirm and the retry spends a
+ * second one — the user confirms the same job twice. This stays in lockstep
+ * with the jobDescription check in execute below: widening it to any other
+ * condition would let a write reach the database unapproved. The chat route
+ * maps it to a toolApproval status.
+ */
+export function addJobNeedsApproval(
+  input: { jobDescription?: string; jobUrl?: string },
+  pastedText?: string,
+): boolean {
+  // A jobUrl is enough to write, because execute can scrape the posting.
+  return Boolean(pastedText ?? input.jobDescription ?? input.jobUrl);
+}
+
+/**
  * userId and pastedText are captured from the route's authenticated session
  * and message array. Anything with those names inside the model's input is
  * ignored — this is the IDOR boundary and it has a dedicated test.
@@ -68,15 +86,6 @@ export function buildAddJobTool(userId: string, pastedText?: string) {
     // Date transforms are deferred here so this schema doubles as the JSON
     // schema the model reads — see src/models/agent.schema.ts.
     inputSchema: AgentAddJobSchema,
-    // Approval is asked for every call that could write, and skipped only for
-    // one that execute is already certain to reject. The card renders before
-    // execute runs, so a doomed call otherwise spends a Confirm and the retry
-    // spends a second one — the user confirms the same job twice. A jobUrl is
-    // enough to write because execute can read the posting itself. This stays
-    // in lockstep with the description check below: widening it to any other
-    // condition would let a write reach the database unapproved.
-    needsApproval: (input: { jobDescription?: string; jobUrl?: string }) =>
-      Boolean(pastedText ?? input?.jobDescription ?? input?.jobUrl),
     execute: async (raw, { abortSignal }): Promise<AgentAddJobResult> => {
       const parsed = AgentAddJobParseSchema.safeParse(raw);
       if (!parsed.success) {
@@ -111,7 +120,11 @@ export function buildAddJobTool(userId: string, pastedText?: string) {
         pastedText ?? input.jobDescription,
         scraped,
       );
-      const jobDescription = chosen.description;
+      // Postgres rejects NUL and lone surrogates, which a pasted or scraped
+      // posting can carry.
+      const jobDescription = chosen.description
+        ? sanitizeString(chosen.description)
+        : undefined;
       if (!jobDescription) {
         const note = scrapeFailure
           ? `The page could not be read (${scrapeFailure}). `

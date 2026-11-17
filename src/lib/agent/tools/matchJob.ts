@@ -1,8 +1,7 @@
 import "server-only";
 
 import { tool, type LanguageModel, type UIMessageStreamWriter } from "ai";
-import { TEMPERATURES } from "@/lib/ai/config";
-import { APP_CONSTANTS } from "@/lib/constants";
+import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
 import { AgentMatchJobSchema } from "@/models/agent.schema";
 import { resolveJobForAgent } from "@/lib/agent/jobLookup";
@@ -42,7 +41,7 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
   return tool({
     description: AGENT_TOOL_DESCRIPTIONS.match_job,
     inputSchema: AgentMatchJobSchema,
-    // No needsApproval: this writes only matchData on the caller's own job,
+    // Not in toolApproval: this writes only matchData on the caller's own job,
     // and they watch the whole thing stream before it lands.
     execute: async (raw, { toolCallId, abortSignal }): Promise<AgentMatchJobResult> => {
       const jobLookup = await resolveJobForAgent(ctx.userId, ctx.pageJobId);

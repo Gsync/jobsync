@@ -17,9 +17,10 @@ export const getRecentJobs = async (): Promise<any | undefined> => {
         Status: true,
         Location: true,
       },
-      orderBy: {
-        appliedDate: "desc",
-      },
+      orderBy: [
+        { appliedDate: { sort: "desc", nulls: "last" } },
+        { id: "desc" },
+      ],
       take: APP_CONSTANTS.RECENT_NUM_JOBS_ACTIVITIES,
     });
     return list;

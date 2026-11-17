@@ -1,10 +1,11 @@
 import db from "@/lib/db";
+import { resumeDetailInclude } from "@/lib/jobs/resumeDetailInclude";
 import type { Automation } from "@/models/automation.model";
 import { ATS_PROVIDERS } from "./ats/registry";
 import { AiProvider } from "@/models/ai.model";
 import { automationLogger } from "@/lib/automation-logger";
 import { PROVIDER_VERIFIERS } from "@/lib/ai/provider-registry.server";
-import { getOllamaApiKey, getOllamaBaseUrl } from "@/actions/apiKey.actions";
+import { resolveApiKey, resolveOllamaApiKey } from "@/lib/api-key-resolver";
 import { log, withSpan } from "@/lib/telemetry";
 import type { ResumeWithSections, RunnerResult } from "./automation-run/types";
 import { getUserAiSettings } from "./automation-run/aiSettings";
@@ -142,8 +143,8 @@ async function runAutomationTraced(
     const aiSettings = await getUserAiSettings(automation.userId);
     if (aiSettings.provider === AiProvider.OLLAMA) {
       const ollamaCheck = await PROVIDER_VERIFIERS.ollama(
-        await getOllamaBaseUrl(automation.userId),
-        { apiKey: await getOllamaApiKey() },
+        (await resolveApiKey(automation.userId, "ollama"))!,
+        { apiKey: await resolveOllamaApiKey() },
       );
       if (!ollamaCheck.success) {
         const message =
@@ -168,28 +169,7 @@ async function runAutomationTraced(
 
     const resume = await db.resume.findUnique({
       where: { id: automation.resumeId },
-      include: {
-        ContactInfo: true,
-        ResumeSections: {
-          include: {
-            summary: true,
-            workExperiences: {
-              include: {
-                Company: true,
-                jobTitle: true,
-                location: true,
-              },
-            },
-            educations: {
-              include: {
-                location: true,
-              },
-            },
-            licenseOrCertifications: true,
-            skills: { include: { Tag: true } },
-          },
-        },
-      },
+      include: resumeDetailInclude,
     });
 
     if (!resume) {

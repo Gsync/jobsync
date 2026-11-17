@@ -8,16 +8,16 @@ import {
   createUIMessageStreamResponse,
   hasToolCall,
   isToolUIPart,
-  stepCountIs,
+  isStepCount,
   streamText,
+  toUIMessageStream,
   type LanguageModelUsage,
   type StopCondition,
   type UIMessage,
 } from "ai";
 import { getModel, type ProviderType } from "@/lib/ai/providers";
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
-import { TEMPERATURES } from "@/lib/ai/config";
-import { APP_CONSTANTS } from "@/lib/constants";
+import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import { AgentChatRequestSchema } from "@/models/agent.schema";
 import {
   AGENT_CHAT_SYSTEM_PROMPT,
@@ -31,7 +31,7 @@ import {
   windowMessages,
 } from "@/lib/agent/paste";
 import { truncateForModel } from "@/lib/agent/paste.server";
-import { buildAgentTools } from "@/lib/agent/tools";
+import { buildAgentToolApproval, buildAgentTools } from "@/lib/agent/tools";
 import type { NestedGenerationGuard } from "@/lib/agent/nestedGeneration";
 import { measureTurnPrefix, type TurnPrefixMetrics } from "@/lib/agent/turnMetrics";
 import { mapAgentError } from "@/lib/agent/errors";
@@ -144,7 +144,7 @@ export const POST = async (req: NextRequest) => {
 
   const pastedText = resolvePastedText(messages);
 
-  // Async in ai@6 (correction #5), and the messages array is client-supplied
+  // Async since ai@6 (correction #5), and the messages array is client-supplied
   // — a shape z.array(z.any()) let through can reject the conversion, and
   // that is a bad request, not a server crash.
   const windowed = windowMessages(messages);
@@ -168,6 +168,7 @@ export const POST = async (req: NextRequest) => {
   // reasoning_content on every assistant message after that boundary, so a
   // reasoning-free reply from two turns ago 400'd the whole request. No
   // provider is special-cased here: the transcript is simply true again.
+  // (@ai-sdk/deepseek 3 now sends "" for missing V4 reasoning_content.)
   // The paste context message below is what actually carries the posting.
   modelMessages = modelMessages.flatMap((message) => {
     if (!(Array.isArray(message.content) && message.content.length === 0)) {
@@ -202,14 +203,14 @@ export const POST = async (req: NextRequest) => {
     AbortSignal.timeout(APP_CONSTANTS.AGENT_CHAT_TIMEOUT_MS),
   ]);
 
-  // Written inside execute, read in onFinish, which runs after it.
+  // Written inside execute, read in onEnd, which runs after it.
   let prefixMetrics: TurnPrefixMetrics | undefined;
 
-  // Written by streamText's own onFinish, read in the outer onFinish. Must be
-  // totalUsage, not one step's usage: stopWhen permits AGENT_CHAT_MAX_STEPS.
+  // Written by streamText's own onEnd, read in the outer onEnd. Its usage
+  // totals every step, and stopWhen permits AGENT_CHAT_MAX_STEPS.
   let turnUsage: LanguageModelUsage | undefined;
   let turnFinishReason: string | undefined;
-  // streamText's onFinish never fires on abort; onAbort reports the steps that
+  // streamText's onEnd never fires on abort; onAbort reports the steps that
   // did finish. The in-flight step's tokens are lost with the connection.
   let turnAbortUsage: TokenUsage | undefined;
 
@@ -244,7 +245,7 @@ export const POST = async (req: NextRequest) => {
   // an already-mapped string straight back keeps it to one line per failure.
   const alreadyMapped = new Set<string>();
   // A doStream throw (Ollama down, bad key) never reaches streamText's
-  // onFinish; this is the only place the turn learns it failed.
+  // onEnd; this is the only place the turn learns it failed.
   let turnError: unknown;
   const mapTurnError = (error: unknown): string =>
     runInSpan(turnSpan, () => {
@@ -278,13 +279,14 @@ export const POST = async (req: NextRequest) => {
         });
         const result = streamText({
           model,
-          system: AGENT_CHAT_SYSTEM_PROMPT,
+          instructions: AGENT_CHAT_SYSTEM_PROMPT,
           messages: modelMessages,
           tools,
+          toolApproval: buildAgentToolApproval(pastedText),
           // Which tools end the turn — and why — lives beside the tool metadata
           // in agent.model.ts, where a new tool is registered.
           stopWhen: [
-            stepCountIs(APP_CONSTANTS.AGENT_CHAT_MAX_STEPS),
+            isStepCount(APP_CONSTANTS.AGENT_CHAT_MAX_STEPS),
             ...AGENT_CHAT_TERMINAL_TOOLS.map((name) =>
               name === "add_job" ? addJobSettledStop : hasToolCall(name),
             ),
@@ -312,10 +314,10 @@ export const POST = async (req: NextRequest) => {
           onAbort: ({ steps }) => {
             turnAbortUsage = usageOfSteps(steps);
           },
-          // streamText's onFinish, not createUIMessageStream's: result is
-          // scoped inside execute while the span ends in the outer onFinish.
-          onFinish: ({ totalUsage, finishReason }) => {
-            turnUsage = totalUsage;
+          // streamText's onEnd, not createUIMessageStream's: result is
+          // scoped inside execute while the span ends in the outer onEnd.
+          onEnd: ({ usage, finishReason }) => {
+            turnUsage = usage;
             turnFinishReason = finishReason;
           },
         });
@@ -326,12 +328,14 @@ export const POST = async (req: NextRequest) => {
         // sees them. Without this the user gets the SDK's "An error occurred."
         // and mapAgentError — the only thing that logs — never runs.
         writer.merge(
-          result.toUIMessageStream({
+          toUIMessageStream({
+            stream: result.stream,
+            tools,
             onError: mapTurnError,
           }),
         );
       }),
-    onFinish: async ({ messages: finalMessages, responseMessage, isAborted }) => {
+    onEnd: async ({ messages: finalMessages, responseMessage, isAborted }) => {
       const { tool, state, outcome } = outcomeOf(responseMessage);
       const fields = {
         provider,
@@ -353,7 +357,7 @@ export const POST = async (req: NextRequest) => {
         messageChars: prefixMetrics?.messageChars ?? 0,
         prefixChanged: prefixMetrics?.prefixChanged ?? false,
       };
-      // onFinish runs outside execute, so the span context has to be
+      // onEnd runs outside execute, so the span context has to be
       // re-entered for the record to carry the turn's trace id.
       runInSpan(turnSpan, () => logTurn(fields));
       // The same curated field set, on the span rather than only in the log,

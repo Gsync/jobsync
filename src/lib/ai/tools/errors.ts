@@ -11,3 +11,13 @@ export class AIUnavailableError extends Error {
     this.name = "AIUnavailableError";
   }
 }
+
+/**
+ * Error thrown when no API key is configured for a provider
+ */
+export class MissingCredentialError extends Error {
+  constructor(providerName: string) {
+    super(`${providerName} credential not configured`);
+    this.name = "MissingCredentialError";
+  }
+}

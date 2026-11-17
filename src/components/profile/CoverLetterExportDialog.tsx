@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { PdfExportDialog } from "@/components/pdf-export/PdfExportDialog";
 import { triggerDownload } from "@/components/pdf-export/download";
 import { useExportSettings } from "@/components/pdf-export/useExportSettings";
@@ -48,9 +48,7 @@ export function CoverLetterExportDialog({
   const resumeHeadline = contactInfo?.headline ?? "";
   const headline = editedHeadline ?? resumeHeadline;
 
-  useEffect(() => {
-    if (!open) setEditedHeadline(null);
-  }, [open]);
+  if (!open && editedHeadline !== null) setEditedHeadline(null);
 
   const isDefault =
     settingsKey(settings) === settingsKey(defaultCoverLetterExportSettings) &&

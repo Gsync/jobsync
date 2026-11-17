@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardTitle } from "../ui/card";
 import { ResponsiveCardHeader } from "../ResponsiveCardHeader";
 import { APP_CONSTANTS } from "@/lib/constants";
-import { JobTitle } from "@prisma/client";
+import type { JobTitle } from "@/generated/prisma/client";
 import JobLocationsTable from "./JobLocationsTable";
 import { getJobLocationsList } from "@/actions/jobLocation.actions";
 import Loading from "../Loading";
