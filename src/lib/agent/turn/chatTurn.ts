@@ -6,7 +6,7 @@ import {
 } from "ai";
 import { saveChatConversation } from "@/actions/agentChat.actions";
 import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
-import type { ProviderType } from "@/lib/ai/providers";
+import type { AiConfig } from "@/lib/ai/aiConfig";
 import { addOllamaTimings, readOllamaTimings, type OllamaTimings } from "@/lib/ai/ollamaTimings";
 import { startAiCall, usageOfSteps, type TokenUsage } from "@/lib/aiUsage/tracker";
 import { genAiRequestAttrs, genAiResponseAttrs, runInSpan, startSpan, SURFACES } from "@/lib/telemetry";
@@ -26,11 +26,11 @@ export function runChatTurn(input: {
   historyDropped: number;
   pageContext?: PageContext;
   pastedText?: string;
-  ai: { provider: ProviderType; modelName: string; model: LanguageModel };
+  ai: AiConfig & { model: LanguageModel };
   requestSignal: AbortSignal;
 }): ReadableStream<UIMessageChunk> {
   const { userId, messages, modelMessages, historyDropped, pageContext, pastedText, requestSignal } = input;
-  const { provider, modelName, model } = input.ai;
+  const { provider, modelName, model, numCtx } = input.ai;
   const errorContext = { provider, model: modelName };
 
   // A client disconnect must cancel the model and its nested tools.
@@ -58,7 +58,7 @@ export function runChatTurn(input: {
     feature: "agent_chat",
     provider,
     model: modelName,
-    numCtx: APP_CONSTANTS.AGENT_CHAT_NUM_CTX,
+    numCtx,
   });
 
   const turnSpan = startSpan("agent.chat.turn", {
@@ -66,7 +66,7 @@ export function runChatTurn(input: {
       provider,
       model: modelName,
       temperature: TEMPERATURES.ANALYSIS,
-      numCtx: APP_CONSTANTS.AGENT_CHAT_NUM_CTX,
+      numCtx,
       surface: SURFACES.AGENT_CHAT,
       system: AGENT_CHAT_SYSTEM_PROMPT,
       prompt: modelMessages,
@@ -120,7 +120,7 @@ export function runChatTurn(input: {
           abortSignal: turnSignal,
           providerOptions: {
             // qwen3.5 selected add_job 7/7 with thinking enabled versus 1/7 without.
-            ollama: { think: true, options: { num_ctx: APP_CONSTANTS.AGENT_CHAT_NUM_CTX } },
+            ollama: { think: true, ...(numCtx !== undefined && { options: { num_ctx: numCtx } }) },
           },
           include: { rawChunks: true },
           onStepEnd: ({ usage }) => {

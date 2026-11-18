@@ -14,9 +14,8 @@ import {
 } from "@/lib/ai";
 import { getResumeById } from "@/actions/profile.actions";
 import { getJobDetails } from "@/actions/job.actions";
-import { defaultUserSettings } from "@/models/userSettings.model";
 import { automationLogger } from "@/lib/automation-logger";
-import { getDefaultModelForProvider } from "@/lib/scraper/automation-run/aiSettings";
+import { resolveAiConfig } from "@/lib/ai/aiConfig";
 import {
   inputSizeAttrs,
   SURFACES,
@@ -56,15 +55,7 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
       return { success: false, message: "Automation resume is missing" };
     }
 
-    const userSettings = await db.userSettings.findUnique({
-      where: { userId: user.id },
-    });
-    const ai = userSettings
-      ? {
-          ...defaultUserSettings.ai,
-          ...(JSON.parse(userSettings.settings).ai ?? {}),
-        }
-      : defaultUserSettings.ai;
+    const { config: ai, configuredModel } = await resolveAiConfig(user.id, "analyze");
 
     const [{ data: resume }, { job: jobDetails }] = await Promise.all([
       getResumeById(resumeId),
@@ -80,8 +71,7 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
       return { success: false, message: "Failed to prepare match inputs" };
     }
 
-    const modelName = ai.model || getDefaultModelForProvider(ai.provider);
-    const model = await getModel(ai.provider, modelName, user.id);
+    const model = await getModel(ai.provider, ai.modelName, user.id);
 
     const promptText = buildJobMatchPrompt(
       resumePre.data.normalizedText,
@@ -93,7 +83,7 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
       feature: "automations",
       spanName: "automation.analyze",
       surface: SURFACES.JOB_MATCH,
-      ai: { provider: ai.provider, modelName, model },
+      ai: { ...ai, model },
       system: JOB_MATCH_SYSTEM_PROMPT,
       prompt: promptText,
       temperature: 0.3,
@@ -118,7 +108,7 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
       resume: { id: resumeId, title: resume.title },
       matchedAt: new Date(),
       provider: ai.provider,
-      model: ai.model,
+      model: configuredModel,
     });
 
     await db.job.update({

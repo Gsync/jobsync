@@ -8,7 +8,7 @@ import {
   removeHtmlTags,
 } from "@/lib/ai";
 import type { JobBoard } from "@/models/automation.model";
-import type { AiSettings } from "@/models/userSettings.model";
+import type { AiConfig } from "@/lib/ai/aiConfig";
 import {
   inputSizeAttrs,
   log,
@@ -16,7 +16,6 @@ import {
 } from "@/lib/telemetry";
 import type { JobDetails } from "../types";
 import type { ResumeWithSections } from "./types";
-import { getDefaultModelForProvider } from "./aiSettings";
 import { convertResumeForMatch } from "./resumeText";
 
 export type MatchResult =
@@ -27,7 +26,7 @@ export async function matchJobToResume(
   job: JobDetails,
   resume: ResumeWithSections,
   sourceBoard: JobBoard,
-  aiSettings: AiSettings,
+  ai: AiConfig,
   userId: string,
   signal?: AbortSignal,
 ): Promise<MatchResult> {
@@ -43,9 +42,7 @@ Description:
 ${removeHtmlTags(job.description)}
 `.trim();
 
-    const provider = aiSettings.provider;
-    const modelName = aiSettings.model || getDefaultModelForProvider(provider);
-    const model = await getModel(provider, modelName, userId);
+    const model = await getModel(ai.provider, ai.modelName, userId);
 
     const promptText = buildAutomationJobMatchPrompt(resumeText, jobText);
 
@@ -54,7 +51,7 @@ ${removeHtmlTags(job.description)}
       feature: "automations",
       spanName: "scraper.match",
       surface: SURFACES.AUTOMATION_MATCH,
-      ai: { provider, modelName, model },
+      ai: { ...ai, model },
       system: AUTOMATION_JOB_MATCH_SYSTEM_PROMPT,
       abortSignal: signal,
       prompt: promptText,

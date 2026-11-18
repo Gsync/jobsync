@@ -71,6 +71,7 @@ describe("analyze discovered job model", () => {
     settings({ provider: "openai" });
     await analyzeDiscoveredJob("job-1");
     const data = JSON.parse(db.job.update.mock.calls[0][0].data.matchData as string);
+    expect(data).not.toHaveProperty("model");
     expect(data.analyzed).toBe(true);
     expect(data).not.toHaveProperty("prerankScore");
     expect(data).not.toHaveProperty("prerankComponents");

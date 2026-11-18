@@ -11,11 +11,8 @@ import { getExistingJobDedupeMap } from "@/lib/jobs/jobDedupe";
 import { automationLogger } from "@/lib/automation-logger";
 import { log } from "@/lib/telemetry";
 import type { BoardFailure, RunnerResult, ResumeWithSections } from "./types";
-import {
-  getAutomationMatchLimit,
-  getDefaultModelForProvider,
-  getUserAiSettings,
-} from "./aiSettings";
+import { getAutomationMatchLimit } from "./aiSettings";
+import { resolveAiConfig } from "@/lib/ai/aiConfig";
 import { parseAtsConfig } from "./config";
 import { extractResumeSkills } from "./resumeText";
 import { buildSkillTerms } from "./skillTags";
@@ -246,10 +243,8 @@ export async function runAtsRun(
       });
     }
 
-    const aiSettings = await getUserAiSettings(automation.userId);
-    const modelName =
-      aiSettings.model || getDefaultModelForProvider(aiSettings.provider);
-    const limit = getAutomationMatchLimit(aiSettings.provider);
+    const { config: ai } = await resolveAiConfig(automation.userId, "automation_match");
+    const limit = getAutomationMatchLimit(ai.provider);
 
     let jobsSaved = 0;
     let jobsTagged = 0;
@@ -347,7 +342,7 @@ export async function runAtsRun(
         scored.job,
         resume,
         automation.jobBoard,
-        aiSettings,
+        ai,
         automation.userId,
         signal,
       );
@@ -362,7 +357,7 @@ export async function runAtsRun(
         if (matchResult.error === "ai_unavailable") {
           // Only the first concurrent task to fail logs; siblings stay quiet.
           if (!aiError) {
-            aiError = `AI provider (${aiSettings.provider}) is not available.`;
+            aiError = `AI provider (${ai.provider}) is not available.`;
             automationLogger.log(automation.id, "error", aiError);
           }
         } else {
@@ -400,8 +395,8 @@ export async function runAtsRun(
             body: matchResult.data.body,
             resume,
             matchedAt: new Date(),
-            provider: aiSettings.provider,
-            model: modelName,
+            provider: ai.provider,
+            model: ai.modelName,
             prerank: { prerankScore: scored.score, prerankComponents: scored.components },
           }),
           skillTerms,

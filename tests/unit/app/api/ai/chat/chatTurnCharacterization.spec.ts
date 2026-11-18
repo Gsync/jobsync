@@ -1,4 +1,5 @@
 import { asSchema, type ToolSet } from "ai";
+import { numCtxFor } from "@/lib/ai/numCtx";
 import { NextRequest } from "next/server";
 import { POST } from "@/app/api/ai/chat/route";
 import { AGENT_PASTE_PART_TYPE } from "@/models/agent.model";
@@ -6,10 +7,10 @@ import { AGENT_PASTE_PART_TYPE } from "@/models/agent.model";
 vi.mock("@/auth", () => ({ auth: async () => ({ user: { id: "user-1" } }) }));
 vi.mock("@/lib/ai/rate-limiter", () => ({ checkRateLimit: () => ({ allowed: true }) }));
 vi.mock("@/lib/ai/providers", () => ({ getModel: async () => ({ id: "fake-model" }) }));
-vi.mock("@/actions/userSettings.actions", () => ({
-  getUserSettings: async () => ({
-    success: true,
-    data: { settings: { ai: { provider: "ollama", model: "qwen3.5:9b" } } },
+vi.mock("@/lib/ai/aiConfig", () => ({
+  resolveAiConfig: async () => ({
+    ok: true,
+    config: { provider: "ollama", modelName: "qwen3.5:9b", numCtx: numCtxFor("chat") },
   }),
 }));
 vi.mock("@/actions/agentChat.actions", () => ({

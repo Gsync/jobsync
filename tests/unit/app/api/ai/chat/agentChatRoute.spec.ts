@@ -1,3 +1,4 @@
+vi.mock("@/lib/ai/aiConfig", () => ({ resolveAiConfig: vi.fn() }));
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 vi.mock("next/server", () => ({
   NextResponse: {
@@ -9,7 +10,6 @@ vi.mock("next/server", () => ({
 }));
 vi.mock("@/lib/ai/rate-limiter", () => ({ checkRateLimit: vi.fn() }));
 vi.mock("@/lib/ai/providers", () => ({ getModel: vi.fn() }));
-vi.mock("@/actions/userSettings.actions", () => ({ getUserSettings: vi.fn() }));
 vi.mock("@/actions/agentChat.actions", () => ({ saveChatConversation: vi.fn() }));
 vi.mock("@/lib/agent/tools", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/agent/tools")>();
@@ -53,11 +53,12 @@ vi.mock("ai", async (importOriginal) => {
 });
 
 import { readFileSync } from "node:fs";
+import { numCtxFor } from "@/lib/ai/numCtx";
+import { resolveAiConfig } from "@/lib/ai/aiConfig";
 import { POST } from "@/app/api/ai/chat/route";
 import { auth } from "@/auth";
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
 import { getModel } from "@/lib/ai/providers";
-import { getUserSettings } from "@/actions/userSettings.actions";
 import { saveChatConversation } from "@/actions/agentChat.actions";
 import { buildAgentTools } from "@/lib/agent/tools";
 import { statusOf } from "@/lib/aiUsage/tracker";
@@ -86,9 +87,9 @@ describe("POST /api/ai/chat", () => {
     vi.clearAllMocks();
     (auth as any).mockResolvedValue({ user: { id: "user-1" } });
     (checkRateLimit as any).mockReturnValue({ allowed: true, remaining: 29, resetIn: 60000 });
-    (getUserSettings as any).mockResolvedValue({
-      success: true,
-      data: { settings: { ai: { provider: "ollama", model: "qwen3.5:9b" } } },
+    vi.mocked(resolveAiConfig).mockResolvedValue({
+      ok: true,
+      config: { provider: "ollama", modelName: "qwen3.5:9b", numCtx: numCtxFor("chat") },
     });
     (getModel as any).mockResolvedValue({ id: "fake-model" });
     (saveChatConversation as any).mockResolvedValue({ success: true });
@@ -397,9 +398,8 @@ describe("POST /api/ai/chat", () => {
   });
 
   it("returns 503 naming Settings when no model is configured, and never guesses one", async () => {
-    (getUserSettings as any).mockResolvedValue({
-      success: true,
-      data: { settings: { ai: { provider: "ollama", model: undefined } } },
+    vi.mocked(resolveAiConfig).mockResolvedValue({
+      ok: false, reason: "no_model",
     });
     const res = await POST(req({ messages: [pasteMessage("posting")] }));
     expect(res.status).toBe(503);
@@ -408,8 +408,19 @@ describe("POST /api/ai/chat", () => {
     expect(streamText).not.toHaveBeenCalled();
   });
 
+  it("answers a JSON 503 when the AI settings cannot be read", async () => {
+    vi.mocked(resolveAiConfig).mockRejectedValueOnce(new SyntaxError("Unexpected token"));
+    const res = await POST(req({ messages: [pasteMessage("posting")] }));
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({
+      error: "No AI model is configured. Pick one in Settings to use the assistant.",
+    });
+    expect(streamText).not.toHaveBeenCalled();
+  });
+
   it("uses the configured model exactly as configured", async () => {
     await POST(req({ messages: [pasteMessage("posting")] }));
+    expect(resolveAiConfig).toHaveBeenCalledWith("user-1", "chat", { requireConfigured: true });
     expect(getModel).toHaveBeenCalledWith("ollama", "qwen3.5:9b", "user-1");
   });
 

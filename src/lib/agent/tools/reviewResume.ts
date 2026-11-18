@@ -2,6 +2,7 @@ import "server-only";
 
 import { tool, type LanguageModel, type UIMessageStreamWriter } from "ai";
 import { SURFACES } from "@/lib/telemetry";
+import { numCtxFor } from "@/lib/ai/numCtx";
 import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
 import { AgentReviewResumeSchema } from "@/models/agent.schema";
@@ -70,7 +71,7 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
         system: RESUME_REVIEW_SYSTEM_PROMPT,
         prompt: buildResumeReviewPrompt(pre.data.normalizedText),
         temperature: TEMPERATURES.FEEDBACK,
-        numCtx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
+        numCtx: numCtxFor("chat_nested"),
         timeoutMs: APP_CONSTANTS.AI_RESUME_REVIEW_TIMEOUT_MS,
         writer: ctx.writer,
         toolCallId,

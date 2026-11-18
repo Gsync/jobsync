@@ -3,15 +3,15 @@ import "server-only";
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { createUIMessageStreamResponse, type UIMessage } from "ai";
-import { getModel, type ProviderType } from "@/lib/ai/providers";
+import { getModel } from "@/lib/ai/providers";
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
 import { AgentChatRequestSchema } from "@/models/agent.schema";
-import { AiProvider } from "@/models/ai.model";
+import { log } from "@/lib/telemetry";
 import { mapAgentError } from "@/lib/agent/errors";
 import { resolvePastedText } from "@/lib/agent/memory/paste";
 import { buildModelMessages } from "@/lib/agent/memory/modelMessages";
 import { runChatTurn } from "@/lib/agent/turn/chatTurn";
-import { getUserSettings } from "@/actions/userSettings.actions";
+import { resolveAiConfig } from "@/lib/ai/aiConfig";
 import { saveChatConversation } from "@/actions/agentChat.actions";
 
 export const POST = async (req: NextRequest) => {
@@ -42,20 +42,17 @@ export const POST = async (req: NextRequest) => {
   // called — a reload, an error or a stop() mid-stream cannot lose them.
   await saveChatConversation(messages);
 
-  const settings = await getUserSettings();
-  const ai = settings?.data?.settings?.ai;
-  // provider is always present — defaultUserSettings supplies it. model is
-  // not, and it is NOT substituted: picking a model the user never chose
-  // turns a knowable configuration error into a mid-stream "model not
-  // found" naming something they never configured.
-  const provider = (ai?.provider ?? AiProvider.OLLAMA) as ProviderType;
-  const modelName = ai?.model;
-  if (!modelName) {
+  const resolved = await resolveAiConfig(userId, "chat", { requireConfigured: true }).catch(() => {
+    log.error("Failed to read AI settings for chat", { userId });
+    return null;
+  });
+  if (!resolved?.ok) {
     return NextResponse.json(
       { error: "No AI model is configured. Pick one in Settings to use the assistant." },
       { status: 503 },
     );
   }
+  const { provider, modelName } = resolved.config;
   const errorContext = { provider, model: modelName };
 
   let model;
@@ -76,7 +73,7 @@ export const POST = async (req: NextRequest) => {
   return createUIMessageStreamResponse({
     stream: runChatTurn({
       userId, messages, modelMessages, historyDropped, pageContext, pastedText,
-      ai: { provider, modelName, model }, requestSignal: req.signal,
+      ai: { ...resolved.config, model }, requestSignal: req.signal,
     }),
   });
 };
