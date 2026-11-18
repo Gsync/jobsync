@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/utils/user.utils";
 import userEvent from "@testing-library/user-event";
 import { format } from "date-fns";
 import { addJob, updateJob } from "@/actions/job.actions";
-import { resolveLinkedInJobForForm } from "@/actions/linkedin.actions";
+import { resolveJobUrlForForm } from "@/actions/jobImport.actions";
 import { toastActionResult } from "@/lib/toast";
 import type { JobResponse } from "@/models/job.model";
 import { APP_CONSTANTS } from "@/lib/constants";
@@ -20,8 +20,8 @@ vi.mock("@/actions/job.actions", () => ({
   updateJob: vi.fn().mockResolvedValue({ success: true }),
 }));
 
-vi.mock("@/actions/linkedin.actions", () => ({
-  resolveLinkedInJobForForm: vi.fn(),
+vi.mock("@/actions/jobImport.actions", () => ({
+  resolveJobUrlForForm: vi.fn(),
 }));
 
 vi.mock("@/actions/profile.actions", () => ({
@@ -126,8 +126,8 @@ describe("AddJob Component", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Job Description")).toBeInTheDocument();
   });
-  it("imports a LinkedIn posting into the form", async () => {
-    (resolveLinkedInJobForForm as any).mockResolvedValue({
+  it("imports a job posting into the form", async () => {
+    (resolveJobUrlForForm as any).mockResolvedValue({
       success: true,
       data: {
         jobUrl: "https://www.linkedin.com/jobs/view/1234567890",
@@ -139,8 +139,8 @@ describe("AddJob Component", () => {
         locationLabel: "Toronto, ON",
         sourceId: "source-1",
         sourceLabel: "LinkedIn",
-        jobType: "Full-time",
-        workplaceType: "Hybrid",
+        jobType: "FT",
+        workplaceType: "HYBRID",
         salaryRange: "$100,000",
         descriptionHtml: "<p>Build things.</p>",
       },
@@ -150,10 +150,10 @@ describe("AddJob Component", () => {
       screen.getByLabelText("Job URL"),
       "https://www.linkedin.com/jobs/view/1234567890",
     );
-    await user.click(screen.getByTestId("import-linkedin-btn"));
+    await user.click(screen.getByTestId("import-job-btn"));
 
     await waitFor(() =>
-      expect(resolveLinkedInJobForForm).toHaveBeenCalledWith(
+      expect(resolveJobUrlForForm).toHaveBeenCalledWith(
         "https://www.linkedin.com/jobs/view/1234567890",
       ),
     );
@@ -164,6 +164,49 @@ describe("AddJob Component", () => {
     expect(screen.getByLabelText("Job Description")).toHaveTextContent(
       "Build things.",
     );
+  });
+
+  it("imports a non-LinkedIn posting and fills its work mode and salary", async () => {
+    (resolveJobUrlForForm as any).mockResolvedValue({
+      success: true,
+      data: {
+        provider: "greenhouse",
+        jobUrl: "https://job-boards.greenhouse.io/acme/jobs/123456",
+        titleId: "title-2",
+        titleLabel: "Platform Engineer",
+        companyId: "company-2",
+        companyLabel: "Globex",
+        locationId: "location-2",
+        locationLabel: "Remote",
+        sourceId: "source-2",
+        sourceLabel: "Greenhouse",
+        jobType: "C",
+        workplaceType: "REMOTE",
+        salaryRange: "$120,000 - $150,000",
+        descriptionHtml: "<p>Run the platform.</p>",
+      },
+    });
+
+    await user.type(
+      screen.getByLabelText("Job URL"),
+      "https://job-boards.greenhouse.io/acme/jobs/123456",
+    );
+    await user.click(screen.getByTestId("import-job-btn"));
+
+    await waitFor(() =>
+      expect(resolveJobUrlForForm).toHaveBeenCalledWith(
+        "https://job-boards.greenhouse.io/acme/jobs/123456",
+      ),
+    );
+    expect(screen.getByLabelText("Job Title")).toHaveTextContent(
+      "Platform Engineer",
+    );
+    expect(screen.getByLabelText("Company")).toHaveTextContent("Globex");
+    expect(screen.getByLabelText("Salary Range")).toHaveTextContent(
+      "$120,000 - $150,000",
+    );
+    expect(screen.getByRole("radio", { name: "Remote" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Contract" })).toBeChecked();
   });
   it("moves a Draft job to Applied when a date applied is picked", async () => {
     expect(screen.getByRole("radio", { name: "Draft" })).toBeChecked();

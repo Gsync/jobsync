@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { addJob, updateJob } from "@/actions/job.actions";
-import { resolveLinkedInJobForForm } from "@/actions/linkedin.actions";
+import { resolveJobUrlForForm } from "@/actions/jobImport.actions";
 import { Link, Loader2, PlusCircle, Search } from "lucide-react";
 import { Button } from "../ui/button";
 import { useForm } from "react-hook-form";
@@ -188,7 +188,7 @@ export function AddJob({
 
   // The date the form filled in itself, so it can take it back again.
   const [autoFilledDate, setAutoFilledDate] = useState<Date | null>(null);
-  const [isImportingLinkedIn, setIsImportingLinkedIn] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   // Tiptap reads its initial content once, so remount it when an import (or a
   // reset between Add and Edit) replaces the description from outside.
   const [descriptionVersion, setDescriptionVersion] = useState(0);
@@ -337,22 +337,23 @@ export function AddJob({
 
   const closeDialog = () => setDialogOpen(false);
 
-  const importFromLinkedIn = async () => {
+  const importFromUrl = async () => {
     const jobUrl = form.getValues("jobUrl")?.trim();
     if (!jobUrl) {
-      toastError("Paste a LinkedIn job URL first.");
+      toastError("Paste a job posting URL first.");
       return;
     }
 
-    setIsImportingLinkedIn(true);
+    setIsImporting(true);
     try {
-      const result = await resolveLinkedInJobForForm(jobUrl);
+      const result = await resolveJobUrlForForm(jobUrl);
       if (!result?.success || !result.data) {
-        toastError(result?.message ?? "Could not read this LinkedIn posting.");
+        toastError(result?.message ?? "Could not read this job posting.");
         return;
       }
 
       const data = result.data as {
+        provider?: string;
         jobUrl: string;
         titleId: string;
         titleLabel: string;
@@ -408,11 +409,11 @@ export function AddJob({
         setValue("salaryRange", data.salaryRange, { shouldValidate: true });
       }
 
-      toastSuccess("Imported from LinkedIn. Review the details before saving.");
+      toastSuccess("Imported from the job link. Review the details before saving.");
     } catch {
-      toastError("Could not read this LinkedIn posting.");
+      toastError("Could not read this job posting.");
     } finally {
-      setIsImportingLinkedIn(false);
+      setIsImporting(false);
     }
   };
 
@@ -520,24 +521,23 @@ export function AddJob({
                               type="button"
                               variant="outline"
                               size="sm"
-                              onClick={importFromLinkedIn}
+                              onClick={importFromUrl}
                               disabled={
-                                isImportingLinkedIn ||
+                                isImporting ||
                                 !field.value ||
                                 !field.value.trim()
                               }
-                              data-testid="import-linkedin-btn"
+                              data-testid="import-job-btn"
                             >
-                              {isImportingLinkedIn ? (
+                              {isImporting ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
                                 <Search className="h-4 w-4" />
                               )}
-                              Import from LinkedIn
+                              Import from URL
                             </Button>
                             <span className="text-xs leading-none text-muted-foreground">
-                              Fills the title, company, location and description
-                              from a LinkedIn job link.
+                              Fills the fields it can from the job posting link.
                             </span>
                           </div>
                           <FormMessage />

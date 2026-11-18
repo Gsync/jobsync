@@ -51,3 +51,77 @@ export function decodeHtml(raw: string): string {
   // Second pass decodes any entities inside tag attribute values
   return decodeEntities(decoded);
 }
+
+const ALLOWED_TAGS = new Set([
+  "p",
+  "br",
+  "strong",
+  "b",
+  "em",
+  "i",
+  "u",
+  "s",
+  "ul",
+  "ol",
+  "li",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "blockquote",
+  "a",
+  "span",
+  "div",
+  "hr",
+]);
+
+/**
+ * Conservatively strips active content from a job description before it
+ * reaches Tiptap. Tiptap already ignores unknown tags on parse, but the stored
+ * value is also read by PDFs and AI prompts, so remove scripts, event handlers
+ * and javascript: URLs here rather than relying on one renderer.
+ */
+export function sanitizeJobHtml(html: string): string {
+  if (!html) return "";
+  return html
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(
+      /<(script|style|iframe|object|embed|form|input|button|textarea|select|option|link|meta)\b[\s\S]*?<\/\1>/gi,
+      "",
+    )
+    .replace(
+      /<(script|style|iframe|object|embed|form|input|button|textarea|select|option|link|meta)\b[^>]*\/?>/gi,
+      "",
+    )
+    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+    .replace(/\sstyle\s*=\s*("[^"]*"|'[^']*')/gi, "")
+    .replace(
+      /\s(href|src)\s*=\s*("|')\s*javascript:[^"']*\2/gi,
+      ' $1="#"',
+    )
+    .replace(/\s(href|src)\s*=\s*javascript:[^\s>]*/gi, ' $1="#"')
+    .replace(/<\/?([a-z0-9]+)(?:\s[^>]*)?>/gi, (tag, name: string) =>
+      ALLOWED_TAGS.has(name.toLowerCase()) ? tag : "",
+    )
+    .trim();
+}
+
+/** Wraps plain text in paragraphs so it can be stored as description HTML. */
+export function textToHtml(text: string): string {
+  if (!text) return "";
+  return text
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map(
+      (paragraph) =>
+        `<p>${paragraph
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\n/g, "<br>")}</p>`,
+    )
+    .join("");
+}

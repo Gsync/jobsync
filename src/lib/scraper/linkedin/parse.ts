@@ -1,4 +1,5 @@
-import { decodeHtml } from "../html";
+import { decodeHtml, sanitizeJobHtml } from "../html";
+import { inferWorkplaceType } from "../import/normalize";
 import type { LinkedInJobDetails, LinkedInSearchResult } from "./types";
 import { canonicalLinkedInJobUrl } from "./url";
 
@@ -51,84 +52,8 @@ function extractBalancedDiv(html: string, className: string): string {
   return html.slice(start);
 }
 
-const ALLOWED_TAGS = new Set([
-  "p",
-  "br",
-  "strong",
-  "b",
-  "em",
-  "i",
-  "u",
-  "s",
-  "ul",
-  "ol",
-  "li",
-  "h1",
-  "h2",
-  "h3",
-  "h4",
-  "h5",
-  "h6",
-  "blockquote",
-  "a",
-  "span",
-  "div",
-  "hr",
-]);
-
-/**
- * Conservatively strips active content from LinkedIn's description HTML before
- * it reaches the Tiptap editor. Tiptap already ignores unknown tags on parse,
- * but the stored value is also read by PDFs and AI prompts, so remove scripts,
- * event handlers and javascript: URLs here rather than relying on one renderer.
- */
-export function sanitizeLinkedInHtml(html: string): string {
-  if (!html) return "";
-  return html
-    .replace(/<!--[\s\S]*?-->/g, "")
-    .replace(
-      /<(script|style|iframe|object|embed|form|input|button|textarea|select|option|link|meta)\b[\s\S]*?<\/\1>/gi,
-      "",
-    )
-    .replace(
-      /<(script|style|iframe|object|embed|form|input|button|textarea|select|option|link|meta)\b[^>]*\/?>/gi,
-      "",
-    )
-    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-    .replace(/\sstyle\s*=\s*("[^"]*"|'[^']*')/gi, "")
-    .replace(
-      /\s(href|src)\s*=\s*("|')\s*javascript:[^"']*\2/gi,
-      ' $1="#"',
-    )
-    .replace(/<\/?([a-z0-9]+)(?:\s[^>]*)?>/gi, (tag, name: string) =>
-      ALLOWED_TAGS.has(name.toLowerCase()) ? tag : "",
-    )
-    .trim();
-}
-
-function inferWorkplaceType(
-  location: string,
-  title: string,
-  description: string,
-): LinkedInJobDetails["workplaceType"] {
-  const sources = [
-    location.toLowerCase(),
-    title.toLowerCase(),
-    description.slice(0, 600).toLowerCase(),
-  ];
-  for (const source of sources) {
-    if (/\bhybrid\b/.test(source)) return "Hybrid";
-    // Ignore benefit phrases such as "remote workspace stipend" while still
-    // recognizing a genuine "remote role" elsewhere in the same text.
-    const withoutRemoteBenefits = source.replace(
-      /\bremote\s+(?:workspace|stipend|office|team|employees?|benefits?)\b/g,
-      " ",
-    );
-    if (/\bremote\b/.test(withoutRemoteBenefits)) return "Remote";
-    if (/\bon[- ]?site\b|\bin[- ]office\b/.test(source)) return "Onsite";
-  }
-  return undefined;
-}
+// LinkedIn descriptions go through the shared sanitizer used by every importer.
+export const sanitizeLinkedInHtml = sanitizeJobHtml;
 
 interface TechnologyPattern {
   label: string;

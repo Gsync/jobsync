@@ -11,6 +11,11 @@ import {
 } from "@/lib/scraper/linkedin";
 import { parseLinkedInSearchUrl } from "@/lib/scraper/linkedin/url";
 import { createJobFromNames } from "@/lib/jobs/createJobFromNames";
+import { normalizeEmploymentType } from "@/lib/scraper/import/normalize";
+import {
+  fallbackImportedLocation,
+  importedDescriptionHtml,
+} from "@/lib/jobs/importedJob";
 import {
   resolveCompany,
   resolveJobSource,
@@ -36,40 +41,6 @@ function scraperMessage(error: ScraperError): string {
     case "parse":
       return error.message;
   }
-}
-
-// LinkedIn's employment labels are broader than JobSync's three job types.
-// Fold the extra categories into the closest stored value instead of failing
-// the import on a label like "Temporary".
-function normalizeEmploymentType(input?: string): string {
-  const value = input?.toLowerCase() ?? "";
-  if (value.includes("part")) return "Part-time";
-  if (
-    value.includes("contract") ||
-    value.includes("temporary") ||
-    value.includes("intern") ||
-    value.includes("volunteer")
-  ) {
-    return "Contract";
-  }
-  return "Full-time";
-}
-
-function fallbackLocation(
-  location: string,
-  workplaceType?: string,
-): string {
-  if (location) return location;
-  return workplaceType === "Remote" ? "Remote" : "Not specified";
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }
 
 export const getLinkedInSearches = async (): Promise<any | undefined> => {
@@ -184,15 +155,16 @@ export const resolveLinkedInJobForForm = async (
       resolveCompany(details.company, user.id),
       resolveJobTitle(details.title, user.id),
       resolveLocation(
-        fallbackLocation(details.location, details.workplaceType),
+        fallbackImportedLocation(details.location, details.workplaceType),
         user.id,
       ),
       resolveJobSource("LinkedIn", user.id),
     ]);
 
-    const descriptionHtml =
-      details.descriptionHtml ||
-      `<p>${escapeHtml(details.descriptionText || "N/A")}</p>`;
+    const descriptionHtml = importedDescriptionHtml(
+      details.descriptionHtml,
+      details.descriptionText,
+    );
 
     return {
       success: true,
@@ -242,7 +214,7 @@ export const importLinkedInJob = async (
         company: details.company,
         jobTitle: details.title,
         jobDescription: details.descriptionText || "N/A",
-        location: fallbackLocation(details.location, details.workplaceType),
+        location: fallbackImportedLocation(details.location, details.workplaceType),
         source: "LinkedIn",
         jobType: normalizeEmploymentType(details.employmentType),
         workplaceType: details.workplaceType,
