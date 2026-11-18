@@ -51,6 +51,31 @@ function reviewTurn(reviewBody: string, providerId: string): Message[] {
   ];
 }
 
+function resumeSelectionTurn(providerId: string): Message[] {
+  const output = {
+    status: 'needs_selection',
+    resumes: [
+      { id: 'resume-eval-1', title: 'Backend 2026' },
+      { id: 'resume-eval-2', title: 'Product Manager' },
+    ],
+  };
+  return [
+    {
+      role: 'assistant',
+      content: null,
+      reasoning_content: '',
+      tool_calls: [
+        {
+          id: 'call_get_resume_1',
+          type: 'function',
+          function: { name: 'get_resume', arguments: toolArguments({}, providerId) },
+        },
+      ],
+    },
+    { role: 'tool', tool_call_id: 'call_get_resume_1', content: JSON.stringify(output) },
+  ];
+}
+
 // Mirrors a confirmed add_job round-trip: the user pressed Confirm, the write
 // happened, and the route resumed the loop for a step that narrates it. The
 // result is AgentAddJobResult's created branch verbatim — the model is told
@@ -118,6 +143,7 @@ export default function prompt({
 
   if (vars.priorReview) messages.push(...reviewTurn(vars.priorReview, providerId));
   if (vars.priorAddJob) messages.push(...addJobTurn(providerId));
+  if (vars.priorResumeSelection) messages.push(...resumeSelectionTurn(providerId));
   if (vars.followUp) messages.push({ role: 'user', content: vars.followUp });
 
   // Injected after the newest user message, and exactly once however many

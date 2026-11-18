@@ -254,6 +254,15 @@ tests:
       - type: javascript
         value: file://./assertions.ts:assertCallsGetResume
 
+  - description: Picked resume after a question - reads it, does not review it
+    vars:
+      userMessage: What skills are listed on my resume?
+      priorResumeSelection: 'true'
+      followUp: Use my resume "Backend 2026"
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsGetResume
+
   # The two resume tools must not be interchangeable: a critique is a review,
   # a factual question is a read. This is the row that catches a tool
   # description that blurs them.
