@@ -130,3 +130,38 @@ export function formatSalary(input: unknown): string | undefined {
   }
   return undefined;
 }
+
+const SYMBOL_TO_CURRENCY: Record<string, string> = {
+  $: "USD",
+  "£": "GBP",
+  "€": "EUR",
+  "¥": "JPY",
+  "₹": "INR",
+};
+
+const SALARY_TEXT_PATTERN =
+  /\b(?:salary|compensation|pay range|base pay|annual pay|hourly rate|rate of pay)\b[^$£€¥₹]{0,100}?(\$|£|€|¥|₹|USD|CAD|AUD|NZD|EUR|GBP|JPY|INR)\s*([\d][\d,.]*)\s*([kK])?(?:\s*(?:-|–|—|to)\s*(?:\$|£|€|¥|₹|USD|CAD|AUD|NZD|EUR|GBP|JPY|INR)?\s*([\d][\d,.]*)\s*([kK])?)?/i;
+
+function salaryAmount(raw: string, thousands?: string): number | undefined {
+  const value = Number(raw.replace(/,/g, ""));
+  if (!Number.isFinite(value)) return undefined;
+  return thousands ? value * 1000 : value;
+}
+
+/**
+ * Pulls a pay range out of prose such as "Annual salary estimated between
+ * $140,000-$165,000". Anchored to a compensation keyword so benefit numbers
+ * and dates are not mistaken for pay.
+ */
+export function salaryFromText(text: string): string | undefined {
+  const match = SALARY_TEXT_PATTERN.exec(text ?? "");
+  if (!match) return undefined;
+
+  const token = match[1].toUpperCase();
+  const currency = SYMBOL_TO_CURRENCY[token] ?? token;
+  const min = salaryAmount(match[2], match[3]);
+  const max = salaryAmount(match[4], match[5]);
+  if (min === undefined) return undefined;
+  if (max === undefined || max === min) return formatAmount(min, currency);
+  return `${formatAmount(min, currency)} - ${formatAmount(max, currency)}`;
+}

@@ -96,6 +96,24 @@ function ashbyFromUrl(url: URL): DetectedJobUrl | null {
   return null;
 }
 
+function ripplingFromUrl(url: URL): DetectedJobUrl | null {
+  const host = url.hostname.toLowerCase();
+  // Rippling serves boards from ats.rippling.com and regional hosts such as
+  // ats.us1.rippling.com, sometimes behind a locale prefix (/en-CA/{board}/...).
+  if (!host.startsWith("ats") || !host.endsWith("rippling.com")) return null;
+
+  const parts = segments(url);
+  const jobsIndex = parts.indexOf("jobs");
+  if (jobsIndex < 1) return null;
+
+  const token = parts[jobsIndex - 1];
+  const id = parts[jobsIndex + 1];
+  if (token && isPostingId(id)) {
+    return { provider: "rippling", token, id };
+  }
+  return null;
+}
+
 /** Detects the best source for a posting URL. Unknown sites use "generic". */
 export function detectJobUrl(input: string): DetectedJobUrl | null {
   const url = parseImportUrl(input);
@@ -106,7 +124,10 @@ export function detectJobUrl(input: string): DetectedJobUrl | null {
   }
 
   const provider =
-    greenhouseFromUrl(url) ?? leverFromUrl(url) ?? ashbyFromUrl(url);
+    greenhouseFromUrl(url) ??
+    leverFromUrl(url) ??
+    ashbyFromUrl(url) ??
+    ripplingFromUrl(url);
   if (provider) return provider;
 
   return { provider: "generic" };
@@ -117,6 +138,7 @@ const SOURCE_BY_HOST: { domain: string; label: string }[] = [
   { domain: "greenhouse.io", label: "Greenhouse" },
   { domain: "lever.co", label: "Lever" },
   { domain: "ashbyhq.com", label: "Ashby" },
+  { domain: "rippling.com", label: "Rippling" },
   { domain: "indeed.com", label: "Indeed" },
   { domain: "glassdoor.com", label: "Glassdoor" },
   { domain: "monster.com", label: "Monster" },
@@ -130,6 +152,7 @@ const KNOWN_SOURCE_LABELS = new Set([
   "Greenhouse",
   "Lever",
   "Ashby",
+  "Rippling",
   "Indeed",
   "Glassdoor",
   "Monster",
@@ -174,6 +197,8 @@ export function providerSourceLabel(provider: JobImportProvider): string {
       return "Lever";
     case "ashby":
       return "Ashby";
+    case "rippling":
+      return "Rippling";
     case "generic":
       return "Company Career page";
   }

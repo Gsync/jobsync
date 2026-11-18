@@ -10,6 +10,7 @@ import {
   fetchAshbyJob,
   fetchGreenhouseJob,
   fetchLeverJob,
+  fetchRipplingJob,
 } from "./providers";
 import type { ImportedJobDetails } from "./types";
 
@@ -169,6 +170,14 @@ export async function resolveJobFromUrl(
     }
     case "ashby": {
       const result = await fetchAshbyJob(
+        detected.token!,
+        detected.id!,
+        url.toString(),
+      );
+      return result.success ? result : genericDetails(url.toString());
+    }
+    case "rippling": {
+      const result = await fetchRipplingJob(
         detected.token!,
         detected.id!,
         url.toString(),

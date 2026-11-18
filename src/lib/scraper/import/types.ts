@@ -3,6 +3,7 @@ export type JobImportProvider =
   | "greenhouse"
   | "lever"
   | "ashby"
+  | "rippling"
   | "generic";
 
 export interface ImportedJobDetails {

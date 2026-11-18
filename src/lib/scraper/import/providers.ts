@@ -9,6 +9,7 @@ import {
   inferWorkplaceType,
   normalizeEmploymentType,
   normalizeWorkplaceLabel,
+  salaryFromText,
 } from "./normalize";
 import type { ImportedJobDetails } from "./types";
 
@@ -279,4 +280,114 @@ export async function fetchAshbyJob(
     };
   }
   return { success: true, data: details };
+}
+
+interface RipplingJobPost {
+  uuid?: string;
+  name?: string;
+  description?: { company?: string; role?: string } | string | null;
+  workLocations?: string[] | null;
+  employmentType?: { id?: string; label?: string } | string | null;
+  createdOn?: string;
+  url?: string;
+  companyName?: string | null;
+  payRangeDetails?: unknown[] | null;
+}
+
+interface RipplingNextData {
+  props?: {
+    pageProps?: {
+      apiData?: {
+        jobPost?: RipplingJobPost | null;
+        jobBoard?: { companyName?: string | null } | null;
+        workLocations?: string[] | null;
+      } | null;
+    } | null;
+  } | null;
+}
+
+/** Reads the JSON Next.js embeds in its `__NEXT_DATA__` script tag. */
+function nextData(html: string): RipplingNextData | null {
+  const match =
+    /<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i.exec(html);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[1]) as RipplingNextData;
+  } catch {
+    return null;
+  }
+}
+
+function ripplingDescription(post: RipplingJobPost): string {
+  const description = post.description;
+  if (typeof description === "string") return description;
+  if (description && typeof description === "object") {
+    return [description.company, description.role].filter(Boolean).join("");
+  }
+  return "";
+}
+
+function ripplingEmploymentType(post: RipplingJobPost): string | undefined {
+  const type = post.employmentType;
+  if (!type) return undefined;
+  if (typeof type === "string") return type;
+  return type.id || type.label || undefined;
+}
+
+export async function fetchRipplingJob(
+  token: string,
+  id: string,
+  inputUrl: string,
+): Promise<ScraperResult<ImportedJobDetails>> {
+  const page = await fetchImportPage(inputUrl);
+  if (!page.success) return page;
+
+  const api = nextData(page.data.text)?.props?.pageProps?.apiData;
+  const post = api?.jobPost;
+  if (!post?.name) {
+    return {
+      success: false,
+      error: {
+        type: "parse",
+        message: "This posting is no longer available.",
+      },
+    };
+  }
+
+  const descriptionHtml = sanitizeJobHtml(ripplingDescription(post));
+  const descriptionText = flattenHtml(descriptionHtml);
+  const locations = post.workLocations?.length
+    ? post.workLocations
+    : api?.workLocations ?? [];
+  const location = locations
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value))
+    .join(", ");
+
+  const company =
+    (post.companyName ?? "").trim() ||
+    (api?.jobBoard?.companyName ?? "").trim() ||
+    prettifyToken(token);
+
+  const salary =
+    formatSalary(post.payRangeDetails?.[0]) ??
+    salaryFromText(descriptionText);
+
+  return {
+    success: true,
+    data: {
+      provider: "rippling",
+      sourceLabel: "Rippling",
+      url: post.url || inputUrl,
+      title: post.name.trim(),
+      company,
+      location,
+      descriptionHtml,
+      descriptionText,
+      employmentType: ripplingEmploymentType(post),
+      workplaceType: inferWorkplaceType(location, post.name, descriptionText),
+      salary,
+      postedDate: post.createdOn || undefined,
+    },
+  };
 }

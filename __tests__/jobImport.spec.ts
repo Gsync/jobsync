@@ -5,6 +5,7 @@ import {
 } from "@/lib/scraper/import";
 import { fetchImportPage } from "@/lib/scraper/import/http";
 import { extractJobFromHtml } from "@/lib/scraper/import/jsonld";
+import { salaryFromText } from "@/lib/scraper/import/normalize";
 import { sanitizeJobHtml } from "@/lib/scraper/html";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -84,6 +85,31 @@ describe("job import URL detection", () => {
     expect(
       detectJobUrl("https://jobs.ashbyhq.com/acme/abcdef12-3456"),
     ).toEqual({ provider: "ashby", token: "acme", id: "abcdef12-3456" });
+  });
+
+  it("detects Rippling board URLs, including locale prefixes", () => {
+    expect(
+      detectJobUrl(
+        "https://ats.rippling.com/coterie-careers/jobs/368d1573-2079-40d7-ac1b-04de40071fdc?jobSite=LinkedIn",
+      ),
+    ).toEqual({
+      provider: "rippling",
+      token: "coterie-careers",
+      id: "368d1573-2079-40d7-ac1b-04de40071fdc",
+    });
+    expect(
+      detectJobUrl(
+        "https://ats.us1.rippling.com/en-CA/coterie-careers/jobs/368d1573-2079-40d7-ac1b-04de40071fdc",
+      ),
+    ).toEqual({
+      provider: "rippling",
+      token: "coterie-careers",
+      id: "368d1573-2079-40d7-ac1b-04de40071fdc",
+    });
+    // A board listing is not a posting, so it stays on the generic path.
+    expect(
+      detectJobUrl("https://ats.rippling.com/coterie-careers/jobs"),
+    ).toEqual({ provider: "generic" });
   });
 
   it("falls back to the generic parser for other sites", () => {
@@ -430,6 +456,66 @@ describe("resolveJobFromUrl", () => {
       expect(result.data.employmentType).toBe("FullTime");
       expect(result.data.descriptionHtml).toContain("Ship product.");
     }
+  });
+
+  it("resolves a Rippling posting from its Next.js page data", async () => {
+    const jobId = "368d1573-2079-40d7-ac1b-04de40071fdc";
+    const jobUrl = `https://ats.rippling.com/coterie-careers/jobs/${jobId}`;
+    const html = `<html><head>
+      <title>Sr Software Engineer (Backend)</title>
+      <meta property="og:title" content="Sr Software Engineer (Backend) | Tagline" />
+      <meta property="og:site_name" content="Rippling Recruiting" />
+      <script id="__NEXT_DATA__" type="application/json">${JSON.stringify({
+        props: {
+          pageProps: {
+            apiData: {
+              jobBoard: { companyName: "Coterie Applications Inc. " },
+              jobPost: {
+                uuid: jobId,
+                name: "Sr Software Engineer (Backend)",
+                url: jobUrl,
+                workLocations: ["Remote (United States)"],
+                employmentType: { id: "Full-Time", label: "SALARIED_FT" },
+                createdOn: "2026-10-16T11:06:23.962000-07:00",
+                companyName: "Coterie Applications Inc. ",
+                payRangeDetails: [],
+                description: {
+                  company: "<p>About Coterie.</p>",
+                  role:
+                    "<p>Build the backend.</p><script>alert(1)</script>" +
+                    "<p>Annual salary estimated between $140,000-$165,000.</p>",
+                },
+              },
+            },
+          },
+        },
+      }).replace(/<\/script/gi, "<\\/script")}</script>
+    </head></html>`;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(html)));
+
+    const result = await resolveJobFromUrl(`${jobUrl}?jobSite=LinkedIn`);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.provider).toBe("rippling");
+      expect(result.data.sourceLabel).toBe("Rippling");
+      expect(result.data.title).toBe("Sr Software Engineer (Backend)");
+      expect(result.data.company).toBe("Coterie Applications Inc.");
+      expect(result.data.location).toBe("Remote (United States)");
+      expect(result.data.workplaceType).toBe("Remote");
+      expect(result.data.employmentType).toBe("Full-Time");
+      expect(result.data.salary).toBe("$140,000 - $165,000");
+      expect(result.data.descriptionHtml).toContain("About Coterie.");
+      expect(result.data.descriptionHtml).toContain("Build the backend.");
+      expect(result.data.descriptionHtml).not.toContain("<script");
+    }
+  });
+
+  it("does not mistake benefit numbers for a salary", () => {
+    expect(salaryFromText("12 company-paid holidays each year")).toBeUndefined();
+    expect(
+      salaryFromText("Annual salary estimated between $140,000-$165,000"),
+    ).toBe("$140,000 - $165,000");
   });
 
   it("falls back to the posting page when an ATS API fails", async () => {
