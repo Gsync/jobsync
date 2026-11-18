@@ -4,7 +4,8 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import { McpSaveMatchResultSchema } from "@/models/mcp.schema";
 import { checkMcpRateLimit } from "@/lib/mcp/rate-limit";
 import { parseJobMatch } from "@/lib/ai/jobMatch/parse";
-import type { JobMatchData } from "@/models/ai.schemas";
+import { buildLlmMatchData } from "@/lib/ai/jobMatch/matchResult";
+import { getDefaultResumeRefForUser } from "@/lib/jobs/getDefaultResumeForUser";
 import type { DescriptionCompleteness } from "@/models/job.model";
 
 export async function handleSaveMatchResult(
@@ -49,18 +50,7 @@ export async function handleSaveMatchResult(
           select: { id: true, title: true },
         })
       : null;
-  if (!resume) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { defaultResumeId: true },
-    });
-    resume = user?.defaultResumeId
-      ? await prisma.resume.findFirst({
-          where: { id: user.defaultResumeId, profile: { userId } },
-          select: { id: true, title: true },
-        })
-      : null;
-  }
+  if (!resume) resume = await getDefaultResumeRefForUser(userId);
 
   // Same scope as the update below, so a job the caller can't write to
   // never leaks its completeness through this read either.
@@ -69,26 +59,23 @@ export async function handleSaveMatchResult(
     select: { descriptionCompleteness: true },
   });
 
-  const matchData: JobMatchData = {
-    matchScore: parsed.scores.matchScore,
-    recommendation: parsed.scores.recommendation,
+  const matchData = buildLlmMatchData({
+    scores: parsed.scores,
     body: parsed.body,
-    resumeId: resume?.id,
-    resumeTitle: resume?.title,
-    matchedAt: new Date().toISOString(),
+    resume: resume ?? undefined,
+    matchedAt: new Date(),
     provider: APP_CONSTANTS.MCP_MATCH_PROVIDER_MARKER,
     model: tokenName,
-    analyzed: true,
     descriptionCompleteness:
       (job?.descriptionCompleteness as DescriptionCompleteness | null) ?? undefined,
-  };
+  });
 
   try {
     await prisma.job.update({
       where: { id: input.jobId, userId, createdVia: { not: null } },
       data: {
         matchScore: parsed.scores.matchScore,
-        matchData: JSON.stringify(matchData),
+        matchData,
       },
     });
   } catch (error: any) {

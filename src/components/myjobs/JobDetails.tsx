@@ -29,7 +29,7 @@ import {
 import { NotesSection } from "./NotesSection";
 import { useState, useMemo } from "react";
 import { MatchDetails } from "../automations/MatchDetails";
-import type { JobMatchData } from "@/models/ai.schemas";
+import { parseMatchData } from "@/lib/ai/jobMatch/matchResult";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { AddJob } from "./AddJob";
 import { deleteJobById, updateJobStatus } from "@/actions/job.actions";
@@ -121,14 +121,7 @@ function JobDetails({
 
   // Derived from the server prop, not local state: the chat saves the match
   // server-side and fires router.refresh(), so mirrored state would go stale.
-  const parsedMatchData = useMemo(() => {
-    if (!job.matchData) return null;
-    try {
-      return JSON.parse(job.matchData) as JobMatchData;
-    } catch {
-      return null;
-    }
-  }, [job.matchData]);
+  const parsedMatchData = useMemo(() => parseMatchData(job.matchData), [job.matchData]);
 
   const jobLabel = `${job.JobTitle?.label ?? "this job"}${
     job.Company?.label ? ` at ${job.Company.label}` : ""

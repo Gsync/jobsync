@@ -20,7 +20,7 @@ import {
   type NestedGenerationGuard,
 } from "@/lib/agent/steps/nestedGeneration";
 import type { AgentMatchJobResult } from "@/models/agent.model";
-import type { JobMatchData } from "@/models/ai.schemas";
+import { buildLlmMatchData } from "@/lib/ai/jobMatch/matchResult";
 
 type MatchJobContext = {
   userId: string;
@@ -143,20 +143,19 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
         };
       }
 
-      const matchData: JobMatchData = {
-        ...scores,
+      const matchData = buildLlmMatchData({
+        scores,
         body,
-        resumeId: resume.id!,
-        resumeTitle: resume.title,
-        matchedAt: new Date().toISOString(),
+        resume: { id: resume.id!, title: resume.title },
+        matchedAt: new Date(),
         provider: ctx.provider,
         model: ctx.modelName,
         surface: APP_CONSTANTS.AGENT_CHAT_MATCH_SURFACE,
-      };
+      });
       const saveResult = await saveJobMatchResult(
         job.id!,
         scores.matchScore,
-        JSON.stringify(matchData),
+        matchData,
       );
       const saved = saveResult?.success === true;
 

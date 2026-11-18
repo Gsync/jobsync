@@ -1,5 +1,6 @@
 "use server";
 
+import { buildLlmMatchData } from "@/lib/ai/jobMatch/matchResult";
 import db from "@/lib/db";
 import { requireUser } from "../shared";
 import { generateText } from "ai";
@@ -151,24 +152,13 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
       return { success: false, message: "AI did not return a match score" };
     }
 
-    let previous: Record<string, unknown> = {};
-    try {
-      previous = JSON.parse(job.matchData ?? "{}");
-    } catch {
-      previous = {};
-    }
-
-    const matchData = JSON.stringify({
-      ...previous,
-      matchScore: scores.matchScore,
-      recommendation: scores.recommendation,
+    const matchData = buildLlmMatchData({
+      scores,
       body,
-      resumeId,
-      resumeTitle: resume.title,
-      matchedAt: new Date().toISOString(),
+      resume: { id: resumeId, title: resume.title },
+      matchedAt: new Date(),
       provider: ai.provider,
       model: ai.model,
-      analyzed: true,
     });
 
     await db.job.update({

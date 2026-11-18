@@ -196,6 +196,7 @@ describe("match_job agent tool", () => {
     expect(data.resumeTitle).toBe("Senior Engineer Resume");
     expect(data.provider).toBe("ollama");
     expect(data.model).toBe("qwen3.5:9b");
+    expect(data.analyzed).toBe(true);
     expect(data.surface).toBe(APP_CONSTANTS.AGENT_CHAT_MATCH_SURFACE);
     expect(typeof data.matchedAt).toBe("string");
   });

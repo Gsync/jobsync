@@ -1,3 +1,4 @@
+import type { JobMatchScores } from "@/models/ai.schemas";
 import { generateText } from "ai";
 import {
   getModel,
@@ -23,12 +24,9 @@ import { getDefaultModelForProvider } from "./aiSettings";
 import { convertResumeForMatch } from "./resumeText";
 import { startAiCall } from "@/lib/aiUsage/tracker";
 
-export interface MatchResult {
-  success: boolean;
-  score: number;
-  data?: object;
-  error?: string;
-}
+export type MatchResult =
+  | { success: true; score: number; data: JobMatchScores & { body: string } }
+  | { success: false; score: number; error: string };
 
 export async function matchJobToResume(
   job: JobDetails,

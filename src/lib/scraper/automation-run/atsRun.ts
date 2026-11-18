@@ -1,3 +1,4 @@
+import { buildPrerankMatchData, buildLlmMatchData } from "@/lib/ai/jobMatch/matchResult";
 import type {
   Automation,
   FunnelStage,
@@ -273,11 +274,10 @@ export async function runAtsRun(
             automation,
             scored.job,
             scalePrerank(scored.score),
-            {
+            buildPrerankMatchData({
               prerankScore: scored.score,
               prerankComponents: scored.components,
-              analyzed: false,
-            },
+            }),
             skillTerms,
           );
           if (saved) {
@@ -313,11 +313,10 @@ export async function runAtsRun(
             automation,
             scored.job,
             scalePrerank(scored.score),
-            {
+            buildPrerankMatchData({
               prerankScore: scored.score,
               prerankComponents: scored.components,
-              analyzed: false,
-            },
+            }),
             skillTerms,
           );
           if (saved) {
@@ -396,17 +395,15 @@ export async function runAtsRun(
           automation,
           scored.job,
           matchResult.score,
-          {
-            ...matchResult.data,
-            resumeId: resume.id,
-            resumeTitle: resume.title,
-            matchedAt: new Date().toISOString(),
+          buildLlmMatchData({
+            scores: matchResult.data,
+            body: matchResult.data.body,
+            resume,
+            matchedAt: new Date(),
             provider: aiSettings.provider,
             model: modelName,
-            prerankScore: scored.score,
-            prerankComponents: scored.components,
-            analyzed: true,
-          },
+            prerank: { prerankScore: scored.score, prerankComponents: scored.components },
+          }),
           skillTerms,
         );
         if (saved) {
