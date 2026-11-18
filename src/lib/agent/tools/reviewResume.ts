@@ -1,6 +1,7 @@
 import "server-only";
 
 import { tool, type LanguageModel, type UIMessageStreamWriter } from "ai";
+import { SURFACES } from "@/lib/telemetry";
 import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
 import { AgentReviewResumeSchema } from "@/models/agent.schema";
@@ -76,6 +77,8 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
         abortSignal,
         guard: ctx.guard,
         label: "review_resume",
+        feature: "resume_review",
+        surface: SURFACES.RESUME_REVIEW,
         provider: ctx.provider,
         modelName: ctx.modelName,
         attrs: {

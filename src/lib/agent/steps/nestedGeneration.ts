@@ -8,8 +8,7 @@ import {
   log,
   runInSpan,
   startSpan,
-  SURFACE_BY_NESTED_LABEL,
-  SURFACES,
+  type Surface,
 } from "@/lib/telemetry";
 import {
   addOllamaTimings,
@@ -18,7 +17,7 @@ import {
   type OllamaTimings,
 } from "@/lib/ai/ollamaTimings";
 import { startAiCall } from "@/lib/aiUsage/tracker";
-import { FEATURE_BY_NESTED_LABEL } from "@/models/aiUsage.model";
+import type { AiUsageFeature } from "@/models/aiUsage.model";
 
 export type NestedGenerationResult =
   | { status: "ok"; text: string }
@@ -43,6 +42,8 @@ type NestedGenerationArgs = {
   abortSignal?: AbortSignal;
   guard: NestedGenerationGuard;
   label: string;
+  feature: AiUsageFeature;
+  surface: Surface;
   provider: string;
   modelName: string;
   userId: string;
@@ -69,6 +70,8 @@ export async function runNestedGeneration({
   abortSignal,
   guard,
   label,
+  feature,
+  surface,
   provider,
   modelName,
   userId,
@@ -82,7 +85,7 @@ export async function runNestedGeneration({
       model: modelName,
       temperature,
       numCtx,
-      surface: SURFACE_BY_NESTED_LABEL[label] ?? SURFACES.AGENT_CHAT,
+      surface,
       system,
       prompt,
     }),
@@ -108,7 +111,7 @@ export async function runNestedGeneration({
     const startedAt = Date.now();
     const tracker = startAiCall({
       userId,
-      feature: FEATURE_BY_NESTED_LABEL[label] ?? "agent_chat",
+      feature,
       provider,
       model: modelName,
       numCtx,

@@ -24,9 +24,9 @@ import { stripThinking } from "@/lib/ai/stripThinking";
 import { cn } from "@/lib/utils";
 import {
   isAgentPastePart,
-  isNestedTool,
   type AgentPastePartData,
 } from "@/models/agent.model";
+import { isNestedTool } from "@/lib/agent/registry";
 
 function PasteChip({ data }: { data: AgentPastePartData }) {
   const chars = data.chars.toLocaleString();

@@ -9,7 +9,7 @@ import {
   AGENT_CHAT_TERMINAL_TOOLS,
   AGENT_NESTED_TOOLS,
   isNestedTool,
-} from "@/models/agent.model";
+} from "@/lib/agent/registry";
 import { McpAddJobInputShape } from "@/models/mcp.schema";
 import { JOB_STATUS_VALUES } from "@/lib/constants";
 

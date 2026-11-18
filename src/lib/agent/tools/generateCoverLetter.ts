@@ -1,6 +1,7 @@
 import "server-only";
 
 import { tool, type LanguageModel, type UIMessageStreamWriter } from "ai";
+import { SURFACES } from "@/lib/telemetry";
 import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
 import { AgentCoverLetterSchema } from "@/models/agent.schema";
@@ -111,6 +112,8 @@ export function buildGenerateCoverLetterTool(ctx: CoverLetterContext) {
         abortSignal,
         guard: ctx.guard,
         label: "generate_cover_letter",
+        feature: "cover_letter",
+        surface: SURFACES.COVER_LETTER,
         provider: ctx.provider,
         modelName: ctx.modelName,
         attrs: {

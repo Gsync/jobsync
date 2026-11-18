@@ -6,13 +6,11 @@ import {
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
-  hasToolCall,
   isToolUIPart,
   isStepCount,
   streamText,
   toUIMessageStream,
   type LanguageModelUsage,
-  type StopCondition,
   type UIMessage,
 } from "ai";
 import { getModel, type ProviderType } from "@/lib/ai/providers";
@@ -31,7 +29,7 @@ import {
 } from "@/lib/agent/memory/paste";
 import { windowMessages } from "@/lib/agent/memory/window";
 import { truncateForModel } from "@/lib/agent/memory/paste.server";
-import { buildAgentToolApproval, buildAgentTools } from "@/lib/agent/tools";
+import { buildAgentStopWhen, buildAgentToolApproval, buildAgentTools } from "@/lib/agent/tools";
 import type { NestedGenerationGuard } from "@/lib/agent/steps/nestedGeneration";
 import { measureTurnPrefix, type TurnPrefixMetrics } from "@/lib/agent/turn/turnMetrics";
 import { mapAgentError } from "@/lib/agent/errors";
@@ -52,13 +50,7 @@ import {
   startSpan,
   SURFACES,
 } from "@/lib/telemetry";
-import { addJobSettled, AGENT_CHAT_TERMINAL_TOOLS } from "@/models/agent.model";
 import { startAiCall, usageOfSteps, type TokenUsage } from "@/lib/aiUsage/tracker";
-
-// The one terminal tool whose stop condition is not "was it called" — see
-// addJobSettled.
-const addJobSettledStop: StopCondition<any> = ({ steps }) =>
-  addJobSettled(steps[steps.length - 1] ?? {});
 
 // One structured line per turn. Sizes and outcomes only — never the pasted
 // posting and never the extracted arguments.
@@ -291,14 +283,7 @@ export const POST = async (req: NextRequest) => {
           messages: modelMessages,
           tools,
           toolApproval: buildAgentToolApproval(pastedText),
-          // Which tools end the turn — and why — lives beside the tool metadata
-          // in agent.model.ts, where a new tool is registered.
-          stopWhen: [
-            isStepCount(APP_CONSTANTS.AGENT_CHAT_MAX_STEPS),
-            ...AGENT_CHAT_TERMINAL_TOOLS.map((name) =>
-              name === "add_job" ? addJobSettledStop : hasToolCall(name),
-            ),
-          ],
+          stopWhen: [isStepCount(APP_CONSTANTS.AGENT_CHAT_MAX_STEPS), ...buildAgentStopWhen()],
           // Argument extraction wants determinism.
           temperature: TEMPERATURES.ANALYSIS,
           abortSignal: turnSignal,

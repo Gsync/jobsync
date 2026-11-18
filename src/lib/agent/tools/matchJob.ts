@@ -1,6 +1,7 @@
 import "server-only";
 
 import { tool, type LanguageModel, type UIMessageStreamWriter } from "ai";
+import { SURFACES } from "@/lib/telemetry";
 import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
 import { AgentMatchJobSchema } from "@/models/agent.schema";
@@ -100,6 +101,8 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
         abortSignal,
         guard: ctx.guard,
         label: "match_job",
+        feature: "job_match",
+        surface: SURFACES.JOB_MATCH,
         provider: ctx.provider,
         modelName: ctx.modelName,
         attrs: {

@@ -41,6 +41,8 @@ const args = () => ({
   toolCallId: "call-1",
   guard: { running: false, elapsedMs: 0 },
   label: "test_tool",
+  feature: "agent_chat" as const,
+  surface: "agent.chat" as const,
   provider: "ollama",
   modelName: "test-model",
   userId: "user-1",
@@ -176,8 +178,8 @@ describe("runNestedGeneration usage", () => {
     streamText.mockReturnValue(textStreamOf(["hello ", "world"]));
   });
 
-  it("records the call under the feature its label maps to", async () => {
-    await runNestedGeneration({ ...args(), label: "review_resume" });
+  it("records the call under the feature it is given", async () => {
+    await runNestedGeneration({ ...args(), feature: "resume_review" });
     expect(startAiCall).toHaveBeenCalledWith({
       userId: "user-1",
       feature: "resume_review",

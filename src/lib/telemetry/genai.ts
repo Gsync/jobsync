@@ -15,14 +15,6 @@ export const SURFACES = {
 
 export type Surface = (typeof SURFACES)[keyof typeof SURFACES];
 
-// Nested-tool labels are the runNestedGeneration argument; mapping them here
-// keeps every surface decision in one file.
-export const SURFACE_BY_NESTED_LABEL: Record<string, Surface> = {
-  review_resume: SURFACES.RESUME_REVIEW,
-  match_job: SURFACES.JOB_MATCH,
-  generate_cover_letter: SURFACES.COVER_LETTER,
-};
-
 export function genAiRequestAttrs(input: {
   provider: string;
   model: string;

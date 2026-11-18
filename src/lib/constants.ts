@@ -1,3 +1,4 @@
+import { AGENT_CHAT_RESUME_MAX_CHARS } from "@/models/agent.model";
 import {
   LayoutDashboard,
   SquareCheckBig,
@@ -212,7 +213,7 @@ export const APP_CONSTANTS = {
   // Ceiling on the resume text a get_resume result carries. A preprocessed
   // resume runs 3-6k chars; this is headroom, not a normal-case trim. It
   // rides in the model window on every later turn, so it is bounded.
-  AGENT_CHAT_RESUME_MAX_CHARS: 12_000,
+  AGENT_CHAT_RESUME_MAX_CHARS,
   // No fallback model constant, deliberately. An unset settings.ai.model is
   // a pre-stream 503 pointing at Settings, not a silently substituted model
   // the user never chose.

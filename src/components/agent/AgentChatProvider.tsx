@@ -37,10 +37,10 @@ import { checkOllamaConnection } from "@/utils/ai.utils";
 import { AiProvider } from "@/models/ai.model";
 import {
   AGENT_NESTED_STREAM_PART_TYPE,
-  isNestedTool,
   type AgentAddJobResult,
   type AgentNestedStreamData,
 } from "@/models/agent.model";
+import { isNestedTool } from "@/lib/agent/registry";
 
 export const AGENT_CHAT_PANEL_ID = "chat";
 

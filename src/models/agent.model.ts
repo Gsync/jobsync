@@ -155,28 +155,19 @@ export type AgentCoverLetterResult =
   | { status: "unreadable"; what: "job" | "resume"; title: string; reason: string }
   | { status: "generation_failed"; jobTitle: string; reason: string };
 
-// Tools that run their own generation and stream it as transient parts. The
-// transcript and the provider both branch on this rather than on a chain of
-// name comparisons that grows with every nested tool.
-export const AGENT_NESTED_TOOLS = [
-  "review_resume",
-  "match_job",
-  "generate_cover_letter",
-] as const;
+export const AGENT_CHAT_RESUME_MAX_CHARS = 12_000;
 
-export function isNestedTool(name: string): boolean {
-  return (AGENT_NESTED_TOOLS as readonly string[]).includes(name);
-}
+export type AgentToolKind = "read" | "write" | "workflow";
+export type AgentInvalidation = "page" | "jobsList";
 
-// Tools that end the turn. The result card renders deterministically from
-// structured fields, so a second generation just to narrate it is 10-30s of
-// local inference for a sentence that could be wrong. A tool that runs its
-// own generation MUST be listed here or a single turn can chain two of them
-// and blow the turn timeout, discarding both.
-export const AGENT_CHAT_TERMINAL_TOOLS = [
-  "add_job",
-  ...AGENT_NESTED_TOOLS,
-] as const;
+export type AgentToolMeta = {
+  kind: AgentToolKind;
+  description: string;
+  runningLabel: string;
+  terminal: boolean;
+  invalidates: readonly AgentInvalidation[];
+  maxResultChars?: number;
+};
 
 // add_job is terminal once it has SETTLED — written, hit a duplicate, or
 // asked for approval — not merely once it has been called. A call that cannot

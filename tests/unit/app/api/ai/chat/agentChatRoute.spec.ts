@@ -62,10 +62,8 @@ import { buildAgentTools } from "@/lib/agent/tools";
 import { statusOf } from "@/lib/aiUsage/tracker";
 import { buildPageContextMessage } from "@/lib/agent/prompt";
 import { APP_CONSTANTS } from "@/lib/constants";
-import {
-  AGENT_CHAT_TERMINAL_TOOLS,
-  AGENT_PASTE_PART_TYPE,
-} from "@/models/agent.model";
+import { AGENT_CHAT_TERMINAL_TOOLS } from "@/lib/agent/registry";
+import { AGENT_PASTE_PART_TYPE } from "@/models/agent.model";
 import { AGENT_PASTE_ONLY_USER_MESSAGE } from "@/lib/agent/prompt";
 
 // signal is not optional on a real Request — the route composes the turn's
