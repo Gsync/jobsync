@@ -24,7 +24,7 @@ describe("resolveAiConfig", () => {
   });
 
   it.each<[AiSurface, number | undefined]>([
-    ["chat", 16384], ["chat_nested", 8192], ["analyze", undefined], ["automation_match", undefined],
+    ["chat", 16384], ["chat_nested", 16384], ["analyze", undefined], ["automation_match", undefined],
   ])("keeps the configured model and context size for %s", async (surface, numCtx) => {
     findUnique.mockResolvedValue({ settings: JSON.stringify({ ai: { model: "custom:latest" } }) });
     expect(await resolveAiConfig("u1", surface, { requireConfigured: true })).toStrictEqual({

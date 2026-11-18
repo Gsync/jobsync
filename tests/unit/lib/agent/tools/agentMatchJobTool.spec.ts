@@ -140,7 +140,7 @@ describe("match_job agent tool", () => {
     expect(args.prompt).toBe(buildJobMatchPrompt(RESUME_TEXT, JOB_TEXT));
     expect(args.temperature).toBe(TEMPERATURES.FEEDBACK);
     expect(args.providerOptions.ollama.options.num_ctx).toBe(
-      APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
+      APP_CONSTANTS.AGENT_CHAT_NUM_CTX,
     );
     expect(args.abortSignal).toBeDefined();
   });

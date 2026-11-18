@@ -191,9 +191,7 @@ export const APP_CONSTANTS = {
   // 15-30s think steps plus a 180s review is ~242s, which the old 240s cut off
   // after the user had watched the whole review stream in.
   AGENT_CHAT_TIMEOUT_MS: 300_000,
-  // Deliberately not AI_OLLAMA_NUM_CTX: a chat turn carries a system prompt,
-  // tool schemas, a paste head and history. Raising the shared value would
-  // change review/match latency.
+  // The chat loop and its nested tools share a context size to avoid reloads.
   AGENT_CHAT_NUM_CTX: 16384,
   // Below this a paste stays inline text and no chip is made, so add_job
   // never receives it as pastedText. 1500 sat above a real Indeed posting

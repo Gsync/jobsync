@@ -2,7 +2,7 @@ import { APP_CONSTANTS } from "@/lib/constants";
 
 const contextSizes = {
   chat: APP_CONSTANTS.AGENT_CHAT_NUM_CTX,
-  chat_nested: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
+  chat_nested: APP_CONSTANTS.AGENT_CHAT_NUM_CTX,
   analyze: undefined,
   automation_match: undefined,
 };

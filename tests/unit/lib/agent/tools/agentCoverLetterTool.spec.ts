@@ -173,7 +173,7 @@ describe("generate_cover_letter agent tool", () => {
     expect(args.instructions).toBe(COVER_LETTER_SYSTEM_PROMPT);
     expect(args.temperature).toBe(TEMPERATURES.FEEDBACK);
     expect(args.providerOptions.ollama.options.num_ctx).toBe(
-      APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
+      APP_CONSTANTS.AGENT_CHAT_NUM_CTX,
     );
     expect(args.abortSignal).toBeDefined();
   });
