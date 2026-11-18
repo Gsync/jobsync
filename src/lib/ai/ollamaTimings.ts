@@ -39,8 +39,8 @@ export function addOllamaTimings(total: OllamaTimings | undefined, step: OllamaT
   };
 }
 
-export function ollamaTimingAttrs(timings: OllamaTimings | undefined) {
-  if (!timings) return {};
+export function ollamaTimingAttrs(timings: Partial<OllamaTimings> | undefined) {
+  if (timings?.loadMs === undefined) return {};
   return {
     "jobsync.ollama.load_ms": timings.loadMs,
     "jobsync.ollama.prompt_eval_ms": timings.promptEvalMs,

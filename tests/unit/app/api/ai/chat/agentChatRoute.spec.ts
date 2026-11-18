@@ -52,6 +52,7 @@ vi.mock("ai", async (importOriginal) => {
   };
 });
 
+import { readFileSync } from "node:fs";
 import { POST } from "@/app/api/ai/chat/route";
 import { auth } from "@/auth";
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
@@ -584,4 +585,8 @@ describe("POST /api/ai/chat", () => {
       expect(arg.usage).toEqual({ inputTokens: 4000, outputTokens: 50 });
     });
   });
+});
+
+it("the route never calls the model itself", () => {
+  expect(readFileSync("src/app/api/ai/chat/route.ts", "utf8")).not.toContain("streamText");
 });
