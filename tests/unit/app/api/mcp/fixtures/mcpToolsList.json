@@ -93,7 +93,7 @@
           "type": "boolean"
         },
         "upsert": {
-          "description": "If this posting is already saved, update it with the fields supplied here instead of reporting a duplicate. A posting counts as already saved when it matches on URL, or on company+title within the dedupe window — so this works for postings with no URL at all. Set this on every re-run of a saved or scheduled search, whether or not you have a URL.",
+          "description": "If this posting is already saved, update it with the fields supplied here instead of reporting a duplicate. The saved job keeps its current status — status is ignored on this path; change it with update_job. A posting counts as already saved when it matches on URL, or on company+title within the dedupe window — so this works for postings with no URL at all. Set this on every re-run of a saved or scheduled search, whether or not you have a URL.",
           "type": "boolean"
         }
       },
@@ -109,20 +109,90 @@
   },
   {
     "name": "find_job",
-    "description": "Look up whether a job posting is already saved in JobSync, by URL. Call this before add_job when re-running a search. With no URL to look up, use add_job's upsert instead of skipping dedupe.",
+    "description": "Look up whether a job posting is already saved in JobSync, by URL and/or by company and job title (optionally location). Returns every match of any age and status, including applied and withdrawn jobs. Call this before add_job when re-running a search; job board links often change between searches, so pass company and jobTitle too, not only the URL.",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "type": "object",
       "properties": {
         "jobUrl": {
+          "description": "Direct URL to the job posting. Matched against saved jobs using the same canonical key as add_job's duplicate detection, so tracking parameters and host casing don't matter.",
           "type": "string",
-          "format": "uri",
-          "description": "Direct URL to the job posting. Matched against saved jobs using the same canonical key as add_job's duplicate detection, so tracking parameters and host casing don't matter."
+          "format": "uri"
+        },
+        "company": {
+          "description": "Company name. Matched case-insensitively, ignoring legal suffixes like Inc or Ltd. Combine with jobTitle to find a posting whose URL has changed.",
+          "type": "string",
+          "minLength": 1
+        },
+        "jobTitle": {
+          "description": "Job title, matched case-insensitively.",
+          "type": "string",
+          "minLength": 1
+        },
+        "location": {
+          "description": "Narrows a company/jobTitle lookup. Jobs saved without a location still match.",
+          "type": "string",
+          "minLength": 1
         }
-      },
-      "required": [
-        "jobUrl"
-      ]
+      }
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "list_jobs",
+    "description": "List saved jobs as compact rows (id, company, title, location, status, saved date), newest first, filtered by company, status, source or createdAfter, with offset paging. Read-only. Use it once at the start of a scheduled run to load what is already tracked.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "company": {
+          "description": "Only jobs at this company (case-insensitive, legal suffixes ignored).",
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "description": "Only jobs with this status. One of: new, draft, applied, interview, offer, offer-accepted, offer-declined, rejected, expired, archived, withdrawn.",
+          "type": "string",
+          "enum": [
+            "new",
+            "draft",
+            "applied",
+            "interview",
+            "offer",
+            "offer-accepted",
+            "offer-declined",
+            "rejected",
+            "expired",
+            "archived",
+            "withdrawn"
+          ]
+        },
+        "source": {
+          "description": "Only jobs from this source, e.g. 'Indeed'.",
+          "type": "string",
+          "minLength": 1
+        },
+        "createdAfter": {
+          "description": "Only jobs saved at or after this ISO 8601 date-time.",
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        },
+        "limit": {
+          "description": "Rows per page, default 50, max 100.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "offset": {
+          "description": "Rows to skip; pass the nextOffset from the previous page.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
     },
     "execution": {
       "taskSupport": "forbidden"
@@ -393,7 +463,7 @@
                 "type": "boolean"
               },
               "upsert": {
-                "description": "If this posting is already saved, update it with the fields supplied here instead of reporting a duplicate. A posting counts as already saved when it matches on URL, or on company+title within the dedupe window — so this works for postings with no URL at all. Set this on every re-run of a saved or scheduled search, whether or not you have a URL.",
+                "description": "If this posting is already saved, update it with the fields supplied here instead of reporting a duplicate. The saved job keeps its current status — status is ignored on this path; change it with update_job. A posting counts as already saved when it matches on URL, or on company+title within the dedupe window — so this works for postings with no URL at all. Set this on every re-run of a saved or scheduled search, whether or not you have a URL.",
                 "type": "boolean"
               }
             },

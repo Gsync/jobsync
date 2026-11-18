@@ -144,6 +144,8 @@ describe("createJobFromNames", () => {
       {
         id: "existing-job",
         jobUrl: "https://www.Example.com/job/1?utm_source=x",
+        createdVia: "my-token",
+        Status: { value: "applied" },
         JobTitle: { label: "Engineer" },
         Company: { label: "Acme" },
       },
@@ -159,7 +161,11 @@ describe("createJobFromNames", () => {
       id: "existing-job",
       title: "Engineer",
       company: "Acme",
+      location: null,
+      status: "applied",
+      updatable: true,
     });
+    expect(result.message).toContain("status: applied");
     expect(result.message).toContain("Duplicate detected");
     expect(result.message).toContain("update_job");
     expect(createJobRecord).not.toHaveBeenCalled();
@@ -168,6 +174,8 @@ describe("createJobFromNames", () => {
   it("detects a duplicate by company+title within the window when no URL is given", async () => {
     (prisma.job.findFirst as any).mockResolvedValueOnce({
       id: "existing-job-2",
+      createdVia: "my-token",
+      Status: { value: "withdrawn" },
       JobTitle: { label: "Engineer" },
       Company: { label: "Acme" },
     });
@@ -175,8 +183,56 @@ describe("createJobFromNames", () => {
     const result = await createJobFromNames(baseInput, userId);
 
     expect(result.created).toBe(false);
-    expect(result.duplicateOf?.id).toBe("existing-job-2");
+    expect(result.duplicateOf).toMatchObject({ id: "existing-job-2", status: "withdrawn" });
     expect(createJobRecord).not.toHaveBeenCalled();
+  });
+
+  it("looks back 60 days for a company+title match", async () => {
+    const now = new Date("2026-11-17T12:00:00Z");
+    vi.useFakeTimers({ now });
+    try {
+      await createJobFromNames(baseInput, userId);
+    } finally {
+      vi.useRealTimers();
+    }
+
+    const where = (prisma.job.findFirst as any).mock.calls[0][0].where;
+    expect(where.createdAt.gte).toEqual(new Date("2026-09-18T12:00:00Z"));
+  });
+
+  it("does not compare location in the company+title check, but reports it", async () => {
+    (resolveLocation as any).mockResolvedValue({ id: "loc-1", label: "Toronto, ON", created: false });
+    (prisma.job.findFirst as any).mockResolvedValueOnce({
+      id: "existing-job-3",
+      createdVia: "my-token",
+      Status: { value: "applied" },
+      JobTitle: { label: "Engineer" },
+      Company: { label: "Acme" },
+      Location: { label: "Toronto, Ontario, Canada" },
+    });
+
+    const result = await createJobFromNames({ ...baseInput, location: "Toronto, ON" }, userId);
+
+    const where = (prisma.job.findFirst as any).mock.calls[0][0].where;
+    expect(where).not.toHaveProperty("OR");
+    expect(where).not.toHaveProperty("locationId");
+    expect(result.created).toBe(false);
+    expect(result.message).toContain("location: Toronto, Ontario, Canada");
+  });
+
+  it("does not point at update_job when the duplicate is a web-app job", async () => {
+    (prisma.job.findFirst as any).mockResolvedValueOnce({
+      id: "web-job",
+      createdVia: null,
+      Status: { value: "interview" },
+      JobTitle: { label: "Engineer" },
+      Company: { label: "Acme" },
+    });
+
+    const result = await createJobFromNames(baseInput, userId);
+
+    expect(result.message).toContain("created in the web app");
+    expect(result.message).not.toContain("call update_job");
   });
 
   it("creates the job when no duplicate is found", async () => {

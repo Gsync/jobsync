@@ -61,7 +61,7 @@ export const McpAddJobInputShape = {
     .boolean()
     .optional()
     .describe(
-      "If this posting is already saved, update it with the fields supplied here instead of reporting a duplicate. A posting counts as already saved when it matches on URL, or on company+title within the dedupe window — so this works for postings with no URL at all. Set this on every re-run of a saved or scheduled search, whether or not you have a URL.",
+      "If this posting is already saved, update it with the fields supplied here instead of reporting a duplicate. The saved job keeps its current status — status is ignored on this path; change it with update_job. A posting counts as already saved when it matches on URL, or on company+title within the dedupe window — so this works for postings with no URL at all. Set this on every re-run of a saved or scheduled search, whether or not you have a URL.",
     ),
 };
 
@@ -134,17 +134,41 @@ export type McpSaveResumeReviewInput = z.infer<
   typeof McpSaveResumeReviewSchema
 >;
 
-// find_job — URL is the only lookup key; it's the one identifier an agent
-// reliably has from a job board, and it's what add_job dedupes on.
+// find_job — by URL (what add_job dedupes on) and/or by company, title and
+// location, which catch postings whose board URL changes between searches.
 export const McpFindJobInputShape = {
   jobUrl: z
     .url()
+    .optional()
     .describe(
       "Direct URL to the job posting. Matched against saved jobs using the same canonical key as add_job's duplicate detection, so tracking parameters and host casing don't matter.",
     ),
+  company: z
+    .string()
+    .min(1)
+    .optional()
+    .describe(
+      "Company name. Matched case-insensitively, ignoring legal suffixes like Inc or Ltd. Combine with jobTitle to find a posting whose URL has changed.",
+    ),
+  jobTitle: z
+    .string()
+    .min(1)
+    .optional()
+    .describe("Job title, matched case-insensitively."),
+  location: z
+    .string()
+    .min(1)
+    .optional()
+    .describe(
+      "Narrows a company/jobTitle lookup. Jobs saved without a location still match.",
+    ),
 };
 
-export const McpFindJobSchema = z.object(McpFindJobInputShape);
+export const McpFindJobSchema = z
+  .object(McpFindJobInputShape)
+  .refine((v) => v.jobUrl || v.company || v.jobTitle, {
+    message: "Provide at least one of jobUrl, company or jobTitle.",
+  });
 export type McpFindJobInput = z.infer<typeof McpFindJobSchema>;
 
 // update_job — every field except jobId is optional; only supplied fields
@@ -236,3 +260,55 @@ export const McpSaveMatchResultsBatchSchema = z.object({
 export type McpSaveMatchResultsBatchInput = z.infer<
   typeof McpSaveMatchResultsBatchSchema
 >;
+
+// list_jobs — read-only, paged; lets an agent load what is already saved once
+// per run instead of probing posting by posting.
+export const McpListJobsInputShape = {
+  company: z
+    .string()
+    .min(1)
+    .optional()
+    .describe("Only jobs at this company (case-insensitive, legal suffixes ignored)."),
+  status: z
+    .preprocess(
+      (v) => (typeof v === "string" ? v.toLowerCase() : v),
+      z.enum(JOB_STATUS_VALUES),
+    )
+    .optional()
+    .describe(`Only jobs with this status. One of: ${JOB_STATUS_VALUES.join(", ")}.`),
+  source: z
+    .string()
+    .min(1)
+    .optional()
+    .describe("Only jobs from this source, e.g. 'Indeed'."),
+  createdAfter: z.iso
+    .datetime({ offset: true })
+    .optional()
+    .describe("Only jobs saved at or after this ISO 8601 date-time."),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(APP_CONSTANTS.MCP_LIST_JOBS_MAX_LIMIT)
+    .optional()
+    .describe(
+      `Rows per page, default ${APP_CONSTANTS.MCP_LIST_JOBS_DEFAULT_LIMIT}, max ${APP_CONSTANTS.MCP_LIST_JOBS_MAX_LIMIT}.`,
+    ),
+  offset: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe("Rows to skip; pass the nextOffset from the previous page."),
+};
+
+export const McpListJobsSchema = z.object(McpListJobsInputShape);
+export type McpListJobsInput = z.infer<typeof McpListJobsSchema>;
+
+// Every MCP tool handler returns this. structuredContent carries the
+// machine-readable fields (duplicate flags, ids) alongside the prose.
+// A type, not an interface: the SDK's result type has an index signature.
+export type McpToolResult = {
+  content: Array<{ type: "text"; text: string }>;
+  structuredContent?: Record<string, unknown>;
+};

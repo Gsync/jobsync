@@ -17,6 +17,15 @@ export interface ResolvedTag extends ResolvedEntity {
 
 // Bucket A — resolve-or-create by exact-normalized value
 
+// The stored `value` a label resolves to, for read-only lookups that must
+// match exactly what resolveEntity would find or create.
+export function entityLookupValue(
+  label: string,
+  opts: { stripLegalSuffix?: boolean } = {},
+): string {
+  return canonicalizeEntityValue(decodeHtml(label).trim(), opts);
+}
+
 interface EntityRow {
   id: string;
   label: string;
@@ -44,7 +53,7 @@ async function resolveEntity(
   opts: { stripLegalSuffix?: boolean } = {},
 ): Promise<ResolvedEntity> {
   const trimmed = decodeHtml(label).trim();
-  const value = canonicalizeEntityValue(trimmed, opts);
+  const value = entityLookupValue(label, opts);
   if (!value) throw new Error("A non-empty label is required");
   const existing = await delegate.findUnique({
     where: { value_createdBy: { value, createdBy: userId } },

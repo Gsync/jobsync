@@ -63,6 +63,12 @@ function urlDedupeKey(url: string): string {
   try {
     const parsed = new URL(normalizeJobUrl(url));
     const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
+    // Indeed serves one posting under many paths and country hosts; jk is
+    // the stable job key. to.indeed.com short links carry none.
+    const indeedKey = parsed.searchParams.get("jk");
+    if (indeedKey && /(^|\.)indeed\.com$/.test(host)) {
+      return `indeed.com/jk/${indeedKey.toLowerCase()}`;
+    }
     return `${host}${parsed.pathname}${parsed.search}`;
   } catch {
     return url.trim().toLowerCase();

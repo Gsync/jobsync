@@ -6,7 +6,9 @@ export const MCP_TOOL_DESCRIPTIONS = {
   add_job:
     "Add a job application to JobSync. Resolves or creates company, job title, location, and source by name. Returns a transparency report of what was matched vs. created.",
   find_job:
-    "Look up whether a job posting is already saved in JobSync, by URL. Call this before add_job when re-running a search. With no URL to look up, use add_job's upsert instead of skipping dedupe.",
+    "Look up whether a job posting is already saved in JobSync, by URL and/or by company and job title (optionally location). Returns every match of any age and status, including applied and withdrawn jobs. Call this before add_job when re-running a search; job board links often change between searches, so pass company and jobTitle too, not only the URL.",
+  list_jobs:
+    "List saved jobs as compact rows (id, company, title, location, status, saved date), newest first, filtered by company, status, source or createdAfter, with offset paging. Read-only. Use it once at the start of a scheduled run to load what is already tracked.",
   update_job:
     "Correct or enrich a job previously added through MCP. Only the fields you supply change. Supplying a fuller jobDescription re-classifies the posting and requests a fresh match analysis — use this instead of re-adding with allowDuplicate.",
   add_question:

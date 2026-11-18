@@ -157,7 +157,7 @@ describe("handleAddJob match gating", () => {
   it("returns the duplicate message with no match offer", async () => {
     (createJobFromNames as any).mockResolvedValue({
       created: false,
-      duplicateOf: { id: "job-9", title: "Engineer", company: "Acme" },
+      duplicateOf: { id: "job-9", title: "Engineer", company: "Acme", status: "applied", updatable: true },
       resolutions: [],
       message: 'Duplicate detected — existing job "Engineer" at "Acme" (id: job-9).',
     });
@@ -168,6 +168,47 @@ describe("handleAddJob match gating", () => {
     expect(text).toContain("Duplicate detected");
     expect(text).not.toContain("save_match_result");
     expect(getDefaultResumeForUser).not.toHaveBeenCalled();
+    expect(text).toContain("pass upsert: true");
+  });
+
+  it("does not suggest upsert or update_job for a web-app duplicate", async () => {
+    (createJobFromNames as any).mockResolvedValue({
+      created: false,
+      duplicateOf: { id: "job-9", title: "Engineer", company: "Acme", status: "applied", updatable: false },
+      resolutions: [],
+      message: "Duplicate detected — it cannot be updated through MCP — leave it as is.",
+    });
+
+    const result = await handleAddJob(baseInput as any, "user-1", "my-token");
+
+    expect(result.content[0].text).not.toContain("upsert");
+    expect(result.content[0].text).not.toContain("update_job");
+  });
+
+  it("returns machine-readable duplicate fields", async () => {
+    (createJobFromNames as any).mockResolvedValue({
+      created: false,
+      duplicateOf: { id: "job-9", title: "Engineer", company: "Acme", status: "withdrawn", updatable: true },
+      resolutions: [],
+      message: "Duplicate detected",
+    });
+
+    const result = await handleAddJob(baseInput as any, "user-1", "my-token");
+
+    expect(result.structuredContent).toEqual({
+      duplicate: true,
+      existingJobId: "job-9",
+      existingStatus: "withdrawn",
+    });
+  });
+
+  it("reports duplicate: false with the new job id when created", async () => {
+    mockCreated("full");
+    mockUsableResume();
+
+    const result = await handleAddJob(baseInput as any, "user-1", "my-token");
+
+    expect(result.structuredContent).toEqual({ duplicate: false, jobId: "job-1" });
   });
 
   it("short-circuits when rate limited", async () => {
@@ -183,7 +224,7 @@ describe("handleAddJob match gating", () => {
 describe("handleAddJob upsert routing", () => {
   const duplicateResult = {
     created: false,
-    duplicateOf: { id: "job-9", title: "Engineer", company: "Acme" },
+    duplicateOf: { id: "job-9", title: "Engineer", company: "Acme", status: "applied", updatable: true },
     resolutions: [],
     message: 'Duplicate detected — existing job "Engineer" at "Acme" (id: job-9).',
   };
@@ -242,6 +283,34 @@ describe("handleAddJob upsert routing", () => {
     expect(passed).not.toHaveProperty("upsert");
     expect(passed).not.toHaveProperty("allowDuplicate");
     expect(passed).not.toHaveProperty("createdVia");
+  });
+
+  it("keeps the existing job's status instead of applying the add's status", async () => {
+    (createJobFromNames as any).mockResolvedValue(duplicateResult);
+    (updateJobFromNames as any).mockResolvedValue({
+      updated: true,
+      jobId: "job-9",
+      descriptionChanged: false,
+      descriptionCompleteness: "full",
+      resolutions: [],
+      message: "Job job-9 updated.",
+    });
+
+    const result = await handleAddJob(
+      { ...baseInput, upsert: true, status: "new" } as any,
+      "user-1",
+      "my-token",
+    );
+
+    const passed = (updateJobFromNames as any).mock.calls[0][0];
+    expect(passed).not.toHaveProperty("status");
+    expect(result.content[0].text).toContain('Status kept as "applied"');
+    expect(result.structuredContent).toEqual({
+      duplicate: true,
+      existingJobId: "job-9",
+      existingStatus: "applied",
+      updated: true,
+    });
   });
 
   it("reports the duplicate normally when upsert is not set", async () => {

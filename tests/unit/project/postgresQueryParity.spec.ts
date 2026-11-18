@@ -16,6 +16,7 @@ import { getJobStageTypeList } from "@/actions/jobStageType.actions";
 import { getJobsList, getJobsIterator } from "@/actions/job/queries";
 import { getRecentJobs } from "@/actions/dashboard/recent";
 import { getCompanyList } from "@/actions/company/queries";
+import { handleListJobs } from "@/lib/mcp/tools/listJobs";
 import prisma from "@/lib/db";
 
 type Call = { model: string; method: string; args: any };
@@ -179,6 +180,7 @@ describe("pagination tiebreaker: every paged sort ends on id", () => {
     ["cover letters", "coverLetter", () => getCoverLetterList()],
     ["contact roles", "contactRole", () => getContactRoleList()],
     ["stage types", "jobStageType", () => getJobStageTypeList()],
+    ["MCP list_jobs", "job", () => handleListJobs({}, "user-1")],
     [
       "reference lists",
       "company",

@@ -1,4 +1,8 @@
-import { getExistingJobDedupeMap, findExistingJobByUrl } from "@/lib/jobs/jobDedupe";
+import {
+  getExistingJobDedupeMap,
+  findExistingJobByUrl,
+  findJobIdsByNames,
+} from "@/lib/jobs/jobDedupe";
 import { jobDedupeKey } from "@/lib/scraper/utils";
 import { PrismaClient } from "@/generated/prisma/client";
 
@@ -16,10 +20,14 @@ function row(over: Partial<{
   title: string | null;
   company: string | null;
   location: string | null;
+  status: string;
+  createdVia: string | null;
 }> = {}) {
   return {
     id: over.id ?? "job-1",
     jobUrl: over.jobUrl ?? null,
+    createdVia: over.createdVia === undefined ? "my-token" : over.createdVia,
+    Status: { value: over.status ?? "new" },
     JobTitle: over.title === null ? null : { label: over.title ?? "Frontend Engineer" },
     Company: over.company === null ? null : { label: over.company ?? "Acme" },
     Location: over.location === null ? null : { label: over.location ?? "Remote" },
@@ -141,7 +149,14 @@ describe("findExistingJobByUrl", () => {
 
     const hit = await findExistingJobByUrl("user-1", "https://ex.com/j/1");
 
-    expect(hit).toEqual({ id: "j1", title: "Engineer", company: "Acme" });
+    expect(hit).toEqual({
+      id: "j1",
+      title: "Engineer",
+      company: "Acme",
+      location: "Remote",
+      status: "new",
+      updatable: true,
+    });
     expect(prisma.job.findMany).not.toHaveBeenCalled();
   });
 
@@ -170,7 +185,35 @@ describe("findExistingJobByUrl", () => {
 
     const hit = await findExistingJobByUrl("user-1", "https://ex.com/j/1");
 
-    expect(hit).toEqual({ id: "j1", title: "Engineer", company: "Acme" });
+    expect(hit).toEqual({
+      id: "j1",
+      title: "Engineer",
+      company: "Acme",
+      location: "Remote",
+      status: "new",
+      updatable: true,
+    });
+  });
+
+  it("reports the matched job's status and that a web-app job is not updatable", async () => {
+    (prisma.job.findFirst as any).mockResolvedValue(
+      row({ id: "j1", jobUrl: "https://ex.com/j/1", status: "withdrawn", createdVia: null }),
+    );
+
+    const hit = await findExistingJobByUrl("user-1", "https://ex.com/j/1");
+
+    expect(hit).toMatchObject({ status: "withdrawn", updatable: false });
+  });
+
+  it("matches two Indeed links to the same posting by their jk job key", async () => {
+    mockJobs([row({ id: "j1", jobUrl: "https://ca.indeed.com/viewjob?jk=ABC123" })]);
+
+    const hit = await findExistingJobByUrl(
+      "user-1",
+      "https://www.indeed.com/rc/clk?jk=abc123&fccid=x",
+    );
+
+    expect(hit?.id).toBe("j1");
   });
 
   it("falls back to a scan and matches a canonical URL variant (www + host case)", async () => {
@@ -219,5 +262,44 @@ describe("meta-key fallback (jobs without a URL)", () => {
     const map = await getExistingJobDedupeMap("user-1");
     const hit = map.get(jobDedupeKey({ title: "Staff Engineer", company: "Acme", location: "Remote" }));
     expect(hit).toBeUndefined();
+  });
+});
+
+describe("findJobIdsByNames", () => {
+  beforeEach(() => (prisma.job.findMany as any).mockReset().mockResolvedValue([]));
+
+  const where = () => (prisma.job.findMany as any).mock.calls[0][0].where;
+
+  it("matches canonical company and title values with no time window", async () => {
+    (prisma.job.findMany as any).mockResolvedValue([{ id: "j1" }]);
+
+    const ids = await findJobIdsByNames("user-1", {
+      company: "  Atolio, Inc. ",
+      jobTitle: "Senior UI ENGINEER",
+    });
+
+    expect(ids).toEqual(["j1"]);
+    expect(where()).toEqual({
+      userId: "user-1",
+      Company: { value: "atolio" },
+      JobTitle: { value: "senior ui engineer" },
+    });
+  });
+
+  it("keeps jobs saved without a location when a location is given", async () => {
+    await findJobIdsByNames("user-1", { company: "Atolio", location: "Vancouver, BC" });
+
+    expect(where().OR).toEqual([
+      { Location: { value: "vancouver bc" } },
+      { locationId: null },
+    ]);
+  });
+
+  it("orders newest first with an id tiebreaker and caps the result", async () => {
+    await findJobIdsByNames("user-1", { jobTitle: "Engineer" });
+
+    const args = (prisma.job.findMany as any).mock.calls[0][0];
+    expect(args.orderBy).toEqual([{ createdAt: "desc" }, { id: "desc" }]);
+    expect(args.take).toBeGreaterThan(0);
   });
 });
