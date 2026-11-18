@@ -21,7 +21,7 @@ import {
   type ToolUIPart,
   type UIMessage,
 } from "ai";
-import { hasPendingApproval, stubConsumedPastes } from "@/lib/agent/paste";
+import { hasPendingApproval, stubConsumedPastes } from "@/lib/agent/memory/paste";
 import { pageContextFor } from "@/lib/agent/pageContext";
 import { useRightRail } from "@/context/RightRailContext";
 import { useSidebar } from "@/context/SidebarContext";

@@ -1,6 +1,6 @@
 import { buildReviewResumeTool } from "@/lib/agent/tools/reviewResume";
 import { buildAgentTools } from "@/lib/agent/tools";
-import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
+import { resolveResumeForAgent } from "@/lib/agent/steps/resumeLookup";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 import { saveResumeReviewResult } from "@/actions/profile.actions";
 import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
@@ -9,7 +9,7 @@ import {
   buildResumeReviewPrompt,
 } from "@/lib/ai/prompts/resume-review";
 
-vi.mock("@/lib/agent/resumeLookup", () => ({ resolveResumeForAgent: vi.fn() }));
+vi.mock("@/lib/agent/steps/resumeLookup", () => ({ resolveResumeForAgent: vi.fn() }));
 vi.mock("@/lib/ai/tools/preprocessing", () => ({ preprocessResume: vi.fn() }));
 vi.mock("@/actions/profile.actions", () => ({
   saveResumeReviewResult: vi.fn(),

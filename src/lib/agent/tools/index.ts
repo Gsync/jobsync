@@ -1,6 +1,6 @@
 import type { LanguageModel, ToolApprovalStatus, ToolSet, UIMessageStreamWriter } from "ai";
 import type { PageContext } from "@/models/agent.model";
-import type { NestedGenerationGuard } from "@/lib/agent/nestedGeneration";
+import type { NestedGenerationGuard } from "@/lib/agent/steps/nestedGeneration";
 import { addJobNeedsApproval, buildAddJobTool } from "./addJob";
 import { buildGetResumeTool } from "./getResume";
 import { buildReviewResumeTool } from "./reviewResume";

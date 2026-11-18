@@ -2,9 +2,9 @@ import {
   resolvePastedText,
   stubConsumedPastes,
   hasPendingApproval,
-  windowMessages,
-} from "@/lib/agent/paste";
-import { truncateForModel } from "@/lib/agent/paste.server";
+} from "@/lib/agent/memory/paste";
+import { windowMessages } from "@/lib/agent/memory/window";
+import { truncateForModel } from "@/lib/agent/memory/paste.server";
 import { AGENT_PASTE_PART_TYPE } from "@/models/agent.model";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { convertToModelMessages } from "ai";

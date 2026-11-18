@@ -37,7 +37,7 @@ describe("agent.nested span", () => {
     const { otlp } = await loadTelemetry({ endpoint: ENDPOINT });
     const { streamText } = await import("ai");
     (streamText as any).mockReturnValue(stubStreamText(["a", "b"], "stop"));
-    const { runNestedGeneration } = await import("@/lib/agent/nestedGeneration");
+    const { runNestedGeneration } = await import("@/lib/agent/steps/nestedGeneration");
 
     const result = await runNestedGeneration({
       model: {} as any,
@@ -65,7 +65,7 @@ describe("agent.nested span", () => {
     const { otlp } = await loadTelemetry({ endpoint: ENDPOINT });
     const { streamText } = await import("ai");
     (streamText as any).mockReturnValue(stubStreamText(["a"], "length"));
-    const { runNestedGeneration } = await import("@/lib/agent/nestedGeneration");
+    const { runNestedGeneration } = await import("@/lib/agent/steps/nestedGeneration");
 
     const result = await runNestedGeneration({
       model: {} as any,
@@ -90,7 +90,7 @@ describe("agent.nested span", () => {
   it("still records a span when the guard rejects the call as busy", async () => {
     mockFetchOk();
     const { otlp } = await loadTelemetry({ endpoint: ENDPOINT });
-    const { runNestedGeneration } = await import("@/lib/agent/nestedGeneration");
+    const { runNestedGeneration } = await import("@/lib/agent/steps/nestedGeneration");
 
     const result = await runNestedGeneration({
       model: {} as any,

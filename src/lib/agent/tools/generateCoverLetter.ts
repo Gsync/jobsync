@@ -4,8 +4,8 @@ import { tool, type LanguageModel, type UIMessageStreamWriter } from "ai";
 import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
 import { AgentCoverLetterSchema } from "@/models/agent.schema";
-import { resolveJobForAgent } from "@/lib/agent/jobLookup";
-import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
+import { resolveJobForAgent } from "@/lib/agent/steps/jobLookup";
+import { resolveResumeForAgent } from "@/lib/agent/steps/resumeLookup";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 import { preprocessJob } from "@/lib/ai/tools/preprocessing-job";
 import {
@@ -18,7 +18,7 @@ import { generateCoverLetterForJob } from "@/actions/coverLetter.actions";
 import {
   runNestedGeneration,
   type NestedGenerationGuard,
-} from "@/lib/agent/nestedGeneration";
+} from "@/lib/agent/steps/nestedGeneration";
 import type { AgentCoverLetterResult } from "@/models/agent.model";
 
 type CoverLetterContext = {

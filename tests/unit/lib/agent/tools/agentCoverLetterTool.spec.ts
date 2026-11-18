@@ -1,7 +1,7 @@
 import { buildGenerateCoverLetterTool } from "@/lib/agent/tools/generateCoverLetter";
 import { buildAgentTools } from "@/lib/agent/tools";
-import { resolveJobForAgent } from "@/lib/agent/jobLookup";
-import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
+import { resolveJobForAgent } from "@/lib/agent/steps/jobLookup";
+import { resolveResumeForAgent } from "@/lib/agent/steps/resumeLookup";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 import { preprocessJob } from "@/lib/ai/tools/preprocessing-job";
 import { generateCoverLetterForJob } from "@/actions/coverLetter.actions";
@@ -11,8 +11,8 @@ import {
   buildCoverLetterPrompt,
 } from "@/lib/ai/prompts/cover-letter";
 
-vi.mock("@/lib/agent/jobLookup", () => ({ resolveJobForAgent: vi.fn() }));
-vi.mock("@/lib/agent/resumeLookup", () => ({ resolveResumeForAgent: vi.fn() }));
+vi.mock("@/lib/agent/steps/jobLookup", () => ({ resolveJobForAgent: vi.fn() }));
+vi.mock("@/lib/agent/steps/resumeLookup", () => ({ resolveResumeForAgent: vi.fn() }));
 vi.mock("@/lib/ai/tools/preprocessing", () => ({ preprocessResume: vi.fn() }));
 vi.mock("@/lib/ai/tools/preprocessing-job", () => ({ preprocessJob: vi.fn() }));
 vi.mock("@/actions/coverLetter.actions", () => ({

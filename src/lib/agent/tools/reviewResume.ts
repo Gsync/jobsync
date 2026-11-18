@@ -4,7 +4,7 @@ import { tool, type LanguageModel, type UIMessageStreamWriter } from "ai";
 import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
 import { AgentReviewResumeSchema } from "@/models/agent.schema";
-import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
+import { resolveResumeForAgent } from "@/lib/agent/steps/resumeLookup";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 import {
   RESUME_REVIEW_SYSTEM_PROMPT,
@@ -15,7 +15,7 @@ import { saveResumeReviewResult } from "@/actions/profile.actions";
 import {
   runNestedGeneration,
   type NestedGenerationGuard,
-} from "@/lib/agent/nestedGeneration";
+} from "@/lib/agent/steps/nestedGeneration";
 import type { AgentReviewResumeResult } from "@/models/agent.model";
 import type { ResumeReviewData } from "@/models/ai.schemas";
 

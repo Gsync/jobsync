@@ -17,7 +17,7 @@ import { AgentReviewContent } from "@/components/agent/AgentReviewContent";
 import { AgentStatusRow } from "@/components/agent/AgentStatusRow";
 import { AgentToolRunningCard } from "@/components/agent/AgentToolRunningCard";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
-import { resolvePastedText } from "@/lib/agent/paste";
+import { resolvePastedText } from "@/lib/agent/memory/paste";
 import { parseJobMatch } from "@/lib/ai/jobMatch/parse";
 import { parseResumeReview } from "@/lib/ai/resumeReview/parse";
 import { stripThinking } from "@/lib/ai/stripThinking";

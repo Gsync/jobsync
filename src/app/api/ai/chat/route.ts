@@ -28,12 +28,12 @@ import {
 import {
   resolvePastedText,
   stubConsumedPastes,
-  windowMessages,
-} from "@/lib/agent/paste";
-import { truncateForModel } from "@/lib/agent/paste.server";
+} from "@/lib/agent/memory/paste";
+import { windowMessages } from "@/lib/agent/memory/window";
+import { truncateForModel } from "@/lib/agent/memory/paste.server";
 import { buildAgentToolApproval, buildAgentTools } from "@/lib/agent/tools";
-import type { NestedGenerationGuard } from "@/lib/agent/nestedGeneration";
-import { measureTurnPrefix, type TurnPrefixMetrics } from "@/lib/agent/turnMetrics";
+import type { NestedGenerationGuard } from "@/lib/agent/steps/nestedGeneration";
+import { measureTurnPrefix, type TurnPrefixMetrics } from "@/lib/agent/turn/turnMetrics";
 import { mapAgentError } from "@/lib/agent/errors";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { saveChatConversation } from "@/actions/agentChat.actions";

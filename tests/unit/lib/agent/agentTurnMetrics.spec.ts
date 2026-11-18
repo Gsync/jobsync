@@ -1,6 +1,6 @@
 import { tool, type ModelMessage, type ToolSet } from "ai";
 import { z } from "zod";
-import { commonPrefixLength, measureTurnPrefix } from "@/lib/agent/turnMetrics";
+import { commonPrefixLength, measureTurnPrefix } from "@/lib/agent/turn/turnMetrics";
 
 const messages: ModelMessage[] = [{ role: "user", content: "add this job" }];
 

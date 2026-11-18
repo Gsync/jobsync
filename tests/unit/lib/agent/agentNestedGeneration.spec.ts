@@ -1,4 +1,4 @@
-import { runNestedGeneration } from "@/lib/agent/nestedGeneration";
+import { runNestedGeneration } from "@/lib/agent/steps/nestedGeneration";
 import { APP_CONSTANTS } from "@/lib/constants";
 
 const streamText = vi.fn();
