@@ -1,6 +1,6 @@
 import { tool, type ModelMessage, type ToolSet } from "ai";
 import { z } from "zod";
-import { measureTurnPrefix } from "@/lib/agent/turnMetrics";
+import { commonPrefixLength, measureTurnPrefix } from "@/lib/agent/turnMetrics";
 
 const messages: ModelMessage[] = [{ role: "user", content: "add this job" }];
 
@@ -99,5 +99,30 @@ describe("measureTurnPrefix", () => {
     });
 
     expect(other.prefixChanged).toBe(false);
+  });
+});
+
+describe("shared request prefix", () => {
+  it("counts matching leading characters", () => {
+    expect(commonPrefixLength("abc", "abd")).toBe(2);
+    expect(commonPrefixLength("abc", "abc")).toBe(3);
+    expect(commonPrefixLength("", "x")).toBe(0);
+  });
+
+  it("compares the entire request against only that user's previous turn", () => {
+    const args = {
+      userId: "shared-prefix",
+      system: "system",
+      tools: toolsWith("Add a job."),
+      modelMessages: messages,
+    };
+    expect(measureTurnPrefix(args).sharedPrefixChars).toBe(0);
+    const repeat = measureTurnPrefix(args);
+    const staticChars = repeat.systemChars + 1 + repeat.toolChars + 1;
+    expect(repeat.sharedPrefixChars).toBe(staticChars + repeat.messageChars);
+    expect(measureTurnPrefix({
+      ...args, modelMessages: [{ role: "user", content: "bye" }],
+    }).sharedPrefixChars).toBe(staticChars + '[{"role":"user","content":"'.length);
+    expect(measureTurnPrefix({ ...args, userId: "other-prefix" }).sharedPrefixChars).toBe(0);
   });
 });

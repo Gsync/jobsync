@@ -6,14 +6,18 @@ export type TurnPrefixMetrics = {
   toolChars: number;
   messageChars: number;
   prefixChanged: boolean;
+  sharedPrefixChars: number;
 };
 
-// Ollama reuses the KV cache only while the leading bytes match the previous
-// request, so a prefix that changes mid-conversation costs a full recompute.
-// Keyed by user because that IS the conversation — ChatConversation.userId is
-// unique. Process-local on purpose: a restart mislabels one turn, which is
-// cheaper than persisting a diagnostic.
-const lastPrefixHash = new Map<string, string>();
+// One previous request per user, process-local for diagnostics.
+const lastPrefix = new Map<string, { hash: string; serialized: string }>();
+
+export function commonPrefixLength(a: string, b: string): number {
+  const limit = Math.min(a.length, b.length);
+  let index = 0;
+  while (index < limit && a[index] === b[index]) index++;
+  return index;
+}
 
 // The tool material as the provider will send it: every offered tool's name,
 // description and JSON schema. Assembled once so the size and the hash read
@@ -43,13 +47,16 @@ export function measureTurnPrefix(args: {
     .update("\n")
     .update(material)
     .digest("hex");
-  const previous = lastPrefixHash.get(args.userId);
-  lastPrefixHash.set(args.userId, hash);
+  const messages = JSON.stringify(args.modelMessages);
+  const serialized = [args.system, material, messages].join("\n");
+  const previous = lastPrefix.get(args.userId);
+  lastPrefix.set(args.userId, { hash, serialized });
 
   return {
     systemChars: args.system.length,
     toolChars: material.length,
-    messageChars: JSON.stringify(args.modelMessages).length,
-    prefixChanged: previous !== undefined && previous !== hash,
+    messageChars: messages.length,
+    prefixChanged: previous !== undefined && previous.hash !== hash,
+    sharedPrefixChars: previous ? commonPrefixLength(previous.serialized, serialized) : 0,
   };
 }

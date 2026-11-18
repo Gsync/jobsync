@@ -185,6 +185,7 @@ describe("POST /api/ai/chat", () => {
     });
     const logged = info.mock.calls.at(-1)![1] as Record<string, unknown>;
     expect(logged).toMatchObject({ tool: "match_job", outcome: "ok" });
+    expect(logged.sharedPrefixChars).toEqual(expect.any(Number));
     info.mockRestore();
   });
 
@@ -313,6 +314,41 @@ describe("POST /api/ai/chat", () => {
     expect(args.onEnd).toEqual(expect.any(Function));
     expect(args).not.toHaveProperty("system");
     expect(args).not.toHaveProperty("onFinish");
+    expect(args.include).toEqual({ rawChunks: true });
+    expect(args.onStepEnd).toEqual(expect.any(Function));
+    expect(args).not.toHaveProperty("includeRawChunks");
+    expect(args).not.toHaveProperty("onStepFinish");
+  });
+
+  it("logs summed Ollama timings and independent per-step token maxima", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    await POST(req({ messages: [pasteMessage("posting")] }));
+    const { onChunk, onStepEnd } = streamArgs();
+    const chunk = { type: "raw", rawValue: {
+      done: true, prompt_eval_count: 3000, prompt_eval_cached_count: 2900,
+      load_duration: 2_000_000, prompt_eval_duration: 3_000_000, eval_duration: 4_000_000,
+    } };
+    onChunk({ chunk });
+    onChunk({ chunk });
+    onStepEnd({ usage: { inputTokens: 5000, outputTokens: 900 } });
+    onStepEnd({ usage: { inputTokens: 7000, outputTokens: 400 } });
+    await capturedOnEnd!({ messages: [], isAborted: false });
+    expect(info.mock.calls.at(-1)?.[1]).toMatchObject({
+      loadMs: 4, promptEvalMs: 6, promptEvalTokens: 6000, promptCachedTokens: 5800,
+      evalMs: 8, maxStepPromptTokens: 7000, maxStepOutputTokens: 900,
+    });
+    info.mockRestore();
+  });
+
+  it("omits unavailable timing and usage fields", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    await POST(req({ messages: [pasteMessage("posting")] }));
+    await capturedOnEnd!({ messages: [], isAborted: false });
+    const fields = info.mock.calls.at(-1)?.[1];
+    expect(fields).not.toHaveProperty("loadMs");
+    expect(fields).not.toHaveProperty("maxStepPromptTokens");
+    expect(fields).not.toHaveProperty("maxStepOutputTokens");
+    info.mockRestore();
   });
 
   // add_job is the only approval-gated tool; a bare boolean status would

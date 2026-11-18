@@ -64,6 +64,27 @@ describe("runNestedGeneration", () => {
     expect(call.abortSignal).toBeDefined();
   });
 
+  it("logs one timing summary from the nested stream's final raw chunk", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    streamText.mockImplementation(({ onChunk }) => ({
+      ...textStreamOf([]),
+      textStream: (async function* () {
+        onChunk({ chunk: { type: "raw", rawValue: {
+          done: true, load_duration: 2_000_000_000, prompt_eval_count: 700,
+          prompt_eval_duration: 3_000_000, eval_duration: 4_000_000,
+        } } });
+        yield "private answer";
+      })(),
+    }));
+    await runNestedGeneration(args());
+    expect(streamText.mock.calls[0][0].include).toEqual({ rawChunks: true });
+    expect(info.mock.calls).toEqual([["[agent-chat] nested generation", {
+      label: "test_tool", status: "ok", loadMs: 2000,
+      promptEvalMs: 3, promptEvalTokens: 700, evalMs: 4,
+    }]]);
+    info.mockRestore();
+  });
+
   // The chat loop needs think:true; a sub-call with no tools does not.
   it("never enables the thinking channel", async () => {
     await runNestedGeneration(args());

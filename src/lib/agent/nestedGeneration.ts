@@ -11,6 +11,12 @@ import {
   SURFACE_BY_NESTED_LABEL,
   SURFACES,
 } from "@/lib/telemetry";
+import {
+  addOllamaTimings,
+  ollamaTimingAttrs,
+  readOllamaTimings,
+  type OllamaTimings,
+} from "@/lib/ai/ollamaTimings";
 import { startAiCall } from "@/lib/aiUsage/tracker";
 import { FEATURE_BY_NESTED_LABEL } from "@/models/aiUsage.model";
 
@@ -108,6 +114,12 @@ export async function runNestedGeneration({
       numCtx,
     });
 
+    let timings: OllamaTimings | undefined;
+    function endGeneration(status: "ok" | "incomplete" | "failed", responseAttrs: Record<string, unknown> = {}) {
+      log.info("[agent-chat] nested generation", { label, status, ...timings });
+      span.end({ "jobsync.nested.status": status, ...responseAttrs, ...ollamaTimingAttrs(timings) });
+    }
+
     let text = "";
     try {
       const sub = streamText({
@@ -116,6 +128,12 @@ export async function runNestedGeneration({
         prompt,
         temperature,
         abortSignal: signal,
+        include: { rawChunks: true },
+        onChunk: ({ chunk }) => {
+          if (chunk.type !== "raw") return;
+          const step = readOllamaTimings(chunk.rawValue);
+          if (step) timings = addOllamaTimings(timings, step);
+        },
         // Deliberately no think:true. These sub-calls have no tools, so
         // reasoning buys nothing and costs 30s. The chat loop enables it.
         providerOptions: { ollama: { options: { num_ctx: numCtx } } },
@@ -143,23 +161,17 @@ export async function runNestedGeneration({
       void tracker.finish({ usage: tokens, finishReason });
       if (finishReason !== "stop") {
         span.setError(new Error(`finishReason=${finishReason}`));
-        span.end({
-          "jobsync.nested.status": "incomplete",
-          ...genAiResponseAttrs({ finishReason }),
-        });
+        endGeneration("incomplete", genAiResponseAttrs({ finishReason }));
         return { status: "incomplete" };
       }
 
-      span.end({
-        "jobsync.nested.status": "ok",
-        ...genAiResponseAttrs({ usage: tokens, finishReason, text }),
-      });
+      endGeneration("ok", genAiResponseAttrs({ usage: tokens, finishReason, text }));
       return { status: "ok", text };
     } catch (error) {
       void tracker.finish({ error, abortedBy: signal });
       log.error(`[agent-chat] ${label} generation failed`, { error: String(error) });
       span.setError(error);
-      span.end({ "jobsync.nested.status": "failed" });
+      endGeneration("failed");
       return { status: "failed" };
     } finally {
       guard.elapsedMs += Date.now() - startedAt;

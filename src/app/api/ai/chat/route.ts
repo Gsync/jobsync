@@ -37,6 +37,12 @@ import { measureTurnPrefix, type TurnPrefixMetrics } from "@/lib/agent/turnMetri
 import { mapAgentError } from "@/lib/agent/errors";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { saveChatConversation } from "@/actions/agentChat.actions";
+import {
+  addOllamaTimings,
+  ollamaTimingAttrs,
+  readOllamaTimings,
+  type OllamaTimings,
+} from "@/lib/ai/ollamaTimings";
 import { AiProvider } from "@/models/ai.model";
 import {
   genAiRequestAttrs,
@@ -204,6 +210,8 @@ export const POST = async (req: NextRequest) => {
   ]);
 
   // Written inside execute, read in onEnd, which runs after it.
+  let timings: OllamaTimings | undefined;
+  const stepMax: { maxStepPromptTokens?: number; maxStepOutputTokens?: number } = {};
   let prefixMetrics: TurnPrefixMetrics | undefined;
 
   // Written by streamText's own onEnd, read in the outer onEnd. Its usage
@@ -301,9 +309,23 @@ export const POST = async (req: NextRequest) => {
             // exclusive — add_job measured 1/7 with it off, 7/7 with it on.
             ollama: { think: true, options: { num_ctx: APP_CONSTANTS.AGENT_CHAT_NUM_CTX } },
           },
+          include: { rawChunks: true },
+          onStepEnd: ({ usage }) => {
+            if (usage.inputTokens !== undefined) {
+              stepMax.maxStepPromptTokens = Math.max(stepMax.maxStepPromptTokens ?? 0, usage.inputTokens);
+            }
+            if (usage.outputTokens !== undefined) {
+              stepMax.maxStepOutputTokens = Math.max(stepMax.maxStepOutputTokens ?? 0, usage.outputTokens);
+            }
+          },
           // First thing the user sees: reasoning is never rendered, and Ollama
           // sends an empty text delta beside every thinking chunk.
           onChunk: ({ chunk }) => {
+            if (chunk.type === "raw") {
+              const step = readOllamaTimings(chunk.rawValue);
+              if (step) timings = addOllamaTimings(timings, step);
+              return;
+            }
             if (
               (chunk.type === "text-delta" && chunk.text.length > 0) ||
               chunk.type === "tool-input-start"
@@ -355,6 +377,9 @@ export const POST = async (req: NextRequest) => {
         systemChars: prefixMetrics?.systemChars ?? 0,
         toolChars: prefixMetrics?.toolChars ?? 0,
         messageChars: prefixMetrics?.messageChars ?? 0,
+        ...timings,
+        ...stepMax,
+        sharedPrefixChars: prefixMetrics?.sharedPrefixChars ?? 0,
         prefixChanged: prefixMetrics?.prefixChanged ?? false,
       };
       // onEnd runs outside execute, so the span context has to be
@@ -377,6 +402,14 @@ export const POST = async (req: NextRequest) => {
         "jobsync.system_chars": fields.systemChars,
         "jobsync.tool_chars": fields.toolChars,
         "jobsync.message_chars": fields.messageChars,
+        ...ollamaTimingAttrs(timings),
+        ...(stepMax.maxStepPromptTokens !== undefined && {
+          "jobsync.max_step_prompt_tokens": stepMax.maxStepPromptTokens,
+        }),
+        ...(stepMax.maxStepOutputTokens !== undefined && {
+          "jobsync.max_step_output_tokens": stepMax.maxStepOutputTokens,
+        }),
+        "jobsync.shared_prefix_chars": fields.sharedPrefixChars,
         "jobsync.prefix_changed": fields.prefixChanged,
       });
       // The stream's cancel path can run this before isAborted is set, so the
