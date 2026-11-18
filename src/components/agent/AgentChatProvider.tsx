@@ -189,12 +189,7 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     },
   });
 
-  // add_job is approval-gated, so the model calls it on one POST and the SDK
-  // executes it on the next — where stopWhen never matches (addJobSettled
-  // wants a tool CALL in the step and that step has only a result), and the
-  // model runs a whole extra generation narrating the write.
-  // Announcing in onFinish left the jobs list stale for the length of that
-  // generation; the output part is on the client the moment the tool returns.
+  // A committed write refreshes the list even if the stream disconnects.
   useEffect(() => {
     const announced = announcedJobWritesRef.current!;
     const landed = createdJobToolCallIds(chat.messages).filter(

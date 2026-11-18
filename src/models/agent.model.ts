@@ -10,6 +10,8 @@ export type PageContext = {
   resumeId?: string;
 };
 
+export const AGENT_DIRECT_INVOKE_PART_TYPE = "data-direct-invoke";
+
 // Custom data part, not a FileUIPart: a file part is a standard type that
 // convertToModelMessages would carry to the model in full, defeating head
 // truncation. Data parts are dropped, which is why the head is injected.
@@ -165,6 +167,7 @@ export type AgentToolMeta = {
   description: string;
   runningLabel: string;
   terminal: boolean;
+  directInvoke?: true;
   invalidates: readonly AgentInvalidation[];
   maxResultChars?: number;
 };

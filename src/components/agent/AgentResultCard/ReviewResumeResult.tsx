@@ -14,7 +14,7 @@ export function ReviewResumeResult({ output }: { output: AgentReviewResumeResult
   }
 
   if (output.status === "needs_selection") {
-    return <ResumeSelectionPrompt prompt="Which resume?" resumes={output.resumes} />;
+    return <ResumeSelectionPrompt toolName="review_resume" prompt="Which resume?" resumes={output.resumes} />;
   }
 
   if (output.status === "unreadable" || output.status === "generation_failed") {

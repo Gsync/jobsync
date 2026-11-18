@@ -1,5 +1,8 @@
 "use client";
 
+import { AGENT_DIRECT_INVOKE_PART_TYPE } from "@/models/agent.model";
+import type { DirectInvokeToolName } from "@/lib/agent/registry";
+
 import {
   Select,
   SelectContent,
@@ -14,8 +17,10 @@ import { useAgentChat } from "@/components/agent/AgentChatProvider";
 export function AgentResumePicker({
   resumes,
   messageFor,
+  toolName,
 }: {
   resumes: { id: string; title: string }[];
+  toolName?: DirectInvokeToolName;
   messageFor?: (title: string) => string;
 }) {
   const { sendMessage } = useAgentChat();
@@ -28,7 +33,12 @@ export function AgentResumePicker({
     const text = messageFor ? messageFor(title) : `Review my resume "${title}"`;
     // The parts form, matching AgentChatInput — this surface always sends
     // parts, never a bare text shortcut.
-    void sendMessage({ parts: [{ type: "text", text }] });
+    void sendMessage({ parts: [
+      { type: "text", text },
+      ...(toolName ? [{
+        type: AGENT_DIRECT_INVOKE_PART_TYPE, data: { toolName, input: { resumeTitle: title } },
+      } as const] : []),
+    ] });
   };
 
   return (

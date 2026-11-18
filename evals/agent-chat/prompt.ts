@@ -76,10 +76,7 @@ function resumeSelectionTurn(providerId: string): Message[] {
   ];
 }
 
-// Mirrors a confirmed add_job round-trip: the user pressed Confirm, the write
-// happened, and the route resumed the loop for a step that narrates it. The
-// result is AgentAddJobResult's created branch verbatim — the model is told
-// nothing about the card beyond this, which is the point of the row.
+// The confirmed write ends with its result card in the transcript.
 function addJobTurn(providerId: string): Message[] {
   const output = {
     created: true,

@@ -205,26 +205,21 @@ tests:
       - type: javascript
         value: file://./assertions.ts:assertDescriptionSupplied
 
-  # The step after Confirm. The user has already pressed it and the row starts
-  # from the write, so any mention of a confirmation card here is the model
-  # asking them to do again what they just did — which is what the capabilities
-  # clause about a created result forbids. Note there is no page-context block
-  # on this row: the route only pushes one when the last message is the user's,
-  # and an approval-resume POST ends on the assistant's turn.
-  - description: After Confirm - reports the save, never re-asks for confirmation
+  - description: After Confirm - answers the follow-up without requesting confirmation again
     vars:
       userMessage: >-
         Add this job: Staff Data Engineer at Helio Systems — they're hiring
         someone to own the pipelines behind their analytics platform.
       priorAddJob: created
+      followUp: What company was that job with?
+      pageLocation: jobs-list
     assert:
       - type: javascript
         value: file://./assertions.ts:assertNoToolCall
       - type: llm-rubric
         value: >-
-          The reply states plainly that the job was added or saved. It does not
-          mention a confirmation card, and does not ask the user to confirm,
-          review, check or press anything.
+          The reply identifies Helio Systems and does not ask the user to confirm,
+          review or save the job again.
 
   # US-5 measured rather than asserted in prose: the agent has no read tool,
   # so the only correct answer is to say so.

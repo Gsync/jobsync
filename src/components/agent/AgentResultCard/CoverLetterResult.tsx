@@ -34,6 +34,7 @@ export function CoverLetterResult({ output }: { output: AgentCoverLetterResult }
   if (output.status === "needs_selection") {
     return (
       <ResumeSelectionPrompt
+        toolName="generate_cover_letter"
         prompt="Which resume should the letter draw on?"
         resumes={output.resumes}
         messageFor={(title) =>

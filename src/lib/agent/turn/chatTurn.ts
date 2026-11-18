@@ -16,6 +16,7 @@ import { stubConsumedPastes } from "../memory/paste";
 import { AGENT_CHAT_SYSTEM_PROMPT } from "../prompt";
 import type { NestedGenerationGuard } from "../steps/nestedGeneration";
 import { buildAgentStopWhen, buildAgentToolApproval, buildAgentTools } from "../tools";
+import { directCallFor, runToolDirect } from "./runToolDirect";
 import { measureTurnPrefix, type TurnPrefixMetrics } from "./turnMetrics";
 import { buildTurnLogFields, logTurn, turnSpanAttrs } from "./turnLog";
 
@@ -53,13 +54,7 @@ export function runChatTurn(input: {
   // Nested calls record their own time, which the turn subtracts.
   const nestedGuard: NestedGenerationGuard = { running: false, elapsedMs: 0 };
 
-  const turnUsageTracker = startAiCall({
-    userId,
-    feature: "agent_chat",
-    provider,
-    model: modelName,
-    numCtx,
-  });
+  let turnUsageTracker: ReturnType<typeof startAiCall> | undefined;
 
   const turnSpan = startSpan("agent.chat.turn", {
     ...genAiRequestAttrs({
@@ -91,7 +86,7 @@ export function runChatTurn(input: {
   return createUIMessageStream({
     originalMessages: messages,
     execute: ({ writer }) =>
-      runInSpan(turnSpan, () => {
+      runInSpan(turnSpan, async () => {
         const tools = buildAgentTools({
           userId,
           pastedText,
@@ -102,18 +97,25 @@ export function runChatTurn(input: {
           writer,
           nestedGuard,
         });
+        const toolApproval = buildAgentToolApproval(pastedText);
+        const call = directCallFor(messages.at(-1));
+        const routedMessages = call ? await runToolDirect({
+          call, tools, toolApproval, writer, messages: modelMessages, abortSignal: turnSignal, onError: mapTurnError,
+        }) : modelMessages;
+        if (!routedMessages) return;
+        turnUsageTracker = startAiCall({ userId, feature: "agent_chat", provider, model: modelName, numCtx });
         prefixMetrics = measureTurnPrefix({
           userId,
           system: AGENT_CHAT_SYSTEM_PROMPT,
           tools,
-          modelMessages,
+          modelMessages: routedMessages,
         });
         const result = streamText({
           model,
           instructions: AGENT_CHAT_SYSTEM_PROMPT,
-          messages: modelMessages,
+          messages: routedMessages,
           tools,
-          toolApproval: buildAgentToolApproval(pastedText),
+          toolApproval,
           stopWhen: [isStepCount(APP_CONSTANTS.AGENT_CHAT_MAX_STEPS), ...buildAgentStopWhen()],
           // Argument extraction wants determinism.
           temperature: TEMPERATURES.ANALYSIS,
@@ -142,7 +144,7 @@ export function runChatTurn(input: {
               (chunk.type === "text-delta" && chunk.text.length > 0) ||
               chunk.type === "tool-input-start"
             ) {
-              turnUsageTracker.markFirstToken();
+              turnUsageTracker?.markFirstToken();
             }
           },
           onAbort: ({ steps }) => {
@@ -182,7 +184,7 @@ export function runChatTurn(input: {
       });
       // Cancellation can fire before the SDK sets isAborted.
       const aborted = isAborted || turnSignal.aborted;
-      void turnUsageTracker.finish({
+      void turnUsageTracker?.finish({
         usage: aborted ? turnAbortUsage : turnUsage,
         finishReason: turnFinishReason,
         error: turnError,

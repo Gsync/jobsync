@@ -438,13 +438,13 @@ describe("POST /api/ai/chat", () => {
     );
   });
 
-  it("does not re-inject the paste head on the approval POST", async () => {
+  it("does not re-inject the paste head when a denied approval resumes the model", async () => {
     const messages = [
       pasteMessage("HEAD_MARKER posting body"),
       {
         id: "m2",
         role: "assistant",
-        parts: [{ type: "tool-add_job", toolCallId: "c1", state: "approval-responded", input: { company: "Acme", jobTitle: "Eng" }, approval: { id: "a1", approved: true } }],
+        parts: [{ type: "tool-add_job", toolCallId: "c1", state: "approval-responded", input: { company: "Acme", jobTitle: "Eng" }, approval: { id: "a1", approved: false } }],
       },
     ];
     await POST(req({ messages }));
