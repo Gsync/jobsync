@@ -40,7 +40,7 @@ import {
   type AgentAddJobResult,
   type AgentNestedStreamData,
 } from "@/models/agent.model";
-import { isNestedTool } from "@/lib/agent/registry";
+import { toolInvalidates } from "@/lib/agent/registry";
 
 export const AGENT_CHAT_PANEL_ID = "chat";
 
@@ -167,15 +167,8 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
       const finishedTools = finishedParts
         .filter((part) => isToolUIPart(part) && part.state === "output-available")
         .map((part) => getToolName(part as ToolUIPart));
-      // Any nested tool that saves server-side leaves the page behind the
-      // panel stale — the saved review card, the job's match score, or the
-      // job's cover-letter button flipping to "Regenerate Letter".
-      const generated = finishedTools.some(isNestedTool);
-      // The score it just saved sits in a JOB row, which a jobs list holding
-      // its own rows can only pick up from the counter. review_resume writes
-      // to the resume and the list renders no cover-letter state, so neither
-      // of the other two nested tools belongs here.
-      const scored = finishedTools.includes("match_job");
+      const refreshPage = finishedTools.some((name) => toolInvalidates(name).includes("page"));
+      const refreshJobsList = finishedTools.some((name) => toolInvalidates(name).includes("jobsList"));
 
       // The route stubs the paste on its way into the DB, but that copy is
       // not the one the client POSTs next turn — so without this the browser
@@ -191,8 +184,8 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
       // returns — see the effect below. An RSC refresh on an irrelevant page
       // is a wasted request, not a bug; a stale saved review or match score
       // right after watching one land reads as one.
-      if (generated) router.refresh();
-      if (scored) setJobWrites((n) => n + 1);
+      if (refreshPage) router.refresh();
+      if (refreshJobsList) setJobWrites((n) => n + 1);
     },
   });
 

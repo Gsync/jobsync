@@ -11,22 +11,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { AgentApprovalCard } from "@/components/agent/AgentApprovalCard";
 import { AgentMarkdown } from "@/components/agent/AgentMarkdown";
-import { AgentMatchContent } from "@/components/agent/AgentMatchContent";
 import { AgentResultCard } from "@/components/agent/AgentResultCard";
-import { AgentReviewContent } from "@/components/agent/AgentReviewContent";
 import { AgentStatusRow } from "@/components/agent/AgentStatusRow";
 import { AgentToolRunningCard } from "@/components/agent/AgentToolRunningCard";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
 import { resolvePastedText } from "@/lib/agent/memory/paste";
-import { parseJobMatch } from "@/lib/ai/jobMatch/parse";
-import { parseResumeReview } from "@/lib/ai/resumeReview/parse";
-import { stripThinking } from "@/lib/ai/stripThinking";
 import { cn } from "@/lib/utils";
 import {
   isAgentPastePart,
   type AgentPastePartData,
 } from "@/models/agent.model";
-import { isNestedTool } from "@/lib/agent/registry";
+import { isAgentToolName } from "@/lib/agent/registry";
+import { AGENT_TOOL_VIEWS } from "@/components/agent/AgentToolViews";
 
 function PasteChip({ data }: { data: AgentPastePartData }) {
   const chars = data.chars.toLocaleString();
@@ -133,32 +129,12 @@ export function AgentChatMessages() {
                 case "input-streaming":
                 case "input-available": {
                   const tool = getToolName(part);
-                  const streamed = isNestedTool(tool)
-                    ? toolStreams[part.toolCallId]
-                    : undefined;
-                  if (!streamed) return <AgentToolRunningCard key={i} part={part} />;
-                  if (tool === "match_job") {
-                    const parsed = parseJobMatch(streamed);
-                    return (
-                      <AgentMatchContent
-                        key={i}
-                        body={parsed.body}
-                        scores={parsed.scores}
-                      />
-                    );
-                  }
-                  // A letter has no scores line, so stripping reasoning is the
-                  // whole of its parse.
-                  if (tool === "generate_cover_letter") {
-                    return <AgentMarkdown key={i} text={stripThinking(streamed)} />;
-                  }
-                  const parsed = parseResumeReview(streamed);
-                  return (
-                    <AgentReviewContent
-                      key={i}
-                      body={parsed.body}
-                      scores={parsed.scores}
-                    />
+                  const Stream = isAgentToolName(tool) ? AGENT_TOOL_VIEWS[tool].Stream : undefined;
+                  const streamed = toolStreams[part.toolCallId];
+                  return Stream && streamed ? (
+                    <Stream key={i} text={streamed} />
+                  ) : (
+                    <AgentToolRunningCard key={i} part={part} />
                   );
                 }
                 case "approval-requested":
