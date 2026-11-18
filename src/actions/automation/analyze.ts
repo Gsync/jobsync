@@ -3,8 +3,7 @@
 import { buildLlmMatchData } from "@/lib/ai/jobMatch/matchResult";
 import db from "@/lib/db";
 import { requireUser } from "../shared";
-import { generateText } from "ai";
-import { startAiCall } from "@/lib/aiUsage/tracker";
+import { runTrackedGeneration } from "@/lib/ai/trackedGeneration";
 import {
   getModel,
   parseJobMatch,
@@ -18,13 +17,9 @@ import { getJobDetails } from "@/actions/job.actions";
 import { defaultUserSettings } from "@/models/userSettings.model";
 import { automationLogger } from "@/lib/automation-logger";
 import { getDefaultModelForProvider } from "@/lib/scraper/automation-run/aiSettings";
-import { APP_CONSTANTS } from "@/lib/constants";
 import {
-  genAiRequestAttrs,
-  genAiResponseAttrs,
   inputSizeAttrs,
   SURFACES,
-  withSpan,
 } from "@/lib/telemetry";
 import { formatError } from "./shared";
 
@@ -93,18 +88,16 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
       jobPre.data.normalizedText,
     );
 
-    const result = await withSpan(
-      "automation.analyze",
-      {
-        ...genAiRequestAttrs({
-          provider: ai.provider,
-          model: modelName,
-          temperature: 0.3,
-          numCtx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
-          surface: SURFACES.JOB_MATCH,
-          system: JOB_MATCH_SYSTEM_PROMPT,
-          prompt: promptText,
-        }),
+    const result = await runTrackedGeneration({
+      userId: user.id,
+      feature: "automations",
+      spanName: "automation.analyze",
+      surface: SURFACES.JOB_MATCH,
+      ai: { provider: ai.provider, modelName, model },
+      system: JOB_MATCH_SYSTEM_PROMPT,
+      prompt: promptText,
+      temperature: 0.3,
+      attrs: {
         ...inputSizeAttrs({
           resumeChars: resumePre.data.normalizedText.length,
           jobChars: jobPre.data.normalizedText.length,
@@ -112,40 +105,7 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
         "jobsync.user_id": user.id,
         "jobsync.job_id": jobId,
       },
-      async (span) => {
-        // The Analyze button on a discovered job counts as Automations.
-        const tracker = startAiCall({
-          userId: user.id,
-          feature: "automations",
-          provider: ai.provider,
-          model: modelName,
-        });
-        let generated;
-        try {
-          generated = await generateText({
-            model,
-            instructions: JOB_MATCH_SYSTEM_PROMPT,
-            prompt: promptText,
-            temperature: 0.3,
-          });
-        } catch (error) {
-          void tracker.finish({ error });
-          throw error;
-        }
-        void tracker.finish({
-          usage: generated.usage,
-          finishReason: generated.finishReason,
-        });
-        span.setAttrs(
-          genAiResponseAttrs({
-            usage: generated.usage,
-            finishReason: generated.finishReason,
-            text: generated.text,
-          }),
-        );
-        return generated;
-      },
-    );
+    });
 
     const { scores, body } = parseJobMatch(result.text);
     if (!scores) {

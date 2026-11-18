@@ -1,5 +1,5 @@
 import type { JobMatchScores } from "@/models/ai.schemas";
-import { generateText } from "ai";
+import { runTrackedGeneration } from "@/lib/ai/trackedGeneration";
 import {
   getModel,
   parseJobMatch,
@@ -7,22 +7,17 @@ import {
   buildAutomationJobMatchPrompt,
   removeHtmlTags,
 } from "@/lib/ai";
-import { APP_CONSTANTS } from "@/lib/constants";
 import type { JobBoard } from "@/models/automation.model";
 import type { AiSettings } from "@/models/userSettings.model";
 import {
-  genAiRequestAttrs,
-  genAiResponseAttrs,
   inputSizeAttrs,
   log,
   SURFACES,
-  withSpan,
 } from "@/lib/telemetry";
 import type { JobDetails } from "../types";
 import type { ResumeWithSections } from "./types";
 import { getDefaultModelForProvider } from "./aiSettings";
 import { convertResumeForMatch } from "./resumeText";
-import { startAiCall } from "@/lib/aiUsage/tracker";
 
 export type MatchResult =
   | { success: true; score: number; data: JobMatchScores & { body: string } }
@@ -54,18 +49,17 @@ ${removeHtmlTags(job.description)}
 
     const promptText = buildAutomationJobMatchPrompt(resumeText, jobText);
 
-    const result = await withSpan(
-      "scraper.match",
-      {
-        ...genAiRequestAttrs({
-          provider,
-          model: modelName,
-          temperature: 0.3,
-          numCtx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
-          surface: SURFACES.AUTOMATION_MATCH,
-          system: AUTOMATION_JOB_MATCH_SYSTEM_PROMPT,
-          prompt: promptText,
-        }),
+    const result = await runTrackedGeneration({
+      userId,
+      feature: "automations",
+      spanName: "scraper.match",
+      surface: SURFACES.AUTOMATION_MATCH,
+      ai: { provider, modelName, model },
+      system: AUTOMATION_JOB_MATCH_SYSTEM_PROMPT,
+      abortSignal: signal,
+      prompt: promptText,
+      temperature: 0.3,
+      attrs: {
         ...inputSizeAttrs({
           resumeChars: resumeText.length,
           jobChars: jobText.length,
@@ -73,41 +67,7 @@ ${removeHtmlTags(job.description)}
         "jobsync.job_board": sourceBoard,
         "jobsync.user_id": userId,
       },
-      async (span) => {
-        // No numCtx: this call passes none, so Ollama uses its daemon default.
-        const tracker = startAiCall({
-          userId,
-          feature: "automations",
-          provider,
-          model: modelName,
-        });
-        let generated;
-        try {
-          generated = await generateText({
-            model,
-            instructions: AUTOMATION_JOB_MATCH_SYSTEM_PROMPT,
-            prompt: promptText,
-            temperature: 0.3,
-            abortSignal: signal,
-          });
-        } catch (error) {
-          void tracker.finish({ error, abortedBy: signal });
-          throw error;
-        }
-        void tracker.finish({
-          usage: generated.usage,
-          finishReason: generated.finishReason,
-        });
-        span.setAttrs(
-          genAiResponseAttrs({
-            usage: generated.usage,
-            finishReason: generated.finishReason,
-            text: generated.text,
-          }),
-        );
-        return generated;
-      },
-    );
+    });
 
     const { scores, body } = parseJobMatch(result.text);
     if (!scores) {
