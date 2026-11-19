@@ -1,6 +1,8 @@
 import { AGENT_CHAT_SYSTEM_PROMPT, buildPageContextMessage, buildPasteContextMessage } from '../../src/lib/agent/prompt';
 import { APP_CONSTANTS } from '../../src/lib/constants';
 
+import { longHistory } from './longHistory';
+
 type Message = Record<string, unknown>;
 
 // Mirrors what the route injects: the user's typed message, then the pasted
@@ -135,7 +137,9 @@ export default function prompt({
 
   const messages: Message[] = [
     { role: 'system', content: AGENT_CHAT_SYSTEM_PROMPT },
-    { role: 'user', content: userMessage },
+    ...(vars.longHistory
+      ? longHistory(vars.longHistory, userMessage, Number(vars.historyTurns))
+      : [{ role: 'user', content: userMessage }]),
   ];
 
   if (vars.priorReview) messages.push(...reviewTurn(vars.priorReview, providerId));

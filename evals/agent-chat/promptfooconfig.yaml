@@ -418,3 +418,21 @@ tests:
     assert:
       - type: javascript
         value: file://./assertions.ts:assertOneNestedCall
+
+  - description: Long history - recalls the target company on the first jump
+    vars:
+      longHistory: My target company for these practice sessions is Juniper Forge.
+      historyTurns: 10
+      userMessage: Which company did I say I was preparing for?
+    assert:
+      - type: icontains
+        value: Juniper Forge
+
+  - description: Long history - recalls the interview topic after the window grows
+    vars:
+      longHistory: My interview practice topic is sediment transport.
+      historyTurns: 11
+      userMessage: What topic did I say I was practicing?
+    assert:
+      - type: icontains
+        value: sediment transport

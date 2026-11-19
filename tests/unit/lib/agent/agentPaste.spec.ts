@@ -226,8 +226,9 @@ describe("windowMessages", () => {
       (_, i) => userMsg(`m${i}`, []),
     );
     const windowed = windowMessages(many as any);
-    expect(windowed).toHaveLength(APP_CONSTANTS.AGENT_CHAT_HISTORY_MESSAGES);
-    expect(windowed[windowed.length - 1].id).toBe(`m${many.length - 1}`);
+    expect(windowed).toHaveLength(12);
+    expect(windowed[0].id).toBe("m18");
+    expect(windowed[windowed.length - 1].id).toBe("m29");
   });
 
   it("cuts on the token budget before the message count when messages are fat", () => {
