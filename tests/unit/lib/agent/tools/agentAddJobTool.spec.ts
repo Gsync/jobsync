@@ -117,6 +117,30 @@ describe("add_job agent tool", () => {
     expect(passed.tags).toEqual(["Go", "Kubernetes"]);
   });
 
+  it("stores the scrape's canonical URL instead of the pasted tracking link", async () => {
+    (scrapeJobPosting as any).mockResolvedValue({
+      success: true,
+      data: {
+        ...scrapedPosting.data,
+        url: "https://www.linkedin.com/jobs/view/research-engineer-at-fudo-partners-4491525662",
+      },
+    });
+
+    const tool = buildAddJobTool("user-1");
+    await execute(tool, {
+      company: "Fudo Partners",
+      jobTitle: "Research Engineer",
+      jobDescription: longDescription,
+      jobUrl:
+        "https://www.linkedin.com/jobs/view/4491525662/?trackingId=a&refId=b&eBP=c",
+    });
+
+    const passed = (createJobFromNames as any).mock.calls[0][0];
+    expect(passed.jobUrl).toBe(
+      "https://www.linkedin.com/jobs/view/research-engineer-at-fudo-partners-4491525662",
+    );
+  });
+
   it("marks a job whose description came from the page as scraped", async () => {
     const result: any = await execute(buildAddJobTool("user-1"), {
       company: "Acme",

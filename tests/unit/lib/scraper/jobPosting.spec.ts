@@ -78,6 +78,36 @@ const jsonLdHtml = `<!doctype html>
   <body><h1>Senior Platform Engineer</h1></body>
 </html>`;
 
+const linkedInHtml = `<!doctype html>
+<html>
+  <head>
+    <title>Research Engineer at Fudo Partners | LinkedIn</title>
+    <link rel="canonical" href="https://www.linkedin.com/jobs/view/research-engineer-at-fudo-partners-4491525662" />
+    <meta property="og:site_name" content="LinkedIn" />
+    <meta property="og:title" content="Research Engineer at Fudo Partners — New York City Metropolitan Area | LinkedIn Jobs" />
+  </head>
+  <body>
+    <main>
+      <nav>Sign in to see more jobs</nav>
+      <a class="topcard__org-name-link topcard__flavor--black-link">Fudo Partners</a>
+      <span class="topcard__flavor topcard__flavor--bullet">New York City Metropolitan Area</span>
+      <div class="description__text description__text--rich">
+        <p>Build production AI systems. You will work across the full AI development lifecycle, developing new approaches and deploying models into production. The team applies modern machine learning to automate sophisticated workflows, extract intelligence from large volumes of unstructured data and build increasingly capable AI applications.</p>
+        <p>Experience with Python, PyTorch and evaluation frameworks is expected.</p>
+        <button>Show more</button>
+      </div>
+      <ul class="description__job-criteria-list">
+        <li class="description__job-criteria-item">
+          <h3>Employment type</h3>
+          <span>Full-time</span>
+        </li>
+      </ul>
+      <aside>Similar jobs at other companies</aside>
+      <section class="similar-jobs">More roles you may like</section>
+    </main>
+  </body>
+</html>`;
+
 describe("htmlToText", () => {
   it("keeps paragraph and list structure while dropping scripts", () => {
     const text = htmlToText(
@@ -147,6 +177,36 @@ describe("extractJobPosting", () => {
     expect(posting.structuredData).toBe(false);
     expect(posting.source).toBe("Gamma");
     expect(posting.warnings?.join(" ")).toMatch(/inferred from the visible text/i);
+  });
+
+  it("reads a job board's description container instead of the surrounding page chrome", () => {
+    const posting = extractJobPosting(linkedInHtml, "https://www.linkedin.com/jobs/view/4491525662/?trackingId=a&refId=b&eBP=c&lipi=d");
+
+    expect(posting.title).toBe("Research Engineer");
+    expect(posting.company).toBe("Fudo Partners");
+    expect(posting.location).toBe("New York City Metropolitan Area");
+    expect(posting.employmentType).toBe("Full-time");
+    expect(posting.source).toBe("LinkedIn");
+    // The page's canonical link drops the feed's tracking parameters.
+    expect(posting.url).toBe(
+      "https://www.linkedin.com/jobs/view/research-engineer-at-fudo-partners-4491525662",
+    );
+    // Only the posting body is kept, not navigation or similar jobs.
+    expect(posting.description).toContain("Build production AI systems.");
+    expect(posting.description).not.toContain("Similar jobs");
+    expect(posting.description).not.toContain("Sign in to see more jobs");
+    expect(posting.description).not.toMatch(/show more/i);
+  });
+
+  it("ignores a canonical link that points at another site", () => {
+    const html = `<html><head>
+      <title>Data Analyst at Gamma</title>
+      <meta name="description" content="Analyse data for the team." />
+      <link rel="canonical" href="https://evil.example/phish" />
+    </head><body></body></html>`;
+
+    const posting = extractJobPosting(html, "https://gamma.example/careers/1?utm_source=x");
+    expect(posting.url).toBe("https://gamma.example/careers/1");
   });
 
   it("names a known job board as the source instead of using it as the company", () => {

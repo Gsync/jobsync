@@ -32,6 +32,7 @@ const TRACKING_PARAMS = [
   "gclid",
   "msclkid",
   "tk",
+  "trk",
   "from",
   "vjk",
   "gh_src",
@@ -45,10 +46,20 @@ export function normalizeJobUrl(url: string): string {
   try {
     const parsed = new URL(url);
     parsed.hash = "";
-    TRACKING_PARAMS.forEach((param) => {
-      parsed.searchParams.delete(param);
-    });
-    parsed.searchParams.sort();
+    if (
+      /(^|\.)linkedin\.com$/i.test(parsed.hostname) &&
+      parsed.pathname.startsWith("/jobs/view/")
+    ) {
+      // LinkedIn job-view links are self-contained; every query parameter on
+      // them (trackingId, refId, eBP, lipi, trk, ...) is tracking added by a
+      // feed or search, so none belongs in a stored, clickable link.
+      parsed.search = "";
+    } else {
+      TRACKING_PARAMS.forEach((param) => {
+        parsed.searchParams.delete(param);
+      });
+      parsed.searchParams.sort();
+    }
     if (parsed.pathname.length > 1) {
       parsed.pathname = parsed.pathname.replace(/\/+$/, "");
     }

@@ -293,19 +293,26 @@ function salaryFromJob(job: JsonObject): string | undefined {
   return unitLabel ? `${range} ${unitLabel}` : range;
 }
 
+function normalizeEmploymentType(raw: string | undefined): string | undefined {
+  const value = raw?.toLowerCase().replace(/[^a-z]/g, "") ?? "";
+  if (!value) return undefined;
+  if (value.includes("full")) return "Full-time";
+  if (value.includes("part")) return "Part-time";
+  if (
+    value.includes("contract") ||
+    value.includes("freelance") ||
+    value.includes("temporary") ||
+    value.includes("intern")
+  ) {
+    return "Contract";
+  }
+  return undefined;
+}
+
 function jobTypeFromJob(job: JsonObject): string | undefined {
   for (const entry of asArray(job.employmentType)) {
-    const value = asString(entry)?.toLowerCase().replace(/[^a-z]/g, "") ?? "";
-    if (value.includes("full")) return "Full-time";
-    if (value.includes("part")) return "Part-time";
-    if (
-      value.includes("contract") ||
-      value.includes("freelance") ||
-      value.includes("temporary") ||
-      value.includes("intern")
-    ) {
-      return "Contract";
-    }
+    const jobType = normalizeEmploymentType(asString(entry));
+    if (jobType) return jobType;
   }
   return undefined;
 }
@@ -328,7 +335,7 @@ function workplaceTypeFromJob(
   const text = `${location ?? ""} ${description.slice(0, 1_500)}`;
   if (/\bremote\b/i.test(text)) return "Remote";
   if (/\bhybrid\b/i.test(text)) return "Hybrid";
-  if (/\bon[- ]?site\b/i.test(text)) return "Onsite";
+  if (/\bon[- ]?site\b|\bin[- ]person\b/i.test(text)) return "Onsite";
   return undefined;
 }
 
@@ -379,6 +386,35 @@ function sourceForHost(host: string): string | undefined {
   return undefined;
 }
 
+const COMMON_SECOND_LEVEL_LABELS = new Set([
+  "co",
+  "com",
+  "org",
+  "net",
+  "gov",
+  "edu",
+  "ac",
+]);
+
+// The registrable-looking part of a host, used to decide whether a page's
+// claimed canonical URL points at the same site. This is intentionally
+// coarse (no public-suffix list) and only ever compares page-authored URLs.
+function siteKey(host: string): string {
+  const labels = host
+    .toLowerCase()
+    .replace(/\.$/, "")
+    .replace(/^www\./, "")
+    .split(".")
+    .filter(Boolean);
+  if (labels.length <= 2) return labels.join(".");
+  const secondLevel = labels[labels.length - 2] ?? "";
+  return (
+    COMMON_SECOND_LEVEL_LABELS.has(secondLevel)
+      ? labels.slice(-3)
+      : labels.slice(-2)
+  ).join(".");
+}
+
 function brandFromHost(host: string): string | undefined {
   const labels = host
     .toLowerCase()
@@ -388,9 +424,10 @@ function brandFromHost(host: string): string | undefined {
   if (labels.length < 2) return undefined;
 
   const secondLevel = labels[labels.length - 2] ?? "";
-  const commonSecondLevels = new Set(["co", "com", "org", "net", "gov", "edu", "ac"]);
   const index =
-    labels.length >= 3 && commonSecondLevels.has(secondLevel) ? labels.length - 3 : labels.length - 2;
+    labels.length >= 3 && COMMON_SECOND_LEVEL_LABELS.has(secondLevel)
+      ? labels.length - 3
+      : labels.length - 2;
   const brand = labels[index];
   if (!brand) return undefined;
   return brand
@@ -459,6 +496,170 @@ function mainHtml(html: string): string | undefined {
   return undefined;
 }
 
+const SCRIPT_ELEMENT = /<script\b[^>]*>[\s\S]*?<\/script>/gi;
+const STYLE_ELEMENT = /<style\b[^>]*>[\s\S]*?<\/style>/gi;
+const NOSCRIPT_ELEMENT = /<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi;
+
+// Job boards (LinkedIn in particular) render the posting inside a dedicated
+// container and put navigation, sign-in prompts and "similar jobs" around it.
+// Reading all of <main> mixes those in, so prefer the container when one can
+// be identified. The hint covers the markup used by the common boards:
+// LinkedIn's description__text/job-details, Indeed's jobDescriptionText and
+// the usual job-description/jobDescription class names.
+const DESCRIPTION_CONTAINER_HINT =
+  /(?:^|[\s"'_-])(?:job|jobs|posting)[-_ ]?(?:description|details|body|content)|description__text|jobdescription|jobsearch-jobcomponent-description/i;
+
+function elementSpan(
+  html: string,
+  start: number,
+  tagName: string,
+): { start: number; end: number } | undefined {
+  const tag = new RegExp(`<(/?)${tagName}\\b[^>]*>`, "gi");
+  tag.lastIndex = start;
+  let depth = 0;
+  let match: RegExpExecArray | null;
+  while ((match = tag.exec(html))) {
+    // A self-closing <div/> is not a container opening.
+    if (match[1] !== "/" && /\/\s*>$/.test(match[0])) continue;
+    depth += match[1] === "/" ? -1 : 1;
+    if (depth === 0) return { start, end: match.index + match[0].length };
+    if (depth < 0) return undefined;
+  }
+  return undefined;
+}
+
+function descriptionFromContainer(html: string): string | undefined {
+  const source = html
+    .replace(SCRIPT_ELEMENT, " ")
+    .replace(STYLE_ELEMENT, " ")
+    .replace(NOSCRIPT_ELEMENT, " ");
+
+  const candidates: Array<{ start: number; end: number; text: string }> = [];
+  const open = /<(div|section|article|main)\b[^>]*>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = open.exec(source))) {
+    if (!DESCRIPTION_CONTAINER_HINT.test(match[0])) continue;
+    const span = elementSpan(source, match.index, match[1].toLowerCase());
+    if (!span) continue;
+    const text = htmlToText(source.slice(span.start, span.end));
+    if (text.length < 200) continue;
+    candidates.push({ ...span, text });
+  }
+  if (candidates.length === 0) return undefined;
+
+  // Prefer the innermost matching element: a wrapper such as <main> can carry
+  // the same class hint while also containing the surrounding page chrome.
+  const innermost = candidates.filter(
+    (candidate) =>
+      !candidates.some(
+        (other) =>
+          other !== candidate &&
+          other.start > candidate.start &&
+          other.end <= candidate.end,
+      ),
+  );
+  const pool = innermost.length > 0 ? innermost : candidates;
+  return pool.reduce((best, candidate) =>
+    candidate.text.length > best.text.length ? candidate : best,
+  ).text;
+}
+
+function stripDescriptionChrome(text: string): string {
+  return text
+    .split("\n")
+    .filter((line) => !/^\s*show (?:more|less)\s*$/i.test(line))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+// The page's own canonical URL is more reliable than the link the user
+// pasted: job boards add tracking parameters (LinkedIn's trackingId, eBP,
+// lipi, ...) that must not be stored or clicked. Only same-site links are
+// accepted, so page content cannot redirect a saved job to another domain.
+function canonicalUrlFromHtml(
+  html: string,
+  pageUrl: URL,
+  meta: Map<string, string>,
+): string | undefined {
+  const candidates: string[] = [];
+  const link = /<link\b[^>]*>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = link.exec(html))) {
+    const attrs = parseAttributes(match[0]);
+    const rel = (attrs.get("rel") ?? "").toLowerCase().split(/\s+/);
+    const href = attrs.get("href");
+    if (href && rel.includes("canonical")) candidates.push(href);
+  }
+  const ogUrl = meta.get("og:url");
+  if (ogUrl) candidates.push(ogUrl);
+
+  for (const raw of candidates) {
+    try {
+      const url = new URL(raw, pageUrl);
+      if (url.protocol !== "http:" && url.protocol !== "https:") continue;
+      if (url.username || url.password) continue;
+      if (siteKey(url.hostname) !== siteKey(pageUrl.hostname)) continue;
+      return url.toString();
+    } catch {
+      // Malformed or non-absolute candidates fall through to the next one.
+    }
+  }
+  return undefined;
+}
+
+const LINKEDIN_HOST = /(^|\.)linkedin\.com$/i;
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function classNameElementText(
+  html: string,
+  className: string,
+): string | undefined {
+  const open = new RegExp(
+    `<([a-z][a-z0-9]*)\\b[^>]*class\\s*=\\s*["'][^"']*${escapeRegExp(className)}[^"']*["'][^>]*>`,
+    "i",
+  );
+  const match = open.exec(html);
+  if (!match) return undefined;
+  const span = elementSpan(html, match.index, match[1].toLowerCase());
+  const text = htmlToText(span ? html.slice(span.start, span.end) : match[0]);
+  return text || undefined;
+}
+
+function linkedInCriteria(
+  html: string,
+  label: string,
+): string | undefined {
+  const pattern = new RegExp(
+    `<h3[^>]*>\\s*${escapeRegExp(label)}\\s*</h3>([\\s\\S]*?)</li>`,
+    "i",
+  );
+  const match = html.match(pattern);
+  const text = match ? htmlToText(match[1] ?? "") : "";
+  return text || undefined;
+}
+
+interface LinkedInExtras {
+  company?: string;
+  location?: string;
+  employmentType?: string;
+}
+
+// LinkedIn's guest job page has no JobPosting JSON-LD, but the top card and
+// the job-criteria list carry the fields the generic extractors miss.
+function extractLinkedInExtras(html: string): LinkedInExtras {
+  return {
+    company: classNameElementText(html, "topcard__org-name-link"),
+    location: classNameElementText(html, "topcard__flavor--bullet"),
+    employmentType: normalizeEmploymentType(
+      linkedInCriteria(html, "Employment type"),
+    ),
+  };
+}
+
 function metaDescription(meta: Map<string, string>): string | undefined {
   const raw =
     meta.get("og:description") ??
@@ -523,16 +724,22 @@ export function extractJobPosting(html: string, url: string): ScrapedJobPosting 
   const host = parsedUrl.hostname.toLowerCase().replace(/\.$/, "");
   const meta = parseMetaTags(html);
   const job = findJobPosting(html);
+  const linkedIn = LINKEDIN_HOST.test(host)
+    ? extractLinkedInExtras(html)
+    : undefined;
 
+  const h1 = extractH1(html);
   const rawTitle =
     asString(job?.title) ??
+    (linkedIn ? h1 : undefined) ??
     meta.get("og:title") ??
     meta.get("twitter:title") ??
-    extractH1(html) ??
+    h1 ??
     extractTitle(html);
 
   const company =
     organizationName(job?.hiringOrganization) ??
+    linkedIn?.company ??
     companyFromRawTitle(rawTitle) ??
     companyFromMeta(meta, host);
 
@@ -541,6 +748,7 @@ export function extractJobPosting(html: string, url: string): ScrapedJobPosting 
 
   const location =
     locationFromJob(job ?? {}) ??
+    linkedIn?.location ??
     (title && /\bremote\b/i.test(title) ? "Remote" : undefined);
 
   const structuredDescription = asString(job?.description);
@@ -551,13 +759,18 @@ export function extractJobPosting(html: string, url: string): ScrapedJobPosting 
   const main = mainHtml(html);
   const bodyText = htmlToText(main ?? html);
   const metaText = metaDescription(meta);
+  const containerText = descriptionFromContainer(html);
 
   let description = structuredText ?? "";
   if (!structuredText) {
+    // The posting's own container beats the whole page: on a job board the
+    // rest of <main> is navigation, sign-in prompts and similar jobs.
     const fallback =
-      bodyText.length > 0 ? bodyText : metaText ?? bodyText;
+      containerText ??
+      (bodyText.length > 0 ? bodyText : metaText ?? bodyText);
     description = fallback;
   }
+  description = stripDescriptionChrome(description);
 
   let descriptionTruncated = false;
   if (description.length > APP_CONSTANTS.SCRAPE_MAX_DESCRIPTION_CHARS) {
@@ -566,7 +779,8 @@ export function extractJobPosting(html: string, url: string): ScrapedJobPosting 
   }
 
   const salary = salaryFromJob(job ?? {});
-  const jobType = jobTypeFromJob(job ?? {});
+  const jobType =
+    jobTypeFromJob(job ?? {}) ?? linkedIn?.employmentType;
   const workplaceType = workplaceTypeFromJob(job ?? {}, location, description);
   const skills = skillsFromJob(job ?? {});
   const source = sourceFromMeta(meta, host, company);
@@ -582,12 +796,14 @@ export function extractJobPosting(html: string, url: string): ScrapedJobPosting 
     warnings.push("The posting was very long, so its description was shortened.");
   }
 
+  const canonicalUrl = canonicalUrlFromHtml(html, parsedUrl, meta);
+
   return {
     title: title ?? "",
     company: company ?? "",
     location: location ?? "",
     description,
-    url: normalizeJobUrl(url),
+    url: normalizeJobUrl(canonicalUrl ?? url),
     postedDate: asString(job?.datePosted),
     salary,
     employmentType: jobType,

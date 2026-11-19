@@ -139,6 +139,10 @@ export function buildAddJobTool(userId: string, pastedText?: string) {
         const result = await createJobFromNames(
           {
             ...input,
+            // The page's canonical link is cleaner than what the user pasted
+            // (no feed tracking parameters), and the scrape is the only part
+            // of the turn that saw it.
+            jobUrl: scraped?.url ?? input.jobUrl,
             company: input.company || scraped?.company || "",
             jobTitle: input.jobTitle || scraped?.title || "",
             location: input.location || scraped?.location || undefined,

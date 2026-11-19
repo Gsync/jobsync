@@ -79,6 +79,24 @@ describe("normalizeJobUrl", () => {
     );
   });
 
+  it("drops every query parameter from a LinkedIn job-view link", () => {
+    expect(
+      normalizeJobUrl(
+        "https://www.linkedin.com/jobs/view/4491525662/?trackingId=a&refId=b&eBP=c&lipi=d&alternateChannel=search"
+      )
+    ).toBe("https://www.linkedin.com/jobs/view/4491525662");
+  });
+
+  it("keeps a LinkedIn search's query parameters", () => {
+    expect(
+      normalizeJobUrl(
+        "https://www.linkedin.com/jobs/search?keywords=engineer&location=NYC&trk=abc"
+      )
+    ).toBe(
+      "https://www.linkedin.com/jobs/search?keywords=engineer&location=NYC"
+    );
+  });
+
   it("sorts query params so order does not matter", () => {
     expect(normalizeJobUrl("https://example.com/job?b=2&a=1")).toBe(
       "https://example.com/job?a=1&b=2"
