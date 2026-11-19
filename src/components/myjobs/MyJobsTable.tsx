@@ -40,6 +40,9 @@ type MyJobsTableProps = {
   onAddNote: (jobId: string) => void;
   sort: SortState<JobSortField> | null;
   onSort: (field: JobSortField) => void;
+  selectedIds: ReadonlySet<string>;
+  onToggleSelect: (id: string) => void;
+  onToggleSelectAll: () => void;
 };
 
 function MyJobsTable({
@@ -51,6 +54,9 @@ function MyJobsTable({
   onAddNote,
   sort,
   onSort,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
 }: MyJobsTableProps) {
   const [alertOpen, setAlertOpen] = useState(false);
   const [jobIdToDelete, setJobIdToDelete] = useState("");
@@ -60,11 +66,27 @@ function MyJobsTable({
     setJobIdToDelete(jobId);
   };
 
+  const selectedCount = jobs.filter((job) => selectedIds.has(job.id)).length;
+  const allSelected = jobs.length > 0 && selectedCount === jobs.length;
+  const someSelected = selectedCount > 0 && !allSelected;
+
   return (
     <TooltipProvider delayDuration={300}>
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-10 pr-0">
+              <input
+                type="checkbox"
+                className="h-4 w-4 cursor-pointer accent-primary align-middle"
+                aria-label={allSelected ? "Deselect all jobs" : "Select all jobs"}
+                checked={allSelected}
+                ref={(el) => {
+                  if (el) el.indeterminate = someSelected;
+                }}
+                onChange={onToggleSelectAll}
+              />
+            </TableHead>
             <TableHead className="hidden w-[100px] sm:table-cell">
               <span className="sr-only">Company Logo</span>
             </TableHead>
@@ -115,8 +137,18 @@ function MyJobsTable({
         </TableHeader>
         <TableBody>
           {jobs.map((job: JobResponse) => {
+            const selected = selectedIds.has(job.id);
             return (
-              <TableRow key={job.id}>
+              <TableRow key={job.id} data-state={selected ? "selected" : undefined}>
+                <TableCell className="w-10 pr-0">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 cursor-pointer accent-primary align-middle"
+                    aria-label={`Select ${job.JobTitle?.label ?? "job"}`}
+                    checked={selected}
+                    onChange={() => onToggleSelect(job.id)}
+                  />
+                </TableCell>
                 <TableCell className="hidden sm:table-cell">
                   <CompanyLogo
                     logoUrl={job.Company?.logoUrl}

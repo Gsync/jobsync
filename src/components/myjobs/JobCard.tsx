@@ -24,6 +24,7 @@ import { JobStatusBadge } from "./JobStatusBadge";
 import { JobActionsMenu } from "./JobActionsMenu";
 import { MatchJobButton } from "./MatchJobButton";
 import { CompanyLogo } from "./CompanyLogo";
+import { cn } from "@/lib/utils";
 
 type JobCardProps = {
   job: JobResponse;
@@ -32,6 +33,8 @@ type JobCardProps = {
   onChangeJobStatus: (id: string, status: JobStatus) => void;
   onAddNote: (jobId: string) => void;
   onDeleteJob: (jobId: string) => void;
+  selected?: boolean;
+  onToggleSelect?: (jobId: string) => void;
 };
 
 export function JobCard({
@@ -41,12 +44,29 @@ export function JobCard({
   onChangeJobStatus,
   onAddNote,
   onDeleteJob,
+  selected = false,
+  onToggleSelect,
 }: JobCardProps) {
   const notesCount = job._count?.Notes ?? 0;
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border bg-card p-4">
+    <div
+      data-state={selected ? "selected" : undefined}
+      className={cn(
+        "flex flex-col gap-3 rounded-lg border bg-card p-4",
+        selected && "border-primary ring-1 ring-primary",
+      )}
+    >
       <div className="flex items-start gap-3">
+        {onToggleSelect && (
+          <input
+            type="checkbox"
+            className="mt-2.5 h-4 w-4 shrink-0 cursor-pointer accent-primary"
+            aria-label={`Select ${job.JobTitle?.label ?? "job"}`}
+            checked={selected}
+            onChange={() => onToggleSelect(job.id)}
+          />
+        )}
         <CompanyLogo
           logoUrl={job.Company?.logoUrl}
           className="h-10 w-10 min-w-10"

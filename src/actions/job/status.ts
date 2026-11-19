@@ -27,6 +27,33 @@ export const updateJobStatus = async (
   }
 };
 
+// Sequential on purpose: changeJobStatus opens a transaction per job, and
+// SQLite has a single writer, so running them in parallel would only contend.
+export const updateJobsStatus = async (
+  jobIds: string[],
+  status: JobStatus,
+): Promise<any | undefined> => {
+  try {
+    const user = await requireUser();
+    const ids = [...new Set(jobIds.filter(Boolean))];
+    if (ids.length === 0) return { success: true, count: 0 };
+
+    for (const jobId of ids) {
+      await changeJobStatus({
+        jobId,
+        userId: user.id,
+        statusId: status.id,
+      });
+    }
+
+    revalidatePath("/dashboard");
+    return { success: true, count: ids.length };
+  } catch (error) {
+    const msg = "Failed to update job statuses.";
+    return handleError(error, msg);
+  }
+};
+
 export const saveJobMatchResult = async (
   jobId: string,
   matchScore: number,

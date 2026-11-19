@@ -55,6 +55,9 @@ export function JobsToolbar({
   editJob,
   resetEditJob,
   addJobInitialOpen,
+  selectedCount,
+  allJobsSelected,
+  onToggleSelectAll,
 }: {
   jobsCount: number;
   totalJobs: number;
@@ -85,8 +88,12 @@ export function JobsToolbar({
   editJob: JobResponse | null;
   resetEditJob: () => void;
   addJobInitialOpen: boolean;
+  selectedCount: number;
+  allJobsSelected: boolean;
+  onToggleSelectAll: () => void;
 }) {
   const [exportOpen, setExportOpen] = useState(false);
+  const someJobsSelected = selectedCount > 0 && !allJobsSelected;
 
   return (
     <CardHeader className="flex-row flex-wrap justify-between items-center gap-3">
@@ -97,6 +104,25 @@ export function JobsToolbar({
         )}
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2 ml-auto">
+        {!initialLoading && jobsCount > 0 && (
+          <label
+            className="flex h-8 cursor-pointer select-none items-center gap-1.5 rounded-md border border-input bg-background px-2 text-xs"
+            title={allJobsSelected ? "Deselect all loaded jobs" : "Select all loaded jobs"}
+          >
+            <input
+              type="checkbox"
+              data-testid="select-all-jobs-toolbar"
+              className="h-3.5 w-3.5 cursor-pointer accent-primary"
+              aria-label={allJobsSelected ? "Deselect all jobs" : "Select all jobs"}
+              checked={allJobsSelected}
+              ref={(el) => {
+                if (el) el.indeterminate = someJobsSelected;
+              }}
+              onChange={onToggleSelectAll}
+            />
+            <span className="hidden sm:inline">All</span>
+          </label>
+        )}
         <JobsViewToggle value={viewMode} onChange={onChangeViewMode} />
         {companyLabel && (
           <button

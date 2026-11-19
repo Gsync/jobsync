@@ -235,3 +235,27 @@ export const deleteJobById = async (
     return handleError(error, msg);
   }
 };
+
+// deleteMany scopes by userId, so ids belonging to another user are silently
+// skipped instead of deleted. The returned count is what actually went away.
+export const deleteJobsById = async (
+  jobIds: string[],
+): Promise<any | undefined> => {
+  try {
+    const user = await requireUser();
+    const ids = [...new Set(jobIds.filter(Boolean))];
+    if (ids.length === 0) return { success: true, count: 0 };
+
+    const res = await prisma.job.deleteMany({
+      where: {
+        id: { in: ids },
+        userId: user.id,
+      },
+    });
+    revalidatePath("/dashboard");
+    return { success: true, count: res.count };
+  } catch (error) {
+    const msg = "Failed to delete jobs.";
+    return handleError(error, msg);
+  }
+};

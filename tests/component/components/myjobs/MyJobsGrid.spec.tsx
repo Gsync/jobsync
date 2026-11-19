@@ -39,6 +39,7 @@ function makeJob(overrides: Partial<JobResponse> = {}): JobResponse {
 
 function renderGrid(jobs: JobResponse[]) {
   const deleteJob = vi.fn();
+  const onToggleSelect = vi.fn();
   render(
     <MyJobsGrid
       jobs={jobs}
@@ -47,9 +48,11 @@ function renderGrid(jobs: JobResponse[]) {
       editJob={vi.fn()}
       onChangeJobStatus={vi.fn()}
       onAddNote={vi.fn()}
+      selectedIds={new Set()}
+      onToggleSelect={onToggleSelect}
     />,
   );
-  return { deleteJob };
+  return { deleteJob, onToggleSelect };
 }
 
 describe("MyJobsGrid", () => {
@@ -94,5 +97,15 @@ describe("MyJobsGrid", () => {
     await user.click(screen.getByRole("button", { name: "Delete" }));
 
     expect(deleteJob).toHaveBeenCalledWith("job-2");
+  });
+
+  it("toggling a card checkbox selects that job", async () => {
+    const { onToggleSelect } = renderGrid([makeJob()]);
+
+    await user.click(
+      screen.getByRole("checkbox", { name: "Select Software Engineer" }),
+    );
+
+    expect(onToggleSelect).toHaveBeenCalledWith("job-1");
   });
 });
