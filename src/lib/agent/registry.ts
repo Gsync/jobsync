@@ -1,11 +1,14 @@
 import { AGENT_CHAT_RESUME_MAX_CHARS, type AgentInvalidation, type AgentToolMeta } from "@/models/agent.model";
 
+export const AGENT_DATA_AREAS = ["saved jobs", "tasks", "notes", "activities", "settings"] as const;
+
 export const AGENT_TOOL_META = {
   add_job: {
     kind: "write",
-    description: "Add a job application to JobSync. Resolves or creates company, job title, location and source by name, and detects duplicates automatically. The user confirms the extracted details before anything is saved.",
+    description: "Save a job application when the user asks to add, save or track a job. Call as soon as you have the company, job title and either a pasted posting or a description of what the role involves. If any are missing, ask for all three together as required. One sentence about the role is enough. Never ask the user for optional fields. The app resolves or creates the company, job title, location and source by name and detects duplicates.",
     runningLabel: "Preparing to add a job…",
     terminal: true,
+    reads: [],
     invalidates: [],
   },
   get_resume: {
@@ -13,31 +16,35 @@ export const AGENT_TOOL_META = {
     description: "Read the contents of one of the user's own resumes in JobSync and return it as text. Use it to answer a question about what a resume says. Optionally takes the resume's title; with no title the app uses the resume the user is currently viewing, or their default resume. Returns their resume titles instead if it cannot tell which one they mean.",
     runningLabel: "Reading your resume…",
     terminal: false,
+    reads: [],
     invalidates: [],
     maxResultChars: AGENT_CHAT_RESUME_MAX_CHARS,
   },
   review_resume: {
     kind: "workflow",
     directInvoke: true,
-    description: "Produce a full scored review of one of the user's own resumes in JobSync. The app generates the review itself, streams it to the user and saves it, then returns the scores and the review text to you. Optionally takes the resume's title; with no title the app uses the resume the user is currently viewing, or their default resume. Returns their resume titles instead if it cannot tell which one they mean.",
+    description: "Call when the user asks for a review, critique, feedback or score on one of their resumes. The app generates the scored review, streams it to the user and saves it. Use the returned scores and review text for follow-up questions. Without a resume title the app uses the resume the user is viewing or their default resume, and returns titles if it needs a selection.",
     runningLabel: "Reviewing your resume…",
     terminal: true,
+    reads: [],
     invalidates: ["page"],
   },
   match_job: {
     kind: "workflow",
     directInvoke: true,
-    description: "Score how well one of the user's own resumes matches the job the user is currently viewing in JobSync, and save the result to that job. The app generates the analysis itself, streams it to the user and saves it, then returns the match score and the analysis text to you. Call it whenever the user asks about matching, fit, what is missing for a role, or whether to apply: each turn tells you which page they are on, so never ask them to open a job or confirm they have one open, and treat a no_job result from an earlier turn as stale rather than repeating it. Optionally takes the resume's title; with no title the app uses the resume linked to the job, or their default resume.",
+    description: "Call when the user asks how well their resume matches the job they are viewing, for a fit score, what is missing for the role, or whether to apply. The app generates the analysis, streams it to the user and saves it to the job. Use the returned match score and analysis for follow-up questions. Without a resume title the app uses the resume linked to the job or their default resume.",
     runningLabel: "Matching your resume to this job…",
     terminal: true,
+    reads: [],
     invalidates: ["page", "jobsList"],
   },
   generate_cover_letter: {
     kind: "workflow",
     directInvoke: true,
-    description: "Write a cover letter for the job the user is currently viewing in JobSync, drawing on one of their own resumes, and save it to their documents. The app writes the letter itself, streams it to the user and saves it, then returns the letter text to you. Call it whenever the user asks for a cover letter, a covering letter, a letter of application or a note to send with an application: each turn tells you which page they are on, so never ask them to open a job or confirm they have one open, and treat a no_job result from an earlier turn as stale rather than repeating it. Optionally takes the resume's title; with no title the app uses the resume linked to the job, or their default resume.",
+    description: "Call when the user asks for a cover letter, a covering letter, a letter of application or a note to send with an application for the job they are viewing. The app writes the letter using one of their resumes, streams it to the user and saves it to their documents. Use the returned letter for follow-up questions. Without a resume title the app uses the resume linked to the job or their default resume.",
     runningLabel: "Writing your cover letter…",
     terminal: true,
+    reads: [],
     invalidates: ["page"],
   },
 } as const satisfies Record<string, AgentToolMeta>;

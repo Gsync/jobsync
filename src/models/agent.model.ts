@@ -1,3 +1,4 @@
+import type { AGENT_DATA_AREAS } from "@/lib/agent/registry";
 import type { DescriptionCompleteness } from "@/models/job.model";
 import type { JobMatchScores, ResumeScores } from "@/models/ai.schemas";
 
@@ -162,7 +163,10 @@ export const AGENT_CHAT_RESUME_MAX_CHARS = 12_000;
 export type AgentToolKind = "read" | "write" | "workflow";
 export type AgentInvalidation = "page" | "jobsList";
 
+export type AgentDataArea = (typeof AGENT_DATA_AREAS)[number];
+
 export type AgentToolMeta = {
+  reads: readonly AgentDataArea[];
   kind: AgentToolKind;
   description: string;
   runningLabel: string;
