@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
+import { getApiKeyEnvVar } from "@/lib/ai/provider-registry";
 import { PROVIDER_VERIFIERS } from "@/lib/ai/provider-registry.server";
 
 export async function POST(req: NextRequest) {
@@ -25,8 +26,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Ollama's credential is a base URL, so an authenticated proxy needs the
+  // bearer token from the provider-specific API key env var (OLLAMA_API_KEY).
+  const apiKeyEnvVar = getApiKeyEnvVar(provider);
+  const apiKey = apiKeyEnvVar ? process.env[apiKeyEnvVar] : undefined;
+
   try {
-    const result = await verifier(key);
+    const result =
+      provider === "ollama"
+        ? await PROVIDER_VERIFIERS.ollama(key, { apiKey })
+        : await verifier(key);
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Verification failed";

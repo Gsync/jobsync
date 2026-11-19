@@ -22,6 +22,7 @@ const JOB_LIST_SELECT = {
   JobTitle: true,
   jobType: true,
   workplaceType: true,
+  jobCategory: true,
   salaryRange: true,
   Company: true,
   Status: true,
@@ -34,6 +35,11 @@ const JOB_LIST_SELECT = {
   matchScore: true,
   matchData: true,
   discoveryStatus: true,
+  emailSubject: true,
+  emailContent: true,
+  emailLink: true,
+  emailReceivedAt: true,
+  emailSeenAt: true,
   _count: { select: { Notes: true } },
 };
 
@@ -67,6 +73,7 @@ const JOB_DETAILS_INCLUDE = {
   tags: {
     orderBy: [{ label: "asc" as const }, { id: "asc" as const }],
   },
+  emails: { orderBy: { receivedAt: "desc" as const } },
   contactLinks: {
     include: {
       Role: true,
@@ -91,6 +98,7 @@ const JOB_DETAILS_INCLUDE = {
 type JobsListFilters = JobListScope & {
   facets?: JobFacets;
   search?: string;
+  jobCategories?: string[];
 };
 
 const buildJobsWhereClause = (userId: string, filters: JobsListFilters) => {
@@ -102,6 +110,7 @@ const buildJobsWhereClause = (userId: string, filters: JobsListFilters) => {
     locationValue,
     sourceValue,
   } = filters;
+  const jobCategories = filters.jobCategories;
   const facets = normalizeJobFacets(filters.facets);
   const and: Record<string, any>[] = [];
 
@@ -126,6 +135,9 @@ const buildJobsWhereClause = (userId: string, filters: JobsListFilters) => {
   if (facets.jobTypes.length) {
     and.push({ jobType: { in: facets.jobTypes } });
   }
+  if (facets.jobCategories.length) {
+    and.push({ jobCategory: { in: facets.jobCategories } });
+  }
   if (facets.workplaces.length) {
     and.push({ workplaceType: { in: facets.workplaces } });
   }
@@ -146,6 +158,10 @@ const buildJobsWhereClause = (userId: string, filters: JobsListFilters) => {
 
   if (sourceValue) {
     whereClause.JobSource = { value: sourceValue };
+  }
+
+  if (jobCategories && jobCategories.length) {
+    whereClause.jobCategory = { in: jobCategories };
   }
 
   if (appliedOnly) {

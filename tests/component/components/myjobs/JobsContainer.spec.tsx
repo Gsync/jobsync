@@ -1,12 +1,14 @@
 import JobsContainer from "@/components/myjobs/JobsContainer";
-import { screen, render, waitFor, act } from "@testing-library/react";
+import { screen, render, waitFor, act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   getJobsList,
   getJobFilterCounts,
   getJobDetails,
   deleteJobById,
+  deleteJobsById,
   updateJobStatus,
+  updateJobsStatus,
 } from "@/actions/job.actions";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { EMPTY_JOB_FACETS } from "@/lib/jobs/jobFacets";
@@ -46,7 +48,9 @@ vi.mock("@/actions/job.actions", () => ({
   getJobFilterCounts: vi.fn(),
   getJobDetails: vi.fn(),
   deleteJobById: vi.fn(),
+  deleteJobsById: vi.fn(),
   updateJobStatus: vi.fn(),
+  updateJobsStatus: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -116,6 +120,7 @@ describe("JobsContainer Search Functionality", () => {
     { id: "2", label: "Interview", value: "interview" },
     { id: "3", label: "Draft", value: "draft" },
     { id: "4", label: "Rejected", value: "rejected" },
+    { id: "5", label: "Archived", value: "archived" },
   ];
 
   const mockCompanies = [
@@ -1033,6 +1038,110 @@ describe("JobsContainer Search Functionality", () => {
         ),
       );
       expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Bulk selection", () => {
+    beforeEach(() => {
+      localStorage.clear();
+      window.HTMLElement.prototype.releasePointerCapture = vi.fn();
+      (getJobsList as any).mockResolvedValue({
+        success: true,
+        data: mockJobs,
+        total: 2,
+      });
+    });
+
+    const selectFirstTwo = async () => {
+      renderComponent();
+      await waitFor(() =>
+        expect(screen.getByText("Full Stack Developer")).toBeInTheDocument(),
+      );
+
+      await user.click(
+        screen.getByRole("checkbox", { name: "Select Full Stack Developer" }),
+      );
+      await user.click(
+        screen.getByRole("checkbox", { name: "Select Frontend Developer" }),
+      );
+
+      expect(screen.getByTestId("job-selection-bar")).toHaveTextContent(
+        "2 jobs selected",
+      );
+    };
+
+    it("selects all loaded jobs from the toolbar", async () => {
+      renderComponent();
+      await waitFor(() =>
+        expect(screen.getByText("Full Stack Developer")).toBeInTheDocument(),
+      );
+
+      await user.click(screen.getByTestId("select-all-jobs-toolbar"));
+
+      expect(screen.getByTestId("job-selection-bar")).toHaveTextContent(
+        "2 jobs selected",
+      );
+
+      await user.click(screen.getByTestId("select-all-jobs-toolbar"));
+      expect(screen.queryByTestId("job-selection-bar")).not.toBeInTheDocument();
+    });
+
+    it("deletes the selected jobs after confirmation", async () => {
+      (deleteJobsById as any).mockResolvedValue({ success: true, count: 2 });
+
+      await selectFirstTwo();
+
+      await user.click(screen.getByRole("button", { name: "Delete" }));
+
+      const dialog = screen.getByRole("alertdialog");
+      expect(dialog).toHaveTextContent("Delete 2 selected jobs?");
+      await user.click(
+        within(dialog).getByRole("button", { name: "Delete" }),
+      );
+
+      await waitFor(() =>
+        expect(deleteJobsById).toHaveBeenCalledWith(["1", "2"]),
+      );
+      await waitFor(() =>
+        expect(screen.queryByTestId("job-selection-bar")).not.toBeInTheDocument(),
+      );
+    });
+
+    it("changes the status of every selected job", async () => {
+      (updateJobsStatus as any).mockResolvedValue({ success: true, count: 2 });
+
+      await selectFirstTwo();
+
+      await user.click(
+        screen.getByRole("button", {
+          name: "Change status of selected jobs",
+        }),
+      );
+      await user.click(await screen.findByText("Rejected"));
+
+      await waitFor(() =>
+        expect(updateJobsStatus).toHaveBeenCalledWith(["1", "2"], {
+          id: "4",
+          label: "Rejected",
+          value: "rejected",
+        }),
+      );
+    });
+
+    it("archives every selected job", async () => {
+      (updateJobsStatus as any).mockResolvedValue({ success: true, count: 2 });
+
+      await selectFirstTwo();
+
+      await user.click(screen.getByRole("button", { name: "Archive" }));
+
+      await waitFor(() =>
+        expect(updateJobsStatus).toHaveBeenCalledWith(["1", "2"], {
+          id: "5",
+          label: "Archived",
+          value: "archived",
+        }),
+      );
     });
   });
 

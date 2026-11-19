@@ -143,6 +143,20 @@ export const APP_CONSTANTS = {
   ASHBY_FETCH_TIMEOUT_MS: 25_000, // per-board AbortController timeout
   ASHBY_FETCH_CONCURRENCY: 5,
 
+  // Single job-posting URL scraper (chat add_job and scrape_job tool)
+  SCRAPE_FETCH_TIMEOUT_MS: 15_000,
+  SCRAPE_MAX_REDIRECTS: 3,
+  SCRAPE_MAX_BYTES: 2_000_000,
+  // Description ceiling for what is stored; the agent tool truncates further
+  // before handing it to the model.
+  SCRAPE_MAX_DESCRIPTION_CHARS: 50_000,
+  SCRAPE_AGENT_DESCRIPTION_MAX_CHARS: 20_000,
+  // Cached briefly so scrape_job followed by add_job does not fetch twice.
+  SCRAPE_CACHE_TTL_MS: 5 * 60 * 1000,
+  SCRAPE_CACHE_MAX_ENTRIES: 25,
+  SCRAPE_USER_AGENT:
+    "Mozilla/5.0 (compatible; JobSync/1.0; +https://github.com/gsync/jobsync)",
+
   // MCP server settings
   MCP_DUPLICATE_WINDOW_DAYS: 30,
   MCP_TOKEN_EXPIRY_PRESETS: [30, 90, 365] as const,
@@ -215,6 +229,9 @@ export const APP_CONSTANTS = {
   // the user never chose.
   // Must not be "ai-panel-width" — that key belongs to the three AI sheets.
   AGENT_CHAT_PANEL_WIDTH_KEY: "agent-chat-width",
+  // Composer prompt history (ArrowUp recall). Persisted so a pasted posting
+  // survives a reload or a remount after an error instead of being lost.
+  AGENT_CHAT_PROMPT_HISTORY_STORAGE_KEY: "agent-chat-prompt-history",
 
   // Telemetry (OTLP export)
   // Flush cadence. A batch is never serialized in the enqueueing caller's

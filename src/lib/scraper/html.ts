@@ -51,3 +51,46 @@ export function decodeHtml(raw: string): string {
   // Second pass decodes any entities inside tag attribute values
   return decodeEntities(decoded);
 }
+
+const BLOCK_TAG_END =
+  /<\s*\/\s*(?:p|div|li|h[1-6]|tr|section|article|blockquote|pre|ul|ol|table|header|footer)\s*>/gi;
+const LINE_BREAK = /<\s*br\s*\/?\s*>/gi;
+const LIST_ITEM_START = /<\s*li\b[^>]*>/gi;
+const SCRIPT_BLOCK = /<\s*script\b[^>]*>[\s\S]*?<\s*\/\s*script\s*>/gi;
+const STYLE_BLOCK = /<\s*style\b[^>]*>[\s\S]*?<\s*\/\s*style\s*>/gi;
+const NOSCRIPT_BLOCK = /<\s*noscript\b[^>]*>[\s\S]*?<\s*\/\s*noscript\s*>/gi;
+const SVG_BLOCK = /<\s*svg\b[^>]*>[\s\S]*?<\s*\/\s*svg\s*>/gi;
+const HTML_COMMENT = /<!--[\s\S]*?-->/g;
+
+// Converts a job posting's HTML description to readable plain text. Unlike
+// flattenHtml, this keeps paragraph/list structure because the result is
+// stored as the job description and rendered through markdown-it — stripping
+// every newline would turn a posting into one giant paragraph.
+export function htmlToText(raw: string): string {
+  if (!raw) return "";
+
+  let text = raw
+    .replace(SCRIPT_BLOCK, " ")
+    .replace(STYLE_BLOCK, " ")
+    .replace(NOSCRIPT_BLOCK, " ")
+    .replace(SVG_BLOCK, " ")
+    .replace(HTML_COMMENT, " ");
+
+  text = decodeEntities(text);
+  text = text
+    .replace(LINE_BREAK, "\n")
+    .replace(LIST_ITEM_START, "- ")
+    .replace(BLOCK_TAG_END, "\n")
+    .replace(/<[^>]*>/g, " ");
+
+  // Entities can live inside text that was hidden behind tags before the
+  // first decode, so decode once more now that the tags are gone.
+  text = decodeEntities(text);
+
+  return text
+    .split("\n")
+    .map((line) => line.replace(/[ \t\u00a0]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}

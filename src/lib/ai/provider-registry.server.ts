@@ -6,22 +6,34 @@ import { createDeepSeek } from "@ai-sdk/deepseek";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { APP_CONSTANTS } from "@/lib/constants";
 
-export const PROVIDER_FACTORIES: Record<
-  string,
-  (credential: string, modelName: string) => any
-> = {
+export type ProviderFactory = (
+  credential: string,
+  modelName: string,
+  opts?: { apiKey?: string },
+) => any;
+
+export const PROVIDER_FACTORIES: Record<string, ProviderFactory> = {
   openai: (apiKey, model) => createOpenAI({ apiKey })(model),
   openrouter: (apiKey, model) =>
     createOpenAI({ apiKey, baseURL: "https://openrouter.ai/api/v1" })(model),
   deepseek: (apiKey, model) => createDeepSeek({ apiKey })(model),
-  ollama: (baseURL, model) =>
-    createOllama({ baseURL: baseURL + "/api" })(model),
+  ollama: (baseURL, model, opts) =>
+    createOllama({
+      baseURL: baseURL + "/api",
+      // Ollama instances behind an authenticated proxy need a bearer token.
+      ...(opts?.apiKey
+        ? { headers: { Authorization: `Bearer ${opts.apiKey}` } }
+        : {}),
+    })(model),
   gemini: (apiKey, model) => createGoogleGenerativeAI({ apiKey })(model),
 };
 
 export const PROVIDER_VERIFIERS: Record<
   string,
-  (key: string) => Promise<{ success: boolean; error?: string }>
+  (
+    key: string,
+    opts?: { apiKey?: string },
+  ) => Promise<{ success: boolean; error?: string }>
 > = {
   openai: async (key) => {
     const res = await fetch("https://api.openai.com/v1/models", {
@@ -73,10 +85,14 @@ export const PROVIDER_VERIFIERS: Record<
     return { success: true };
   },
 
-  ollama: async (key) => {
+  ollama: async (key, opts?: { apiKey?: string }) => {
     const baseUrl = key.replace(/\/+$/, "");
+    const headers = opts?.apiKey
+      ? { Authorization: `Bearer ${opts.apiKey}` }
+      : undefined;
     try {
       const res = await fetch(`${baseUrl}/api/tags`, {
+        ...(headers ? { headers } : {}),
         signal: AbortSignal.timeout(APP_CONSTANTS.AI_OLLAMA_LIST_TIMEOUT_MS),
       });
       if (!res.ok)

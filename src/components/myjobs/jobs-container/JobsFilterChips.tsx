@@ -6,6 +6,7 @@ import {
   JobStatus,
   getJobTypeLabel,
   getWorkplaceTypeLabel,
+  getJobCategoryLabel,
 } from "@/models/job.model";
 
 // "Filtered by" row for the popover facets; deep-link chips stay in the
@@ -43,6 +44,11 @@ export function JobsFilterChips({
       name: "Workplace",
       value: facets.workplaces.map((c) => getWorkplaceTypeLabel(c)).join(", "),
       clear: { workplaces: [] },
+    },
+    {
+      name: "Job category",
+      value: facets.jobCategories.map((c) => getJobCategoryLabel(c)).join(", "),
+      clear: { jobCategories: [] },
     },
     {
       name: "Dismissed",

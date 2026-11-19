@@ -24,7 +24,7 @@ vi.mock("@/lib/db", () => {
     "company", "jobTitle", "location", "jobSource", "tag", "activityType",
     "profile", "file", "resume", "contactInfo", "summary", "resumeSection",
     "workExperience", "education", "licenseOrCertification", "otherSection",
-    "skill", "coverLetter", "automation", "job", "note",
+    "skill", "coverLetter", "automation", "job", "jobEmail", "note",
     "contact", "contactRole", "jobContact", "jobStageType", "jobStage",
     "jobStageInterviewer", "jobStagePrepQuestion",
     "task", "activity", "question", "userSettings", "chatConversation",

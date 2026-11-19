@@ -38,7 +38,7 @@ describe("AgentAddJobSchema", () => {
   // SDK, where the model gets an opaque error and the user gets "That could
   // not be completed."
   it("keeps jobDescription optional while telling the model to always send it", () => {
-    expect(AgentAddJobSchema.safeParse({ company: "Acme", jobTitle: "Eng" }).success).toBe(true);
+    expect(AgentAddJobSchema.safeParse({ company: "Acme", jobTitle: "Eng", jobCategory: "INDUSTRY_OTHERS" }).success).toBe(true);
     expect(AgentAddJobSchema.shape.jobDescription.description).toMatch(/always include this field/i);
     expect(AgentAddJobSchema.shape.jobDescription.description).not.toBe(
       McpAddJobInputShape.jobDescription.description,
@@ -57,6 +57,7 @@ describe("AgentAddJobSchema", () => {
     const parsed = AgentAddJobSchema.parse({
       company: "Acme",
       jobTitle: "Eng",
+      jobCategory: "INDUSTRY_OTHERS",
       dueDate: "2030-01-01T00:00:00Z",
     });
     expect(typeof parsed.dueDate).toBe("string");
@@ -66,6 +67,7 @@ describe("AgentAddJobSchema", () => {
     const parsed = AgentAddJobParseSchema.parse({
       company: "Acme",
       jobTitle: "Eng",
+      jobCategory: "INDUSTRY_OTHERS",
       dueDate: "2030-01-01T00:00:00Z",
       appliedDate: "2029-01-01T00:00:00Z",
     });
@@ -77,6 +79,7 @@ describe("AgentAddJobSchema", () => {
     const parsed: any = AgentAddJobParseSchema.parse({
       company: "Acme",
       jobTitle: "Eng",
+      jobCategory: "INDUSTRY_OTHERS",
       userId: "attacker-user",
     });
     expect(parsed.userId).toBeUndefined();

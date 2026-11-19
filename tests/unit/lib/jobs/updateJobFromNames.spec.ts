@@ -6,6 +6,7 @@ import {
   resolveJobSource,
   resolveJobType,
   resolveWorkplaceType,
+  resolveJobCategory,
   resolveJobStatus,
   resolveTags,
 } from "@/lib/jobs/resolve";
@@ -28,6 +29,7 @@ vi.mock("@/lib/jobs/resolve", () => ({
   resolveJobSource: vi.fn(),
   resolveJobType: vi.fn(),
   resolveWorkplaceType: vi.fn(),
+  resolveJobCategory: vi.fn(),
   resolveJobStatus: vi.fn(),
   resolveTags: vi.fn(),
 }));
@@ -55,6 +57,7 @@ describe("updateJobFromNames", () => {
     (resolveJobStatus as any).mockResolvedValue("status-1");
     (resolveJobType as any).mockReturnValue("FT");
     (resolveWorkplaceType as any).mockReturnValue("REMOTE");
+    (resolveJobCategory as any).mockReturnValue("INDUSTRY_OTHERS");
     (resolveTags as any).mockResolvedValue({ resolved: [], dropped: [] });
     (changeJobStatus as any).mockResolvedValue({ id: "job-1" });
   });

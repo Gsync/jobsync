@@ -285,6 +285,7 @@ describe("POST /api/ai/chat", () => {
     );
     expect(Object.keys(streamArgs().tools)).toEqual([
       "add_job",
+      "scrape_job",
       "get_resume",
       "review_resume",
       "match_job",

@@ -4,8 +4,10 @@ import { Card, CardContent, CardFooter } from "../ui/card";
 import { Loader } from "lucide-react";
 import {
   deleteJobById,
+  deleteJobsById,
   getJobDetails,
   updateJobStatus,
+  updateJobsStatus,
 } from "@/actions/job.actions";
 import { toastError, toastSuccess } from "@/lib/toast";
 import {
@@ -26,6 +28,7 @@ import { NoteDialog } from "./NoteDialog";
 import { useJobFilters } from "./jobs-container/useJobFilters";
 import { useJobsList } from "./jobs-container/useJobsList";
 import { downloadJobsList } from "./jobs-container/downloadJobsCsv";
+import { JobSelectionBar } from "./jobs-container/JobSelectionBar";
 import { JobsToolbar } from "./jobs-container/JobsToolbar";
 import { EMPTY_JOB_FACETS, hasJobFacets } from "@/lib/jobs/jobFacets";
 import { Button } from "../ui/button";
@@ -51,6 +54,8 @@ function JobsContainer({
   const [editJob, setEditJob] = useState(null);
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [noteJobId, setNoteJobId] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkActionPending, setBulkActionPending] = useState(false);
 
   const {
     queryParams,
@@ -130,6 +135,82 @@ function JobsContainer({
     setEditJob(null);
   };
 
+  // Selection only ever acts on ids that are currently loaded, so switching
+  // filters or reloading simply drops rows that are no longer in the list.
+  const selectedJobs = jobs.filter((job) => selectedIds.has(job.id));
+  const selectedCount = selectedJobs.length;
+  const selectedIdList = selectedJobs.map((job) => job.id);
+  const allJobsSelected = jobs.length > 0 && selectedCount === jobs.length;
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const onToggleSelect = (jobId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(jobId)) next.delete(jobId);
+      else next.add(jobId);
+      return next;
+    });
+  };
+
+  const onToggleSelectAll = () => {
+    setSelectedIds(
+      allJobsSelected ? new Set() : new Set(jobs.map((job) => job.id)),
+    );
+  };
+
+  const onBulkDelete = async () => {
+    const ids = selectedIdList;
+    if (ids.length === 0 || bulkActionPending) return;
+
+    setBulkActionPending(true);
+    const { success, message, count } = await deleteJobsById(ids);
+    setBulkActionPending(false);
+
+    if (success) {
+      const deleted = count ?? ids.length;
+      toastSuccess(
+        `${deleted} ${deleted === 1 ? "job" : "jobs"} deleted successfully`,
+      );
+      clearSelection();
+      reloadJobs();
+      router.refresh();
+    } else {
+      toastError(message);
+    }
+  };
+
+  const applyStatusToSelected = async (jobStatus: JobStatus) => {
+    const ids = selectedIdList;
+    if (ids.length === 0 || bulkActionPending) return;
+
+    setBulkActionPending(true);
+    const { success, message, count } = await updateJobsStatus(ids, jobStatus);
+    setBulkActionPending(false);
+
+    if (success) {
+      const updated = count ?? ids.length;
+      toastSuccess(
+        `${updated} ${updated === 1 ? "job" : "jobs"} moved to ${jobStatus.label}`,
+      );
+      clearSelection();
+      reloadJobs();
+      router.refresh();
+    } else {
+      toastError(message);
+    }
+  };
+
+  const archivedStatus = statuses.find((status) => status.value === "archived");
+
+  const onBulkArchive = () => {
+    if (!archivedStatus) {
+      toastError("Archive status is not available");
+      return;
+    }
+    applyStatusToSelected(archivedStatus);
+  };
+
   const onAddNote = (jobId: string) => {
     setNoteJobId(jobId);
     setNoteDialogOpen(true);
@@ -174,9 +255,24 @@ function JobsContainer({
           editJob={editJob}
           resetEditJob={resetEditJob}
           addJobInitialOpen={queryParams.get("add-job") === "true"}
+          selectedCount={selectedCount}
+          allJobsSelected={allJobsSelected}
+          onToggleSelectAll={onToggleSelectAll}
         />
         <CardContent>
           {initialLoading && <Loading />}
+          {!initialLoading && selectedCount > 0 && (
+            <JobSelectionBar
+              selectedCount={selectedCount}
+              jobStatuses={statuses}
+              pending={bulkActionPending}
+              archiveAvailable={Boolean(archivedStatus)}
+              onClear={clearSelection}
+              onChangeStatus={applyStatusToSelected}
+              onArchive={onBulkArchive}
+              onDelete={onBulkDelete}
+            />
+          )}
           {!initialLoading &&
             listLoaded &&
             jobs.length === 0 &&
@@ -201,6 +297,8 @@ function JobsContainer({
                 editJob={onEditJob}
                 onChangeJobStatus={onChangeJobStatus}
                 onAddNote={onAddNote}
+                selectedIds={selectedIds}
+                onToggleSelect={onToggleSelect}
               />
             ) : (
               <MyJobsTable
@@ -212,6 +310,9 @@ function JobsContainer({
                 onAddNote={onAddNote}
                 sort={sort}
                 onSort={toggleSort}
+                selectedIds={selectedIds}
+                onToggleSelect={onToggleSelect}
+                onToggleSelectAll={onToggleSelectAll}
               />
             ))}
           {jobs.length < totalJobs && (

@@ -1,4 +1,4 @@
-import { resolveApiKey } from "@/lib/api-key-resolver";
+import { resolveApiKey, resolveOllamaApiKey } from "@/lib/api-key-resolver";
 import { PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
 import { PROVIDER_FACTORIES } from "@/lib/ai/provider-registry.server";
 import { MissingCredentialError } from "@/lib/ai/tools/errors";
@@ -20,5 +20,12 @@ export async function getModel(
   if (!credential)
     throw new MissingCredentialError(entry.displayName);
 
-  return factory(credential, modelName);
+  // Ollama's credential is a base URL; when the instance sits behind an
+  // authenticated proxy, the bearer token comes from OLLAMA_API_KEY.
+  const model =
+    provider === "ollama"
+      ? await factory(credential, modelName, { apiKey: await resolveOllamaApiKey() })
+      : await factory(credential, modelName);
+
+  return model;
 }

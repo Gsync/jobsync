@@ -6,6 +6,7 @@ import { requireUser } from "./shared";
 import { handleError } from "@/lib/utils";
 import { encrypt, getLast4 } from "@/lib/encryption";
 import { apiKeySaveSchema } from "@/models/apiKey.schema";
+import { resolveOllamaApiKey } from "@/lib/api-key-resolver";
 import type {
   ApiKeyClientResponse,
   ApiKeyProvider,

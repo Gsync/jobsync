@@ -1,5 +1,5 @@
 import prisma from "@/lib/db";
-import { JOB_TYPES, WORKPLACE_TYPES, matchEnumEntry } from "@/models/job.model";
+import { JOB_TYPES, WORKPLACE_TYPES, JOB_CATEGORIES, matchEnumEntry } from "@/models/job.model";
 import { decodeHtml } from "@/lib/scraper/html";
 import { canonicalizeEntityValue } from "./canonicalize";
 
@@ -256,6 +256,14 @@ export function resolveWorkplaceType(input?: string): string | null {
   if (match) return match[0];
   const valid = Object.values(WORKPLACE_TYPES);
   throw new JobResolutionError(`Invalid workplaceType "${input}". Valid values: ${valid.join(", ")}`);
+}
+
+export function resolveJobCategory(input?: string): string {
+  if (!input) return "INDUSTRY_OTHERS";
+  const match = matchEnumEntry(JOB_CATEGORIES, input);
+  if (match) return match[0];
+  const valid = Object.values(JOB_CATEGORIES);
+  throw new JobResolutionError(`Invalid jobCategory "${input}". Valid values: ${valid.join(", ")}`);
 }
 
 export async function resolveJobStatus(value?: string): Promise<string> {

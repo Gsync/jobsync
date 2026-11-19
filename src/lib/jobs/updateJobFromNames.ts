@@ -11,6 +11,7 @@ import {
   resolveJobSource,
   resolveJobType,
   resolveWorkplaceType,
+  resolveJobCategory,
   resolveJobStatus,
   resolveTags,
   type ResolvedEntity,
@@ -29,6 +30,7 @@ export interface UpdateJobFromNamesInput {
   source?: string;
   jobType?: string;
   workplaceType?: string;
+  jobCategory?: string;
   status?: string;
   // Not `| null`: McpUpdateJobSchema's transform can only produce
   // Date | undefined, never null, so there's no reachable "clear the date"
@@ -39,6 +41,10 @@ export interface UpdateJobFromNamesInput {
   jobUrl?: string;
   salaryRange?: string;
   tags?: string[];
+  emailSubject?: string;
+  emailContent?: string;
+  emailLink?: string;
+  emailReceivedAt?: Date;
 }
 
 export interface UpdateJobFromNamesResult {
@@ -85,6 +91,10 @@ export async function updateJobFromNames(
     input.workplaceType !== undefined
       ? resolveWorkplaceType(input.workplaceType)
       : undefined;
+  const jobCategoryValue =
+    input.jobCategory !== undefined
+      ? resolveJobCategory(input.jobCategory)
+      : undefined;
 
   const [
     resolvedCompany,
@@ -112,6 +122,13 @@ export async function updateJobFromNames(
     ...(resolvedTagsResult ? resolvedTagsResult.resolved : []),
   ];
 
+  // Track whether an email is being attached so we can append a chain entry.
+  const emailAttached =
+    input.emailSubject !== undefined ||
+    input.emailContent !== undefined ||
+    input.emailLink !== undefined ||
+    input.emailReceivedAt !== undefined;
+
   const data: Record<string, unknown> = {};
   if (resolvedCompany) data.companyId = resolvedCompany.id;
   if (resolvedTitle) data.jobTitleId = resolvedTitle.id;
@@ -120,7 +137,12 @@ export async function updateJobFromNames(
   if (statusId) data.statusId = statusId;
   if (jobTypeValue !== undefined) data.jobType = jobTypeValue;
   if (workplaceTypeValue !== undefined) data.workplaceType = workplaceTypeValue;
+  if (jobCategoryValue !== undefined) data.jobCategory = jobCategoryValue;
   if (input.salaryRange !== undefined) data.salaryRange = input.salaryRange;
+  if (input.emailSubject !== undefined) data.emailSubject = input.emailSubject;
+  if (input.emailContent !== undefined) data.emailContent = input.emailContent;
+  if (input.emailLink !== undefined) data.emailLink = input.emailLink;
+  if (input.emailReceivedAt !== undefined) data.emailReceivedAt = input.emailReceivedAt;
   if (input.dueDate !== undefined) data.dueDate = input.dueDate;
   if (input.jobUrl !== undefined) data.jobUrl = normalizeJobUrl(input.jobUrl);
   if (input.applied !== undefined) data.applied = input.applied;
@@ -170,6 +192,23 @@ export async function updateJobFromNames(
         statusId,
         jobFields: data,
         requireCreatedVia: true,
+      });
+    } else if (emailAttached) {
+      // The job patch and its new email chain entry commit together.
+      await prisma.$transaction(async (tx) => {
+        await tx.job.update({
+          where: { id: jobId, userId, createdVia: { not: null } },
+          data,
+        });
+        await tx.jobEmail.create({
+          data: {
+            jobId,
+            subject: input.emailSubject ?? null,
+            content: input.emailContent ?? null,
+            link: input.emailLink ?? null,
+            receivedAt: input.emailReceivedAt ?? null,
+          },
+        });
       });
     } else {
       await prisma.job.update({

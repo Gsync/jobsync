@@ -49,10 +49,10 @@ async function listTools(): Promise<unknown[]> {
 }
 
 describe("MCP tools/list parity", () => {
-  it("lists the nine tools with unchanged names, descriptions and input schemas", async () => {
+  it("lists every tool with unchanged names, descriptions and input schemas", async () => {
     const tools = await listTools();
     const expected = JSON.parse(readFileSync(FIXTURE, "utf8"));
-    expect(tools).toHaveLength(9);
+    expect(tools).toHaveLength(17);
     expect(tools).toEqual(expected);
   });
 

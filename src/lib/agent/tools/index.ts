@@ -2,6 +2,7 @@ import type { LanguageModel, ToolApprovalStatus, ToolSet, UIMessageStreamWriter 
 import type { PageContext } from "@/models/agent.model";
 import type { NestedGenerationGuard } from "@/lib/agent/nestedGeneration";
 import { addJobNeedsApproval, buildAddJobTool } from "./addJob";
+import { buildScrapeJobTool } from "./scrapeJob";
 import { buildGetResumeTool } from "./getResume";
 import { buildReviewResumeTool } from "./reviewResume";
 import { buildMatchJobTool } from "./matchJob";
@@ -23,6 +24,7 @@ export function buildAgentTools(ctx: {
 }): ToolSet {
   return {
     add_job: buildAddJobTool(ctx.userId, ctx.pastedText),
+    scrape_job: buildScrapeJobTool(),
     get_resume: buildGetResumeTool(ctx.userId, ctx.pageContext?.resumeId),
     review_resume: buildReviewResumeTool({
       userId: ctx.userId,
@@ -65,6 +67,7 @@ export function buildAgentToolApproval(pastedText?: string) {
 
 export {
   buildAddJobTool,
+  buildScrapeJobTool,
   buildGetResumeTool,
   buildReviewResumeTool,
   buildMatchJobTool,

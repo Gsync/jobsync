@@ -1,27 +1,37 @@
 "use server";
 import prisma from "@/lib/db";
 import fs from "fs";
-import { isResumeFilePath } from "@/lib/resumeFiles";
+import { isResumeFilePath, isAttachmentFilePath } from "@/lib/resumeFiles";
 import { log } from "@/lib/telemetry";
 import { requireUser } from "./shared";
 
 export const deleteFile = async (fileId: string) => {
   const user = await requireUser();
 
-  const file = await prisma.file.findFirst({
-    where: {
-      id: fileId,
-      Resume: { profile: { userId: user.id } },
-    },
-  });
+  // Two owner-scoped lookups rather than an OR: an OR hides which relation
+  // granted access, and the ownership guard cannot verify it.
+  const file =
+    (await prisma.file.findFirst({
+      where: {
+        id: fileId,
+        Resume: { profile: { userId: user.id } },
+      },
+    })) ??
+    (await prisma.file.findFirst({
+      where: {
+        id: fileId,
+        Job: { userId: user.id },
+      },
+    }));
 
   if (!file) {
     throw new Error("File not found or access denied");
   }
 
-  // A row may predate path confinement; drop it without touching the disk
-  if (!isResumeFilePath(file.filePath)) {
-    log.warn("[Resume] Skipped unlinking a path outside the resumes directory", {
+  const isManaged =
+    isResumeFilePath(file.filePath) || isAttachmentFilePath(file.filePath);
+  if (!isManaged) {
+    log.warn("[File] Skipped unlinking a path outside managed directories", {
       "file.path": file.filePath,
     });
   } else if (fs.existsSync(file.filePath)) {

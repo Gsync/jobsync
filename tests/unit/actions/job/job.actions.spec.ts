@@ -3,6 +3,7 @@ import {
   createLocation,
   createJobSource,
   deleteJobById,
+  deleteJobsById,
   getJobDetails,
   getJobsList,
   getJobFilterCounts,
@@ -11,6 +12,7 @@ import {
   saveJobMatchResult,
   updateJob,
   updateJobStatus,
+  updateJobsStatus,
 } from "@/actions/job.actions";
 import { getMockJobDetails, getMockJobsList } from "@/lib/mock.utils";
 import { EMPTY_JOB_FACETS } from "@/lib/jobs/jobFacets";
@@ -45,6 +47,7 @@ vi.mock("@/generated/prisma/client", () => {
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
+      deleteMany: vi.fn(),
     },
     location: {
       findMany: vi.fn(),
@@ -105,6 +108,7 @@ describe("jobActions", () => {
     company: "company-id",
     location: "location-id",
     type: "FT",
+    jobCategory: "INDUSTRY_OTHERS",
     status: "status-id",
     source: "source-id",
     salaryRange: "$50,000 - $70,000",
@@ -1027,6 +1031,7 @@ describe("jobActions", () => {
           },
         },
         tags: { orderBy: [{ label: "asc" }, { id: "asc" }] },
+        emails: { orderBy: { receivedAt: "desc" } },
         contactLinks: {
           include: {
             Role: true,
@@ -1250,6 +1255,7 @@ describe("jobActions", () => {
           appliedDate: jobData.dateApplied,
           description: jobData.jobDescription,
           jobType: jobData.type,
+          jobCategory: jobData.jobCategory,
           userId: mockUser.id,
           jobUrl: jobData.jobUrl,
           applied: jobData.applied,
@@ -1287,6 +1293,7 @@ describe("jobActions", () => {
           dueDate: jobData.dueDate,
           description: jobData.jobDescription,
           jobType: jobData.type,
+          jobCategory: jobData.jobCategory,
           userId: mockUser.id,
           resumeId: jobData.resume,
           stages: {
@@ -1640,6 +1647,76 @@ describe("jobActions", () => {
       await expect(deleteJobById("job-id")).resolves.toStrictEqual({
         success: false,
         message: "Unexpected error",
+      });
+    });
+  });
+  describe("deleteJobsById", () => {
+    it("returns an error when the user is not authenticated", async () => {
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      await expect(deleteJobsById(["a", "b"])).resolves.toStrictEqual({
+        success: false,
+        message: "Not authenticated",
+      });
+    });
+
+    it("deletes only the caller's jobs and deduplicates ids", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.job.deleteMany as any).mockResolvedValue({ count: 2 });
+
+      const result = await deleteJobsById(["a", "b", "a"]);
+
+      expect(result).toStrictEqual({ success: true, count: 2 });
+      expect(prisma.job.deleteMany).toHaveBeenCalledWith({
+        where: { id: { in: ["a", "b"] }, userId: mockUser.id },
+      });
+    });
+
+    it("does nothing for an empty selection", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+
+      await expect(deleteJobsById([])).resolves.toStrictEqual({
+        success: true,
+        count: 0,
+      });
+      expect(prisma.job.deleteMany).not.toHaveBeenCalled();
+    });
+  });
+  describe("updateJobsStatus", () => {
+    it("changes the status of each selected job", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (changeJobStatus as any).mockResolvedValue({});
+
+      const status = { id: "status-id", label: "Archived", value: "archived" };
+      const result = await updateJobsStatus(["a", "b", "a"], status);
+
+      expect(result).toStrictEqual({ success: true, count: 2 });
+      expect(changeJobStatus).toHaveBeenCalledTimes(2);
+      expect(changeJobStatus).toHaveBeenCalledWith({
+        jobId: "a",
+        userId: mockUser.id,
+        statusId: status.id,
+      });
+      expect(changeJobStatus).toHaveBeenCalledWith({
+        jobId: "b",
+        userId: mockUser.id,
+        statusId: status.id,
+      });
+    });
+
+    it("returns an error when a job cannot be updated", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (changeJobStatus as any).mockRejectedValue(new Error("Job not found"));
+
+      await expect(
+        updateJobsStatus(["a"], {
+          id: "status-id",
+          label: "Archived",
+          value: "archived",
+        }),
+      ).resolves.toStrictEqual({
+        success: false,
+        message: "Job not found",
       });
     });
   });

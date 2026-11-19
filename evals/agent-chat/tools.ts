@@ -6,6 +6,7 @@ import {
   AgentGetResumeSchema,
   AgentMatchJobSchema,
   AgentReviewResumeSchema,
+  AgentScrapeJobSchema,
 } from '../../src/models/agent.schema';
 
 // The same schemas the chat route registers, so the model sees the exact
@@ -18,6 +19,14 @@ export function getTools() {
         name: 'add_job',
         description: AGENT_TOOL_DESCRIPTIONS.add_job,
         parameters: z.toJSONSchema(AgentAddJobSchema, { io: 'input' }),
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'scrape_job',
+        description: AGENT_TOOL_DESCRIPTIONS.scrape_job,
+        parameters: z.toJSONSchema(AgentScrapeJobSchema, { io: 'input' }),
       },
     },
     {

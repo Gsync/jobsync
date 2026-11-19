@@ -52,7 +52,7 @@ export type AgentAddJobResult = {
   jobId?: string;
   duplicateOf?: { id: string; title: string; company: string };
   resolutions: AgentResolvedEntity[];
-  descriptionSource?: "pasted" | "model";
+  descriptionSource?: "pasted" | "model" | "scraped";
   descriptionChars?: number;
   descriptionCompleteness?: DescriptionCompleteness;
   validationError?: string;
@@ -62,6 +62,34 @@ export type AgentAddJobResult = {
   // the field and its values and read fine unaided, so they leave it unset.
   displayError?: string;
 };
+
+// What scrape_job returns to the model AND to the result card. jobDescription
+// is the page's text, capped for the model window; add_job re-reads the URL
+// (from the short-lived cache) and stores the full version.
+export type AgentScrapeJobResult =
+  | {
+      status: "ok";
+      jobUrl: string;
+      company: string;
+      jobTitle: string;
+      jobDescription: string;
+      descriptionChars: number;
+      descriptionCompleteness: DescriptionCompleteness;
+      descriptionTruncated: boolean;
+      structuredData: boolean;
+      location?: string;
+      source?: string;
+      jobType?: string;
+      workplaceType?: string;
+      salaryRange?: string;
+      postedDate?: string;
+      tags?: string[];
+      warnings?: string[];
+    }
+  | {
+      status: "invalid_url" | "blocked" | "fetch_failed" | "not_job_posting" | "too_large";
+      reason: string;
+    };
 
 // Which rule picked the resume. Surfaced so the result card can say "your
 // default resume" instead of leaving the user guessing which one was read.

@@ -108,6 +108,10 @@ export async function insertRows(
   newFileTypes: Map<string, string>,
 ): Promise<Record<string, number>> {
   const counts: Record<string, number> = {};
+  // File.jobId cannot be written at File-insert time: Resume.FileId forces File
+  // ahead of Resume, and Resume ahead of Job. Collect the link and apply it once
+  // every Job row exists.
+  const fileJobLinks: { fileId: string; jobId: string }[] = [];
 
   for (const model of INSERT_ORDER) {
     if (MODEL_SPECS[model].lookup) continue;
@@ -119,7 +123,7 @@ export async function insertRows(
       let payload = buildCreateData(model, row, idMap, userId);
 
       if (model === "File") {
-        const { fileMissing: _marker, ...rest } = payload;
+        const { fileMissing: _marker, jobId: oldJobId, ...rest } = payload;
         payload = {
           ...rest,
           filePath: newFilePaths.get(row.id as string)!,
@@ -128,6 +132,12 @@ export async function insertRows(
           // describes a file that is not on disk either way.
           fileType: newFileTypes.get(row.id as string) ?? "application/pdf",
         };
+        // Degrade a dangling job link to null rather than aborting: File.jobId
+        // is nullable and a missing attachment target is not worth the import.
+        const mappedJobId = oldJobId ? idMap.get(oldJobId as string) : undefined;
+        if (mappedJobId) {
+          fileJobLinks.push({ fileId: payload.id as string, jobId: mappedJobId });
+        }
       }
       if (model === "Job") {
         const { statusValue, ...rest } = payload as { statusValue: string };
@@ -142,6 +152,13 @@ export async function insertRows(
 
       await tx[spec.delegate].create({ data: payload });
     }
+  }
+
+  for (const link of fileJobLinks) {
+    await tx.file.update({
+      where: { id: link.fileId },
+      data: { jobId: link.jobId },
+    });
   }
 
   return counts;

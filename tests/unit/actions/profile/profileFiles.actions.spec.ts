@@ -54,6 +54,22 @@ describe("deleteFile", () => {
     expect(prisma.file.delete).toHaveBeenCalledWith({ where: { id: "f1" } });
   });
 
+  it("deletes a file attached to a job the caller owns", async () => {
+    const filePath = path.join(resumes, "attachment.pdf");
+    fs.writeFileSync(filePath, "%PDF");
+    (prisma.file.findFirst as any)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: "f1", filePath });
+
+    await deleteFile("f1");
+
+    expect(prisma.file.findFirst).toHaveBeenLastCalledWith({
+      where: { id: "f1", Job: { userId: "user-1" } },
+    });
+    expect(fs.existsSync(filePath)).toBe(false);
+    expect(prisma.file.delete).toHaveBeenCalledWith({ where: { id: "f1" } });
+  });
+
   it("skips the unlink for a stored path outside the directory but still deletes the row", async () => {
     const outside = path.join(tmp, "dev.db");
     fs.writeFileSync(outside, "db");

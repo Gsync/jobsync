@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { APP_CONSTANTS, JOB_STATUS_VALUES } from "@/lib/constants";
-import { WORKPLACE_TYPES, matchEnumEntry } from "@/models/job.model";
+import { WORKPLACE_TYPES, JOB_CATEGORIES, matchEnumEntry } from "@/models/job.model";
 
 // An enum rather than a described string, for the same reason status is one:
 // a small local model fills an enum-constrained slot and ignores prose hints.
@@ -18,6 +18,13 @@ const workplaceTypeField = z
   .optional()
   .describe(`Work arrangement stated in the posting. One of: ${Object.values(WORKPLACE_TYPES).join(", ")}.`);
 
+const jobCategoryField = z
+  .preprocess(
+    (v) => (typeof v === "string" ? (matchEnumEntry(JOB_CATEGORIES, v)?.[1] ?? v) : v),
+    z.enum(JOB_CATEGORIES),
+  )
+  .describe(`Compulsory classification of the posting. One of: ${Object.values(JOB_CATEGORIES).join(", ")}.`);
+
 // Raw input shape for MCP tool registration (no transforms — SDK uses this for JSON schema)
 export const McpAddJobInputShape = {
   company: z.string().min(1, "company is required"),
@@ -29,6 +36,7 @@ export const McpAddJobInputShape = {
   source: z.string().optional().describe("Job board or site the listing came from, e.g. 'LinkedIn', 'Indeed', 'company website'. If not stated explicitly, infer it from the job posting's URL/domain when possible instead of leaving it blank."),
   jobType: z.string().optional().describe("Employment type: 'Full-time', 'Part-time', or 'Contract'"),
   workplaceType: workplaceTypeField,
+  jobCategory: jobCategoryField,
   // Lowercased before the enum check so a caller sending "Applied"/"Draft"
   // (capitalized, like the old free-text field silently tolerated via
   // resolveJobStatus's case-insensitive DB lookup) still validates instead
@@ -169,6 +177,7 @@ export const McpUpdateJobInputShape = {
   source: z.string().optional(),
   jobType: z.string().optional().describe("Employment type: 'Full-time', 'Part-time', or 'Contract'"),
   workplaceType: workplaceTypeField,
+  jobCategory: jobCategoryField.optional(),
   // Same lowercase-preprocess treatment as add_job's status (Task 1) — the
   // SDK validates against this exact shape, so the case-insensitivity has to
   // live here too, not just on the transformed McpUpdateJobSchema.
@@ -190,12 +199,19 @@ export const McpUpdateJobInputShape = {
     .describe(
       "Skills required for the job, e.g. ['React', 'TypeScript']. Replaces the job's existing tags wholesale rather than merging, so include the tags returned by find_job that should be kept (max 10 applied).",
     ),
+  // Email tracking fields — agents (Claude/Hermes/OpenClaw) attach an email
+  // they found in the user's inbox to a saved job.
+  emailSubject: z.string().optional().describe("Subject line of an email received about this job (confirmation, interview, rejection, etc.)."),
+  emailContent: z.string().optional().describe("Body/snippet of the email received about this job."),
+  emailLink: z.string().url().optional().describe("Permalink or message id link to the email in the user's mailbox."),
+  emailReceivedAt: z.string().datetime({ offset: true }).optional().describe("When the email was received (ISO-8601)."),
 };
 
 export const McpUpdateJobSchema = z.object({
   ...McpUpdateJobInputShape,
   dueDate: z.iso.datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
   appliedDate: z.iso.datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
+  emailReceivedAt: z.iso.datetime({ offset: true }).optional().transform((v) => (v ? new Date(v) : undefined)),
 });
 
 export type McpUpdateJobInput = z.infer<typeof McpUpdateJobSchema>;
@@ -236,3 +252,67 @@ export const McpSaveMatchResultsBatchSchema = z.object({
 export type McpSaveMatchResultsBatchInput = z.infer<
   typeof McpSaveMatchResultsBatchSchema
 >;
+
+// list_jobs — agent-friendly filtering of the caller's saved jobs.
+export const McpListJobsInputShape = {
+  search: z.string().optional().describe("Free-text search (case-insensitive contains) across job title, company, location, source and description. Use to find jobs by keyword, e.g. 'React', 'remote', 'engineer'."),
+  status: z.string().optional().describe("Filter by application status (case-insensitive contains). Possible values: new, draft, applied, interview, offer, offer-accepted, offer-declined, rejected, expired, archived, withdrawn. E.g. 'applied', 'draft', 'interview'."),
+  company: z.string().optional().describe("Filter by company name (case-insensitive contains), e.g. 'Google', 'Acme'."),
+  applied: z.boolean().optional().describe("Filter by applied flag."),
+  limit: z.number().int().min(1).max(100).optional().describe("Max results per page (default 25, max 100)."),
+  offset: z.number().int().min(0).optional().describe("Pagination offset (default 0)."),
+};
+
+export const McpListJobsSchema = z.object(McpListJobsInputShape);
+export type McpListJobsInput = z.infer<typeof McpListJobsSchema>;
+
+// get_job — full details for one job by id.
+export const McpGetJobInputShape = {
+  jobId: z.string().min(1).describe("The id of the job, as returned by list_jobs or add_job (a UUID). Use list_jobs first if you only have a title/company."),
+};
+
+export const McpGetJobSchema = z.object(McpGetJobInputShape);
+export type McpGetJobInput = z.infer<typeof McpGetJobSchema>;
+
+// delete_job — remove a job created via MCP.
+export const McpDeleteJobInputShape = {
+  jobId: z.string().min(1).describe("The id of the job to delete."),
+};
+
+export const McpDeleteJobSchema = z.object(McpDeleteJobInputShape);
+export type McpDeleteJobInput = z.infer<typeof McpDeleteJobSchema>;
+
+// list_companies — list the caller's companies.
+export const McpListCompaniesInputShape = {
+  search: z.string().optional().describe("Free-text search across company name and ATS token."),
+  limit: z.number().int().min(1).max(200).optional().describe("Max results (default 50, max 200)."),
+  offset: z.number().int().min(0).optional().describe("Pagination offset (default 0)."),
+};
+
+export const McpListCompaniesSchema = z.object(McpListCompaniesInputShape);
+export type McpListCompaniesInput = z.infer<typeof McpListCompaniesSchema>;
+
+// list_resumes — list the caller's resumes (id + title), marking the default.
+export const McpListResumesInputShape = {};
+
+export const McpListResumesSchema = z.object(McpListResumesInputShape);
+export type McpListResumesInput = z.infer<typeof McpListResumesSchema>;
+
+// get_resume — read the full normalized text of one resume (by id, or the default).
+export const McpGetResumeInputShape = {
+  resumeId: z.string().min(1).optional().describe("The id of the resume to read, as returned by list_resumes. Omit to read the default resume (or the only one if there is just one)."),
+  resumeTitle: z.string().optional().describe("The title of the resume to read, as the user referred to it. Used only when resumeId is omitted."),
+};
+export const McpGetResumeSchema = z.object(McpGetResumeInputShape);
+export type McpGetResumeInput = z.infer<typeof McpGetResumeSchema>;
+
+// get_job_stats — aggregate counts by status.
+export const McpGetJobStatsInputShape = {};
+
+export const McpGetJobStatsSchema = z.object(McpGetJobStatsInputShape);
+export type McpGetJobStatsInput = z.infer<typeof McpGetJobStatsSchema>;
+
+// get_analytics — richer pipeline analytics.
+export const McpGetAnalyticsInputShape = {};
+export const McpGetAnalyticsSchema = z.object(McpGetAnalyticsInputShape);
+export type McpGetAnalyticsInput = z.infer<typeof McpGetAnalyticsSchema>;

@@ -27,6 +27,7 @@ export const AddJobFormSchema = z.object({
     }),
   type: z.string().min(1),
   workplaceType: z.string().optional(),
+  jobCategory: z.string().min(1),
   source: z
     .string({
       error: "Source is required.",

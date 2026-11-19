@@ -7,6 +7,7 @@ import {
   resolveJobSource,
   resolveJobType,
   resolveWorkplaceType,
+  resolveJobCategory,
   resolveJobStatus,
   resolveTags,
 } from "@/lib/jobs/resolve";
@@ -32,6 +33,7 @@ vi.mock("@/lib/jobs/resolve", () => ({
   resolveJobSource: vi.fn(),
   resolveJobType: vi.fn(),
   resolveWorkplaceType: vi.fn(),
+  resolveJobCategory: vi.fn(),
   resolveJobStatus: vi.fn(),
   resolveTags: vi.fn(),
 }));
@@ -53,6 +55,7 @@ describe("createJobFromNames", () => {
     (resolveJobSource as any).mockResolvedValue(null);
     (resolveJobType as any).mockReturnValue("Full-time");
     (resolveWorkplaceType as any).mockReturnValue(null);
+    (resolveJobCategory as any).mockReturnValue("INDUSTRY_OTHERS");
     (resolveJobStatus as any).mockResolvedValue("status-1");
     (resolveTags as any).mockResolvedValue({ resolved: [], dropped: [] });
     (prisma.job.findFirst as any).mockResolvedValue(null);

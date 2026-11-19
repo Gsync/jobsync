@@ -19,12 +19,12 @@ vi.mock("@/lib/encryption", () => ({
 vi.mock("@/lib/ai/provider-registry", () => ({
   PROVIDER_REGISTRY: {
     openai: { envVar: "OPENAI_API_KEY" },
-    ollama: { defaultCredential: "ollama-default" },
+    ollama: { defaultCredential: "ollama-default", apiKeyEnvVar: "OLLAMA_API_KEY" },
     deepseek: { envVar: "DEEPSEEK_API_KEY", defaultCredential: "ds-default" },
   },
 }));
 
-import { resolveApiKey } from "@/lib/api-key-resolver";
+import { resolveApiKey, resolveOllamaApiKey } from "@/lib/api-key-resolver";
 
 describe("resolveApiKey", () => {
   const OLD_ENV = process.env;
@@ -34,6 +34,7 @@ describe("resolveApiKey", () => {
     process.env = { ...OLD_ENV };
     delete process.env.OPENAI_API_KEY;
     delete process.env.DEEPSEEK_API_KEY;
+    delete process.env.OLLAMA_API_KEY;
   });
 
   afterAll(() => {
@@ -121,5 +122,21 @@ describe("resolveApiKey", () => {
 
     expect(result).toBe("env-openai");
     expect(mockFindUnique).not.toHaveBeenCalled();
+  });
+
+  describe("resolveOllamaApiKey", () => {
+    it("returns the OLLAMA_API_KEY env var when set", async () => {
+      process.env.OLLAMA_API_KEY = "2017260613";
+
+      const result = await resolveOllamaApiKey();
+
+      expect(result).toBe("2017260613");
+    });
+
+    it("returns undefined when the OLLAMA_API_KEY env var is unset", async () => {
+      const result = await resolveOllamaApiKey();
+
+      expect(result).toBeUndefined();
+    });
   });
 });

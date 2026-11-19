@@ -21,6 +21,7 @@ describe("jobFacets", () => {
         statuses: ["applied", "interview"],
         acceptedDiscovered: true,
         jobTypes: ["FT", "C"],
+        jobCategories: [],
         workplaces: ["REMOTE"],
         includeDismissed: true,
       });
@@ -77,6 +78,7 @@ describe("jobFacets", () => {
         statuses: ["applied", "offer"],
         acceptedDiscovered: true,
         jobTypes: ["PT"],
+        jobCategories: [],
         workplaces: ["REMOTE", "ONSITE"],
         includeDismissed: false,
       };
@@ -92,6 +94,7 @@ describe("jobFacets", () => {
           statuses: ["applied", "interview"],
           acceptedDiscovered: true,
           jobTypes: ["FT"],
+          jobCategories: [],
           workplaces: ["REMOTE"],
           includeDismissed: true,
         }),

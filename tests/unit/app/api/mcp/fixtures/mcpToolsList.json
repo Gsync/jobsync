@@ -39,6 +39,15 @@
             "Onsite"
           ]
         },
+        "jobCategory": {
+          "description": "Compulsory classification of the posting. One of: academic, industry_civil, industry_others.",
+          "type": "string",
+          "enum": [
+            "academic",
+            "industry_civil",
+            "industry_others"
+          ]
+        },
         "status": {
           "description": "Application status. One of: new, draft, applied, interview, offer, offer-accepted, offer-declined, rejected, expired, archived, withdrawn. Defaults to 'draft'.",
           "type": "string",
@@ -100,7 +109,8 @@
       "required": [
         "company",
         "jobTitle",
-        "jobDescription"
+        "jobDescription",
+        "jobCategory"
       ]
     },
     "execution": {
@@ -172,6 +182,15 @@
             "Onsite"
           ]
         },
+        "jobCategory": {
+          "description": "Compulsory classification of the posting. One of: academic, industry_civil, industry_others.",
+          "type": "string",
+          "enum": [
+            "academic",
+            "industry_civil",
+            "industry_others"
+          ]
+        },
         "status": {
           "description": "Application status. One of: new, draft, applied, interview, offer, offer-accepted, offer-declined, rejected, expired, archived, withdrawn.",
           "type": "string",
@@ -215,6 +234,25 @@
           "items": {
             "type": "string"
           }
+        },
+        "emailSubject": {
+          "description": "Subject line of an email received about this job (confirmation, interview, rejection, etc.).",
+          "type": "string"
+        },
+        "emailContent": {
+          "description": "Body/snippet of the email received about this job.",
+          "type": "string"
+        },
+        "emailLink": {
+          "description": "Permalink or message id link to the email in the user's mailbox.",
+          "type": "string",
+          "format": "uri"
+        },
+        "emailReceivedAt": {
+          "description": "When the email was received (ISO-8601).",
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
         }
       },
       "required": [
@@ -339,6 +377,15 @@
                   "Onsite"
                 ]
               },
+              "jobCategory": {
+                "description": "Compulsory classification of the posting. One of: academic, industry_civil, industry_others.",
+                "type": "string",
+                "enum": [
+                  "academic",
+                  "industry_civil",
+                  "industry_others"
+                ]
+              },
               "status": {
                 "description": "Application status. One of: new, draft, applied, interview, offer, offer-accepted, offer-declined, rejected, expired, archived, withdrawn. Defaults to 'draft'.",
                 "type": "string",
@@ -400,7 +447,8 @@
             "required": [
               "company",
               "jobTitle",
-              "jobDescription"
+              "jobDescription",
+              "jobCategory"
             ]
           },
           "description": "Up to 10 jobs, each with the same fields as add_job. Processed in order; each item consumes one unit of the MCP rate-limit budget."
@@ -494,6 +542,176 @@
         "resumeId",
         "reviewText"
       ]
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "list_jobs",
+    "description": "List/search the user's saved jobs. Optional filters: search (free text across title, company, location, source, description), status (application status, case-insensitive contains, e.g. 'applied', 'draft', 'interview'), company (contains), applied (boolean). Paginate with limit (default 25, max 100) and offset. Returns one compact line per job: title, company, id, status, location, applied, match score, tags, url, plus total count and a 'more available' hint. Use get_job with an id for the full record (description, contacts, stages, match data). Use this to browse the job list, find a jobId, or check whether a role was already saved before adding it.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "search": {
+          "description": "Free-text search (case-insensitive contains) across job title, company, location, source and description. Use to find jobs by keyword, e.g. 'React', 'remote', 'engineer'.",
+          "type": "string"
+        },
+        "status": {
+          "description": "Filter by application status (case-insensitive contains). Possible values: new, draft, applied, interview, offer, offer-accepted, offer-declined, rejected, expired, archived, withdrawn. E.g. 'applied', 'draft', 'interview'.",
+          "type": "string"
+        },
+        "company": {
+          "description": "Filter by company name (case-insensitive contains), e.g. 'Google', 'Acme'.",
+          "type": "string"
+        },
+        "applied": {
+          "description": "Filter by applied flag.",
+          "type": "boolean"
+        },
+        "limit": {
+          "description": "Max results per page (default 25, max 100).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "offset": {
+          "description": "Pagination offset (default 0).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_job",
+    "description": "Fetch the full record for one saved job by id: title, company, status, location, source, type, workplace, salary, applied/appliedDate, dueDate, match score, tags, contacts, interview stages, resume/cover letter, url, createdVia, and the full job description. Use after list_jobs or add_job to read, review, or enrich a posting. Only returns jobs owned by the caller.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The id of the job, as returned by list_jobs or add_job (a UUID). Use list_jobs first if you only have a title/company."
+        }
+      },
+      "required": [
+        "jobId"
+      ]
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "delete_job",
+    "description": "Delete a job by id. Only jobs created through MCP (createdVia set) can be deleted this way; jobs created in the web app cannot be removed via MCP — tell the user to delete them in the app. Returns a confirmation with the job title/company.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The id of the job to delete."
+        }
+      },
+      "required": [
+        "jobId"
+      ]
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "list_companies",
+    "description": "List the user's companies with job counts, watchlist flag and ATS board info. Supports free-text search (name or ATS token) and pagination (limit default 50, max 200; offset). Use to resolve a company name to an id, inspect the company list, or check which boards are linked before running an automation.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "search": {
+          "description": "Free-text search across company name and ATS token.",
+          "type": "string"
+        },
+        "limit": {
+          "description": "Max results (default 50, max 200).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "offset": {
+          "description": "Pagination offset (default 0).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "list_resumes",
+    "description": "List the user's resumes (id + title + last-updated), marking the default one. Use to pick a resumeId for save_match_result / review_resume, or to confirm which resume exists before reviewing. Returns 'No resumes found' if none exist.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {}
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_resume",
+    "description": "Read the full normalized text of one of the user's resumes. Pass resumeId (from list_resumes) or resumeTitle; omit both to read the default resume. Returns the resume text so you can answer questions about it, match it against a job, or review it. Use this when you need to see resume content, not just its title.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "resumeId": {
+          "description": "The id of the resume to read, as returned by list_resumes. Omit to read the default resume (or the only one if there is just one).",
+          "type": "string",
+          "minLength": 1
+        },
+        "resumeTitle": {
+          "description": "The title of the resume to read, as the user referred to it. Used only when resumeId is omitted.",
+          "type": "string"
+        }
+      }
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_job_stats",
+    "description": "Aggregate pipeline overview: total jobs, applied count, and counts grouped by application status (new, draft, applied, interview, offer, rejected, etc.). Use for a quick summary of the job pipeline before deciding what to work on.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {}
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_analytics",
+    "description": "Richer pipeline analytics: totals, applied count, jobs added in the last 30 days, counts by status, top companies and top sources. Use for deeper insights into where applications are going and how the pipeline is trending.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {}
     },
     "execution": {
       "taskSupport": "forbidden"

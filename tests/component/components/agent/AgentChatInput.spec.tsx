@@ -38,6 +38,7 @@ const huge = "y".repeat(APP_CONSTANTS.AGENT_CHAT_PASTE_MAX_CHARS + 1000);
 describe("AgentChatInput", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     chat.status = "ready";
     chat.approvalPending = false;
     chat.queued = undefined;
@@ -53,7 +54,7 @@ describe("AgentChatInput", () => {
     expect((screen.getByRole("textbox") as HTMLTextAreaElement).value).toContain(
       short,
     );
-    expect(screen.queryByText(/pasted/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/pasted posting/i)).not.toBeInTheDocument();
   });
 
   it("turns an over-threshold paste into a removable chip", async () => {
@@ -117,6 +118,49 @@ describe("AgentChatInput", () => {
       parts.some((p: any) => p.type === "text" && p.text === "add this job"),
     ).toBe(true);
     expect(parts.some((p: any) => p.type === AGENT_PASTE_PART_TYPE)).toBe(true);
+  });
+
+  it("recalls the last prompt and its paste chip with ArrowUp", async () => {
+    render(<AgentChatInput />);
+    await paste(long);
+    await userEvent.type(screen.getByRole("textbox"), "add this job");
+    await userEvent.click(screen.getByRole("button", { name: /send/i }));
+    expect(screen.queryByText(/pasted/i)).not.toBeInTheDocument();
+
+    await userEvent.type(screen.getByRole("textbox"), "{ArrowUp}");
+    expect(screen.getByRole("textbox")).toHaveValue("add this job");
+    expect(screen.getByText(/pasted/i)).toBeInTheDocument();
+  });
+
+  it("walks back and forward through history and restores the draft", async () => {
+    render(<AgentChatInput />);
+    const box = screen.getByRole("textbox");
+
+    await userEvent.type(box, "first");
+    await userEvent.click(screen.getByRole("button", { name: /send/i }));
+    await userEvent.type(box, "second");
+    await userEvent.click(screen.getByRole("button", { name: /send/i }));
+
+    await userEvent.type(box, "{ArrowUp}");
+    expect(box).toHaveValue("second");
+    await userEvent.type(box, "{ArrowUp}");
+    expect(box).toHaveValue("first");
+    await userEvent.type(box, "{ArrowDown}");
+    expect(box).toHaveValue("second");
+    await userEvent.type(box, "{ArrowDown}");
+    expect(box).toHaveValue("");
+  });
+
+  it("leaves ArrowUp alone in the middle of a multiline draft", async () => {
+    render(<AgentChatInput />);
+    const box = screen.getByRole("textbox");
+
+    await userEvent.type(box, "sent prompt");
+    await userEvent.click(screen.getByRole("button", { name: /send/i }));
+    await paste("line one\nline two");
+    await userEvent.type(box, "{ArrowUp}");
+
+    expect(box).toHaveValue("line one\nline two");
   });
 
   // Whether a send waits — for an approval, or for a reply already streaming —

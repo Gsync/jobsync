@@ -1,10 +1,11 @@
 import { JOB_STATUS_VALUES } from "@/lib/constants";
-import { JOB_TYPES, JobFacets, WORKPLACE_TYPES } from "@/models/job.model";
+import { JOB_TYPES, JOB_CATEGORIES, JobFacets, WORKPLACE_TYPES, getJobCategoryLabel } from "@/models/job.model";
 
 export const EMPTY_JOB_FACETS: JobFacets = {
   statuses: [],
   acceptedDiscovered: false,
   jobTypes: [],
+  jobCategories: [],
   workplaces: [],
   includeDismissed: false,
 };
@@ -13,11 +14,13 @@ const PARAM = {
   statuses: "status",
   acceptedDiscovered: "accepted",
   jobTypes: "type",
+  jobCategories: "category",
   workplaces: "workplace",
   includeDismissed: "dismissed",
 } as const;
 
 const JOB_TYPE_CODES = Object.keys(JOB_TYPES);
+const JOB_CATEGORY_CODES = Object.keys(JOB_CATEGORIES);
 const WORKPLACE_CODES = Object.keys(WORKPLACE_TYPES);
 
 // Filtering the whitelist (not the input) dedupes and fixes the order.
@@ -31,6 +34,7 @@ export function normalizeJobFacets(
     statuses: pick(input?.statuses, JOB_STATUS_VALUES),
     acceptedDiscovered: input?.acceptedDiscovered === true,
     jobTypes: pick(input?.jobTypes, JOB_TYPE_CODES),
+    jobCategories: pick(input?.jobCategories, JOB_CATEGORY_CODES),
     workplaces: pick(input?.workplaces, WORKPLACE_CODES),
     includeDismissed: input?.includeDismissed === true,
   };
@@ -44,6 +48,7 @@ export function parseJobFacets(params: URLSearchParams): JobFacets {
     statuses: readList(params, PARAM.statuses),
     acceptedDiscovered: params.get(PARAM.acceptedDiscovered) === "1",
     jobTypes: readList(params, PARAM.jobTypes),
+    jobCategories: readList(params, PARAM.jobCategories),
     workplaces: readList(params, PARAM.workplaces),
     includeDismissed: params.get(PARAM.includeDismissed) === "1",
   });
@@ -62,6 +67,7 @@ export function writeJobFacets(
   setList(PARAM.statuses, facets.statuses);
   setFlag(PARAM.acceptedDiscovered, facets.acceptedDiscovered);
   setList(PARAM.jobTypes, facets.jobTypes);
+  setList(PARAM.jobCategories, facets.jobCategories);
   setList(PARAM.workplaces, facets.workplaces);
   setFlag(PARAM.includeDismissed, facets.includeDismissed);
   return next;
@@ -70,6 +76,7 @@ export function writeJobFacets(
 export const countJobFacets = (facets: JobFacets) =>
   facets.statuses.length +
   facets.jobTypes.length +
+  facets.jobCategories.length +
   facets.workplaces.length +
   Number(facets.acceptedDiscovered) +
   Number(facets.includeDismissed);

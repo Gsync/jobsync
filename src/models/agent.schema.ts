@@ -43,6 +43,19 @@ export const AgentAddJobParseSchema = AgentAddJobSchema.extend({
 
 export type AgentAddJobInput = z.infer<typeof AgentAddJobParseSchema>;
 
+// The only field is the URL the user supplied. The page is fetched by the app,
+// never by the model, so there is no place for it to supply page content.
+export const AgentScrapeJobSchema = z.object({
+  jobUrl: z
+    .string()
+    .url()
+    .describe(
+      "The full http(s) URL of the job posting to read. The app fetches the page itself; never guess the posting's details from the URL.",
+    ),
+});
+
+export type AgentScrapeJobInput = z.infer<typeof AgentScrapeJobSchema>;
+
 // One optional field, and never an id: the model names a resume the way the
 // user did, and the server resolves it ownership-scoped. An id-shaped input
 // would be an IDOR surface the model could be talked into filling.

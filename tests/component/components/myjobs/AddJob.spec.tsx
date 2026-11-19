@@ -353,10 +353,13 @@ describe("AddJob Component", () => {
         status: "d7ba200a-6dc1-4ea8-acff-29ebb0d4676a",
         dueDate: expect.any(Date),
         dateApplied: undefined,
+        jobCategory: "ACADEMIC",
         salaryRange: "",
         jobDescription: "<p>New Job Description</p>",
         jobUrl: "",
         tags: [],
+        resume: undefined,
+        coverLetter: undefined,
       });
     });
   }, 10000);
@@ -486,6 +489,7 @@ describe("AddJob Component - Edit Mode", () => {
     description: "<p>Existing job description</p>",
     jobUrl: "https://example.com/job",
     applied: true,
+    jobCategory: "ACADEMIC",
   } as unknown as JobResponse;
 
   async function renderEditMode(overrides: Partial<JobResponse> = {}) {

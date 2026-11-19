@@ -25,6 +25,7 @@ import {
   JobResponse,
   getJobTypeLabel,
   getWorkplaceTypeLabel,
+  getJobCategoryLabel,
 } from "@/models/job.model";
 import { CompanyLogo } from "../CompanyLogo";
 
@@ -57,6 +58,7 @@ export function JobDetailsHeader({
     job.Location?.label,
     getJobTypeLabel(job.jobType),
     job.workplaceType ? getWorkplaceTypeLabel(job.workplaceType) : null,
+    job.jobCategory ? getJobCategoryLabel(job.jobCategory) : null,
   ]
     .filter(Boolean)
     .join(" · ");

@@ -34,11 +34,12 @@ export function AgentChatEmptyState() {
       {/* Stated up front rather than left to the model to confess: a local 8B
           asked what it can do will happily invent capabilities. */}
       <p className="text-sm text-muted-foreground">
-        I can add a job to your tracker — paste a posting or type the details,
-        and I&apos;ll show you what I extracted before anything is saved. I can
-        also read and review your resumes, and while you&apos;re looking at a
-        job I can score how well one of them matches it or write you a cover
-        letter. I can&apos;t search your existing jobs or read your tasks yet.
+        I can add a job to your tracker — paste a posting, paste a link to it,
+        or type the details, and I&apos;ll show you what I extracted before
+        anything is saved. I can also read and review your resumes, and while
+        you&apos;re looking at a job I can score how well one of them matches it
+        or write you a cover letter. I can&apos;t search your existing jobs or
+        read your tasks yet.
       </p>
 
       <Suggestions>

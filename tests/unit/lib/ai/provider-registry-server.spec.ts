@@ -8,6 +8,7 @@ vi.mock("@ai-sdk/google", () => ({ createGoogleGenerativeAI: vi.fn() }));
 vi.mock("ollama-ai-provider-v2", () => ({ createOllama: vi.fn() }));
 
 import { createOpenAI } from "@ai-sdk/openai";
+import { createOllama } from "ollama-ai-provider-v2";
 import {
   PROVIDER_FACTORIES,
   PROVIDER_VERIFIERS,
@@ -142,6 +143,48 @@ describe("PROVIDER_FACTORIES – openrouter", () => {
 
     expect(createOpenAI).toHaveBeenCalledWith(
       expect.objectContaining({ apiKey: "sk-or-specific-key" }),
+    );
+  });
+});
+
+describe("PROVIDER_FACTORIES – ollama", () => {
+  it("creates the ollama provider with the base url", () => {
+    const mockChainFn = vi.fn().mockReturnValue({});
+    (createOllama as any).mockReturnValue(mockChainFn);
+
+    PROVIDER_FACTORIES.ollama("http://127.0.0.1:11434", "qwen3.5:9b");
+
+    expect(createOllama).toHaveBeenCalledWith({
+      baseURL: "http://127.0.0.1:11434/api",
+    });
+    expect(mockChainFn).toHaveBeenCalledWith("qwen3.5:9b");
+  });
+
+  it("adds the bearer auth header when an api key is configured", () => {
+    const mockChainFn = vi.fn().mockReturnValue({});
+    (createOllama as any).mockReturnValue(mockChainFn);
+
+    PROVIDER_FACTORIES.ollama("https://myllm.oscarpoudel.com.np", "qwen3.5:9b", {
+      apiKey: "2017260613",
+    });
+
+    expect(createOllama).toHaveBeenCalledWith({
+      baseURL: "https://myllm.oscarpoudel.com.np/api",
+      headers: { Authorization: "Bearer 2017260613" },
+    });
+  });
+
+  it("omits the auth header when no api key is configured", () => {
+    const mockChainFn = vi.fn().mockReturnValue({});
+    (createOllama as any).mockReturnValue(mockChainFn);
+
+    PROVIDER_FACTORIES.ollama("http://127.0.0.1:11434", "qwen3.5:9b");
+
+    expect(createOllama).toHaveBeenCalledWith({
+      baseURL: "http://127.0.0.1:11434/api",
+    });
+    expect(createOllama).not.toHaveBeenCalledWith(
+      expect.objectContaining({ headers: expect.anything() }),
     );
   });
 });

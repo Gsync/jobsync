@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { Pencil, StickyNote, Trash } from "lucide-react";
+import { Pencil, StickyNote, Trash, Mail } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { format } from "date-fns";
@@ -18,6 +18,7 @@ import {
   JobStatus,
   getJobTypeLabel,
   getWorkplaceTypeLabel,
+  getJobCategoryLabel,
 } from "@/models/job.model";
 import type { SortState } from "@/models/sort.model";
 import { SortableTableHead } from "../SortableTableHead";
@@ -39,6 +40,9 @@ type MyJobsTableProps = {
   onAddNote: (jobId: string) => void;
   sort: SortState<JobSortField> | null;
   onSort: (field: JobSortField) => void;
+  selectedIds: ReadonlySet<string>;
+  onToggleSelect: (id: string) => void;
+  onToggleSelectAll: () => void;
 };
 
 function MyJobsTable({
@@ -50,6 +54,9 @@ function MyJobsTable({
   onAddNote,
   sort,
   onSort,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
 }: MyJobsTableProps) {
   const [alertOpen, setAlertOpen] = useState(false);
   const [jobIdToDelete, setJobIdToDelete] = useState("");
@@ -59,11 +66,27 @@ function MyJobsTable({
     setJobIdToDelete(jobId);
   };
 
+  const selectedCount = jobs.filter((job) => selectedIds.has(job.id)).length;
+  const allSelected = jobs.length > 0 && selectedCount === jobs.length;
+  const someSelected = selectedCount > 0 && !allSelected;
+
   return (
     <TooltipProvider delayDuration={300}>
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-10 pr-0">
+              <input
+                type="checkbox"
+                className="h-4 w-4 cursor-pointer accent-primary align-middle"
+                aria-label={allSelected ? "Deselect all jobs" : "Select all jobs"}
+                checked={allSelected}
+                ref={(el) => {
+                  if (el) el.indeterminate = someSelected;
+                }}
+                onChange={onToggleSelectAll}
+              />
+            </TableHead>
             <TableHead className="hidden w-[100px] sm:table-cell">
               <span className="sr-only">Company Logo</span>
             </TableHead>
@@ -106,6 +129,7 @@ function MyJobsTable({
             >
               Source
             </SortableTableHead>
+            <TableHead className="hidden md:table-cell">Email</TableHead>
             <TableHead>
               <span className="sr-only">Actions</span>
             </TableHead>
@@ -113,8 +137,18 @@ function MyJobsTable({
         </TableHeader>
         <TableBody>
           {jobs.map((job: JobResponse) => {
+            const selected = selectedIds.has(job.id);
             return (
-              <TableRow key={job.id}>
+              <TableRow key={job.id} data-state={selected ? "selected" : undefined}>
+                <TableCell className="w-10 pr-0">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 cursor-pointer accent-primary align-middle"
+                    aria-label={`Select ${job.JobTitle?.label ?? "job"}`}
+                    checked={selected}
+                    onChange={() => onToggleSelect(job.id)}
+                  />
+                </TableCell>
                 <TableCell className="hidden sm:table-cell">
                   <CompanyLogo
                     logoUrl={job.Company?.logoUrl}
@@ -151,9 +185,11 @@ function MyJobsTable({
                   </div>
                   <span className="block truncate text-xs font-normal text-muted-foreground">
                     {[
-                      getJobTypeLabel(job.jobType),
                       job.workplaceType
                         ? getWorkplaceTypeLabel(job.workplaceType)
+                        : null,
+                      job.jobCategory
+                        ? getJobCategoryLabel(job.jobCategory)
                         : null,
                     ]
                       .filter(Boolean)
@@ -197,6 +233,31 @@ function MyJobsTable({
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {job.JobSource?.label}
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {job.emailReceivedAt || job.emailSubject || job.emailLink || job.emailContent ? (
+                    <a
+                      href={job.emailLink || "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`inline-flex items-center gap-1 text-xs ${
+                        !job.emailSeenAt ||
+                        (job.emailReceivedAt
+                          ? new Date(job.emailReceivedAt) > new Date(job.emailSeenAt)
+                          : true)
+                          ? "animate-pulse text-primary font-semibold"
+                          : "text-muted-foreground"
+                      }`}
+                      title={job.emailSubject || "Email received"}
+                    >
+                      <Mail className="h-4 w-4" />
+                      {job.emailSubject
+                        ? job.emailSubject.slice(0, 18)
+                        : "Received"}
+                    </a>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">

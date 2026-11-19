@@ -1,6 +1,7 @@
 // Mock server-only dependencies to allow importing getModel in the jsdom environment
 vi.mock("@/lib/api-key-resolver", () => ({
   resolveApiKey: vi.fn(),
+  resolveOllamaApiKey: vi.fn(),
 }));
 
 vi.mock("@/lib/ai/provider-registry.server", () => ({
@@ -14,7 +15,7 @@ vi.mock("@/lib/ai/provider-registry.server", () => ({
 }));
 
 import { getModel } from "@/lib/ai/providers";
-import { resolveApiKey } from "@/lib/api-key-resolver";
+import { resolveApiKey, resolveOllamaApiKey } from "@/lib/api-key-resolver";
 import { PROVIDER_FACTORIES } from "@/lib/ai/provider-registry.server";
 
 describe("getModel – openrouter", () => {
@@ -85,5 +86,37 @@ describe("getModel – provider validation", () => {
     await expect(
       getModel("openrouter", "openai/gpt-4o"),
     ).resolves.toBeDefined();
+  });
+});
+
+describe("getModel – ollama", () => {
+  it("passes the resolved ollama api key to the factory", async () => {
+    (resolveApiKey as any).mockResolvedValue("https://myllm.oscarpoudel.com.np");
+    (resolveOllamaApiKey as any).mockResolvedValue("2017260613");
+    (PROVIDER_FACTORIES.ollama as any).mockReturnValue({});
+
+    await getModel("ollama", "qwen3.5:9b", "user-1");
+
+    expect(resolveApiKey).toHaveBeenCalledWith("user-1", "ollama");
+    expect(resolveOllamaApiKey).toHaveBeenCalled();
+    expect(PROVIDER_FACTORIES.ollama).toHaveBeenCalledWith(
+      "https://myllm.oscarpoudel.com.np",
+      "qwen3.5:9b",
+      { apiKey: "2017260613" },
+    );
+  });
+
+  it("works without an api key configured (no bearer token)", async () => {
+    (resolveApiKey as any).mockResolvedValue("http://127.0.0.1:11434");
+    (resolveOllamaApiKey as any).mockResolvedValue(undefined);
+    (PROVIDER_FACTORIES.ollama as any).mockReturnValue({});
+
+    await getModel("ollama", "qwen3.5:9b", "user-1");
+
+    expect(PROVIDER_FACTORIES.ollama).toHaveBeenCalledWith(
+      "http://127.0.0.1:11434",
+      "qwen3.5:9b",
+      { apiKey: undefined },
+    );
   });
 });

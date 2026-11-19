@@ -81,7 +81,7 @@ describe("add_job approval through the real SDK", () => {
   });
 
   it("asks for approval and does not execute a call carrying a pasted posting", async () => {
-    const { result, execute } = run(addJobCallingModel({ company: "Acme", jobTitle: "Engineer" }), {
+    const { result, execute } = run(addJobCallingModel({ company: "Acme", jobTitle: "Engineer", jobCategory: "industry_others" }), {
       pastedText: "THE PASTED POSTING",
     });
     const types = await chunkTypes(result);
@@ -91,7 +91,7 @@ describe("add_job approval through the real SDK", () => {
   });
 
   it("does not gate a call with no description anywhere", async () => {
-    const { result, execute } = run(addJobCallingModel({ company: "Acme", jobTitle: "Engineer" }), {});
+    const { result, execute } = run(addJobCallingModel({ company: "Acme", jobTitle: "Engineer", jobCategory: "industry_others" }), {});
     const types = await chunkTypes(result);
     expect(types).not.toContain("tool-approval-request");
     expect(execute).toHaveBeenCalledTimes(1);
@@ -100,7 +100,7 @@ describe("add_job approval through the real SDK", () => {
   });
 
   it("never executes a call the user denied", async () => {
-    const input = { company: "Acme", jobTitle: "Engineer", jobDescription: "a description" };
+    const input = { company: "Acme", jobTitle: "Engineer", jobCategory: "industry_others", jobDescription: "a description" };
     const messages: ModelMessage[] = [
       { role: "user", content: "add this job" },
       {
@@ -124,7 +124,7 @@ describe("add_job approval through the real SDK", () => {
 
   // The resume POST re-resolves toolApproval; only "denied" may block it.
   it("executes a call the user approved, exactly once", async () => {
-    const input = { company: "Acme", jobTitle: "Engineer", jobDescription: "a description" };
+    const input = { company: "Acme", jobTitle: "Engineer", jobCategory: "industry_others", jobDescription: "a description" };
     const messages: ModelMessage[] = [
       { role: "user", content: "add this job" },
       {

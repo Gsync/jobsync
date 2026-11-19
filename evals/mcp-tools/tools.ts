@@ -10,6 +10,8 @@ import {
   McpSaveMatchResultsBatchInputShape,
   McpReviewResumeInputShape,
   McpSaveResumeReviewInputShape,
+  McpGetResumeInputShape,
+  McpGetAnalyticsInputShape,
 } from '../../src/models/mcp.schema';
 
 // Same raw shapes route.ts hands the MCP SDK, so the model sees the parameter
@@ -25,6 +27,8 @@ const SHAPES: Record<string, z.ZodRawShape> = {
   save_match_results_batch: McpSaveMatchResultsBatchInputShape,
   review_resume: McpReviewResumeInputShape,
   save_resume_review: McpSaveResumeReviewInputShape,
+  get_resume: McpGetResumeInputShape,
+  get_analytics: McpGetAnalyticsInputShape,
 };
 
 export function getTools() {

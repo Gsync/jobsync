@@ -34,6 +34,6 @@ describe("workplaceType schema", () => {
 
   it("carries the same field into update_job and the agent's add_job", () => {
     expect(workplaceType(McpUpdateJobInputShape as any).parse({ workplaceType: "On-site" }).workplaceType).toBe("Onsite");
-    expect(AgentAddJobSchema.parse({ company: "Acme", jobTitle: "Engineer", workplaceType: "On-site" }).workplaceType).toBe("Onsite");
+    expect(AgentAddJobSchema.parse({ company: "Acme", jobTitle: "Engineer", jobCategory: "INDUSTRY_OTHERS", workplaceType: "On-site" }).workplaceType).toBe("Onsite");
   });
 });

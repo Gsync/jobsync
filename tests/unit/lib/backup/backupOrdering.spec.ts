@@ -111,7 +111,10 @@ describe("backup ordering", () => {
 
   it("scopes the models whose ownership chain is easy to get wrong", () => {
     expect(MODEL_SPECS.File.scope("u1")).toEqual({
-      Resume: { profile: { userId: "u1" } },
+      OR: [
+        { Resume: { profile: { userId: "u1" } } },
+        { Job: { userId: "u1" } },
+      ],
     });
     expect(MODEL_SPECS.Summary.scope("u1")).toEqual({
       ResumeSection: { Resume: { profile: { userId: "u1" } } },

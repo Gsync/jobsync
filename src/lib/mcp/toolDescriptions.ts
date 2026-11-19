@@ -21,6 +21,22 @@ export const MCP_TOOL_DESCRIPTIONS = {
     "Fetch the user's default resume so you can review it. Returns the normalized resume text plus a directive — produce the review yourself, then call save_resume_review with the result.",
   save_resume_review:
     "Persist a resume review (produced by you, the agent) against the resume previously handed to you by review_resume. Call this after review_resume hands you a review directive.",
+  list_jobs:
+    "List/search the user's saved jobs. Optional filters: search (free text across title, company, location, source, description), status (application status, case-insensitive contains, e.g. 'applied', 'draft', 'interview'), company (contains), applied (boolean). Paginate with limit (default 25, max 100) and offset. Returns one compact line per job: title, company, id, status, location, applied, match score, tags, url, plus total count and a 'more available' hint. Use get_job with an id for the full record (description, contacts, stages, match data). Use this to browse the job list, find a jobId, or check whether a role was already saved before adding it.",
+  get_job:
+    "Fetch the full record for one saved job by id: title, company, status, location, source, type, workplace, salary, applied/appliedDate, dueDate, match score, tags, contacts, interview stages, resume/cover letter, url, createdVia, and the full job description. Use after list_jobs or add_job to read, review, or enrich a posting. Only returns jobs owned by the caller.",
+  delete_job:
+    "Delete a job by id. Only jobs created through MCP (createdVia set) can be deleted this way; jobs created in the web app cannot be removed via MCP — tell the user to delete them in the app. Returns a confirmation with the job title/company.",
+  list_companies:
+    "List the user's companies with job counts, watchlist flag and ATS board info. Supports free-text search (name or ATS token) and pagination (limit default 50, max 200; offset). Use to resolve a company name to an id, inspect the company list, or check which boards are linked before running an automation.",
+  list_resumes:
+    "List the user's resumes (id + title + last-updated), marking the default one. Use to pick a resumeId for save_match_result / review_resume, or to confirm which resume exists before reviewing. Returns 'No resumes found' if none exist.",
+  get_resume:
+    "Read the full normalized text of one of the user's resumes. Pass resumeId (from list_resumes) or resumeTitle; omit both to read the default resume. Returns the resume text so you can answer questions about it, match it against a job, or review it. Use this when you need to see resume content, not just its title.",
+  get_job_stats:
+    "Aggregate pipeline overview: total jobs, applied count, and counts grouped by application status (new, draft, applied, interview, offer, rejected, etc.). Use for a quick summary of the job pipeline before deciding what to work on.",
+  get_analytics:
+    "Richer pipeline analytics: totals, applied count, jobs added in the last 30 days, counts by status, top companies and top sources. Use for deeper insights into where applications are going and how the pipeline is trending.",
 } as const;
 
 export type McpToolName = keyof typeof MCP_TOOL_DESCRIPTIONS;

@@ -16,6 +16,7 @@ import {
   JobStatus,
   getJobTypeLabel,
   getWorkplaceTypeLabel,
+  getJobCategoryLabel,
 } from "@/models/job.model";
 
 type JobSummaryCardProps = {
@@ -57,6 +58,8 @@ export function JobSummaryCard({
               {getJobTypeLabel(job.jobType)}
               {job.workplaceType &&
                 ` · ${getWorkplaceTypeLabel(job.workplaceType)}`}
+              {job.jobCategory &&
+                ` · ${getJobCategoryLabel(job.jobCategory)}`}
             </p>
           </div>
           <div>

@@ -24,6 +24,8 @@ import {
   JobTitle,
   Tag,
   WORKPLACE_TYPES,
+  JOB_CATEGORIES,
+  JOB_CATEGORY_LABELS,
 } from "@/models/job.model";
 import { addDays } from "date-fns";
 import { z } from "zod";
@@ -137,6 +139,7 @@ export function AddJob({
   const newJobDefaultValues = {
     type: Object.keys(JOB_TYPES)[0],
     workplaceType: "ONSITE",
+    jobCategory: Object.keys(JOB_CATEGORIES)[0],
     dueDate: addDays(new Date(), APP_CONSTANTS.DEFAULT_JOB_DUE_DAYS),
     status: draftStatusId,
     salaryRange: "",
@@ -183,6 +186,7 @@ export function AddJob({
         location: editJob.Location?.id,
         type: editJob.jobType,
         workplaceType: editJob.workplaceType ?? undefined,
+        jobCategory: editJob.jobCategory ?? undefined,
         source: editJob.JobSource?.id,
         status: editJob.Status.id,
         dueDate: editJob.dueDate,
@@ -407,6 +411,7 @@ export function AddJob({
                               <FormMessage />
                             </FormItem>
                           )}
+
                         />
                       </div>
                       {/* Company */}
@@ -513,6 +518,31 @@ export function AddJob({
                               aria-label="Job Type"
                               options={Object.entries(JOB_TYPES).map(
                                 ([value, label]) => ({ value, label }),
+                              )}
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      {/* Job Category */}
+                      <FormField
+                        control={form.control}
+                        name="jobCategory"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <div className="flex items-baseline gap-1">
+                              <FormLabel>Job Category</FormLabel>
+                              {requiredMark}
+                            </div>
+                            <SegmentedRadio
+                              aria-label="Job Category"
+                              options={Object.entries(JOB_CATEGORIES).map(
+                                ([key, value]) => ({
+                                  value,
+                                  label: JOB_CATEGORY_LABELS[key] ?? value,
+                                }),
                               )}
                               value={field.value}
                               onValueChange={field.onChange}

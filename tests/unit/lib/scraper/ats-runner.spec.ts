@@ -42,6 +42,7 @@ vi.mock("@/lib/scraper/lever", () => ({
 
 vi.mock("@/lib/api-key-resolver", () => ({
   resolveApiKey: vi.fn().mockResolvedValue(undefined),
+  resolveOllamaApiKey: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/lib/ai/provider-registry.server", () => ({

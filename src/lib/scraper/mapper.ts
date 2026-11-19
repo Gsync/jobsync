@@ -51,6 +51,7 @@ interface MapperOutput {
   description: string;
   jobType: string;
   workplaceType: string | null;
+  jobCategory: string;
   createdAt: Date;
   applied: boolean;
   statusId: string;
@@ -103,6 +104,7 @@ export async function mapScrapedJobToJobRecord(
     jobType: normalizeJobType(scrapedJob.employmentType),
     workplaceType:
       scrapedJob.workplaceType ?? normalizeWorkplaceType(scrapedJob.isRemote),
+    jobCategory: "INDUSTRY_OTHERS",
     createdAt: new Date(),
     applied: false,
     statusId,

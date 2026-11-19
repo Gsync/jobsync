@@ -71,7 +71,9 @@ export function AddJobResult({
             Description ·{" "}
             {output.descriptionSource === "pasted"
               ? "pasted verbatim"
-              : "model-supplied"}{" "}
+              : output.descriptionSource === "scraped"
+                ? "scraped from the posting"
+                : "model-supplied"}{" "}
             · {output.descriptionChars} chars
           </span>
           {output.descriptionCompleteness && (

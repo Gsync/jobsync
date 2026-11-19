@@ -49,6 +49,8 @@ function renderTable(jobs: JobResponse[], overrides: Partial<React.ComponentProp
   const editJob = vi.fn();
   const onChangeJobStatus = vi.fn();
   const onAddNote = vi.fn();
+  const onToggleSelect = vi.fn();
+  const onToggleSelectAll = vi.fn();
   const props: React.ComponentProps<typeof MyJobsTable> = {
     jobs,
     jobStatuses: mockStatuses,
@@ -58,10 +60,21 @@ function renderTable(jobs: JobResponse[], overrides: Partial<React.ComponentProp
     onAddNote,
     sort: null,
     onSort: vi.fn(),
+    selectedIds: new Set(),
+    onToggleSelect,
+    onToggleSelectAll,
     ...overrides,
   };
   const result = render(<MyJobsTable {...props} />);
-  return { ...result, deleteJob, editJob, onChangeJobStatus, onAddNote };
+  return {
+    ...result,
+    deleteJob,
+    editJob,
+    onChangeJobStatus,
+    onAddNote,
+    onToggleSelect,
+    onToggleSelectAll,
+  };
 }
 
 describe("MyJobsTable", () => {
@@ -121,6 +134,9 @@ describe("MyJobsTable", () => {
         onAddNote={vi.fn()}
         sort={null}
         onSort={vi.fn()}
+        selectedIds={new Set()}
+        onToggleSelect={vi.fn()}
+        onToggleSelectAll={vi.fn()}
       />,
     );
     expect(screen.getByRole("link", { name: /match/i })).toHaveAttribute(
@@ -160,9 +176,41 @@ describe("MyJobsTable", () => {
         onAddNote={vi.fn()}
         sort={null}
         onSort={vi.fn()}
+        selectedIds={new Set()}
+        onToggleSelect={vi.fn()}
+        onToggleSelectAll={vi.fn()}
       />,
     );
     expect(screen.queryByText("0")).not.toBeInTheDocument();
+  });
+
+  describe("row selection", () => {
+    const user = userEvent.setup();
+
+    it("toggles a row and the select-all header", async () => {
+      const { onToggleSelect, onToggleSelectAll } = renderTable([
+        makeJob(),
+        makeJob({ id: "job-2", JobTitle: { id: "2", label: "Data Analyst", value: "data analyst", createdBy: "user-1" } }),
+      ]);
+
+      await user.click(
+        screen.getByRole("checkbox", { name: "Select Software Engineer" }),
+      );
+      expect(onToggleSelect).toHaveBeenCalledWith("job-1");
+
+      await user.click(
+        screen.getByRole("checkbox", { name: "Select all jobs" }),
+      );
+      expect(onToggleSelectAll).toHaveBeenCalled();
+    });
+
+    it("checks the row box for a selected job", () => {
+      renderTable([makeJob()], { selectedIds: new Set(["job-1"]) });
+
+      expect(
+        screen.getByRole("checkbox", { name: "Select Software Engineer" }),
+      ).toBeChecked();
+    });
   });
 
   describe("row actions menu", () => {
