@@ -1,7 +1,7 @@
 import "server-only";
 
 import { convertToModelMessages, type ModelMessage, type UIMessage } from "ai";
-import type { PageContext } from "@/models/agent.model";
+import { omitHistoricalResumeText, type PageContext } from "@/models/agent.model";
 import {
   AGENT_PASTE_ONLY_USER_MESSAGE,
   buildPageContextMessage,
@@ -30,6 +30,16 @@ function withHistoricalPages(messages: UIMessage[], pageContext?: PageContext): 
   });
 }
 
+function trimResumeHistory(messages: UIMessage[]): UIMessage[] {
+  const latestUser = messages.findLastIndex(message => message.role === "user");
+  const previousUser = messages.findLastIndex((message, index) => index < latestUser && message.role === "user");
+  if (previousUser < 0) return messages;
+
+  return messages.map((message, index) => index < previousUser && message.role === "assistant"
+    ? { ...message, parts: message.parts.map(omitHistoricalResumeText) }
+    : message);
+}
+
 export async function buildModelMessages({ messages, pageContext, pastedText }: {
   messages: UIMessage[];
   pageContext?: PageContext;
@@ -38,10 +48,11 @@ export async function buildModelMessages({ messages, pageContext, pastedText }: 
   // Async since ai@6 (correction #5), and the messages array is client-supplied
   // — a shape z.array(z.any()) let through can reject the conversion, and
   // that is a bad request, not a server crash.
-  const windowed = windowMessages(messages);
+  let windowed: UIMessage[];
 
   let modelMessages;
   try {
+    windowed = windowMessages(trimResumeHistory(messages));
     modelMessages = await convertToModelMessages(withHistoricalPages(windowed, pageContext));
   } catch {
     return { ok: false };

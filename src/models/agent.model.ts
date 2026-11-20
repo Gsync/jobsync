@@ -1,3 +1,4 @@
+import type { UIMessage } from "ai";
 import type { AGENT_DATA_AREAS } from "@/lib/agent/registry";
 import type { DescriptionCompleteness } from "@/models/job.model";
 import type { JobMatchScores, ResumeScores } from "@/models/ai.schemas";
@@ -86,6 +87,15 @@ export type AgentGetResumeResult =
   | { status: "needs_selection"; resumes: { id: string; title: string }[] }
   | { status: "no_resumes" }
   | { status: "unreadable"; title: string; reason: string };
+
+export function omitHistoricalResumeText(part: UIMessage["parts"][number]): typeof part {
+  if (part.type !== "tool-get_resume" || part.state !== "output-available") return part;
+  const { output } = part;
+  if (!output || typeof output !== "object" || !("status" in output) || output.status !== "ok" ||
+      !("resumeText" in output) || typeof output.resumeText !== "string") return part;
+
+  return { ...part, output: { ...output, resumeText: "Earlier replies may already contain the answer. Re-read this resume by title if you need another detail." } };
+}
 
 // Transient stream part carrying a nested generation's tokens. It is never
 // persisted: the finished artifact lands in the tool result, and keeping both

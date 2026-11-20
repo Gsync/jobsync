@@ -60,6 +60,45 @@ describe("buildModelMessages", () => {
     ]);
   });
 
+  it("omits only an older successful resume read after two newer user messages", async () => {
+    const full = { status: "ok", title: "Backend", resumeText: "Backend details", chars: 15,
+      resumeId: "r1", source: "page", truncated: false };
+    const picker = { status: "needs_selection", resumes: [{ id: "r1", title: "Backend" }] };
+    const review = { status: "ok", saved: false, body: "Review details" };
+    const toolPart = (type: `tool-${string}`, output: unknown): UIMessage["parts"][number] => ({
+      type, toolCallId: type, state: "output-available", input: {}, output,
+    });
+    const read: UIMessage = { ...message("assistant"), parts: [toolPart("tool-get_resume", full)] };
+    const middle: UIMessage = { ...message("assistant"), parts: [
+      toolPart("tool-review_resume", review), toolPart("tool-get_resume", picker),
+    ] };
+    const immediate = [message("user"), read, message("user")];
+    const outputs = async (messages: UIMessage[]) => {
+      const result = await buildModelMessages({ messages });
+      return result.ok && result.modelMessages.flatMap(m =>
+        m.role === "tool" ? m.content.map(part => part.type === "tool-result" && part.output) : []);
+    };
+    expect(await outputs(immediate)).toEqual([{ type: "json", value: full }]);
+    expect(await outputs([...immediate, middle, message("user"), read])).toEqual([
+      { type: "json", value: { ...full, resumeText: "Earlier replies may already contain the answer. Re-read this resume by title if you need another detail." } },
+      { type: "json", value: review }, { type: "json", value: picker }, { type: "json", value: full },
+    ]);
+    expect(full.resumeText).toBe("Backend details");
+  });
+
+  it("budgets the shortened result before windowing eight ordinary turns", async () => {
+    const read: UIMessage = { ...message("assistant"), parts: [{
+      type: "tool-get_resume", state: "output-available", toolCallId: "read", input: {},
+      output: { status: "ok", title: "Backend", resumeText: "x".repeat(24000) },
+    }] };
+    const turns = Array.from({ length: 8 }, () => [
+      { ...message("user"), parts: [{ type: "text" as const, text: "y".repeat(1600) }] },
+      message("assistant"),
+    ]).flat();
+    const messages = [message("user"), read, ...turns];
+    expect(await buildModelMessages({ messages })).toMatchObject({ ok: true, historyDropped: 0 });
+  });
+
   it("counts dropped transcript messages before adding context", async () => {
     const messages = Array.from({ length: 25 }, (_, i) => message("user", String(i)));
     expect(await buildModelMessages({ messages })).toMatchObject({ ok: true, historyDropped: 9 });
