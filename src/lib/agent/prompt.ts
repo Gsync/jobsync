@@ -94,6 +94,13 @@ const PAGE_CONTEXT_MESSAGES: Record<PageLocation, string> = {
   elsewhere: "<page-context>The user is not viewing a job's page.</page-context>",
 };
 
+export function historicalPageHint(location: unknown): string {
+  if (typeof location === "string" && Object.hasOwn(PAGE_CONTEXT_MESSAGES, location)) {
+    return PAGE_CONTEXT_MESSAGES[location as PageLocation];
+  }
+  return PAGE_CONTEXT_MESSAGES.elsewhere;
+}
+
 export function buildPageContextMessage(pageContext?: PageContext): string {
   return PAGE_CONTEXT_MESSAGES[pageLocationOf(pageContext)];
 }

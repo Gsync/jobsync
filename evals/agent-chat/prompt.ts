@@ -1,4 +1,4 @@
-import { AGENT_CHAT_SYSTEM_PROMPT, buildPageContextMessage, buildPasteContextMessage } from '../../src/lib/agent/prompt';
+import { AGENT_CHAT_SYSTEM_PROMPT, historicalPageHint, buildPasteContextMessage } from '../../src/lib/agent/prompt';
 import { APP_CONSTANTS } from '../../src/lib/constants';
 
 import { longHistory } from './longHistory';
@@ -118,6 +118,20 @@ function addJobTurn(providerId: string): Message[] {
   ];
 }
 
+function noJobTurn(providerId: string): Message[] {
+  return [
+    {
+      role: 'assistant', content: null, reasoning_content: '',
+      tool_calls: [{
+        id: 'call_match_job_1', type: 'function',
+        function: { name: 'match_job', arguments: toolArguments({}, providerId) },
+      }],
+    },
+    { role: 'tool', tool_call_id: 'call_match_job_1', content: JSON.stringify({ status: 'no_job' }) },
+    { role: 'assistant', content: 'Please open the job you mean.', reasoning_content: '' },
+  ];
+}
+
 export default function prompt({
   vars,
   provider,
@@ -145,33 +159,21 @@ export default function prompt({
   if (vars.priorReview) messages.push(...reviewTurn(vars.priorReview, providerId));
   if (vars.priorAddJob) messages.push(...addJobTurn(providerId));
   if (vars.priorResumeSelection) messages.push(...resumeSelectionTurn(providerId));
+  if (vars.priorNoJob) messages.push(...noJobTurn(providerId));
   if (vars.followUp) messages.push({ role: 'user', content: vars.followUp });
 
-  // Injected after the newest user message, and exactly once however many
-  // turns the row replays: the route pushes it at the tail of every turn the
-  // user speaks and never persists it, so history carries no older copies.
-  // Position is the point — it is what has to outrank a stale no_job result
-  // sitting in the transcript — so building it before a replayed turn would
-  // measure the ordering the block was added to fix. Rows say where they are;
-  // the default is a page with no job open.
-  const pageContext =
-    vars.pageLocation === 'job'
-      ? { route: '/dashboard/myjobs/job-eval-1', jobId: 'job-eval-1' }
-      : vars.pageLocation === 'jobs-list'
-        ? { route: '/dashboard/myjobs' }
-        : undefined;
-  // The route's lastIsUser guard, reproduced: an approval-resume POST ends on
-  // the assistant's turn, so nothing is injected on it.
-  if (messages[messages.length - 1]?.role === 'user') {
-    messages.push({ role: 'user', content: buildPageContextMessage(pageContext) });
-  }
+  const withPages = messages.flatMap((message, index) => {
+    if (message.role !== 'user') return [message];
+    const location = index === messages.length - 1 ? vars.pageLocation : vars.priorPageLocation;
+    return [message, { role: 'user', content: historicalPageHint(location) }];
+  });
 
   // Last, as in the route: a pasted posting outranks the page line.
   if (vars.jobPosting) {
     const head = vars.jobPosting.slice(0, APP_CONSTANTS.AGENT_CHAT_PASTE_HEAD_CHARS);
     const block = `<<<PASTED_${NONCE}>>>\n${head.split(NONCE).join('')}\n<<<END_PASTED_${NONCE}>>>`;
-    messages.push({ role: 'user', content: buildPasteContextMessage(block) });
+    withPages.push({ role: 'user', content: buildPasteContextMessage(block) });
   }
 
-  return messages;
+  return withPages;
 }

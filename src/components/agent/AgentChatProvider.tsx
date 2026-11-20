@@ -22,7 +22,7 @@ import {
   type UIMessage,
 } from "ai";
 import { hasPendingApproval, stubConsumedPastes } from "@/lib/agent/memory/paste";
-import { pageContextFor } from "@/lib/agent/pageContext";
+import { pageContextFor, pageLocationOf } from "@/lib/agent/pageContext";
 import { useRightRail } from "@/context/RightRailContext";
 import { useSidebar } from "@/context/SidebarContext";
 import { useResizablePanel } from "@/hooks/useResizablePanel";
@@ -305,7 +305,10 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
   const dispatch = useCallback(
     (message: QueuedMessage) => {
       setInterruptedTurn(false);
-      return chat.sendMessage(message);
+      return chat.sendMessage({
+        ...message,
+        metadata: { pageLocation: pageLocationOf(pageContextFor(window.location.pathname)) },
+      });
     },
     [chat],
   );
@@ -370,8 +373,8 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
   useEffect(() => {
     if (!released || sentRef.current === released) return;
     sentRef.current = released;
-    void chat.sendMessage(released.message);
-  }, [released, chat]);
+    void dispatch(released.message);
+  }, [released, dispatch]);
 
   const regenerate = useCallback(() => {
     if (streamingRef.current) return;

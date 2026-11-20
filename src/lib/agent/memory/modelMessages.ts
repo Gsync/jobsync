@@ -6,9 +6,29 @@ import {
   AGENT_PASTE_ONLY_USER_MESSAGE,
   buildPageContextMessage,
   buildPasteContextMessage,
+  historicalPageHint,
 } from "../prompt";
 import { truncateForModel } from "./paste.server";
 import { windowMessages } from "./window";
+
+function hasPageLocation(metadata: unknown): metadata is { pageLocation: unknown } {
+  return metadata !== null && typeof metadata === "object" && "pageLocation" in metadata;
+}
+
+function withHistoricalPages(messages: UIMessage[], pageContext?: PageContext): UIMessage[] {
+  return messages.flatMap((message, index) => {
+    const { metadata } = message;
+    if (message.role !== "user" || !hasPageLocation(metadata)) {
+      return [message];
+    }
+    const text = index === messages.length - 1
+      ? buildPageContextMessage(pageContext)
+      : historicalPageHint(metadata.pageLocation);
+    return [message, {
+      id: message.id, role: "user", parts: [{ type: "text", text }],
+    }];
+  });
+}
 
 export async function buildModelMessages({ messages, pageContext, pastedText }: {
   messages: UIMessage[];
@@ -22,7 +42,7 @@ export async function buildModelMessages({ messages, pageContext, pastedText }: 
 
   let modelMessages;
   try {
-    modelMessages = await convertToModelMessages(windowed);
+    modelMessages = await convertToModelMessages(withHistoricalPages(windowed, pageContext));
   } catch {
     return { ok: false };
   }
@@ -52,12 +72,10 @@ export async function buildModelMessages({ messages, pageContext, pastedText }: 
   // Injected only on the turn that introduced the paste. On the approval POST
   // the last message is the assistant's, so nothing is re-injected — and the
   // full text never reaches the model on any turn.
-  const lastIsUser = messages[messages.length - 1]?.role === "user";
-  // Whether a job is open is a per-turn fact, but a no_job tool result sits
-  // in history looking permanent — the model replayed one for two turns.
-  // Recency is what has to beat it, so this rides at the end of the messages
-  // rather than in the system prompt. A pasted posting still lands last.
-  if (lastIsUser) {
+  const last = windowed.at(-1);
+  const lastIsUser = last?.role === "user";
+  // Older clients still receive the live page hint on the current turn.
+  if (lastIsUser && !hasPageLocation(last.metadata)) {
     modelMessages.push({ role: "user", content: buildPageContextMessage(pageContext) });
   }
   if (pastedText && lastIsUser) {

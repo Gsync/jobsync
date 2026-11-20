@@ -35,8 +35,33 @@ describe("buildModelMessages", () => {
     expect(result.ok && result.modelMessages).toEqual([expect.objectContaining({ role: "assistant" })]);
   });
 
+  it("keeps each historical page beside its user turn and uses live context for the latest turn", async () => {
+    const marked = (pageLocation: string) => ({ ...message("user"), metadata: { pageLocation } });
+    const result = await buildModelMessages({
+      messages: [message("user"), marked("jobs-list"), marked("__proto__"), message("assistant"), marked("elsewhere")],
+      pageContext: { jobId: "current" },
+    });
+    const hello = { role: "user", content: [{ type: "text", text: "hello" }] };
+    const hint = (text: string) => ({ role: "user", content: [{ type: "text", text }] });
+    expect(result.ok && result.modelMessages).toEqual([
+      hello, hello, hint(buildPageContextMessage({ route: "/dashboard/myjobs" })),
+      hello, hint(buildPageContextMessage(undefined)), expect.objectContaining({ role: "assistant" }),
+      hello, hint(buildPageContextMessage({ jobId: "current" })),
+    ]);
+  });
+
+  it("keeps the historical page on approval without repeating the pasted posting", async () => {
+    const user = { ...message("user"), metadata: { pageLocation: "resume" } };
+    const result = await buildModelMessages({ messages: [user, message("assistant")], pastedText: "posting" });
+    expect(result.ok && result.modelMessages).toEqual([
+      expect.objectContaining({ role: "user" }),
+      { role: "user", content: [{ type: "text", text: buildPageContextMessage({ resumeId: "resume" }) }] },
+      expect.objectContaining({ role: "assistant" }),
+    ]);
+  });
+
   it("counts dropped transcript messages before adding context", async () => {
     const messages = Array.from({ length: 25 }, (_, i) => message("user", String(i)));
-    expect(await buildModelMessages({ messages })).toMatchObject({ ok: true, historyDropped: 5 });
+    expect(await buildModelMessages({ messages })).toMatchObject({ ok: true, historyDropped: 9 });
   });
 });

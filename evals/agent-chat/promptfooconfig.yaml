@@ -3,7 +3,7 @@ description: Agent chat tool-loop regression tests — does the configured model
 # These rows exercise the CHAT surface, not MCP. All five tools are declared
 # from the same Zod schemas and descriptions the /api/ai/chat route registers,
 # and prompt.ts assembles each turn exactly as the route does — page-context
-# block at the tail, paste head after it — so "did the model copy the posting
+# block after each user turn, current paste head last — so "did the model copy the posting
 # it was shown into jobDescription" is measurable here. No route, no database,
 # no approval gate: the model chooses and promptfoo asserts on the raw
 # tool_calls.
@@ -211,6 +211,7 @@ tests:
         Add this job: Staff Data Engineer at Helio Systems — they're hiring
         someone to own the pipelines behind their analytics platform.
       priorAddJob: created
+      priorPageLocation: jobs-list
       followUp: What company was that job with?
       pageLocation: jobs-list
     assert:
@@ -354,6 +355,17 @@ tests:
           job's page, and asks them to open the job they mean. It does not ask
           them to paste a posting or to add the job again, and does not claim
           to have scored anything.
+
+  - description: Opens a job after a no_job result - retries match_job
+    vars:
+      userMessage: How well do I match this job?
+      priorNoJob: yes
+      priorPageLocation: jobs-list
+      followUp: I opened it. How well do I match now?
+      pageLocation: job
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsMatchJob
 
   # The 'elsewhere' page line, which names no page: the model can say a job's
   # page is not open, and nothing more.

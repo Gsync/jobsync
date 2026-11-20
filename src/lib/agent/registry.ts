@@ -5,7 +5,7 @@ export const AGENT_DATA_AREAS = ["saved jobs", "tasks", "notes", "activities", "
 export const AGENT_TOOL_META = {
   add_job: {
     kind: "write",
-    description: "Save a job application when the user asks to add, save or track a job. Call as soon as you have the company, job title and either a pasted posting or a description of what the role involves. If any are missing, ask for all three together as required. One sentence about the role is enough. Never ask the user for optional fields. The app resolves or creates the company, job title, location and source by name and detects duplicates.",
+    description: "Save a job application when the user asks to add, save or track a job. Call as soon as you have the company, job title and either a pasted posting or a description of what the role involves. If any are missing, ask for all three together as required. One sentence about the role is enough. Never ask the user for optional fields. The app resolves or creates the company, job title, location and source by name and detects duplicates. When the result says the job was created, it is already saved. Answer follow-up questions from that result without asking the user to confirm again.",
     runningLabel: "Preparing to add a job…",
     terminal: true,
     reads: [],

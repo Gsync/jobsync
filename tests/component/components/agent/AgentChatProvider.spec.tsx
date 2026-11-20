@@ -235,7 +235,7 @@ describe("AgentChatProvider", () => {
     chat.status = "ready";
     rerender(tree());
     await userEvent.click(screen.getByText("sendMessage"));
-    expect(chat.sendMessage).toHaveBeenCalled();
+    expect(chat.sendMessage).toHaveBeenCalledWith(expect.objectContaining({ metadata: { pageLocation: "elsewhere" } }));
     expect(screen.getByTestId("state").textContent).toContain(
       "false|false|false|null",
     );
@@ -258,11 +258,13 @@ describe("AgentChatProvider", () => {
     await userEvent.click(screen.getByText("sendMessage"));
     expect(chat.sendMessage).not.toHaveBeenCalled();
 
+    window.history.pushState({}, "", "/dashboard/myjobs/job-9");
     chat.status = "ready";
     await act(async () => {
       rerender(tree());
     });
     expect(chat.sendMessage).toHaveBeenCalledTimes(1);
+    expect(chat.sendMessage.mock.calls[0][0].metadata).toEqual({ pageLocation: "job" });
     expect(chat.sendMessage.mock.calls[0][0].parts[0].text).toBe("hello");
     expect(screen.getByTestId("queued").textContent).toBe("");
   });
