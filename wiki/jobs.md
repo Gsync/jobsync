@@ -42,11 +42,9 @@ To take back an application logged by mistake:
 
 ## How do I change a job's status?
 
-There are three ways. In the Jobs list, click a row's status badge and pick the new status from the menu, or use the row's **⋮** menu and choose **Change status**. Or open the job and use the **Update Status** button at the top-right of the job details, choosing **Change status**. Every one of these menus lists every status with the current one greyed out, and the change saves immediately — there is no separate save step.
+In the Jobs list, click the status badge or choose **⋮ → Change status**. On the job details page, choose **Update Status → Change status** at the top right. Each menu shows every status, disables the current one and saves your selection immediately.
 
-The Add Job dialog also has a Status field, so a status can be set when you first create the job or from **Edit Job** later.
-
-All four of those paths also append a stage to the job's [timeline](./timeline.md), so the history stays in step with the label. Picking a status the job already holds adds nothing.
+You can also set Status in **Add Job** or **Edit Job**. Each status change adds a stage to the job's [timeline](./timeline.md). Selecting the current status adds nothing.
 
 ## What is on a job's details page?
 
