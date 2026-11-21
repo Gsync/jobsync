@@ -125,7 +125,8 @@ export type AgentNestedStreamData = { delta: string };
 // ids reached, replaced in place by the SDK because type and id repeat.
 export const AGENT_TOOL_PROGRESS_PART_TYPE = "data-tool-progress";
 
-export type AgentToolProgressData = { steps: string[] };
+// labels overrides a step's registry label with resolved detail.
+export type AgentToolProgressData = { steps: string[]; labels?: Record<string, string> };
 
 // Transient: written once when the turn deadline fires, so the client can say
 // "Timed out." rather than guess why the stream ended.

@@ -18,7 +18,7 @@ import {
   runNestedGeneration,
   type NestedGenerationGuard,
 } from "@/lib/agent/steps/nestedGeneration";
-import { toolStepReporter } from "@/lib/agent/steps/progress";
+import { resumeStepLabel, toolStepReporter } from "@/lib/agent/steps/progress";
 import type { AgentReviewResumeResult } from "@/models/agent.model";
 import type { ResumeReviewData } from "@/models/ai.schemas";
 
@@ -59,7 +59,7 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
       }
 
       const title = lookup.resume.title;
-      report("prepare");
+      report("prepare", { resume: resumeStepLabel(lookup, "the one you're viewing") });
       const pre = await preprocessResume(lookup.resume);
       if (!pre.success) {
         return {

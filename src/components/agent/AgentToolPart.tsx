@@ -19,6 +19,7 @@ import type { AgentReplyStop } from "@/models/agent.model";
 type Props = {
   part: ToolUIPart;
   steps?: readonly string[];
+  stepLabels?: Readonly<Record<string, string>>;
   streamed?: string;
   running: boolean;
   stopped?: AgentReplyStop;
@@ -55,6 +56,7 @@ export function AgentToolPart(props: Props) {
       <AgentToolProgress
         toolName={toolName}
         steps={reached}
+        stepLabels={props.stepLabels}
         section={section}
         outcome={outcomeOf(part, toolName)}
         running={props.running}

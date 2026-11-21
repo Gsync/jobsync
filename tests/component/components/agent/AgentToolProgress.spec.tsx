@@ -32,6 +32,13 @@ describe("AgentToolProgress", () => {
     expect(screen.queryByText("Generating review…")).not.toBeInTheDocument();
   });
 
+  it("shows a server relabel in place of the registry label", () => {
+    setup({ stepLabels: { resume: 'Using resume "Senior FS" (default)' } });
+    expect(screen.getByText('Using resume "Senior FS" (default)')).toBeInTheDocument();
+    expect(screen.queryByText("Loading resume…")).not.toBeInTheDocument();
+    expect(screen.getByText("Preparing resume text…")).toBeInTheDocument();
+  });
+
   it("shows only the reported steps", () => {
     const steps = ["resume", "prepare", "generate", "save"];
     const before = setup({ steps, section: "before" });

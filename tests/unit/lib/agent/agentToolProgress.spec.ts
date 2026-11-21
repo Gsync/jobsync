@@ -1,7 +1,38 @@
 import { createUIMessageStream, readUIMessageStream, type UIMessageStreamWriter } from "ai";
-import { toolStepReporter } from "@/lib/agent/steps/progress";
+import { resumeStepLabel, toolStepReporter } from "@/lib/agent/steps/progress";
+
+describe("resumeStepLabel", () => {
+  const resume = { title: "Senior FS" };
+
+  it("names the resume and why it was picked", () => {
+    expect(resumeStepLabel({ resume, source: "default" }, "linked to this job"))
+      .toBe('Using resume "Senior FS" (default)');
+    expect(resumeStepLabel({ resume, source: "page" }, "linked to this job"))
+      .toBe('Using resume "Senior FS" (linked to this job)');
+  });
+
+  it("adds no note for a named or only resume", () => {
+    expect(resumeStepLabel({ resume, source: "named" }, "x")).toBe('Using resume "Senior FS"');
+    expect(resumeStepLabel({ resume, source: "only" }, "x")).toBe('Using resume "Senior FS"');
+  });
+});
 
 describe("toolStepReporter", () => {
+  it("carries a relabel on every later write", () => {
+    const write = vi.fn();
+    const report = toolStepReporter("review_resume", { write } as unknown as UIMessageStreamWriter, "call-1");
+
+    report("resume");
+    report("prepare", { resume: "Using resume \"A\"" });
+    report("generate");
+
+    expect(write.mock.calls.map(([part]) => part.data)).toEqual([
+      { steps: ["resume"] },
+      { steps: ["resume", "prepare"], labels: { resume: "Using resume \"A\"" } },
+      { steps: ["resume", "prepare", "generate"], labels: { resume: "Using resume \"A\"" } },
+    ]);
+  });
+
   it("writes a persisted progress part keyed by the tool call", () => {
     const write = vi.fn();
     const report = toolStepReporter("review_resume", { write } as unknown as UIMessageStreamWriter, "call-1");

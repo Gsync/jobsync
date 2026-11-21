@@ -243,6 +243,13 @@ describe("generate_cover_letter agent tool", () => {
     expect(progressParts().every((part) => part.id === "call-1" && !("transient" in part))).toBe(true);
   });
 
+  it("relabels the resume step with the resume it chose", async () => {
+    await execute(buildGenerateCoverLetterTool(ctx()), {});
+    expect(progressParts().at(-1).data.labels).toEqual({
+      resume: 'Using resume "Senior Engineer Resume" (linked to this job)',
+    });
+  });
+
   it("reports each step while its work runs, not before", async () => {
     findJob.mockImplementation(async () => {
       expect(stepsSoFar()).toEqual(["job"]);

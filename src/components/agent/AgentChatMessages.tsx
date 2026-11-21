@@ -85,14 +85,14 @@ function pendingDirectLabel(messages: UIMessage[], status: string): string | und
     : undefined;
 }
 
-function progressSteps(message: UIMessage): Map<string, readonly string[]> {
-  const steps = new Map<string, readonly string[]>();
+function toolProgress(message: UIMessage): Map<string, AgentToolProgressData> {
+  const progress = new Map<string, AgentToolProgressData>();
   for (const part of message.parts) {
     if (part.type !== AGENT_TOOL_PROGRESS_PART_TYPE) continue;
     const { id, data } = part as { id?: string; data: AgentToolProgressData };
-    if (id) steps.set(id, data.steps);
+    if (id) progress.set(id, data);
   }
-  return steps;
+  return progress;
 }
 
 export function AgentChatMessages() {
@@ -126,7 +126,7 @@ export function AgentChatMessages() {
       <ConversationContent className="gap-4">
         {messages.map((message) => {
           const stopped = stoppedReplies.get(message.id);
-          const steps = progressSteps(message);
+          const progress = toolProgress(message);
           return <div
             key={message.id}
             className={cn(
@@ -159,7 +159,8 @@ export function AgentChatMessages() {
                 <AgentToolPart
                   key={part.toolCallId}
                   part={part}
-                  steps={steps.get(part.toolCallId)}
+                  steps={progress.get(part.toolCallId)?.steps}
+                  stepLabels={progress.get(part.toolCallId)?.labels}
                   streamed={toolStreams[part.toolCallId]}
                   running={
                     message === last && inFlight && !stopped &&

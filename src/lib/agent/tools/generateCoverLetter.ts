@@ -21,7 +21,7 @@ import {
   runNestedGeneration,
   type NestedGenerationGuard,
 } from "@/lib/agent/steps/nestedGeneration";
-import { toolStepReporter } from "@/lib/agent/steps/progress";
+import { resumeStepLabel, toolStepReporter } from "@/lib/agent/steps/progress";
 import type { AgentCoverLetterResult } from "@/models/agent.model";
 
 type CoverLetterContext = {
@@ -76,7 +76,7 @@ export function buildGenerateCoverLetterTool(ctx: CoverLetterContext) {
       }
 
       const resume = resumeLookup.resume;
-      report("prepare");
+      report("prepare", { resume: resumeStepLabel(resumeLookup, "linked to this job") });
       const [resumePre, jobPre] = await Promise.all([
         preprocessResume(resume),
         preprocessJob(job),

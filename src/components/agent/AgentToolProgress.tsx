@@ -48,6 +48,7 @@ const MARK_NOTES: Partial<Record<Mark, string>> = {
 export type AgentToolProgressProps = {
   toolName: AgentToolName;
   steps: readonly string[];
+  stepLabels?: Readonly<Record<string, string>>;
   section: "before" | "after";
   outcome?: AgentToolOutcome;
   running: boolean;
@@ -58,6 +59,7 @@ export type AgentToolProgressProps = {
 export function AgentToolProgress({
   toolName,
   steps,
+  stepLabels,
   section,
   outcome,
   running,
@@ -98,7 +100,9 @@ export function AgentToolProgress({
                 data-mark={mark}
                 className={cn("size-3.5", color, mark === "running" && "animate-spin")}
               />
-              <span className="text-muted-foreground">{labels.get(id)}</span>
+              <span className="text-muted-foreground">
+                {stepLabels?.[id] ?? labels.get(id)}
+              </span>
               {note && (
                 <span className={cn(mark === "timedOut" && "text-destructive")}>
                   {note}

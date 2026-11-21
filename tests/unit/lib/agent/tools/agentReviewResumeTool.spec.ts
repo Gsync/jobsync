@@ -120,6 +120,13 @@ describe("review_resume agent tool", () => {
     expect(streamText.mock.calls[0][0].prompt).toContain(LONG_RESUME);
   });
 
+  it("relabels the resume step with the resume it chose", async () => {
+    await execute(buildReviewResumeTool(ctx()), {});
+    expect(progressParts().at(-1).data.labels).toEqual({
+      resume: 'Using resume "Senior Engineer Resume" (default)',
+    });
+  });
+
   it("reports each step in order, with the stream between generate and check", async () => {
     streamText.mockReturnValue(textStreamOf(["SCORES: ", "overall=78 ", "impact=72 clarity=81 ats=69\n\nBody"]));
     await execute(buildReviewResumeTool(ctx()), {});

@@ -20,7 +20,7 @@ import {
   runNestedGeneration,
   type NestedGenerationGuard,
 } from "@/lib/agent/steps/nestedGeneration";
-import { toolStepReporter } from "@/lib/agent/steps/progress";
+import { resumeStepLabel, toolStepReporter } from "@/lib/agent/steps/progress";
 import type { AgentMatchJobResult } from "@/models/agent.model";
 import { buildLlmMatchData } from "@/lib/ai/jobMatch/matchResult";
 
@@ -69,7 +69,7 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
       }
 
       const resume = resumeLookup.resume;
-      report("prepare");
+      report("prepare", { resume: resumeStepLabel(resumeLookup, "linked to this job") });
       const [resumePre, jobPre] = await Promise.all([
         preprocessResume(resume),
         preprocessJob(job),
