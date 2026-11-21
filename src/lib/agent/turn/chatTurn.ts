@@ -124,6 +124,8 @@ export function runChatTurn(input: {
           providerOptions: {
             // qwen3.5 selected add_job 7/7 with thinking enabled versus 1/7 without.
             ollama: { think: true, ...(numCtx !== undefined && { options: { num_ctx: numCtx } }) },
+            // Replay history as text, not item_references to OpenAI storage.
+            openai: { store: false },
           },
           include: { rawChunks: true },
           onStepEnd: ({ usage }) => {

@@ -231,6 +231,9 @@
       "options": {
         "num_ctx": 16384
       }
+    },
+    "openai": {
+      "store": false
     }
   },
   "toolApprovalKeys": [
