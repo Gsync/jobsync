@@ -77,6 +77,17 @@ describe("analyze discovered job model", () => {
     expect(data).not.toHaveProperty("prerankComponents");
   });
 
+  it("carries the job's own description completeness into the match", async () => {
+    settings({ provider: "openai" });
+    db.job.findFirst.mockResolvedValueOnce({
+      id: "job-1", automationId: "auto-1", descriptionCompleteness: "title-only",
+      matchData: null, automation: { resumeId: "res-1" },
+    } as unknown as Awaited<ReturnType<typeof prisma.job.findFirst>>);
+    await analyzeDiscoveredJob("job-1");
+    const data = JSON.parse(db.job.update.mock.calls[0][0].data.matchData as string);
+    expect(data.descriptionCompleteness).toBe("title-only");
+  });
+
   it.each([
     ["openai", "gpt-4o-mini"],
     ["deepseek", "deepseek-chat"],

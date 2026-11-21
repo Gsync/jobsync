@@ -20,6 +20,7 @@ import {
   inputSizeAttrs,
   SURFACES,
 } from "@/lib/telemetry";
+import type { DescriptionCompleteness } from "@/models/job.model";
 import { formatError } from "./shared";
 
 // Runs an on-demand LLM match for an un-analyzed discovered job using the
@@ -109,6 +110,8 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
       matchedAt: new Date(),
       provider: ai.provider,
       model: configuredModel,
+      descriptionCompleteness:
+        (job.descriptionCompleteness as DescriptionCompleteness | null) ?? undefined,
     });
 
     await db.job.update({

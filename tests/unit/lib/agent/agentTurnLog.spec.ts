@@ -27,7 +27,7 @@ it("maps turn measurements to the existing span attributes", () => {
     provider: "ollama", model: "test", tool: "add_job", toolState: "output-available",
     outcome: "created", aborted: false, pasteChars: 1, messageCount: 2, historyDropped: 3,
     systemChars: 4, toolChars: 5, messageChars: 6, sharedPrefixChars: 7, prefixChanged: true,
-    loadMs: 8, promptEvalMs: 9, promptEvalTokens: 10, promptCachedTokens: 0, evalMs: 11,
+    loadMs: 8, promptEvalMs: 9, promptEvalTokens: 10, evalMs: 11,
     maxStepPromptTokens: 12, maxStepOutputTokens: 13,
   })).toEqual({
     "jobsync.tool": "add_job", "jobsync.tool_state": "output-available",
@@ -36,7 +36,7 @@ it("maps turn measurements to the existing span attributes", () => {
     "jobsync.system_chars": 4, "jobsync.tool_chars": 5, "jobsync.message_chars": 6,
     "jobsync.shared_prefix_chars": 7, "jobsync.prefix_changed": true,
     "jobsync.ollama.load_ms": 8, "jobsync.ollama.prompt_eval_ms": 9,
-    "jobsync.ollama.prompt_eval_tokens": 10, "jobsync.ollama.prompt_cached_tokens": 0,
+    "jobsync.ollama.prompt_eval_tokens": 10,
     "jobsync.ollama.eval_ms": 11, "jobsync.max_step_prompt_tokens": 12,
     "jobsync.max_step_output_tokens": 13,
   });

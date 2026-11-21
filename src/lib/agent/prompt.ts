@@ -44,7 +44,7 @@ export const AGENT_CHAT_SYSTEM_PROMPT = [
   AGENT_CHAT_PROMPT_SECTIONS.safety,
 ].join("\n\n");
 
-// The empty-state reply mirrors the three required fields in add_job’s description.
+// The empty-state reply mirrors add_job’s three required fields.
 export const AGENT_ADD_JOB_INTRO = [
   "Happy to add it. Paste the job posting here and I'll pull the details out of it.",
   "",

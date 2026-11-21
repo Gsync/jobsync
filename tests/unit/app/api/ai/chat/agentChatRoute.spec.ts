@@ -147,6 +147,16 @@ describe("POST /api/ai/chat", () => {
     expect((saveChatConversation as any).mock.calls.length).toBe(afterReceipt);
   });
 
+  it("does not write the turn back when a disconnect ends it before isAborted is set", async () => {
+    const controller = new AbortController();
+    await POST({ json: async () => ({ messages: [pasteMessage("posting")] }), signal: controller.signal } as any);
+    const afterReceipt = (saveChatConversation as any).mock.calls.length;
+    controller.abort();
+
+    await capturedOnEnd!({ messages: [pasteMessage("posting")], responseMessage: undefined, isAborted: false });
+    expect((saveChatConversation as any).mock.calls.length).toBe(afterReceipt);
+  });
+
   it("still writes the turn back when it finished normally", async () => {
     await POST(req({ messages: [pasteMessage("posting")] }));
     const afterReceipt = (saveChatConversation as any).mock.calls.length;
@@ -325,7 +335,7 @@ describe("POST /api/ai/chat", () => {
     await POST(req({ messages: [pasteMessage("posting")] }));
     const { onChunk, onStepEnd } = streamArgs();
     const chunk = { type: "raw", rawValue: {
-      done: true, prompt_eval_count: 3000, prompt_eval_cached_count: 2900,
+      done: true, prompt_eval_count: 3000,
       load_duration: 2_000_000, prompt_eval_duration: 3_000_000, eval_duration: 4_000_000,
     } };
     onChunk({ chunk });
@@ -334,7 +344,7 @@ describe("POST /api/ai/chat", () => {
     onStepEnd({ usage: { inputTokens: 7000, outputTokens: 400 } });
     await capturedOnEnd!({ messages: [], isAborted: false });
     expect(info.mock.calls.at(-1)?.[1]).toMatchObject({
-      loadMs: 4, promptEvalMs: 6, promptEvalTokens: 6000, promptCachedTokens: 5800,
+      loadMs: 4, promptEvalMs: 6, promptEvalTokens: 6000,
       evalMs: 8, maxStepPromptTokens: 7000, maxStepOutputTokens: 900,
     });
     info.mockRestore();
@@ -408,12 +418,12 @@ describe("POST /api/ai/chat", () => {
     expect(streamText).not.toHaveBeenCalled();
   });
 
-  it("answers a JSON 503 when the AI settings cannot be read", async () => {
+  it("answers a retryable 503, not the Settings advice, when the AI settings cannot be read", async () => {
     vi.mocked(resolveAiConfig).mockRejectedValueOnce(new SyntaxError("Unexpected token"));
     const res = await POST(req({ messages: [pasteMessage("posting")] }));
     expect(res.status).toBe(503);
     expect(await res.json()).toEqual({
-      error: "No AI model is configured. Pick one in Settings to use the assistant.",
+      error: "Couldn't load your AI settings. Try again in a moment.",
     });
     expect(streamText).not.toHaveBeenCalled();
   });

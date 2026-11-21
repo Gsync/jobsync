@@ -14,6 +14,12 @@ type DirectCall = {
   approval?: { confirmedInput: unknown };
 };
 
+// A tool that finished after cancellation, so the turn can still record it.
+export type CommittedOutput = { toolName: AgentToolName; toolCallId: string; input: unknown; output: unknown };
+
+// messages resumes the model; without them the turn is over.
+export type DirectRun = { messages?: ModelMessage[]; committed?: CommittedOutput };
+
 export function directCallFor(message?: UIMessage): DirectCall | undefined {
   if (message?.role === "assistant") {
     const step = message.parts.findLastIndex(part => part.type === "step-start");
@@ -48,16 +54,16 @@ export async function runToolDirect({ call, tools, toolApproval, writer, message
   messages: ModelMessage[];
   abortSignal: AbortSignal;
   onError: (error: unknown) => string;
-}): Promise<ModelMessage[] | undefined> {
+}): Promise<DirectRun> {
   const { toolName, toolCallId, approval } = call;
   const tool = tools[toolName];
   const parsed = await asSchema(tool.inputSchema).validate?.(call.input);
-  if (!parsed?.success) return messages;
+  if (!parsed?.success) return { messages };
   // Schema transforms must reproduce the exact operation the user approved.
   if (approval && !isDeepStrictEqual(structuredClone(parsed.value), structuredClone(approval.confirmedInput))) {
-    return messages;
+    return { messages };
   }
-  if (toolApproval[toolName]?.(parsed.value) === "user-approval" && !approval) return messages;
+  if (toolApproval[toolName]?.(parsed.value) === "user-approval" && !approval) return { messages };
   abortSignal.throwIfAborted();
   if (!approval) {
     writer.write({ type: "start" });
@@ -69,23 +75,25 @@ export async function runToolDirect({ call, tools, toolApproval, writer, message
   } catch (error) {
     if (abortSignal.aborted) {
       writer.write({ type: "abort" });
-      return;
+      return {};
     }
     writer.write({ type: "tool-output-error", toolCallId, errorText: onError(error) });
     writer.write({ type: "finish", finishReason: "error" });
-    return;
-  }
-  if (abortSignal.aborted) {
-    writer.write({ type: "abort" });
-    return;
+    return {};
   }
   writer.write({ type: "tool-output-available", toolCallId, output });
+  // The write already happened, so cancellation must not discard its result.
+  if (abortSignal.aborted) {
+    writer.write({ type: "abort" });
+    return { committed: { toolName, toolCallId, input: parsed.value, output } };
+  }
   if (approval && output?.validationError) {
     const last = messages.at(-1);
     if (last?.role !== "tool") throw new Error("Missing approval response");
-    return [...messages.slice(0, -1), { ...last, content: [...last.content, {
+    return { messages: [...messages.slice(0, -1), { ...last, content: [...last.content, {
       type: "tool-result", toolName, toolCallId, output: { type: "json", value: output },
-    }] }];
+    }] }] };
   }
   writer.write({ type: "finish", finishReason: "stop" });
+  return {};
 }

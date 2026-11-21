@@ -4,9 +4,10 @@ import { NextRequest } from "next/server";
 import { POST } from "@/app/api/ai/chat/route";
 import { AGENT_PASTE_PART_TYPE } from "@/models/agent.model";
 
-const { save, startUsage, createJob, resolveResume } = vi.hoisted(() => ({
+const { save, update, startUsage, createJob, resolveResume } = vi.hoisted(() => ({
   resolveResume: vi.fn(async () => ({ status: "no_resumes" })),
-  save: vi.fn(), startUsage: vi.fn(() => ({ markFirstToken: vi.fn(), finish: vi.fn() })), createJob: vi.fn(),
+  save: vi.fn(), update: vi.fn(),
+  startUsage: vi.fn(() => ({ markFirstToken: vi.fn(), finish: vi.fn() })), createJob: vi.fn(),
 }));
 vi.mock("@/lib/jobs/createJobFromNames", () => ({ createJobFromNames: createJob }));
 vi.mock("@/lib/agent/steps/resumeLookup", () => ({
@@ -23,6 +24,7 @@ vi.mock("@/lib/ai/aiConfig", () => ({
 }));
 vi.mock("@/actions/agentChat.actions", () => ({
   saveChatConversation: save,
+  updateChatConversation: update,
 }));
 vi.mock("@/lib/aiUsage/tracker", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/aiUsage/tracker")>(),
@@ -146,6 +148,52 @@ it.each([true, false])("finishes the confirmed write directly (created=%s)", asy
   expect(stream).toContain('"type":"tool-output-available"');
   expect(save.mock.lastCall?.[0][1]).toMatchObject({
     id: "a1", parts: [{ toolCallId: "c1", state: "output-available", output: { created } }],
+  });
+});
+
+// Stop, Clear and closing the tab all cancel while the write may be running.
+describe("a confirmed write that finishes after cancellation", () => {
+  async function startCancelledWrite() {
+    let finishWrite!: () => void;
+    createJob.mockImplementationOnce(() => new Promise((resolve) => {
+      finishWrite = () => resolve({ created: true, resolutions: [], jobId: "j1" });
+    }));
+    const controller = new AbortController();
+    const response = await POST(new NextRequest("http://localhost/api/ai/chat", {
+      method: "POST", body: JSON.stringify(approvalTurn({ id: "ap1", approved: true })), signal: controller.signal,
+    }));
+    await vi.waitFor(() => expect(createJob).toHaveBeenCalledTimes(1));
+    return { response, controller, finishWrite };
+  }
+
+  function expectRecordedWrite() {
+    const saved = update.mock.lastCall?.[0];
+    expect(saved[1]).toMatchObject({
+      id: "a1", parts: [{ toolCallId: "c1", state: "output-available", output: { created: true } }],
+    });
+    expect(saved[0].parts[1].data.consumed).toBe(true);
+    // Only write-on-receipt upserts, so a Clear in between stays deleted.
+    expect(save).toHaveBeenCalledTimes(1);
+  }
+
+  it("records the result when the signal aborts mid-write", async () => {
+    const { response, controller, finishWrite } = await startCancelledWrite();
+    const body = response.text();
+    controller.abort();
+    finishWrite();
+    await body;
+    await vi.waitFor(() => expect(update).toHaveBeenCalledTimes(1));
+    expectRecordedWrite();
+  });
+
+  it("records the result when the connection closes mid-write", async () => {
+    const { response, controller, finishWrite } = await startCancelledWrite();
+    controller.abort();
+    const cancelled = response.body!.cancel();
+    finishWrite();
+    await cancelled;
+    await vi.waitFor(() => expect(update).toHaveBeenCalledTimes(1));
+    expectRecordedWrite();
   });
 });
 

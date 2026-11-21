@@ -25,16 +25,17 @@ export function windowStart(messages: UIMessage[], budget: number): number {
     tokens += costs[end];
     if (tokens <= budget && end - start + 1 <= cap) continue;
 
-    // Keep the newest message when no later user fits both low-water marks.
+    // Without a user under both low-water marks, keep the latest user that
+    // fits the hard limits so an answer never loses its question.
+    let fallback: { start: number; tokens: number } | undefined;
     while (start < end) {
       tokens -= costs[start];
       start++;
-      if (
-        messages[start].role === "user" &&
-        tokens <= budget * 0.6 &&
-        end - start + 1 <= cap * 0.6
-      ) break;
+      if (messages[start].role !== "user") continue;
+      if (tokens <= budget * 0.6 && end - start + 1 <= cap * 0.6) break;
+      if (tokens <= budget && end - start + 1 <= cap) fallback = { start, tokens };
     }
+    if (fallback && messages[start].role !== "user") ({ start, tokens } = fallback);
   }
   return start;
 }

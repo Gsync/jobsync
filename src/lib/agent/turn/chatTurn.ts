@@ -4,21 +4,20 @@ import {
   createUIMessageStream, isStepCount, streamText, toUIMessageStream,
   type LanguageModel, type LanguageModelUsage, type ModelMessage, type UIMessage, type UIMessageChunk,
 } from "ai";
-import { saveChatConversation } from "@/actions/agentChat.actions";
 import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import type { AiConfig } from "@/lib/ai/aiConfig";
 import { addOllamaTimings, readOllamaTimings, type OllamaTimings } from "@/lib/ai/ollamaTimings";
 import { startAiCall, usageOfSteps, type TokenUsage } from "@/lib/aiUsage/tracker";
-import { genAiRequestAttrs, genAiResponseAttrs, runInSpan, startSpan, SURFACES } from "@/lib/telemetry";
+import { genAiRequestAttrs, runInSpan, startSpan, SURFACES } from "@/lib/telemetry";
 import type { PageContext } from "@/models/agent.model";
 import { mapAgentError } from "../errors";
-import { stubConsumedPastes } from "../memory/paste";
 import { AGENT_CHAT_SYSTEM_PROMPT } from "../prompt";
 import type { NestedGenerationGuard } from "../steps/nestedGeneration";
 import { buildAgentStopWhen, buildAgentToolApproval, buildAgentTools } from "../tools";
-import { directCallFor, runToolDirect } from "./runToolDirect";
+import { persistTurn } from "./persistTurn";
+import { directCallFor, runToolDirect, type DirectRun } from "./runToolDirect";
 import { measureTurnPrefix, type TurnPrefixMetrics } from "./turnMetrics";
-import { buildTurnLogFields, logTurn, turnSpanAttrs } from "./turnLog";
+import { buildTurnLogFields, endTurnSpan } from "./turnLog";
 
 export function runChatTurn(input: {
   userId: string;
@@ -55,6 +54,7 @@ export function runChatTurn(input: {
   const nestedGuard: NestedGenerationGuard = { running: false, elapsedMs: 0 };
 
   let turnUsageTracker: ReturnType<typeof startAiCall> | undefined;
+  let direct: Promise<DirectRun> | undefined;
 
   const turnSpan = startSpan("agent.chat.turn", {
     ...genAiRequestAttrs({
@@ -99,9 +99,10 @@ export function runChatTurn(input: {
         });
         const toolApproval = buildAgentToolApproval(pastedText);
         const call = directCallFor(messages.at(-1));
-        const routedMessages = call ? await runToolDirect({
+        direct = call ? runToolDirect({
           call, tools, toolApproval, writer, messages: modelMessages, abortSignal: turnSignal, onError: mapTurnError,
-        }) : modelMessages;
+        }) : undefined;
+        const routedMessages = direct ? (await direct).messages : modelMessages;
         if (!routedMessages) return;
         turnUsageTracker = startAiCall({ userId, feature: "agent_chat", provider, model: modelName, numCtx });
         prefixMetrics = measureTurnPrefix({
@@ -175,13 +176,7 @@ export function runChatTurn(input: {
         ...timings,
         ...stepMax,
       };
-      // Restore the trace context for the turn log.
-      runInSpan(turnSpan, () => logTurn(fields));
-      // Keep turn measurements queryable alongside tool spans.
-      turnSpan.end({
-        ...genAiResponseAttrs({ usage: turnUsage, finishReason: turnFinishReason }),
-        ...turnSpanAttrs(fields),
-      });
+      endTurnSpan(turnSpan, fields, { usage: turnUsage, finishReason: turnFinishReason });
       // Cancellation can fire before the SDK sets isAborted.
       const aborted = isAborted || turnSignal.aborted;
       void turnUsageTracker?.finish({
@@ -191,10 +186,10 @@ export function runChatTurn(input: {
         abortedBy: turnSignal,
         excludeMs: nestedGuard.elapsedMs,
       });
-      // Saving after Clear would restore the deleted conversation.
-      if (isAborted) return;
-      // Stubbing happens here so it lives in exactly one place.
-      await saveChatConversation(stubConsumedPastes(finalMessages));
+      // A disconnect ends the stream while a direct write may still be running.
+      // Its failure already reached the stream's onError.
+      const committed = aborted ? (await direct?.catch(() => undefined))?.committed : undefined;
+      await persistTurn({ messages, finalMessages, aborted, committed });
     },
     // The outer stream passes the error directly.
     onError: mapTurnError,

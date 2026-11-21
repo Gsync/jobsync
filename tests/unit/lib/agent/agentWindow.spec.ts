@@ -40,10 +40,27 @@ describe("windowStart", () => {
     );
   });
 
-  it("keeps the newest assistant when its size leaves no qualifying user", () => {
+  it("keeps the latest fitting user when no user reaches the low-water marks", () => {
     const history = [...conversation(4), ...conversation(2, 700).slice(1)];
-    expect(windowStart(history, 1000)).toBe(4);
+    expect(windowStart(history, 1000)).toBe(2);
+  });
+
+  it("keeps the newest assistant when no user fits the hard budget", () => {
+    const history = [...conversation(4), ...conversation(2, 700).slice(1)];
     expect(windowStart(history, 500)).toBe(4);
     expect(windowStart([], 500)).toBe(0);
+  });
+
+  it("keeps a large answer with its question across the follow-up turn", () => {
+    const sized = (id: string, role: "user" | "assistant", chars: number): UIMessage =>
+      ({ id, role, parts: [{ type: "text", text: "x".repeat(chars) }] });
+    const history = [
+      sized("u1", "user", 8000), sized("a1", "assistant", 8000),
+      sized("u2", "user", 100), sized("a2", "assistant", 24000), sized("u3", "user", 100),
+    ];
+    const budget = APP_CONSTANTS.AGENT_CHAT_HISTORY_TOKEN_BUDGET;
+    expect(history[windowStart(history, budget)].id).toBe("u2");
+    const followUp = [...history, sized("a3", "assistant", 100), sized("u4", "user", 100)];
+    expect(followUp[windowStart(followUp, budget)].id).toBe("u2");
   });
 });

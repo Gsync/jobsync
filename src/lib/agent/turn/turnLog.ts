@@ -1,6 +1,6 @@
-import { isToolUIPart, type UIMessage } from "ai";
+import { isToolUIPart, type LanguageModelUsage, type UIMessage } from "ai";
 import { ollamaTimingAttrs, type OllamaTimings } from "@/lib/ai/ollamaTimings";
-import { log } from "@/lib/telemetry";
+import { genAiResponseAttrs, log, runInSpan, type Span } from "@/lib/telemetry";
 import type { TurnPrefixMetrics } from "./turnMetrics";
 
 export type TurnLogFields = TurnPrefixMetrics & Partial<OllamaTimings> & {
@@ -21,6 +21,16 @@ export type TurnLogFields = TurnPrefixMetrics & Partial<OllamaTimings> & {
 // posting and never the extracted arguments.
 export function logTurn(fields: TurnLogFields) {
   log.info("[agent-chat] turn", fields);
+}
+
+export function endTurnSpan(span: Span, fields: TurnLogFields, response: {
+  usage?: LanguageModelUsage;
+  finishReason?: string;
+}) {
+  // Restore the trace context for the turn log.
+  runInSpan(span, () => logTurn(fields));
+  // Keep turn measurements queryable alongside tool spans.
+  span.end({ ...genAiResponseAttrs(response), ...turnSpanAttrs(fields) });
 }
 
 export function outcomeOf(message: UIMessage | undefined): {

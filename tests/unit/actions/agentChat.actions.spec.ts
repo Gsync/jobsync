@@ -1,6 +1,7 @@
 import {
   getChatConversation,
   saveChatConversation,
+  updateChatConversation,
   clearChatConversation,
 } from "@/actions/agentChat.actions";
 import { getCurrentUser } from "@/utils/user.utils";
@@ -14,6 +15,7 @@ vi.mock("@/generated/prisma/client", () => {
     chatConversation: {
       findUnique: vi.fn(),
       upsert: vi.fn(),
+      updateMany: vi.fn(),
       deleteMany: vi.fn(),
     },
   };
@@ -86,6 +88,15 @@ describe("agentChat actions", () => {
     expect(stored[stored.length - 1].id).toBe(`m${many.length - 1}`);
   });
 
+  it("updateChatConversation updates the caller's row and never creates one", async () => {
+    await updateChatConversation([msg("a")] as any);
+    expect(prisma.chatConversation.updateMany).toHaveBeenCalledWith({
+      where: { userId: "user-1" },
+      data: { messages: JSON.stringify([msg("a")]) },
+    });
+    expect(prisma.chatConversation.upsert).not.toHaveBeenCalled();
+  });
+
   it("clearChatConversation deletes only the caller's row", async () => {
     await clearChatConversation();
     expect(prisma.chatConversation.deleteMany).toHaveBeenCalledWith({
@@ -97,8 +108,10 @@ describe("agentChat actions", () => {
     (getCurrentUser as any).mockResolvedValue(null);
     expect((await getChatConversation()).success).toBe(false);
     expect((await saveChatConversation([])).success).toBe(false);
+    expect((await updateChatConversation([])).success).toBe(false);
     expect((await clearChatConversation()).success).toBe(false);
     expect(prisma.chatConversation.upsert).not.toHaveBeenCalled();
+    expect(prisma.chatConversation.updateMany).not.toHaveBeenCalled();
     expect(prisma.chatConversation.deleteMany).not.toHaveBeenCalled();
   });
 });

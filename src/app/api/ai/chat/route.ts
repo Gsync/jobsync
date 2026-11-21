@@ -42,11 +42,17 @@ export const POST = async (req: NextRequest) => {
   // called — a reload, an error or a stop() mid-stream cannot lose them.
   await saveChatConversation(messages);
 
-  const resolved = await resolveAiConfig(userId, "chat", { requireConfigured: true }).catch(() => {
-    log.error("Failed to read AI settings for chat", { userId });
-    return null;
-  });
-  if (!resolved?.ok) {
+  let resolved;
+  try {
+    resolved = await resolveAiConfig(userId, "chat", { requireConfigured: true });
+  } catch (error) {
+    log.error("Failed to read AI settings for chat", { userId, error: String(error) });
+    return NextResponse.json(
+      { error: "Couldn't load your AI settings. Try again in a moment." },
+      { status: 503 },
+    );
+  }
+  if (!resolved.ok) {
     return NextResponse.json(
       { error: "No AI model is configured. Pick one in Settings to use the assistant." },
       { status: 503 },

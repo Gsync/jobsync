@@ -55,6 +55,28 @@ export const saveChatConversation = async (
   }
 };
 
+// Never creates the row, so a turn finishing after Clear cannot restore it.
+export const updateChatConversation = async (
+  messages: UIMessage[],
+): Promise<{ success: boolean; message?: string }> => {
+  try {
+    const user = await requireUser();
+
+    const trimmed = messages.slice(
+      -APP_CONSTANTS.AGENT_CHAT_MAX_STORED_MESSAGES,
+    );
+
+    await prisma.chatConversation.updateMany({
+      where: { userId: user.id },
+      data: { messages: JSON.stringify(trimmed) },
+    });
+
+    return { success: true };
+  } catch (error) {
+    return handleError(error, "Failed to save the conversation.");
+  }
+};
+
 export const clearChatConversation = async (): Promise<{
   success: boolean;
   message?: string;
