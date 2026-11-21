@@ -12,16 +12,41 @@ export function toolStepReporter<Name extends AgentToolName>(
   _name: Name,
   writer: UIMessageStreamWriter,
   toolCallId: string,
-): (step: AgentToolStepId<Name>, relabel?: Partial<Record<AgentToolStepId<Name>, string>>) => void {
+) {
+  type Step = AgentToolStepId<Name>;
   const reached: string[] = [];
   const labels: Record<string, string> = {};
-  return (step, relabel) => {
-    reached.push(step);
-    Object.assign(labels, relabel);
+  const durationSeconds: Record<string, number> = {};
+  let startedAt = 0;
+
+  function recordDuration(now: number) {
+    const step = reached.at(-1);
+    const seconds = Math.floor((now - startedAt) / 1000);
+    if (!step || seconds < 1) return false;
+    durationSeconds[step] = seconds;
+    return true;
+  }
+
+  function writeProgress() {
     const data: AgentToolProgressData = { steps: [...reached] };
     if (Object.keys(labels).length > 0) data.labels = { ...labels };
+    if (Object.keys(durationSeconds).length > 0) data.durationSeconds = { ...durationSeconds };
     writer.write({ type: AGENT_TOOL_PROGRESS_PART_TYPE, id: toolCallId, data });
+  }
+
+  function report(step: Step, relabel?: Partial<Record<Step, string>>) {
+    const now = performance.now();
+    recordDuration(now);
+    startedAt = now;
+    reached.push(step);
+    Object.assign(labels, relabel);
+    writeProgress();
+  }
+
+  report.finish = () => {
+    if (recordDuration(performance.now())) writeProgress();
   };
+  return report;
 }
 
 // pageNote says what a "page" source meant to the caller: the resume being

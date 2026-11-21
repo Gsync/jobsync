@@ -18,6 +18,30 @@ describe("resumeStepLabel", () => {
 });
 
 describe("toolStepReporter", () => {
+  it("records whole seconds at step boundaries, including the final step", () => {
+    const write = vi.fn();
+    const report = toolStepReporter("review_resume", { write } as unknown as UIMessageStreamWriter, "call-1");
+    const clock = vi.spyOn(performance, "now");
+    try {
+      clock.mockReturnValue(100);
+      report("resume");
+      clock.mockReturnValue(1099);
+      report("prepare");
+      clock.mockReturnValue(2099);
+      report("generate");
+      clock.mockReturnValue(28999);
+      report("save");
+      expect(write.mock.calls.map(([part]) => part.data.durationSeconds)).toEqual([
+        undefined, undefined, { prepare: 1 }, { prepare: 1, generate: 26 },
+      ]);
+      clock.mockReturnValue(31100);
+      report.finish();
+      expect(write.mock.lastCall?.[0].data.durationSeconds).toEqual({ prepare: 1, generate: 26, save: 2 });
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
   it("carries a relabel on every later write", () => {
     const write = vi.fn();
     const report = toolStepReporter("review_resume", { write } as unknown as UIMessageStreamWriter, "call-1");

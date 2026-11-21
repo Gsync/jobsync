@@ -148,6 +148,7 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
         JSON.stringify(reviewData),
       );
       const saved = saveResult?.success === true;
+      if (saved) report.finish();
 
       return {
         status: "ok",

@@ -287,6 +287,24 @@ describe("AgentChatMessages", () => {
   const marks = (container: HTMLElement) =>
     [...container.querySelectorAll("[data-mark]")].map((m) => m.getAttribute("data-mark"));
 
+  it("shows timings on checked steps, including the final step once the result arrives", () => {
+    const timed = progress("rv1", REVIEW);
+    timed.data.durationSeconds = { generate: 26, save: 1 };
+    chat.status = "streaming";
+    chat.messages = [assistant([reviewRunning, timed])];
+    const view = render(<AgentChatMessages />);
+    expect(screen.getByText("Generating review…").closest("li")).toHaveTextContent("26s");
+    expect(screen.queryByText(/1s/)).not.toBeInTheDocument();
+
+    chat.status = "ready";
+    chat.messages = [assistant([
+      { ...reviewRunning, state: "output-available", output: { status: "ok", saved: true, body: "Done." } },
+      timed,
+    ])];
+    view.rerender(<AgentChatMessages />);
+    expect(screen.getByText("Saving review…").closest("li")).toHaveTextContent("1s");
+  });
+
   it("shows a review's steps from its progress part", () => {
     chat.status = "streaming";
     chat.messages = [

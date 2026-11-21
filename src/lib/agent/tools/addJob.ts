@@ -77,6 +77,7 @@ export function buildAddJobTool({
       if (!jobDescription) return failed(NO_DESCRIPTION, NO_DESCRIPTION_DISPLAY);
 
       try {
+        const report = toolStepReporter("add_job", writer, toolCallId);
         const result = await createJobFromNames(
           {
             ...input,
@@ -84,8 +85,9 @@ export function buildAddJobTool({
             createdVia: APP_CONSTANTS.AGENT_CHAT_CREATED_VIA,
           },
           userId,
-          toolStepReporter("add_job", writer, toolCallId),
+          report,
         );
+        if (result.created) report.finish();
 
         // result.message is deliberately NOT returned: it is MCP-facing
         // protocol text naming update_job and allowDuplicate, neither of

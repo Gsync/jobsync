@@ -49,6 +49,7 @@ export type AgentToolProgressProps = {
   toolName: AgentToolName;
   steps: readonly string[];
   stepLabels?: Readonly<Record<string, string>>;
+  durationSeconds?: Readonly<Record<string, number>>;
   section: "before" | "after";
   outcome?: AgentToolOutcome;
   running: boolean;
@@ -60,6 +61,7 @@ export function AgentToolProgress({
   toolName,
   steps,
   stepLabels,
+  durationSeconds,
   section,
   outcome,
   running,
@@ -89,6 +91,7 @@ export function AgentToolProgress({
           const mark: Mark = isLast ? current : "done";
           const { Icon, color } = MARKS[mark];
           const note = isLast ? MARK_NOTES[mark] : undefined;
+          const seconds = durationSeconds?.[id];
           return (
             <li
               key={id}
@@ -103,6 +106,9 @@ export function AgentToolProgress({
               <span className="text-muted-foreground">
                 {stepLabels?.[id] ?? labels.get(id)}
               </span>
+              {mark === "done" && seconds !== undefined && (
+                <span className="shrink-0 text-xs">· {seconds}s</span>
+              )}
               {note && (
                 <span className={cn(mark === "timedOut" && "text-destructive")}>
                   {note}

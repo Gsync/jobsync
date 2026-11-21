@@ -20,6 +20,7 @@ type Props = {
   part: ToolUIPart;
   steps?: readonly string[];
   stepLabels?: Readonly<Record<string, string>>;
+  durationSeconds?: Readonly<Record<string, number>>;
   streamed?: string;
   running: boolean;
   stopped?: AgentReplyStop;
@@ -57,6 +58,7 @@ export function AgentToolPart(props: Props) {
         toolName={toolName}
         steps={reached}
         stepLabels={props.stepLabels}
+        durationSeconds={props.durationSeconds}
         section={section}
         outcome={outcomeOf(part, toolName)}
         running={props.running}

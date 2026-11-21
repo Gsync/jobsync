@@ -176,6 +176,7 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
         matchData,
       );
       const saved = saveResult?.success === true;
+      if (saved) report.finish();
 
       return {
         status: "ok",

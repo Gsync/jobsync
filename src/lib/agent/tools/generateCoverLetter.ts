@@ -173,6 +173,7 @@ export function buildGenerateCoverLetterTool(ctx: CoverLetterContext) {
       report("save");
       const saveResult = await generateCoverLetterForJob(job.id!, letter);
       const saved = saveResult?.success === true;
+      if (saved) report.finish();
 
       return {
         status: "ok",
