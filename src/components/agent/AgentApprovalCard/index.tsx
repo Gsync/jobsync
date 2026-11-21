@@ -18,10 +18,12 @@ type Respond = (r: { id: string; approved: boolean; reason?: string }) => void;
 export function AgentApprovalCard({
   part,
   pastedText,
+  progressStarted,
   onRespond,
 }: {
   part: ToolUIPart;
   pastedText?: string;
+  progressStarted?: boolean;
   onRespond: Respond;
 }) {
   const [declining, setDeclining] = useState(false);
@@ -57,7 +59,7 @@ export function AgentApprovalCard({
 
       {Approval && <Approval input={input} pastedText={pastedText} />}
 
-      {part.state === "approval-responded" && (
+      {part.state === "approval-responded" && !progressStarted && (
         <p className="text-xs text-muted-foreground">Waiting…</p>
       )}
 

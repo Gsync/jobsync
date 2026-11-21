@@ -115,6 +115,10 @@ export type AgentToolProgressData = { steps: string[] };
 // "Timed out." rather than guess why the stream ended.
 export const AGENT_TURN_TIMEOUT_PART_TYPE = "data-turn-timeout";
 
+// Why a reply stopped before its output arrived; known only to the client
+// (interrupted) or to the server's deadline signal (timedOut).
+export type AgentReplyStop = "interrupted" | "timedOut";
+
 export const AGENT_REVIEW_PROGRESS_PART_TYPE = "data-review-progress";
 export type AgentReviewProgress = "Loading resume…" | "Preparing resume text…" | "Starting review…" | "Extracting scores…" | "Saving review…";
 

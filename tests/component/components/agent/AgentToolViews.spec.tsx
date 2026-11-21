@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { AgentResultCard } from "@/components/agent/AgentResultCard";
 import { AgentToolRunningCard } from "@/components/agent/AgentToolRunningCard";
-import { AGENT_TOOL_VIEWS } from "@/components/agent/AgentToolViews";
+import { AGENT_TOOL_VIEWS, workflowOutcome } from "@/components/agent/AgentToolViews";
 import { AGENT_TOOL_META, AGENT_TOOL_NAMES } from "@/lib/agent/registry";
 
 vi.mock("@/components/agent/AgentChatProvider", () => ({ useAgentChat: vi.fn() }));
@@ -25,4 +25,29 @@ it("renders an empty result card for a retired tool", () => {
     <AgentResultCard part={{ ...retiredPart, state: "output-available", output: { status: "ok" } }} />,
   );
   expect(container.firstElementChild).toBeEmptyDOMElement();
+});
+
+it("gives every tool with steps an outcome", () => {
+  for (const name of AGENT_TOOL_NAMES) {
+    if (AGENT_TOOL_META[name].steps.length === 0) continue;
+    expect(AGENT_TOOL_VIEWS[name].outcome, name).toBeDefined();
+  }
+});
+
+it("maps workflow outputs to outcomes", () => {
+  const gen = { status: "generation_failed", reason: "x" };
+  expect(workflowOutcome({ status: "ok", saved: true })).toBe("ok");
+  expect(workflowOutcome({ status: "ok", saved: false })).toBe("failed");
+  expect(workflowOutcome({ ...gen, busy: true })).toBe("answer");
+  expect(workflowOutcome({ ...gen, timedOut: true })).toBe("timedOut");
+  expect(workflowOutcome(gen)).toBe("failed");
+  expect(workflowOutcome({ status: "unreadable" })).toBe("failed");
+  expect(workflowOutcome({ status: "needs_selection" })).toBe("answer");
+});
+
+it("maps an add_job duplicate to answer", () => {
+  const outcome = AGENT_TOOL_VIEWS.add_job.outcome!;
+  expect(outcome({ created: true })).toBe("ok");
+  expect(outcome({ created: false, duplicateOf: { id: "j1" } })).toBe("answer");
+  expect(outcome({ created: false, validationError: "bad" })).toBe("failed");
 });
