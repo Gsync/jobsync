@@ -256,6 +256,28 @@ it.each(["match_job", "generate_cover_letter"])(
   },
 );
 
+// A direct run has no model step, so its saved message must still replay as a
+// tool call and result for the follow-up to discuss.
+it("replays a direct run's result to the model on a follow-up", async () => {
+  const invoke = untitledInvoke("match_job");
+  await postTurn({ messages: [invoke] });
+  const [, ran] = save.mock.lastCall![0];
+  streamText.mockClear();
+
+  await postTurn({ messages: [invoke, ran, user("u2", "What should I do next?")] });
+  expect(streamText).toHaveBeenCalledTimes(1);
+  const messages = streamText.mock.calls[0]![0].messages;
+  expect(messages.slice(0, 4)).toMatchObject([
+    { role: "user", content: [{ type: "text", text: "Review this" }] },
+    { role: "assistant", content: [{ type: "tool-call", toolName: "match_job" }] },
+    { role: "tool", content: [{
+      type: "tool-result", toolName: "match_job",
+      output: { type: "json", value: { status: "no_job" } },
+    }] },
+    { role: "user", content: [{ type: "text", text: "What should I do next?" }] },
+  ]);
+});
+
 it.each([["add_job", {}], ["get_resume", {}], ["constructor", {}], ["review_resume", { resumeTitle: 7 }], ["review_resume", { resumeTitle: "  " }]])(
   "routes an ineligible picker request through chat (%s)", async (toolName, input) => {
     await postTurn({ messages: [{ id: "pick", role: "user", parts: [

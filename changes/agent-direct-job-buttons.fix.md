@@ -1,0 +1,1 @@
+A job's AI Match and Generate Cover Letter buttons, and the AI chat's Review resume, Match a job and Generate cover letter suggestions, now start straight away instead of waiting on the model to think first.
