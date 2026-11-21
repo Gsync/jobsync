@@ -10,7 +10,10 @@ vi.mock("next/server", () => ({
 }));
 vi.mock("@/lib/ai/rate-limiter", () => ({ checkRateLimit: vi.fn() }));
 vi.mock("@/lib/ai/providers", () => ({ getModel: vi.fn() }));
-vi.mock("@/actions/agentChat.actions", () => ({ saveChatConversation: vi.fn() }));
+vi.mock("@/actions/agentChat.actions", () => ({
+  getChatConversation: vi.fn(),
+  saveChatConversation: vi.fn(),
+}));
 vi.mock("@/lib/agent/tools", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/agent/tools")>();
   return { ...actual, buildAgentTools: vi.fn(actual.buildAgentTools) };
@@ -59,7 +62,7 @@ import { POST } from "@/app/api/ai/chat/route";
 import { auth } from "@/auth";
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
 import { getModel } from "@/lib/ai/providers";
-import { saveChatConversation } from "@/actions/agentChat.actions";
+import { getChatConversation, saveChatConversation } from "@/actions/agentChat.actions";
 import { buildAgentTools } from "@/lib/agent/tools";
 import { statusOf } from "@/lib/aiUsage/tracker";
 import { buildPageContextMessage } from "@/lib/agent/prompt";
@@ -93,6 +96,7 @@ describe("POST /api/ai/chat", () => {
     });
     (getModel as any).mockResolvedValue({ id: "fake-model" });
     (saveChatConversation as any).mockResolvedValue({ success: true });
+    vi.mocked(getChatConversation).mockResolvedValue({ success: true, data: [] });
   });
 
   it("returns 401 without a session", async () => {
@@ -131,6 +135,15 @@ describe("POST /api/ai/chat", () => {
     const saveOrder = (saveChatConversation as any).mock.invocationCallOrder[0];
     const streamOrder = streamText.mock.invocationCallOrder[0];
     expect(saveOrder).toBeLessThan(streamOrder);
+  });
+
+  it("saves and runs the incoming messages when the stored copy cannot load", async () => {
+    vi.mocked(getChatConversation).mockResolvedValue({ success: false, message: "Failed to load the conversation." });
+    const messages = [pasteMessage("the 6kb posting")];
+    const res = await POST(req({ messages }));
+    expect(res.status).toBe(200);
+    expect(saveChatConversation).toHaveBeenCalledWith(messages);
+    expect(streamText).toHaveBeenCalledTimes(1);
   });
 
   // Clear deletes the conversation row and the cancelled turn's onEnd fires

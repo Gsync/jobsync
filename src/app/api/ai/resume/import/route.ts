@@ -202,7 +202,9 @@ export const POST = async (req: NextRequest) => {
           // An abort ends the stream without an error, so name the deadline.
           if (controller.signal.reason?.name === "TimeoutError") {
             streamErrorMessage = `AI request timed out after ${APP_CONSTANTS.AI_RESUME_IMPORT_TIMEOUT_MS / 1000} seconds. Please try again.`;
+            importSpan.setError(controller.signal.reason);
           }
+          importSpan.end();
         },
       }),
     );

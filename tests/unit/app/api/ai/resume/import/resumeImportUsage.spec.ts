@@ -19,6 +19,12 @@ const finish = vi.fn();
 const startAiCall = vi.fn((..._a: unknown[]) => ({ markFirstToken, finish }));
 vi.mock("@/lib/aiUsage/tracker", () => ({ startAiCall: (...a: unknown[]) => startAiCall(...a) }));
 
+const span = { traceId: "", spanId: "", setAttrs: vi.fn(), setError: vi.fn(), end: vi.fn() };
+vi.mock("@/lib/telemetry", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/telemetry")>()),
+  startSpan: () => span,
+}));
+
 let options: any;
 const defaultPartials = async function* (): AsyncGenerator<unknown> {
   yield { summary: "a" };
@@ -98,7 +104,16 @@ describe("resume import usage", () => {
     options.onAbort({ steps: [] });
     const { abortedBy } = finish.mock.calls[0][0];
     expect(abortedBy.reason.name).toBe("TimeoutError");
+    expect(span.setError).toHaveBeenCalledWith(abortedBy.reason);
+    expect(span.end).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
+  });
+
+  it("ends the span without an error when the client disconnects", async () => {
+    await POST(req());
+    options.onAbort({ steps: [] });
+    expect(span.setError).not.toHaveBeenCalled();
+    expect(span.end).toHaveBeenCalledTimes(1);
   });
 
   it("tells the client the request timed out when the deadline aborts it", async () => {

@@ -3,7 +3,9 @@ import {
   asSchema, generateId, isToolUIPart, type ModelMessage, type ToolSet,
   type UIMessage, type UIMessageStreamWriter,
 } from "ai";
-import { AGENT_DIRECT_INVOKE_PART_TYPE } from "@/models/agent.model";
+import {
+  AGENT_DIRECT_INVOKE_PART_TYPE, AGENT_TOOL_PROGRESS_PART_TYPE, type AgentAddJobResult,
+} from "@/models/agent.model";
 import { isDirectInvokeTool, type AgentToolName } from "../registry";
 import type { buildAgentToolApproval } from "../tools";
 
@@ -15,7 +17,9 @@ type DirectCall = {
 };
 
 // A tool that finished after cancellation, so the turn can still record it.
-export type CommittedOutput = { toolName: AgentToolName; toolCallId: string; input: unknown; output: unknown };
+export type CommittedOutput = {
+  toolName: AgentToolName; toolCallId: string; input: unknown; output: unknown; progress?: unknown;
+};
 
 // messages resumes the model; without them the turn is over.
 export type DirectRun = { messages?: ModelMessage[]; committed?: CommittedOutput };
@@ -46,12 +50,38 @@ export function directCallFor(message?: UIMessage): DirectCall | undefined {
   return { toolName: data.toolName, toolCallId: generateId(), input: data.input };
 }
 
+// Tools hold this writer, so a committed result can keep its last steps.
+export function recordToolProgress(writer: UIMessageStreamWriter) {
+  const last = new Map<string, unknown>();
+  const recording: UIMessageStreamWriter = {
+    ...writer,
+    write: (chunk) => {
+      if (chunk.type === AGENT_TOOL_PROGRESS_PART_TYPE && chunk.id) last.set(chunk.id, chunk.data);
+      writer.write(chunk);
+    },
+  };
+  return { writer: recording, lastProgress: (toolCallId: string) => last.get(toolCallId) };
+}
+
+// Only a finished write is worth saving; a cut-off generation is not.
+function completedWrite(toolName: AgentToolName, output: unknown): boolean {
+  if (toolName === "add_job") {
+    const result = output as AgentAddJobResult | undefined;
+    return result?.created === true || result?.duplicateOf !== undefined;
+  }
+  const result = output as { status?: string; saved?: boolean } | undefined;
+  return result?.status === "ok" && result.saved === true;
+}
+
 // A completed tool result beside the approval tells the SDK it already ran.
-export async function runToolDirect({ call, tools, toolApproval, writer, messages, abortSignal, onError }: {
+export async function runToolDirect({
+  call, tools, toolApproval, writer, lastProgress, messages, abortSignal, onError,
+}: {
   call: DirectCall;
   tools: ToolSet;
   toolApproval: ReturnType<typeof buildAgentToolApproval>;
   writer: UIMessageStreamWriter;
+  lastProgress: (toolCallId: string) => unknown;
   messages: ModelMessage[];
   abortSignal: AbortSignal;
   onError: (error: unknown) => string;
@@ -83,10 +113,12 @@ export async function runToolDirect({ call, tools, toolApproval, writer, message
     return {};
   }
   writer.write({ type: "tool-output-available", toolCallId, output });
-  // The write already happened, so cancellation must not discard its result.
+  // A finished write already happened, so cancellation must not discard it.
   if (abortSignal.aborted) {
     writer.write({ type: "abort" });
-    return { committed: { toolName, toolCallId, input: parsed.value, output } };
+    if (!completedWrite(toolName, output)) return {};
+    const progress = lastProgress(toolCallId);
+    return { committed: { toolName, toolCallId, input: parsed.value, output, progress } };
   }
   if (approval && output?.validationError) {
     const last = messages.at(-1);

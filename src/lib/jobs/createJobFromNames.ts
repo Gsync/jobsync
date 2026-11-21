@@ -56,7 +56,7 @@ export interface CreateJobFromNamesResult {
 }
 
 // Reported to callers that show progress; MCP and API v1 pass nothing.
-export type CreateJobStep = "resolve" | "duplicate" | "save";
+type CreateJobStep = "resolve" | "duplicate" | "save";
 
 export async function createJobFromNames(
   input: CreateJobFromNamesInput,

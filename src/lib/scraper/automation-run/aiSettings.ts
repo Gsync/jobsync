@@ -3,7 +3,7 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import type { ProviderType } from "@/lib/ai/providers";
 import { AiProvider } from "@/models/ai.model";
 
-export { getDefaultModelForProvider, getUserAiSettings } from "@/lib/ai/aiConfig";
+export { getUserAiSettings } from "@/lib/ai/aiConfig";
 
 // Ollama serializes on the GPU, so it must process matches one at a time;
 // other providers can fan out concurrently.

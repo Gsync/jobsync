@@ -12,7 +12,16 @@ import { resolvePastedText } from "@/lib/agent/memory/paste";
 import { buildModelMessages } from "@/lib/agent/memory/modelMessages";
 import { runChatTurn } from "@/lib/agent/turn/chatTurn";
 import { resolveAiConfig } from "@/lib/ai/aiConfig";
-import { saveChatConversation } from "@/actions/agentChat.actions";
+import { getChatConversation, saveChatConversation } from "@/actions/agentChat.actions";
+import { mergeCommittedResults } from "@/lib/agent/turn/mergeCommittedResults";
+
+// A result saved after Stop must survive the browser's stale copy.
+async function withCommittedResults(incoming: UIMessage[], userId: string): Promise<UIMessage[]> {
+  const stored = await getChatConversation();
+  if (stored.success) return mergeCommittedResults(incoming, stored.data ?? []);
+  log.warn("Failed to load the chat conversation before saving", { userId, message: stored.message });
+  return incoming;
+}
 
 export const POST = async (req: NextRequest) => {
   const session = await auth();
@@ -34,7 +43,7 @@ export const POST = async (req: NextRequest) => {
     return NextResponse.json({ error: "Invalid chat request." }, { status: 400 });
   }
 
-  const messages = parsed.data.messages as UIMessage[];
+  const messages = await withCommittedResults(parsed.data.messages as UIMessage[], userId);
   const { pageContext } = parsed.data;
 
   // Write-on-receipt. The user's message and the posting they pasted are the

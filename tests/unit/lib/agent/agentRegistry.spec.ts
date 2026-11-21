@@ -2,7 +2,6 @@ import {
   AGENT_CHAT_TERMINAL_TOOLS,
   AGENT_TOOL_META,
   AGENT_TOOL_NAMES,
-  isNestedTool,
   toolInvalidates,
 } from "@/lib/agent/registry";
 import {
@@ -24,13 +23,6 @@ describe("agent tool metadata", () => {
       if (meta.kind === "workflow") expect(meta.terminal).toBe(true);
       if (!meta.terminal) expect(meta.maxResultChars).toEqual(expect.any(Number));
     }
-  });
-
-  it("recognizes only registered workflows", () => {
-    expect(AGENT_TOOL_NAMES.filter(isNestedTool)).toEqual([
-      "review_resume", "match_job", "generate_cover_letter",
-    ]);
-    expect(isNestedTool("not_a_tool")).toBe(false);
   });
 
   it("declares unique step ids per tool", () => {

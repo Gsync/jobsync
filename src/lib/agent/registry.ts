@@ -95,11 +95,6 @@ export function isDirectInvokeTool(name: string): name is DirectInvokeToolName {
   return isAgentToolName(name) && "directInvoke" in AGENT_TOOL_META[name];
 }
 
-export function isNestedTool(name: string): boolean {
-  return isAgentToolName(name) && AGENT_TOOL_META[name].kind === "workflow";
-}
-
-export const AGENT_NESTED_TOOLS: readonly AgentToolName[] = AGENT_TOOL_NAMES.filter(isNestedTool);
 export const AGENT_CHAT_TERMINAL_TOOLS: readonly AgentToolName[] =
   AGENT_TOOL_NAMES.filter((name) => AGENT_TOOL_META[name].terminal);
 

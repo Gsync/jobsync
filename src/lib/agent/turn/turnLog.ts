@@ -19,7 +19,7 @@ export type TurnLogFields = TurnPrefixMetrics & Partial<OllamaTimings> & {
 
 // One structured line per turn. Sizes and outcomes only — never the pasted
 // posting and never the extracted arguments.
-export function logTurn(fields: TurnLogFields) {
+function logTurn(fields: TurnLogFields) {
   log.info("[agent-chat] turn", fields);
 }
 

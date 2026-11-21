@@ -206,7 +206,7 @@ export type AgentCoverLetterResult =
 
 export const AGENT_CHAT_RESUME_MAX_CHARS = 12_000;
 
-export type AgentToolKind = "read" | "write" | "workflow";
+type AgentToolKind = "read" | "write" | "workflow";
 export type AgentInvalidation = "page" | "jobsList";
 
 export type AgentDataArea = (typeof AGENT_DATA_AREAS)[number];

@@ -4,10 +4,10 @@ import { NextRequest } from "next/server";
 import { POST } from "@/app/api/ai/chat/route";
 import { AGENT_PASTE_PART_TYPE } from "@/models/agent.model";
 
-const { save, update, startUsage, createJob, resolveResume, resolveJob } = vi.hoisted(() => ({
+const { save, update, load, startUsage, createJob, resolveResume, resolveJob } = vi.hoisted(() => ({
   resolveResume: vi.fn(async (..._args: unknown[]) => ({ status: "no_resumes" })),
   resolveJob: vi.fn(async (..._args: unknown[]) => ({ status: "no_job" })),
-  save: vi.fn(), update: vi.fn(),
+  save: vi.fn(), update: vi.fn(), load: vi.fn(async () => ({ success: true, data: [] as unknown[] })),
   startUsage: vi.fn(() => ({ markFirstToken: vi.fn(), finish: vi.fn() })), createJob: vi.fn(),
 }));
 vi.mock("@/lib/jobs/createJobFromNames", () => ({ createJobFromNames: createJob }));
@@ -25,6 +25,7 @@ vi.mock("@/lib/ai/aiConfig", () => ({
   }),
 }));
 vi.mock("@/actions/agentChat.actions", () => ({
+  getChatConversation: load,
   saveChatConversation: save,
   updateChatConversation: update,
 }));
@@ -157,9 +158,12 @@ it.each([true, false])("finishes the confirmed write directly (created=%s)", asy
 describe("a confirmed write that finishes after cancellation", () => {
   async function startCancelledWrite() {
     let finishWrite!: () => void;
-    createJob.mockImplementationOnce(() => new Promise((resolve) => {
-      finishWrite = () => resolve({ created: true, resolutions: [], jobId: "j1" });
-    }));
+    createJob.mockImplementationOnce((_input, _userId, report: (step: string) => void) => {
+      report("resolve");
+      return new Promise((resolve) => {
+        finishWrite = () => resolve({ created: true, resolutions: [], jobId: "j1" });
+      });
+    });
     const controller = new AbortController();
     const response = await POST(new NextRequest("http://localhost/api/ai/chat", {
       method: "POST", body: JSON.stringify(approvalTurn({ id: "ap1", approved: true })), signal: controller.signal,
@@ -171,7 +175,10 @@ describe("a confirmed write that finishes after cancellation", () => {
   function expectRecordedWrite() {
     const saved = update.mock.lastCall?.[0];
     expect(saved[1]).toMatchObject({
-      id: "a1", parts: [{ toolCallId: "c1", state: "output-available", output: { created: true } }],
+      id: "a1", parts: [
+        { type: "data-tool-progress", id: "c1", data: { steps: ["resolve"] } },
+        { toolCallId: "c1", state: "output-available", output: { created: true } },
+      ],
     });
     expect(saved[0].parts[1].data.consumed).toBe(true);
     // Only write-on-receipt upserts, so a Clear in between stays deleted.
@@ -197,6 +204,19 @@ describe("a confirmed write that finishes after cancellation", () => {
     await vi.waitFor(() => expect(update).toHaveBeenCalledTimes(1));
     expectRecordedWrite();
   });
+});
+
+// Stop leaves the browser holding the approval with no result.
+it("keeps a result committed after Stop when the next message arrives", async () => {
+  const { messages: [, approved] } = approvalTurn({ id: "ap1", approved: true });
+  const finished = { ...approved, parts: [{
+    ...approved.parts[0], state: "output-available", output: { created: true, resolutions: [], jobId: "j1" },
+  }] };
+  load.mockResolvedValueOnce({ success: true, data: [paste, finished] });
+  await postTurn({ pageContext: jobsPage, messages: [paste, approved, user("u2", "Thanks")] });
+  expect(save.mock.calls[0]![0][1]).toEqual(finished);
+  expect(createJob).not.toHaveBeenCalled();
+  expect(JSON.stringify(streamText.mock.calls[0]![0].messages)).toContain('"type":"tool-result"');
 });
 
 it("continues after validation with the executed result in the final tool message", async () => {

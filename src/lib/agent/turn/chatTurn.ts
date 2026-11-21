@@ -15,7 +15,7 @@ import { AGENT_CHAT_SYSTEM_PROMPT } from "../prompt";
 import type { NestedGenerationGuard } from "../steps/nestedGeneration";
 import { buildAgentStopWhen, buildAgentToolApproval, buildAgentTools } from "../tools";
 import { persistTurn } from "./persistTurn";
-import { directCallFor, runToolDirect, type DirectRun } from "./runToolDirect";
+import { directCallFor, recordToolProgress, runToolDirect, type DirectRun } from "./runToolDirect";
 import { measureTurnPrefix, type TurnPrefixMetrics } from "./turnMetrics";
 import { buildTurnLogFields, endTurnSpan } from "./turnLog";
 
@@ -92,6 +92,7 @@ export function runChatTurn(input: {
           writer.write({ type: AGENT_TURN_TIMEOUT_PART_TYPE, data: {}, transient: true });
         };
         turnTimeout.addEventListener("abort", onTurnTimeout, { once: true });
+        const progress = recordToolProgress(writer);
         const tools = buildAgentTools({
           userId,
           pastedText,
@@ -99,13 +100,14 @@ export function runChatTurn(input: {
           model,
           provider,
           modelName,
-          writer,
+          writer: progress.writer,
           nestedGuard,
         });
         const toolApproval = buildAgentToolApproval(pastedText);
         const call = directCallFor(messages.at(-1));
         direct = call ? runToolDirect({
-          call, tools, toolApproval, writer, messages: modelMessages, abortSignal: turnSignal, onError: mapTurnError,
+          call, tools, toolApproval, writer, lastProgress: progress.lastProgress,
+          messages: modelMessages, abortSignal: turnSignal, onError: mapTurnError,
         }) : undefined;
         const routedMessages = direct ? (await direct).messages : modelMessages;
         if (!routedMessages) return;

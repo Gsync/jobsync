@@ -5,7 +5,7 @@ import { startAiCall } from "@/lib/aiUsage/tracker";
 import { genAiRequestAttrs, genAiResponseAttrs, withSpan, type Surface } from "@/lib/telemetry";
 import type { AiUsageFeature } from "@/models/aiUsage.model";
 
-export type TrackedAi = {
+type TrackedAi = {
   provider: string;
   modelName: string;
   model: LanguageModel;
