@@ -81,7 +81,7 @@ async function openChat(page: Page) {
   await page.goto("/dashboard/myjobs");
   await page.getByRole("button", { name: "Chat AI" }).click();
   // A shared user can carry a transcript in from another run or a manual
-  // pass, so start from Clear. Then reload: clear() calls setMessages([])
+  // pass, so start from Clear Session. Then reload: clear() calls setMessages([])
   // only after the server action resolves, and waiting on the HTTP response
   // is not enough — it resolves on headers, while the action settles after
   // the RSC body is parsed. A late wipe would swallow the first message the
@@ -91,7 +91,7 @@ async function openChat(page: Page) {
     page.waitForResponse(
       (res) => res.request().method() === "POST" && res.url().includes("/dashboard"),
     ),
-    page.getByRole("button", { name: "Clear" }).click(),
+    page.getByRole("button", { name: "Clear Session" }).click(),
   ]);
   await page.reload();
   await page.getByRole("button", { name: "Chat AI" }).click();
@@ -114,10 +114,10 @@ test.describe("agent chat", () => {
     // panel survives the navigation because the provider is in the layout.
     await page.getByRole("link", { name: "Tasks" }).click();
     await expect(page).toHaveURL(/\/dashboard\/tasks/);
-    await expect(page.getByRole("button", { name: "Clear" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Clear Session" })).toBeVisible();
 
     await page.getByRole("button", { name: "Close chat" }).click();
-    await expect(page.getByRole("button", { name: "Clear" })).toBeHidden();
+    await expect(page.getByRole("button", { name: "Clear Session" })).toBeHidden();
     await expect(
       page.getByRole("button", { name: "Chat AI" }),
     ).toBeVisible();

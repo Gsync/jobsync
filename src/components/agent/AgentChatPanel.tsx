@@ -1,8 +1,9 @@
 "use client";
 
-import { CheckCircle, Loader2, Scan, Sparkles, X, XCircle } from "lucide-react";
+import { CheckCircle, Loader2, Maximize, Minimize, Sparkles, Trash2, X, XCircle } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AgentChatEmptyState } from "@/components/agent/AgentChatEmptyState";
 import { AgentChatInput } from "@/components/agent/AgentChatInput";
 import { AgentChatMessages } from "@/components/agent/AgentChatMessages";
@@ -39,6 +40,8 @@ export function AgentChatPanel() {
   const providerLabel = preflight.provider
     ? preflight.provider.charAt(0).toUpperCase() + preflight.provider.slice(1)
     : "";
+  const expandLabel = isPanelExpanded ? "Restore panel" : "Expand panel";
+  const ExpandIcon = isPanelExpanded ? Minimize : Maximize;
 
   return (
     <Sheet
@@ -50,6 +53,12 @@ export function AgentChatPanel() {
     >
       <SheetContent
         overlay={false}
+        onOpenAutoFocus={(event) => {
+          // Focus the sheet so Clear Session doesn't show a tooltip on open.
+          if (!(event.target instanceof HTMLElement)) return;
+          event.preventDefault();
+          event.target.focus();
+        }}
         // Docked, not a takeover: without these the first click on the jobs
         // list behind the panel would dismiss it, and refreshing that list
         // after a write would be pointless.
@@ -88,34 +97,52 @@ export function AgentChatPanel() {
                 : providerLabel}
             </span>
           </div>
-          {/* Never gated on the approval: it is the way out of a card whose
-              approvalId the server no longer recognizes. */}
-          <Button
-            className="h-6 ml-auto shrink-0 rounded-sm px-2 text-xs opacity-70 hover:opacity-100"
-            onClick={() => void clear()}
-            size="sm"
-            variant="ghost"
-          >
-            Clear
-          </Button>
-          <Button
-            aria-label={isPanelExpanded ? "Restore panel" : "Expand panel"}
-            className="h-6 w-6 shrink-0 rounded-sm opacity-70 hover:opacity-100 hidden lg:inline-flex"
-            onClick={togglePanelExpand}
-            size="icon"
-            variant="ghost"
-          >
-            <Scan className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            aria-label="Close chat"
-            className="h-6 w-6 shrink-0 rounded-sm opacity-70 hover:opacity-100"
-            onClick={close}
-            size="icon"
-            variant="ghost"
-          >
-            <X className="h-3.5 w-3.5" />
-          </Button>
+          <TooltipProvider delayDuration={300}>
+            {/* Never gated on the approval: it is the way out of a card whose
+                approvalId the server no longer recognizes. */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  aria-label="Clear Session"
+                  className="ml-auto h-6 w-6 shrink-0 rounded-sm opacity-70 hover:opacity-100"
+                  onClick={() => void clear()}
+                  size="icon"
+                  variant="ghost"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Clear Session</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  aria-label={expandLabel}
+                  className="h-6 w-6 shrink-0 rounded-sm opacity-70 hover:opacity-100 hidden lg:inline-flex"
+                  onClick={togglePanelExpand}
+                  size="icon"
+                  variant="ghost"
+                >
+                  <ExpandIcon className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">{expandLabel}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  aria-label="Close chat"
+                  className="h-6 w-6 shrink-0 rounded-sm opacity-70 hover:opacity-100"
+                  onClick={close}
+                  size="icon"
+                  variant="ghost"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Close chat</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col lg:mx-auto lg:w-full lg:max-w-6xl">

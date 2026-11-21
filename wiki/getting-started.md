@@ -23,6 +23,10 @@ If you run Ollama somewhere other than the default address, add that address und
 
 Nothing AI-powered works until a provider *and* a model are both set — resume review, job matching, cover letters and the chat panel all refuse to start rather than silently picking a model for you. If you selected Ollama and the model list is empty, JobSync could not reach the Ollama server; check that it is running and reachable from wherever JobSync is running.
 
+## What do the AI chat header buttons do?
+
+Hover over the buttons in the upper-right corner of AI chat to see what they do. The trash icon (**Clear Session**) clears your conversation. On wider screens, the four outer corners (**Expand panel**) widen the chat. The icon then switches to four inner corners (**Restore panel**) to bring the chat back to its default width. **Close chat** hides the panel.
+
 ## What do the progress steps in AI chat mean?
 
 The **Selected tool** row shows the tool chosen for each call, such as `review_resume`. When the assistant adds a job, reviews a resume, matches a job or writes a cover letter, the chat lists each step as it happens: adding a job resolves details, checks for an existing job and saves; a review loads your resume, prepares its text, generates the review, extracts scores and saves it; a match or cover letter loads the job and resume, prepares their text, generates, and saves. Once the resume is chosen, its step names it — for example *Using resume "Senior FS" (default)* — and says why it was picked: your default, the one linked to the job, or the one you're viewing. A finished step shows a green ✓, the current step an orange spinner, and a step that failed or timed out a red ✗ or **Timed out.**; if you stop the reply or close the panel it shows **Interrupted.** in grey. A grey circle means the assistant stopped without anything breaking — it asked you to pick a resume, found the job already saved, or was busy with another analysis — and the card below says why. The steps stay in the conversation after a reload.
