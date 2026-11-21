@@ -11,12 +11,6 @@ export const AI_USAGE_FEATURES = {
 
 export type AiUsageFeature = keyof typeof AI_USAGE_FEATURES;
 
-export const FEATURE_BY_NESTED_LABEL: Record<string, AiUsageFeature> = {
-  review_resume: "resume_review",
-  match_job: "job_match",
-  generate_cover_letter: "cover_letter",
-};
-
 export const AI_CALL_STATUSES = [
   "ok",
   "error",

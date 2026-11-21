@@ -74,7 +74,7 @@ A resume with no skills section still works, but the automation then has only yo
 
 Two tiers. **Jobs analyzed per run** (the slider in the Search step, default 10, maximum 50) is how many top-ranked listings get a full AI match score. Higher means more coverage but slower and, on a paid provider, costlier runs.
 
-**Save additional relevant listings** is on by default. With it on, relevant listings that did not make the cut are still saved, ranked but not yet AI-scored — they show a lexical relevance percentage and an **Analyze** button so you can score one on demand. Turn it off if you only want the scored shortlist.
+**Save additional relevant listings** is on by default. With it on, relevant listings that did not make the cut are still saved, ranked but not yet AI-scored — they show a lexical relevance percentage and an **Analyze** button so you can score one on demand. After you select **Analyze**, the AI match score replaces the relevance percentage and its breakdown. Turn it off if you only want the scored shortlist.
 
 Listings only reach AI analysis if they are related to your search strongly enough to be worth the call — clearing the relevance floor on a single generic word is not enough. Of the ones that are analyzed, only those meeting your match threshold are saved. So a run can fetch hundreds of listings and save none: the run log shows how many were skipped as too weakly related and how many were analyzed but fell below the threshold.
 
@@ -90,7 +90,7 @@ Every discovered job starts as **new**, with a due date three days from the day 
 
 - **Accept** — copies it into your tracked jobs, where it behaves like any job you added by hand.
 - **Dismiss** — marks it dismissed so it stops cluttering the list. It is not deleted.
-- **Analyze** — appears on listings that were saved without an AI score, and scores one on demand.
+- **Analyze** — appears on listings that were saved without an AI score, and replaces the relevance score and breakdown with an AI match.
 
 Click a job to open its details, including the AI match breakdown and, for unscored listings, the relevance breakdown that explains which of your titles and keywords it hit. The **Status** filter in the header narrows the list to new, accepted or dismissed, and **Clear** removes discovered jobs in bulk.
 

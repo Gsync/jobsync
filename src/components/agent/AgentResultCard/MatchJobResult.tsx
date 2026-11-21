@@ -1,6 +1,7 @@
 "use client";
 
 import { AgentMatchContent } from "@/components/agent/AgentMatchContent";
+import { JobResumeFooter } from "@/components/agent/AgentResultCard/JobResumeFooter";
 import { NoResumesNotice } from "@/components/agent/AgentResultCard/NoResumesNotice";
 import { ResumeSelectionPrompt } from "@/components/agent/AgentResultCard/ResumeSelectionPrompt";
 import type { AgentMatchJobResult } from "@/models/agent.model";
@@ -25,6 +26,7 @@ export function MatchJobResult({ output }: { output: AgentMatchJobResult }) {
   if (output.status === "needs_selection") {
     return (
       <ResumeSelectionPrompt
+        toolName="match_job"
         prompt="Which resume should I match against?"
         resumes={output.resumes}
         messageFor={(title) => `Match this job against my resume "${title}"`}
@@ -51,11 +53,7 @@ export function MatchJobResult({ output }: { output: AgentMatchJobResult }) {
   return (
     <div className="text-sm">
       <AgentMatchContent body={output.body} scores={output.scores} />
-      <p className="mt-2 text-xs text-muted-foreground">
-        {output.jobTitle}
-        {output.company ? ` at ${output.company}` : ""} · matched against{" "}
-        {output.resumeTitle}
-      </p>
+      <JobResumeFooter output={output} relation="matched against" />
       {!output.saved && (
         <p className="mt-1 text-xs text-muted-foreground">
           Match not saved — {output.saveError}

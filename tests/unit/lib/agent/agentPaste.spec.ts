@@ -2,9 +2,9 @@ import {
   resolvePastedText,
   stubConsumedPastes,
   hasPendingApproval,
-  windowMessages,
-} from "@/lib/agent/paste";
-import { truncateForModel } from "@/lib/agent/paste.server";
+} from "@/lib/agent/memory/paste";
+import { windowMessages } from "@/lib/agent/memory/window";
+import { truncateForModel } from "@/lib/agent/memory/paste.server";
 import { AGENT_PASTE_PART_TYPE } from "@/models/agent.model";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { convertToModelMessages } from "ai";
@@ -226,8 +226,9 @@ describe("windowMessages", () => {
       (_, i) => userMsg(`m${i}`, []),
     );
     const windowed = windowMessages(many as any);
-    expect(windowed).toHaveLength(APP_CONSTANTS.AGENT_CHAT_HISTORY_MESSAGES);
-    expect(windowed[windowed.length - 1].id).toBe(`m${many.length - 1}`);
+    expect(windowed).toHaveLength(12);
+    expect(windowed[0].id).toBe("m18");
+    expect(windowed[windowed.length - 1].id).toBe("m29");
   });
 
   it("cuts on the token budget before the message count when messages are fat", () => {

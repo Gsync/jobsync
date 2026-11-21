@@ -1,15 +1,16 @@
 import { buildReviewResumeTool } from "@/lib/agent/tools/reviewResume";
 import { buildAgentTools } from "@/lib/agent/tools";
-import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
+import { resolveResumeForAgent } from "@/lib/agent/steps/resumeLookup";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 import { saveResumeReviewResult } from "@/actions/profile.actions";
 import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
+import { AGENT_TOOL_META } from "@/lib/agent/registry";
 import {
   RESUME_REVIEW_SYSTEM_PROMPT,
   buildResumeReviewPrompt,
 } from "@/lib/ai/prompts/resume-review";
 
-vi.mock("@/lib/agent/resumeLookup", () => ({ resolveResumeForAgent: vi.fn() }));
+vi.mock("@/lib/agent/steps/resumeLookup", () => ({ resolveResumeForAgent: vi.fn() }));
 vi.mock("@/lib/ai/tools/preprocessing", () => ({ preprocessResume: vi.fn() }));
 vi.mock("@/actions/profile.actions", () => ({
   saveResumeReviewResult: vi.fn(),
@@ -51,6 +52,13 @@ const ctx = () => ({
   writer: writer as any,
   guard: { running: false, elapsedMs: 0 },
 });
+
+const progressParts = () =>
+  writer.write.mock.calls
+    .map(([part]) => part)
+    .filter((part) => part.type === "data-tool-progress");
+const stepsSoFar = (): string[] => progressParts().at(-1)?.data.steps ?? [];
+const REGISTRY_STEPS = AGENT_TOOL_META.review_resume.steps.map((step) => step.id);
 
 const execute = (agentTool: any, input: any) =>
   agentTool.execute(input, { toolCallId: "call-1", messages: [] });
@@ -102,7 +110,7 @@ describe("review_resume agent tool", () => {
     expect(args.prompt).toBe(buildResumeReviewPrompt(LONG_RESUME));
     expect(args.temperature).toBe(TEMPERATURES.FEEDBACK);
     expect(args.providerOptions.ollama.options.num_ctx).toBe(
-      APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
+      APP_CONSTANTS.AGENT_CHAT_NUM_CTX,
     );
     expect(args.abortSignal).toBeDefined();
   });
@@ -112,17 +120,53 @@ describe("review_resume agent tool", () => {
     expect(streamText.mock.calls[0][0].prompt).toContain(LONG_RESUME);
   });
 
-  it("streams the sub-call's tokens as transient parts keyed by the tool call", async () => {
+  it("relabels the resume step with the resume it chose", async () => {
+    await execute(buildReviewResumeTool(ctx()), {});
+    expect(progressParts().find((part) => part.data.labels)?.data.resumeId).toBe("r1");
+    expect(progressParts().at(-1).data.resumeId).toBe("r1");
+    expect(progressParts().at(-1).data.labels).toEqual({
+      resume: 'Using resume "Senior Engineer Resume" (default)',
+    });
+  });
+
+  it("reports each step in order, with the stream between generate and check", async () => {
     streamText.mockReturnValue(textStreamOf(["SCORES: ", "overall=78 ", "impact=72 clarity=81 ats=69\n\nBody"]));
     await execute(buildReviewResumeTool(ctx()), {});
-    expect(writer.write).toHaveBeenCalledTimes(3);
-    const first = writer.write.mock.calls[0][0];
-    expect(first.type).toBe("data-nested-stream");
-    expect(first.id).toBe("call-1");
-    expect(first.transient).toBe(true);
-    expect(
-      writer.write.mock.calls.map((c: any[]) => c[0].data.delta).join(""),
-    ).toContain("SCORES: overall=78");
+    const events = writer.write.mock.calls.map(([part]) => part);
+    const labelled = events.map((part) =>
+      part.type === "data-tool-progress"
+        ? part.data.steps.at(-1)
+        : "token",
+    );
+    expect(labelled).toEqual([
+      "resume", "prepare", "generate", "token", "token", "token", "check", "save",
+    ]);
+    expect(progressParts().at(-1).data.steps).toEqual(REGISTRY_STEPS);
+    expect(progressParts().every((part) => part.id === "call-1" && !("transient" in part))).toBe(true);
+    const streamed = events.filter((part) => part.type === "data-nested-stream");
+    expect(streamed.every((part) => part.id === "call-1" && part.transient)).toBe(true);
+    expect(streamed.map((part) => part.data.delta).join("")).toContain("SCORES: overall=78");
+  });
+
+  it("reports each step while its work runs, not before", async () => {
+    resolve.mockImplementation(async () => {
+      expect(stepsSoFar()).toEqual(["resume"]);
+      return { status: "ok", resume: { id: "r1", title: "Senior Engineer Resume" } };
+    });
+    preprocess.mockImplementation(async () => {
+      expect(stepsSoFar()).toEqual(["resume", "prepare"]);
+      return { success: true, data: { normalizedText: LONG_RESUME } };
+    });
+    streamText.mockImplementation(() => {
+      expect(stepsSoFar()).toEqual(["resume", "prepare", "generate"]);
+      return textStreamOf([REVIEW]);
+    });
+    save.mockImplementation(async () => {
+      expect(stepsSoFar()).toEqual(REGISTRY_STEPS);
+      return { success: true };
+    });
+    const result = await execute(buildReviewResumeTool(ctx()), {});
+    expect(result.status).toBe("ok");
   });
 
   it("returns scores and the markdown body, with the scores line stripped", async () => {
@@ -194,7 +238,48 @@ describe("review_resume agent tool", () => {
     });
     const result = await execute(buildReviewResumeTool(ctx()), {});
     expect(result.status).toBe("generation_failed");
+    // No signal of ours fired, so the user did not stop it.
+    expect(result).not.toHaveProperty("interrupted");
     expect(save).not.toHaveBeenCalled();
+  });
+
+  it("reports a deadline as timed out, not interrupted", async () => {
+    vi.spyOn(AbortSignal, "timeout").mockReturnValue(AbortSignal.abort());
+    streamText.mockReturnValue({
+      textStream: (async function* () {
+        throw new Error("The operation timed out");
+      })(),
+    });
+    const result = await execute(buildReviewResumeTool(ctx()), {});
+    expect(result).toMatchObject({ status: "generation_failed", timedOut: true });
+    expect(result).not.toHaveProperty("interrupted");
+    expect(save).not.toHaveBeenCalled();
+    vi.mocked(AbortSignal.timeout).mockRestore();
+  });
+
+  it("reports the caller's abort as a plain failure", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    streamText.mockReturnValue({
+      textStream: (async function* () {
+        throw new Error("aborted");
+      })(),
+    });
+    const result = await (buildReviewResumeTool(ctx()) as any).execute({}, {
+      toolCallId: "call-1",
+      messages: [],
+      abortSignal: controller.signal,
+    });
+    expect(result.status).toBe("generation_failed");
+    expect(result).not.toHaveProperty("interrupted");
+    expect(result).not.toHaveProperty("timedOut");
+  });
+
+  it("does not report generate when the guard is busy", async () => {
+    const busy = { ...ctx(), guard: { running: true, elapsedMs: 0 } };
+    const result = await execute(buildReviewResumeTool(busy), {});
+    expect(result).toMatchObject({ status: "generation_failed", busy: true });
+    expect(stepsSoFar()).toEqual(["resume", "prepare"]);
   });
 
   it.each(["other", "length"])(
@@ -207,7 +292,11 @@ describe("review_resume agent tool", () => {
         ),
       );
       const result = await execute(buildReviewResumeTool(ctx()), {});
-      expect(result.status).toBe("generation_failed");
+      expect(result).toMatchObject({
+        status: "generation_failed",
+        reason: "The review stopped before it finished, so nothing was saved.",
+      });
+      expect(result).not.toHaveProperty("interrupted");
       expect(save).not.toHaveBeenCalled();
     },
   );

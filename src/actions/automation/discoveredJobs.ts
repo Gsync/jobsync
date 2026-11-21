@@ -1,5 +1,6 @@
 "use server";
 
+import { parseMatchData } from "@/lib/ai/jobMatch/matchResult";
 import db from "@/lib/db";
 import { requireUser } from "../shared";
 import type {
@@ -128,14 +129,7 @@ export async function getDiscoveredJobById(id: string): Promise<{
       return { success: false, message: "Discovered job not found" };
     }
 
-    let parsedMatchData = null;
-    if (job.matchData) {
-      try {
-        parsedMatchData = JSON.parse(job.matchData);
-      } catch {
-        // Ignore parse errors
-      }
-    }
+    const parsedMatchData = parseMatchData(job.matchData);
 
     return {
       success: true,

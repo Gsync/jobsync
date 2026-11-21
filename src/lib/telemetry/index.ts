@@ -10,7 +10,6 @@ export {
   genAiRequestAttrs,
   genAiResponseAttrs,
   inputSizeAttrs,
-  SURFACE_BY_NESTED_LABEL,
   SURFACES,
   type Surface,
 } from "./genai";

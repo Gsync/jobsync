@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { AgentMarkdown } from "@/components/agent/AgentMarkdown";
+import { JobResumeFooter } from "@/components/agent/AgentResultCard/JobResumeFooter";
 import { NoResumesNotice } from "@/components/agent/AgentResultCard/NoResumesNotice";
 import { ResumeSelectionPrompt } from "@/components/agent/AgentResultCard/ResumeSelectionPrompt";
 import type { AgentCoverLetterResult } from "@/models/agent.model";
@@ -34,6 +35,7 @@ export function CoverLetterResult({ output }: { output: AgentCoverLetterResult }
   if (output.status === "needs_selection") {
     return (
       <ResumeSelectionPrompt
+        toolName="generate_cover_letter"
         prompt="Which resume should the letter draw on?"
         resumes={output.resumes}
         messageFor={(title) =>
@@ -63,11 +65,7 @@ export function CoverLetterResult({ output }: { output: AgentCoverLetterResult }
   return (
     <div className="text-sm">
       <AgentMarkdown text={output.body} />
-      <p className="mt-2 text-xs text-muted-foreground">
-        {output.jobTitle}
-        {output.company ? ` at ${output.company}` : ""} · drawn from{" "}
-        {output.resumeTitle}
-      </p>
+      <JobResumeFooter output={output} relation="drawn from" />
       {output.saved ? (
         <p className="mt-1 text-xs text-muted-foreground">
           Saved as “{output.coverLetterTitle}” —{" "}

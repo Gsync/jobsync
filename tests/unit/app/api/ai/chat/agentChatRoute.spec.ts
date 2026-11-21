@@ -1,3 +1,4 @@
+vi.mock("@/lib/ai/aiConfig", () => ({ resolveAiConfig: vi.fn() }));
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 vi.mock("next/server", () => ({
   NextResponse: {
@@ -9,8 +10,10 @@ vi.mock("next/server", () => ({
 }));
 vi.mock("@/lib/ai/rate-limiter", () => ({ checkRateLimit: vi.fn() }));
 vi.mock("@/lib/ai/providers", () => ({ getModel: vi.fn() }));
-vi.mock("@/actions/userSettings.actions", () => ({ getUserSettings: vi.fn() }));
-vi.mock("@/actions/agentChat.actions", () => ({ saveChatConversation: vi.fn() }));
+vi.mock("@/actions/agentChat.actions", () => ({
+  getChatConversation: vi.fn(),
+  saveChatConversation: vi.fn(),
+}));
 vi.mock("@/lib/agent/tools", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/agent/tools")>();
   return { ...actual, buildAgentTools: vi.fn(actual.buildAgentTools) };
@@ -52,20 +55,20 @@ vi.mock("ai", async (importOriginal) => {
   };
 });
 
+import { readFileSync } from "node:fs";
+import { numCtxFor } from "@/lib/ai/numCtx";
+import { resolveAiConfig } from "@/lib/ai/aiConfig";
 import { POST } from "@/app/api/ai/chat/route";
 import { auth } from "@/auth";
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
 import { getModel } from "@/lib/ai/providers";
-import { getUserSettings } from "@/actions/userSettings.actions";
-import { saveChatConversation } from "@/actions/agentChat.actions";
+import { getChatConversation, saveChatConversation } from "@/actions/agentChat.actions";
 import { buildAgentTools } from "@/lib/agent/tools";
 import { statusOf } from "@/lib/aiUsage/tracker";
 import { buildPageContextMessage } from "@/lib/agent/prompt";
 import { APP_CONSTANTS } from "@/lib/constants";
-import {
-  AGENT_CHAT_TERMINAL_TOOLS,
-  AGENT_PASTE_PART_TYPE,
-} from "@/models/agent.model";
+import { AGENT_CHAT_TERMINAL_TOOLS } from "@/lib/agent/registry";
+import { AGENT_PASTE_PART_TYPE } from "@/models/agent.model";
 import { AGENT_PASTE_ONLY_USER_MESSAGE } from "@/lib/agent/prompt";
 
 // signal is not optional on a real Request — the route composes the turn's
@@ -87,12 +90,13 @@ describe("POST /api/ai/chat", () => {
     vi.clearAllMocks();
     (auth as any).mockResolvedValue({ user: { id: "user-1" } });
     (checkRateLimit as any).mockReturnValue({ allowed: true, remaining: 29, resetIn: 60000 });
-    (getUserSettings as any).mockResolvedValue({
-      success: true,
-      data: { settings: { ai: { provider: "ollama", model: "qwen3.5:9b" } } },
+    vi.mocked(resolveAiConfig).mockResolvedValue({
+      ok: true,
+      config: { provider: "ollama", modelName: "qwen3.5:9b", numCtx: numCtxFor("chat") },
     });
     (getModel as any).mockResolvedValue({ id: "fake-model" });
     (saveChatConversation as any).mockResolvedValue({ success: true });
+    vi.mocked(getChatConversation).mockResolvedValue({ success: true, data: [] });
   });
 
   it("returns 401 without a session", async () => {
@@ -133,6 +137,15 @@ describe("POST /api/ai/chat", () => {
     expect(saveOrder).toBeLessThan(streamOrder);
   });
 
+  it("saves and runs the incoming messages when the stored copy cannot load", async () => {
+    vi.mocked(getChatConversation).mockResolvedValue({ success: false, message: "Failed to load the conversation." });
+    const messages = [pasteMessage("the 6kb posting")];
+    const res = await POST(req({ messages }));
+    expect(res.status).toBe(200);
+    expect(saveChatConversation).toHaveBeenCalledWith(messages);
+    expect(streamText).toHaveBeenCalledTimes(1);
+  });
+
   // Clear deletes the conversation row and the cancelled turn's onEnd fires
   // afterwards — writing there would restore exactly what was just deleted.
   it("does not write the turn back when it was cancelled", async () => {
@@ -144,6 +157,16 @@ describe("POST /api/ai/chat", () => {
       responseMessage: undefined,
       isAborted: true,
     });
+    expect((saveChatConversation as any).mock.calls.length).toBe(afterReceipt);
+  });
+
+  it("does not write the turn back when a disconnect ends it before isAborted is set", async () => {
+    const controller = new AbortController();
+    await POST({ json: async () => ({ messages: [pasteMessage("posting")] }), signal: controller.signal } as any);
+    const afterReceipt = (saveChatConversation as any).mock.calls.length;
+    controller.abort();
+
+    await capturedOnEnd!({ messages: [pasteMessage("posting")], responseMessage: undefined, isAborted: false });
     expect((saveChatConversation as any).mock.calls.length).toBe(afterReceipt);
   });
 
@@ -185,6 +208,7 @@ describe("POST /api/ai/chat", () => {
     });
     const logged = info.mock.calls.at(-1)![1] as Record<string, unknown>;
     expect(logged).toMatchObject({ tool: "match_job", outcome: "ok" });
+    expect(logged.sharedPrefixChars).toEqual(expect.any(Number));
     info.mockRestore();
   });
 
@@ -313,6 +337,41 @@ describe("POST /api/ai/chat", () => {
     expect(args.onEnd).toEqual(expect.any(Function));
     expect(args).not.toHaveProperty("system");
     expect(args).not.toHaveProperty("onFinish");
+    expect(args.include).toEqual({ rawChunks: true });
+    expect(args.onStepEnd).toEqual(expect.any(Function));
+    expect(args).not.toHaveProperty("includeRawChunks");
+    expect(args).not.toHaveProperty("onStepFinish");
+  });
+
+  it("logs summed Ollama timings and independent per-step token maxima", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    await POST(req({ messages: [pasteMessage("posting")] }));
+    const { onChunk, onStepEnd } = streamArgs();
+    const chunk = { type: "raw", rawValue: {
+      done: true, prompt_eval_count: 3000,
+      load_duration: 2_000_000, prompt_eval_duration: 3_000_000, eval_duration: 4_000_000,
+    } };
+    onChunk({ chunk });
+    onChunk({ chunk });
+    onStepEnd({ usage: { inputTokens: 5000, outputTokens: 900 } });
+    onStepEnd({ usage: { inputTokens: 7000, outputTokens: 400 } });
+    await capturedOnEnd!({ messages: [], isAborted: false });
+    expect(info.mock.calls.at(-1)?.[1]).toMatchObject({
+      loadMs: 4, promptEvalMs: 6, promptEvalTokens: 6000,
+      evalMs: 8, maxStepPromptTokens: 7000, maxStepOutputTokens: 900,
+    });
+    info.mockRestore();
+  });
+
+  it("omits unavailable timing and usage fields", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    await POST(req({ messages: [pasteMessage("posting")] }));
+    await capturedOnEnd!({ messages: [], isAborted: false });
+    const fields = info.mock.calls.at(-1)?.[1];
+    expect(fields).not.toHaveProperty("loadMs");
+    expect(fields).not.toHaveProperty("maxStepPromptTokens");
+    expect(fields).not.toHaveProperty("maxStepOutputTokens");
+    info.mockRestore();
   });
 
   // add_job is the only approval-gated tool; a bare boolean status would
@@ -361,10 +420,74 @@ describe("POST /api/ai/chat", () => {
     expect(abortSignal.aborted).toBe(true);
   });
 
+  describe("turn deadline", () => {
+    // A merged stream the test closes itself, so the turn stays open while the
+    // deadline signal is driven.
+    function holdTurnOpen() {
+      let close!: () => void;
+      toUIMessageStream.mockReturnValueOnce(
+        new ReadableStream({ start: (c) => { close = () => c.close(); } }),
+      );
+      return () => close();
+    }
+    const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+    const timeoutParts = (body: string) =>
+      body.split("data-turn-timeout").length - 1;
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it("tells the client when the turn deadline fires", async () => {
+      const deadline = new AbortController();
+      vi.spyOn(AbortSignal, "timeout").mockReturnValue(deadline.signal);
+      const close = holdTurnOpen();
+      const response = await POST(req({ messages: [pasteMessage("posting")] }));
+      const body = response.text();
+      await tick();
+      deadline.abort();
+      close();
+      const text = await body;
+      expect(timeoutParts(text)).toBe(1);
+      expect(text).not.toContain('"transient":false');
+    });
+
+    it("does not report a timeout on a client disconnect", async () => {
+      const deadline = new AbortController();
+      vi.spyOn(AbortSignal, "timeout").mockReturnValue(deadline.signal);
+      const close = holdTurnOpen();
+      const disconnect = new AbortController();
+      const response = await POST({
+        json: async () => ({ messages: [pasteMessage("posting")] }),
+        signal: disconnect.signal,
+      } as any);
+      const body = response.text();
+      await tick();
+      disconnect.abort();
+      deadline.abort();
+      close();
+      expect(timeoutParts(await body)).toBe(0);
+    });
+
+    it("detaches the timeout listener when the turn ends", async () => {
+      const deadline = new AbortController();
+      vi.spyOn(AbortSignal, "timeout").mockReturnValue(deadline.signal);
+      const add = vi.spyOn(deadline.signal, "addEventListener");
+      const remove = vi.spyOn(deadline.signal, "removeEventListener");
+      const close = holdTurnOpen();
+      const response = await POST(req({ messages: [pasteMessage("posting")] }));
+      const body = response.text();
+      await tick();
+      close();
+      await body;
+      const listener = add.mock.calls.find(([type]) => type === "abort")![1];
+      expect(remove).toHaveBeenCalledWith("abort", listener);
+    });
+  });
+
   it("returns 503 naming Settings when no model is configured, and never guesses one", async () => {
-    (getUserSettings as any).mockResolvedValue({
-      success: true,
-      data: { settings: { ai: { provider: "ollama", model: undefined } } },
+    vi.mocked(resolveAiConfig).mockResolvedValue({
+      ok: false, reason: "no_model",
     });
     const res = await POST(req({ messages: [pasteMessage("posting")] }));
     expect(res.status).toBe(503);
@@ -373,8 +496,19 @@ describe("POST /api/ai/chat", () => {
     expect(streamText).not.toHaveBeenCalled();
   });
 
+  it("answers a retryable 503, not the Settings advice, when the AI settings cannot be read", async () => {
+    vi.mocked(resolveAiConfig).mockRejectedValueOnce(new SyntaxError("Unexpected token"));
+    const res = await POST(req({ messages: [pasteMessage("posting")] }));
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({
+      error: "Couldn't load your AI settings. Try again in a moment.",
+    });
+    expect(streamText).not.toHaveBeenCalled();
+  });
+
   it("uses the configured model exactly as configured", async () => {
     await POST(req({ messages: [pasteMessage("posting")] }));
+    expect(resolveAiConfig).toHaveBeenCalledWith("user-1", "chat", { requireConfigured: true });
     expect(getModel).toHaveBeenCalledWith("ollama", "qwen3.5:9b", "user-1");
   });
 
@@ -392,13 +526,13 @@ describe("POST /api/ai/chat", () => {
     );
   });
 
-  it("does not re-inject the paste head on the approval POST", async () => {
+  it("does not re-inject the paste head when a denied approval resumes the model", async () => {
     const messages = [
       pasteMessage("HEAD_MARKER posting body"),
       {
         id: "m2",
         role: "assistant",
-        parts: [{ type: "tool-add_job", toolCallId: "c1", state: "approval-responded", input: { company: "Acme", jobTitle: "Eng" }, approval: { id: "a1", approved: true } }],
+        parts: [{ type: "tool-add_job", toolCallId: "c1", state: "approval-responded", input: { company: "Acme", jobTitle: "Eng" }, approval: { id: "a1", approved: false } }],
       },
     ];
     await POST(req({ messages }));
@@ -550,4 +684,8 @@ describe("POST /api/ai/chat", () => {
       expect(arg.usage).toEqual({ inputTokens: 4000, outputTokens: 50 });
     });
   });
+});
+
+it("the route never calls the model itself", () => {
+  expect(readFileSync("src/app/api/ai/chat/route.ts", "utf8")).not.toContain("streamText");
 });

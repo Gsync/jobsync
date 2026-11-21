@@ -1,10 +1,10 @@
 import { buildGetResumeTool } from "@/lib/agent/tools/getResume";
 import { buildAgentTools } from "@/lib/agent/tools";
-import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
+import { resolveResumeForAgent } from "@/lib/agent/steps/resumeLookup";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 import { APP_CONSTANTS } from "@/lib/constants";
 
-vi.mock("@/lib/agent/resumeLookup", () => ({ resolveResumeForAgent: vi.fn() }));
+vi.mock("@/lib/agent/steps/resumeLookup", () => ({ resolveResumeForAgent: vi.fn() }));
 vi.mock("@/lib/ai/tools/preprocessing", () => ({ preprocessResume: vi.fn() }));
 
 const resolve = resolveResumeForAgent as unknown as ReturnType<typeof vi.fn>;

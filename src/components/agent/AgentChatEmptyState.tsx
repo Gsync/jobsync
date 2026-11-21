@@ -3,19 +3,20 @@
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
 import { AGENT_ADD_JOB_INTRO } from "@/lib/agent/prompt";
+import type { DirectInvokeToolName } from "@/lib/agent/registry";
+import { directInvokeParts } from "@/models/agent.model";
 
-// None need editing first, so they act on click. "Review resume" runs a real
-// turn. "Match a job" and "Generate cover letter" have no page context here,
-// so the tools reply with a graceful "no_job" result telling the user to open
-// a job's page first. ADD_JOB is the one whose answer is knowable without the
-// model — see AGENT_ADD_JOB_INTRO.
+// None need editing first, so they act on click. The three tool chips run as
+// direct invokes, skipping the model's thinking turn; off a job's page the job
+// tools reply with a graceful "no_job" result. ADD_JOB is the one whose answer
+// is knowable without the model — see AGENT_ADD_JOB_INTRO.
 const ADD_JOB = "Add a job posting";
-const EXAMPLES = [
-  ADD_JOB,
-  "Review resume",
-  "Match a job",
-  "Generate cover letter",
-];
+const TOOL_EXAMPLES: Record<string, DirectInvokeToolName> = {
+  "Review resume": "review_resume",
+  "Match a job": "match_job",
+  "Generate cover letter": "generate_cover_letter",
+};
+const EXAMPLES = [ADD_JOB, ...Object.keys(TOOL_EXAMPLES)];
 
 export function AgentChatEmptyState() {
   const { sendMessage, seedExchange, preflight } = useAgentChat();
@@ -26,7 +27,7 @@ export function AgentChatEmptyState() {
       seedExchange(example, AGENT_ADD_JOB_INTRO);
       return;
     }
-    void sendMessage({ parts: [{ type: "text", text: example }] });
+    void sendMessage({ parts: directInvokeParts(example, TOOL_EXAMPLES[example]) });
   };
 
   return (

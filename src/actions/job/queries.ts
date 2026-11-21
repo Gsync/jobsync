@@ -1,4 +1,5 @@
 "use server";
+import { UNANALYZED_MATCH_FILTER } from "@/lib/ai/jobMatch/matchResult";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import {
@@ -12,7 +13,7 @@ import type { SortState } from "@/models/sort.model";
 import { findManySorted, planListSort, SortFieldSpec } from "@/lib/listSort";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { requireUser } from "../shared";
-import { hideUnanalyzedScore, UNANALYZED_MATCH_MARKER } from "./shared";
+import { hideUnanalyzedScore } from "./shared";
 import { STAGE_DETAIL_INCLUDE } from "../jobStage/shared";
 
 const JOB_LIST_SELECT = {
@@ -211,13 +212,13 @@ const JOB_SORT_SPECS: Record<JobSortField, SortFieldSpec> = {
         matchScore: { not: null },
         OR: [
           { matchData: null },
-          { NOT: { matchData: { contains: UNANALYZED_MATCH_MARKER } } },
+          { NOT: UNANALYZED_MATCH_FILTER },
         ],
       },
       noValue: {
         OR: [
           { matchScore: null },
-          { matchData: { contains: UNANALYZED_MATCH_MARKER } },
+          UNANALYZED_MATCH_FILTER,
         ],
       },
     },

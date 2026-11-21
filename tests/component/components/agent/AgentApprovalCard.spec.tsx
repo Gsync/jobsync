@@ -136,6 +136,20 @@ describe("AgentApprovalCard", () => {
     expect(screen.getByText(/waiting/i)).toBeInTheDocument();
   });
 
+  it("hides Waiting… once progress has started", () => {
+    render(
+      <AgentApprovalCard
+        part={part({
+          state: "approval-responded",
+          approval: { id: "ap1", approved: true },
+        })}
+        progressStarted
+        onRespond={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/waiting/i)).not.toBeInTheDocument();
+  });
+
   it("renders nothing for a state it does not own", () => {
     const { container } = render(
       <AgentApprovalCard

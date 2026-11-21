@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Resume } from "@/models/profile.model";
+import { directInvokeParts } from "@/models/agent.model";
 
 const chat = {
   open: vi.fn(),
@@ -58,7 +59,13 @@ describe("ResumeContainer — Review button", () => {
 
     expect(chat.clear).toHaveBeenCalled();
     expect(chat.sendMessage).toHaveBeenCalledWith({
-      parts: [{ type: "text", text: "Review Senior Engineer Resume" }],
+      parts: directInvokeParts("Review Senior Engineer Resume", "review_resume"),
+    });
+
+    // No title: the lookup resolves the open page's resume (D10).
+    expect(directInvokeParts("Review Senior Engineer Resume", "review_resume")[1]).toEqual({
+      type: "data-direct-invoke",
+      data: { toolName: "review_resume", input: {} },
     });
 
     // Opening first is what stops a failed clear from leaving a dead button.
@@ -94,7 +101,7 @@ describe("ResumeContainer — Review button", () => {
     );
     expect(chat.clear).toHaveBeenCalled();
     expect(chat.sendMessage).toHaveBeenCalledWith({
-      parts: [{ type: "text", text: "Review Senior Engineer Resume" }],
+      parts: directInvokeParts("Review Senior Engineer Resume", "review_resume"),
     });
   });
 

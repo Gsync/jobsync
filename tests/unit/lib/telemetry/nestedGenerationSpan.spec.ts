@@ -37,7 +37,7 @@ describe("agent.nested span", () => {
     const { otlp } = await loadTelemetry({ endpoint: ENDPOINT });
     const { streamText } = await import("ai");
     (streamText as any).mockReturnValue(stubStreamText(["a", "b"], "stop"));
-    const { runNestedGeneration } = await import("@/lib/agent/nestedGeneration");
+    const { runNestedGeneration } = await import("@/lib/agent/steps/nestedGeneration");
 
     const result = await runNestedGeneration({
       model: {} as any,
@@ -48,8 +48,11 @@ describe("agent.nested span", () => {
       timeoutMs: 1000,
       writer,
       toolCallId: "call-1",
+      report: () => {},
       guard: { running: false, elapsedMs: 0 },
       label: "review_resume",
+      feature: "resume_review",
+      surface: "resume.review",
       provider: "ollama",
       modelName: "qwen3.5:9b",
       userId: "user-1",
@@ -65,7 +68,7 @@ describe("agent.nested span", () => {
     const { otlp } = await loadTelemetry({ endpoint: ENDPOINT });
     const { streamText } = await import("ai");
     (streamText as any).mockReturnValue(stubStreamText(["a"], "length"));
-    const { runNestedGeneration } = await import("@/lib/agent/nestedGeneration");
+    const { runNestedGeneration } = await import("@/lib/agent/steps/nestedGeneration");
 
     const result = await runNestedGeneration({
       model: {} as any,
@@ -76,8 +79,11 @@ describe("agent.nested span", () => {
       timeoutMs: 1000,
       writer,
       toolCallId: "call-1",
+      report: () => {},
       guard: { running: false, elapsedMs: 0 },
       label: "review_resume",
+      feature: "resume_review",
+      surface: "resume.review",
       provider: "ollama",
       modelName: "qwen3.5:9b",
       userId: "user-1",
@@ -90,7 +96,7 @@ describe("agent.nested span", () => {
   it("still records a span when the guard rejects the call as busy", async () => {
     mockFetchOk();
     const { otlp } = await loadTelemetry({ endpoint: ENDPOINT });
-    const { runNestedGeneration } = await import("@/lib/agent/nestedGeneration");
+    const { runNestedGeneration } = await import("@/lib/agent/steps/nestedGeneration");
 
     const result = await runNestedGeneration({
       model: {} as any,
@@ -101,8 +107,11 @@ describe("agent.nested span", () => {
       timeoutMs: 1000,
       writer,
       toolCallId: "call-1",
+      report: () => {},
       guard: { running: true, elapsedMs: 0 },
       label: "match_job",
+      feature: "job_match",
+      surface: "job.match",
       provider: "ollama",
       modelName: "qwen3.5:9b",
       userId: "user-1",

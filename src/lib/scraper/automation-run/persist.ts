@@ -28,7 +28,7 @@ export async function persistDiscoveredJob(
   automation: Automation,
   job: JobDetails,
   matchScore: number,
-  matchData: object,
+  matchData: string,
   skillTerms: SkillTerm[],
 ): Promise<{ saved: boolean; tagsApplied: number }> {
   const scrapedJob: ScrapedJobData = {
@@ -48,7 +48,7 @@ export async function persistDiscoveredJob(
     userId: automation.userId,
     automationId: automation.id,
     matchScore,
-    matchData: JSON.stringify(matchData),
+    matchData,
     skillTerms,
   });
 

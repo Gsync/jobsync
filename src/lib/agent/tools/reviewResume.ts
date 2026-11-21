@@ -1,10 +1,12 @@
 import "server-only";
 
 import { tool, type LanguageModel, type UIMessageStreamWriter } from "ai";
+import { SURFACES } from "@/lib/telemetry";
+import { numCtxFor } from "@/lib/ai/numCtx";
 import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
 import { AgentReviewResumeSchema } from "@/models/agent.schema";
-import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
+import { resolveResumeForAgent } from "@/lib/agent/steps/resumeLookup";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 import {
   RESUME_REVIEW_SYSTEM_PROMPT,
@@ -15,7 +17,8 @@ import { saveResumeReviewResult } from "@/actions/profile.actions";
 import {
   runNestedGeneration,
   type NestedGenerationGuard,
-} from "@/lib/agent/nestedGeneration";
+} from "@/lib/agent/steps/nestedGeneration";
+import { resumeStepLabel, toolStepReporter } from "@/lib/agent/steps/progress";
 import type { AgentReviewResumeResult } from "@/models/agent.model";
 import type { ResumeReviewData } from "@/models/ai.schemas";
 
@@ -43,6 +46,8 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
     // Not in toolApproval: this writes only the caller's own reviewData, and
     // they watch the whole thing stream before it lands.
     execute: async (raw, { toolCallId, abortSignal }): Promise<AgentReviewResumeResult> => {
+      const report = toolStepReporter("review_resume", ctx.writer, toolCallId);
+      report("resume");
       const lookup = await resolveResumeForAgent(ctx.userId, {
         title: raw?.resumeTitle,
         pageResumeId: ctx.pageResumeId,
@@ -54,6 +59,7 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
       }
 
       const title = lookup.resume.title;
+      report("prepare", { resume: resumeStepLabel(lookup, "the one you're viewing") }, lookup.resume.id);
       const pre = await preprocessResume(lookup.resume);
       if (!pre.success) {
         return {
@@ -69,13 +75,16 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
         system: RESUME_REVIEW_SYSTEM_PROMPT,
         prompt: buildResumeReviewPrompt(pre.data.normalizedText),
         temperature: TEMPERATURES.FEEDBACK,
-        numCtx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
+        numCtx: numCtxFor("chat_nested"),
         timeoutMs: APP_CONSTANTS.AI_RESUME_REVIEW_TIMEOUT_MS,
         writer: ctx.writer,
         toolCallId,
         abortSignal,
         guard: ctx.guard,
+        report,
         label: "review_resume",
+        feature: "resume_review",
+        surface: SURFACES.RESUME_REVIEW,
         provider: ctx.provider,
         modelName: ctx.modelName,
         attrs: {
@@ -86,6 +95,7 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
         return {
           status: "generation_failed",
           title,
+          busy: true,
           reason: "Another analysis is already running — ask for this one once it finishes.",
         };
       }
@@ -96,6 +106,14 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
           reason: "The review stopped before it finished, so nothing was saved.",
         };
       }
+      if (generation.status === "failed" && generation.timedOut) {
+        return {
+          status: "generation_failed",
+          title,
+          timedOut: true,
+          reason: "The review timed out before it finished, so nothing was saved.",
+        };
+      }
       if (generation.status === "failed") {
         return {
           status: "generation_failed",
@@ -104,6 +122,7 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
         };
       }
 
+      report("check");
       const { scores, body } = parseResumeReview(generation.text);
       // reviewData is overwrite-only with no history, so an unscored or
       // half-finished generation must not be written.
@@ -123,11 +142,13 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
         model: ctx.modelName,
         surface: APP_CONSTANTS.AGENT_CHAT_REVIEW_SURFACE,
       };
+      report("save");
       const saveResult = await saveResumeReviewResult(
         lookup.resume.id!,
         JSON.stringify(reviewData),
       );
       const saved = saveResult?.success === true;
+      if (saved) report.finish();
 
       return {
         status: "ok",

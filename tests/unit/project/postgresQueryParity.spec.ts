@@ -1,4 +1,4 @@
-import { UNANALYZED_MATCH_MARKER } from "@/actions/job/shared";
+import { UNANALYZED_MATCH_MARKER } from "@/lib/ai/jobMatch/matchResult";
 import { getTagList } from "@/actions/tag.actions";
 import { getDiscoveredJobs } from "@/actions/automation/discoveredJobs";
 import { getAutomationRuns } from "@/actions/automation/runs";

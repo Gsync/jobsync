@@ -2,7 +2,7 @@ import { persistDiscoveredJob } from "@/lib/scraper/automation-run/persist";
 import { mapScrapedJobToJobRecord } from "@/lib/scraper/mapper";
 import db from "@/lib/db";
 import { resolveStageTypeForStatusId } from "@/lib/jobs/resolve";
-import { UNANALYZED_MATCH_MARKER } from "@/actions/job/shared";
+import { UNANALYZED_MATCH_MARKER } from "@/lib/ai/jobMatch/matchResult";
 
 vi.mock("@/lib/db", () => ({
   default: {
@@ -42,7 +42,7 @@ beforeEach(() => {
 
 describe("persistDiscoveredJob", () => {
   it("gives a discovered job its first current stage", async () => {
-    const res = await persistDiscoveredJob(automation, job, 50, {}, []);
+    const res = await persistDiscoveredJob(automation, job, 50, "{}", []);
 
     expect(res.saved).toBe(true);
     expect(resolveStageTypeForStatusId).toHaveBeenCalledWith("s-new", "u1");
@@ -56,14 +56,14 @@ describe("persistDiscoveredJob", () => {
   it("saves nothing when the unique index refuses the job", async () => {
     mockDb.job.create.mockRejectedValue({ code: "P2002" });
 
-    const res = await persistDiscoveredJob(automation, job, 50, {}, []);
+    const res = await persistDiscoveredJob(automation, job, 50, "{}", []);
 
     expect(res.saved).toBe(false);
   });
 
   // The jobs list Match sort filters on this substring of matchData.
   it("writes the unanalysed marker the jobs list sort filters on", async () => {
-    await persistDiscoveredJob(automation, job, 50, { analyzed: false }, []);
+    await persistDiscoveredJob(automation, job, 50, JSON.stringify({ analyzed: false }), []);
 
     expect(mapScrapedJobToJobRecord).toHaveBeenCalledWith(
       expect.objectContaining({

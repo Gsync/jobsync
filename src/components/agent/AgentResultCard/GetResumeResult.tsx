@@ -20,7 +20,13 @@ export function GetResumeResult({ output }: { output: AgentGetResumeResult }) {
   }
 
   if (output.status === "needs_selection") {
-    return <ResumeSelectionPrompt prompt="Which resume?" resumes={output.resumes} />;
+    return (
+      <ResumeSelectionPrompt
+        prompt="Which resume?"
+        resumes={output.resumes}
+        messageFor={(title) => `Use my resume "${title}"`}
+      />
+    );
   }
 
   const sourceNote =

@@ -279,6 +279,8 @@ describe("AgentResultCard", () => {
     );
     expect(screen.getByText(/good match/i)).toBeInTheDocument();
     expect(screen.getByText(/Strong backend overlap/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Senior Backend Engineer" })).toHaveAttribute("href", "/dashboard/myjobs/job-1");
+    expect(screen.getByRole("link", { name: "Senior Engineer Resume" })).toHaveAttribute("href", "/dashboard/profile/resume/r9");
   });
 
   it("tells the user to open a job when there is none in context", () => {
@@ -327,6 +329,8 @@ describe("AgentResultCard", () => {
     expect(
       screen.getByText(/Senior Backend Engineer - Northwind Cloud/i),
     ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Senior Backend Engineer" })).toHaveAttribute("href", "/dashboard/myjobs/job-1");
+    expect(screen.getByRole("link", { name: "Senior Engineer Resume" })).toHaveAttribute("href", "/dashboard/profile/resume/r9");
   });
 
   it("tells the user to open a job when a letter has none in context", () => {

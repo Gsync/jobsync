@@ -11,6 +11,7 @@ vi.mock("@/components/agent/AgentChatProvider", () => ({
 
 import { AgentChatEmptyState } from "@/components/agent/AgentChatEmptyState";
 import { AGENT_ADD_JOB_INTRO } from "@/lib/agent/prompt";
+import { directInvokeParts } from "@/models/agent.model";
 
 describe("AgentChatEmptyState", () => {
   beforeEach(() => {
@@ -32,14 +33,18 @@ describe("AgentChatEmptyState", () => {
     );
   });
 
-  // The other three end in a tool call whose outcome depends on the page.
-  it("sends the tool-backed suggestions to the model", async () => {
+  // The click already names the tool, so a thinking turn only adds latency.
+  it.each([
+    ["Review resume", "review_resume"],
+    ["Match a job", "match_job"],
+    ["Generate cover letter", "generate_cover_letter"],
+  ] as const)("runs %s as a direct invoke", async (label, toolName) => {
     render(<AgentChatEmptyState />);
-    await userEvent.click(screen.getByText("Match a job"));
+    await userEvent.click(screen.getByText(label));
 
     expect(seedExchange).not.toHaveBeenCalled();
     expect(sendMessage).toHaveBeenCalledWith({
-      parts: [{ type: "text", text: "Match a job" }],
+      parts: directInvokeParts(label, toolName),
     });
   });
 

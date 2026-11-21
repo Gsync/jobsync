@@ -92,6 +92,7 @@ function Probe() {
       <span data-testid="composer-nonce">{c.composerNonce}</span>
       <span data-testid="panel-expanded">{String(c.isPanelExpanded)}</span>
       <span data-testid="panel-width">{c.panelWidth}</span>
+      <span data-testid="stopped-replies">{[...c.stoppedReplies].map(([id, why]) => `${id}:${why}`).join(",")}</span>
       <span data-testid="review-stream">{c.toolStreams["rv1"] ?? ""}</span>
       <span data-testid="job-writes">{c.jobWrites}</span>
     </div>
@@ -235,7 +236,7 @@ describe("AgentChatProvider", () => {
     chat.status = "ready";
     rerender(tree());
     await userEvent.click(screen.getByText("sendMessage"));
-    expect(chat.sendMessage).toHaveBeenCalled();
+    expect(chat.sendMessage).toHaveBeenCalledWith(expect.objectContaining({ metadata: { pageLocation: "elsewhere" } }));
     expect(screen.getByTestId("state").textContent).toContain(
       "false|false|false|null",
     );
@@ -258,11 +259,13 @@ describe("AgentChatProvider", () => {
     await userEvent.click(screen.getByText("sendMessage"));
     expect(chat.sendMessage).not.toHaveBeenCalled();
 
+    window.history.pushState({}, "", "/dashboard/myjobs/job-9");
     chat.status = "ready";
     await act(async () => {
       rerender(tree());
     });
     expect(chat.sendMessage).toHaveBeenCalledTimes(1);
+    expect(chat.sendMessage.mock.calls[0][0].metadata).toEqual({ pageLocation: "job" });
     expect(chat.sendMessage.mock.calls[0][0].parts[0].text).toBe("hello");
     expect(screen.getByTestId("queued").textContent).toBe("");
   });
@@ -584,6 +587,23 @@ describe("AgentChatProvider", () => {
       });
     });
     expect(chat.setMessages).not.toHaveBeenCalled();
+  });
+
+  it.each([{ isAbort: true }, { isDisconnect: true }, { finishReason: "interrupted" }])(
+    "records the interrupted reply for %o", (outcome) => {
+      setup();
+      act(() => chatInit().onFinish({ message: { id: "a1", parts: [] }, ...outcome }));
+      expect(screen.getByTestId("stopped-replies")).toHaveTextContent("a1:interrupted");
+    },
+  );
+
+  it("records a timed-out reply when the server reports the deadline", () => {
+    setup();
+    act(() => {
+      chatInit().onData({ type: "data-turn-timeout", data: {} });
+      chatInit().onFinish({ message: { id: "a1", parts: [] } });
+    });
+    expect(screen.getByTestId("stopped-replies")).toHaveTextContent("a1:timedOut");
   });
 
   it("accumulates transient review deltas keyed by tool call id", async () => {

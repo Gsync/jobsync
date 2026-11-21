@@ -2,12 +2,15 @@ import { handleSaveMatchResult } from "@/lib/mcp/tools/saveMatchResult";
 import { checkMcpRateLimit } from "@/lib/mcp/rate-limit";
 import { PrismaClient } from "@/generated/prisma/client";
 
+import { getDefaultResumeRefForUser } from "@/lib/jobs/getDefaultResumeForUser";
+
+vi.mock("@/lib/jobs/getDefaultResumeForUser", () => ({ getDefaultResumeRefForUser: vi.fn() }));
+
 const prisma = new PrismaClient({} as never);
 
 vi.mock("@/generated/prisma/client", () => {
   const mPrismaClient = {
     job: { update: vi.fn(), findFirst: vi.fn() },
-    user: { findUnique: vi.fn() },
     resume: { findFirst: vi.fn() },
   };
   return { PrismaClient: vi.fn(function () { return mPrismaClient; }) };
@@ -23,10 +26,7 @@ const validMatchText =
 describe("handleSaveMatchResult", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (prisma.user.findUnique as any).mockResolvedValue({
-      defaultResumeId: "resume-1",
-    });
-    (prisma.resume.findFirst as any).mockResolvedValue({
+    vi.mocked(getDefaultResumeRefForUser).mockResolvedValue({
       id: "resume-1",
       title: "My Resume",
     });
@@ -116,7 +116,7 @@ describe("handleSaveMatchResult", () => {
   });
 
   it("omits resumeId/resumeTitle when no default resume is set (best-effort)", async () => {
-    (prisma.user.findUnique as any).mockResolvedValue({ defaultResumeId: null });
+    vi.mocked(getDefaultResumeRefForUser).mockResolvedValue(null);
 
     await handleSaveMatchResult(
       { jobId: "job-1", matchText: validMatchText },
@@ -147,7 +147,7 @@ describe("handleSaveMatchResult", () => {
       select: { id: true, title: true },
     });
     // Echoed id resolved, so the default lookup is skipped entirely.
-    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(getDefaultResumeRefForUser).not.toHaveBeenCalled();
 
     const call = (prisma.job.update as any).mock.calls[0][0];
     const matchData = JSON.parse(call.data.matchData);
@@ -157,9 +157,7 @@ describe("handleSaveMatchResult", () => {
 
   it("falls back to the current default when an echoed resumeId no longer resolves", async () => {
     // Echoed id doesn't resolve; default lookup then succeeds.
-    (prisma.resume.findFirst as any)
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ id: "resume-1", title: "My Resume" });
+    (prisma.resume.findFirst as any).mockResolvedValueOnce(null);
 
     await handleSaveMatchResult(
       { jobId: "job-1", resumeId: "stale-resume", matchText: validMatchText },
@@ -167,7 +165,7 @@ describe("handleSaveMatchResult", () => {
       "my-token",
     );
 
-    expect(prisma.user.findUnique).toHaveBeenCalled();
+    expect(getDefaultResumeRefForUser).toHaveBeenCalledWith("user-7");
     const call = (prisma.job.update as any).mock.calls[0][0];
     const matchData = JSON.parse(call.data.matchData);
     expect(matchData.resumeId).toBe("resume-1");

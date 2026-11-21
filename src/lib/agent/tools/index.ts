@@ -1,17 +1,15 @@
-import type { LanguageModel, ToolApprovalStatus, ToolSet, UIMessageStreamWriter } from "ai";
-import type { PageContext } from "@/models/agent.model";
-import type { NestedGenerationGuard } from "@/lib/agent/nestedGeneration";
+import { hasToolCall, type StopCondition } from "ai";
+import type { InferToolInput, LanguageModel, ToolApprovalStatus, ToolSet, UIMessageStreamWriter } from "ai";
+import { AGENT_CHAT_TERMINAL_TOOLS, AGENT_TOOL_NAMES, type AgentToolName } from "@/lib/agent/registry";
+import { addJobSettled, type PageContext } from "@/models/agent.model";
+import type { NestedGenerationGuard } from "@/lib/agent/steps/nestedGeneration";
 import { addJobNeedsApproval, buildAddJobTool } from "./addJob";
 import { buildGetResumeTool } from "./getResume";
 import { buildReviewResumeTool } from "./reviewResume";
 import { buildMatchJobTool } from "./matchJob";
 import { buildGenerateCoverLetterTool } from "./generateCoverLetter";
 
-// The three nested tools deliberately break the "a tool touches neither the
-// route nor provider resolution" rule in CLAUDE.md: they run their own
-// generation, so they need the resolved model and the stream writer. Recorded
-// in docs/architecture/agent-chat.md rather than contorted around.
-export function buildAgentTools(ctx: {
+export type AgentToolContext = {
   userId: string;
   pastedText?: string;
   pageContext?: PageContext;
@@ -20,47 +18,73 @@ export function buildAgentTools(ctx: {
   modelName: string;
   writer: UIMessageStreamWriter;
   nestedGuard: NestedGenerationGuard;
-}): ToolSet {
-  return {
-    add_job: buildAddJobTool(ctx.userId, ctx.pastedText),
-    get_resume: buildGetResumeTool(ctx.userId, ctx.pageContext?.resumeId),
-    review_resume: buildReviewResumeTool({
+};
+
+type AgentToolServerEntry = {
+  build: (ctx: AgentToolContext) => ToolSet[string];
+  settled?: typeof addJobSettled;
+  approval?: (input: InferToolInput<ToolSet[string]>, pastedText?: string) => boolean;
+};
+
+const AGENT_TOOL_SERVER: Record<AgentToolName, AgentToolServerEntry> = {
+  add_job: {
+    build: (ctx) => buildAddJobTool({
       userId: ctx.userId,
+      pastedText: ctx.pastedText,
+      writer: ctx.writer,
+    }),
+    settled: addJobSettled,
+    approval: addJobNeedsApproval,
+  },
+  get_resume: {
+    build: (ctx) => buildGetResumeTool(ctx.userId, ctx.pageContext?.resumeId),
+  },
+  review_resume: {
+    build: (ctx) => buildReviewResumeTool({
+      ...ctx,
       pageResumeId: ctx.pageContext?.resumeId,
-      model: ctx.model,
-      provider: ctx.provider,
-      modelName: ctx.modelName,
-      writer: ctx.writer,
       guard: ctx.nestedGuard,
     }),
-    match_job: buildMatchJobTool({
-      userId: ctx.userId,
+  },
+  match_job: {
+    build: (ctx) => buildMatchJobTool({
+      ...ctx,
       pageJobId: ctx.pageContext?.jobId,
-      model: ctx.model,
-      provider: ctx.provider,
-      modelName: ctx.modelName,
-      writer: ctx.writer,
       guard: ctx.nestedGuard,
     }),
-    generate_cover_letter: buildGenerateCoverLetterTool({
-      userId: ctx.userId,
+  },
+  generate_cover_letter: {
+    build: (ctx) => buildGenerateCoverLetterTool({
+      ...ctx,
       pageJobId: ctx.pageContext?.jobId,
-      model: ctx.model,
-      provider: ctx.provider,
-      modelName: ctx.modelName,
-      writer: ctx.writer,
       guard: ctx.nestedGuard,
     }),
-  };
+  },
+};
+
+export function buildAgentTools(ctx: AgentToolContext): ToolSet {
+  return Object.fromEntries(
+    AGENT_TOOL_NAMES.map((name) => [name, AGENT_TOOL_SERVER[name].build(ctx)]),
+  );
 }
 
-// The only approval gate in the app. A status, never a boolean: a bare true
-// normalizes to no status and the tool runs unasked.
+export function buildAgentStopWhen(): StopCondition<ToolSet>[] {
+  return AGENT_CHAT_TERMINAL_TOOLS.map((name) => {
+    const { settled } = AGENT_TOOL_SERVER[name];
+    if (!settled) return hasToolCall(name);
+    return ({ steps }) => settled(steps[steps.length - 1] ?? {});
+  });
+}
+
 export function buildAgentToolApproval(pastedText?: string) {
-  return {
-    add_job: (input: { jobDescription?: string }): ToolApprovalStatus =>
-      addJobNeedsApproval(input, pastedText) ? "user-approval" : "not-applicable",
-  };
+  const gates: Record<string, (input: InferToolInput<ToolSet[string]>) => ToolApprovalStatus> = {};
+  for (const name of AGENT_TOOL_NAMES) {
+    const { approval } = AGENT_TOOL_SERVER[name];
+    if (approval) {
+      gates[name] = (input) => approval(input, pastedText) ? "user-approval" : "not-applicable";
+    }
+  }
+  return gates;
 }
 
 export {

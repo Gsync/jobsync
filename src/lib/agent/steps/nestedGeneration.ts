@@ -8,17 +8,22 @@ import {
   log,
   runInSpan,
   startSpan,
-  SURFACE_BY_NESTED_LABEL,
-  SURFACES,
+  type Surface,
 } from "@/lib/telemetry";
+import {
+  addOllamaTimings,
+  ollamaTimingAttrs,
+  readOllamaTimings,
+  type OllamaTimings,
+} from "@/lib/ai/ollamaTimings";
 import { startAiCall } from "@/lib/aiUsage/tracker";
-import { FEATURE_BY_NESTED_LABEL } from "@/models/aiUsage.model";
+import type { AiUsageFeature } from "@/models/aiUsage.model";
 
 export type NestedGenerationResult =
   | { status: "ok"; text: string }
   | { status: "incomplete" }
   | { status: "busy" }
-  | { status: "failed" };
+  | { status: "failed"; timedOut?: true };
 
 // One per request, created by the chat route. Process-wide state would block
 // one user behind another's generation. elapsedMs is what the turn subtracts
@@ -37,12 +42,17 @@ type NestedGenerationArgs = {
   abortSignal?: AbortSignal;
   guard: NestedGenerationGuard;
   label: string;
+  feature: AiUsageFeature;
+  surface: Surface;
   provider: string;
   modelName: string;
   userId: string;
   // Call-site facts the invariant half cannot know: input sizes and whether
   // the caller clipped what it sent.
   attrs?: Record<string, unknown>;
+  // Called once the guard accepts the call, so a "busy" rejection never
+  // announces a generation that did not start.
+  report: (step: "generate") => void;
 };
 
 /**
@@ -63,10 +73,13 @@ export async function runNestedGeneration({
   abortSignal,
   guard,
   label,
+  feature,
+  surface,
   provider,
   modelName,
   userId,
   attrs,
+  report,
 }: NestedGenerationArgs): Promise<NestedGenerationResult> {
   // Started before the guard check so a rejected call is visible too — "busy"
   // is exactly the outcome you go looking for when a review never appeared.
@@ -76,7 +89,7 @@ export async function runNestedGeneration({
       model: modelName,
       temperature,
       numCtx,
-      surface: SURFACE_BY_NESTED_LABEL[label] ?? SURFACES.AGENT_CHAT,
+      surface,
       system,
       prompt,
     }),
@@ -91,22 +104,30 @@ export async function runNestedGeneration({
     return { status: "busy" };
   }
   guard.running = true;
+  report("generate");
 
   return runInSpan(span, async () => {
     // Own deadline, plus the outer turn's signal so closing the panel aborts
     // this too.
-    const signals: AbortSignal[] = [AbortSignal.timeout(timeoutMs)];
+    const deadline = AbortSignal.timeout(timeoutMs);
+    const signals: AbortSignal[] = [deadline];
     if (abortSignal) signals.push(abortSignal);
     const signal = AbortSignal.any(signals);
 
     const startedAt = Date.now();
     const tracker = startAiCall({
       userId,
-      feature: FEATURE_BY_NESTED_LABEL[label] ?? "agent_chat",
+      feature,
       provider,
       model: modelName,
       numCtx,
     });
+
+    let timings: OllamaTimings | undefined;
+    function endGeneration(status: "ok" | "incomplete" | "failed", responseAttrs: Record<string, unknown> = {}) {
+      log.info("[agent-chat] nested generation", { label, status, ...timings });
+      span.end({ "jobsync.nested.status": status, ...responseAttrs, ...ollamaTimingAttrs(timings) });
+    }
 
     let text = "";
     try {
@@ -116,6 +137,12 @@ export async function runNestedGeneration({
         prompt,
         temperature,
         abortSignal: signal,
+        include: { rawChunks: true },
+        onChunk: ({ chunk }) => {
+          if (chunk.type !== "raw") return;
+          const step = readOllamaTimings(chunk.rawValue);
+          if (step) timings = addOllamaTimings(timings, step);
+        },
         // Deliberately no think:true. These sub-calls have no tools, so
         // reasoning buys nothing and costs 30s. The chat loop enables it.
         providerOptions: { ollama: { options: { num_ctx: numCtx } } },
@@ -143,23 +170,20 @@ export async function runNestedGeneration({
       void tracker.finish({ usage: tokens, finishReason });
       if (finishReason !== "stop") {
         span.setError(new Error(`finishReason=${finishReason}`));
-        span.end({
-          "jobsync.nested.status": "incomplete",
-          ...genAiResponseAttrs({ finishReason }),
-        });
+        endGeneration("incomplete", genAiResponseAttrs({ finishReason }));
         return { status: "incomplete" };
       }
 
-      span.end({
-        "jobsync.nested.status": "ok",
-        ...genAiResponseAttrs({ usage: tokens, finishReason, text }),
-      });
+      endGeneration("ok", genAiResponseAttrs({ usage: tokens, finishReason, text }));
       return { status: "ok", text };
     } catch (error) {
       void tracker.finish({ error, abortedBy: signal });
       log.error(`[agent-chat] ${label} generation failed`, { error: String(error) });
       span.setError(error);
-      span.end({ "jobsync.nested.status": "failed" });
+      endGeneration("failed");
+      if (deadline.aborted && !abortSignal?.aborted) {
+        return { status: "failed", timedOut: true };
+      }
       return { status: "failed" };
     } finally {
       guard.elapsedMs += Date.now() - startedAt;

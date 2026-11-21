@@ -1,3 +1,5 @@
+import type { UIMessage } from "ai";
+import type { AGENT_DATA_AREAS, DirectInvokeToolName } from "@/lib/agent/registry";
 import type { DescriptionCompleteness } from "@/models/job.model";
 import type { JobMatchScores, ResumeScores } from "@/models/ai.schemas";
 
@@ -9,6 +11,24 @@ export type PageContext = {
   jobId?: string;
   resumeId?: string;
 };
+
+export const AGENT_DIRECT_INVOKE_PART_TYPE = "data-direct-invoke";
+
+// A missing title lets the tool resolve the open page's resume itself; a given
+// one beats the page, which is wrong for a button that means "this resume".
+export function directInvokeParts(
+  text: string,
+  toolName: DirectInvokeToolName,
+  resumeTitle?: string,
+): UIMessage["parts"] {
+  return [
+    { type: "text", text },
+    {
+      type: AGENT_DIRECT_INVOKE_PART_TYPE,
+      data: { toolName, input: resumeTitle === undefined ? {} : { resumeTitle } },
+    },
+  ];
+}
 
 // Custom data part, not a FileUIPart: a file part is a standard type that
 // convertToModelMessages would carry to the model in full, defeating head
@@ -84,6 +104,15 @@ export type AgentGetResumeResult =
   | { status: "no_resumes" }
   | { status: "unreadable"; title: string; reason: string };
 
+export function omitHistoricalResumeText(part: UIMessage["parts"][number]): typeof part {
+  if (part.type !== "tool-get_resume" || part.state !== "output-available") return part;
+  const { output } = part;
+  if (!output || typeof output !== "object" || !("status" in output) || output.status !== "ok" ||
+      !("resumeText" in output) || typeof output.resumeText !== "string") return part;
+
+  return { ...part, output: { ...output, resumeText: "Earlier replies may already contain the answer. Re-read this resume by title if you need another detail." } };
+}
+
 // Transient stream part carrying a nested generation's tokens. It is never
 // persisted: the finished artifact lands in the tool result, and keeping both
 // would duplicate it in storage and in model context. Shared by review_resume
@@ -91,6 +120,26 @@ export type AgentGetResumeResult =
 export const AGENT_NESTED_STREAM_PART_TYPE = "data-nested-stream";
 
 export type AgentNestedStreamData = { delta: string };
+
+// Persisted, unlike the nested stream: one part per tool call holding the step
+// ids reached, replaced in place by the SDK because type and id repeat.
+export const AGENT_TOOL_PROGRESS_PART_TYPE = "data-tool-progress";
+
+// labels overrides a step's registry label with resolved detail.
+export type AgentToolProgressData = {
+  steps: string[];
+  labels?: Record<string, string>;
+  resumeId?: string;
+  durationSeconds?: Record<string, number>;
+};
+
+// Transient: written once when the turn deadline fires, so the client can say
+// "Timed out." rather than guess why the stream ended.
+export const AGENT_TURN_TIMEOUT_PART_TYPE = "data-turn-timeout";
+
+// Why a reply stopped before its output arrived; known only to the client
+// (interrupted) or to the server's deadline signal (timedOut).
+export type AgentReplyStop = "interrupted" | "timedOut";
 
 // What review_resume returns to the model AND to the result card. The resume
 // text is deliberately absent — follow-ups answer from `body`, not from the
@@ -108,7 +157,7 @@ export type AgentReviewResumeResult =
   | { status: "needs_selection"; resumes: { id: string; title: string }[] }
   | { status: "no_resumes" }
   | { status: "unreadable"; title: string; reason: string }
-  | { status: "generation_failed"; title: string; reason: string };
+  | { status: "generation_failed"; title: string; reason: string; timedOut?: true; busy?: true };
 
 // What match_job returns to the model AND to the result card. Neither the
 // resume text nor the job description is here — follow-ups answer from `body`.
@@ -129,7 +178,7 @@ export type AgentMatchJobResult =
   | { status: "needs_selection"; resumes: { id: string; title: string }[] }
   | { status: "no_resumes" }
   | { status: "unreadable"; what: "job" | "resume"; title: string; reason: string }
-  | { status: "generation_failed"; jobTitle: string; reason: string };
+  | { status: "generation_failed"; jobTitle: string; reason: string; timedOut?: true; busy?: true };
 
 // What generate_cover_letter returns to the model AND to the result card. The
 // letter body is here so a follow-up ("make it shorter") answers from it; the
@@ -153,30 +202,26 @@ export type AgentCoverLetterResult =
   | { status: "needs_selection"; resumes: { id: string; title: string }[] }
   | { status: "no_resumes" }
   | { status: "unreadable"; what: "job" | "resume"; title: string; reason: string }
-  | { status: "generation_failed"; jobTitle: string; reason: string };
+  | { status: "generation_failed"; jobTitle: string; reason: string; timedOut?: true; busy?: true };
 
-// Tools that run their own generation and stream it as transient parts. The
-// transcript and the provider both branch on this rather than on a chain of
-// name comparisons that grows with every nested tool.
-export const AGENT_NESTED_TOOLS = [
-  "review_resume",
-  "match_job",
-  "generate_cover_letter",
-] as const;
+export const AGENT_CHAT_RESUME_MAX_CHARS = 12_000;
 
-export function isNestedTool(name: string): boolean {
-  return (AGENT_NESTED_TOOLS as readonly string[]).includes(name);
-}
+type AgentToolKind = "read" | "write" | "workflow";
+export type AgentInvalidation = "page" | "jobsList";
 
-// Tools that end the turn. The result card renders deterministically from
-// structured fields, so a second generation just to narrate it is 10-30s of
-// local inference for a sentence that could be wrong. A tool that runs its
-// own generation MUST be listed here or a single turn can chain two of them
-// and blow the turn timeout, discarding both.
-export const AGENT_CHAT_TERMINAL_TOOLS = [
-  "add_job",
-  ...AGENT_NESTED_TOOLS,
-] as const;
+export type AgentDataArea = (typeof AGENT_DATA_AREAS)[number];
+
+export type AgentToolMeta = {
+  reads: readonly AgentDataArea[];
+  kind: AgentToolKind;
+  description: string;
+  runningLabel: string;
+  steps: readonly { id: string; label: string }[];
+  terminal: boolean;
+  directInvoke?: true;
+  invalidates: readonly AgentInvalidation[];
+  maxResultChars?: number;
+};
 
 // add_job is terminal once it has SETTLED — written, hit a duplicate, or
 // asked for approval — not merely once it has been called. A call that cannot

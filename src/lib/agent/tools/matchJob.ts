@@ -1,11 +1,13 @@
 import "server-only";
 
 import { tool, type LanguageModel, type UIMessageStreamWriter } from "ai";
+import { SURFACES } from "@/lib/telemetry";
+import { numCtxFor } from "@/lib/ai/numCtx";
 import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
 import { AgentMatchJobSchema } from "@/models/agent.schema";
-import { resolveJobForAgent } from "@/lib/agent/jobLookup";
-import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
+import { resolveJobForAgent } from "@/lib/agent/steps/jobLookup";
+import { resolveResumeForAgent } from "@/lib/agent/steps/resumeLookup";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 import { preprocessJob } from "@/lib/ai/tools/preprocessing-job";
 import {
@@ -17,9 +19,10 @@ import { saveJobMatchResult } from "@/actions/job.actions";
 import {
   runNestedGeneration,
   type NestedGenerationGuard,
-} from "@/lib/agent/nestedGeneration";
+} from "@/lib/agent/steps/nestedGeneration";
+import { resumeStepLabel, toolStepReporter } from "@/lib/agent/steps/progress";
 import type { AgentMatchJobResult } from "@/models/agent.model";
-import type { JobMatchData } from "@/models/ai.schemas";
+import { buildLlmMatchData } from "@/lib/ai/jobMatch/matchResult";
 
 type MatchJobContext = {
   userId: string;
@@ -44,6 +47,8 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
     // Not in toolApproval: this writes only matchData on the caller's own job,
     // and they watch the whole thing stream before it lands.
     execute: async (raw, { toolCallId, abortSignal }): Promise<AgentMatchJobResult> => {
+      const report = toolStepReporter("match_job", ctx.writer, toolCallId);
+      report("job");
       const jobLookup = await resolveJobForAgent(ctx.userId, ctx.pageJobId);
       if (jobLookup.status === "no_job") return { status: "no_job" };
 
@@ -53,6 +58,7 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
 
       // The job's linked resume takes the pageResumeId slot: a job page has no
       // pageContext.resumeId, and job.resumeId is the closest thing to one.
+      report("resume");
       const resumeLookup = await resolveResumeForAgent(ctx.userId, {
         title: raw?.resumeTitle,
         pageResumeId: job.resumeId ?? undefined,
@@ -63,6 +69,7 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
       }
 
       const resume = resumeLookup.resume;
+      report("prepare", { resume: resumeStepLabel(resumeLookup, "linked to this job") }, resume.id);
       const [resumePre, jobPre] = await Promise.all([
         preprocessResume(resume),
         preprocessJob(job),
@@ -93,13 +100,16 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
           jobPre.data.normalizedText,
         ),
         temperature: TEMPERATURES.FEEDBACK,
-        numCtx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
+        numCtx: numCtxFor("chat_nested"),
         timeoutMs: APP_CONSTANTS.AI_JOB_MATCH_TIMEOUT_MS,
         writer: ctx.writer,
         toolCallId,
         abortSignal,
         guard: ctx.guard,
+        report,
         label: "match_job",
+        feature: "job_match",
+        surface: SURFACES.JOB_MATCH,
         provider: ctx.provider,
         modelName: ctx.modelName,
         attrs: {
@@ -111,6 +121,7 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
         return {
           status: "generation_failed",
           jobTitle,
+          busy: true,
           reason: "Another analysis is already running — ask for this one once it finishes.",
         };
       }
@@ -121,6 +132,14 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
           reason: "The analysis stopped before it finished, so nothing was saved.",
         };
       }
+      if (generation.status === "failed" && generation.timedOut) {
+        return {
+          status: "generation_failed",
+          jobTitle,
+          timedOut: true,
+          reason: "The analysis timed out before it finished, so nothing was saved.",
+        };
+      }
       if (generation.status === "failed") {
         return {
           status: "generation_failed",
@@ -129,6 +148,7 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
         };
       }
 
+      report("check");
       const { scores, body } = parseJobMatch(generation.text);
       // matchData is overwrite-only with no history, so an unscored or
       // half-finished generation must not be written.
@@ -140,22 +160,23 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
         };
       }
 
-      const matchData: JobMatchData = {
-        ...scores,
+      const matchData = buildLlmMatchData({
+        scores,
         body,
-        resumeId: resume.id!,
-        resumeTitle: resume.title,
-        matchedAt: new Date().toISOString(),
+        resume: { id: resume.id!, title: resume.title },
+        matchedAt: new Date(),
         provider: ctx.provider,
         model: ctx.modelName,
         surface: APP_CONSTANTS.AGENT_CHAT_MATCH_SURFACE,
-      };
+      });
+      report("save");
       const saveResult = await saveJobMatchResult(
         job.id!,
         scores.matchScore,
-        JSON.stringify(matchData),
+        matchData,
       );
       const saved = saveResult?.success === true;
+      if (saved) report.finish();
 
       return {
         status: "ok",

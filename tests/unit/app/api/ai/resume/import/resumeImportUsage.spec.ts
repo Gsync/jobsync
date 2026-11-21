@@ -19,19 +19,25 @@ const finish = vi.fn();
 const startAiCall = vi.fn((..._a: unknown[]) => ({ markFirstToken, finish }));
 vi.mock("@/lib/aiUsage/tracker", () => ({ startAiCall: (...a: unknown[]) => startAiCall(...a) }));
 
+const span = { traceId: "", spanId: "", setAttrs: vi.fn(), setError: vi.fn(), end: vi.fn() };
+vi.mock("@/lib/telemetry", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/telemetry")>()),
+  startSpan: () => span,
+}));
+
 let options: any;
+const defaultPartials = async function* (): AsyncGenerator<unknown> {
+  yield { summary: "a" };
+  yield { summary: "ab" };
+};
+let partials = defaultPartials;
 vi.mock("ai", async (importOriginal) => {
   const actual = await importOriginal<typeof import("ai")>();
   return {
     ...actual,
     streamText: (o: any) => {
       options = o;
-      return {
-        partialOutputStream: (async function* () {
-          yield { summary: "a" };
-          yield { summary: "ab" };
-        })(),
-      };
+      return { partialOutputStream: partials() };
     },
   };
 });
@@ -49,8 +55,29 @@ async function drain(res: Response) {
   while (!(await reader.read()).done);
 }
 
+async function lastLine(res: Response): Promise<unknown> {
+  const lines = (await res.text()).trim().split("\n");
+  return JSON.parse(lines.at(-1)!);
+}
+
+// The stream stays open until the test aborts it, as streamText's does.
+function openUntilAborted() {
+  let close!: () => void;
+  const closed = new Promise<void>((resolve) => (close = resolve));
+  partials = async function* () {
+    await closed;
+  };
+  return () => {
+    options.onAbort({ steps: [] });
+    close();
+  };
+}
+
 describe("resume import usage", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    partials = defaultPartials;
+  });
 
   it("records one resume_import call and marks the first snapshot", async () => {
     const res = await POST(req());
@@ -77,6 +104,34 @@ describe("resume import usage", () => {
     options.onAbort({ steps: [] });
     const { abortedBy } = finish.mock.calls[0][0];
     expect(abortedBy.reason.name).toBe("TimeoutError");
+    expect(span.setError).toHaveBeenCalledWith(abortedBy.reason);
+    expect(span.end).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
+  });
+
+  it("ends the span without an error when the client disconnects", async () => {
+    await POST(req());
+    options.onAbort({ steps: [] });
+    expect(span.setError).not.toHaveBeenCalled();
+    expect(span.end).toHaveBeenCalledTimes(1);
+  });
+
+  it("tells the client the request timed out when the deadline aborts it", async () => {
+    vi.useFakeTimers();
+    const abort = openUntilAborted();
+    const res = (await POST(req())) as Response;
+    vi.advanceTimersByTime(240_000);
+    vi.useRealTimers();
+    abort();
+    expect(await lastLine(res)).toEqual({ __error: expect.stringMatching(/timed out after \d+ seconds/) });
+  });
+
+  it("sends no error line when the client disconnects", async () => {
+    const client = new AbortController();
+    const abort = openUntilAborted();
+    const res = (await POST({ ...req(), signal: client.signal })) as Response;
+    client.abort();
+    abort();
+    expect((await res.text()).trim()).toBe("");
   });
 });

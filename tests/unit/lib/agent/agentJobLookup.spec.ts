@@ -1,4 +1,4 @@
-import { resolveJobForAgent } from "@/lib/agent/jobLookup";
+import { resolveJobForAgent } from "@/lib/agent/steps/jobLookup";
 import prisma from "@/lib/db";
 
 vi.mock("@/lib/db", () => ({

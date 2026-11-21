@@ -10,6 +10,7 @@ import {
   resolveJobStatus,
   resolveTags,
 } from "@/lib/jobs/resolve";
+import { AGENT_TOOL_META } from "@/lib/agent/registry";
 import { PrismaClient } from "@/generated/prisma/client";
 
 const prisma = new PrismaClient({} as never);
@@ -265,5 +266,58 @@ describe("createJobFromNames", () => {
     expect(createJobRecord).toHaveBeenCalledWith(
       expect.objectContaining({ descriptionCompleteness: "title-only" }),
     );
+  });
+
+  describe("onStep", () => {
+    it("reports resolve, duplicate and save in order, each before its work", async () => {
+      const steps: string[] = [];
+      const onStep = (step: string) => steps.push(step);
+      (resolveCompany as any).mockImplementation(async () => {
+        expect(steps).toEqual(["resolve"]);
+        return { id: "company-1", label: "Acme", created: true };
+      });
+      (prisma.job.findFirst as any).mockImplementation(async () => {
+        expect(steps).toEqual(["resolve", "duplicate"]);
+        return null;
+      });
+      (createJobRecord as any).mockImplementation(async () => {
+        expect(steps).toEqual(["resolve", "duplicate", "save"]);
+        return { id: "job-1" };
+      });
+
+      await createJobFromNames(baseInput, userId, onStep);
+
+      expect(steps).toEqual(["resolve", "duplicate", "save"]);
+      // Pins the registry side: a declared step the function never reports.
+      expect(steps).toEqual(AGENT_TOOL_META.add_job.steps.map((step) => step.id));
+    });
+
+    it("skips duplicate when allowDuplicate is true", async () => {
+      const onStep = vi.fn();
+      await createJobFromNames({ ...baseInput, allowDuplicate: true }, userId, onStep);
+      expect(onStep.mock.calls.map(([step]) => step)).toEqual(["resolve", "save"]);
+    });
+
+    it("stops at duplicate when the job exists", async () => {
+      (prisma.job.findFirst as any).mockResolvedValueOnce({
+        id: "existing-job",
+        createdVia: "my-token",
+        Status: { value: "applied" },
+        JobTitle: { label: "Engineer" },
+        Company: { label: "Acme" },
+      });
+      const onStep = vi.fn();
+
+      const result = await createJobFromNames(baseInput, userId, onStep);
+
+      expect(result.created).toBe(false);
+      expect(onStep.mock.calls.map(([step]) => step)).toEqual(["resolve", "duplicate"]);
+      expect(createJobRecord).not.toHaveBeenCalled();
+    });
+
+    it("reports nothing when no callback is passed", async () => {
+      const result = await createJobFromNames(baseInput, userId);
+      expect(result.created).toBe(true);
+    });
   });
 });

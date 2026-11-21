@@ -55,9 +55,13 @@ export interface CreateJobFromNamesResult {
   message: string;
 }
 
+// Reported to callers that show progress; MCP and API v1 pass nothing.
+type CreateJobStep = "resolve" | "duplicate" | "save";
+
 export async function createJobFromNames(
   input: CreateJobFromNamesInput,
   userId: string,
+  onStep?: (step: CreateJobStep) => void,
 ): Promise<CreateJobFromNamesResult> {
   const {
     company,
@@ -83,6 +87,7 @@ export async function createJobFromNames(
   const jobTypeValue = resolveJobType(jobType);
   const workplaceTypeValue = resolveWorkplaceType(workplaceType);
 
+  onStep?.("resolve");
   // Resolve Bucket A and B in parallel where possible
   const [
     resolvedCompany,
@@ -110,6 +115,7 @@ export async function createJobFromNames(
 
   // Duplicate detection
   if (!allowDuplicate) {
+    onStep?.("duplicate");
     const duplicate = await detectDuplicate({
       userId,
       companyId: resolvedCompany.id,
@@ -131,6 +137,7 @@ export async function createJobFromNames(
 
   const descriptionCompleteness = classifyDescriptionCompleteness(jobDescription);
 
+  onStep?.("save");
   const job = await createJobRecord({
     jobTitleId: resolvedTitle.id,
     companyId: resolvedCompany.id,

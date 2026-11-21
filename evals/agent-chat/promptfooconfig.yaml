@@ -3,7 +3,7 @@ description: Agent chat tool-loop regression tests — does the configured model
 # These rows exercise the CHAT surface, not MCP. All five tools are declared
 # from the same Zod schemas and descriptions the /api/ai/chat route registers,
 # and prompt.ts assembles each turn exactly as the route does — page-context
-# block at the tail, paste head after it — so "did the model copy the posting
+# block after each user turn, current paste head last — so "did the model copy the posting
 # it was shown into jobDescription" is measurable here. No route, no database,
 # no approval gate: the model chooses and promptfoo asserts on the raw
 # tool_calls.
@@ -205,26 +205,22 @@ tests:
       - type: javascript
         value: file://./assertions.ts:assertDescriptionSupplied
 
-  # The step after Confirm. The user has already pressed it and the row starts
-  # from the write, so any mention of a confirmation card here is the model
-  # asking them to do again what they just did — which is what the capabilities
-  # clause about a created result forbids. Note there is no page-context block
-  # on this row: the route only pushes one when the last message is the user's,
-  # and an approval-resume POST ends on the assistant's turn.
-  - description: After Confirm - reports the save, never re-asks for confirmation
+  - description: After Confirm - answers the follow-up without requesting confirmation again
     vars:
       userMessage: >-
         Add this job: Staff Data Engineer at Helio Systems — they're hiring
         someone to own the pipelines behind their analytics platform.
       priorAddJob: created
+      priorPageLocation: jobs-list
+      followUp: What company was that job with?
+      pageLocation: jobs-list
     assert:
       - type: javascript
         value: file://./assertions.ts:assertNoToolCall
       - type: llm-rubric
         value: >-
-          The reply states plainly that the job was added or saved. It does not
-          mention a confirmation card, and does not ask the user to confirm,
-          review, check or press anything.
+          The reply identifies Helio Systems and does not ask the user to confirm,
+          review or save the job again.
 
   # US-5 measured rather than asserted in prose: the agent has no read tool,
   # so the only correct answer is to say so.
@@ -250,6 +246,15 @@ tests:
   - description: Plain resume question - reads the resume instead of refusing
     vars:
       userMessage: What skills are listed on my resume?
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsGetResume
+
+  - description: Picked resume after a question - reads it, does not review it
+    vars:
+      userMessage: What skills are listed on my resume?
+      priorResumeSelection: 'true'
+      followUp: Use my resume "Backend 2026"
     assert:
       - type: javascript
         value: file://./assertions.ts:assertCallsGetResume
@@ -351,6 +356,17 @@ tests:
           them to paste a posting or to add the job again, and does not claim
           to have scored anything.
 
+  - description: Opens a job after a no_job result - retries match_job
+    vars:
+      userMessage: How well do I match this job?
+      priorNoJob: yes
+      priorPageLocation: jobs-list
+      followUp: I opened it. How well do I match now?
+      pageLocation: job
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsMatchJob
+
   # The 'elsewhere' page line, which names no page: the model can say a job's
   # page is not open, and nothing more.
   - description: Cover letter request off a job's page - redirects, no tool call
@@ -414,3 +430,21 @@ tests:
     assert:
       - type: javascript
         value: file://./assertions.ts:assertOneNestedCall
+
+  - description: Long history - recalls the target company on the first jump
+    vars:
+      longHistory: My target company for these practice sessions is Juniper Forge.
+      historyTurns: 10
+      userMessage: Which company did I say I was preparing for?
+    assert:
+      - type: icontains
+        value: Juniper Forge
+
+  - description: Long history - recalls the interview topic after the window grows
+    vars:
+      longHistory: My interview practice topic is sediment transport.
+      historyTurns: 11
+      userMessage: What topic did I say I was practicing?
+    assert:
+      - type: icontains
+        value: sediment transport

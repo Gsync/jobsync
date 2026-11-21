@@ -1,3 +1,4 @@
+import { AGENT_CHAT_RESUME_MAX_CHARS } from "@/models/agent.model";
 import {
   LayoutDashboard,
   SquareCheckBig,
@@ -190,9 +191,7 @@ export const APP_CONSTANTS = {
   // 15-30s think steps plus a 180s review is ~242s, which the old 240s cut off
   // after the user had watched the whole review stream in.
   AGENT_CHAT_TIMEOUT_MS: 300_000,
-  // Deliberately not AI_OLLAMA_NUM_CTX: a chat turn carries a system prompt,
-  // tool schemas, a paste head and history. Raising the shared value would
-  // change review/match latency.
+  // The chat loop and its nested tools share a context size to avoid reloads.
   AGENT_CHAT_NUM_CTX: 16384,
   // Below this a paste stays inline text and no chip is made, so add_job
   // never receives it as pastedText. 1500 sat above a real Indeed posting
@@ -212,7 +211,7 @@ export const APP_CONSTANTS = {
   // Ceiling on the resume text a get_resume result carries. A preprocessed
   // resume runs 3-6k chars; this is headroom, not a normal-case trim. It
   // rides in the model window on every later turn, so it is bounded.
-  AGENT_CHAT_RESUME_MAX_CHARS: 12_000,
+  AGENT_CHAT_RESUME_MAX_CHARS,
   // No fallback model constant, deliberately. An unset settings.ai.model is
   // a pre-stream 503 pointing at Settings, not a silently substituted model
   // the user never chose.

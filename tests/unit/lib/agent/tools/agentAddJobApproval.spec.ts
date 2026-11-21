@@ -50,7 +50,7 @@ function textModel() {
 }
 
 function run(model: MockLanguageModelV4, opts: { pastedText?: string; messages?: ModelMessage[] }) {
-  const tool = buildAddJobTool("user-1", opts.pastedText);
+  const tool = buildAddJobTool({ userId: "user-1", pastedText: opts.pastedText, writer: { write: vi.fn() } as any });
   const execute = vi.fn(tool.execute!);
   const result = streamText({
     model,
