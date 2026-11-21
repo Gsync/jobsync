@@ -105,6 +105,15 @@ export const AGENT_NESTED_STREAM_PART_TYPE = "data-nested-stream";
 
 export type AgentNestedStreamData = { delta: string };
 
+// Persisted, unlike the nested stream: one part per tool call holding the step
+// ids reached, replaced in place by the SDK because type and id repeat.
+export const AGENT_TOOL_PROGRESS_PART_TYPE = "data-tool-progress";
+
+export type AgentToolProgressData = { steps: string[] };
+
+export const AGENT_REVIEW_PROGRESS_PART_TYPE = "data-review-progress";
+export type AgentReviewProgress = "Loading resume…" | "Preparing resume text…" | "Starting review…" | "Extracting scores…" | "Saving review…";
+
 // What review_resume returns to the model AND to the result card. The resume
 // text is deliberately absent — follow-ups answer from `body`, not from the
 // serialization.
@@ -121,7 +130,7 @@ export type AgentReviewResumeResult =
   | { status: "needs_selection"; resumes: { id: string; title: string }[] }
   | { status: "no_resumes" }
   | { status: "unreadable"; title: string; reason: string }
-  | { status: "generation_failed"; title: string; reason: string };
+  | { status: "generation_failed"; title: string; reason: string; interrupted?: true; timedOut?: true };
 
 // What match_job returns to the model AND to the result card. Neither the
 // resume text nor the job description is here — follow-ups answer from `body`.
@@ -180,6 +189,7 @@ export type AgentToolMeta = {
   kind: AgentToolKind;
   description: string;
   runningLabel: string;
+  steps: readonly { id: string; label: string }[];
   terminal: boolean;
   directInvoke?: true;
   invalidates: readonly AgentInvalidation[];

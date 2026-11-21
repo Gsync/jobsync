@@ -33,6 +33,24 @@ describe("agent tool metadata", () => {
     expect(isNestedTool("not_a_tool")).toBe(false);
   });
 
+  it("declares unique step ids per tool", () => {
+    for (const meta of Object.values(AGENT_TOOL_META)) {
+      const ids = meta.steps.map((step) => step.id);
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+  });
+
+  it("gives every workflow a generate step", () => {
+    for (const meta of Object.values(AGENT_TOOL_META)) {
+      if (meta.kind !== "workflow") continue;
+      expect(meta.steps.map((step) => step.id)).toContain("generate");
+    }
+  });
+
+  it("gives get_resume no steps", () => {
+    expect(AGENT_TOOL_META.get_resume.steps).toEqual([]);
+  });
+
   it("returns the refresh targets for a tool", () => {
     expect(toolInvalidates("match_job")).toEqual(["page", "jobsList"]);
     expect(toolInvalidates("not_a_tool")).toEqual([]);
