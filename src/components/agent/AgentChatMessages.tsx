@@ -2,27 +2,27 @@
 
 import { useState } from "react";
 import { FileTextIcon, XIcon } from "lucide-react";
-import { getToolName, isStaticToolUIPart, type UIMessage } from "ai";
+import { isStaticToolUIPart, type UIMessage } from "ai";
 import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
 import { Button } from "@/components/ui/button";
-import { AgentApprovalCard } from "@/components/agent/AgentApprovalCard";
 import { AgentMarkdown } from "@/components/agent/AgentMarkdown";
-import { AgentResultCard } from "@/components/agent/AgentResultCard";
 import { AgentStatusRow } from "@/components/agent/AgentStatusRow";
-import { AgentToolRunningCard } from "@/components/agent/AgentToolRunningCard";
+import { AgentToolPart } from "@/components/agent/AgentToolPart";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
 import { resolvePastedText } from "@/lib/agent/memory/paste";
 import { cn } from "@/lib/utils";
 import {
+  AGENT_DIRECT_INVOKE_PART_TYPE,
+  AGENT_TOOL_PROGRESS_PART_TYPE,
   isAgentPastePart,
   type AgentPastePartData,
+  type AgentToolProgressData,
 } from "@/models/agent.model";
-import { isAgentToolName } from "@/lib/agent/registry";
-import { AGENT_TOOL_VIEWS } from "@/components/agent/AgentToolViews";
+import { AGENT_TOOL_META, isAgentToolName } from "@/lib/agent/registry";
 
 function PasteChip({ data }: { data: AgentPastePartData }) {
   const chars = data.chars.toLocaleString();
@@ -53,7 +53,9 @@ function showThinking(messages: UIMessage[], status: string): boolean {
   const last = messages[messages.length - 1];
   if (!last || last.role !== "assistant") return true;
 
-  const tail = last.parts[last.parts.length - 1];
+  // Progress parts land after the tool part and stay the tail; they are not
+  // something on screen of their own.
+  const tail = last.parts.findLast((part) => !part.type.startsWith("data-"));
   if (!tail) return true;
   if (tail.type === "text") return tail.text.trim().length === 0;
   if (!isStaticToolUIPart(tail)) return true;
@@ -71,6 +73,28 @@ function showThinking(messages: UIMessage[], status: string): boolean {
   }
 }
 
+// A direct invoke runs no model, so the tool is known before any part exists.
+function pendingDirectLabel(messages: UIMessage[], status: string): string | undefined {
+  if (status !== "submitted" && status !== "streaming") return;
+  const last = messages.at(-1);
+  if (last?.role !== "user") return;
+  const part = last.parts.find((p) => p.type === AGENT_DIRECT_INVOKE_PART_TYPE);
+  const toolName = (part as { data?: { toolName?: string } } | undefined)?.data?.toolName;
+  return toolName && isAgentToolName(toolName)
+    ? AGENT_TOOL_META[toolName].runningLabel
+    : undefined;
+}
+
+function progressSteps(message: UIMessage): Map<string, readonly string[]> {
+  const steps = new Map<string, readonly string[]>();
+  for (const part of message.parts) {
+    if (part.type !== AGENT_TOOL_PROGRESS_PART_TYPE) continue;
+    const { id, data } = part as { id?: string; data: AgentToolProgressData };
+    if (id) steps.set(id, data.steps);
+  }
+  return steps;
+}
+
 export function AgentChatMessages() {
   const {
     messages,
@@ -79,6 +103,7 @@ export function AgentChatMessages() {
     regenerate,
     addToolApprovalResponse,
     interruptedTurn,
+    stoppedReplies,
     dismissInterrupted,
   } = useAgentChat();
   const [dismissed, setDismissed] = useState(false);
@@ -86,6 +111,9 @@ export function AgentChatMessages() {
   const pastedText = resolvePastedText(messages);
   const showContinue =
     !dismissed && (interruptedTurn || endsAwaitingReply(messages, status));
+  const inFlight = status === "streaming" || status === "submitted";
+  const last = messages.at(-1);
+  const directLabel = pendingDirectLabel(messages, status);
   const thinking = showThinking(messages, status);
 
   const dismiss = () => {
@@ -96,8 +124,10 @@ export function AgentChatMessages() {
   return (
     <Conversation className="flex-1">
       <ConversationContent className="gap-4">
-        {messages.map((message) => (
-          <div
+        {messages.map((message) => {
+          const stopped = stoppedReplies.get(message.id);
+          const steps = progressSteps(message);
+          return <div
             key={message.id}
             className={cn(
               "flex flex-col gap-2 text-sm",
@@ -125,37 +155,24 @@ export function AgentChatMessages() {
               // Static, not dynamic: every tool this surface exposes is
               // declared in buildAgentTools, so a dynamic part is not ours.
               if (!isStaticToolUIPart(part)) return null;
-              switch (part.state) {
-                case "input-streaming":
-                case "input-available": {
-                  const tool = getToolName(part);
-                  const Stream = isAgentToolName(tool) ? AGENT_TOOL_VIEWS[tool].Stream : undefined;
-                  const streamed = toolStreams[part.toolCallId];
-                  return Stream && streamed ? (
-                    <Stream key={i} text={streamed} />
-                  ) : (
-                    <AgentToolRunningCard key={i} part={part} />
-                  );
-                }
-                case "approval-requested":
-                case "approval-responded":
-                  return (
-                    <AgentApprovalCard
-                      key={i}
-                      part={part}
-                      pastedText={pastedText}
-                      onRespond={addToolApprovalResponse}
-                    />
-                  );
-                // Default, not a case list: AgentResultCard already returns
-                // null for anything it does not recognize, and rendering
-                // nothing beats rendering an unknown future state raw.
-                default:
-                  return <AgentResultCard key={i} part={part} />;
-              }
+              return (
+                <AgentToolPart
+                  key={part.toolCallId}
+                  part={part}
+                  steps={steps.get(part.toolCallId)}
+                  streamed={toolStreams[part.toolCallId]}
+                  running={
+                    message === last && inFlight && !stopped &&
+                    !part.state.startsWith("output-")
+                  }
+                  stopped={stopped}
+                  pastedText={pastedText}
+                  onRespond={addToolApprovalResponse}
+                />
+              );
             })}
-          </div>
-        ))}
+          </div>;
+        })}
 
         {showContinue && (
           <div className="flex items-center gap-2 rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
@@ -184,7 +201,9 @@ export function AgentChatMessages() {
           </div>
         )}
 
-        {thinking && <AgentStatusRow label="Thinking…" />}
+        {directLabel ? (
+          <AgentStatusRow label={directLabel} />
+        ) : thinking && <AgentStatusRow label="Thinking…" />}
       </ConversationContent>
       <ConversationScrollButton aria-label="Scroll to bottom" />
     </Conversation>

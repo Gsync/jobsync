@@ -10,6 +10,7 @@ import {
   AGENT_NESTED_TOOLS,
   isNestedTool,
 } from "@/lib/agent/registry";
+import { directInvokeParts } from "@/models/agent.model";
 import { McpAddJobInputShape } from "@/models/mcp.schema";
 import { JOB_STATUS_VALUES } from "@/lib/constants";
 
@@ -128,5 +129,21 @@ describe("nested tool registry", () => {
     for (const name of AGENT_NESTED_TOOLS) {
       expect([...AGENT_CHAT_TERMINAL_TOOLS]).toContain(name);
     }
+  });
+});
+
+describe("directInvokeParts", () => {
+  it("carries the title as the tool input", () => {
+    expect(directInvokeParts("Review A", "review_resume", "A")).toEqual([
+      { type: "text", text: "Review A" },
+      { type: "data-direct-invoke", data: { toolName: "review_resume", input: { resumeTitle: "A" } } },
+    ]);
+  });
+
+  it("sends an empty input when no title is given", () => {
+    expect(directInvokeParts("Review", "match_job")[1]).toEqual({
+      type: "data-direct-invoke",
+      data: { toolName: "match_job", input: {} },
+    });
   });
 });

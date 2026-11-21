@@ -23,7 +23,7 @@ Paste the full posting text into Job Description if you have it. The AI features
 
 ## How do I add a job by pasting a posting into AI chat?
 
-Click **Chat AI** in the header to open the assistant panel, paste the full text of a job posting into the message box, and send it. The assistant extracts the title, company, location and description and shows you an approval card with exactly what it found. Nothing is saved to your tracker until you approve that card, and you can edit the details before you do. Confirming ends the turn with a card showing the saved job or duplicate. Unless the posting or your message gives a deadline, the job is saved with a due date three days from today, the same as the Add Job form.
+Click **Chat AI** in the header to open the assistant panel, paste the full text of a job posting into the message box, and send it. The assistant extracts the title, company, location and description and shows you an approval card with exactly what it found. Nothing is saved to your tracker until you approve that card, and you can edit the details before you do. Confirming ends the turn with a card showing the saved job or duplicate. The chat shows each step; an already-saved posting stops at the existing-job card ([steps](./getting-started.md#what-do-the-progress-steps-in-ai-chat-mean)). Unless the posting or your message gives a deadline, the job is saved with a due date three days from today, the same as the Add Job form.
 
 Choose a model under **Settings → AI Provider** first. Long postings appear as chips and are extracted in full. In long conversations, the assistant drops older messages in batches. Repeat an earlier detail if your request depends on it.
 

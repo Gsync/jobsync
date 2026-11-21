@@ -4,12 +4,14 @@ import { NextRequest } from "next/server";
 import { POST } from "@/app/api/ai/chat/route";
 import { AGENT_PASTE_PART_TYPE } from "@/models/agent.model";
 
-const { save, update, startUsage, createJob, resolveResume } = vi.hoisted(() => ({
-  resolveResume: vi.fn(async () => ({ status: "no_resumes" })),
+const { save, update, startUsage, createJob, resolveResume, resolveJob } = vi.hoisted(() => ({
+  resolveResume: vi.fn(async (..._args: unknown[]) => ({ status: "no_resumes" })),
+  resolveJob: vi.fn(async (..._args: unknown[]) => ({ status: "no_job" })),
   save: vi.fn(), update: vi.fn(),
   startUsage: vi.fn(() => ({ markFirstToken: vi.fn(), finish: vi.fn() })), createJob: vi.fn(),
 }));
 vi.mock("@/lib/jobs/createJobFromNames", () => ({ createJobFromNames: createJob }));
+vi.mock("@/lib/agent/steps/jobLookup", () => ({ resolveJobForAgent: resolveJob }));
 vi.mock("@/lib/agent/steps/resumeLookup", () => ({
   resolveResumeForAgent: resolveResume,
 }));
@@ -220,7 +222,41 @@ it.each(["review_resume", "match_job", "generate_cover_letter"])("streams the %s
   }));
 });
 
-it.each([["add_job", {}], ["get_resume", {}], ["constructor", {}], ["review_resume", { resumeTitle: 7 }]])(
+const untitledInvoke = (toolName: string) => ({ id: "go", role: "user", parts: [
+  { type: "text", text: "Review this" }, { type: "data-direct-invoke", data: { toolName, input: {} } },
+] });
+
+it("reviews the page's resume when the direct invoke has no title", async () => {
+  await postTurn({
+    pageContext: { route: "/dashboard/profile/resume/older", resumeId: "older" },
+    messages: [untitledInvoke("review_resume")],
+  });
+  expect(streamText).not.toHaveBeenCalled();
+  expect(resolveResume).toHaveBeenCalledWith("user-1", { title: undefined, pageResumeId: "older" });
+});
+
+it.each(["match_job", "generate_cover_letter"])(
+  "streams the %s call directly when the invoke has no title", async (toolName) => {
+    resolveJob.mockResolvedValueOnce({ status: "ok", job: { id: "job-1", resumeId: null } } as never);
+    const stream = await postTurn({
+      pageContext: { route: "/dashboard/myjobs/job-1", jobId: "job-1" },
+      messages: [untitledInvoke(toolName)],
+    });
+    expect(streamText).not.toHaveBeenCalled();
+    expect(stream).toContain('"type":"tool-output-available"');
+    expect(resolveResume).toHaveBeenCalledWith("user-1", expect.objectContaining({ title: undefined }));
+  },
+);
+
+it.each(["match_job", "generate_cover_letter"])(
+  "returns no_job directly for %s off a job page", async (toolName) => {
+    const stream = await postTurn({ messages: [untitledInvoke(toolName)] });
+    expect(streamText).not.toHaveBeenCalled();
+    expect(stream).toContain('"status":"no_job"');
+  },
+);
+
+it.each([["add_job", {}], ["get_resume", {}], ["constructor", {}], ["review_resume", { resumeTitle: 7 }], ["review_resume", { resumeTitle: "  " }]])(
   "routes an ineligible picker request through chat (%s)", async (toolName, input) => {
     await postTurn({ messages: [{ id: "pick", role: "user", parts: [
       { type: "text", text: "Use Engineering" }, { type: "data-direct-invoke", data: { toolName, input } },

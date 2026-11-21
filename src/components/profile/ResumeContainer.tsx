@@ -32,6 +32,7 @@ import {
 } from "./resume-container/ResumeDialogs";
 import { useResumeImport } from "./resume-container/useResumeImport";
 import { useResumePdfExport } from "./resume-container/useResumePdfExport";
+import { directInvokeParts } from "@/models/agent.model";
 
 function ResumeContainer({
   resume,
@@ -115,7 +116,7 @@ function ResumeContainer({
     } catch {
       // Reported by the action itself; the review still goes out.
     }
-    void sendMessage({ parts: [{ type: "text", text: `Review ${title}` }] });
+    void sendMessage({ parts: directInvokeParts(`Review ${title}`, "review_resume") });
   };
 
   const onReviewClick = () => {

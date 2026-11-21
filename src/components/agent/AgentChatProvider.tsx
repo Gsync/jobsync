@@ -37,6 +37,8 @@ import { checkOllamaConnection } from "@/utils/ai.utils";
 import { AiProvider } from "@/models/ai.model";
 import {
   AGENT_NESTED_STREAM_PART_TYPE,
+  AGENT_TURN_TIMEOUT_PART_TYPE,
+  type AgentReplyStop,
   type AgentAddJobResult,
   type AgentNestedStreamData,
 } from "@/models/agent.model";
@@ -57,6 +59,18 @@ type Preflight = {
 type QueuedMessage = { parts: UIMessage["parts"] };
 
 type AgentChatValue = ReturnType<typeof useAgentChatValue>;
+
+// The server's deadline part is the only signal that tells a timeout from the
+// user's own Stop: the SDK reports both as an abort with no reason.
+function replyStop(
+  timedOut: boolean,
+  end: { isAbort?: boolean; isDisconnect?: boolean; finishReason?: string },
+): AgentReplyStop | undefined {
+  if (timedOut) return "timedOut";
+  if (end.isAbort || end.isDisconnect || end.finishReason === "interrupted") {
+    return "interrupted";
+  }
+}
 
 const AgentChatContext = createContext<AgentChatValue | null>(null);
 
@@ -111,6 +125,9 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     togglePanelExpand();
   }, [isPanelExpanded, collapseSidebar, togglePanelExpand]);
 
+  const [stoppedReplies, setStoppedReplies] = useState<ReadonlyMap<string, AgentReplyStop>>(new Map());
+  // Set by the server's deadline part, read once by the reply that ends.
+  const turnTimedOutRef = useRef(false);
   const [interruptedTurn, setInterruptedTurn] = useState(false);
   const [preflight, setPreflight] = useState<Preflight>({
     checked: false,
@@ -153,12 +170,20 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     // POSTs back to execute the tool. It is the mechanism, not a nicety.
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
     onData: (part) => {
+      if (part.type === AGENT_TURN_TIMEOUT_PART_TYPE) {
+        turnTimedOutRef.current = true;
+        return;
+      }
       if (part.type !== AGENT_NESTED_STREAM_PART_TYPE || !part.id) return;
       const id = part.id;
       const { delta } = part.data as AgentNestedStreamData;
       setToolStreams((prev) => ({ ...prev, [id]: (prev[id] ?? "") + delta }));
     },
-    onFinish: ({ message, isAbort, isError }) => {
+    onFinish: ({ message, isAbort, isDisconnect, isError, finishReason }) => {
+      const timedOut = turnTimedOutRef.current;
+      turnTimedOutRef.current = false;
+      const stop = replyStop(timedOut, { isAbort, isDisconnect, finishReason });
+      if (stop) setStoppedReplies((prev) => new Map(prev).set(message.id, stop));
       // onFinish runs from a finally block, so it fires on abort too.
       if (isAbort || isError) return;
 
@@ -288,6 +313,7 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     setInterruptedTurn(false);
     setComposerNonce((n) => n + 1);
     setToolStreams({});
+    setStoppedReplies(new Map());
     setQueued(undefined);
     // Clearing an idle conversation aborted nothing worth reporting.
     if (wasStreaming) toastInfo("Conversation cleared and generation stopped.");
@@ -411,6 +437,7 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     queued,
     clearQueued,
     interruptedTurn,
+    stoppedReplies,
     dismissInterrupted,
     clear,
     preflight,

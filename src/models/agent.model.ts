@@ -1,5 +1,5 @@
 import type { UIMessage } from "ai";
-import type { AGENT_DATA_AREAS } from "@/lib/agent/registry";
+import type { AGENT_DATA_AREAS, DirectInvokeToolName } from "@/lib/agent/registry";
 import type { DescriptionCompleteness } from "@/models/job.model";
 import type { JobMatchScores, ResumeScores } from "@/models/ai.schemas";
 
@@ -13,6 +13,22 @@ export type PageContext = {
 };
 
 export const AGENT_DIRECT_INVOKE_PART_TYPE = "data-direct-invoke";
+
+// A missing title lets the tool resolve the open page's resume itself; a given
+// one beats the page, which is wrong for a button that means "this resume".
+export function directInvokeParts(
+  text: string,
+  toolName: DirectInvokeToolName,
+  resumeTitle?: string,
+): UIMessage["parts"] {
+  return [
+    { type: "text", text },
+    {
+      type: AGENT_DIRECT_INVOKE_PART_TYPE,
+      data: { toolName, input: resumeTitle === undefined ? {} : { resumeTitle } },
+    },
+  ];
+}
 
 // Custom data part, not a FileUIPart: a file part is a standard type that
 // convertToModelMessages would carry to the model in full, defeating head
@@ -119,9 +135,6 @@ export const AGENT_TURN_TIMEOUT_PART_TYPE = "data-turn-timeout";
 // (interrupted) or to the server's deadline signal (timedOut).
 export type AgentReplyStop = "interrupted" | "timedOut";
 
-export const AGENT_REVIEW_PROGRESS_PART_TYPE = "data-review-progress";
-export type AgentReviewProgress = "Loading resume…" | "Preparing resume text…" | "Starting review…" | "Extracting scores…" | "Saving review…";
-
 // What review_resume returns to the model AND to the result card. The resume
 // text is deliberately absent — follow-ups answer from `body`, not from the
 // serialization.
@@ -138,7 +151,7 @@ export type AgentReviewResumeResult =
   | { status: "needs_selection"; resumes: { id: string; title: string }[] }
   | { status: "no_resumes" }
   | { status: "unreadable"; title: string; reason: string }
-  | { status: "generation_failed"; title: string; reason: string; interrupted?: true; timedOut?: true; busy?: true };
+  | { status: "generation_failed"; title: string; reason: string; timedOut?: true; busy?: true };
 
 // What match_job returns to the model AND to the result card. Neither the
 // resume text nor the job description is here — follow-ups answer from `body`.

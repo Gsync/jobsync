@@ -39,9 +39,10 @@ export function directCallFor(message?: UIMessage): DirectCall | undefined {
   if (message?.role !== "user") return;
   const part = message.parts.find(p => p.type === AGENT_DIRECT_INVOKE_PART_TYPE);
   if (part?.type !== AGENT_DIRECT_INVOKE_PART_TYPE) return;
-  const data = part.data as { toolName?: string; input?: { resumeTitle?: string } } | null;
+  const data = part.data as { toolName?: string; input?: { resumeTitle?: unknown } } | null;
   if (typeof data?.toolName !== "string" || !isDirectInvokeTool(data.toolName)) return;
-  if (typeof data.input?.resumeTitle !== "string" || !data.input.resumeTitle.trim()) return;
+  const title = data.input?.resumeTitle;
+  if (title !== undefined && (typeof title !== "string" || !title.trim())) return;
   return { toolName: data.toolName, toolCallId: generateId(), input: data.input };
 }
 

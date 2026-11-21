@@ -9,6 +9,7 @@ const chat = {
   resumeStream: vi.fn(),
   addToolApprovalResponse: vi.fn(),
   interruptedTurn: false,
+  stoppedReplies: new Map<string, string>(),
   dismissInterrupted: vi.fn(),
   toolStreams: {} as Record<string, string>,
 };
@@ -42,6 +43,7 @@ describe("AgentChatMessages", () => {
     chat.messages = [];
     chat.status = "ready";
     chat.interruptedTurn = false;
+    chat.stoppedReplies = new Map();
     chat.toolStreams = {};
   });
 
@@ -277,6 +279,148 @@ describe("AgentChatMessages", () => {
     state: "input-available",
     input: {},
   } as any;
+
+  const progress = (id: string, steps: string[]) =>
+    ({ type: "data-tool-progress", id, data: { steps } }) as any;
+  const REVIEW = ["resume", "prepare", "generate", "check", "save"];
+  const rows = () => screen.getAllByRole("listitem").map((row) => row.textContent);
+  const marks = (container: HTMLElement) =>
+    [...container.querySelectorAll("[data-mark]")].map((m) => m.getAttribute("data-mark"));
+
+  it("shows a review's steps from its progress part", () => {
+    chat.status = "streaming";
+    chat.messages = [
+      user([{ type: "text", text: "Review Design Resume" }]),
+      assistant([reviewRunning, progress("rv1", ["resume", "prepare"])]),
+    ];
+    const view = render(<AgentChatMessages />);
+    expect(rows()).toEqual(["Loading resume…", "Preparing resume text…"]);
+    expect(screen.getByText("Preparing resume text…").closest("li")).toHaveAttribute("aria-current", "step");
+    expect(screen.queryByText("Thinking…")).not.toBeInTheDocument();
+
+    chat.toolStreams.rv1 = "SCORES: overall=78 impact=72 clarity=81 ats=69\n\nClear summary.";
+    chat.messages[1] = assistant([reviewRunning, progress("rv1", REVIEW.slice(0, 4))]);
+    view.rerender(<AgentChatMessages />);
+    expect(screen.getByText("Clear summary.")).toAppearBefore(screen.getByText("Extracting scores…"));
+    expect(screen.getByText("Generating review…")).toAppearBefore(screen.getByText("Clear summary."));
+    expect(screen.getByText("Extracting scores…").closest("li")).toHaveAttribute("aria-current", "step");
+
+    const output = { status: "ok", saved: true, body: "Clear summary." };
+    chat.status = "ready";
+    chat.messages[1] = assistant([
+      { ...reviewRunning, state: "output-available", output }, progress("rv1", REVIEW),
+    ]);
+    view.rerender(<AgentChatMessages />);
+    expect(rows()).toEqual([
+      "Loading resume…", "Preparing resume text…", "Generating review…",
+      "Extracting scores…", "Saving review…",
+    ]);
+    expect(screen.getByText("Clear summary.")).toAppearBefore(screen.getByText("Extracting scores…"));
+    expect(view.container.querySelector('[aria-current="step"]')).toBeNull();
+    expect(marks(view.container).every((m) => m === "done")).toBe(true);
+  });
+
+  it("keeps two tool calls' steps apart", () => {
+    chat.messages = [assistant([
+      { ...reviewRunning, state: "output-available", output: { status: "needs_selection", resumes: [{ id: "r1", title: "A" }] } },
+      progress("rv1", ["resume"]),
+      { type: "tool-review_resume", toolCallId: "rv2", state: "output-available", input: {}, output: { status: "ok", saved: true, body: "Done." } },
+      progress("rv2", REVIEW),
+    ])];
+    render(<AgentChatMessages />);
+    expect(screen.getAllByText("Loading resume…")).toHaveLength(2);
+    expect(screen.getAllByText("Saving review…")).toHaveLength(1);
+  });
+
+  it("labels a pending direct invoke with the tool's running label", () => {
+    chat.status = "submitted";
+    chat.messages = [user([
+      { type: "text", text: "Review Design Resume" },
+      { type: "data-direct-invoke", data: { toolName: "review_resume", input: {} } },
+    ])];
+    render(<AgentChatMessages />);
+    expect(screen.getByText("Reviewing your resume…")).toBeInTheDocument();
+    expect(screen.queryByText("Thinking…")).not.toBeInTheDocument();
+  });
+
+  it("shows no Thinking… while a tool's progress part is the tail", () => {
+    chat.status = "streaming";
+    chat.messages = [assistant([reviewRunning, progress("rv1", ["resume"])])];
+    const view = render(<AgentChatMessages />);
+    expect(screen.queryByText("Thinking…")).not.toBeInTheDocument();
+
+    chat.messages = [assistant([
+      toolPart("approval-responded", { approval: { id: "ap1", approved: true } }),
+      progress("c1", ["resolve"]),
+    ])];
+    view.rerender(<AgentChatMessages />);
+    expect(screen.queryByText("Thinking…")).not.toBeInTheDocument();
+  });
+
+  it("marks a review interrupted when the reply was stopped", () => {
+    chat.stoppedReplies = new Map([["a1", "interrupted"]]);
+    chat.messages = [assistant([reviewRunning, progress("rv1", ["resume", "prepare"])])];
+    const { container } = render(<AgentChatMessages />);
+    expect(screen.getByText("Interrupted.")).toBeInTheDocument();
+    expect(marks(container)).toEqual(["done", "interrupted"]);
+    expect(container.querySelector('[aria-current="step"]')).toBeNull();
+  });
+
+  it("marks a review timed out when the server reported the deadline", () => {
+    chat.stoppedReplies = new Map([["a1", "timedOut"]]);
+    chat.messages = [assistant([reviewRunning, progress("rv1", ["resume", "prepare"])])];
+    render(<AgentChatMessages />);
+    expect(screen.getByText("Timed out.")).toBeInTheDocument();
+    expect(screen.queryByText("Interrupted.")).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["generation_failed", { status: "generation_failed", title: "Resume", reason: "Could not generate." }],
+    ["unreadable", { status: "unreadable", title: "Resume", reason: "Missing content." }],
+  ])("marks the step a %s review broke at with a failure icon", (_, output) => {
+    chat.messages = [assistant([
+      { ...reviewRunning, state: "output-available", output }, progress("rv1", ["resume", "prepare"]),
+    ])];
+    const { container } = render(<AgentChatMessages />);
+    expect(marks(container)).toEqual(["done", "failed"]);
+    expect(container.querySelector('[aria-current="step"]')).toBeNull();
+  });
+
+  it("keeps a neutral mark when the review stops to ask for a resume", () => {
+    chat.messages = [assistant([
+      { ...reviewRunning, state: "output-available", output: {
+        status: "needs_selection", resumes: [{ id: "r1", title: "A" }, { id: "r2", title: "B" }],
+      } },
+      progress("rv1", ["resume"]),
+    ])];
+    const { container } = render(<AgentChatMessages />);
+    expect(marks(container)).toEqual(["answer"]);
+  });
+
+  it("marks a review that timed out, distinct from interrupted", () => {
+    chat.messages = [assistant([
+      { ...reviewRunning, state: "output-available", output: {
+        status: "generation_failed", timedOut: true, title: "Resume", reason: "The review timed out.",
+      } },
+      progress("rv1", ["resume", "prepare", "generate"]),
+    ])];
+    render(<AgentChatMessages />);
+    expect(screen.getByText("Timed out.")).toBeInTheDocument();
+    expect(screen.queryByText("Interrupted.")).not.toBeInTheDocument();
+  });
+
+  it("shows a save error after the review and the save attempt", () => {
+    chat.messages = [assistant([
+      { ...reviewRunning, state: "output-available", output: {
+        status: "ok", body: "Clear summary.", saved: false, saveError: "Storage unavailable.",
+      } },
+      progress("rv1", REVIEW),
+    ])];
+    const { container } = render(<AgentChatMessages />);
+    expect(screen.getByText("Clear summary.")).toAppearBefore(screen.getByText("Saving review…"));
+    expect(screen.getByText(/Review not saved — Storage unavailable/)).toBeInTheDocument();
+    expect(marks(container).at(-1)).toBe("failed");
+  });
 
   it("renders the review as it streams, before the tool result exists", () => {
     chat.status = "streaming";
