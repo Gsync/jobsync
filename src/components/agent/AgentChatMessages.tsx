@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { FileTextIcon, XIcon } from "lucide-react";
-import { isStaticToolUIPart, type UIMessage } from "ai";
+import { Fragment, useState } from "react";
+import { FileTextIcon, WrenchIcon, XIcon } from "lucide-react";
+import { getToolName, isStaticToolUIPart, type UIMessage } from "ai";
 import {
   Conversation,
   ConversationContent,
@@ -22,7 +22,7 @@ import {
   type AgentPastePartData,
   type AgentToolProgressData,
 } from "@/models/agent.model";
-import { AGENT_TOOL_META, isAgentToolName } from "@/lib/agent/registry";
+import { AGENT_TOOL_META, isAgentToolName, type AgentToolName } from "@/lib/agent/registry";
 
 function PasteChip({ data }: { data: AgentPastePartData }) {
   const chars = data.chars.toLocaleString();
@@ -74,15 +74,22 @@ function showThinking(messages: UIMessage[], status: string): boolean {
 }
 
 // A direct invoke runs no model, so the tool is known before any part exists.
-function pendingDirectLabel(messages: UIMessage[], status: string): string | undefined {
+function pendingDirectTool(messages: UIMessage[], status: string): AgentToolName | undefined {
   if (status !== "submitted" && status !== "streaming") return;
   const last = messages.at(-1);
   if (last?.role !== "user") return;
   const part = last.parts.find((p) => p.type === AGENT_DIRECT_INVOKE_PART_TYPE);
   const toolName = (part as { data?: { toolName?: string } } | undefined)?.data?.toolName;
-  return toolName && isAgentToolName(toolName)
-    ? AGENT_TOOL_META[toolName].runningLabel
-    : undefined;
+  return toolName && isAgentToolName(toolName) ? toolName : undefined;
+}
+
+function SelectedTool({ name }: { name: string }) {
+  return (
+    <p className="flex items-center gap-2 text-xs text-muted-foreground">
+      <WrenchIcon aria-hidden="true" className="size-3.5" />
+      Selected tool <code>{name}</code>
+    </p>
+  );
 }
 
 function toolProgress(message: UIMessage): Map<string, AgentToolProgressData> {
@@ -113,7 +120,7 @@ export function AgentChatMessages() {
     !dismissed && (interruptedTurn || endsAwaitingReply(messages, status));
   const inFlight = status === "streaming" || status === "submitted";
   const last = messages.at(-1);
-  const directLabel = pendingDirectLabel(messages, status);
+  const directTool = pendingDirectTool(messages, status);
   const thinking = showThinking(messages, status);
 
   const dismiss = () => {
@@ -156,20 +163,22 @@ export function AgentChatMessages() {
               // declared in buildAgentTools, so a dynamic part is not ours.
               if (!isStaticToolUIPart(part)) return null;
               return (
-                <AgentToolPart
-                  key={part.toolCallId}
-                  part={part}
-                  steps={progress.get(part.toolCallId)?.steps}
-                  stepLabels={progress.get(part.toolCallId)?.labels}
-                  streamed={toolStreams[part.toolCallId]}
-                  running={
-                    message === last && inFlight && !stopped &&
-                    !part.state.startsWith("output-")
-                  }
-                  stopped={stopped}
-                  pastedText={pastedText}
-                  onRespond={addToolApprovalResponse}
-                />
+                <Fragment key={part.toolCallId}>
+                  <SelectedTool name={getToolName(part)} />
+                  <AgentToolPart
+                    part={part}
+                    steps={progress.get(part.toolCallId)?.steps}
+                    stepLabels={progress.get(part.toolCallId)?.labels}
+                    streamed={toolStreams[part.toolCallId]}
+                    running={
+                      message === last && inFlight && !stopped &&
+                      !part.state.startsWith("output-")
+                    }
+                    stopped={stopped}
+                    pastedText={pastedText}
+                    onRespond={addToolApprovalResponse}
+                  />
+                </Fragment>
               );
             })}
           </div>;
@@ -202,8 +211,11 @@ export function AgentChatMessages() {
           </div>
         )}
 
-        {directLabel ? (
-          <AgentStatusRow label={directLabel} />
+        {directTool ? (
+          <div className="flex flex-col gap-2">
+            <SelectedTool name={directTool} />
+            <AgentStatusRow label={AGENT_TOOL_META[directTool].runningLabel} />
+          </div>
         ) : thinking && <AgentStatusRow label="Thinking…" />}
       </ConversationContent>
       <ConversationScrollButton aria-label="Scroll to bottom" />

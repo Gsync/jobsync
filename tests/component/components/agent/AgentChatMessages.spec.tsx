@@ -295,6 +295,7 @@ describe("AgentChatMessages", () => {
     ];
     const view = render(<AgentChatMessages />);
     expect(rows()).toEqual(["Loading resume…", "Preparing resume text…"]);
+    expect(screen.getByText("review_resume")).toAppearBefore(screen.getByText("Loading resume…"));
     expect(screen.getByText("Preparing resume text…").closest("li")).toHaveAttribute("aria-current", "step");
     expect(screen.queryByText("Thinking…")).not.toBeInTheDocument();
 
@@ -340,6 +341,7 @@ describe("AgentChatMessages", () => {
     ])];
     render(<AgentChatMessages />);
     expect(screen.getByText("Reviewing your resume…")).toBeInTheDocument();
+    expect(screen.getByText("review_resume")).toBeInTheDocument();
     expect(screen.queryByText("Thinking…")).not.toBeInTheDocument();
   });
 
