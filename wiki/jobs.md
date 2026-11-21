@@ -54,6 +54,8 @@ Three parts, top to bottom. A **header row** with the job title, a `Company · L
 
 The tabs are **Description**, **[Timeline](./timeline.md)**, **AI Match**, **Cover Letter**, **[Contacts](./contacts.md)** and **Notes**, and all six are always there. AI Match and Cover Letter stay in the bar even when the job has neither, showing a short explanation and a button to run it — so the tab set never shifts between jobs. Timeline, Notes and Contacts each carry a count badge once the job has any. Contacts lists the people linked to this job with the role each played. The tab you are on is kept in the address bar, so a refresh, a bookmark or the browser Back button lands you back on the same one.
 
+After a job match or cover letter finishes in chat, click the job title in the result card’s footer to open the job details, or click the resume title to open the resume used.
+
 ## How do I edit, annotate or delete a job?
 
 **Edit** and **Delete** are buttons in the header row of the job details page, and both are also in the **⋮** menu next to them. **Edit** reopens the same dialog you added the job with, pre-filled. **Delete** asks for confirmation and then removes the job permanently — there is no undo and no trash, so use *Archived* status instead if you only want it out of the list.

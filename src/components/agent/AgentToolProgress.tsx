@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Check,
   Circle,
@@ -49,6 +50,7 @@ export type AgentToolProgressProps = {
   toolName: AgentToolName;
   steps: readonly string[];
   stepLabels?: Readonly<Record<string, string>>;
+  resumeId?: string;
   durationSeconds?: Readonly<Record<string, number>>;
   section: "before" | "after";
   outcome?: AgentToolOutcome;
@@ -57,10 +59,27 @@ export type AgentToolProgressProps = {
   streaming: boolean;
 };
 
+function resumeLabel(label: string | undefined, resumeId?: string) {
+  if (!label || !resumeId) return label;
+  const parts = /^(Using resume ")([\s\S]+)"(.*)$/.exec(label);
+  if (!parts) return label;
+  const [, prefix, title, note] = parts;
+  return (
+    <>
+      {prefix}
+      <Link href={`/dashboard/profile/resume/${resumeId}`} className="font-medium underline hover:text-foreground">
+        {title}
+      </Link>
+      &quot;{note}
+    </>
+  );
+}
+
 export function AgentToolProgress({
   toolName,
   steps,
   stepLabels,
+  resumeId,
   durationSeconds,
   section,
   outcome,
@@ -92,6 +111,7 @@ export function AgentToolProgress({
           const { Icon, color } = MARKS[mark];
           const note = isLast ? MARK_NOTES[mark] : undefined;
           const seconds = durationSeconds?.[id];
+          const stepLabel = stepLabels?.[id] ?? labels.get(id);
           return (
             <li
               key={id}
@@ -104,7 +124,7 @@ export function AgentToolProgress({
                 className={cn("size-3.5", color, mark === "running" && "animate-spin")}
               />
               <span className="text-muted-foreground">
-                {stepLabels?.[id] ?? labels.get(id)}
+                {id === "resume" ? resumeLabel(stepLabel, resumeId) : stepLabel}
               </span>
               {mark === "done" && seconds !== undefined && (
                 <span className="shrink-0 text-xs">· {seconds}s</span>

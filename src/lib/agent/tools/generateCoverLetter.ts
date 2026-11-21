@@ -76,7 +76,7 @@ export function buildGenerateCoverLetterTool(ctx: CoverLetterContext) {
       }
 
       const resume = resumeLookup.resume;
-      report("prepare", { resume: resumeStepLabel(resumeLookup, "linked to this job") });
+      report("prepare", { resume: resumeStepLabel(resumeLookup, "linked to this job") }, resume.id);
       const [resumePre, jobPre] = await Promise.all([
         preprocessResume(resume),
         preprocessJob(job),

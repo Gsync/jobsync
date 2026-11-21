@@ -20,6 +20,7 @@ type Props = {
   part: ToolUIPart;
   steps?: readonly string[];
   stepLabels?: Readonly<Record<string, string>>;
+  resumeId?: string;
   durationSeconds?: Readonly<Record<string, number>>;
   streamed?: string;
   running: boolean;
@@ -51,6 +52,10 @@ export function AgentToolPart(props: Props) {
   const reached = isAgentToolName(toolName) ? knownSteps(toolName, steps) : undefined;
   const Stream = isAgentToolName(toolName) ? AGENT_TOOL_VIEWS[toolName].Stream : undefined;
   const stream = Stream && streamed ? <Stream text={streamed} /> : null;
+  // Older progress records have the selected resume ID only in the result.
+  const output = part.state === "output-available" ? part.output : undefined;
+  const savedResumeId = output && typeof output === "object" &&
+    "resumeId" in output && typeof output.resumeId === "string" ? output.resumeId : undefined;
 
   const progress = (section: "before" | "after") =>
     reached && isAgentToolName(toolName) ? (
@@ -58,6 +63,7 @@ export function AgentToolPart(props: Props) {
         toolName={toolName}
         steps={reached}
         stepLabels={props.stepLabels}
+        resumeId={props.resumeId ?? savedResumeId}
         durationSeconds={props.durationSeconds}
         section={section}
         outcome={outcomeOf(part, toolName)}

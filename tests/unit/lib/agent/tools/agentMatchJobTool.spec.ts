@@ -181,6 +181,8 @@ describe("match_job agent tool", () => {
 
   it("relabels the resume step with the resume it chose", async () => {
     await execute(buildMatchJobTool(ctx()), {});
+    expect(progressParts().find((part) => part.data.labels)?.data.resumeId).toBe("r9");
+    expect(progressParts().at(-1).data.resumeId).toBe("r9");
     expect(progressParts().at(-1).data.labels).toEqual({
       resume: 'Using resume "Senior Engineer Resume" (linked to this job)',
     });

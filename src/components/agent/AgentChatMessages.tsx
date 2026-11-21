@@ -169,6 +169,7 @@ export function AgentChatMessages() {
                     part={part}
                     steps={progress.get(part.toolCallId)?.steps}
                     stepLabels={progress.get(part.toolCallId)?.labels}
+                    resumeId={progress.get(part.toolCallId)?.resumeId}
                     durationSeconds={progress.get(part.toolCallId)?.durationSeconds}
                     streamed={toolStreams[part.toolCallId]}
                     running={

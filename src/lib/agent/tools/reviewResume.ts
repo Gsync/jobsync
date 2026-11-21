@@ -59,7 +59,7 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
       }
 
       const title = lookup.resume.title;
-      report("prepare", { resume: resumeStepLabel(lookup, "the one you're viewing") });
+      report("prepare", { resume: resumeStepLabel(lookup, "the one you're viewing") }, lookup.resume.id);
       const pre = await preprocessResume(lookup.resume);
       if (!pre.success) {
         return {

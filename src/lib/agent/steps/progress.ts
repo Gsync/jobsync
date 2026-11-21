@@ -17,6 +17,7 @@ export function toolStepReporter<Name extends AgentToolName>(
   const reached: string[] = [];
   const labels: Record<string, string> = {};
   const durationSeconds: Record<string, number> = {};
+  let resumeId: string | undefined;
   let startedAt = 0;
 
   function recordDuration(now: number) {
@@ -30,16 +31,18 @@ export function toolStepReporter<Name extends AgentToolName>(
   function writeProgress() {
     const data: AgentToolProgressData = { steps: [...reached] };
     if (Object.keys(labels).length > 0) data.labels = { ...labels };
+    if (resumeId) data.resumeId = resumeId;
     if (Object.keys(durationSeconds).length > 0) data.durationSeconds = { ...durationSeconds };
     writer.write({ type: AGENT_TOOL_PROGRESS_PART_TYPE, id: toolCallId, data });
   }
 
-  function report(step: Step, relabel?: Partial<Record<Step, string>>) {
+  function report(step: Step, relabel?: Partial<Record<Step, string>>, selectedResumeId?: string) {
     const now = performance.now();
     recordDuration(now);
     startedAt = now;
     reached.push(step);
     Object.assign(labels, relabel);
+    if (selectedResumeId) resumeId = selectedResumeId;
     writeProgress();
   }
 

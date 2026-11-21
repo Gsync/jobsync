@@ -129,6 +129,7 @@ export const AGENT_TOOL_PROGRESS_PART_TYPE = "data-tool-progress";
 export type AgentToolProgressData = {
   steps: string[];
   labels?: Record<string, string>;
+  resumeId?: string;
   durationSeconds?: Record<string, number>;
 };
 

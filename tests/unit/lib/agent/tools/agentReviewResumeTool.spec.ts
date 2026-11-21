@@ -122,6 +122,8 @@ describe("review_resume agent tool", () => {
 
   it("relabels the resume step with the resume it chose", async () => {
     await execute(buildReviewResumeTool(ctx()), {});
+    expect(progressParts().find((part) => part.data.labels)?.data.resumeId).toBe("r1");
+    expect(progressParts().at(-1).data.resumeId).toBe("r1");
     expect(progressParts().at(-1).data.labels).toEqual({
       resume: 'Using resume "Senior Engineer Resume" (default)',
     });

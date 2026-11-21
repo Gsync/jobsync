@@ -92,6 +92,26 @@ describe("AgentToolPart", () => {
     expect(stream.compareDocumentPosition(after) & follows).toBeTruthy();
   });
 
+  it.each(["live", "saved"])("links only the resume title in a %s progress step", (phase) => {
+    const title = 'Senior "Backend" Engineer';
+    const label = `Using resume "${title}" (default)`;
+    setup({
+      steps: ["resume", "prepare"],
+      stepLabels: { resume: label },
+      ...(phase === "live"
+        ? { running: true, resumeId: "r7" }
+        : {
+            part: part({
+              state: "output-available",
+              output: { status: "ok", resumeId: "r7", title, body: "Review", saved: true },
+            }),
+          }),
+    });
+    const link = screen.getByRole("link", { name: title });
+    expect(link).toHaveAttribute("href", "/dashboard/profile/resume/r7");
+    expect(link.closest("li")).toHaveTextContent(label);
+  });
+
   it("renders a persisted step with no spinner when not running", () => {
     const { container } = setup({
       part: part({ state: "output-available", output: busy }),
