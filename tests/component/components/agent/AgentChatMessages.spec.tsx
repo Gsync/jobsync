@@ -343,6 +343,15 @@ describe("AgentChatMessages", () => {
     expect(screen.queryByText("Thinking…")).not.toBeInTheDocument();
   });
 
+  it("shows a warm-colored spinner while the assistant is thinking", () => {
+    chat.status = "submitted";
+    chat.messages = [user([{ type: "text", text: "Review Design Resume" }])];
+    render(<AgentChatMessages />);
+
+    const spinner = screen.getByText("Thinking…").parentElement?.querySelector("svg");
+    expect(spinner).toHaveClass("animate-spin", "text-orange-600", "dark:text-amber-500");
+  });
+
   it("shows no Thinking… while a tool's progress part is the tail", () => {
     chat.status = "streaming";
     chat.messages = [assistant([reviewRunning, progress("rv1", ["resume"])])];

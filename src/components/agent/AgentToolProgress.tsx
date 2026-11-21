@@ -20,7 +20,7 @@ type Mark = "done" | "running" | "failed" | "timedOut" | "interrupted" | "answer
 
 const MARKS: Record<Mark, { Icon: LucideIcon; color?: string }> = {
   done: { Icon: Check, color: "text-green-600 dark:text-green-500" },
-  running: { Icon: Loader2, color: "text-orange-600 dark:text-orange-500" },
+  running: { Icon: Loader2, color: "text-orange-600 dark:text-amber-500" },
   failed: { Icon: X, color: "text-destructive" },
   timedOut: { Icon: TimerOff, color: "text-destructive" },
   interrupted: { Icon: CirclePause },

@@ -132,12 +132,12 @@ describe("AgentToolProgress", () => {
       return all[all.length - 1];
     };
     expect(last({ outcome: "ok" })).toHaveClass("text-green-600", "dark:text-green-500");
-    expect(last({ running: true })).toHaveClass("text-orange-600", "dark:text-orange-500");
+    expect(last({ running: true })).toHaveClass("text-orange-600", "dark:text-amber-500");
     expect(last({ outcome: "failed" })).toHaveClass("text-destructive");
     expect(last({ outcome: "timedOut" })).toHaveClass("text-destructive");
     for (const props of [{ stopped: "interrupted" as const }, { outcome: "answer" as const }]) {
       expect(last(props).getAttribute("class")).not.toMatch(
-        /text-(green|orange|destructive)/,
+        /text-(green|orange|amber|destructive)/,
       );
     }
   });

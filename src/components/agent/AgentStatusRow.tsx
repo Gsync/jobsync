@@ -12,7 +12,7 @@ export function AgentStatusRow({ label }: { label: string }) {
   return (
     <div className="rounded-sm border bg-muted/20 px-3 py-2">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-orange-600 dark:text-amber-500" />
         <span>{label}</span>
       </div>
       {showSlowWarning && <SlowResponseWarning />}
