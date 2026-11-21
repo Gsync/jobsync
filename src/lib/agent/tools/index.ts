@@ -28,7 +28,11 @@ type AgentToolServerEntry = {
 
 const AGENT_TOOL_SERVER: Record<AgentToolName, AgentToolServerEntry> = {
   add_job: {
-    build: (ctx) => buildAddJobTool(ctx.userId, ctx.pastedText),
+    build: (ctx) => buildAddJobTool({
+      userId: ctx.userId,
+      pastedText: ctx.pastedText,
+      writer: ctx.writer,
+    }),
     settled: addJobSettled,
     approval: addJobNeedsApproval,
   },

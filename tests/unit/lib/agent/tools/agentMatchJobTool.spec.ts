@@ -6,6 +6,7 @@ import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 import { preprocessJob } from "@/lib/ai/tools/preprocessing-job";
 import { saveJobMatchResult } from "@/actions/job.actions";
 import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
+import { AGENT_TOOL_META } from "@/lib/agent/registry";
 import {
   JOB_MATCH_SYSTEM_PROMPT,
   buildJobMatchPrompt,
@@ -55,6 +56,13 @@ const ctx = () => ({
   writer: writer as any,
   guard: { running: false, elapsedMs: 0 },
 });
+
+const progressParts = () =>
+  writer.write.mock.calls
+    .map(([part]) => part)
+    .filter((part) => part.type === "data-tool-progress");
+const stepsSoFar = (): string[] => progressParts().at(-1)?.data.steps ?? [];
+const REGISTRY_STEPS = AGENT_TOOL_META.match_job.steps.map((step) => step.id);
 
 const execute = (agentTool: any, input: any) =>
   agentTool.execute(input, { toolCallId: "call-1", messages: [] });
@@ -156,11 +164,74 @@ describe("match_job agent tool", () => {
       textStreamOf(["SCORES: ", "match=72 recommendation=good\n\nBody"]),
     );
     await execute(buildMatchJobTool(ctx()), {});
-    expect(writer.write).toHaveBeenCalledTimes(2);
-    const first = writer.write.mock.calls[0][0];
-    expect(first.type).toBe("data-nested-stream");
-    expect(first.id).toBe("call-1");
-    expect(first.transient).toBe(true);
+    const streamed = writer.write.mock.calls
+      .map(([part]) => part)
+      .filter((part) => part.type === "data-nested-stream");
+    expect(streamed).toHaveLength(2);
+    expect(streamed.every((part) => part.id === "call-1" && part.transient)).toBe(true);
+  });
+
+  it("reports each step in order", async () => {
+    await execute(buildMatchJobTool(ctx()), {});
+    const reached = progressParts().map((part) => part.data.steps.at(-1));
+    expect(reached).toEqual(REGISTRY_STEPS);
+    expect(stepsSoFar()).toEqual(REGISTRY_STEPS);
+    expect(progressParts().every((part) => part.id === "call-1" && !("transient" in part))).toBe(true);
+  });
+
+  it("reports each step while its work runs, not before", async () => {
+    findJob.mockImplementation(async () => {
+      expect(stepsSoFar()).toEqual(["job"]);
+      return { status: "ok", job: { id: "job-1", resumeId: "r9", JobTitle: { label: "T" }, Company: { label: "C" } } };
+    });
+    findResume.mockImplementation(async () => {
+      expect(stepsSoFar()).toEqual(["job", "resume"]);
+      return { status: "ok", resume: { id: "r9", title: "Senior Engineer Resume" } };
+    });
+    preResume.mockImplementation(async () => {
+      expect(stepsSoFar()).toEqual(["job", "resume", "prepare"]);
+      return { success: true, data: { normalizedText: RESUME_TEXT } };
+    });
+    streamText.mockImplementation(() => {
+      expect(stepsSoFar()).toEqual(["job", "resume", "prepare", "generate"]);
+      return textStreamOf([MATCH]);
+    });
+    save.mockImplementation(async () => {
+      expect(stepsSoFar()).toEqual(REGISTRY_STEPS);
+      return { success: true };
+    });
+    const result = await execute(buildMatchJobTool(ctx()), {});
+    expect(result.status).toBe("ok");
+  });
+
+  it("stops at job when there is no job", async () => {
+    findJob.mockResolvedValue({ status: "no_job" });
+    await execute(buildMatchJobTool(ctx()), {});
+    expect(stepsSoFar()).toEqual(["job"]);
+  });
+
+  it("does not report generate when the guard is busy", async () => {
+    const busy = { ...ctx(), guard: { running: true, elapsedMs: 0 } };
+    const result = await execute(buildMatchJobTool(busy), {});
+    expect(result).toMatchObject({ status: "generation_failed", busy: true });
+    expect(stepsSoFar()).toEqual(["job", "resume", "prepare"]);
+  });
+
+  it("reports a deadline as timed out", async () => {
+    vi.spyOn(AbortSignal, "timeout").mockReturnValue(AbortSignal.abort());
+    streamText.mockReturnValue({
+      textStream: (async function* () {
+        throw new Error("The operation timed out");
+      })(),
+    });
+    const result = await execute(buildMatchJobTool(ctx()), {});
+    vi.mocked(AbortSignal.timeout).mockRestore();
+    expect(result).toMatchObject({
+      status: "generation_failed",
+      timedOut: true,
+      reason: "The analysis timed out before it finished, so nothing was saved.",
+    });
+    expect(save).not.toHaveBeenCalled();
   });
 
   it("returns the score and the markdown body, with the scores line stripped", async () => {

@@ -18,6 +18,7 @@ import {
   runNestedGeneration,
   type NestedGenerationGuard,
 } from "@/lib/agent/steps/nestedGeneration";
+import { toolStepReporter } from "@/lib/agent/steps/progress";
 import type { AgentReviewResumeResult } from "@/models/agent.model";
 import type { ResumeReviewData } from "@/models/ai.schemas";
 
@@ -45,6 +46,8 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
     // Not in toolApproval: this writes only the caller's own reviewData, and
     // they watch the whole thing stream before it lands.
     execute: async (raw, { toolCallId, abortSignal }): Promise<AgentReviewResumeResult> => {
+      const report = toolStepReporter("review_resume", ctx.writer, toolCallId);
+      report("resume");
       const lookup = await resolveResumeForAgent(ctx.userId, {
         title: raw?.resumeTitle,
         pageResumeId: ctx.pageResumeId,
@@ -56,6 +59,7 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
       }
 
       const title = lookup.resume.title;
+      report("prepare");
       const pre = await preprocessResume(lookup.resume);
       if (!pre.success) {
         return {
@@ -77,6 +81,7 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
         toolCallId,
         abortSignal,
         guard: ctx.guard,
+        report,
         label: "review_resume",
         feature: "resume_review",
         surface: SURFACES.RESUME_REVIEW,
@@ -90,6 +95,7 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
         return {
           status: "generation_failed",
           title,
+          busy: true,
           reason: "Another analysis is already running — ask for this one once it finishes.",
         };
       }
@@ -100,6 +106,14 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
           reason: "The review stopped before it finished, so nothing was saved.",
         };
       }
+      if (generation.status === "failed" && generation.timedOut) {
+        return {
+          status: "generation_failed",
+          title,
+          timedOut: true,
+          reason: "The review timed out before it finished, so nothing was saved.",
+        };
+      }
       if (generation.status === "failed") {
         return {
           status: "generation_failed",
@@ -108,6 +122,7 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
         };
       }
 
+      report("check");
       const { scores, body } = parseResumeReview(generation.text);
       // reviewData is overwrite-only with no history, so an unscored or
       // half-finished generation must not be written.
@@ -127,6 +142,7 @@ export function buildReviewResumeTool(ctx: ReviewResumeContext) {
         model: ctx.modelName,
         surface: APP_CONSTANTS.AGENT_CHAT_REVIEW_SURFACE,
       };
+      report("save");
       const saveResult = await saveResumeReviewResult(
         lookup.resume.id!,
         JSON.stringify(reviewData),

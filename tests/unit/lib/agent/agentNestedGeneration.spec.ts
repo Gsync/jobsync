@@ -29,6 +29,7 @@ function textStreamOf(
 }
 
 const writer = { write: vi.fn(), merge: vi.fn(), onError: undefined };
+const report = vi.fn();
 
 const args = () => ({
   model: { id: "fake-model" } as any,
@@ -38,6 +39,7 @@ const args = () => ({
   numCtx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
   timeoutMs: 1000,
   writer: writer as any,
+  report,
   toolCallId: "call-1",
   guard: { running: false, elapsedMs: 0 },
   label: "test_tool",
@@ -131,6 +133,45 @@ describe("runNestedGeneration", () => {
     });
     const result = await runNestedGeneration(args());
     expect(result).toEqual({ status: "failed" });
+  });
+
+  it("reports generate once the guard accepts, before the first delta", async () => {
+    await runNestedGeneration(args());
+    expect(report).toHaveBeenCalledTimes(1);
+    expect(report).toHaveBeenCalledWith("generate");
+    expect(report.mock.invocationCallOrder[0]).toBeLessThan(
+      writer.write.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("does not report generate when busy", async () => {
+    await runNestedGeneration({ ...args(), guard: { running: true, elapsedMs: 0 } });
+    expect(report).not.toHaveBeenCalled();
+  });
+
+  it("marks a deadline as timedOut", async () => {
+    vi.spyOn(AbortSignal, "timeout").mockReturnValue(AbortSignal.abort());
+    streamText.mockReturnValue({
+      textStream: (async function* () {
+        throw new Error("The operation timed out");
+      })(),
+    });
+    const result = await runNestedGeneration(args());
+    vi.mocked(AbortSignal.timeout).mockRestore();
+    expect(result).toEqual({ status: "failed", timedOut: true });
+  });
+
+  it("does not mark the caller's abort as timedOut", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    streamText.mockReturnValue({
+      textStream: (async function* () {
+        throw new Error("aborted");
+      })(),
+    });
+    const result = await runNestedGeneration({ ...args(), abortSignal: controller.signal });
+    expect(result).toEqual({ status: "failed" });
+    expect(result).not.toHaveProperty("timedOut");
   });
 
   it("reports failed rather than throwing when the stream errors", async () => {

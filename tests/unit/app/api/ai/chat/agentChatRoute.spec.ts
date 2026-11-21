@@ -407,6 +407,71 @@ describe("POST /api/ai/chat", () => {
     expect(abortSignal.aborted).toBe(true);
   });
 
+  describe("turn deadline", () => {
+    // A merged stream the test closes itself, so the turn stays open while the
+    // deadline signal is driven.
+    function holdTurnOpen() {
+      let close!: () => void;
+      toUIMessageStream.mockReturnValueOnce(
+        new ReadableStream({ start: (c) => { close = () => c.close(); } }),
+      );
+      return () => close();
+    }
+    const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+    const timeoutParts = (body: string) =>
+      body.split("data-turn-timeout").length - 1;
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it("tells the client when the turn deadline fires", async () => {
+      const deadline = new AbortController();
+      vi.spyOn(AbortSignal, "timeout").mockReturnValue(deadline.signal);
+      const close = holdTurnOpen();
+      const response = await POST(req({ messages: [pasteMessage("posting")] }));
+      const body = response.text();
+      await tick();
+      deadline.abort();
+      close();
+      const text = await body;
+      expect(timeoutParts(text)).toBe(1);
+      expect(text).not.toContain('"transient":false');
+    });
+
+    it("does not report a timeout on a client disconnect", async () => {
+      const deadline = new AbortController();
+      vi.spyOn(AbortSignal, "timeout").mockReturnValue(deadline.signal);
+      const close = holdTurnOpen();
+      const disconnect = new AbortController();
+      const response = await POST({
+        json: async () => ({ messages: [pasteMessage("posting")] }),
+        signal: disconnect.signal,
+      } as any);
+      const body = response.text();
+      await tick();
+      disconnect.abort();
+      deadline.abort();
+      close();
+      expect(timeoutParts(await body)).toBe(0);
+    });
+
+    it("detaches the timeout listener when the turn ends", async () => {
+      const deadline = new AbortController();
+      vi.spyOn(AbortSignal, "timeout").mockReturnValue(deadline.signal);
+      const add = vi.spyOn(deadline.signal, "addEventListener");
+      const remove = vi.spyOn(deadline.signal, "removeEventListener");
+      const close = holdTurnOpen();
+      const response = await POST(req({ messages: [pasteMessage("posting")] }));
+      const body = response.text();
+      await tick();
+      close();
+      await body;
+      const listener = add.mock.calls.find(([type]) => type === "abort")![1];
+      expect(remove).toHaveBeenCalledWith("abort", listener);
+    });
+  });
+
   it("returns 503 naming Settings when no model is configured, and never guesses one", async () => {
     vi.mocked(resolveAiConfig).mockResolvedValue({
       ok: false, reason: "no_model",

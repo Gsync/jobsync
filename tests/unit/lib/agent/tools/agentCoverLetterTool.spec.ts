@@ -6,6 +6,7 @@ import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 import { preprocessJob } from "@/lib/ai/tools/preprocessing-job";
 import { generateCoverLetterForJob } from "@/actions/coverLetter.actions";
 import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
+import { AGENT_TOOL_META } from "@/lib/agent/registry";
 import {
   COVER_LETTER_SYSTEM_PROMPT,
   buildCoverLetterPrompt,
@@ -61,6 +62,13 @@ const ctx = (overrides: Record<string, unknown> = {}) => ({
   guard: { running: false, elapsedMs: 0 },
   ...overrides,
 });
+
+const progressParts = () =>
+  writer.write.mock.calls
+    .map(([part]) => part)
+    .filter((part) => part.type === "data-tool-progress");
+const stepsSoFar = (): string[] => progressParts().at(-1)?.data.steps ?? [];
+const REGISTRY_STEPS = AGENT_TOOL_META.generate_cover_letter.steps.map((step) => step.id);
 
 const execute = (agentTool: any, input: any) =>
   agentTool.execute(input, { toolCallId: "call-1", messages: [] });
@@ -221,11 +229,73 @@ describe("generate_cover_letter agent tool", () => {
   it("streams the sub-call's tokens as transient parts keyed by the tool call", async () => {
     streamText.mockReturnValue(textStreamOf(["Dear Hiring ", "Manager,"]));
     await execute(buildGenerateCoverLetterTool(ctx()), {});
-    expect(writer.write).toHaveBeenCalledTimes(2);
-    const first = writer.write.mock.calls[0][0];
-    expect(first.type).toBe("data-nested-stream");
-    expect(first.id).toBe("call-1");
-    expect(first.transient).toBe(true);
+    const streamed = writer.write.mock.calls
+      .map(([part]) => part)
+      .filter((part) => part.type === "data-nested-stream");
+    expect(streamed).toHaveLength(2);
+    expect(streamed.every((part) => part.id === "call-1" && part.transient)).toBe(true);
+  });
+
+  it("reports each step in order", async () => {
+    await execute(buildGenerateCoverLetterTool(ctx()), {});
+    const reached = progressParts().map((part) => part.data.steps.at(-1));
+    expect(reached).toEqual(REGISTRY_STEPS);
+    expect(progressParts().every((part) => part.id === "call-1" && !("transient" in part))).toBe(true);
+  });
+
+  it("reports each step while its work runs, not before", async () => {
+    findJob.mockImplementation(async () => {
+      expect(stepsSoFar()).toEqual(["job"]);
+      return {
+        status: "ok",
+        job: {
+          id: "job-1", resumeId: "r9", matchData: MATCH_DATA, descriptionCompleteness: "full",
+          JobTitle: { label: "T" }, Company: { label: "C" },
+        },
+      };
+    });
+    findResume.mockImplementation(async () => {
+      expect(stepsSoFar()).toEqual(["job", "resume"]);
+      return { status: "ok", resume: { id: "r9", title: "Senior Engineer Resume" } };
+    });
+    preResume.mockImplementation(async () => {
+      expect(stepsSoFar()).toEqual(["job", "resume", "prepare"]);
+      return { success: true, data: { normalizedText: RESUME_TEXT } };
+    });
+    streamText.mockImplementation(() => {
+      expect(stepsSoFar()).toEqual(["job", "resume", "prepare", "generate"]);
+      return textStreamOf([LETTER]);
+    });
+    save.mockImplementation(async () => {
+      expect(stepsSoFar()).toEqual(REGISTRY_STEPS);
+      return { success: true, data: { id: "cl-1", title: "T" } };
+    });
+    const result = await execute(buildGenerateCoverLetterTool(ctx()), {});
+    expect(result.status).toBe("ok");
+  });
+
+  it("does not report generate when the guard is busy", async () => {
+    const busy = ctx({ guard: { running: true, elapsedMs: 0 } });
+    const result = await execute(buildGenerateCoverLetterTool(busy), {});
+    expect(result).toMatchObject({ status: "generation_failed", busy: true });
+    expect(stepsSoFar()).toEqual(["job", "resume", "prepare"]);
+  });
+
+  it("reports a deadline as timed out", async () => {
+    vi.spyOn(AbortSignal, "timeout").mockReturnValue(AbortSignal.abort());
+    streamText.mockReturnValue({
+      textStream: (async function* () {
+        throw new Error("The operation timed out");
+      })(),
+    });
+    const result = await execute(buildGenerateCoverLetterTool(ctx()), {});
+    vi.mocked(AbortSignal.timeout).mockRestore();
+    expect(result).toMatchObject({
+      status: "generation_failed",
+      timedOut: true,
+      reason: "The letter timed out before it finished, so nothing was saved.",
+    });
+    expect(save).not.toHaveBeenCalled();
   });
 
   it("returns the letter and where it was saved", async () => {

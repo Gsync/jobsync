@@ -9,7 +9,7 @@ import type { AiConfig } from "@/lib/ai/aiConfig";
 import { addOllamaTimings, readOllamaTimings, type OllamaTimings } from "@/lib/ai/ollamaTimings";
 import { startAiCall, usageOfSteps, type TokenUsage } from "@/lib/aiUsage/tracker";
 import { genAiRequestAttrs, runInSpan, startSpan, SURFACES } from "@/lib/telemetry";
-import type { PageContext } from "@/models/agent.model";
+import { AGENT_TURN_TIMEOUT_PART_TYPE, type PageContext } from "@/models/agent.model";
 import { mapAgentError } from "../errors";
 import { AGENT_CHAT_SYSTEM_PROMPT } from "../prompt";
 import type { NestedGenerationGuard } from "../steps/nestedGeneration";
@@ -34,10 +34,10 @@ export function runChatTurn(input: {
   const errorContext = { provider, model: modelName };
 
   // A client disconnect must cancel the model and its nested tools.
-  const turnSignal = AbortSignal.any([
-    requestSignal,
-    AbortSignal.timeout(APP_CONSTANTS.AGENT_CHAT_TIMEOUT_MS),
-  ]);
+  const turnTimeout = AbortSignal.timeout(APP_CONSTANTS.AGENT_CHAT_TIMEOUT_MS);
+  const turnSignal = AbortSignal.any([requestSignal, turnTimeout]);
+  // Only the server knows the deadline fired; the client sees a bare abort.
+  let onTurnTimeout: (() => void) | undefined;
 
   // Written inside execute, read in onEnd, which runs after it.
   let timings: OllamaTimings | undefined;
@@ -87,6 +87,11 @@ export function runChatTurn(input: {
     originalMessages: messages,
     execute: ({ writer }) =>
       runInSpan(turnSpan, async () => {
+        onTurnTimeout = () => {
+          if (requestSignal.aborted) return;
+          writer.write({ type: AGENT_TURN_TIMEOUT_PART_TYPE, data: {}, transient: true });
+        };
+        turnTimeout.addEventListener("abort", onTurnTimeout, { once: true });
         const tools = buildAgentTools({
           userId,
           pastedText,
@@ -169,6 +174,8 @@ export function runChatTurn(input: {
         );
       }),
     onEnd: async ({ messages: finalMessages, responseMessage, isAborted }) => {
+      // A finished turn must not leave a closure pinned on the 300s timer.
+      if (onTurnTimeout) turnTimeout.removeEventListener("abort", onTurnTimeout);
       const fields = {
         ...buildTurnLogFields({
           provider, model: modelName, responseMessage, aborted: isAborted,

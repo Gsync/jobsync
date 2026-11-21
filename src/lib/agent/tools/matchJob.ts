@@ -20,6 +20,7 @@ import {
   runNestedGeneration,
   type NestedGenerationGuard,
 } from "@/lib/agent/steps/nestedGeneration";
+import { toolStepReporter } from "@/lib/agent/steps/progress";
 import type { AgentMatchJobResult } from "@/models/agent.model";
 import { buildLlmMatchData } from "@/lib/ai/jobMatch/matchResult";
 
@@ -46,6 +47,8 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
     // Not in toolApproval: this writes only matchData on the caller's own job,
     // and they watch the whole thing stream before it lands.
     execute: async (raw, { toolCallId, abortSignal }): Promise<AgentMatchJobResult> => {
+      const report = toolStepReporter("match_job", ctx.writer, toolCallId);
+      report("job");
       const jobLookup = await resolveJobForAgent(ctx.userId, ctx.pageJobId);
       if (jobLookup.status === "no_job") return { status: "no_job" };
 
@@ -55,6 +58,7 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
 
       // The job's linked resume takes the pageResumeId slot: a job page has no
       // pageContext.resumeId, and job.resumeId is the closest thing to one.
+      report("resume");
       const resumeLookup = await resolveResumeForAgent(ctx.userId, {
         title: raw?.resumeTitle,
         pageResumeId: job.resumeId ?? undefined,
@@ -65,6 +69,7 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
       }
 
       const resume = resumeLookup.resume;
+      report("prepare");
       const [resumePre, jobPre] = await Promise.all([
         preprocessResume(resume),
         preprocessJob(job),
@@ -101,6 +106,7 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
         toolCallId,
         abortSignal,
         guard: ctx.guard,
+        report,
         label: "match_job",
         feature: "job_match",
         surface: SURFACES.JOB_MATCH,
@@ -115,6 +121,7 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
         return {
           status: "generation_failed",
           jobTitle,
+          busy: true,
           reason: "Another analysis is already running — ask for this one once it finishes.",
         };
       }
@@ -125,6 +132,14 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
           reason: "The analysis stopped before it finished, so nothing was saved.",
         };
       }
+      if (generation.status === "failed" && generation.timedOut) {
+        return {
+          status: "generation_failed",
+          jobTitle,
+          timedOut: true,
+          reason: "The analysis timed out before it finished, so nothing was saved.",
+        };
+      }
       if (generation.status === "failed") {
         return {
           status: "generation_failed",
@@ -133,6 +148,7 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
         };
       }
 
+      report("check");
       const { scores, body } = parseJobMatch(generation.text);
       // matchData is overwrite-only with no history, so an unscored or
       // half-finished generation must not be written.
@@ -153,6 +169,7 @@ export function buildMatchJobTool(ctx: MatchJobContext) {
         model: ctx.modelName,
         surface: APP_CONSTANTS.AGENT_CHAT_MATCH_SURFACE,
       });
+      report("save");
       const saveResult = await saveJobMatchResult(
         job.id!,
         scores.matchScore,

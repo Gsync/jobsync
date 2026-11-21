@@ -111,6 +111,10 @@ export const AGENT_TOOL_PROGRESS_PART_TYPE = "data-tool-progress";
 
 export type AgentToolProgressData = { steps: string[] };
 
+// Transient: written once when the turn deadline fires, so the client can say
+// "Timed out." rather than guess why the stream ended.
+export const AGENT_TURN_TIMEOUT_PART_TYPE = "data-turn-timeout";
+
 export const AGENT_REVIEW_PROGRESS_PART_TYPE = "data-review-progress";
 export type AgentReviewProgress = "Loading resume…" | "Preparing resume text…" | "Starting review…" | "Extracting scores…" | "Saving review…";
 
@@ -130,7 +134,7 @@ export type AgentReviewResumeResult =
   | { status: "needs_selection"; resumes: { id: string; title: string }[] }
   | { status: "no_resumes" }
   | { status: "unreadable"; title: string; reason: string }
-  | { status: "generation_failed"; title: string; reason: string; interrupted?: true; timedOut?: true };
+  | { status: "generation_failed"; title: string; reason: string; interrupted?: true; timedOut?: true; busy?: true };
 
 // What match_job returns to the model AND to the result card. Neither the
 // resume text nor the job description is here — follow-ups answer from `body`.
@@ -151,7 +155,7 @@ export type AgentMatchJobResult =
   | { status: "needs_selection"; resumes: { id: string; title: string }[] }
   | { status: "no_resumes" }
   | { status: "unreadable"; what: "job" | "resume"; title: string; reason: string }
-  | { status: "generation_failed"; jobTitle: string; reason: string };
+  | { status: "generation_failed"; jobTitle: string; reason: string; timedOut?: true; busy?: true };
 
 // What generate_cover_letter returns to the model AND to the result card. The
 // letter body is here so a follow-up ("make it shorter") answers from it; the
@@ -175,7 +179,7 @@ export type AgentCoverLetterResult =
   | { status: "needs_selection"; resumes: { id: string; title: string }[] }
   | { status: "no_resumes" }
   | { status: "unreadable"; what: "job" | "resume"; title: string; reason: string }
-  | { status: "generation_failed"; jobTitle: string; reason: string };
+  | { status: "generation_failed"; jobTitle: string; reason: string; timedOut?: true; busy?: true };
 
 export const AGENT_CHAT_RESUME_MAX_CHARS = 12_000;
 

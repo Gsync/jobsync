@@ -21,6 +21,7 @@ import {
   runNestedGeneration,
   type NestedGenerationGuard,
 } from "@/lib/agent/steps/nestedGeneration";
+import { toolStepReporter } from "@/lib/agent/steps/progress";
 import type { AgentCoverLetterResult } from "@/models/agent.model";
 
 type CoverLetterContext = {
@@ -47,6 +48,8 @@ export function buildGenerateCoverLetterTool(ctx: CoverLetterContext) {
     // Not in toolApproval: the letter lands in the caller's own documents and
     // they watch the whole thing stream before it does.
     execute: async (raw, { toolCallId, abortSignal }): Promise<AgentCoverLetterResult> => {
+      const report = toolStepReporter("generate_cover_letter", ctx.writer, toolCallId);
+      report("job");
       const jobLookup = await resolveJobForAgent(ctx.userId, ctx.pageJobId);
       if (jobLookup.status === "no_job") return { status: "no_job" };
 
@@ -62,6 +65,7 @@ export function buildGenerateCoverLetterTool(ctx: CoverLetterContext) {
 
       // The job's linked resume takes the pageResumeId slot: a job page has no
       // pageContext.resumeId, and job.resumeId is the closest thing to one.
+      report("resume");
       const resumeLookup = await resolveResumeForAgent(ctx.userId, {
         title: raw?.resumeTitle,
         pageResumeId: job.resumeId ?? undefined,
@@ -72,6 +76,7 @@ export function buildGenerateCoverLetterTool(ctx: CoverLetterContext) {
       }
 
       const resume = resumeLookup.resume;
+      report("prepare");
       const [resumePre, jobPre] = await Promise.all([
         preprocessResume(resume),
         preprocessJob(job),
@@ -112,6 +117,7 @@ export function buildGenerateCoverLetterTool(ctx: CoverLetterContext) {
         toolCallId,
         abortSignal,
         guard: ctx.guard,
+        report,
         label: "generate_cover_letter",
         feature: "cover_letter",
         surface: SURFACES.COVER_LETTER,
@@ -126,6 +132,7 @@ export function buildGenerateCoverLetterTool(ctx: CoverLetterContext) {
         return {
           status: "generation_failed",
           jobTitle,
+          busy: true,
           reason: "Another analysis is already running — ask for this one once it finishes.",
         };
       }
@@ -134,6 +141,14 @@ export function buildGenerateCoverLetterTool(ctx: CoverLetterContext) {
           status: "generation_failed",
           jobTitle,
           reason: "The letter stopped before it finished, so nothing was saved.",
+        };
+      }
+      if (generation.status === "failed" && generation.timedOut) {
+        return {
+          status: "generation_failed",
+          jobTitle,
+          timedOut: true,
+          reason: "The letter timed out before it finished, so nothing was saved.",
         };
       }
       if (generation.status === "failed") {
@@ -155,6 +170,7 @@ export function buildGenerateCoverLetterTool(ctx: CoverLetterContext) {
         };
       }
 
+      report("save");
       const saveResult = await generateCoverLetterForJob(job.id!, letter);
       const saved = saveResult?.success === true;
 

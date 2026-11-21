@@ -23,7 +23,7 @@ export type NestedGenerationResult =
   | { status: "ok"; text: string }
   | { status: "incomplete" }
   | { status: "busy" }
-  | { status: "failed" };
+  | { status: "failed"; timedOut?: true };
 
 // One per request, created by the chat route. Process-wide state would block
 // one user behind another's generation. elapsedMs is what the turn subtracts
@@ -50,6 +50,9 @@ type NestedGenerationArgs = {
   // Call-site facts the invariant half cannot know: input sizes and whether
   // the caller clipped what it sent.
   attrs?: Record<string, unknown>;
+  // Called once the guard accepts the call, so a "busy" rejection never
+  // announces a generation that did not start.
+  report: (step: "generate") => void;
 };
 
 /**
@@ -76,6 +79,7 @@ export async function runNestedGeneration({
   modelName,
   userId,
   attrs,
+  report,
 }: NestedGenerationArgs): Promise<NestedGenerationResult> {
   // Started before the guard check so a rejected call is visible too — "busy"
   // is exactly the outcome you go looking for when a review never appeared.
@@ -100,11 +104,13 @@ export async function runNestedGeneration({
     return { status: "busy" };
   }
   guard.running = true;
+  report("generate");
 
   return runInSpan(span, async () => {
     // Own deadline, plus the outer turn's signal so closing the panel aborts
     // this too.
-    const signals: AbortSignal[] = [AbortSignal.timeout(timeoutMs)];
+    const deadline = AbortSignal.timeout(timeoutMs);
+    const signals: AbortSignal[] = [deadline];
     if (abortSignal) signals.push(abortSignal);
     const signal = AbortSignal.any(signals);
 
@@ -175,6 +181,9 @@ export async function runNestedGeneration({
       log.error(`[agent-chat] ${label} generation failed`, { error: String(error) });
       span.setError(error);
       endGeneration("failed");
+      if (deadline.aborted && !abortSignal?.aborted) {
+        return { status: "failed", timedOut: true };
+      }
       return { status: "failed" };
     } finally {
       guard.elapsedMs += Date.now() - startedAt;
