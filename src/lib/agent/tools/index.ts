@@ -8,6 +8,7 @@ import { buildGetResumeTool } from "./getResume";
 import { buildReviewResumeTool } from "./reviewResume";
 import { buildMatchJobTool } from "./matchJob";
 import { buildGenerateCoverLetterTool } from "./generateCoverLetter";
+import { addQuestionSettled, buildAddQuestionTool } from "./addQuestion";
 
 export type AgentToolContext = {
   userId: string;
@@ -22,7 +23,7 @@ export type AgentToolContext = {
 
 type AgentToolServerEntry = {
   build: (ctx: AgentToolContext) => ToolSet[string];
-  settled?: typeof addJobSettled;
+  settled?: (steps: readonly Parameters<typeof addJobSettled>[0][]) => boolean;
   approval?: (input: InferToolInput<ToolSet[string]>, pastedText?: string) => boolean;
 };
 
@@ -33,7 +34,7 @@ const AGENT_TOOL_SERVER: Record<AgentToolName, AgentToolServerEntry> = {
       pastedText: ctx.pastedText,
       writer: ctx.writer,
     }),
-    settled: addJobSettled,
+    settled: (steps) => addJobSettled(steps[steps.length - 1] ?? {}),
     approval: addJobNeedsApproval,
   },
   get_resume: {
@@ -60,6 +61,14 @@ const AGENT_TOOL_SERVER: Record<AgentToolName, AgentToolServerEntry> = {
       guard: ctx.nestedGuard,
     }),
   },
+  add_question: {
+    build: (ctx) => buildAddQuestionTool({
+      userId: ctx.userId,
+      pastedText: ctx.pastedText,
+      writer: ctx.writer,
+    }),
+    settled: addQuestionSettled,
+  },
 };
 
 export function buildAgentTools(ctx: AgentToolContext): ToolSet {
@@ -72,7 +81,7 @@ export function buildAgentStopWhen(): StopCondition<ToolSet>[] {
   return AGENT_CHAT_TERMINAL_TOOLS.map((name) => {
     const { settled } = AGENT_TOOL_SERVER[name];
     if (!settled) return hasToolCall(name);
-    return ({ steps }) => settled(steps[steps.length - 1] ?? {});
+    return ({ steps }) => settled(steps);
   });
 }
 
@@ -93,4 +102,5 @@ export {
   buildReviewResumeTool,
   buildMatchJobTool,
   buildGenerateCoverLetterTool,
+  buildAddQuestionTool,
 };

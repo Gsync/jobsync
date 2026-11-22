@@ -44,8 +44,8 @@ describe("agent chat system prompt", () => {
     expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).not.toMatch(/already pressed Confirm/i);
   });
 
-  it("preserves the five-tool count and current limitations verbatim", () => {
-    expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/^You have exactly five capabilities\./);
+  it("preserves the six-tool count and current limitations verbatim", () => {
+    expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/^You have exactly six capabilities\./);
     expect(AGENT_CHAT_PROMPT_SECTIONS.limitations).toBe(
       "You cannot list, search or count the user's saved jobs, and you cannot read their tasks, notes, activities or settings in this version. If asked about any of them, say plainly that you cannot see that data yet. Never state a job count, an application status, or claim to have performed an action you have no tool for. You can read resumes only through get_resume or review_resume, and you can read the job the user is viewing only through match_job or generate_cover_letter — never describe a resume or a job you have not read.",
     );
@@ -101,6 +101,15 @@ describe("agent chat system prompt", () => {
     expect(buildPasteContextMessage("BLOCK")).toMatch(/data/i);
   });
 
+  // Skip has no field, so a skipped question re-sent comes back held again
+  it("tells the model to leave skipped questions out of the re-call", () => {
+    expect(AGENT_TOOL_DESCRIPTIONS.add_question).toMatch(/leave out any the user skips/i);
+  });
+
+  it("tells the model to explain an invalid result to the user", () => {
+    expect(AGENT_TOOL_DESCRIPTIONS.add_question).toMatch(/for an invalid result, tell the user what to change/i);
+  });
+
   it("describes add_job without mentioning tools the chat does not expose", () => {
     expect(AGENT_TOOL_DESCRIPTIONS.add_job).toBeTruthy();
     expect(AGENT_TOOL_DESCRIPTIONS.add_job).not.toMatch(/upsert|allowDuplicate|update_job/);
@@ -142,13 +151,14 @@ describe("agent chat system prompt", () => {
     expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/if a job page is open, call the requested tool straight away/i);
   });
 
-  it("describes all five tools", () => {
+  it("describes all six tools", () => {
     expect(Object.keys(AGENT_TOOL_DESCRIPTIONS)).toEqual([
       "add_job",
       "get_resume",
       "review_resume",
       "match_job",
       "generate_cover_letter",
+      "add_question",
     ]);
   });
 

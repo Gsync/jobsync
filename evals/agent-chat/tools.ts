@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { AGENT_TOOL_META, AGENT_TOOL_NAMES, type AgentToolName } from '../../src/lib/agent/registry';
 import {
   AgentAddJobSchema,
+  AgentAddQuestionSchema,
   AgentCoverLetterSchema,
   AgentGetResumeSchema,
   AgentMatchJobSchema,
@@ -14,6 +15,7 @@ const SCHEMAS: Record<AgentToolName, z.ZodType> = {
   review_resume: AgentReviewResumeSchema,
   match_job: AgentMatchJobSchema,
   generate_cover_letter: AgentCoverLetterSchema,
+  add_question: AgentAddQuestionSchema,
 };
 
 export function getTools() {

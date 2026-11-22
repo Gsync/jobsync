@@ -2,6 +2,7 @@ import type { UIMessage } from "ai";
 import type { AGENT_DATA_AREAS, DirectInvokeToolName } from "@/lib/agent/registry";
 import type { DescriptionCompleteness } from "@/models/job.model";
 import type { JobMatchScores, ResumeScores } from "@/models/ai.schemas";
+import type { SaveQuestionResult } from "@/models/question.model";
 
 // Dependency-free by design: client components import these types, so nothing
 // here may pull in Prisma or server-only code. Type-only imports are erased.
@@ -81,6 +82,19 @@ export type AgentAddJobResult = {
   // wherever the two audiences need different words; Zod's own messages name
   // the field and its values and read fine unaided, so they leave it unset.
   displayError?: string;
+};
+
+// Where a cut-off paste stopped, so the user knows what to paste next
+export type AgentQuestionPasteCut = {
+  readChars: number;
+  totalChars: number;
+  lastQuestion: string;
+};
+
+export type AgentAddQuestionResult = {
+  items: SaveQuestionResult[];
+  paste?: AgentQuestionPasteCut;
+  error?: string;
 };
 
 // Which rule picked the resume. Surfaced so the result card can say "your

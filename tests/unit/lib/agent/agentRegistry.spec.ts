@@ -14,7 +14,7 @@ import {
 describe("agent tool metadata", () => {
   it("preserves the model's tool order", () => {
     expect(AGENT_TOOL_NAMES).toEqual([
-      "add_job", "get_resume", "review_resume", "match_job", "generate_cover_letter",
+      "add_job", "get_resume", "review_resume", "match_job", "generate_cover_letter", "add_question",
     ]);
   });
 
@@ -61,9 +61,8 @@ describe("agent tool server map", () => {
     });
     expect(Object.keys(tools)).toEqual(AGENT_TOOL_NAMES);
     for (const tool of Object.values(tools)) expect(tool).not.toHaveProperty("needsApproval");
-    expect(Object.keys(buildAgentToolApproval("x"))).toEqual(
-      AGENT_TOOL_NAMES.filter((name) => AGENT_TOOL_META[name].kind === "write"),
-    );
+    // Root invariant: add_job is the only approval-gated tool
+    expect(Object.keys(buildAgentToolApproval("x"))).toEqual(["add_job"]);
   });
 
   it("stops for pending approval and lets the model retry a validation error", async () => {
@@ -75,5 +74,74 @@ describe("agent tool server map", () => {
       stop({ steps: [{ toolCalls, toolResults }] } as Parameters<typeof stop>[0]);
     expect(await check([])).toBe(true);
     expect(await check([{ toolName: "add_job", output: { validationError: "missing" } }])).toBe(false);
+  });
+
+  describe("add_question settles", () => {
+    const stop = buildAgentStopWhen()[AGENT_CHAT_TERMINAL_TOOLS.indexOf("add_question")];
+    const questions = (n: number) => Array.from({ length: n }, (_, i) => ({ question: `Question ${i + 1}?` }));
+    const item = (status: string, index = 1) => ({ index, question: "Q?", status });
+    const check = (
+      output: unknown,
+      call: { input?: unknown; invalid?: boolean } = { input: { questions: questions(1) } },
+    ) => {
+      const toolCalls = [{ toolName: "add_question", ...call }];
+      const toolResults = output === undefined ? [] : [{ toolName: "add_question", output }];
+      return stop({ steps: [{ toolCalls, toolResults }] } as unknown as Parameters<typeof stop>[0]);
+    };
+
+    it("does not settle with no add_question call", async () => {
+      expect(await stop({ steps: [{ toolCalls: [], toolResults: [] }] } as unknown as Parameters<typeof stop>[0])).toBe(false);
+    });
+
+    it("does not settle on a call with no result, since nothing awaits approval", async () => {
+      expect(await check(undefined)).toBe(false);
+    });
+
+    it("does not settle on an error result", async () => {
+      expect(await check({ items: [], error: "Saving the questions failed." })).toBe(false);
+    });
+
+    it.each(["similar", "exists", "invalid", "failed"])("does not settle while an item is %s", async (status) => {
+      expect(await check({ items: [item("saved"), item(status, 2)] })).toBe(false);
+    });
+
+    it("settles when every item is saved, merged, skipped or a repeat", async () => {
+      const output = { items: ["saved", "merged", "skipped", "repeat"].map((s, i) => item(s, i + 1)) };
+      expect(await check(output, { input: { questions: questions(4) } })).toBe(true);
+    });
+
+    it("does not settle on an invalid call", async () => {
+      expect(await check(undefined, { input: {}, invalid: true })).toBe(false);
+    });
+
+    const step = (output: unknown, n = 1) => ({
+      toolCalls: [{ toolName: "add_question", input: { questions: questions(n) } }],
+      toolResults: [{ toolName: "add_question", output }],
+    });
+    const stopAfter = (steps: unknown[]) => stop({ steps } as unknown as Parameters<typeof stop>[0]);
+    const savedItems = (n: number) => ({ items: questions(n).map((_, i) => item("saved", i + 1)) });
+
+    it("keeps the turn open after a held round is resolved, so the rest can still be sent", async () => {
+      const held = { items: [...savedItems(19).items, item("similar", 20)] };
+      expect(await stopAfter([step(held, 20), step(savedItems(1))])).toBe(false);
+    });
+
+    it("keeps the turn open when a later call saves while an earlier item is still held", async () => {
+      expect(await stopAfter([step({ items: [item("similar")] }), step(savedItems(1))])).toBe(false);
+    });
+
+    it("settles a full call of 20 followed by the rest, all saved", async () => {
+      expect(await stopAfter([step(savedItems(20), 20), step(savedItems(1))])).toBe(true);
+    });
+
+    it("settles a save after a step with no add_question call", async () => {
+      expect(await stopAfter([{ toolCalls: [], toolResults: [] }, step(savedItems(1))])).toBe(true);
+    });
+
+    it("keeps the turn open after a full call of 20 so the rest can be sent", async () => {
+      const full = { items: questions(20).map((_, i) => item("saved", i + 1)) };
+      expect(await check(full, { input: { questions: questions(20) } })).toBe(false);
+      expect(await check({ items: [item("saved")] }, { input: { questions: questions(1) } })).toBe(true);
+    });
   });
 });

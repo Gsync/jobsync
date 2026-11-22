@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   AgentAddJobSchema,
   AgentAddJobParseSchema,
+  AgentAddQuestionSchema,
   AgentChatRequestSchema,
   AgentCoverLetterSchema,
 } from "@/models/agent.schema";
@@ -11,7 +12,7 @@ import {
   AGENT_TOOL_NAMES,
 } from "@/lib/agent/registry";
 import { directInvokeParts } from "@/models/agent.model";
-import { McpAddJobInputShape } from "@/models/mcp.schema";
+import { McpAddJobInputShape, McpAddQuestionInputShape } from "@/models/mcp.schema";
 import { JOB_STATUS_VALUES } from "@/lib/constants";
 
 describe("AgentAddJobSchema", () => {
@@ -81,6 +82,21 @@ describe("AgentAddJobSchema", () => {
       userId: "attacker-user",
     });
     expect(parsed.userId).toBeUndefined();
+  });
+});
+
+describe("AgentAddQuestionSchema", () => {
+  const json = z.toJSONSchema(AgentAddQuestionSchema, { io: "input" }) as any;
+
+  it("takes 1 to 20 questions per call", () => {
+    expect(json.properties.questions.minItems).toBe(1);
+    expect(json.properties.questions.maxItems).toBe(20);
+  });
+
+  it("derives the item from the MCP shape and exposes no userId", () => {
+    const item = json.properties.questions.items;
+    expect(Object.keys(item.properties)).toEqual(Object.keys(McpAddQuestionInputShape));
+    expect("userId" in item.properties).toBe(false);
   });
 });
 
