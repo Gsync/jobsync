@@ -17,12 +17,14 @@ describe("add_question agent tool", () => {
     (saveQuestions as any).mockResolvedValue(items);
   });
 
-  it("saves under the session user, never a userId from the model's input", async () => {
+  // Replace overwrites an answer without a card, so an injected paste could
+  // otherwise talk the model into wiping one the user wrote in the app
+  it("saves under the session user, never a userId from the model's input, and replaces only agent-created questions", async () => {
     const tool = buildAddQuestionTool({ userId: "user-1", writer });
     await execute(tool, { questions: [{ question: "Tell me about yourself", userId: "attacker" }] });
     expect(saveQuestions).toHaveBeenCalledWith(expect.any(Array), "user-1", {
       createdVia: "chat",
-      replaceAgentCreatedOnly: false,
+      replaceAgentCreatedOnly: true,
       onStep: expect.any(Function),
     });
   });

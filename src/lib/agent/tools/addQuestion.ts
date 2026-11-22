@@ -66,7 +66,8 @@ export function buildAddQuestionTool({
       try {
         const items = await saveQuestions(input.questions, userId, {
           createdVia: APP_CONSTANTS.AGENT_CHAT_CREATED_VIA,
-          replaceAgentCreatedOnly: false,
+          // No card confirms a replace, so app-written answers stay append-only
+          replaceAgentCreatedOnly: true,
           onStep: report,
         });
         report.finish();
