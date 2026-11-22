@@ -12,7 +12,9 @@ export const MCP_TOOL_DESCRIPTIONS = {
   update_job:
     "Correct or enrich a job previously added through MCP. Only the fields you supply change. Supplying a fuller jobDescription re-classifies the posting and requests a fresh match analysis — use this instead of re-adding with allowDuplicate.",
   add_question:
-    "Add an entry to the Question Bank. Resolves or creates tags by name. Returns a transparency report of what was matched vs. created.",
+    "Add one interview question to the Question Bank, with the user's answer if they gave one and skill tags. The bank is checked first: a question already saved is never saved twice, and similar saved questions come back for you to confirm with the user before re-calling. Use add_questions_batch for several questions.",
+  add_questions_batch:
+    "Add up to 20 interview questions in one call, each with add_question's fields and the same duplicate check; returns one labelled result per question. Use this for all the questions from one interview instead of N add_question calls.",
   save_match_result:
     "Persist a job-fit match analysis (produced by you, the agent) against a job previously created with add_job. Call this after add_job hands you a match directive.",
   add_jobs_batch:
