@@ -59,43 +59,23 @@ export const getInterviewList = async (
     const where = buildInterviewWhere(user.id, search, stageTypeId, companyId);
 
     // Ordering stays in the query because the list is server-paged.
-    // Undated rounds sort last: the dated rows are paged first and the undated
-    // ones continue the list. Kept from SQLite, which had no NULLS LAST.
-    const and = where.AND ?? [];
-    const datedWhere = { ...where, AND: [...and, { occurredAt: { not: null } }] };
-    const undatedWhere = { ...where, AND: [...and, { occurredAt: null }] };
-    const skip = (page - 1) * limit;
-
-    const [total, datedTotal] = await Promise.all([
+    // Undated rounds sort last.
+    const [data, total] = await Promise.all([
+      prisma.jobStage.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: INTERVIEW_LIST_INCLUDE,
+        orderBy: [
+          { occurredAt: { sort: "desc", nulls: "last" } },
+          { createdAt: "desc" },
+          { id: "desc" },
+        ],
+      }),
       prisma.jobStage.count({ where }),
-      prisma.jobStage.count({ where: datedWhere }),
     ]);
 
-    const datedTake = Math.min(limit, Math.max(0, datedTotal - skip));
-    const dated =
-      datedTake > 0
-        ? await prisma.jobStage.findMany({
-            where: datedWhere,
-            skip,
-            take: datedTake,
-            include: INTERVIEW_LIST_INCLUDE,
-            orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
-          })
-        : [];
-
-    const undatedTake = limit - dated.length;
-    const undated =
-      undatedTake > 0 && total > datedTotal
-        ? await prisma.jobStage.findMany({
-            where: undatedWhere,
-            skip: Math.max(0, skip - datedTotal),
-            take: undatedTake,
-            include: INTERVIEW_LIST_INCLUDE,
-            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-          })
-        : [];
-
-    return { data: [...dated, ...undated], total };
+    return { data, total };
   } catch (error) {
     return handleError(error, "Failed to fetch interviews. ");
   }

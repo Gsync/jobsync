@@ -82,32 +82,20 @@ describe("addStagePrepQuestions", () => {
         { stageId: "st1", questionId: "q1", asked: false },
         { stageId: "st1", questionId: "q2", asked: false },
       ],
+      skipDuplicates: true,
     });
   });
 
-  // SQLite has no skipDuplicates, so the subtraction is ours to get right.
-  it("skips questions already on the stage's prep list", async () => {
-    db.jobStagePrepQuestion.findMany.mockResolvedValueOnce([
-      { questionId: "q1" },
-    ]);
-
-    await addStagePrepQuestions("st1", ["q1", "q2"]);
-
-    expect(db.jobStagePrepQuestion.createMany).toHaveBeenCalledWith({
-      data: [{ stageId: "st1", questionId: "q2", asked: false }],
-    });
-  });
-
-  it("writes nothing when every question is already linked", async () => {
-    db.jobStagePrepQuestion.findMany.mockResolvedValueOnce([
-      { questionId: "q1" },
-      { questionId: "q2" },
-    ]);
+  // The unique index does the skipping, so a repeat add must not fail.
+  it("succeeds when every question is already linked", async () => {
+    db.jobStagePrepQuestion.createMany.mockResolvedValueOnce({ count: 0 });
 
     const res = await addStagePrepQuestions("st1", ["q1", "q2"]);
 
     expect(res.success).toBe(true);
-    expect(db.jobStagePrepQuestion.createMany).not.toHaveBeenCalled();
+    expect(db.jobStagePrepQuestion.createMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skipDuplicates: true }),
+    );
   });
 
   it("rejects an empty selection", async () => {

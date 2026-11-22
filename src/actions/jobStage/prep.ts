@@ -28,19 +28,11 @@ export const addStagePrepQuestions = async (
     assertInterviewStage(stage);
     if (owned !== ids.length) throw new Error("Question not found");
 
-    // The already-linked ids are subtracted here rather than left to the
-    // unique index. skipDuplicates is available now; switching is later work.
-    const linked = await prisma.jobStagePrepQuestion.findMany({
-      where: { stageId, questionId: { in: ids } },
-      select: { questionId: true },
+    // The unique index skips already-linked ids, even under concurrent adds.
+    await prisma.jobStagePrepQuestion.createMany({
+      data: ids.map((questionId) => ({ stageId, questionId, asked: false })),
+      skipDuplicates: true,
     });
-    const alreadyLinked = new Set(linked.map((row) => row.questionId));
-    const fresh = ids.filter((id) => !alreadyLinked.has(id));
-    if (fresh.length > 0) {
-      await prisma.jobStagePrepQuestion.createMany({
-        data: fresh.map((questionId) => ({ stageId, questionId, asked: false })),
-      });
-    }
 
     const data = await prisma.jobStagePrepQuestion.findMany({
       where: { stageId },

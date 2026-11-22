@@ -242,13 +242,11 @@ describe("pagination tiebreaker: every paged sort ends on id", () => {
     for (const call of calls) expect(lastKey(call.args.orderBy)).toEqual({ id: "desc" });
   });
 
-  it("interviews, dated and undated halves", async () => {
-    h.returns["jobStage.count"] = (args: any) =>
-      args.where.AND?.some((c: any) => c.occurredAt?.not === null) ? 1 : 3;
+  it("interviews, undated rounds last", async () => {
     await getInterviewList(1, 10);
-    const calls = findManyCalls("jobStage");
-    expect(calls).toHaveLength(2);
-    for (const call of calls) expect(lastKey(call.args.orderBy)).toEqual({ id: "desc" });
+    const [call] = findManyCalls("jobStage");
+    expect(call.args.orderBy[0]).toEqual({ occurredAt: { sort: "desc", nulls: "last" } });
+    expect(lastKey(call.args.orderBy)).toEqual({ id: "desc" });
   });
 
   it("the job export iterator", async () => {

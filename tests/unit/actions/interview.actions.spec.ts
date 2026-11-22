@@ -22,7 +22,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   (getCurrentUser as any).mockResolvedValue(user);
   db.jobStage.findMany.mockResolvedValue([]);
-  // Non-zero, so the dated page is actually queried
   db.jobStage.count.mockResolvedValue(1);
 });
 
@@ -35,48 +34,35 @@ describe("getInterviewList", () => {
     expect(where.StageType).toEqual({ Status: { value: "interview" } });
   });
 
-  it("orders dated rounds newest first over a set with no undated rows", async () => {
+  it("orders dated rounds newest first with undated ones last", async () => {
     await getInterviewList();
 
-    const args = db.jobStage.findMany.mock.calls[0][0];
-    expect(args.where.AND).toContainEqual({ occurredAt: { not: null } });
-    expect(args.orderBy[0]).toEqual({ occurredAt: "desc" });
-    // total === datedTotal, so no second query for undated rows
     expect(db.jobStage.findMany).toHaveBeenCalledTimes(1);
+    expect(db.jobStage.findMany.mock.calls[0][0].orderBy).toEqual([
+      { occurredAt: { sort: "desc", nulls: "last" } },
+      { createdAt: "desc" },
+      { id: "desc" },
+    ]);
   });
 
-  it("appends undated rounds after the dated ones", async () => {
-    db.jobStage.findMany
-      .mockResolvedValueOnce([{ id: "dated" }])
-      .mockResolvedValueOnce([{ id: "undated" }]);
-    // total 2, dated 1
-    db.jobStage.count.mockResolvedValueOnce(2).mockResolvedValueOnce(1);
+  it("returns the page with the total of every matching round", async () => {
+    db.jobStage.findMany.mockResolvedValueOnce([{ id: "dated" }, { id: "undated" }]);
+    db.jobStage.count.mockResolvedValueOnce(35);
 
     const res = await getInterviewList(1);
 
-    expect(db.jobStage.findMany.mock.calls[0][0].where.AND).toContainEqual({
-      occurredAt: { not: null },
-    });
-    expect(db.jobStage.findMany.mock.calls[1][0].where.AND).toContainEqual({
-      occurredAt: null,
-    });
     expect(res.data.map((r: any) => r.id)).toEqual(["dated", "undated"]);
-    expect(res.total).toBe(2);
+    expect(res.total).toBe(35);
+    expect(db.jobStage.count.mock.calls[0][0].where).toBe(
+      db.jobStage.findMany.mock.calls[0][0].where,
+    );
   });
 
-  it("pages past the dated rows straight into the undated ones", async () => {
-    // 30 dated rows, 5 undated; page 2 of 25 is the tail of both
-    db.jobStage.count.mockResolvedValueOnce(35).mockResolvedValueOnce(30);
-    db.jobStage.findMany.mockResolvedValue([]);
-
+  it("pages by skip and take", async () => {
     await getInterviewList(2, 25);
 
     expect(db.jobStage.findMany.mock.calls[0][0]).toMatchObject({
       skip: 25,
-      take: 5,
-    });
-    expect(db.jobStage.findMany.mock.calls[1][0]).toMatchObject({
-      skip: 0,
       take: 25,
     });
   });
