@@ -25,6 +25,7 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import Loading from "../Loading";
 import { QuestionList } from "./QuestionList";
 import { QuestionForm } from "./QuestionForm";
+import { useAgentChat } from "@/components/agent/AgentChatProvider";
 
 type QuestionsContainerProps = {
   availableTags: Tag[];
@@ -39,6 +40,7 @@ function QuestionsContainer({
 }: QuestionsContainerProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { questionWrites } = useAgentChat();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [page, setPage] = useState(1);
   const [totalQuestions, setTotalQuestions] = useState(0);
@@ -108,6 +110,18 @@ function QuestionsContainer({
     await loadQuestions(1, filterKey, searchTerm || undefined);
     onQuestionsChanged?.();
   }, [loadQuestions, filterKey, searchTerm, onQuestionsChanged]);
+
+  // The agent saves server-side, so only this counter says the list changed.
+  // Deps are the counter alone: filter and search effects cover the rest.
+  // No spinner: the list stays on screen while the new page loads.
+  useEffect(() => {
+    if (questionWrites === 0) return;
+    fetchQuestions(1, filterKey, searchTerm || undefined).then((result) => {
+      applyQuestions(1, result);
+      onQuestionsChanged?.();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questionWrites]);
 
   const onDeleteQuestion = async (questionId: string) => {
     const result = await deleteQuestion(questionId);

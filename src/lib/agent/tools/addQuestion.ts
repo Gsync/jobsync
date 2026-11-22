@@ -3,9 +3,10 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
 import { AgentAddQuestionSchema } from "@/models/agent.schema";
 import { saveQuestions } from "@/lib/questions/saveQuestions";
+import { normalizeQuestionText } from "@/lib/questions/similarity";
 import { log } from "@/lib/telemetry";
 import { toolStepReporter } from "@/lib/agent/steps/progress";
-import type { AgentAddQuestionResult } from "@/models/agent.model";
+import type { AgentAddQuestionResult, AgentQuestionPasteCut } from "@/models/agent.model";
 import type { SaveQuestionResult } from "@/models/question.model";
 
 const UNSETTLED: ReadonlySet<SaveQuestionResult["status"]> = new Set([
@@ -49,20 +50,50 @@ export function addQuestionSettled(steps: readonly AgentStep[]): boolean {
   return sent?.length !== APP_CONSTANTS.MAX_QUESTIONS_PER_CALL;
 }
 
+// Typed questions beside a live posting chip did not come from the paste
+function drewOnPaste(pastedText: string, questions: { question: string }[]): boolean {
+  const paste = normalizeQuestionText(pastedText);
+  return questions.some(({ question }) => paste.includes(normalizeQuestionText(question)));
+}
+
+// lastQuestion is the last one the model sent, so the user knows where to resume
+export function pasteCut(
+  pastedText: string | undefined,
+  questions: { question: string }[],
+): AgentQuestionPasteCut | undefined {
+  const readChars = APP_CONSTANTS.AGENT_CHAT_PASTE_HEAD_CHARS;
+  if (!pastedText || pastedText.length <= readChars) return undefined;
+  if (!drewOnPaste(pastedText, questions)) return undefined;
+  return { readChars, totalChars: pastedText.length, lastQuestion: questions.at(-1)?.question ?? "" };
+}
+
 // userId is captured from the session; a userId in the model's input is ignored
 export function buildAddQuestionTool({
   userId,
+  pastedText,
   writer,
 }: {
   userId: string;
   pastedText?: string;
   writer: UIMessageStreamWriter;
 }) {
+  // Built once per request: later calls in the turn would name a different
+  // last question for the same paste
+  let pasteReported = false;
+  const takePaste = (questions: { question: string }[]) => {
+    if (pasteReported) return {};
+    const paste = pasteCut(pastedText, questions);
+    if (!paste) return {};
+    pasteReported = true;
+    return { paste };
+  };
+
   return tool({
     description: AGENT_TOOL_DESCRIPTIONS.add_question,
     inputSchema: AgentAddQuestionSchema,
     execute: async (input, { toolCallId }): Promise<AgentAddQuestionResult> => {
       const report = toolStepReporter("add_question", writer, toolCallId);
+      const paste = takePaste(input.questions);
       try {
         const items = await saveQuestions(input.questions, userId, {
           createdVia: APP_CONSTANTS.AGENT_CHAT_CREATED_VIA,
@@ -71,13 +102,14 @@ export function buildAddQuestionTool({
           onStep: report,
         });
         report.finish();
-        return { items };
+        return { items, ...paste };
       } catch (error) {
         log.error("[agent-chat] add_question failed", { error: String(error) });
         // Fixed text: Prisma messages carry connection details
         return {
           items: [],
           error: "Saving the questions failed. Try again, or add them from the Questions page.",
+          ...paste,
         };
       }
     },

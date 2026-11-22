@@ -172,7 +172,8 @@ export default function prompt({
   if (vars.jobPosting) {
     const head = vars.jobPosting.slice(0, APP_CONSTANTS.AGENT_CHAT_PASTE_HEAD_CHARS);
     const block = `<<<PASTED_${NONCE}>>>\n${head.split(NONCE).join('')}\n<<<END_PASTED_${NONCE}>>>`;
-    withPages.push({ role: 'user', content: buildPasteContextMessage(block) });
+    const chars = { shown: head.length, total: vars.jobPosting.length };
+    withPages.push({ role: 'user', content: buildPasteContextMessage(block, chars) });
   }
 
   return withPages;

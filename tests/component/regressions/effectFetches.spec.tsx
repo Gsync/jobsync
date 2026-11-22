@@ -52,7 +52,7 @@ vi.mock("@/actions/mcpToken.actions", () => ({
 }));
 vi.mock("@/actions/job.actions", () => ({ getJobsList: vi.fn() }));
 vi.mock("@/components/agent/AgentChatProvider", () => ({
-  useAgentChat: () => ({ jobWrites: 0 }),
+  useAgentChat: () => ({ jobWrites: 0, questionWrites: 0 }),
 }));
 vi.mock("@/components/automations/AutomationList", () => ({
   AutomationList: ({ automations }: { automations: unknown[] }) => (

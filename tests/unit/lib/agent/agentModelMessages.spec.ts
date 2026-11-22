@@ -30,6 +30,16 @@ describe("buildModelMessages", () => {
     ]);
   });
 
+  it("says how much of a long paste the model sees", async () => {
+    const result = await buildModelMessages({ messages: [message("user")], pastedText: "x".repeat(3400) });
+    expect(result.ok && result.modelMessages.at(-1)?.content).toContain("first 2,000 of 3,400 characters");
+  });
+
+  it("says a short paste is shown in full", async () => {
+    const result = await buildModelMessages({ messages: [message("user")], pastedText: "x".repeat(1500) });
+    expect(result.ok && result.modelMessages.at(-1)?.content).toContain("shown here in full");
+  });
+
   it("leaves the assistant last when resuming a turn", async () => {
     const result = await buildModelMessages({ messages: [message("assistant")], pastedText: "posting" });
     expect(result.ok && result.modelMessages).toEqual([expect.objectContaining({ role: "assistant" })]);

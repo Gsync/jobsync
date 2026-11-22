@@ -66,3 +66,15 @@ it("renders the error alone", () => {
   expect(screen.getByText(/Saving the questions failed/)).toBeInTheDocument();
   expect(screen.queryByRole("group")).not.toBeInTheDocument();
 });
+
+it("says how much of a cut-off paste was read and where to resume", () => {
+  renderCard({ items: [items[0]!], paste: { readChars: 2000, totalChars: 3400, lastQuestion: "Why this company?" } });
+  expect(screen.getByText(
+    "Only the first 2,000 of 3,400 pasted characters were read, up to “Why this company?”. Paste the rest, starting with the question after it.",
+  )).toBeInTheDocument();
+});
+
+it("shows the cut-off notice beside an error", () => {
+  renderCard({ items: [], error: "Saving failed.", paste: { readChars: 2000, totalChars: 3400, lastQuestion: "Q" } });
+  expect(screen.getByText(/Only the first 2,000 of 3,400 pasted characters/)).toBeInTheDocument();
+});

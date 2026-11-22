@@ -9,6 +9,10 @@ vi.mock("next/navigation", () => ({
   useRouter: () => router,
   useSearchParams: () => searchParams,
 }));
+// useAgentChat throws outside the provider, which this spec does not mount.
+vi.mock("@/components/agent/AgentChatProvider", () => ({
+  useAgentChat: () => ({ questionWrites: 0 }),
+}));
 vi.mock("@/actions/question.actions", () => ({
   deleteQuestion: vi.fn(),
   getPrepStageLabel: vi.fn(),

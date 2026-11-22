@@ -57,4 +57,49 @@ describe("add_question agent tool", () => {
       data: { steps: ["duplicate"] },
     });
   });
+
+  describe("cut-off paste", () => {
+    const questions = [{ question: "Tell me about yourself" }, { question: "Why this company?" }];
+    const dump = "1. Tell me about yourself.\n2. Why this company?\n".padEnd(3400, "x");
+
+    it("reports how much of a long paste was read, up to the last question sent", async () => {
+      const tool = buildAddQuestionTool({ userId: "user-1", pastedText: dump, writer });
+      const result = await execute(tool, { questions });
+      expect(result.paste).toEqual({ readChars: 2000, totalChars: 3400, lastQuestion: "Why this company?" });
+    });
+
+    it.each([["a short paste", "x".repeat(1500)], ["no paste", undefined]])(
+      "reports nothing for %s", async (_label, pastedText) => {
+        const tool = buildAddQuestionTool({ userId: "user-1", pastedText, writer });
+        expect((await execute(tool, { questions })).paste).toBeUndefined();
+      },
+    );
+
+    // A same-turn re-call would otherwise show a second, different cut-off note
+    it("reports the cut-off on the first call of the request only", async () => {
+      const tool = buildAddQuestionTool({ userId: "user-1", pastedText: dump, writer });
+      expect((await execute(tool, { questions })).paste).toBeDefined();
+      expect((await execute(tool, { questions: [questions[0]] })).paste).toBeUndefined();
+    });
+
+    // An older posting chip is still live when the user types a question
+    it("reports nothing when no sent question came from the paste", async () => {
+      const tool = buildAddQuestionTool({ userId: "user-1", pastedText: "x".repeat(3400), writer });
+      expect((await execute(tool, { questions: [{ question: "Why Acme?" }] })).paste).toBeUndefined();
+    });
+
+    it("reports the cut-off on a later call that drew on the paste", async () => {
+      const tool = buildAddQuestionTool({ userId: "user-1", pastedText: dump, writer });
+      expect((await execute(tool, { questions: [{ question: "Why Acme?" }] })).paste).toBeUndefined();
+      expect((await execute(tool, { questions })).paste).toBeDefined();
+    });
+
+    it("reports the cut-off on an error result too", async () => {
+      (saveQuestions as any).mockRejectedValue(new Error("db down"));
+      const tool = buildAddQuestionTool({ userId: "user-1", pastedText: dump, writer });
+      expect((await execute(tool, { questions })).paste).toEqual({
+        readChars: 2000, totalChars: 3400, lastQuestion: "Why this company?",
+      });
+    });
+  });
 });

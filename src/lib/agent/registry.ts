@@ -85,7 +85,7 @@ export const AGENT_TOOL_META = {
     ],
     terminal: true,
     reads: [],
-    invalidates: ["page"],
+    invalidates: ["page", "questionsList"],
   },
 } as const satisfies Record<string, AgentToolMeta>;
 

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
-import type { AgentAddQuestionResult } from "@/models/agent.model";
+import type { AgentAddQuestionResult, AgentQuestionPasteCut } from "@/models/agent.model";
 import type { SaveQuestionResult } from "@/models/question.model";
 
 type Status = SaveQuestionResult["status"];
@@ -36,8 +36,25 @@ function SavedItem({ item }: { item: ItemOf<"saved"> }) {
   );
 }
 
+function PasteNotice({ paste }: { paste: AgentQuestionPasteCut }) {
+  const read = paste.readChars.toLocaleString("en-US");
+  const total = paste.totalChars.toLocaleString("en-US");
+  return (
+    <p className="mt-2 text-xs text-muted-foreground">
+      {`Only the first ${read} of ${total} pasted characters were read, up to “${paste.lastQuestion}”. Paste the rest, starting with the question after it.`}
+    </p>
+  );
+}
+
 export function AddQuestionResult({ output }: { output: AgentAddQuestionResult }) {
-  if (output.error) return <p className="text-sm">{output.error}</p>;
+  if (output.error) {
+    return (
+      <div className="text-sm">
+        <p>{output.error}</p>
+        {output.paste && <PasteNotice paste={output.paste} />}
+      </div>
+    );
+  }
 
   const saved = itemsWith(output.items, ["saved"]);
   const updated = itemsWith(output.items, ["merged"]);
@@ -90,6 +107,7 @@ export function AddQuestionResult({ output }: { output: AgentAddQuestionResult }
           {repeats} repeated {repeats === 1 ? "question" : "questions"} combined
         </p>
       )}
+      {output.paste && <PasteNotice paste={output.paste} />}
     </div>
   );
 }

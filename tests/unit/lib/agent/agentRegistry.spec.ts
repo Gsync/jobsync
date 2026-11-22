@@ -46,6 +46,7 @@ describe("agent tool metadata", () => {
   it("returns the refresh targets for a tool", () => {
     expect(toolInvalidates("match_job")).toEqual(["page", "jobsList"]);
     expect(toolInvalidates("not_a_tool")).toEqual([]);
+    expect(toolInvalidates("add_question")).toEqual(["page", "questionsList"]);
   });
 });
 

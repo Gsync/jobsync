@@ -1,6 +1,7 @@
 import "server-only";
 
 import { convertToModelMessages, type ModelMessage, type UIMessage } from "ai";
+import { APP_CONSTANTS } from "@/lib/constants";
 import { omitHistoricalResumeText, type PageContext } from "@/models/agent.model";
 import {
   AGENT_PASTE_ONLY_USER_MESSAGE,
@@ -91,7 +92,11 @@ export async function buildModelMessages({ messages, pageContext, pastedText }: 
   }
   if (pastedText && lastIsUser) {
     const { block } = truncateForModel(pastedText);
-    modelMessages.push({ role: "user", content: buildPasteContextMessage(block) });
+    const chars = {
+      shown: Math.min(pastedText.length, APP_CONSTANTS.AGENT_CHAT_PASTE_HEAD_CHARS),
+      total: pastedText.length,
+    };
+    modelMessages.push({ role: "user", content: buildPasteContextMessage(block, chars) });
   }
 
   return { ok: true, modelMessages, historyDropped: messages.length - windowed.length };
