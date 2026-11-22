@@ -66,8 +66,6 @@ CLAUDE.md
 .github/*
 !.github/workflows
 .claude
-.specify
-/specs
 .vscode
 AGENTS.md
 .promptfoo/
