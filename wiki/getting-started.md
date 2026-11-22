@@ -73,7 +73,7 @@ Click the ⚙ button (Set goals) at the bottom right of the Daily Goals calendar
 - **Profile** — your resumes, contact information and the profile the AI features read from.
 - **Library** — the shared reference lists behind the dropdowns: Companies, Job Titles, Locations, Sources, Skills and Activity Types.
 
-**Settings is not one of the entries above.** Open the avatar menu at the bottom of the sidebar instead, below the navigation list, and choose **Settings**. It holds AI Provider, API Keys, Appearance, MCP Access and Data (backup, export and import). That same menu also has Notifications, AI Usage, Support and Logout.
+**Settings is not one of the entries above.** Open the avatar menu at the bottom of the sidebar instead, below the navigation list, and choose **Settings**. It holds AI Provider, API Keys, Appearance, Access Tokens and Data (backup, export and import). That same menu also has Notifications, AI Usage, Support and Logout.
 
 ## Where do I find installation and Docker instructions?
 

@@ -235,7 +235,7 @@ export default function McpAccessSettings() {
         <CardHeader className="flex-row flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
             <CardTitle className="text-lg font-medium">Personal Access Tokens</CardTitle>
-            <CardDescription>Tokens authenticate external agents to call MCP tools.</CardDescription>
+            <CardDescription>Tokens connect MCP clients, the browser extension and other integrations to JobSync.</CardDescription>
           </div>
           <Button size="sm" className="shrink-0" onClick={() => setShowGenerateDialog(true)} disabled={isLoading}>
             <Plus className="h-4 w-4 mr-1" />
@@ -248,7 +248,7 @@ export default function McpAccessSettings() {
               <Loader2 className="h-4 w-4 animate-spin" /> Loading tokens...
             </div>
           ) : tokens.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No MCP tokens yet. Generate one to get started.</p>
+            <p className="text-sm text-muted-foreground">No access tokens yet. Generate one to get started.</p>
           ) : (
             <div className="space-y-3">
               {tokens.map((t) => (
@@ -296,9 +296,9 @@ export default function McpAccessSettings() {
       <Dialog open={showGenerateDialog} onOpenChange={setShowGenerateDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Generate MCP Token</DialogTitle>
+            <DialogTitle>Generate Access Token</DialogTitle>
             <DialogDescription>
-              Name this token after the client (e.g. ChatGPT, Hermes, Claude Desktop) &mdash; it&apos;s shown as the source on jobs this token creates.
+              Name this token after what will use it (e.g. Claude Desktop, Browser extension) &mdash; jobs it adds show this name unless the integration sends its own.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

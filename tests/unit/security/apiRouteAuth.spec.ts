@@ -2,9 +2,9 @@
 // Flags departures, it does not prove auth: an auth() call and a 401 in the
 // same handler do not show the 401 rejects the session. Runtime 401 checks
 // stay in api-auth-contract.spec.ts.
-// The proxy matcher's `(?!auth|mcp)` excludes any first segment that merely
-// starts with those words, so a future /api/authors or /api/mcp-tokens
-// route is unguarded by the proxy; this spec reports it as uncovered.
+// The proxy matcher's `(?!auth|mcp|v1)` excludes any first segment that
+// merely starts with those words, so a future /api/authors, /api/mcp-tokens
+// or /api/v1beta route is unguarded by the proxy; this spec reports it.
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -17,7 +17,7 @@ import { applyExceptions, ROUTE_EXCEPTIONS } from "./exceptions";
 
 const API_DIR = path.join(process.cwd(), "src/app/api");
 const PROXY_FILE = path.join(process.cwd(), "src/proxy.ts");
-const REAL_MATCHER = ["/dashboard", "/dashboard/:path*", "/api/((?!auth|mcp).*)"];
+const REAL_MATCHER = ["/dashboard", "/dashboard/:path*", "/api/((?!auth|mcp|v1).*)"];
 
 function routeFiles(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -155,6 +155,23 @@ describe("proxy coverage self-checks", () => {
   it("reports unsupported segments as findings rather than dropping the route", () => {
     expect(scanProxyCoverage(["src/app/api/@slot/route.ts"], REAL_MATCHER)).toEqual([
       { file: "src/app/api/@slot/route.ts", target: "@slot", check: "unsupported-segment" },
+    ]);
+  });
+
+  it("REAL_MATCHER mirrors src/proxy.ts", () => {
+    expect(extractMatcher(read("src/proxy.ts"))).toEqual(REAL_MATCHER);
+  });
+
+  it("excludes /api/v1 and still protects other routes", () => {
+    const files = [
+      "src/app/api/v1/jobs/route.ts",
+      "src/app/api/v1beta/route.ts",
+      "src/app/api/jobs/export/route.ts",
+      "src/app/api/version/route.ts",
+    ];
+    expect(scanProxyCoverage(files, REAL_MATCHER)).toEqual([
+      { file: files[0], target: "/api/v1/jobs", check: "proxy-coverage" },
+      { file: files[1], target: "/api/v1beta", check: "proxy-coverage" },
     ]);
   });
 

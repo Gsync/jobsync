@@ -159,7 +159,7 @@ When you add a job with a substantial description and you've set a **default res
 
 #### 1. Generate a token
 
-1. Sign in to JobSync and go to **Settings > MCP Access**.
+1. Sign in to JobSync and go to **Settings > Access Tokens**.
 2. Click **Generate**, give it a name (e.g. the client you'll connect, like "Claude Desktop"), and pick an expiry.
 3. Copy the token and config snippets shown — the full token is only displayed once.
 

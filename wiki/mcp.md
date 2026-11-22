@@ -21,11 +21,13 @@ JobSync runs no AI model on the MCP path. When the agent produces a match score 
 
 ## How do I generate an MCP access token?
 
-Open the avatar menu at the bottom of the sidebar, choose **Settings**, then **MCP Access**, and click **Generate**. Name the token after the client you are connecting — "Claude Desktop", "Hermes" — because that name is what appears as the source on every job the token creates. Pick an expiry of 30, 90 or 365 days; 90 is the default.
+Open the avatar menu at the bottom of the sidebar, choose **Settings**, then **Access Tokens**, and click **Generate**. Name the token after the client you are connecting — "Claude Desktop", "Hermes" — because that name is what appears as the source on every job the token creates. Pick an expiry of 30, 90 or 365 days; 90 is the default.
 
 The dialog that follows shows the full token once and never again. Copy it before you close the dialog, along with the ready-made config snippet for your client. If you lose it, revoke the token and generate a new one.
 
 The same page shows your **Endpoint URL** at the top — it is your JobSync address with `/api/mcp` on the end — and lists every token you have, with its prefix, creation and expiry dates, last use and scopes. You can hold up to 10 tokens at a time.
+
+The same tokens also work for the [JobSync API](./api.md) and the [browser extension](./browser-extension.md).
 
 ## How do I add the connector to Claude Desktop?
 
@@ -96,15 +98,15 @@ Both are two-step flows, so a match or review is saved only if your agent comple
 
 ## Why is my agent not connecting or not seeing the tools?
 
-Work through these in order. Check that the endpoint URL in your config matches the one shown on the **MCP Access** page, including `/api/mcp`. Check that the token has not expired or been revoked — the tokens list shows expiry, and a revoked token stops working immediately. Restart the client fully after editing its config; most clients read it only at startup.
+Work through these in order. Check that the endpoint URL in your config matches the one shown on the **Access Tokens** page, including `/api/mcp`. Check that the token has not expired or been revoked — the tokens list shows expiry, and a revoked token stops working immediately. Restart the client fully after editing its config; most clients read it only at startup.
 
-If the connection works but calls start failing, you may have hit the rate limit: 60 MCP requests per hour across all tools and all your tokens. A batch call spends one request per item, and adding a job then saving its match spends two.
+If the connection works but calls start failing, you may have hit the rate limit: 100 requests per hour across all tools and all your tokens, shared with the [JobSync API](./api.md). A batch call spends one request per item, and adding a job then saving its match spends two.
 
 If you self-host with `NODE_ENV=production`, the MCP server is off unless the environment variable `MCP_ENABLED` is set to `true`. That and every other setting are covered in the [project README](https://github.com/Gsync/jobsync#readme).
 
 ## How do I revoke a token or see which agent added a job?
 
-Click the trash icon next to a token on **Settings → MCP Access** and confirm. Any agent using it loses access straight away, and this cannot be undone — the client will need a new token pasted into its config.
+Click the trash icon next to a token on **Settings → Access Tokens** and confirm. Any agent using it loses access straight away, and this cannot be undone — the client will need a new token pasted into its config.
 
 Revoking does not delete anything the token created. Jobs it added stay in your tracker with that token's name recorded as their source, which is how you tell an agent-added job from one you entered yourself. Editing such a job in the app is normal in every way.
 

@@ -18,14 +18,20 @@ const NAMED_ENTITIES: Record<string, string> = {
   "&amp;": "&", // keep ampersand last so it does not undo other entities
 };
 
+// HTML spec: NUL, surrogates and out-of-range code points decode to U+FFFD.
+function codePointChar(code: number): string {
+  if (code === 0 || (code >= 0xd800 && code <= 0xdfff) || code > 0x10ffff) {
+    return "�";
+  }
+  return String.fromCodePoint(code);
+}
+
 function decodeEntities(input: string): string {
   let out = input;
   // Numeric entities first (decimal + hex).
-  out = out.replace(/&#(\d+);/g, (_, code) =>
-    String.fromCodePoint(Number(code)),
-  );
+  out = out.replace(/&#(\d+);/g, (_, code) => codePointChar(Number(code)));
   out = out.replace(/&#x([0-9a-fA-F]+);/g, (_, code) =>
-    String.fromCodePoint(parseInt(code, 16)),
+    codePointChar(parseInt(code, 16)),
   );
   for (const [entity, char] of Object.entries(NAMED_ENTITIES)) {
     out = out.split(entity).join(char);

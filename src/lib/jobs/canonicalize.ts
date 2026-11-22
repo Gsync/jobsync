@@ -7,6 +7,8 @@
 // suffixes like "Inc"/"LLC". Other punctuation is left intact so distinct
 // labels such as "C++" vs "C#" can never collapse into one record.
 
+import { decodeHtml } from "@/lib/scraper/html";
+
 const LEGAL_SUFFIXES = [
   "inc",
   "llc",
@@ -47,4 +49,12 @@ export function canonicalizeEntityValue(
 
   // Guard against a label that is nothing but a suffix (e.g. "Inc").
   return value.length > 0 ? value : base;
+}
+
+// The exact key resolveEntity matches on, so validators can't drift from it.
+export function entityLabelValue(
+  label: string,
+  opts: { stripLegalSuffix?: boolean } = {},
+): string {
+  return canonicalizeEntityValue(decodeHtml(label).trim(), opts);
 }

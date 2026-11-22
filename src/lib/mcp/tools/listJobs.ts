@@ -1,6 +1,6 @@
 import prisma from "@/lib/db";
 import { APP_CONSTANTS } from "@/lib/constants";
-import { entityLookupValue } from "@/lib/jobs/resolve";
+import { entityLabelValue } from "@/lib/jobs/canonicalize";
 import { checkMcpRateLimit } from "@/lib/mcp/rate-limit";
 import type { McpListJobsInput, McpToolResult } from "@/models/mcp.schema";
 
@@ -62,10 +62,10 @@ function buildWhere(input: McpListJobsInput, userId: string) {
   return {
     userId,
     ...(input.company && {
-      Company: { value: entityLookupValue(input.company, { stripLegalSuffix: true }) },
+      Company: { value: entityLabelValue(input.company, { stripLegalSuffix: true }) },
     }),
     ...(input.status && { Status: { value: input.status } }),
-    ...(input.source && { JobSource: { value: entityLookupValue(input.source) } }),
+    ...(input.source && { JobSource: { value: entityLabelValue(input.source) } }),
     ...(input.createdAfter && { createdAt: { gte: new Date(input.createdAfter) } }),
   };
 }

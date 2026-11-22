@@ -24,6 +24,7 @@ export const WIKI_FEATURES = [
   "activities",
   "questions",
   "mcp",
+  "api",
   "backup",
 ] as const;
 

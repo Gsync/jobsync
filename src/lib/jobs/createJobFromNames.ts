@@ -11,7 +11,10 @@ import {
 import { createJobRecord } from "@/lib/jobs/createJobRecord";
 import { classifyDescriptionCompleteness } from "@/lib/jobs/descriptionCompleteness";
 import type { DescriptionCompleteness } from "@/models/job.model";
+import { serializeByUser } from "@/lib/jobs/serializeByUser";
 import {
+  findCompany,
+  findJobTitle,
   resolveCompany,
   resolveJobTitle,
   resolveLocation,
@@ -88,94 +91,119 @@ export async function createJobFromNames(
   const workplaceTypeValue = resolveWorkplaceType(workplaceType);
 
   onStep?.("resolve");
-  // Resolve Bucket A and B in parallel where possible
-  const [
-    resolvedCompany,
-    resolvedTitle,
-    resolvedLocation,
-    resolvedSource,
-    resolvedTagsResult,
-    statusId,
-  ] = await Promise.all([
-    resolveCompany(company, userId),
-    resolveJobTitle(jobTitle, userId),
-    location ? resolveLocation(location, userId) : Promise.resolve(null),
-    source ? resolveJobSource(source, userId) : Promise.resolve(null),
-    resolveTags(tags, userId, APP_CONSTANTS.MAX_JOB_TAGS),
-    resolveJobStatus(status),
-  ]);
+  const statusId = await resolveJobStatus(status);
 
-  const resolutions: ResolvedEntity[] = [
-    resolvedCompany,
-    resolvedTitle,
-    ...(resolvedLocation ? [resolvedLocation] : []),
-    ...(resolvedSource ? [resolvedSource] : []),
-    ...resolvedTagsResult.resolved,
-  ];
-
-  // Duplicate detection
-  if (!allowDuplicate) {
-    onStep?.("duplicate");
-    const duplicate = await detectDuplicate({
-      userId,
-      companyId: resolvedCompany.id,
-      jobTitleId: resolvedTitle.id,
-      jobUrl,
-    });
-    if (duplicate) {
-      return {
-        created: false,
-        duplicateOf: duplicate,
-        resolutions,
-        message: buildDuplicateMessage(duplicate, resolutions),
-      };
+  // One user's saves run in turn, so two identical requests can't both pass
+  // the duplicate check before either inserts.
+  return serializeByUser(userId, async () => {
+    if (!allowDuplicate) {
+      const duplicate = await findDuplicate({ userId, company, jobTitle, jobUrl }, onStep);
+      if (duplicate) return duplicate;
     }
-  }
 
-  // Default appliedDate if applied is true but no date provided
-  const resolvedAppliedDate = applied && !appliedDate ? new Date() : (appliedDate ?? null);
+    onStep?.("save");
+    // Created only now, so a refused duplicate leaves no new Library entries
+    const [
+      resolvedCompany,
+      resolvedTitle,
+      resolvedLocation,
+      resolvedSource,
+      resolvedTagsResult,
+    ] = await Promise.all([
+      resolveCompany(company, userId),
+      resolveJobTitle(jobTitle, userId),
+      location ? resolveLocation(location, userId) : Promise.resolve(null),
+      source ? resolveJobSource(source, userId) : Promise.resolve(null),
+      resolveTags(tags, userId, APP_CONSTANTS.MAX_JOB_TAGS),
+    ]);
 
-  const descriptionCompleteness = classifyDescriptionCompleteness(jobDescription);
+    const resolutions: ResolvedEntity[] = [
+      resolvedCompany,
+      resolvedTitle,
+      ...(resolvedLocation ? [resolvedLocation] : []),
+      ...(resolvedSource ? [resolvedSource] : []),
+      ...resolvedTagsResult.resolved,
+    ];
 
-  onStep?.("save");
-  const job = await createJobRecord({
-    jobTitleId: resolvedTitle.id,
-    companyId: resolvedCompany.id,
-    locationId: resolvedLocation?.id ?? null,
-    statusId,
-    jobSourceId: resolvedSource?.id ?? null,
-    salaryRange: salaryRange ?? null,
-    dueDate,
-    appliedDate: resolvedAppliedDate,
-    // Markdown-rendered here, unlike UI-created jobs which store raw
-    // Tiptap HTML directly — both are valid HTML for TipTapContentViewer,
-    // but don't assume Tiptap-specific structure when reading this field.
-    description: md.render(jobDescription),
-    jobType: jobTypeValue,
-    workplaceType: workplaceTypeValue,
-    userId,
-    jobUrl: jobUrl ? normalizeJobUrl(jobUrl) : null,
-    applied,
-    tagIds: resolvedTagsResult.resolved.map((t) => t.id),
-    createdVia: createdVia ?? null,
-    descriptionCompleteness,
+    // Default appliedDate if applied is true but no date provided
+    const resolvedAppliedDate = applied && !appliedDate ? new Date() : (appliedDate ?? null);
+
+    const descriptionCompleteness = classifyDescriptionCompleteness(jobDescription);
+
+    const job = await createJobRecord({
+      jobTitleId: resolvedTitle.id,
+      companyId: resolvedCompany.id,
+      locationId: resolvedLocation?.id ?? null,
+      statusId,
+      jobSourceId: resolvedSource?.id ?? null,
+      salaryRange: salaryRange ?? null,
+      dueDate,
+      appliedDate: resolvedAppliedDate,
+      // Markdown-rendered here, unlike UI-created jobs which store raw
+      // Tiptap HTML directly — both are valid HTML for TipTapContentViewer,
+      // but don't assume Tiptap-specific structure when reading this field.
+      description: md.render(jobDescription),
+      jobType: jobTypeValue,
+      workplaceType: workplaceTypeValue,
+      userId,
+      jobUrl: jobUrl ? normalizeJobUrl(jobUrl) : null,
+      applied,
+      tagIds: resolvedTagsResult.resolved.map((t) => t.id),
+      createdVia: createdVia ?? null,
+      descriptionCompleteness,
+    });
+
+    const message = buildSuccessMessage(resolutions, resolvedTagsResult.dropped, job.id);
+
+    return {
+      created: true,
+      jobId: job.id,
+      resolutions,
+      descriptionCompleteness,
+      message,
+    };
   });
+}
 
-  const message = buildSuccessMessage(resolutions, resolvedTagsResult.dropped, job.id);
+interface DuplicateLookup {
+  userId: string;
+  company: string;
+  jobTitle: string;
+  jobUrl?: string;
+}
 
+// Read-only: names are looked up, never created, before the check
+async function findDuplicate(
+  lookup: DuplicateLookup,
+  onStep?: (step: CreateJobStep) => void,
+): Promise<CreateJobFromNamesResult | null> {
+  const { userId, company, jobTitle, jobUrl } = lookup;
+  const [foundCompany, foundTitle] = await Promise.all([
+    findCompany(company, userId),
+    findJobTitle(jobTitle, userId),
+  ]);
+  onStep?.("duplicate");
+  const duplicate = await detectDuplicate({
+    userId,
+    companyId: foundCompany?.id,
+    jobTitleId: foundTitle?.id,
+    jobUrl,
+  });
+  if (!duplicate) return null;
+
+  const matched = [foundCompany, foundTitle].filter((r): r is ResolvedEntity => r !== null);
   return {
-    created: true,
-    jobId: job.id,
-    resolutions,
-    descriptionCompleteness,
-    message,
+    created: false,
+    duplicateOf: duplicate,
+    resolutions: matched,
+    message: buildDuplicateMessage(duplicate, matched),
   };
 }
 
 interface DuplicateQuery {
   userId: string;
-  companyId: string;
-  jobTitleId: string;
+  companyId?: string;
+  jobTitleId?: string;
   jobUrl?: string;
 }
 
@@ -191,6 +219,9 @@ async function detectDuplicate(
     const byUrl = await findExistingJobByUrl(userId, jobUrl);
     if (byUrl) return byUrl;
   }
+
+  // A company or title not yet in the Library can't have a saved job
+  if (!companyId || !jobTitleId) return null;
 
   // Tier 2 — company + title within window. Location is not compared:
   // spellings vary ("Toronto, ON" vs "Toronto, Ontario"), so it is reported
@@ -248,7 +279,7 @@ function buildDuplicateMessage(
     `Duplicate detected — existing job "${dup.title}" at "${dup.company}" ` +
     `(id: ${dup.id}, status: ${dup.status}, location: ${dup.location ?? "none"}). ` +
     next +
-    `Pass allowDuplicate: true only if this is genuinely a different posting. ` +
-    `Resolutions: ${parts.join("; ")}.`
+    `Pass allowDuplicate: true only if this is genuinely a different posting.` +
+    (parts.length > 0 ? ` Resolutions: ${parts.join("; ")}.` : "")
   );
 }

@@ -1,7 +1,7 @@
 import prisma from "@/lib/db";
 import { JOB_TYPES, WORKPLACE_TYPES, matchEnumEntry } from "@/models/job.model";
 import { decodeHtml } from "@/lib/scraper/html";
-import { canonicalizeEntityValue } from "./canonicalize";
+import { canonicalizeEntityValue, entityLabelValue } from "./canonicalize";
 
 export interface ResolvedEntity {
   id: string;
@@ -16,15 +16,6 @@ export interface ResolvedTag extends ResolvedEntity {
 }
 
 // Bucket A — resolve-or-create by exact-normalized value
-
-// The stored `value` a label resolves to, for read-only lookups that must
-// match exactly what resolveEntity would find or create.
-export function entityLookupValue(
-  label: string,
-  opts: { stripLegalSuffix?: boolean } = {},
-): string {
-  return canonicalizeEntityValue(decodeHtml(label).trim(), opts);
-}
 
 interface EntityRow {
   id: string;
@@ -53,7 +44,7 @@ async function resolveEntity(
   opts: { stripLegalSuffix?: boolean } = {},
 ): Promise<ResolvedEntity> {
   const trimmed = decodeHtml(label).trim();
-  const value = entityLookupValue(label, opts);
+  const value = entityLabelValue(label, opts);
   if (!value) throw new Error("A non-empty label is required");
   const existing = await delegate.findUnique({
     where: { value_createdBy: { value, createdBy: userId } },
@@ -74,6 +65,29 @@ async function resolveEntity(
     }
     throw err;
   }
+}
+
+// Read-only twin of resolveEntity, for checks that must not create records
+async function findEntity(
+  delegate: EntityDelegate,
+  label: string,
+  userId: string,
+  opts: { stripLegalSuffix?: boolean } = {},
+): Promise<ResolvedEntity | null> {
+  const value = entityLabelValue(label, opts);
+  if (!value) return null;
+  const existing = await delegate.findUnique({
+    where: { value_createdBy: { value, createdBy: userId } },
+  });
+  return existing ? { id: existing.id, label: existing.label, created: false } : null;
+}
+
+export function findCompany(label: string, userId: string): Promise<ResolvedEntity | null> {
+  return findEntity(prisma.company, label, userId, { stripLegalSuffix: true });
+}
+
+export function findJobTitle(label: string, userId: string): Promise<ResolvedEntity | null> {
+  return findEntity(prisma.jobTitle, label, userId);
 }
 
 export function resolveCompany(

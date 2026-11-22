@@ -1,7 +1,7 @@
 import prisma from "@/lib/db";
 import { jobDedupeKey, normalizeJobUrl } from "@/lib/scraper/utils";
 import { APP_CONSTANTS } from "@/lib/constants";
-import { entityLookupValue } from "@/lib/jobs/resolve";
+import { entityLabelValue } from "@/lib/jobs/canonicalize";
 
 export interface ExistingJobRef {
   id: string;
@@ -132,14 +132,14 @@ export async function findJobIdsByNames(
     where: {
       userId,
       ...(names.company && {
-        Company: { value: entityLookupValue(names.company, { stripLegalSuffix: true }) },
+        Company: { value: entityLabelValue(names.company, { stripLegalSuffix: true }) },
       }),
       ...(names.jobTitle && {
-        JobTitle: { value: entityLookupValue(names.jobTitle) },
+        JobTitle: { value: entityLabelValue(names.jobTitle) },
       }),
       ...(names.location && {
         OR: [
-          { Location: { value: entityLookupValue(names.location) } },
+          { Location: { value: entityLabelValue(names.location) } },
           { locationId: null },
         ],
       }),

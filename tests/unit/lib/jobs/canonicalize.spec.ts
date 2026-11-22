@@ -1,4 +1,4 @@
-import { canonicalizeEntityValue } from "@/lib/jobs/canonicalize";
+import { canonicalizeEntityValue, entityLabelValue } from "@/lib/jobs/canonicalize";
 
 describe("canonicalizeEntityValue", () => {
   it("lowercases and trims", () => {
@@ -61,5 +61,21 @@ describe("canonicalizeEntityValue", () => {
     it("falls back to the base form when the label is only a suffix", () => {
       expect(canonicalizeEntityValue("Inc", strip)).toBe("inc");
     });
+  });
+});
+
+describe("entityLabelValue", () => {
+  it("decodes entities before canonicalizing", () => {
+    expect(entityLabelValue("&#44;")).toBe("");
+    expect(entityLabelValue("&nbsp;")).toBe("");
+    expect(entityLabelValue("AT&amp;T")).toBe("at&t");
+  });
+
+  it("trims and strips legal suffixes when asked", () => {
+    expect(entityLabelValue(" Acme, Inc. ", { stripLegalSuffix: true })).toBe("acme");
+  });
+
+  it("does not throw on out-of-range numeric entities", () => {
+    expect(entityLabelValue("&#1114112;")).toBe("\uFFFD");
   });
 });

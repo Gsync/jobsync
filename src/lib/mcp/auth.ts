@@ -1,12 +1,19 @@
 import prisma from "@/lib/db";
 import { hashToken } from "./tokens";
 
-type AuthSuccess = { ok: true; userId: string; scopes: string[]; tokenName: string };
+type AuthSuccess = {
+  ok: true;
+  userId: string;
+  scopes: string[];
+  tokenName: string;
+  expiresAt: Date;
+};
 type AuthFailure = { ok: false; status: 401 | 403; error: string };
 
 export async function resolveMcpToken(req: Request): Promise<AuthSuccess | AuthFailure> {
   const authHeader = req.headers.get("authorization") ?? "";
-  if (!authHeader.startsWith("Bearer ")) {
+  // RFC 9110: the scheme is case-insensitive; the token itself is not
+  if (!/^bearer /i.test(authHeader)) {
     return { ok: false, status: 401, error: "Missing or malformed Authorization header" };
   }
 
@@ -38,5 +45,11 @@ export async function resolveMcpToken(req: Request): Promise<AuthSuccess | AuthF
   } catch {
     return { ok: false, status: 401, error: "Malformed token scopes" };
   }
-  return { ok: true, userId: record.userId, scopes, tokenName: record.name };
+  return {
+    ok: true,
+    userId: record.userId,
+    scopes,
+    tokenName: record.name,
+    expiresAt: record.expiresAt,
+  };
 }
