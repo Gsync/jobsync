@@ -67,6 +67,29 @@ async function resolveEntity(
   }
 }
 
+// Read-only twin of resolveEntity, for checks that must not create records
+async function findEntity(
+  delegate: EntityDelegate,
+  label: string,
+  userId: string,
+  opts: { stripLegalSuffix?: boolean } = {},
+): Promise<ResolvedEntity | null> {
+  const value = entityLabelValue(label, opts);
+  if (!value) return null;
+  const existing = await delegate.findUnique({
+    where: { value_createdBy: { value, createdBy: userId } },
+  });
+  return existing ? { id: existing.id, label: existing.label, created: false } : null;
+}
+
+export function findCompany(label: string, userId: string): Promise<ResolvedEntity | null> {
+  return findEntity(prisma.company, label, userId, { stripLegalSuffix: true });
+}
+
+export function findJobTitle(label: string, userId: string): Promise<ResolvedEntity | null> {
+  return findEntity(prisma.jobTitle, label, userId);
+}
+
 export function resolveCompany(
   label: string,
   userId: string,

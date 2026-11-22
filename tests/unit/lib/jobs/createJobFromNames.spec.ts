@@ -1,6 +1,8 @@
 import { createJobFromNames } from "@/lib/jobs/createJobFromNames";
 import { createJobRecord } from "@/lib/jobs/createJobRecord";
 import {
+  findCompany,
+  findJobTitle,
   resolveCompany,
   resolveJobTitle,
   resolveLocation,
@@ -27,6 +29,8 @@ vi.mock("@/lib/jobs/createJobRecord", () => ({
 }));
 
 vi.mock("@/lib/jobs/resolve", () => ({
+  findCompany: vi.fn(),
+  findJobTitle: vi.fn(),
   resolveCompany: vi.fn(),
   resolveJobTitle: vi.fn(),
   resolveLocation: vi.fn(),
@@ -48,6 +52,8 @@ describe("createJobFromNames", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    (findCompany as any).mockResolvedValue({ id: "company-1", label: "Acme", created: false });
+    (findJobTitle as any).mockResolvedValue({ id: "title-1", label: "Engineer", created: false });
     (resolveCompany as any).mockResolvedValue({ id: "company-1", label: "Acme", created: true });
     (resolveJobTitle as any).mockResolvedValue({ id: "title-1", label: "Engineer", created: true });
     (resolveLocation as any).mockResolvedValue(null);
@@ -236,6 +242,71 @@ describe("createJobFromNames", () => {
     expect(result.message).not.toContain("call update_job");
   });
 
+  it("creates no reference records when the save is refused as a duplicate", async () => {
+    (findCompany as any).mockResolvedValue(null);
+    (prisma.job.findMany as any).mockResolvedValueOnce([
+      {
+        id: "existing-job",
+        jobUrl: "https://example.com/job/1",
+        createdVia: "my-token",
+        Status: { value: "applied" },
+        JobTitle: { label: "Engineer" },
+        Company: { label: "Acme Labs" },
+      },
+    ]);
+
+    const result = await createJobFromNames(
+      {
+        ...baseInput,
+        company: "Acme Corp",
+        jobUrl: "https://example.com/job/1",
+        location: "Remote - EMEA",
+        source: "NewBoard",
+        tags: ["React"],
+      },
+      userId,
+    );
+
+    expect(result.created).toBe(false);
+    expect(result.resolutions).toEqual([{ id: "title-1", label: "Engineer", created: false }]);
+    for (const resolver of [resolveCompany, resolveJobTitle, resolveLocation, resolveJobSource, resolveTags]) {
+      expect(resolver).not.toHaveBeenCalled();
+    }
+  });
+
+  it("skips the company+title check when the company is not in the Library yet", async () => {
+    (findCompany as any).mockResolvedValue(null);
+
+    const result = await createJobFromNames(baseInput, userId);
+
+    expect(prisma.job.findFirst).not.toHaveBeenCalled();
+    expect(result.created).toBe(true);
+  });
+
+  it("refuses the second of two identical saves sent at the same time", async () => {
+    let saved: object | null = null;
+    (prisma.job.findFirst as any).mockImplementation(async () => saved);
+    (createJobRecord as any).mockImplementation(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      saved = {
+        id: "job-1",
+        createdVia: "my-token",
+        Status: { value: "draft" },
+        JobTitle: { label: "Engineer" },
+        Company: { label: "Acme" },
+      };
+      return { id: "job-1" };
+    });
+
+    const results = await Promise.all([
+      createJobFromNames(baseInput, userId),
+      createJobFromNames(baseInput, userId),
+    ]);
+
+    expect(results.map((r) => r.created)).toEqual([true, false]);
+    expect(createJobRecord).toHaveBeenCalledTimes(1);
+  });
+
   it("creates the job when no duplicate is found", async () => {
     const result = await createJobFromNames(baseInput, userId);
 
@@ -272,13 +343,18 @@ describe("createJobFromNames", () => {
     it("reports resolve, duplicate and save in order, each before its work", async () => {
       const steps: string[] = [];
       const onStep = (step: string) => steps.push(step);
-      (resolveCompany as any).mockImplementation(async () => {
+      (findCompany as any).mockImplementation(async () => {
         expect(steps).toEqual(["resolve"]);
-        return { id: "company-1", label: "Acme", created: true };
+        return { id: "company-1", label: "Acme", created: false };
       });
       (prisma.job.findFirst as any).mockImplementation(async () => {
         expect(steps).toEqual(["resolve", "duplicate"]);
         return null;
+      });
+      // Reference records are created only once the save is going ahead
+      (resolveCompany as any).mockImplementation(async () => {
+        expect(steps).toEqual(["resolve", "duplicate", "save"]);
+        return { id: "company-1", label: "Acme", created: true };
       });
       (createJobRecord as any).mockImplementation(async () => {
         expect(steps).toEqual(["resolve", "duplicate", "save"]);

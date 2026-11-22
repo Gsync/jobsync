@@ -71,11 +71,14 @@ describe("POST /api/v1/jobs", () => {
     expect(rateLimitMock).not.toHaveBeenCalled();
   });
 
-  it("returns 400 with no issues for malformed JSON", async () => {
+  it("returns 400 naming the body for malformed JSON", async () => {
     const res = await POST(post("{"));
 
     expect(res.status).toBe(400);
-    expect(await res.json()).toEqual({ error: "Invalid request", issues: [] });
+    expect(await res.json()).toEqual({
+      error: "Invalid request",
+      issues: [{ path: "", message: "Body must be valid JSON" }],
+    });
   });
 
   it("returns 400 for a JSON body that is not an object", async () => {

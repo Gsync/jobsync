@@ -45,6 +45,23 @@ describe("resolveMcpToken", () => {
     });
   });
 
+  it("accepts the scheme in any case and keeps the token's case", async () => {
+    (prisma.mcpAccessToken.findUnique as any).mockResolvedValue({
+      id: "t-1",
+      userId: "user-1",
+      scopes: JSON.stringify(["jobs:write"]),
+      name: "my-token",
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+
+    const result = await resolveMcpToken(makeRequest("bearer jsync_MixedCase"));
+
+    expect(result.ok).toBe(true);
+    expect(prisma.mcpAccessToken.findUnique).toHaveBeenCalledWith({
+      where: { tokenHash: hashToken("jsync_MixedCase") },
+    });
+  });
+
   it("rejects an empty bearer token", async () => {
     const result = await resolveMcpToken(makeRequest("Bearer    "));
     expect(result).toEqual({ ok: false, status: 401, error: "Empty token" });

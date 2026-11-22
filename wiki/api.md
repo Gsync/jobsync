@@ -85,4 +85,4 @@ The script must be able to reach your JobSync instance. A JobSync running on you
 
 ## What is the API rate limit?
 
-It is 100 requests an hour, shared with MCP across all your tokens. Every authenticated request to `/api/v1/jobs` counts, including rejected ones; the ping endpoint does not count. Over the limit, the API answers `429` with a `Retry-After` header giving the seconds until you can try again.
+It is 100 requests an hour, shared with MCP across all your tokens. Every request to `/api/v1/jobs` with a valid token that has the `jobs:write` scope counts, including ones rejected as invalid or duplicate; the ping endpoint does not count. Over the limit, the API answers `429` with a `Retry-After` header giving the seconds until you can try again.

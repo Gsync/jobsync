@@ -12,7 +12,8 @@ type AuthFailure = { ok: false; status: 401 | 403; error: string };
 
 export async function resolveMcpToken(req: Request): Promise<AuthSuccess | AuthFailure> {
   const authHeader = req.headers.get("authorization") ?? "";
-  if (!authHeader.startsWith("Bearer ")) {
+  // RFC 9110: the scheme is case-insensitive; the token itself is not
+  if (!/^bearer /i.test(authHeader)) {
     return { ok: false, status: 401, error: "Missing or malformed Authorization header" };
   }
 

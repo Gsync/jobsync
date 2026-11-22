@@ -71,7 +71,7 @@ export async function POST(req: Request): Promise<Response> {
     if (!limit.allowed) return rateLimited(limit.resetIn);
 
     const json = await readJson(req);
-    if (!json.ok) return invalid([]);
+    if (!json.ok) return invalid([{ path: "", message: "Body must be valid JSON" }]);
 
     const parsed = ApiV1AddJobSchema.safeParse(json.body);
     if (!parsed.success) {
