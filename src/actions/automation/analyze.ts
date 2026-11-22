@@ -1,9 +1,9 @@
 "use server";
 
+import { buildLlmMatchData } from "@/lib/ai/jobMatch/matchResult";
 import db from "@/lib/db";
 import { requireUser } from "../shared";
-import { generateText } from "ai";
-import { startAiCall } from "@/lib/aiUsage/tracker";
+import { runTrackedGeneration } from "@/lib/ai/trackedGeneration";
 import {
   getModel,
   parseJobMatch,
@@ -14,17 +14,13 @@ import {
 } from "@/lib/ai";
 import { getResumeById } from "@/actions/profile.actions";
 import { getJobDetails } from "@/actions/job.actions";
-import { defaultUserSettings } from "@/models/userSettings.model";
 import { automationLogger } from "@/lib/automation-logger";
-import { getDefaultModelForProvider } from "@/lib/scraper/automation-run/aiSettings";
-import { APP_CONSTANTS } from "@/lib/constants";
+import { resolveAiConfig } from "@/lib/ai/aiConfig";
 import {
-  genAiRequestAttrs,
-  genAiResponseAttrs,
   inputSizeAttrs,
   SURFACES,
-  withSpan,
 } from "@/lib/telemetry";
+import type { DescriptionCompleteness } from "@/models/job.model";
 import { formatError } from "./shared";
 
 // Runs an on-demand LLM match for an un-analyzed discovered job using the
@@ -60,15 +56,7 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
       return { success: false, message: "Automation resume is missing" };
     }
 
-    const userSettings = await db.userSettings.findUnique({
-      where: { userId: user.id },
-    });
-    const ai = userSettings
-      ? {
-          ...defaultUserSettings.ai,
-          ...(JSON.parse(userSettings.settings).ai ?? {}),
-        }
-      : defaultUserSettings.ai;
+    const { config: ai, configuredModel } = await resolveAiConfig(user.id, "analyze");
 
     const [{ data: resume }, { job: jobDetails }] = await Promise.all([
       getResumeById(resumeId),
@@ -84,26 +72,23 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
       return { success: false, message: "Failed to prepare match inputs" };
     }
 
-    const modelName = ai.model || getDefaultModelForProvider(ai.provider);
-    const model = await getModel(ai.provider, modelName, user.id);
+    const model = await getModel(ai.provider, ai.modelName, user.id);
 
     const promptText = buildJobMatchPrompt(
       resumePre.data.normalizedText,
       jobPre.data.normalizedText,
     );
 
-    const result = await withSpan(
-      "automation.analyze",
-      {
-        ...genAiRequestAttrs({
-          provider: ai.provider,
-          model: modelName,
-          temperature: 0.3,
-          numCtx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
-          surface: SURFACES.JOB_MATCH,
-          system: JOB_MATCH_SYSTEM_PROMPT,
-          prompt: promptText,
-        }),
+    const result = await runTrackedGeneration({
+      userId: user.id,
+      feature: "automations",
+      spanName: "automation.analyze",
+      surface: SURFACES.JOB_MATCH,
+      ai: { ...ai, model },
+      system: JOB_MATCH_SYSTEM_PROMPT,
+      prompt: promptText,
+      temperature: 0.3,
+      attrs: {
         ...inputSizeAttrs({
           resumeChars: resumePre.data.normalizedText.length,
           jobChars: jobPre.data.normalizedText.length,
@@ -111,64 +96,22 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
         "jobsync.user_id": user.id,
         "jobsync.job_id": jobId,
       },
-      async (span) => {
-        // The Analyze button on a discovered job counts as Automations.
-        const tracker = startAiCall({
-          userId: user.id,
-          feature: "automations",
-          provider: ai.provider,
-          model: modelName,
-        });
-        let generated;
-        try {
-          generated = await generateText({
-            model,
-            instructions: JOB_MATCH_SYSTEM_PROMPT,
-            prompt: promptText,
-            temperature: 0.3,
-          });
-        } catch (error) {
-          void tracker.finish({ error });
-          throw error;
-        }
-        void tracker.finish({
-          usage: generated.usage,
-          finishReason: generated.finishReason,
-        });
-        span.setAttrs(
-          genAiResponseAttrs({
-            usage: generated.usage,
-            finishReason: generated.finishReason,
-            text: generated.text,
-          }),
-        );
-        return generated;
-      },
-    );
+    });
 
     const { scores, body } = parseJobMatch(result.text);
     if (!scores) {
       return { success: false, message: "AI did not return a match score" };
     }
 
-    let previous: Record<string, unknown> = {};
-    try {
-      previous = JSON.parse(job.matchData ?? "{}");
-    } catch {
-      previous = {};
-    }
-
-    const matchData = JSON.stringify({
-      ...previous,
-      matchScore: scores.matchScore,
-      recommendation: scores.recommendation,
+    const matchData = buildLlmMatchData({
+      scores,
       body,
-      resumeId,
-      resumeTitle: resume.title,
-      matchedAt: new Date().toISOString(),
+      resume: { id: resumeId, title: resume.title },
+      matchedAt: new Date(),
       provider: ai.provider,
-      model: ai.model,
-      analyzed: true,
+      model: configuredModel,
+      descriptionCompleteness:
+        (job.descriptionCompleteness as DescriptionCompleteness | null) ?? undefined,
     });
 
     await db.job.update({

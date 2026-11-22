@@ -199,6 +199,12 @@ export const POST = async (req: NextRequest) => {
         onAbort: () => {
           clearTimeout(timer);
           void importUsage.finish({ abortedBy: controller.signal });
+          // An abort ends the stream without an error, so name the deadline.
+          if (controller.signal.reason?.name === "TimeoutError") {
+            streamErrorMessage = `AI request timed out after ${APP_CONSTANTS.AI_RESUME_IMPORT_TIMEOUT_MS / 1000} seconds. Please try again.`;
+            importSpan.setError(controller.signal.reason);
+          }
+          importSpan.end();
         },
       }),
     );
@@ -250,15 +256,6 @@ export const POST = async (req: NextRequest) => {
       },
     });
   } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      return NextResponse.json(
-        {
-          error: `AI request timed out after ${APP_CONSTANTS.AI_RESUME_IMPORT_TIMEOUT_MS / 1000} seconds. Please try again.`,
-        },
-        { status: 504 },
-      );
-    }
-
     const message =
       error instanceof Error ? error.message : "AI request failed";
 

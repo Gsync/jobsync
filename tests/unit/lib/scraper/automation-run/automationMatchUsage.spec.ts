@@ -11,7 +11,6 @@ vi.mock("@/lib/ai", () => ({
   removeHtmlTags: (s: string) => s,
 }));
 vi.mock("@/lib/scraper/automation-run/resumeText", () => ({ convertResumeForMatch: async () => "resume" }));
-vi.mock("@/lib/scraper/automation-run/aiSettings", () => ({ getDefaultModelForProvider: () => "qwen3.5:9b" }));
 vi.mock("@/lib/telemetry", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/telemetry")>();
   return { ...actual, log: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } };
@@ -24,7 +23,7 @@ import { matchJobToResume } from "@/lib/scraper/automation-run/match";
 
 const job = { title: "Dev", company: "Acme", location: "Remote", description: "d" } as any;
 const run = (signal?: AbortSignal) =>
-  matchJobToResume(job, {} as any, "greenhouse" as any, { provider: "ollama", model: "qwen3.5:9b" } as any, "user-1", signal);
+  matchJobToResume(job, {} as any, "greenhouse" as any, { provider: "ollama", modelName: "qwen3.5:9b" }, "user-1", signal);
 
 describe("automation match usage", () => {
   beforeEach(() => vi.clearAllMocks());

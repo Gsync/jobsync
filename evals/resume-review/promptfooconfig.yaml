@@ -11,18 +11,13 @@ providers:
       temperature: 0.3
       max_tokens: 8192
 
-  # Local Ollama via its OpenAI-compatible endpoint. reasoning_effort goes in
-  # passthrough to clear promptfoo's reasoning-model name check; disabling
-  # thinking matches the app, where ollama-ai-provider-v2 sets think:false.
-  - id: openai:chat:qwen3.5:9b
+  - id: ollama:chat:qwen3.5:9b
     label: ollama-qwen3.5-9b
     config:
-      apiBaseUrl: http://localhost:11434/v1
-      apiKey: ollama
       temperature: 0.3
-      max_tokens: 8192
-      passthrough:
-        reasoning_effort: "none"
+      think: false
+      num_ctx: 16384
+      num_predict: 8192
 
 prompts:
   - file://./prompt.ts

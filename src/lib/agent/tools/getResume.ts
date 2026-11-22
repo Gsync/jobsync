@@ -2,7 +2,7 @@ import { tool } from "ai";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
 import { AgentGetResumeSchema } from "@/models/agent.schema";
-import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
+import { resolveResumeForAgent } from "@/lib/agent/steps/resumeLookup";
 import { preprocessResume } from "@/lib/ai/tools/preprocessing";
 import { log } from "@/lib/telemetry";
 import type { AgentGetResumeResult } from "@/models/agent.model";

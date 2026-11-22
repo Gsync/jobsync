@@ -1,4 +1,5 @@
 "use server";
+import { buildLlmMatchData } from "@/lib/ai/jobMatch/matchResult";
 import prisma from "@/lib/db";
 import { handleError } from "@/lib/utils";
 import { requireUser } from "./shared";
@@ -569,13 +570,11 @@ export const generateMockJobsAction = async (): Promise<any> => {
           : null;
       const matchScore = tier ? getRandomInt(tier.min, tier.max) : null;
       const matchData = tier
-        ? JSON.stringify({
-            matchScore,
-            recommendation: tier.recommendation,
+        ? buildLlmMatchData({
+            scores: { matchScore: matchScore!, recommendation: tier.recommendation },
             body: tier.body,
-            analyzed: true,
-            matchedAt: createdAt.toISOString(),
-            ...(resume ? { resumeId: resume.id, resumeTitle: resume.title } : {}),
+            matchedAt: createdAt,
+            resume: resume ?? undefined,
           })
         : null;
 

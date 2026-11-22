@@ -21,8 +21,8 @@ import {
   type ToolUIPart,
   type UIMessage,
 } from "ai";
-import { hasPendingApproval, stubConsumedPastes } from "@/lib/agent/paste";
-import { pageContextFor } from "@/lib/agent/pageContext";
+import { hasPendingApproval, stubConsumedPastes } from "@/lib/agent/memory/paste";
+import { pageContextFor, pageLocationOf } from "@/lib/agent/pageContext";
 import { useRightRail } from "@/context/RightRailContext";
 import { useSidebar } from "@/context/SidebarContext";
 import { useResizablePanel } from "@/hooks/useResizablePanel";
@@ -37,10 +37,12 @@ import { checkOllamaConnection } from "@/utils/ai.utils";
 import { AiProvider } from "@/models/ai.model";
 import {
   AGENT_NESTED_STREAM_PART_TYPE,
-  isNestedTool,
+  AGENT_TURN_TIMEOUT_PART_TYPE,
+  type AgentReplyStop,
   type AgentAddJobResult,
   type AgentNestedStreamData,
 } from "@/models/agent.model";
+import { toolInvalidates } from "@/lib/agent/registry";
 
 export const AGENT_CHAT_PANEL_ID = "chat";
 
@@ -57,6 +59,18 @@ type Preflight = {
 type QueuedMessage = { parts: UIMessage["parts"] };
 
 type AgentChatValue = ReturnType<typeof useAgentChatValue>;
+
+// The server's deadline part is the only signal that tells a timeout from the
+// user's own Stop: the SDK reports both as an abort with no reason.
+function replyStop(
+  timedOut: boolean,
+  end: { isAbort?: boolean; isDisconnect?: boolean; finishReason?: string },
+): AgentReplyStop | undefined {
+  if (timedOut) return "timedOut";
+  if (end.isAbort || end.isDisconnect || end.finishReason === "interrupted") {
+    return "interrupted";
+  }
+}
 
 const AgentChatContext = createContext<AgentChatValue | null>(null);
 
@@ -111,6 +125,9 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     togglePanelExpand();
   }, [isPanelExpanded, collapseSidebar, togglePanelExpand]);
 
+  const [stoppedReplies, setStoppedReplies] = useState<ReadonlyMap<string, AgentReplyStop>>(new Map());
+  // Set by the server's deadline part, read once by the reply that ends.
+  const turnTimedOutRef = useRef(false);
   const [interruptedTurn, setInterruptedTurn] = useState(false);
   const [preflight, setPreflight] = useState<Preflight>({
     checked: false,
@@ -153,12 +170,20 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     // POSTs back to execute the tool. It is the mechanism, not a nicety.
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
     onData: (part) => {
+      if (part.type === AGENT_TURN_TIMEOUT_PART_TYPE) {
+        turnTimedOutRef.current = true;
+        return;
+      }
       if (part.type !== AGENT_NESTED_STREAM_PART_TYPE || !part.id) return;
       const id = part.id;
       const { delta } = part.data as AgentNestedStreamData;
       setToolStreams((prev) => ({ ...prev, [id]: (prev[id] ?? "") + delta }));
     },
-    onFinish: ({ message, isAbort, isError }) => {
+    onFinish: ({ message, isAbort, isDisconnect, isError, finishReason }) => {
+      const timedOut = turnTimedOutRef.current;
+      turnTimedOutRef.current = false;
+      const stop = replyStop(timedOut, { isAbort, isDisconnect, finishReason });
+      if (stop) setStoppedReplies((prev) => new Map(prev).set(message.id, stop));
       // onFinish runs from a finally block, so it fires on abort too.
       if (isAbort || isError) return;
 
@@ -167,15 +192,8 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
       const finishedTools = finishedParts
         .filter((part) => isToolUIPart(part) && part.state === "output-available")
         .map((part) => getToolName(part as ToolUIPart));
-      // Any nested tool that saves server-side leaves the page behind the
-      // panel stale — the saved review card, the job's match score, or the
-      // job's cover-letter button flipping to "Regenerate Letter".
-      const generated = finishedTools.some(isNestedTool);
-      // The score it just saved sits in a JOB row, which a jobs list holding
-      // its own rows can only pick up from the counter. review_resume writes
-      // to the resume and the list renders no cover-letter state, so neither
-      // of the other two nested tools belongs here.
-      const scored = finishedTools.includes("match_job");
+      const refreshPage = finishedTools.some((name) => toolInvalidates(name).includes("page"));
+      const refreshJobsList = finishedTools.some((name) => toolInvalidates(name).includes("jobsList"));
 
       // The route stubs the paste on its way into the DB, but that copy is
       // not the one the client POSTs next turn — so without this the browser
@@ -191,17 +209,12 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
       // returns — see the effect below. An RSC refresh on an irrelevant page
       // is a wasted request, not a bug; a stale saved review or match score
       // right after watching one land reads as one.
-      if (generated) router.refresh();
-      if (scored) setJobWrites((n) => n + 1);
+      if (refreshPage) router.refresh();
+      if (refreshJobsList) setJobWrites((n) => n + 1);
     },
   });
 
-  // add_job is approval-gated, so the model calls it on one POST and the SDK
-  // executes it on the next — where stopWhen never matches (addJobSettled
-  // wants a tool CALL in the step and that step has only a result), and the
-  // model runs a whole extra generation narrating the write.
-  // Announcing in onFinish left the jobs list stale for the length of that
-  // generation; the output part is on the client the moment the tool returns.
+  // A committed write refreshes the list even if the stream disconnects.
   useEffect(() => {
     const announced = announcedJobWritesRef.current!;
     const landed = createdJobToolCallIds(chat.messages).filter(
@@ -300,6 +313,7 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     setInterruptedTurn(false);
     setComposerNonce((n) => n + 1);
     setToolStreams({});
+    setStoppedReplies(new Map());
     setQueued(undefined);
     // Clearing an idle conversation aborted nothing worth reporting.
     if (wasStreaming) toastInfo("Conversation cleared and generation stopped.");
@@ -317,7 +331,10 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
   const dispatch = useCallback(
     (message: QueuedMessage) => {
       setInterruptedTurn(false);
-      return chat.sendMessage(message);
+      return chat.sendMessage({
+        ...message,
+        metadata: { pageLocation: pageLocationOf(pageContextFor(window.location.pathname)) },
+      });
     },
     [chat],
   );
@@ -382,8 +399,8 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
   useEffect(() => {
     if (!released || sentRef.current === released) return;
     sentRef.current = released;
-    void chat.sendMessage(released.message);
-  }, [released, chat]);
+    void dispatch(released.message);
+  }, [released, dispatch]);
 
   const regenerate = useCallback(() => {
     if (streamingRef.current) return;
@@ -420,6 +437,7 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     queued,
     clearQueued,
     interruptedTurn,
+    stoppedReplies,
     dismissInterrupted,
     clear,
     preflight,

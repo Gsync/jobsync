@@ -3,7 +3,11 @@ import { addDays } from "date-fns";
 import prisma from "@/lib/db";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { normalizeJobUrl } from "@/lib/scraper/utils";
-import { findExistingJobByUrl } from "@/lib/jobs/jobDedupe";
+import {
+  findExistingJobByUrl,
+  toDuplicateJobRef,
+  type DuplicateJobRef,
+} from "@/lib/jobs/jobDedupe";
 import { createJobRecord } from "@/lib/jobs/createJobRecord";
 import { classifyDescriptionCompleteness } from "@/lib/jobs/descriptionCompleteness";
 import type { DescriptionCompleteness } from "@/models/job.model";
@@ -45,15 +49,19 @@ export interface CreateJobFromNamesInput {
 export interface CreateJobFromNamesResult {
   created: boolean;
   jobId?: string;
-  duplicateOf?: { id: string; title: string; company: string };
+  duplicateOf?: DuplicateJobRef;
   resolutions: ResolvedEntity[];
   descriptionCompleteness?: DescriptionCompleteness;
   message: string;
 }
 
+// Reported to callers that show progress; MCP and API v1 pass nothing.
+type CreateJobStep = "resolve" | "duplicate" | "save";
+
 export async function createJobFromNames(
   input: CreateJobFromNamesInput,
   userId: string,
+  onStep?: (step: CreateJobStep) => void,
 ): Promise<CreateJobFromNamesResult> {
   const {
     company,
@@ -79,6 +87,7 @@ export async function createJobFromNames(
   const jobTypeValue = resolveJobType(jobType);
   const workplaceTypeValue = resolveWorkplaceType(workplaceType);
 
+  onStep?.("resolve");
   // Resolve Bucket A and B in parallel where possible
   const [
     resolvedCompany,
@@ -106,12 +115,13 @@ export async function createJobFromNames(
 
   // Duplicate detection
   if (!allowDuplicate) {
-    const duplicate = await detectDuplicate(
+    onStep?.("duplicate");
+    const duplicate = await detectDuplicate({
       userId,
-      resolvedCompany.id,
-      resolvedTitle.id,
+      companyId: resolvedCompany.id,
+      jobTitleId: resolvedTitle.id,
       jobUrl,
-    );
+    });
     if (duplicate) {
       return {
         created: false,
@@ -127,6 +137,7 @@ export async function createJobFromNames(
 
   const descriptionCompleteness = classifyDescriptionCompleteness(jobDescription);
 
+  onStep?.("save");
   const job = await createJobRecord({
     jobTitleId: resolvedTitle.id,
     companyId: resolvedCompany.id,
@@ -161,12 +172,17 @@ export async function createJobFromNames(
   };
 }
 
+interface DuplicateQuery {
+  userId: string;
+  companyId: string;
+  jobTitleId: string;
+  jobUrl?: string;
+}
+
 async function detectDuplicate(
-  userId: string,
-  companyId: string,
-  jobTitleId: string,
-  jobUrl?: string,
-): Promise<{ id: string; title: string; company: string } | null> {
+  query: DuplicateQuery,
+): Promise<DuplicateJobRef | null> {
+  const { userId, companyId, jobTitleId, jobUrl } = query;
   // Tier 1 — URL match (no time window). Uses the same canonical key as
   // automation dedup (jobDedupeKey folds host case, leading "www.", param
   // order, and tracking params), so URL variants of the same posting are
@@ -176,7 +192,9 @@ async function detectDuplicate(
     if (byUrl) return byUrl;
   }
 
-  // Tier 2 — company + title within window
+  // Tier 2 — company + title within window. Location is not compared:
+  // spellings vary ("Toronto, ON" vs "Toronto, Ontario"), so it is reported
+  // in the message and the agent decides via allowDuplicate.
   const windowDays = APP_CONSTANTS.MCP_DUPLICATE_WINDOW_DAYS;
   const since = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000);
   const byNameWindow = await prisma.job.findFirst({
@@ -186,13 +204,17 @@ async function detectDuplicate(
       jobTitleId,
       createdAt: { gte: since },
     },
-    select: { id: true, JobTitle: { select: { label: true } }, Company: { select: { label: true } } },
+    select: {
+      id: true,
+      createdVia: true,
+      Status: { select: { value: true } },
+      JobTitle: { select: { label: true } },
+      Company: { select: { label: true } },
+      Location: { select: { label: true } },
+    },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   });
-  if (byNameWindow) {
-    return { id: byNameWindow.id, title: byNameWindow.JobTitle.label, company: byNameWindow.Company.label };
-  }
-
-  return null;
+  return byNameWindow ? toDuplicateJobRef(byNameWindow) : null;
 }
 
 function buildSuccessMessage(
@@ -212,16 +234,20 @@ function buildSuccessMessage(
 }
 
 function buildDuplicateMessage(
-  dup: { id: string; title: string; company: string },
+  dup: DuplicateJobRef,
   resolutions: ResolvedEntity[],
 ): string {
   const parts = resolutions.map((r) => {
     const action = r.created ? "Created" : "Matched";
     return `${action} ${r.label}`;
   });
+  const next = dup.updatable
+    ? `To enrich or correct it, call update_job with jobId "${dup.id}" instead of re-adding. `
+    : `It was created in the web app, so it cannot be updated through MCP — leave it as is. `;
   return (
-    `Duplicate detected — existing job "${dup.title}" at "${dup.company}" (id: ${dup.id}). ` +
-    `To enrich or correct it, call update_job with jobId "${dup.id}" instead of re-adding. ` +
+    `Duplicate detected — existing job "${dup.title}" at "${dup.company}" ` +
+    `(id: ${dup.id}, status: ${dup.status}, location: ${dup.location ?? "none"}). ` +
+    next +
     `Pass allowDuplicate: true only if this is genuinely a different posting. ` +
     `Resolutions: ${parts.join("; ")}.`
   );

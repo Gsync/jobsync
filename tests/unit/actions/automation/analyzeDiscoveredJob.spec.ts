@@ -1,4 +1,5 @@
 import { analyzeDiscoveredJob } from "@/actions/automation/analyze";
+import { buildPrerankMatchData } from "@/lib/ai/jobMatch/matchResult";
 import prisma from "@/lib/db";
 import { getModel } from "@/lib/ai";
 import { startAiCall } from "@/lib/aiUsage/tracker";
@@ -56,13 +57,37 @@ beforeEach(() => {
   db.job.findFirst.mockResolvedValue({
     id: "job-1",
     automationId: "auto-1",
-    matchData: null,
+    matchData: buildPrerankMatchData({
+      prerankScore: 0.4,
+      prerankComponents: { titleScore: 1, keywordScore: 0, locScore: 0, titleHits: [], keywordHits: [] },
+    }),
     automation: { resumeId: "res-1" },
   } as unknown as Awaited<ReturnType<typeof prisma.job.findFirst>>);
   db.job.update.mockResolvedValue({} as Awaited<ReturnType<typeof prisma.job.update>>);
 });
 
 describe("analyze discovered job model", () => {
+  it("overwrites a pre-ranked row and marks it analyzed", async () => {
+    settings({ provider: "openai" });
+    await analyzeDiscoveredJob("job-1");
+    const data = JSON.parse(db.job.update.mock.calls[0][0].data.matchData as string);
+    expect(data).not.toHaveProperty("model");
+    expect(data.analyzed).toBe(true);
+    expect(data).not.toHaveProperty("prerankScore");
+    expect(data).not.toHaveProperty("prerankComponents");
+  });
+
+  it("carries the job's own description completeness into the match", async () => {
+    settings({ provider: "openai" });
+    db.job.findFirst.mockResolvedValueOnce({
+      id: "job-1", automationId: "auto-1", descriptionCompleteness: "title-only",
+      matchData: null, automation: { resumeId: "res-1" },
+    } as unknown as Awaited<ReturnType<typeof prisma.job.findFirst>>);
+    await analyzeDiscoveredJob("job-1");
+    const data = JSON.parse(db.job.update.mock.calls[0][0].data.matchData as string);
+    expect(data.descriptionCompleteness).toBe("title-only");
+  });
+
   it.each([
     ["openai", "gpt-4o-mini"],
     ["deepseek", "deepseek-chat"],

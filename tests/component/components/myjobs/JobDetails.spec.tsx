@@ -479,6 +479,17 @@ describe("JobDetails – AI Match", () => {
     expect(chat.clear).toHaveBeenCalled();
     const sent = chat.sendMessage.mock.calls[0][0];
     expect(sent.parts[0].text).toMatch(/match/i);
+    expect(sent.parts[1].data.toolName).toBe("match_job");
+  });
+
+  it("sends the held match once a pending approval is cleared", async () => {
+    chat.approvalPending = true;
+    render(<JobDetails job={makeJob()} {...baseProps} />);
+    await userEvent.click(screen.getByRole("button", { name: /ai match/i }));
+    await userEvent.click(screen.getByRole("button", { name: /clear and continue/i }));
+    await act(async () => {});
+    const sent = chat.sendMessage.mock.calls[0][0];
+    expect(sent.parts[1].data.toolName).toBe("match_job");
   });
 
   // The panel opens first so a failed clear cannot leave the button dead, and
@@ -547,6 +558,7 @@ describe("JobDetails cover letter action", () => {
     expect(sent.parts[0].text).toMatch(/cover letter/i);
     expect(sent.parts[0].text).toContain("Frontend Developer");
     expect(sent.parts[0].text).toContain("Acme Corp");
+    expect(sent.parts[1].data.toolName).toBe("generate_cover_letter");
   });
 
   it("asks before clearing a conversation with a pending approval", async () => {
@@ -592,6 +604,7 @@ describe("JobDetails – auto-match from the jobs list", () => {
     expect(chat.open).toHaveBeenCalled();
     const sent = chat.sendMessage.mock.calls[0][0];
     expect(sent.parts[0].text).toMatch(/match/i);
+    expect(sent.parts[1].data.toolName).toBe("match_job");
     expect(router.replace).toHaveBeenCalledWith("?tab=match", { scroll: false });
   });
 

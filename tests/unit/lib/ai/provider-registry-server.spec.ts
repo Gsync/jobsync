@@ -107,10 +107,11 @@ describe("PROVIDER_VERIFIERS – openrouter", () => {
 });
 
 describe("PROVIDER_FACTORIES – openrouter", () => {
-  it("uses createOpenAI with the openrouter baseURL", () => {
+  // The bare provider call is OpenAI's Responses API; OpenRouter gets Chat.
+  it("uses createOpenAI's Chat Completions model with the openrouter baseURL", () => {
     const mockModelInstance = { modelId: "openai/gpt-4o" };
     const mockChainFn = vi.fn().mockReturnValue(mockModelInstance);
-    (createOpenAI as any).mockReturnValue(mockChainFn);
+    (createOpenAI as any).mockReturnValue({ chat: mockChainFn });
 
     const result = PROVIDER_FACTORIES.openrouter(
       "sk-or-apikey",
@@ -127,7 +128,7 @@ describe("PROVIDER_FACTORIES – openrouter", () => {
 
   it("passes the model name through to the factory chain", () => {
     const mockChainFn = vi.fn().mockReturnValue({});
-    (createOpenAI as any).mockReturnValue(mockChainFn);
+    (createOpenAI as any).mockReturnValue({ chat: mockChainFn });
 
     PROVIDER_FACTORIES.openrouter("sk-or-key", "google/gemini-flash");
 
@@ -136,7 +137,7 @@ describe("PROVIDER_FACTORIES – openrouter", () => {
 
   it("passes the API key through to createOpenAI", () => {
     const mockChainFn = vi.fn().mockReturnValue({});
-    (createOpenAI as any).mockReturnValue(mockChainFn);
+    (createOpenAI as any).mockReturnValue({ chat: mockChainFn });
 
     PROVIDER_FACTORIES.openrouter("sk-or-specific-key", "any-model");
 

@@ -7,9 +7,10 @@ import {
 } from "@/models/agent.schema";
 import {
   AGENT_CHAT_TERMINAL_TOOLS,
-  AGENT_NESTED_TOOLS,
-  isNestedTool,
-} from "@/models/agent.model";
+  AGENT_TOOL_META,
+  AGENT_TOOL_NAMES,
+} from "@/lib/agent/registry";
+import { directInvokeParts } from "@/models/agent.model";
 import { McpAddJobInputShape } from "@/models/mcp.schema";
 import { JOB_STATUS_VALUES } from "@/lib/constants";
 
@@ -112,21 +113,31 @@ describe("AgentCoverLetterSchema", () => {
 });
 
 describe("nested tool registry", () => {
-  it("names every tool that runs its own generation", () => {
-    expect([...AGENT_NESTED_TOOLS]).toEqual([
-      "review_resume",
-      "match_job",
-      "generate_cover_letter",
-    ]);
-    expect(isNestedTool("generate_cover_letter")).toBe(true);
-    expect(isNestedTool("add_job")).toBe(false);
-  });
-
   // A tool that runs its own generation MUST end the turn, or one turn can
   // chain two of them past the turn deadline and discard both.
   it("makes every nested tool terminal", () => {
-    for (const name of AGENT_NESTED_TOOLS) {
+    const workflows = AGENT_TOOL_NAMES.filter(
+      (name) => AGENT_TOOL_META[name].kind === "workflow",
+    );
+    expect(workflows.length).toBeGreaterThan(0);
+    for (const name of workflows) {
       expect([...AGENT_CHAT_TERMINAL_TOOLS]).toContain(name);
     }
+  });
+});
+
+describe("directInvokeParts", () => {
+  it("carries the title as the tool input", () => {
+    expect(directInvokeParts("Review A", "review_resume", "A")).toEqual([
+      { type: "text", text: "Review A" },
+      { type: "data-direct-invoke", data: { toolName: "review_resume", input: { resumeTitle: "A" } } },
+    ]);
+  });
+
+  it("sends an empty input when no title is given", () => {
+    expect(directInvokeParts("Review", "match_job")[1]).toEqual({
+      type: "data-direct-invoke",
+      data: { toolName: "match_job", input: {} },
+    });
   });
 });

@@ -1,4 +1,4 @@
-import { resolveResumeForAgent } from "@/lib/agent/resumeLookup";
+import { resolveResumeForAgent } from "@/lib/agent/steps/resumeLookup";
 import prisma from "@/lib/db";
 
 vi.mock("@/lib/db", () => ({

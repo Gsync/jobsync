@@ -12,7 +12,7 @@ export const PROVIDER_FACTORIES: Record<
 > = {
   openai: (apiKey, model) => createOpenAI({ apiKey })(model),
   openrouter: (apiKey, model) =>
-    createOpenAI({ apiKey, baseURL: "https://openrouter.ai/api/v1" })(model),
+    createOpenAI({ apiKey, baseURL: "https://openrouter.ai/api/v1" }).chat(model),
   deepseek: (apiKey, model) => createDeepSeek({ apiKey })(model),
   ollama: (baseURL, model) =>
     createOllama({ baseURL: baseURL + "/api" })(model),

@@ -1,4 +1,4 @@
-import { runNestedGeneration } from "@/lib/agent/nestedGeneration";
+import { runNestedGeneration } from "@/lib/agent/steps/nestedGeneration";
 import { APP_CONSTANTS } from "@/lib/constants";
 
 const streamText = vi.fn();
@@ -29,6 +29,7 @@ function textStreamOf(
 }
 
 const writer = { write: vi.fn(), merge: vi.fn(), onError: undefined };
+const report = vi.fn();
 
 const args = () => ({
   model: { id: "fake-model" } as any,
@@ -38,9 +39,12 @@ const args = () => ({
   numCtx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
   timeoutMs: 1000,
   writer: writer as any,
+  report,
   toolCallId: "call-1",
   guard: { running: false, elapsedMs: 0 },
   label: "test_tool",
+  feature: "agent_chat" as const,
+  surface: "agent.chat" as const,
   provider: "ollama",
   modelName: "test-model",
   userId: "user-1",
@@ -62,6 +66,27 @@ describe("runNestedGeneration", () => {
       APP_CONSTANTS.AI_OLLAMA_NUM_CTX,
     );
     expect(call.abortSignal).toBeDefined();
+  });
+
+  it("logs one timing summary from the nested stream's final raw chunk", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    streamText.mockImplementation(({ onChunk }) => ({
+      ...textStreamOf([]),
+      textStream: (async function* () {
+        onChunk({ chunk: { type: "raw", rawValue: {
+          done: true, load_duration: 2_000_000_000, prompt_eval_count: 700,
+          prompt_eval_duration: 3_000_000, eval_duration: 4_000_000,
+        } } });
+        yield "private answer";
+      })(),
+    }));
+    await runNestedGeneration(args());
+    expect(streamText.mock.calls[0][0].include).toEqual({ rawChunks: true });
+    expect(info.mock.calls).toEqual([["[agent-chat] nested generation", {
+      label: "test_tool", status: "ok", loadMs: 2000,
+      promptEvalMs: 3, promptEvalTokens: 700, evalMs: 4,
+    }]]);
+    info.mockRestore();
   });
 
   // The chat loop needs think:true; a sub-call with no tools does not.
@@ -110,6 +135,45 @@ describe("runNestedGeneration", () => {
     expect(result).toEqual({ status: "failed" });
   });
 
+  it("reports generate once the guard accepts, before the first delta", async () => {
+    await runNestedGeneration(args());
+    expect(report).toHaveBeenCalledTimes(1);
+    expect(report).toHaveBeenCalledWith("generate");
+    expect(report.mock.invocationCallOrder[0]).toBeLessThan(
+      writer.write.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("does not report generate when busy", async () => {
+    await runNestedGeneration({ ...args(), guard: { running: true, elapsedMs: 0 } });
+    expect(report).not.toHaveBeenCalled();
+  });
+
+  it("marks a deadline as timedOut", async () => {
+    vi.spyOn(AbortSignal, "timeout").mockReturnValue(AbortSignal.abort());
+    streamText.mockReturnValue({
+      textStream: (async function* () {
+        throw new Error("The operation timed out");
+      })(),
+    });
+    const result = await runNestedGeneration(args());
+    vi.mocked(AbortSignal.timeout).mockRestore();
+    expect(result).toEqual({ status: "failed", timedOut: true });
+  });
+
+  it("does not mark the caller's abort as timedOut", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    streamText.mockReturnValue({
+      textStream: (async function* () {
+        throw new Error("aborted");
+      })(),
+    });
+    const result = await runNestedGeneration({ ...args(), abortSignal: controller.signal });
+    expect(result).toEqual({ status: "failed" });
+    expect(result).not.toHaveProperty("timedOut");
+  });
+
   it("reports failed rather than throwing when the stream errors", async () => {
     streamText.mockReturnValue({
       textStream: (async function* () {
@@ -155,8 +219,8 @@ describe("runNestedGeneration usage", () => {
     streamText.mockReturnValue(textStreamOf(["hello ", "world"]));
   });
 
-  it("records the call under the feature its label maps to", async () => {
-    await runNestedGeneration({ ...args(), label: "review_resume" });
+  it("records the call under the feature it is given", async () => {
+    await runNestedGeneration({ ...args(), feature: "resume_review" });
     expect(startAiCall).toHaveBeenCalledWith({
       userId: "user-1",
       feature: "resume_review",

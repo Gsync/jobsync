@@ -1,10 +1,20 @@
 import prisma from "@/lib/db";
 import { jobDedupeKey, normalizeJobUrl } from "@/lib/scraper/utils";
+import { APP_CONSTANTS } from "@/lib/constants";
+import { entityLabelValue } from "@/lib/jobs/canonicalize";
 
 export interface ExistingJobRef {
   id: string;
   title: string;
   company: string;
+}
+
+// A matched job plus what an agent needs to decide its next call: the
+// current status, location, and whether MCP may update it.
+export interface DuplicateJobRef extends ExistingJobRef {
+  location: string | null;
+  status: string;
+  updatable: boolean;
 }
 
 // Builds a dedupe-key -> job identity map over a user's saved jobs, using the
@@ -51,14 +61,37 @@ export async function getExistingJobDedupeMap(
 const existingJobByUrlSelect = {
   id: true,
   jobUrl: true,
+  createdVia: true,
+  Status: { select: { value: true } },
   JobTitle: { select: { label: true } },
   Company: { select: { label: true } },
+  Location: { select: { label: true } },
 } as const;
+
+interface DuplicateJobRow {
+  id: string;
+  createdVia: string | null;
+  Status: { value: string };
+  JobTitle: { label: string };
+  Company: { label: string };
+  Location: { label: string } | null;
+}
+
+export function toDuplicateJobRef(job: DuplicateJobRow): DuplicateJobRef {
+  return {
+    id: job.id,
+    title: job.JobTitle.label,
+    company: job.Company.label,
+    location: job.Location?.label ?? null,
+    status: job.Status.value,
+    updatable: job.createdVia != null,
+  };
+}
 
 export async function findExistingJobByUrl(
   userId: string,
   jobUrl: string,
-): Promise<ExistingJobRef | null> {
+): Promise<DuplicateJobRef | null> {
   // Fast path: jobUrl is stored normalized (normalizeJobUrl), so an exact
   // match on the same normalization covers the overwhelming majority of
   // adds without scanning every URL-bearing job.
@@ -66,13 +99,7 @@ export async function findExistingJobByUrl(
     where: { userId, jobUrl: normalizeJobUrl(jobUrl) },
     select: existingJobByUrlSelect,
   });
-  if (exact) {
-    return {
-      id: exact.id,
-      title: exact.JobTitle.label,
-      company: exact.Company.label,
-    };
-  }
+  if (exact) return toDuplicateJobRef(exact);
 
   // Fallback: urlDedupeKey folds host case/www, which normalizeJobUrl
   // deliberately doesn't, so a small number of stored URLs may only match
@@ -83,13 +110,43 @@ export async function findExistingJobByUrl(
     select: existingJobByUrlSelect,
   });
   for (const job of jobs) {
-    if (jobDedupeKey({ url: job.jobUrl }) === key) {
-      return {
-        id: job.id,
-        title: job.JobTitle.label,
-        company: job.Company.label,
-      };
-    }
+    if (jobDedupeKey({ url: job.jobUrl }) === key) return toDuplicateJobRef(job);
   }
   return null;
+}
+
+export interface JobNameLookup {
+  company?: string;
+  jobTitle?: string;
+  location?: string;
+}
+
+// find_job's company/title lookup: no time window, any status. A location
+// narrows the match but still keeps jobs saved without one, mirroring
+// add_job's duplicate rule. Newest first, capped.
+export async function findJobIdsByNames(
+  userId: string,
+  names: JobNameLookup,
+): Promise<string[]> {
+  const jobs = await prisma.job.findMany({
+    where: {
+      userId,
+      ...(names.company && {
+        Company: { value: entityLabelValue(names.company, { stripLegalSuffix: true }) },
+      }),
+      ...(names.jobTitle && {
+        JobTitle: { value: entityLabelValue(names.jobTitle) },
+      }),
+      ...(names.location && {
+        OR: [
+          { Location: { value: entityLabelValue(names.location) } },
+          { locationId: null },
+        ],
+      }),
+    },
+    select: { id: true },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: APP_CONSTANTS.MCP_FIND_JOB_MAX_MATCHES,
+  });
+  return jobs.map((job) => job.id);
 }

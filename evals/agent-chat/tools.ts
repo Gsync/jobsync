@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AGENT_TOOL_DESCRIPTIONS } from '../../src/lib/agent/prompt';
+import { AGENT_TOOL_META, AGENT_TOOL_NAMES, type AgentToolName } from '../../src/lib/agent/registry';
 import {
   AgentAddJobSchema,
   AgentCoverLetterSchema,
@@ -8,51 +8,23 @@ import {
   AgentReviewResumeSchema,
 } from '../../src/models/agent.schema';
 
-// The same schemas the chat route registers, so the model sees the exact
-// parameter schema and .describe() text the real surface advertises.
+const SCHEMAS: Record<AgentToolName, z.ZodType> = {
+  add_job: AgentAddJobSchema,
+  get_resume: AgentGetResumeSchema,
+  review_resume: AgentReviewResumeSchema,
+  match_job: AgentMatchJobSchema,
+  generate_cover_letter: AgentCoverLetterSchema,
+};
+
 export function getTools() {
-  return [
-    {
-      type: 'function',
-      function: {
-        name: 'add_job',
-        description: AGENT_TOOL_DESCRIPTIONS.add_job,
-        parameters: z.toJSONSchema(AgentAddJobSchema, { io: 'input' }),
-      },
+  return AGENT_TOOL_NAMES.map((name) => ({
+    type: 'function',
+    function: {
+      name,
+      description: AGENT_TOOL_META[name].description,
+      parameters: z.toJSONSchema(SCHEMAS[name], { io: 'input' }),
     },
-    {
-      type: 'function',
-      function: {
-        name: 'get_resume',
-        description: AGENT_TOOL_DESCRIPTIONS.get_resume,
-        parameters: z.toJSONSchema(AgentGetResumeSchema, { io: 'input' }),
-      },
-    },
-    {
-      type: 'function',
-      function: {
-        name: 'review_resume',
-        description: AGENT_TOOL_DESCRIPTIONS.review_resume,
-        parameters: z.toJSONSchema(AgentReviewResumeSchema, { io: 'input' }),
-      },
-    },
-    {
-      type: 'function',
-      function: {
-        name: 'match_job',
-        description: AGENT_TOOL_DESCRIPTIONS.match_job,
-        parameters: z.toJSONSchema(AgentMatchJobSchema, { io: 'input' }),
-      },
-    },
-    {
-      type: 'function',
-      function: {
-        name: 'generate_cover_letter',
-        description: AGENT_TOOL_DESCRIPTIONS.generate_cover_letter,
-        parameters: z.toJSONSchema(AgentCoverLetterSchema, { io: 'input' }),
-      },
-    },
-  ];
+  }));
 }
 
 export default getTools;

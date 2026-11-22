@@ -91,6 +91,43 @@ describe("handleAddJobsBatch", () => {
     expect(handleAddJob).toHaveBeenCalledTimes(2);
     expect(text).toContain("Rate limit exceeded");
     expect(text).toContain("1 item(s) not attempted");
+    expect((result.structuredContent as any).results).toEqual([
+      { index: 1, error: "first ok" },
+      { index: 2, error: "Rate limit exceeded. Try again in 30s." },
+      { index: 3, skipped: true },
+    ]);
+  });
+});
+
+describe("handleAddJobsBatch structured results", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("gives every item its own result, so one duplicate does not block the rest", async () => {
+    (handleAddJob as any)
+      .mockResolvedValueOnce({
+        content: [{ type: "text", text: "Duplicate detected" }],
+        structuredContent: { duplicate: true, existingJobId: "job-9", existingStatus: "applied" },
+      })
+      .mockResolvedValueOnce({
+        content: [{ type: "text", text: "created" }],
+        structuredContent: { duplicate: false, jobId: "job-2" },
+      })
+      .mockRejectedValueOnce(new Error("boom"));
+
+    const result = await handleAddJobsBatch(
+      { jobs: [job("Atolio"), job("Globex"), job("Initech")] } as any,
+      "user-1",
+      "my-token",
+    );
+
+    expect(handleAddJob).toHaveBeenCalledTimes(3);
+    expect(result.structuredContent).toEqual({
+      results: [
+        { index: 1, duplicate: true, existingJobId: "job-9", existingStatus: "applied" },
+        { index: 2, duplicate: false, jobId: "job-2" },
+        { index: 3, error: "Error: boom" },
+      ],
+    });
   });
 });
 

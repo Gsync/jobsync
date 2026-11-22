@@ -73,11 +73,12 @@ Both snippets are shown in the token dialog with your real URL and token already
 
 ## Which tools does a connected agent get?
 
-Nine, all of them writes to your own data:
+Ten. All but find_job and list_jobs write to your own data:
 
-- **add_job** — adds a job, resolving or creating company, title, location, source and tags by name, and reporting back what it matched versus created. If the agent sends no due date, the job gets one three days from today, the same as the Add Job form.
+- **add_job** — adds a job, resolving or creating company, title, location, source and tags by name, and reporting back what it matched versus created. If the agent sends no due date, the job gets one three days from today, the same as the Add Job form. It refuses to add a posting you already have: one with the same link, or the same company and title saved in the last 60 days. The agent is told the saved job's location, so it can still add a genuinely separate opening in another city. If the agent asks it to update the saved job instead, that job keeps its current status, so a re-run search never moves an applied or withdrawn job back to New.
 - **add_jobs_batch** — the same thing for up to 10 jobs in one call, for a scheduled run.
-- **find_job** — checks by URL whether a posting is already saved, before adding it again.
+- **find_job** — checks whether a posting is already saved, by link or by company and title, at any age and in any status.
+- **list_jobs** — lists your saved jobs in short rows, filtered by company, status, source or date, so an agent can load what you already track at the start of a run.
 - **update_job** — corrects or enriches a job that was added through MCP. Only the fields supplied change.
 - **add_question** — adds an entry to your Question Bank, with tags resolved the same way.
 - **review_resume** / **save_resume_review** — hands the agent your default resume and reviewing instructions, then stores the review it writes.

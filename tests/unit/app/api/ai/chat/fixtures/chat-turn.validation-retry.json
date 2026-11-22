@@ -1,0 +1,53 @@
+[
+  {
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": "add this job"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool-call",
+        "toolCallId": "c1",
+        "toolName": "add_job",
+        "input": {
+          "company": "Acme",
+          "jobTitle": "Engineer"
+        }
+      },
+      {
+        "type": "tool-approval-request",
+        "approvalId": "ap1",
+        "toolCallId": "c1"
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-approval-response",
+        "approvalId": "ap1",
+        "approved": true
+      },
+      {
+        "type": "tool-result",
+        "toolName": "add_job",
+        "toolCallId": "c1",
+        "output": {
+          "type": "json",
+          "value": {
+            "created": false,
+            "resolutions": [],
+            "validationError": "Saving the job failed. Try again, or add it from the Jobs page."
+          }
+        }
+      }
+    ]
+  }
+]

@@ -93,12 +93,42 @@ const reviewRunningMessage = {
   ],
 };
 
-describe("agent chat close paths", () => {
+describe("agent chat header and close paths", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     chat.messages = [];
     chat.status = "streaming";
     chat.error = undefined;
+  });
+
+  it.each(["Clear Session", "Expand panel", "Close chat"])(
+    "shows the %s tooltip on hover",
+    async (name) => {
+      setup();
+      await openPanel();
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+
+      await userEvent.hover(screen.getByRole("button", { name }));
+      expect(await screen.findByRole("tooltip", { name })).toBeInTheDocument();
+    },
+  );
+
+  it("switches the expand tooltip when the panel changes size", async () => {
+    const user = userEvent.setup();
+    setup();
+    await openPanel();
+
+    const expand = screen.getByRole("button", { name: "Expand panel" });
+    await user.click(expand);
+
+    const restore = screen.getByRole("button", { name: "Restore panel" });
+    await user.unhover(restore);
+    await user.hover(restore);
+    expect(await screen.findByRole("tooltip", { name: "Restore panel" })).toBeInTheDocument();
+    await user.click(restore);
+
+    expect(expand).toHaveAccessibleName("Expand panel");
   });
 
   it("stops the stream when the panel's close button is used", async () => {
@@ -165,11 +195,14 @@ describe("agent chat close paths", () => {
     expect(vi.mocked(toastInfo).mock.calls[0]![0]).toMatch(/stopped/i);
   });
 
-  it("toasts when Clear aborts a stream", async () => {
+  it("toasts when the Clear Session trash button aborts a stream", async () => {
     setup();
     await openPanel();
+    const clear = screen.getByRole("button", { name: "Clear Session" });
+    expect(clear.querySelector("svg.lucide-trash-2")).toBeInTheDocument();
+    expect(clear).not.toHaveTextContent(/\S/);
     await act(async () => {
-      await userEvent.click(screen.getByRole("button", { name: "Clear" }));
+      await userEvent.click(clear);
     });
     expect(vi.mocked(toastInfo).mock.calls[0]![0]).toMatch(/cleared/i);
   });
@@ -181,7 +214,7 @@ describe("agent chat close paths", () => {
     setup();
     await openPanel();
     await act(async () => {
-      await userEvent.click(screen.getByRole("button", { name: "Clear" }));
+      await userEvent.click(screen.getByRole("button", { name: "Clear Session" }));
       await userEvent.click(screen.getByRole("button", { name: "Close chat" }));
     });
     expect(toastInfo).not.toHaveBeenCalled();

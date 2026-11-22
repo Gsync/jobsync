@@ -168,7 +168,14 @@ describe("POST /api/v1/jobs", () => {
   it("maps a duplicate to 409", async () => {
     createMock.mockResolvedValue({
       created: false,
-      duplicateOf: { id: "j9", title: "Engineer", company: "Acme" },
+      duplicateOf: {
+        id: "j9",
+        title: "Engineer",
+        company: "Acme",
+        location: null,
+        status: "applied",
+        updatable: true,
+      },
       resolutions: [],
       message: "…",
     });

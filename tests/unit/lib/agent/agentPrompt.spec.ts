@@ -2,6 +2,7 @@ import {
   AGENT_CHAT_PROMPT_SECTIONS,
   AGENT_CHAT_SYSTEM_PROMPT,
   AGENT_TOOL_DESCRIPTIONS,
+  buildLimitations,
   buildPasteContextMessage,
 } from "@/lib/agent/prompt";
 import { AgentAddJobSchema } from "@/models/agent.schema";
@@ -36,15 +37,30 @@ describe("agent chat system prompt", () => {
   // calling the tool, re-implementing the approval card in chat text.
   it("tells the model to call the tool instead of confirming in chat", () => {
     expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/never ask.*confirm in the chat/i);
-    expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/never ask the user for optional fields/i);
+    expect(AGENT_TOOL_DESCRIPTIONS.add_job).toMatch(/never ask the user for optional fields/i);
   });
 
-  // The approval-resume POST narrates a write that already happened, and the
-  // only card language in the section is future-tense — so the model told the
-  // user to "hit Confirm to save it" for a job already in the database.
-  it("tells the model a created job is already saved", () => {
-    expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/already pressed Confirm/i);
-    expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/never mention the confirmation card/i);
+  it("leaves settled job saves to the result card", () => {
+    expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).not.toMatch(/already pressed Confirm/i);
+  });
+
+  it("preserves the five-tool count and current limitations verbatim", () => {
+    expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/^You have exactly five capabilities\./);
+    expect(AGENT_CHAT_PROMPT_SECTIONS.limitations).toBe(
+      "You cannot list, search or count the user's saved jobs, and you cannot read their tasks, notes, activities or settings in this version. If asked about any of them, say plainly that you cannot see that data yet. Never state a job count, an application status, or claim to have performed an action you have no tool for. You can read resumes only through get_resume or review_resume, and you can read the job the user is viewing only through match_job or generate_cover_letter — never describe a resume or a job you have not read.",
+    );
+  });
+
+  it("refuses only the data areas still missing from the registry", () => {
+    const limitations = buildLimitations(["saved jobs", "tasks", "notes"]);
+    expect(limitations).toContain("You cannot read their activities or settings in this version.");
+    expect(limitations).not.toMatch(/saved jobs|tasks|notes|Never state a job count/);
+  });
+
+  it("keeps the tool-use guard when every data area is readable", () => {
+    const limitations = buildLimitations(["saved jobs", "tasks", "notes", "activities", "settings"]);
+    expect(limitations).not.toMatch(/cannot see that data|cannot read their|cannot list/);
+    expect(limitations).toMatch(/action you have no tool for/);
   });
 
   // The model has to CLASSIFY nothing here. Asking it to decide whether a
@@ -115,15 +131,15 @@ describe("agent chat system prompt", () => {
   it("routes review requests to the tool instead of describing a review", () => {
     expect(AGENT_CHAT_PROMPT_SECTIONS).not.toHaveProperty("review");
     expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toContain("review_resume");
-    expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/never write a review yourself/i);
+    expect(AGENT_TOOL_DESCRIPTIONS.review_resume).toMatch(/call when the user asks for a review/i);
   });
 
   // Measured in eval-B74: told only that match_job "works on a job's page",
   // qwen3.5:9b asked the user to open one on 3 of 3 rows instead of calling it.
   // It cannot see the page, so the precondition is the app's to report.
   it("tells the model to call match_job rather than ask which page the user is on", () => {
-    expect(AGENT_TOOL_DESCRIPTIONS.match_job).toMatch(/never ask them to open a job/i);
-    expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/never ask them to open a job/i);
+    expect(AGENT_TOOL_DESCRIPTIONS.match_job).toMatch(/call when the user asks how well their resume matches/i);
+    expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/if a job page is open, call the requested tool straight away/i);
   });
 
   it("describes all five tools", () => {
@@ -140,10 +156,10 @@ describe("agent chat system prompt", () => {
   // for itself must never be stated as one the model has to verify first.
   it("tells the model to call generate_cover_letter rather than ask which page the user is on", () => {
     expect(AGENT_TOOL_DESCRIPTIONS.generate_cover_letter).toMatch(
-      /never ask them to open a job/i,
+      /call when the user asks for a cover letter/i,
     );
     expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(
-      /never write the letter yourself/i,
+      /if a job page is open, call the requested tool straight away/i,
     );
   });
 
@@ -161,14 +177,13 @@ describe("agent chat system prompt", () => {
   it("tells the model an earlier no_job result is stale", () => {
     expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/no_job/);
     expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/earlier turn/i);
-    expect(AGENT_TOOL_DESCRIPTIONS.match_job).toMatch(/stale/i);
-    expect(AGENT_TOOL_DESCRIPTIONS.generate_cover_letter).toMatch(/stale/i);
+    expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/earlier turn is stale/i);
   });
 
   // jobLookup returns no_job for an unresolvable id too, so the block saying
   // a job is open and this turn's tool saying no_job is a reachable state.
   it("still believes a no_job result from the current turn", () => {
-    expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/on this turn is current/i);
+    expect(AGENT_CHAT_PROMPT_SECTIONS.capabilities).toMatch(/report a no_job returned on this turn plainly/i);
   });
 
   // get_resume stays the on-ramp for reading a resume, but it is no longer

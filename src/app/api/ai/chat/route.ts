@@ -2,93 +2,25 @@ import "server-only";
 
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
-import {
-  convertToModelMessages,
-  createUIMessageStream,
-  createUIMessageStreamResponse,
-  hasToolCall,
-  isToolUIPart,
-  isStepCount,
-  streamText,
-  toUIMessageStream,
-  type LanguageModelUsage,
-  type StopCondition,
-  type UIMessage,
-} from "ai";
-import { getModel, type ProviderType } from "@/lib/ai/providers";
+import { createUIMessageStreamResponse, type UIMessage } from "ai";
+import { getModel } from "@/lib/ai/providers";
 import { checkRateLimit } from "@/lib/ai/rate-limiter";
-import { APP_CONSTANTS, TEMPERATURES } from "@/lib/constants";
 import { AgentChatRequestSchema } from "@/models/agent.schema";
-import {
-  AGENT_CHAT_SYSTEM_PROMPT,
-  AGENT_PASTE_ONLY_USER_MESSAGE,
-  buildPageContextMessage,
-  buildPasteContextMessage,
-} from "@/lib/agent/prompt";
-import {
-  resolvePastedText,
-  stubConsumedPastes,
-  windowMessages,
-} from "@/lib/agent/paste";
-import { truncateForModel } from "@/lib/agent/paste.server";
-import { buildAgentToolApproval, buildAgentTools } from "@/lib/agent/tools";
-import type { NestedGenerationGuard } from "@/lib/agent/nestedGeneration";
-import { measureTurnPrefix, type TurnPrefixMetrics } from "@/lib/agent/turnMetrics";
+import { log } from "@/lib/telemetry";
 import { mapAgentError } from "@/lib/agent/errors";
-import { getUserSettings } from "@/actions/userSettings.actions";
-import { saveChatConversation } from "@/actions/agentChat.actions";
-import { AiProvider } from "@/models/ai.model";
-import {
-  genAiRequestAttrs,
-  genAiResponseAttrs,
-  log,
-  runInSpan,
-  startSpan,
-  SURFACES,
-} from "@/lib/telemetry";
-import { addJobSettled, AGENT_CHAT_TERMINAL_TOOLS } from "@/models/agent.model";
-import { startAiCall, usageOfSteps, type TokenUsage } from "@/lib/aiUsage/tracker";
+import { resolvePastedText } from "@/lib/agent/memory/paste";
+import { buildModelMessages } from "@/lib/agent/memory/modelMessages";
+import { runChatTurn } from "@/lib/agent/turn/chatTurn";
+import { resolveAiConfig } from "@/lib/ai/aiConfig";
+import { getChatConversation, saveChatConversation } from "@/actions/agentChat.actions";
+import { mergeCommittedResults } from "@/lib/agent/turn/mergeCommittedResults";
 
-// The one terminal tool whose stop condition is not "was it called" — see
-// addJobSettled.
-const addJobSettledStop: StopCondition<any> = ({ steps }) =>
-  addJobSettled(steps[steps.length - 1] ?? {});
-
-// One structured line per turn. Sizes and outcomes only — never the pasted
-// posting and never the extracted arguments.
-function logTurn(fields: Record<string, unknown>) {
-  log.info("[agent-chat] turn", fields);
-}
-
-function outcomeOf(message: UIMessage | undefined): {
-  tool: string | null;
-  state: string | null;
-  outcome: string;
-} {
-  for (const part of message?.parts ?? []) {
-    if (!isToolUIPart(part)) continue;
-    const tool = part.type.replace(/^tool-/, "");
-    if (part.state !== "output-available") {
-      return { tool, state: part.state, outcome: part.state };
-    }
-    const output = part.output as
-      | { status?: string; created?: boolean; validationError?: string }
-      | undefined;
-    // Discriminated on shape, not on tool name: a name allowlist logged a
-    // resume read as "duplicate" once already. Status-carrying results report
-    // their own outcome, and add_job is the only shape without a status field,
-    // so it is the fallback rather than the default.
-    if (typeof output?.status === "string") {
-      return { tool, state: part.state, outcome: output.status };
-    }
-    const outcome = output?.validationError
-      ? "validation"
-      : output?.created
-        ? "created"
-        : "duplicate";
-    return { tool, state: part.state, outcome };
-  }
-  return { tool: null, state: null, outcome: "none" };
+// A result saved after Stop must survive the browser's stale copy.
+async function withCommittedResults(incoming: UIMessage[], userId: string): Promise<UIMessage[]> {
+  const stored = await getChatConversation();
+  if (stored.success) return mergeCommittedResults(incoming, stored.data ?? []);
+  log.warn("Failed to load the chat conversation before saving", { userId, message: stored.message });
+  return incoming;
 }
 
 export const POST = async (req: NextRequest) => {
@@ -111,7 +43,7 @@ export const POST = async (req: NextRequest) => {
     return NextResponse.json({ error: "Invalid chat request." }, { status: 400 });
   }
 
-  const messages = parsed.data.messages as UIMessage[];
+  const messages = await withCommittedResults(parsed.data.messages as UIMessage[], userId);
   const { pageContext } = parsed.data;
 
   // Write-on-receipt. The user's message and the posting they pasted are the
@@ -119,20 +51,23 @@ export const POST = async (req: NextRequest) => {
   // called — a reload, an error or a stop() mid-stream cannot lose them.
   await saveChatConversation(messages);
 
-  const settings = await getUserSettings();
-  const ai = settings?.data?.settings?.ai;
-  // provider is always present — defaultUserSettings supplies it. model is
-  // not, and it is NOT substituted: picking a model the user never chose
-  // turns a knowable configuration error into a mid-stream "model not
-  // found" naming something they never configured.
-  const provider = (ai?.provider ?? AiProvider.OLLAMA) as ProviderType;
-  const modelName = ai?.model;
-  if (!modelName) {
+  let resolved;
+  try {
+    resolved = await resolveAiConfig(userId, "chat", { requireConfigured: true });
+  } catch (error) {
+    log.error("Failed to read AI settings for chat", { userId, error: String(error) });
+    return NextResponse.json(
+      { error: "Couldn't load your AI settings. Try again in a moment." },
+      { status: 503 },
+    );
+  }
+  if (!resolved.ok) {
     return NextResponse.json(
       { error: "No AI model is configured. Pick one in Settings to use the assistant." },
       { status: 503 },
     );
   }
+  const { provider, modelName } = resolved.config;
   const errorContext = { provider, model: modelName };
 
   let model;
@@ -144,264 +79,16 @@ export const POST = async (req: NextRequest) => {
 
   const pastedText = resolvePastedText(messages);
 
-  // Async since ai@6 (correction #5), and the messages array is client-supplied
-  // — a shape z.array(z.any()) let through can reject the conversion, and
-  // that is a bad request, not a server crash.
-  const windowed = windowMessages(messages);
-
-  let modelMessages;
-  try {
-    modelMessages = await convertToModelMessages(windowed);
-  } catch {
+  const prepared = await buildModelMessages({ messages, pageContext, pastedText });
+  if (!prepared.ok) {
     return NextResponse.json({ error: "Invalid chat request." }, { status: 400 });
   }
+  const { modelMessages, historyDropped } = prepared;
 
-  // A chip-only send — paste, then Send without typing — has no text part,
-  // and the paste part is not a model part, so the message converts to empty
-  // content. Ollama rejects the whole request on it (its content field is a
-  // string; the provider serializes empty content as []), and it keeps doing
-  // so on every later turn while the shell stays in the window.
-  //
-  // It is given a body rather than dropped. Dropping it removed a user turn
-  // that really happened, which moved the last-user-message boundary back
-  // over an older assistant reply — and DeepSeek's thinking mode requires
-  // reasoning_content on every assistant message after that boundary, so a
-  // reasoning-free reply from two turns ago 400'd the whole request. No
-  // provider is special-cased here: the transcript is simply true again.
-  // (@ai-sdk/deepseek 3 now sends "" for missing V4 reasoning_content.)
-  // The paste context message below is what actually carries the posting.
-  modelMessages = modelMessages.flatMap((message) => {
-    if (!(Array.isArray(message.content) && message.content.length === 0)) {
-      return [message];
-    }
-    if (message.role !== "user") return [];
-    return [{ role: "user" as const, content: AGENT_PASTE_ONLY_USER_MESSAGE }];
-  });
-
-  // Injected only on the turn that introduced the paste. On the approval POST
-  // the last message is the assistant's, so nothing is re-injected — and the
-  // full text never reaches the model on any turn.
-  const lastIsUser = messages[messages.length - 1]?.role === "user";
-  // Whether a job is open is a per-turn fact, but a no_job tool result sits
-  // in history looking permanent — the model replayed one for two turns.
-  // Recency is what has to beat it, so this rides at the end of the messages
-  // rather than in the system prompt. A pasted posting still lands last.
-  if (lastIsUser) {
-    modelMessages.push({ role: "user", content: buildPageContextMessage(pageContext) });
-  }
-  if (pastedText && lastIsUser) {
-    const { block } = truncateForModel(pastedText);
-    modelMessages.push({ role: "user", content: buildPasteContextMessage(block) });
-  }
-
-  // req.signal is what makes stop()/Clear/close actually stop generating: the
-  // client aborting its fetch is otherwise invisible here, and streamText would
-  // keep pulling tokens until the deadline. Tools inherit this via execute's
-  // abortSignal, so a nested generation is cancelled too.
-  const turnSignal = AbortSignal.any([
-    req.signal,
-    AbortSignal.timeout(APP_CONSTANTS.AGENT_CHAT_TIMEOUT_MS),
-  ]);
-
-  // Written inside execute, read in onEnd, which runs after it.
-  let prefixMetrics: TurnPrefixMetrics | undefined;
-
-  // Written by streamText's own onEnd, read in the outer onEnd. Its usage
-  // totals every step, and stopWhen permits AGENT_CHAT_MAX_STEPS.
-  let turnUsage: LanguageModelUsage | undefined;
-  let turnFinishReason: string | undefined;
-  // streamText's onEnd never fires on abort; onAbort reports the steps that
-  // did finish. The in-flight step's tokens are lost with the connection.
-  let turnAbortUsage: TokenUsage | undefined;
-
-  // Created here, not in buildAgentTools, so the turn can subtract the nested
-  // generations' time — they are recorded as their own calls.
-  const nestedGuard: NestedGenerationGuard = { running: false, elapsedMs: 0 };
-
-  const turnUsageTracker = startAiCall({
-    userId,
-    feature: "agent_chat",
-    provider,
-    model: modelName,
-    numCtx: APP_CONSTANTS.AGENT_CHAT_NUM_CTX,
-  });
-
-  const turnSpan = startSpan("agent.chat.turn", {
-    ...genAiRequestAttrs({
-      provider,
-      model: modelName,
-      temperature: TEMPERATURES.ANALYSIS,
-      numCtx: APP_CONSTANTS.AGENT_CHAT_NUM_CTX,
-      surface: SURFACES.AGENT_CHAT,
-      system: AGENT_CHAT_SYSTEM_PROMPT,
-      prompt: modelMessages,
+  return createUIMessageStreamResponse({
+    stream: runChatTurn({
+      userId, messages, modelMessages, historyDropped, pageContext, pastedText,
+      ai: { ...resolved.config, model }, requestSignal: req.signal,
     }),
-    "jobsync.user_id": userId,
   });
-
-  // toUIMessageStream maps and logs a stream failure, then the SDK re-wraps
-  // the mapped string as an Error and hands it to createUIMessageStream's
-  // onError, which would map and log the same failure a second time. Passing
-  // an already-mapped string straight back keeps it to one line per failure.
-  const alreadyMapped = new Set<string>();
-  // A doStream throw (Ollama down, bad key) never reaches streamText's
-  // onEnd; this is the only place the turn learns it failed.
-  let turnError: unknown;
-  const mapTurnError = (error: unknown): string =>
-    runInSpan(turnSpan, () => {
-      turnError ??= error;
-      const message = error instanceof Error ? error.message : "";
-      if (alreadyMapped.has(message)) return message;
-      const mapped = mapAgentError(error, errorContext);
-      alreadyMapped.add(mapped);
-      return mapped;
-    });
-
-  const stream = createUIMessageStream({
-    originalMessages: messages,
-    execute: ({ writer }) =>
-      runInSpan(turnSpan, () => {
-        const tools = buildAgentTools({
-          userId,
-          pastedText,
-          pageContext,
-          model,
-          provider,
-          modelName,
-          writer,
-          nestedGuard,
-        });
-        prefixMetrics = measureTurnPrefix({
-          userId,
-          system: AGENT_CHAT_SYSTEM_PROMPT,
-          tools,
-          modelMessages,
-        });
-        const result = streamText({
-          model,
-          instructions: AGENT_CHAT_SYSTEM_PROMPT,
-          messages: modelMessages,
-          tools,
-          toolApproval: buildAgentToolApproval(pastedText),
-          // Which tools end the turn — and why — lives beside the tool metadata
-          // in agent.model.ts, where a new tool is registered.
-          stopWhen: [
-            isStepCount(APP_CONSTANTS.AGENT_CHAT_MAX_STEPS),
-            ...AGENT_CHAT_TERMINAL_TOOLS.map((name) =>
-              name === "add_job" ? addJobSettledStop : hasToolCall(name),
-            ),
-          ],
-          // Argument extraction wants determinism.
-          temperature: TEMPERATURES.ANALYSIS,
-          abortSignal: turnSignal,
-          providerOptions: {
-            // qwen3.5 is a hybrid-reasoning model and the provider defaults
-            // think to false. With the thinking channel shut it deliberates in
-            // the content channel, and content and a tool call are mutually
-            // exclusive — add_job measured 1/7 with it off, 7/7 with it on.
-            ollama: { think: true, options: { num_ctx: APP_CONSTANTS.AGENT_CHAT_NUM_CTX } },
-          },
-          // First thing the user sees: reasoning is never rendered, and Ollama
-          // sends an empty text delta beside every thinking chunk.
-          onChunk: ({ chunk }) => {
-            if (
-              (chunk.type === "text-delta" && chunk.text.length > 0) ||
-              chunk.type === "tool-input-start"
-            ) {
-              turnUsageTracker.markFirstToken();
-            }
-          },
-          onAbort: ({ steps }) => {
-            turnAbortUsage = usageOfSteps(steps);
-          },
-          // streamText's onEnd, not createUIMessageStream's: result is
-          // scoped inside execute while the span ends in the outer onEnd.
-          onEnd: ({ usage, finishReason }) => {
-            turnUsage = usage;
-            turnFinishReason = finishReason;
-          },
-        });
-        // createUIMessageStream emits no start/finish of its own — the merged
-        // stream carries them, so this is byte-identical to the old response.
-        // Load-bearing: toUIMessageStream catches stream errors itself and
-        // emits an error part, so createUIMessageStream's onError below never
-        // sees them. Without this the user gets the SDK's "An error occurred."
-        // and mapAgentError — the only thing that logs — never runs.
-        writer.merge(
-          toUIMessageStream({
-            stream: result.stream,
-            tools,
-            onError: mapTurnError,
-          }),
-        );
-      }),
-    onEnd: async ({ messages: finalMessages, responseMessage, isAborted }) => {
-      const { tool, state, outcome } = outcomeOf(responseMessage);
-      const fields = {
-        provider,
-        model: modelName,
-        tool,
-        toolState: state,
-        outcome,
-        aborted: isAborted,
-        pasteChars: pastedText?.length ?? 0,
-        messageCount: finalMessages.length,
-        // Windowing is invisible to the user, so this is the only signal that
-        // the model was given less history than the transcript holds.
-        historyDropped: messages.length - windowed.length,
-        // What was actually sent. prefixChanged is the cache signal: the
-        // system prompt and tool material must stay byte-identical within a
-        // conversation or Ollama recomputes the whole prefix.
-        systemChars: prefixMetrics?.systemChars ?? 0,
-        toolChars: prefixMetrics?.toolChars ?? 0,
-        messageChars: prefixMetrics?.messageChars ?? 0,
-        prefixChanged: prefixMetrics?.prefixChanged ?? false,
-      };
-      // onEnd runs outside execute, so the span context has to be
-      // re-entered for the record to carry the turn's trace id.
-      runInSpan(turnSpan, () => logTurn(fields));
-      // The same curated field set, on the span rather than only in the log,
-      // so it is queryable beside latency, tokens and the tool waterfall.
-      turnSpan.end({
-        ...genAiResponseAttrs({
-          usage: turnUsage,
-          finishReason: turnFinishReason,
-        }),
-        "jobsync.tool": fields.tool,
-        "jobsync.tool_state": fields.toolState,
-        "jobsync.outcome": fields.outcome,
-        "jobsync.aborted": fields.aborted,
-        "jobsync.paste_chars": fields.pasteChars,
-        "jobsync.message_count": fields.messageCount,
-        "jobsync.history_dropped": fields.historyDropped,
-        "jobsync.system_chars": fields.systemChars,
-        "jobsync.tool_chars": fields.toolChars,
-        "jobsync.message_chars": fields.messageChars,
-        "jobsync.prefix_changed": fields.prefixChanged,
-      });
-      // The stream's cancel path can run this before isAborted is set, so the
-      // signal decides too; statusOf ignores abortedBy unless it fired.
-      const aborted = isAborted || turnSignal.aborted;
-      void turnUsageTracker.finish({
-        usage: aborted ? turnAbortUsage : turnUsage,
-        finishReason: turnFinishReason,
-        error: turnError,
-        abortedBy: turnSignal,
-        excludeMs: nestedGuard.elapsedMs,
-      });
-      // A cancelled turn never writes back. Clear deletes the conversation and
-      // this fires afterwards on the stream's cancel path, so saving here would
-      // restore exactly what the user just deleted. The write-on-receipt above
-      // already made their message durable, and an incomplete review is not
-      // worth persisting.
-      if (isAborted) return;
-      // Stubbing happens here so it lives in exactly one place.
-      await saveChatConversation(stubConsumedPastes(finalMessages));
-    },
-    // NOTE: this signature takes the error directly, unlike streamText's
-    // onError which takes { error }.
-    onError: mapTurnError,
-  });
-
-  return createUIMessageStreamResponse({ stream });
 };

@@ -1,4 +1,4 @@
-import { tool } from "ai";
+import { tool, type UIMessageStreamWriter } from "ai";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { AGENT_TOOL_DESCRIPTIONS } from "@/lib/agent/prompt";
 import { AgentAddJobParseSchema, AgentAddJobSchema } from "@/models/agent.schema";
@@ -6,6 +6,7 @@ import { createJobFromNames } from "@/lib/jobs/createJobFromNames";
 import { JobResolutionError } from "@/lib/jobs/resolve";
 import { log } from "@/lib/telemetry";
 import { sanitizeString } from "@/lib/postgresText";
+import { toolStepReporter } from "@/lib/agent/steps/progress";
 import type { AgentAddJobResult } from "@/models/agent.model";
 
 // The model usually reaches here having omitted jobDescription because the
@@ -44,13 +45,21 @@ export function addJobNeedsApproval(
  * and message array. Anything with those names inside the model's input is
  * ignored — this is the IDOR boundary and it has a dedicated test.
  */
-export function buildAddJobTool(userId: string, pastedText?: string) {
+export function buildAddJobTool({
+  userId,
+  pastedText,
+  writer,
+}: {
+  userId: string;
+  pastedText?: string;
+  writer: UIMessageStreamWriter;
+}) {
   return tool({
     description: AGENT_TOOL_DESCRIPTIONS.add_job,
     // Date transforms are deferred here so this schema doubles as the JSON
     // schema the model reads — see src/models/agent.schema.ts.
     inputSchema: AgentAddJobSchema,
-    execute: async (raw): Promise<AgentAddJobResult> => {
+    execute: async (raw, { toolCallId }): Promise<AgentAddJobResult> => {
       const parsed = AgentAddJobParseSchema.safeParse(raw);
       if (!parsed.success) {
         // Returned, not thrown, so the model can see why and retry.
@@ -68,6 +77,7 @@ export function buildAddJobTool(userId: string, pastedText?: string) {
       if (!jobDescription) return failed(NO_DESCRIPTION, NO_DESCRIPTION_DISPLAY);
 
       try {
+        const report = toolStepReporter("add_job", writer, toolCallId);
         const result = await createJobFromNames(
           {
             ...input,
@@ -75,7 +85,9 @@ export function buildAddJobTool(userId: string, pastedText?: string) {
             createdVia: APP_CONSTANTS.AGENT_CHAT_CREATED_VIA,
           },
           userId,
+          report,
         );
+        if (result.created) report.finish();
 
         // result.message is deliberately NOT returned: it is MCP-facing
         // protocol text naming update_job and allowDuplicate, neither of

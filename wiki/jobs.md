@@ -23,9 +23,9 @@ Paste the full posting text into Job Description if you have it. The AI features
 
 ## How do I add a job by pasting a posting into AI chat?
 
-Click **Chat AI** in the header to open the assistant panel, paste the full text of a job posting into the message box, and send it. The assistant extracts the title, company, location and description and shows you an approval card with exactly what it found. Nothing is saved to your tracker until you approve that card, and you can edit the details before you do. Unless the posting or your message gives a deadline, the job is saved with a due date three days from today, the same as the Add Job form.
+Click **Chat AI** in the header to open the assistant panel, paste the full text of a job posting into the message box, and send it. The assistant extracts the title, company, location and description and shows you an approval card with exactly what it found. Nothing is saved to your tracker until you approve that card, and you can edit the details before you do. Confirming ends the turn with a card showing the saved job or duplicate. The chat shows each step; an already-saved posting stops at the existing-job card ([steps](./getting-started.md#what-do-the-progress-steps-in-ai-chat-mean)). Unless the posting or your message gives a deadline, the job is saved with a due date three days from today, the same as the Add Job form.
 
-This requires an AI provider and model to be set under **Settings → AI Provider**; without them the panel tells you so instead of starting. A long paste is attached as a chip rather than inlined into the message — that is expected, and the full text still reaches the extraction.
+Choose a model under **Settings → AI Provider** first. Long postings appear as chips and are extracted in full. In long conversations, the assistant drops older messages in batches. Repeat an earlier detail if your request depends on it.
 
 ## What do the job statuses mean?
 
@@ -42,17 +42,17 @@ To take back an application logged by mistake:
 
 ## How do I change a job's status?
 
-There are three ways. In the Jobs list, click a row's status badge and pick the new status from the menu, or use the row's **⋮** menu and choose **Change status**. Or open the job and use the **Update Status** button at the top-right of the job details, choosing **Change status**. Every one of these menus lists every status with the current one greyed out, and the change saves immediately — there is no separate save step.
+In the Jobs list, click the status badge or choose **⋮ → Change status**. On the job details page, choose **Update Status → Change status** at the top right. Each menu shows every status, disables the current one and saves your selection immediately.
 
-The Add Job dialog also has a Status field, so a status can be set when you first create the job or from **Edit Job** later.
-
-All four of those paths also append a stage to the job's [timeline](./timeline.md), so the history stays in step with the label. Picking a status the job already holds adds nothing.
+You can also set Status in **Add Job** or **Edit Job**. Each status change adds a stage to the job's [timeline](./timeline.md). Selecting the current status adds nothing.
 
 ## What is on a job's details page?
 
 Three parts, top to bottom. A **header row** with the job title, a `Company · Location · Job Type · Workplace` line whose company name opens the company's [details page](./companies.md), and the actions: **Update Status**, AI Match, Cover Letter, Edit, Delete and a **⋮** menu. Below it a **summary card** of eight facts — Status, Job Type, Salary Range, Source, Applied, AI Match, Resume and Added — with the job URL and any skill badges on a divider row underneath. Below that, six **tabs**.
 
 The tabs are **Description**, **[Timeline](./timeline.md)**, **AI Match**, **Cover Letter**, **[Contacts](./contacts.md)** and **Notes**, and all six are always there. AI Match and Cover Letter stay in the bar even when the job has neither, showing a short explanation and a button to run it — so the tab set never shifts between jobs. Timeline, Notes and Contacts each carry a count badge once the job has any. Contacts lists the people linked to this job with the role each played. The tab you are on is kept in the address bar, so a refresh, a bookmark or the browser Back button lands you back on the same one.
+
+After a job match or cover letter finishes in chat, click the job title in the result card’s footer to open the job details, or click the resume title to open the resume used.
 
 ## How do I edit, annotate or delete a job?
 

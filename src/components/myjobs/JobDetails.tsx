@@ -15,7 +15,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTabQueryParam } from "@/hooks/useTabQueryParam";
+import type { UIMessage } from "ai";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
+import { directInvokeParts } from "@/models/agent.model";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +31,7 @@ import {
 import { NotesSection } from "./NotesSection";
 import { useState, useMemo } from "react";
 import { MatchDetails } from "../automations/MatchDetails";
-import type { JobMatchData } from "@/models/ai.schemas";
+import { parseMatchData } from "@/lib/ai/jobMatch/matchResult";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { AddJob } from "./AddJob";
 import { deleteJobById, updateJobStatus } from "@/actions/job.actions";
@@ -86,7 +88,7 @@ function JobDetails({
     busy: chatBusy,
   } = useAgentChat();
   const [showClearChatConfirm, setShowClearChatConfirm] = useState(false);
-  const [pendingChatMessage, setPendingChatMessage] = useState("");
+  const [pendingChatParts, setPendingChatParts] = useState<UIMessage["parts"]>([]);
   const [editJobTarget, setEditJobTarget] = useState<JobResponse | null>(
     null,
   );
@@ -121,14 +123,7 @@ function JobDetails({
 
   // Derived from the server prop, not local state: the chat saves the match
   // server-side and fires router.refresh(), so mirrored state would go stale.
-  const parsedMatchData = useMemo(() => {
-    if (!job.matchData) return null;
-    try {
-      return JSON.parse(job.matchData) as JobMatchData;
-    } catch {
-      return null;
-    }
-  }, [job.matchData]);
+  const parsedMatchData = useMemo(() => parseMatchData(job.matchData), [job.matchData]);
 
   const jobLabel = `${job.JobTitle?.label ?? "this job"}${
     job.Company?.label ? ` at ${job.Company.label}` : ""
@@ -137,28 +132,32 @@ function JobDetails({
   // Panel first so a failed clear can never leave a button looking dead, and
   // the message is sent either way — a conversation that would not clear is no
   // reason to withhold it.
-  const startChat = async (text: string) => {
+  const startChat = async (parts: UIMessage["parts"]) => {
     openChat();
     try {
       await clearChat();
     } catch {
       // Reported by the action itself; the message still goes out.
     }
-    void sendMessage({ parts: [{ type: "text", text }] });
+    void sendMessage({ parts });
   };
 
-  const requestChat = (text: string) => {
+  const requestChat = (parts: UIMessage["parts"]) => {
     if (approvalPending) {
-      setPendingChatMessage(text);
+      setPendingChatParts(parts);
       setShowClearChatConfirm(true);
       return;
     }
-    void startChat(text);
+    void startChat(parts);
   };
 
-  const onMatch = () => requestChat(`Match my resume to ${jobLabel}`);
+  // Direct invokes: the button names the tool, so no model turn picks it.
+  const onMatch = () =>
+    requestChat(directInvokeParts(`Match my resume to ${jobLabel}`, "match_job"));
   const onCoverLetter = () =>
-    requestChat(`Write a cover letter for ${jobLabel}`);
+    requestChat(
+      directInvokeParts(`Write a cover letter for ${jobLabel}`, "generate_cover_letter"),
+    );
 
   useAutoMatch(onMatch);
 
@@ -403,7 +402,7 @@ function JobDetails({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void startChat(pendingChatMessage)}>
+            <AlertDialogAction onClick={() => void startChat(pendingChatParts)}>
               Clear and continue
             </AlertDialogAction>
           </AlertDialogFooter>
