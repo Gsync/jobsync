@@ -11,6 +11,7 @@ import {
   setPrepQuestionAsked,
 } from "@/actions/jobStage.actions";
 import type { JobStage } from "@/models/jobStage.model";
+import { hasAnswer } from "@/lib/questions/answer";
 import { askedTally } from "./stageDisplay";
 
 type StagePrepListProps = {
@@ -18,13 +19,6 @@ type StagePrepListProps = {
   onAddPrepQuestions: () => void;
   onChanged: () => void;
 };
-
-// An untouched answer is still QuestionForm's "TBD" default, which the Tiptap
-// editor may have wrapped in markup by the time it is saved.
-function hasAnswer(answer: string | null): boolean {
-  const text = (answer ?? "").replace(/<[^>]*>/g, "").trim().toLowerCase();
-  return text.length > 0 && text !== "tbd";
-}
 
 export function StagePrepList({
   stage,
