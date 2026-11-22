@@ -106,6 +106,16 @@ describe("importBackup guards", () => {
     expect(syncSchedulerState).toHaveBeenCalled();
   });
 
+  it("reports any other transaction failure as nothing changed", async () => {
+    (mockDb.$transaction as unknown as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error("connection reset"),
+    );
+    await expect(
+      importBackup(await emptyBackup(), "user-1", EMAIL, true),
+    ).rejects.toThrow(new BackupError("Import failed and nothing was changed."));
+    expect(syncSchedulerState).not.toHaveBeenCalled();
+  });
+
   it("strips NULs a SQLite-era backup can carry before inserting", async () => {
     const data = BackupDataSchema.parse({
       Company: [{ id: "c1", label: "Acme\u0000 Corp", value: "acme corp", logoUrl: null }],

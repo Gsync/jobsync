@@ -268,11 +268,6 @@ export async function importBackup(
       writtenPaths.map((p) => fs.unlink(p).catch(() => undefined)),
     );
     if (error instanceof BackupError) throw error;
-    const message = error instanceof Error ? error.message : "";
-    // Dead on Postgres (a SQLite lock message); removed with the import shim.
-    if (/database is locked|SQLITE_BUSY/i.test(message)) {
-      throw new BackupError("The database is busy. Please try the import again.");
-    }
     log.error("[Backup] Import transaction failed", { error: String(error) });
     throw new BackupError("Import failed and nothing was changed.");
   }

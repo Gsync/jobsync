@@ -51,8 +51,8 @@ const withCondition = (where: Where, extra: Where): Where => {
   return { ...where, AND: [...and, extra] };
 };
 
-// Valued rows page first and the list continues into the blank ones. Kept
-// from SQLite, which had no NULLS LAST; one nulls:"last" query is later work.
+// Valued rows page first and the list continues into the blank ones. Prisma
+// has no nulls option on relation sorts, and Match's blanks include scores.
 export async function findManySorted(
   model: ListSortDelegate,
   query: { where: Where; skip: number; take: number; select?: unknown },

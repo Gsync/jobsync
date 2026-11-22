@@ -146,9 +146,7 @@ const LIST_QUERY_EXCEPTIONS = [
   ...ownerFirst("contactRole.actions.ts", ["getContactRoleList:contactRole.findMany#1", "getContactRoleList:contactRole.count#1"]),
   ...ownerFirst("interview.actions.ts", [
     "getInterviewList:jobStage.count#1",
-    "getInterviewList:jobStage.count#2",
     "getInterviewList:jobStage.findMany#1",
-    "getInterviewList:jobStage.findMany#2",
   ]),
   ...ownerFirst("job/queries.ts", [
     "getJobFilterCounts:job.count#1",
@@ -199,7 +197,6 @@ const VERIFIED_ID_EXCEPTIONS = [
   ]),
   ...unscoped("jobStage/prep.ts", VERIFIED, [
     "addStagePrepQuestions:jobStagePrepQuestion.findMany#1",
-    "addStagePrepQuestions:jobStagePrepQuestion.findMany#2",
     "setPrepQuestionAsked:jobStagePrepQuestion.findFirst#1",
   ]),
   ...unscoped("profile/certification.ts", VERIFIED, [
