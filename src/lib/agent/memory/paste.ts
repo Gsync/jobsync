@@ -3,8 +3,10 @@ import { APP_CONSTANTS } from "@/lib/constants";
 import {
   isAgentPastePart,
   type AgentAddJobResult,
+  type AgentAddQuestionResult,
   type AgentPastePart,
 } from "@/models/agent.model";
+import type { SaveQuestionResult } from "@/models/question.model";
 
 // Client-safe by design: no node:crypto here. truncateForModel lives in
 // paste.server.ts so the composer and transcript can import these helpers.
@@ -40,26 +42,55 @@ export function resolvePastedText(messages: UIMessage[]): string | undefined {
   return undefined;
 }
 
-function findConsumingWrite(
+function countLabel(count: number, text: string): string[] {
+  return count > 0 ? [`${count} ${text}`] : [];
+}
+
+export function pastedQuestionsLabel(output: AgentAddQuestionResult): string {
+  const count = (...statuses: SaveQuestionResult["status"][]) =>
+    output.items.filter((item) => statuses.includes(item.status)).length;
+  const counts = output.error ? [] : [
+    ...countLabel(count("saved", "merged"), "saved"),
+    ...countLabel(count("skipped", "exists"), "already in your bank"),
+    ...countLabel(count("similar", "invalid"), "waiting on your reply"),
+    ...countLabel(count("failed"), "not saved"),
+  ];
+  return `[pasted questions — ${counts.length > 0 ? counts.join(", ") : "not saved"}]`;
+}
+
+function consumingLabel(part: UIMessage["parts"][number]): string | undefined {
+  if (!isToolUIPart(part) || part.state !== "output-available") return undefined;
+  const name = getToolName(part);
+  // add_question reads the paste whatever the outcome: held and skipped items
+  // are re-sent from the result, never re-read from the paste.
+  if (name === "add_question") {
+    return pastedQuestionsLabel(part.output as AgentAddQuestionResult);
+  }
+  // Only these two tools consume a paste. Without this guard any future tool
+  // returning created:true stubs the posting out from under it.
+  if (name !== "add_job") return undefined;
+  // Only a successful create consumes the posting. A duplicate or a
+  // validation failure leaves it available for the retry.
+  if (!(part.output as AgentAddJobResult | undefined)?.created) return undefined;
+  const input = part.input as { company?: string; jobTitle?: string } | undefined;
+  return `[pasted posting — saved as ${input?.jobTitle ?? "a job"} at ${input?.company ?? "a company"}]`;
+}
+
+export function findConsumingWrite(
   messages: UIMessage[],
-): { company?: string; jobTitle?: string } | undefined {
+): { label: string; messageIndex: number } | undefined {
   for (let i = messages.length - 1; i >= 0; i--) {
-    for (const part of messages[i]?.parts ?? []) {
-      if (!isToolUIPart(part) || part.state !== "output-available") continue;
-      // add_job is the only tool that consumes a paste. Without this guard any
-      // future tool returning created:true stubs the posting out from under it.
-      if (getToolName(part) !== "add_job") continue;
-      const output = part.output as AgentAddJobResult | undefined;
-      // Only a successful create consumes the paste. A duplicate or a
-      // validation failure leaves it available for the retry.
-      if (!output?.created) continue;
-      const input = part.input as
-        | { company?: string; jobTitle?: string }
-        | undefined;
-      return { company: input?.company, jobTitle: input?.jobTitle };
+    const parts = messages[i]?.parts ?? [];
+    for (let j = parts.length - 1; j >= 0; j--) {
+      const label = consumingLabel(parts[j]!);
+      if (label) return { label, messageIndex: i };
     }
   }
   return undefined;
+}
+
+export function consumesPaste(messages: UIMessage[]): boolean {
+  return findConsumingWrite(messages) !== undefined;
 }
 
 // Called from the persistence path so stubbing happens in exactly one place.
@@ -69,9 +100,9 @@ export function stubConsumedPastes(messages: UIMessage[]): UIMessage[] {
   const write = findConsumingWrite(messages);
   if (!write) return messages;
 
-  const label = `[pasted posting — saved as ${write.jobTitle ?? "a job"} at ${write.company ?? "a company"}]`;
-
-  return messages.map((message) => ({
+  // Pastes after the write are still live: a second list pasted while the
+  // agent asks about answers must survive the turn's DB save.
+  return messages.map((message, index) => index > write.messageIndex ? message : {
     ...message,
     parts: (message.parts ?? []).map((part) => {
       if (!isAgentPastePart(part) || part.data.consumed) return part;
@@ -80,11 +111,11 @@ export function stubConsumedPastes(messages: UIMessage[]): UIMessage[] {
         // chars is left alone: the chip still labels the user's paste, so
         // rewriting it to the stub's length shrinks the count on screen as
         // if we had truncated what they pasted.
-        data: { ...part.data, text: label, consumed: true },
+        data: { ...part.data, text: write.label, consumed: true },
       };
       return stubbed;
     }),
-  })) as UIMessage[];
+  }) as UIMessage[];
 }
 
 // Derived from the messages array rather than live useChat state, so it works

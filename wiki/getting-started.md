@@ -3,7 +3,7 @@ type: tutorial
 title: Getting Started
 description: The first run through JobSync — creating an account, connecting an AI provider, adding a job, and what each sidebar area is for.
 feature: setup
-tags: [setup, first run, sign in, account, ai provider, ollama, sidebar, navigation, dashboard, quick add, shortcuts, ai usage, tokens, goals, daily goals, calendar]
+tags: [setup, first run, sign in, account, ai provider, ollama, sidebar, navigation, dashboard, quick add, shortcuts, ai usage, tokens, goals, daily goals, calendar, interview questions]
 aliases: [new user, onboarding, first steps, how do I start, set up jobsync, how much ai am i using]
 status: stable
 stale_after: 2027-08-31
@@ -44,6 +44,14 @@ Open the avatar menu at the bottom of the sidebar and choose **AI Usage**. It sh
 Click **Jobs** in the sidebar, then the **Add Job** button in the top-right of the Jobs card. Job Title, Company, Job Location and Job Source are the fields you have to fill in yourself. Job Type, Workplace Type, Status, Due Date and Job Description are also required, but the form arrives with them already filled — Due Date three days out and Job Description the placeholder `N/A` — so you can change them but not leave them empty. Job URL, Salary Range, Date Applied, a resume, a cover letter and skills are the genuinely optional ones, and you can add them later.
 
 There is a faster route once an AI provider is set: click **Chat AI** in the header, paste the full text of a job posting into the chat, and the assistant extracts the details and shows you exactly what it found before anything is saved. Nothing is written until you approve it.
+
+## How do I save interview questions from AI chat?
+
+Click **Chat AI**, then **Add a question** (or just type or paste your questions and ask the assistant to save them); they go straight into **Questions**, with no approval step, and an open Questions page updates by itself. If you gave no answers, the assistant may first ask whether you want to add any, or save them straight away; a question saved without an answer shows **TBD**, and you can fill it in later on the Questions page. It picks a few skill tags for each question itself.
+
+Each question is checked against your bank first. One already saved, sent without an answer, is reported as already in your bank. For one already saved that you did answer, or one close to a saved question, the assistant asks what to do. Your answer can become the saved question's first answer if it has none, go below the saved answer, or replace it; a close match can also be saved as a new question, and any can be skipped. Without an answer, a close match can only be saved as new or skipped. Replace only works on questions an agent created that already have an answer; on one you wrote in the app, your answer can only be added to it. The saved question always keeps its wording. The check compares shared words, not meaning, so "Describe a conflict with a coworker" and "Tell me about a time you disagreed with a colleague" save as two questions.
+
+The assistant reads the first 2,000 characters of a long paste. When your list runs past that, the result card names the last question read; paste the rest, starting after it.
 
 ## How do I add something quickly from the Dashboard?
 

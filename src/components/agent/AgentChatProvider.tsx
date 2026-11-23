@@ -21,7 +21,7 @@ import {
   type ToolUIPart,
   type UIMessage,
 } from "ai";
-import { hasPendingApproval, stubConsumedPastes } from "@/lib/agent/memory/paste";
+import { consumesPaste, hasPendingApproval, stubConsumedPastes } from "@/lib/agent/memory/paste";
 import { pageContextFor, pageLocationOf } from "@/lib/agent/pageContext";
 import { useRightRail } from "@/context/RightRailContext";
 import { useSidebar } from "@/context/SidebarContext";
@@ -90,6 +90,15 @@ function createdJobToolCallIds(messages: UIMessage[]): string[] {
   return ids;
 }
 
+// Finished calls of tools that change the question bank, by tool call id
+function questionWriteToolCallIds(messages: UIMessage[]): string[] {
+  return messages.flatMap((message) => (message.parts ?? []).flatMap((part) =>
+    isToolUIPart(part) && part.state === "output-available"
+      && toolInvalidates(getToolName(part)).includes("questionsList")
+      ? [part.toolCallId]
+      : []));
+}
+
 function useAgentChatValue(initialMessages: UIMessage[]) {
   const router = useRouter();
   const pathname = usePathname();
@@ -143,6 +152,7 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
   // server action, so router.refresh cannot reach it — pages that hold their
   // own rows subscribe to this counter.
   const [jobWrites, setJobWrites] = useState(0);
+  const [questionWrites, setQuestionWrites] = useState(0);
 
   // Which writes have already been announced. Seeded from the persisted
   // transcript so a yesterday's add_job in initialMessages is not mistaken for
@@ -151,6 +161,10 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
   const announcedJobWritesRef = useRef<Set<string> | null>(null);
   if (announcedJobWritesRef.current === null) {
     announcedJobWritesRef.current = new Set(createdJobToolCallIds(initialMessages));
+  }
+  const announcedQuestionWritesRef = useRef<Set<string> | null>(null);
+  if (announcedQuestionWritesRef.current === null) {
+    announcedQuestionWritesRef.current = new Set(questionWriteToolCallIds(initialMessages));
   }
 
   const chat = useChat({
@@ -184,17 +198,6 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
       turnTimedOutRef.current = false;
       const stop = replyStop(timedOut, { isAbort, isDisconnect, finishReason });
       if (stop) setStoppedReplies((prev) => new Map(prev).set(message.id, stop));
-      // onFinish runs from a finally block, so it fires on abort too.
-      if (isAbort || isError) return;
-
-      const finishedParts = message?.parts ?? [];
-      const wrote = createdJobToolCallIds(message ? [message] : []).length > 0;
-      const finishedTools = finishedParts
-        .filter((part) => isToolUIPart(part) && part.state === "output-available")
-        .map((part) => getToolName(part as ToolUIPart));
-      const refreshPage = finishedTools.some((name) => toolInvalidates(name).includes("page"));
-      const refreshJobsList = finishedTools.some((name) => toolInvalidates(name).includes("jobsList"));
-
       // The route stubs the paste on its way into the DB, but that copy is
       // not the one the client POSTs next turn — so without this the browser
       // keeps a consumed posting marked unconsumed, resolvePastedText finds
@@ -203,7 +206,18 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
       // reload, when the stubbed row re-seeded the transcript.
       // Stays here rather than in the effect below: its deadline is the next
       // POST, and writing to useChat's store mid-stream risks being clobbered.
-      if (wrote) chat.setMessages((prev) => stubConsumedPastes(prev));
+      // Before the abort return: a Stop after a save must still stub it.
+      if (message && consumesPaste([message])) chat.setMessages((prev) => stubConsumedPastes(prev));
+
+      // onFinish runs from a finally block, so it fires on abort too.
+      if (isAbort || isError) return;
+
+      const finishedParts = message?.parts ?? [];
+      const finishedTools = finishedParts
+        .filter((part) => isToolUIPart(part) && part.state === "output-available")
+        .map((part) => getToolName(part as ToolUIPart));
+      const refreshPage = finishedTools.some((name) => toolInvalidates(name).includes("page"));
+      const refreshJobsList = finishedTools.some((name) => toolInvalidates(name).includes("jobsList"));
 
       // Only the nested tools. A job write refreshes the moment add_job
       // returns — see the effect below. An RSC refresh on an irrelevant page
@@ -225,6 +239,16 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     setJobWrites((n) => n + 1);
     router.refresh();
   }, [chat.messages, router]);
+
+  // Same for questions: a held item keeps the turn going after the save, and
+  // a Stop or disconnect then skips onFinish
+  useEffect(() => {
+    const announced = announcedQuestionWritesRef.current!;
+    const landed = questionWriteToolCallIds(chat.messages).filter((id) => !announced.has(id));
+    if (landed.length === 0) return;
+    landed.forEach((id) => announced.add(id));
+    setQuestionWrites((n) => n + 1);
+  }, [chat.messages]);
 
   const streaming = chat.status === "streaming" || chat.status === "submitted";
   // For the callbacks below, which must see the latest status without being
@@ -425,6 +449,7 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
     messages: chat.messages,
     toolStreams,
     jobWrites,
+    questionWrites,
     status: chat.status,
     error: chat.error,
     clearError: chat.clearError,

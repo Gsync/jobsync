@@ -10,7 +10,7 @@ vi.mock("@/components/agent/AgentChatProvider", () => ({
 }));
 
 import { AgentChatEmptyState } from "@/components/agent/AgentChatEmptyState";
-import { AGENT_ADD_JOB_INTRO } from "@/lib/agent/prompt";
+import { AGENT_ADD_JOB_INTRO, AGENT_ADD_QUESTION_INTRO } from "@/lib/agent/prompt";
 import { directInvokeParts } from "@/models/agent.model";
 
 describe("AgentChatEmptyState", () => {
@@ -24,12 +24,23 @@ describe("AgentChatEmptyState", () => {
   // 15-30s turn on it is latency for text we already know.
   it("answers the add-job suggestion locally instead of calling the model", async () => {
     render(<AgentChatEmptyState />);
-    await userEvent.click(screen.getByText("Add a job posting"));
+    await userEvent.click(screen.getByText("Add a job"));
 
     expect(sendMessage).not.toHaveBeenCalled();
     expect(seedExchange).toHaveBeenCalledWith(
-      "Add a job posting",
+      "Add a job",
       AGENT_ADD_JOB_INTRO,
+    );
+  });
+
+  it("answers the add-question suggestion locally instead of calling the model", async () => {
+    render(<AgentChatEmptyState />);
+    await userEvent.click(screen.getByText("Add a question"));
+
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect(seedExchange).toHaveBeenCalledWith(
+      "Add a question",
+      AGENT_ADD_QUESTION_INTRO,
     );
   });
 
@@ -51,7 +62,7 @@ describe("AgentChatEmptyState", () => {
   it("does nothing when preflight failed", async () => {
     preflight = { checked: true, ok: false };
     render(<AgentChatEmptyState />);
-    await userEvent.click(screen.getByText("Add a job posting"));
+    await userEvent.click(screen.getByText("Add a job"));
 
     expect(seedExchange).not.toHaveBeenCalled();
     expect(sendMessage).not.toHaveBeenCalled();

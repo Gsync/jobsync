@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { McpAddJobInputShape } from "@/models/mcp.schema";
+import { APP_CONSTANTS } from "@/lib/constants";
+import { McpAddJobInputShape, McpAddQuestionInputShape } from "@/models/mcp.schema";
 
 export const AgentChatRequestSchema = z.object({
   // Validated by the SDK downstream, not here. The whole array is
@@ -78,3 +79,14 @@ export const AgentCoverLetterSchema = z.object({
 });
 
 export type AgentCoverLetterInput = z.infer<typeof AgentCoverLetterSchema>;
+
+// Item derived from the MCP shape, never restated; userId is a closure param
+export const AgentAddQuestionSchema = z.object({
+  questions: z
+    .array(z.object(McpAddQuestionInputShape))
+    .min(1)
+    .max(APP_CONSTANTS.MAX_QUESTIONS_PER_CALL)
+    .describe("Every question the user asked to save, one item each, in the order given."),
+});
+
+export type AgentAddQuestionInput = z.infer<typeof AgentAddQuestionSchema>;

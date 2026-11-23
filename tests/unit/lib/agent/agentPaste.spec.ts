@@ -2,6 +2,8 @@ import {
   resolvePastedText,
   stubConsumedPastes,
   hasPendingApproval,
+  pastedQuestionsLabel,
+  consumesPaste,
 } from "@/lib/agent/memory/paste";
 import { windowMessages } from "@/lib/agent/memory/window";
 import { truncateForModel } from "@/lib/agent/memory/paste.server";
@@ -184,6 +186,152 @@ describe("stubConsumedPastes", () => {
     const part: any = stubConsumedPastes(messages)[0].parts[0];
     expect(part.data.text).toContain("6kb posting");
     expect(part.data.consumed).toBe(false);
+  });
+});
+
+const questionPart = (output: unknown, state = "output-available") => ({
+  type: "tool-add_question",
+  toolCallId: "call-q",
+  state,
+  input: { questions: [] },
+  output,
+});
+
+const item = (status: string, index = 0) => ({ index, question: `Q${index}`, status }) as any;
+
+describe("pastedQuestionsLabel", () => {
+  it("counts saved and already-in-bank items", () => {
+    const items = [
+      item("saved", 0), item("merged", 1), item("saved", 2),
+      item("skipped", 3), item("exists", 4),
+    ];
+    expect(pastedQuestionsLabel({ items })).toBe(
+      "[pasted questions — 3 saved, 2 already in your bank]",
+    );
+  });
+
+  it("names items still waiting on the user's reply", () => {
+    expect(pastedQuestionsLabel({ items: [item("similar", 0), item("invalid", 1)] })).toBe(
+      "[pasted questions — 2 waiting on your reply]",
+    );
+  });
+
+  it("counts a failed item as not saved", () => {
+    const items = [item("saved", 0), item("saved", 1), item("saved", 2), item("failed", 3)];
+    expect(pastedQuestionsLabel({ items })).toBe(
+      "[pasted questions — 3 saved, 1 not saved]",
+    );
+  });
+
+  it("says not saved when the call errored", () => {
+    expect(pastedQuestionsLabel({ items: [], error: "boom" })).toBe(
+      "[pasted questions — not saved]",
+    );
+  });
+
+  it("says not saved when every count is zero", () => {
+    expect(pastedQuestionsLabel({ items: [] })).toBe("[pasted questions — not saved]");
+  });
+});
+
+describe("stubConsumedPastes with add_question", () => {
+  const withQuestionOutput = (output: unknown) => [
+    userMsg("1", [pastePart("p1", "the whole question dump")]),
+    assistantMsg("2", [questionPart(output)]),
+  ] as any;
+
+  it("stubs the paste when every item was already in the bank", () => {
+    const part: any = stubConsumedPastes(
+      withQuestionOutput({ items: [item("skipped", 0), item("skipped", 1)] }),
+    )[0].parts[0];
+    expect(part.data.text).toBe("[pasted questions — 2 already in your bank]");
+    expect(part.data.consumed).toBe(true);
+  });
+
+  it("stubs the paste with the saved and already counts", () => {
+    const items = [
+      item("saved", 0), item("saved", 1), item("saved", 2),
+      item("skipped", 3), item("exists", 4),
+    ];
+    const part: any = stubConsumedPastes(withQuestionOutput({ items }))[0].parts[0];
+    expect(part.data.text).toBe("[pasted questions — 3 saved, 2 already in your bank]");
+  });
+
+  it("still stubs when every item is held as similar", () => {
+    const part: any = stubConsumedPastes(
+      withQuestionOutput({ items: [item("similar", 0), item("similar", 1)] }),
+    )[0].parts[0];
+    expect(part.data.text).toBe("[pasted questions — 2 waiting on your reply]");
+    expect(part.data.consumed).toBe(true);
+  });
+
+  it("stubs as not saved when the call errored", () => {
+    const part: any = stubConsumedPastes(
+      withQuestionOutput({ items: [], error: "Could not save." }),
+    )[0].parts[0];
+    expect(part.data.text).toBe("[pasted questions — not saved]");
+  });
+
+  it("does not stub for a get_resume output", () => {
+    const messages = [
+      userMsg("1", [pastePart("p1", "the whole question dump")]),
+      assistantMsg("2", [{
+        type: "tool-get_resume", toolCallId: "c", state: "output-available",
+        input: {}, output: { status: "no_resumes" },
+      }]),
+    ] as any;
+    const part: any = stubConsumedPastes(messages)[0].parts[0];
+    expect(part.data.consumed).toBe(false);
+    expect(part.data.text).toBe("the whole question dump");
+  });
+
+  // persistTurn stubs every turn's DB copy, so an unbounded stub would
+  // replace a second list, pasted after the save, with the first list's label.
+  it("leaves a paste newer than the question write intact", () => {
+    const messages = [
+      userMsg("1", [pastePart("pA", "LIST_A")]),
+      assistantMsg("2", [questionPart({ items: [item("saved", 0)] })]),
+      userMsg("3", [pastePart("pB", "LIST_B")]),
+      assistantMsg("4", [{ type: "text", text: "Do you have answers?" }]),
+    ] as any;
+    const stubbed: any = stubConsumedPastes(messages);
+    expect(stubbed[0].parts[0].data.text).toBe("[pasted questions — 1 saved]");
+    expect(stubbed[2].parts[0].data.text).toBe("LIST_B");
+    expect(stubbed[2].parts[0].data.consumed).toBe(false);
+  });
+
+  it("leaves a posting newer than the job write intact", () => {
+    const messages = [
+      userMsg("1", [pastePart("pA", "POSTING_A")]),
+      assistantMsg("2", [toolPart("output-available", {
+        output: { created: true, jobId: "job-1", resolutions: [] },
+      })]),
+      userMsg("3", [pastePart("pB", "POSTING_B")]),
+    ] as any;
+    const stubbed: any = stubConsumedPastes(messages);
+    expect(stubbed[0].parts[0].data.consumed).toBe(true);
+    expect(stubbed[2].parts[0].data.text).toBe("POSTING_B");
+    expect(stubbed[2].parts[0].data.consumed).toBe(false);
+  });
+});
+
+describe("consumesPaste", () => {
+  it("is true for any finished add_question call", () => {
+    expect(consumesPaste([assistantMsg("1", [questionPart({ items: [item("skipped")] })])] as any)).toBe(true);
+  });
+
+  it("is false for an add_job duplicate", () => {
+    const messages = [assistantMsg("1", [toolPart("output-available", {
+      output: { created: false, resolutions: [], duplicateOf: { id: "j", title: "t", company: "c" } },
+    })])] as any;
+    expect(consumesPaste(messages)).toBe(false);
+  });
+
+  it("is true for a created add_job", () => {
+    const messages = [assistantMsg("1", [toolPart("output-available", {
+      output: { created: true, jobId: "job-1", resolutions: [] },
+    })])] as any;
+    expect(consumesPaste(messages)).toBe(true);
   });
 });
 

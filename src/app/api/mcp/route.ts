@@ -7,6 +7,8 @@ import {
   McpAddJobSchema,
   McpAddQuestionInputShape,
   McpAddQuestionSchema,
+  McpAddQuestionsBatchInputShape,
+  McpAddQuestionsBatchSchema,
   McpSaveMatchResultInputShape,
   McpSaveMatchResultSchema,
   McpReviewResumeInputShape,
@@ -26,6 +28,7 @@ import {
 } from "@/models/mcp.schema";
 import { handleAddJob } from "@/lib/mcp/tools/addJob";
 import { handleAddQuestion } from "@/lib/mcp/tools/addQuestion";
+import { handleAddQuestionsBatch } from "@/lib/mcp/tools/addQuestionsBatch";
 import { handleSaveMatchResult } from "@/lib/mcp/tools/saveMatchResult";
 import { handleReviewResume } from "@/lib/mcp/tools/reviewResume";
 import { handleSaveResumeReview } from "@/lib/mcp/tools/saveResumeReview";
@@ -177,6 +180,33 @@ async function handler(req: Request): Promise<Response> {
         };
       }
       return handleAddQuestion(parsed.data, userId, tokenName);
+    },
+  );
+
+  server.registerTool(
+    "add_questions_batch",
+    { description: MCP_TOOL_DESCRIPTIONS.add_questions_batch, inputSchema: McpAddQuestionsBatchInputShape },
+    async (rawInput) => {
+      if (!auth.scopes.includes("questions:write")) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "Insufficient scope. Required: questions:write",
+            },
+          ],
+        };
+      }
+      const parsed = McpAddQuestionsBatchSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => i.message).join("; ");
+        return {
+          content: [
+            { type: "text" as const, text: `Validation error: ${issues}` },
+          ],
+        };
+      }
+      return handleAddQuestionsBatch(parsed.data, userId, tokenName);
     },
   );
 

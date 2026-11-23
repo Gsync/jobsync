@@ -74,17 +74,21 @@ export const McpAddJobSchema = z.object({
 
 export type McpAddJobInput = z.infer<typeof McpAddJobSchema>;
 
-// Raw input shape for MCP tool registration (no transforms — SDK uses this for JSON schema)
+// No min/max: saveQuestions checks limits per item, not per call
 export const McpAddQuestionInputShape = {
   question: z.string()
-    .min(APP_CONSTANTS.MIN_QUESTION_LENGTH, `question must be at least ${APP_CONSTANTS.MIN_QUESTION_LENGTH} characters`)
-    .max(APP_CONSTANTS.MAX_QUESTION_LENGTH, `question cannot exceed ${APP_CONSTANTS.MAX_QUESTION_LENGTH} characters`),
-  answer: z.string()
-    .min(APP_CONSTANTS.MIN_QUESTION_ANSWER_LENGTH, `answer must be at least ${APP_CONSTANTS.MIN_QUESTION_ANSWER_LENGTH} characters`)
-    .max(APP_CONSTANTS.MAX_QUESTION_ANSWER_LENGTH, `answer cannot exceed ${APP_CONSTANTS.MAX_QUESTION_ANSWER_LENGTH} characters`)
-    .describe("Markdown-formatted answer/notes (required). Plain text also works."),
+    .describe(`The interview question as asked, ${APP_CONSTANTS.MIN_QUESTION_LENGTH}–${APP_CONSTANTS.MAX_QUESTION_LENGTH} characters.`),
+  answer: z.string().optional()
+    .describe(`The user's answer or notes in markdown, ${APP_CONSTANTS.MIN_QUESTION_ANSWER_LENGTH}–${APP_CONSTANTS.MAX_QUESTION_ANSWER_LENGTH} characters. Omit it when the user gave none.`),
   tags: z.array(z.string()).optional()
-    .describe("Skill/topic tags (max 10 applied, extras dropped). Created if they don't exist."),
+    .describe("1–5 skills or topics the question tests, e.g. [\"Postgres\", \"Database design\"] for \"Why Postgres over Mongo?\"."),
+  notSameAs: z.array(z.string()).optional()
+    .describe("Only after a result listed similar saved questions: the ids of the candidates that are not the same question."),
+  mergeInto: z.object({
+    questionId: z.string(),
+    mode: z.enum(["append", "replace"]),
+  }).optional()
+    .describe("Only after a result named a matching saved question: that question's id, with mode \"append\" to add the answer below the saved one or \"replace\" to overwrite it."),
 };
 
 export const McpAddQuestionSchema = z.object(McpAddQuestionInputShape);
@@ -240,6 +244,19 @@ export const McpAddJobsBatchSchema = z.object({
   jobs: z.array(McpAddJobSchema).min(1).max(APP_CONSTANTS.MCP_BATCH_MAX_ITEMS),
 });
 export type McpAddJobsBatchInput = z.infer<typeof McpAddJobsBatchSchema>;
+
+export const McpAddQuestionsBatchInputShape = {
+  questions: z
+    .array(z.object(McpAddQuestionInputShape))
+    .min(1)
+    .max(APP_CONSTANTS.MAX_QUESTIONS_PER_CALL)
+    .describe(
+      `Up to ${APP_CONSTANTS.MAX_QUESTIONS_PER_CALL} questions, each with the same fields as add_question. Each question consumes one unit of the MCP rate-limit budget.`,
+    ),
+};
+
+export const McpAddQuestionsBatchSchema = z.object(McpAddQuestionsBatchInputShape);
+export type McpAddQuestionsBatchInput = z.infer<typeof McpAddQuestionsBatchSchema>;
 
 export const McpSaveMatchResultsBatchInputShape = {
   results: z

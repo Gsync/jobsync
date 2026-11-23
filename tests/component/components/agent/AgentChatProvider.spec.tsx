@@ -78,7 +78,7 @@ function Probe() {
       >
         sendSecond
       </button>
-      <button onClick={() => c.seedExchange("Add a job posting", "canned")}>
+      <button onClick={() => c.seedExchange("Add a job", "canned")}>
         seedExchange
       </button>
       <button onClick={c.clearQueued}>clearQueued</button>
@@ -95,6 +95,7 @@ function Probe() {
       <span data-testid="stopped-replies">{[...c.stoppedReplies].map(([id, why]) => `${id}:${why}`).join(",")}</span>
       <span data-testid="review-stream">{c.toolStreams["rv1"] ?? ""}</span>
       <span data-testid="job-writes">{c.jobWrites}</span>
+      <span data-testid="question-writes">{c.questionWrites}</span>
     </div>
   );
 }
@@ -151,7 +152,7 @@ describe("AgentChatProvider", () => {
     expect(next).toHaveLength(3);
     expect(next[1]).toMatchObject({
       role: "user",
-      parts: [{ type: "text", text: "Add a job posting" }],
+      parts: [{ type: "text", text: "Add a job" }],
     });
     expect(next[2]).toMatchObject({
       role: "assistant",
@@ -576,6 +577,122 @@ describe("AgentChatProvider", () => {
     ]);
     expect(stubbed[0].parts[0].data.consumed).toBe(true);
     expect(JSON.stringify(stubbed)).not.toContain("SECRET_POSTING_BODY");
+  });
+
+  // A list where every question was already saved still used the paste up;
+  // left live, the next typed message would re-send the whole dump.
+  it("stubs the client-side paste after any finished add_question", async () => {
+    const questionMessage = {
+      id: "a5",
+      role: "assistant",
+      parts: [
+        {
+          type: "tool-add_question",
+          toolCallId: "q1",
+          state: "output-available",
+          input: { questions: [] },
+          output: {
+            items: [
+              { index: 0, question: "Q0", status: "skipped", existing: { question: "Q0" } },
+              { index: 1, question: "Q1", status: "skipped", existing: { question: "Q1" } },
+            ],
+          },
+        },
+      ],
+    } as any;
+    setup();
+    await act(async () => {
+      chatInit().onFinish({ message: questionMessage, messages: [questionMessage] });
+    });
+    const update = chat.setMessages.mock.calls.at(-1)![0] as any;
+    const stubbed = update([
+      {
+        id: "u1",
+        role: "user",
+        parts: [
+          {
+            type: "data-paste",
+            id: "p1",
+            data: { id: "p1", text: "QUESTION_DUMP", chars: 13, truncated: false, consumed: false },
+          },
+        ],
+      },
+      questionMessage,
+    ]);
+    expect(stubbed[0].parts[0].data.consumed).toBe(true);
+    expect(stubbed[0].parts[0].data.text).toBe("[pasted questions — 2 already in your bank]");
+  });
+
+  const questionMessage = {
+    id: "a6",
+    role: "assistant",
+    parts: [{
+      type: "tool-add_question", toolCallId: "q2", state: "output-available", input: { questions: [] },
+      output: { items: [{ index: 0, question: "Q0", status: "saved", tags: [], droppedTags: [] }] },
+    }],
+  } as any;
+
+  // Questions are saved server-side; only this counter tells an open
+  // Questions page that its list changed. A held item keeps the model
+  // talking, so a Stop then must not leave the page stale.
+  it("bumps questionWrites as soon as add_question returns, mid-stream", async () => {
+    const { rerender } = setup();
+    expect(screen.getByTestId("question-writes").textContent).toBe("0");
+    chat.messages = [questionMessage];
+    await act(async () => {
+      rerender(tree());
+    });
+    expect(screen.getByTestId("question-writes").textContent).toBe("1");
+
+    chat.messages = [questionMessage, { id: "a7", role: "assistant", parts: [] }];
+    await act(async () => {
+      rerender(tree());
+    });
+    await act(async () => {
+      chatInit().onFinish({ message: questionMessage, messages: [questionMessage], isAbort: true });
+    });
+    expect(screen.getByTestId("question-writes").textContent).toBe("1");
+  });
+
+  it("does not count a question write once more when the turn finishes", async () => {
+    const { rerender } = setup();
+    chat.messages = [questionMessage];
+    await act(async () => {
+      rerender(tree());
+    });
+    await act(async () => {
+      chatInit().onFinish({ message: questionMessage, messages: [questionMessage] });
+    });
+    expect(screen.getByTestId("question-writes").textContent).toBe("1");
+  });
+
+  it("does not announce a question write seeded from the persisted transcript", () => {
+    chat.messages = [questionMessage];
+    setup([questionMessage]);
+    expect(screen.getByTestId("question-writes").textContent).toBe("0");
+  });
+
+  // Left live after Stop, the next typed message re-sends the whole dump
+  it("stubs the client-side paste when the user stops after add_question", async () => {
+    setup();
+    await act(async () => {
+      chatInit().onFinish({ message: questionMessage, messages: [questionMessage], isAbort: true });
+    });
+    const update = chat.setMessages.mock.calls.at(-1)![0] as any;
+    const stubbed = update([
+      {
+        id: "u1",
+        role: "user",
+        parts: [{
+          type: "data-paste",
+          id: "p1",
+          data: { id: "p1", text: "QUESTION_DUMP", chars: 13, truncated: false, consumed: false },
+        }],
+      },
+      questionMessage,
+    ]);
+    expect(stubbed[0].parts[0].data.consumed).toBe(true);
+    expect(JSON.stringify(stubbed)).not.toContain("QUESTION_DUMP");
   });
 
   it("does not stub the client-side paste when no job was created", async () => {

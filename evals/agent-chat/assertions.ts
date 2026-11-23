@@ -186,6 +186,12 @@ function textOf(output: unknown): string {
   return String(raw?.content ?? '');
 }
 
+// An empty finish (reasoning only) must fail even if a grader would accept it
+export function assertVisibleReply(output: unknown): AssertionResult {
+  const pass = textOf(output).trim().length > 0;
+  return { pass, score: pass ? 1 : 0, reason: pass ? 'visible reply' : 'no visible reply (empty or reasoning-only finish)' };
+}
+
 // The inverse of the assertCalls* family, for the rows where reaching for a
 // tool is itself the failure. Pairs with an llm-rubric on what was said
 // instead — this half only pins that nothing was called.
@@ -246,4 +252,69 @@ export function assertFollowUpStaysConversational(output: unknown): AssertionRes
   const { scores } = parseResumeReview(textOf(output));
   const pass = calls.length === 0 && !scores;
   return { pass, score: pass ? 1 : 0, reason: pass ? 'answered from context, no tool call, no new SCORES line' : `expected a plain answer, got: ${calls.length ? describe(calls) : 'a new SCORES line'}` };
+}
+
+// add_question
+
+function questionsOf(output: unknown): Record<string, any>[] {
+  const args = parseToolCalls(output).find((c) => c.name === 'add_question')?.args ?? {};
+  return Array.isArray(args.questions) ? args.questions : [];
+}
+
+export function assertCallsAddQuestion(output: unknown): AssertionResult {
+  const calls = parseToolCalls(output);
+  const pass = calls.length === 1 && calls[0].name === 'add_question';
+  return { pass, score: pass ? 1 : 0, reason: pass ? 'called add_question' : `expected one add_question call, got: ${describe(calls)}` };
+}
+
+// A long list may arrive as parallel calls in one step; the app settles that
+export function assertOnlyAddQuestionCalls(output: unknown): AssertionResult {
+  const calls = parseToolCalls(output);
+  const pass = calls.length > 0 && calls.every((c) => c.name === 'add_question');
+  return { pass, score: pass ? 1 : 0, reason: pass ? `called add_question ${calls.length}x` : `expected only add_question calls, got: ${describe(calls)}` };
+}
+
+export function assertQuestionCount(output: unknown, context: Context): AssertionResult {
+  const want = Number(context.vars.expectedQuestions);
+  const got = questionsOf(output).length;
+  const pass = got === want;
+  return { pass, score: pass ? 1 : 0, reason: pass ? `sent ${got} questions` : `sent ${got} questions, wanted ${want}` };
+}
+
+export function assertQuestionTags(output: unknown): AssertionResult {
+  const items = questionsOf(output);
+  const bad = items
+    .map((item, i) => ({ i: i + 1, n: Array.isArray(item.tags) ? item.tags.length : 0 }))
+    .filter(({ n }) => n < 1 || n > 5);
+  const pass = items.length > 0 && bad.length === 0;
+  return { pass, score: pass ? 1 : 0, reason: pass ? 'every item carries 1–5 tags' : items.length === 0 ? 'no questions sent' : `items outside 1–5 tags: ${bad.map(({ i, n }) => `#${i}=${n}`).join(', ')}` };
+}
+
+// The re-call rejects the offered candidate by id, without asking the user
+export function assertNotSameAs(output: unknown, context: Context): AssertionResult {
+  const id = context.vars.expectedQuestionId;
+  const item = questionsOf(output)[0];
+  const pass = Boolean(item?.notSameAs?.includes(id)) && !item?.mergeInto;
+  return { pass, score: pass ? 1 : 0, reason: pass ? `notSameAs carries ${id}` : `expected notSameAs with ${id} and no mergeInto, got: ${JSON.stringify(item ?? null)}` };
+}
+
+// After a Replace the menu should not have offered: ask afresh, or attempt
+// exactly that Replace once. Never a silent Append or save as new
+export function assertReplaceOrAsk(output: unknown, context: Context): AssertionResult {
+  const calls = parseToolCalls(output);
+  if (calls.length === 0) return assertVisibleReply(output);
+  const items = questionsOf(output);
+  const item = items[0];
+  const merge = item?.mergeInto;
+  const pass = calls.length === 1 && calls[0].name === 'add_question' && items.length === 1 &&
+    merge?.questionId === context.vars.expectedQuestionId && merge?.mode === 'replace' &&
+    typeof item?.answer === 'string' && item.answer.length > 0 && !item?.notSameAs?.length;
+  return { pass, score: pass ? 1 : 0, reason: pass ? 'attempted only the requested replace' : `expected a fresh question or one replace on ${context.vars.expectedQuestionId}, got: ${describe(calls)} ${JSON.stringify(items)}` };
+}
+
+export function assertMergeInto(output: unknown, context: Context): AssertionResult {
+  const { expectedQuestionId: id, expectedMode: mode } = context.vars;
+  const merge = questionsOf(output)[0]?.mergeInto;
+  const pass = merge?.questionId === id && merge?.mode === mode;
+  return { pass, score: pass ? 1 : 0, reason: pass ? `mergeInto ${id} (${mode})` : `expected mergeInto ${id} (${mode}), got: ${JSON.stringify(merge ?? null)}` };
 }

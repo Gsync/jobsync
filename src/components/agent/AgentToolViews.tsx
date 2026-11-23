@@ -9,8 +9,10 @@ import { GetResumeResult } from "./AgentResultCard/GetResumeResult";
 import { ReviewResumeResult } from "./AgentResultCard/ReviewResumeResult";
 import { MatchJobResult } from "./AgentResultCard/MatchJobResult";
 import { CoverLetterResult } from "./AgentResultCard/CoverLetterResult";
+import { AddQuestionResult } from "./AgentResultCard/AddQuestionResult";
 import type {
   AgentAddJobResult,
+  AgentAddQuestionResult,
   AgentCoverLetterResult,
   AgentGetResumeResult,
   AgentMatchJobResult,
@@ -46,6 +48,16 @@ function addJobOutcome(output: unknown): AgentToolOutcome {
   return result?.duplicateOf ? "answer" : "ok";
 }
 
+const HELD_STATUSES: readonly string[] = ["exists", "similar", "invalid"];
+
+function addQuestionOutcome(output: unknown): AgentToolOutcome {
+  const result = output as AgentAddQuestionResult;
+  if (result?.error) return "failed";
+  const statuses = (result?.items ?? []).map((item) => item.status);
+  if (statuses.some((status) => HELD_STATUSES.includes(status))) return "answer";
+  return statuses.includes("failed") ? "failed" : "ok";
+}
+
 type AgentToolView = {
   Result: ComponentType<{ output: unknown; input: Record<string, unknown> }>;
   Approval?: ComponentType<{ input: Record<string, unknown>; pastedText?: string }>;
@@ -76,5 +88,9 @@ export const AGENT_TOOL_VIEWS: Record<AgentToolName, AgentToolView> = {
     Result: ({ output }) => <CoverLetterResult output={output as AgentCoverLetterResult} />,
     Stream: CoverLetterStream,
     outcome: workflowOutcome,
+  },
+  add_question: {
+    Result: ({ output }) => <AddQuestionResult output={output as AgentAddQuestionResult} />,
+    outcome: addQuestionOutcome,
   },
 };

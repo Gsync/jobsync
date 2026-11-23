@@ -42,6 +42,9 @@ providers:
       temperature: 0.1
       # Mirrors the route: providerOptions.ollama.think plus AGENT_CHAT_NUM_CTX.
       think: true
+      # Grade what the user sees: thinking text in output let a reasoning-only
+      # finish read as a reply
+      showThinking: false
       num_ctx: 16384
       tools: file://./tools.json
 
@@ -448,3 +451,384 @@ tests:
     assert:
       - type: icontains
         value: sediment transport
+
+  # add_question. Prior rounds are injected by prompt.ts's priorAddQuestion,
+  # shaped as the tool returns them.
+  - description: Single question with an answer - calls add_question with 1 item
+    vars:
+      userMessage: >-
+        Save this interview question: What is a closure in JavaScript? My
+        answer: a function that keeps access to the variables of the scope it
+        was created in, even after that scope has returned.
+      pageLocation: elsewhere
+      expectedQuestions: 1
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertQuestionCount
+
+  - description: List of 3 with no answers - asks once about answers, no tool call
+    vars:
+      userMessage: >-
+        Save these questions: 1) Tell me about yourself 2) Why Postgres over
+        Mongo? 3) How do you handle a failing deploy?
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
+      - type: llm-rubric
+        value: >-
+          The reply lists the three questions and asks the user once whether
+          they want to add answers to any of them. It does not claim the
+          questions are already saved.
+
+  # From the Phase 3 manual check: the app saved both at once.
+  - description: Two questions with no answers - asks once about answers, no tool call
+    vars:
+      userMessage: "Save these: 1) Tell me about yourself 2) Why Postgres over Mongo?"
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
+      - type: llm-rubric
+        value: >-
+          The reply asks the user whether they want to add answers before
+          saving. It does not claim the questions are already saved.
+
+  - description: List of 3 where two have answers - calls with 3 items
+    vars:
+      userMessage: >-
+        Add these to my question bank:
+        1) Tell me about yourself - I'm a backend engineer with eight years on
+        payments systems, most recently leading a team of four.
+        2) Why Postgres over Mongo? - Relational integrity for money, and JSONB
+        covers the few document-shaped cases we have.
+        3) Where do you see yourself in five years?
+      pageLocation: elsewhere
+      expectedQuestions: 3
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertQuestionCount
+
+  # From the Phase 3 manual check: all three chat saves arrived with no tags.
+  - description: Tags - every add_question item carries 1-5 tags
+    vars:
+      userMessage: >-
+        Add these to my question bank:
+        1) Tell me about yourself - I'm a backend engineer with eight years on
+        payments systems, most recently leading a team of four.
+        2) Why Postgres over Mongo? - Relational integrity for money, and JSONB
+        covers the few document-shaped cases we have.
+        3) Where do you see yourself in five years?
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertQuestionTags
+
+  # Phase 3 deferred minor: settling relies on the model sending exactly 20.
+  # The remaining 1 may follow in a parallel call in the same step.
+  - description: 21 questions with no answers wanted - first call sends exactly 20
+    vars:
+      userMessage: >-
+        Save all of these, no answers needed: 1) Tell me about yourself
+        2) Why this company? 3) Why are you leaving? 4) Greatest strength?
+        5) Greatest weakness? 6) Describe a conflict 7) Describe a failure
+        8) Describe a success 9) How do you prioritise? 10) How do you handle
+        stress? 11) What motivates you? 12) Ideal manager? 13) Ideal team?
+        14) Salary expectations? 15) Notice period? 16) Remote or office?
+        17) Biggest project? 18) Hardest bug? 19) How do you learn? 20) Any
+        questions for us? 21) Where do you see yourself in five years?
+      pageLocation: elsewhere
+      expectedQuestions: 20
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertOnlyAddQuestionCalls
+      - type: javascript
+        value: file://./assertions.ts:assertQuestionCount
+
+  - description: After exists, "add it below" - re-calls with mergeInto append
+    vars:
+      userMessage: >-
+        Save this question: Why Postgres over Mongo? My answer: Postgres gives
+        us relational integrity, and JSONB covers the document cases.
+      priorAddQuestion: exists
+      priorAssistantReply: >-
+        "Why Postgres over Mongo?" is already in your bank with an answer.
+        Should I add your answer below the saved one, replace it, or skip it?
+      followUp: Add it below.
+      priorPageLocation: elsewhere
+      pageLocation: elsewhere
+      expectedQuestionId: q-eval-1
+      expectedMode: append
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertMergeInto
+
+  - description: After exists, "replace it" - re-calls with mergeInto replace
+    vars:
+      userMessage: >-
+        Save this question: Why Postgres over Mongo? My answer: Postgres gives
+        us relational integrity, and JSONB covers the document cases.
+      priorAddQuestion: exists
+      priorAssistantReply: >-
+        "Why Postgres over Mongo?" is already in your bank with an answer.
+        Should I add your answer below the saved one, replace it, or skip it?
+      followUp: Replace it.
+      priorPageLocation: elsewhere
+      pageLocation: elsewhere
+      expectedQuestionId: q-eval-1
+      expectedMode: replace
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertMergeInto
+
+  # Acceptance: a different question that shares words is rejected by id,
+  # with no question to the user.
+  - description: Similar but not the same question - re-calls with notSameAs, no question to the user
+    vars:
+      userMessage: "Save this question, no answer: Why do you want to leave your job?"
+      priorAddQuestion: similar
+      pageLocation: elsewhere
+      expectedQuestionId: q-eval-2
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertNotSameAs
+
+  # Live 2026-11-22: the shared "what are your" opening held a distinct question
+  - description: Similar weaknesses/strengths - re-sends at once with notSameAs, no question to the user
+    vars:
+      userMessage: "Save this question, no answer: What are your weaknesses?"
+      priorAddQuestion: similarWeakness
+      pageLocation: elsewhere
+      expectedQuestionId: q-eval-4
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertNotSameAs
+
+  # Live 2026-11-22: "save it" re-sent the held question unchanged, held again
+  - description: Save it after a held similar question - re-sends with notSameAs
+    vars:
+      userMessage: "Save this question, no answer: What are your weaknesses?"
+      priorAddQuestion: similarWeakness
+      priorAssistantReply: >-
+        "What are your weaknesses?" looks similar to "What are your strengths?",
+        which is already in your bank. Should I save yours as a new question,
+        or skip it?
+      followUp: save it
+      priorPageLocation: elsewhere
+      pageLocation: elsewhere
+      expectedQuestionId: q-eval-4
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertNotSameAs
+
+  # Counterweight to the notSameAs rows: sending it here saves a duplicate
+  - description: Similar unanswered rewording - asks, does not re-send with notSameAs
+    vars:
+      userMessage: "Save this question, no answer: How do you deal with a broken deployment?"
+      priorAddQuestion: similarRewording
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
+      - type: llm-rubric
+        value: >-
+          The reply tells the user their question looks like the saved
+          question "How do you handle a failing deploy?", asks whether to save
+          theirs as a new question or skip it, and does not claim it was saved.
+
+  # Fixture changed 2026-11-23 to the 0.89 failing-deployment pair; compare
+  # with earlier runs (0.28 broken-deployment pair) separately.
+  - description: Similar with a user answer - offers add below, replace, save as new and skip
+    vars:
+      userMessage: >-
+        Save this question: How do you handle a failing deployment? My answer: I roll back first, then find the cause from the deploy diff and the logs.
+      priorAddQuestion: similarAnswered
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
+      - type: javascript
+        value: file://./assertions.ts:assertVisibleReply
+      - type: llm-rubric
+        value: >-
+          The reply tells the user their question matches the saved question "How do you handle a failing deploy?" and offers four choices: add their answer below the saved answer, replace the saved answer (described as changing or overwriting it), save theirs as a new question, or skip it. It does not claim anything was saved.
+
+  # Unanswered target: there is no saved answer, so no add-below and no replace
+  - description: Similar with a user answer, unanswered target - offers first answer, save as new and skip
+    vars:
+      userMessage: >-
+        Save this question: How do you handle a failing deployment? My answer: I roll back first, then find the cause from the deploy diff and the logs.
+      priorAddQuestion: similarAnsweredBlank
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
+      - type: javascript
+        value: file://./assertions.ts:assertVisibleReply
+      - type: llm-rubric
+        value: >-
+          The reply tells the user their question matches the saved question "How do you handle a failing deploy?", which has no answer yet, and offers to add their answer as its first answer, save theirs as a new question, or skip it. It does not offer to replace the saved answer and does not claim anything was saved.
+
+  # App-created answered target: canReplace is false, so no replace
+  - description: Similar with a user answer, app-created target - offers add below, save as new and skip
+    vars:
+      userMessage: >-
+        Save this question: How do you handle a failing deployment? My answer: I roll back first, then find the cause from the deploy diff and the logs.
+      priorAddQuestion: similarAnsweredApp
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
+      - type: javascript
+        value: file://./assertions.ts:assertVisibleReply
+      - type: llm-rubric
+        value: >-
+          The reply tells the user their question matches the saved question "How do you handle a failing deploy?" and offers to add their answer below the saved answer, save theirs as a new question, or skip it. It does not offer to replace the saved answer and does not claim anything was saved.
+
+  # The menu wrongly offered Replace and the user took it: ask afresh or try
+  # exactly that Replace once; a silent Append or save as new fails
+  - description: User says Replace after a mistaken menu - asks afresh or attempts only that replace
+    vars:
+      userMessage: >-
+        Save this question: How do you handle a failing deployment? My answer: I roll back first, then find the cause from the deploy diff and the logs.
+      priorAddQuestion: similarAnsweredApp
+      priorAssistantReply: >-
+        "How do you handle a failing deployment?" matches "How do you handle a
+        failing deploy?" in your bank. Should I add your answer to it, replace
+        the saved answer, save yours as a new question, or skip it?
+      followUp: Replace.
+      priorPageLocation: elsewhere
+      pageLocation: elsewhere
+      expectedQuestionId: q-eval-3
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertReplaceOrAsk
+      # The JS check only sees that text exists; a false "replaced" must fail
+      - type: llm-rubric
+        value: >-
+          Either the output is a single add_question call that tries to replace
+          the saved answer, or the reply asks the user for a fresh choice or
+          explains that replacing is not available for this question. A reply
+          that claims the answer was saved, added or replaced fails.
+
+  # After a refused Replace the assistant explains and waits; any call fails
+  - description: Replace refused on an unanswered target - explains and asks, no call
+    vars:
+      userMessage: >-
+        Save this question: How do you handle a failing deployment? My answer: I roll back first, then find the cause from the deploy diff and the logs.
+      priorAddQuestion: similarAnsweredBlank
+      priorAssistantReply: >-
+        "How do you handle a failing deployment?" matches "How do you handle a
+        failing deploy?" in your bank. Should I add your answer to it, replace
+        the saved answer, save yours as a new question, or skip it?
+      followUp: Replace.
+      priorRetry: refusedReplaceBlank
+      priorPageLocation: elsewhere
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
+      - type: javascript
+        value: file://./assertions.ts:assertVisibleReply
+      - type: llm-rubric
+        value: >-
+          The reply explains that the saved question has no answer to replace, asks whether to add the user's answer to it instead, and does not claim anything was saved.
+
+  - description: Replace refused on an app-created target - explains and asks, no call
+    vars:
+      userMessage: >-
+        Save this question: How do you handle a failing deployment? My answer: I roll back first, then find the cause from the deploy diff and the logs.
+      priorAddQuestion: similarAnsweredApp
+      priorAssistantReply: >-
+        "How do you handle a failing deployment?" matches "How do you handle a
+        failing deploy?" in your bank. Should I add your answer to it, replace
+        the saved answer, save yours as a new question, or skip it?
+      followUp: Replace.
+      priorRetry: refusedReplaceApp
+      priorPageLocation: elsewhere
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
+      - type: javascript
+        value: file://./assertions.ts:assertVisibleReply
+      - type: llm-rubric
+        value: >-
+          The reply explains that for this question, which was created in the app, the user's answer can only be added below the saved answer, asks whether to add it below instead, and does not claim anything was saved or replaced.
+
+  # A merge onto an unanswered question: the report must match storage
+  - description: Append onto TBD, user asks what changed - first answer, wording kept
+    vars:
+      userMessage: >-
+        Save this question: How do you handle a failing deployment? My answer: I roll back first, then find the cause from the deploy diff and the logs.
+      priorAddQuestion: mergedOntoTbd
+      priorAssistantReply: Done.
+      followUp: What exactly did you save?
+      priorPageLocation: elsewhere
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
+      - type: javascript
+        value: file://./assertions.ts:assertVisibleReply
+      - type: llm-rubric
+        value: >-
+          The reply says the user's answer was added as the first answer of
+          the saved question "How do you handle a failing deploy?" and that the
+          saved question's wording was kept. It does not say the answer was
+          added below an existing answer or that the question was renamed.
+
+  # From the Phase 3 manual check: the model answered from history with no
+  # call. With the saved result in context a prose "already saved" is
+  # truthful and writes nothing, so either outcome passes.
+  - description: Same list sent again after it saved - calls add_question or says already saved
+    vars:
+      userMessage: "Save these, no answers: 1) Tell me about yourself 2) Why Postgres over Mongo?"
+      priorAddQuestion: saved
+      priorAssistantReply: Saved both questions to your bank.
+      followUp: "Save these, no answers: 1) Tell me about yourself 2) Why Postgres over Mongo?"
+      priorPageLocation: elsewhere
+      pageLocation: elsewhere
+    assert:
+      - type: llm-rubric
+        value: >-
+          Either the output is an add_question call with both questions, or
+          the reply says both questions are already saved and does not claim
+          it saved anything new.
+
+  # Chip-only send: the model sees "(pasted content)" and the neutral block.
+  - description: Paste-only question list with answers - add_question, not add_job
+    vars:
+      jobPosting: file://./fixtures/question-paste.txt
+      userMessage: (pasted content)
+      pageLocation: elsewhere
+      expectedQuestions: 5
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertQuestionCount
+
+  - description: Asks what an interviewer might ask - answers, no tool call
+    vars:
+      userMessage: What might they ask me in a system design round?
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
