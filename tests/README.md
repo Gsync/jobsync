@@ -11,7 +11,7 @@ Every executable test lives here, split by suite first and by the production cod
 | Integration | `integration/` | Vitest project `integration` | Several real layers at a documented boundary; today only the opt-in backup round trip against a real Postgres |
 | E2E | `tests/e2e/` | Playwright | Browser flows against a running dev server |
 
-Inside `unit/` and `component/`, a spec sits in the directory that mirrors its primary production module's parent, without `src/` — the spec for `src/lib/jobs/resolve.ts` lives in `unit/lib/jobs/`. Exceptions: `unit/project/` holds repository-wide checks (`browserslistFloor`, `postgresQueryParity`), `unit/scripts/` holds specs for `scripts/`, `component/regressions/` holds cross-feature render regressions, and `unit/proxyMatcher.spec.ts` sits at the suite root because `src/proxy.ts` sits at the `src/` root.
+Inside `unit/` and `component/`, a spec sits in the directory that mirrors its primary production module's parent, without `src/` — the spec for `src/lib/jobs/resolve.ts` lives in `unit/lib/jobs/`. Exceptions: `unit/project/` holds repository-wide checks (`browserslistFloor`, `postgresQueryParity`, `jobStatusWrites`, `stageResolverTransactions`, `stageOrdering`, `eslintRules`), `unit/scripts/` holds specs for `scripts/`, `component/regressions/` holds cross-feature render regressions, and `unit/proxyMatcher.spec.ts` sits at the suite root because `src/proxy.ts` sits at the `src/` root.
 
 A unit spec that touches Prisma asserts against a mocked client: it proves which query the code builds, not that Postgres accepts it. Only the integration suite runs a real engine.
 

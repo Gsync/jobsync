@@ -23,8 +23,8 @@ export function anyDescendant(node: ts.Node, test: (n: ts.Node) => boolean): boo
 export const isCallTo = (n: ts.Node, name: string) =>
   ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === name;
 
-// Top-level functions by name: declarations and const arrow/function values.
-export function localFunctions(source: ts.SourceFile): Map<string, FunctionLike> {
+// Only direct declarations belong to this scope.
+export function localFunctions(source: ts.SourceFile | ts.Block): Map<string, FunctionLike> {
   const fns = new Map<string, FunctionLike>();
   for (const stmt of source.statements) {
     if (ts.isFunctionDeclaration(stmt) && stmt.name) fns.set(stmt.name.text, stmt);
@@ -37,4 +37,25 @@ export function localFunctions(source: ts.SourceFile): Map<string, FunctionLike>
     }
   }
   return fns;
+}
+
+export function containingFunction(node: ts.Node): string {
+  for (let n: ts.Node | undefined = node.parent; n; n = n.parent) {
+    if (ts.isFunctionDeclaration(n) && n.name) return n.name.text;
+    if ((ts.isArrowFunction(n) || ts.isFunctionExpression(n)) && ts.isVariableDeclaration(n.parent) && ts.isIdentifier(n.parent.name)) {
+      return n.parent.name.text;
+    }
+  }
+  return "<module>";
+}
+
+export function walk(node: ts.Node, visit: (node: ts.Node) => void) {
+  visit(node);
+  ts.forEachChild(node, (child) => walk(child, visit));
+}
+
+export function nextTarget(ordinals: Map<string, number>, key: string): string {
+  const ordinal = (ordinals.get(key) ?? 0) + 1;
+  ordinals.set(key, ordinal);
+  return `${key}#${ordinal}`;
 }

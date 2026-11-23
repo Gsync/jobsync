@@ -1,5 +1,5 @@
 import ts from "typescript";
-import { anyDescendant, isCallTo, parse, type FunctionLike } from "./ast";
+import { anyDescendant, containingFunction, isCallTo, parse, type FunctionLike } from "./ast";
 import { serverActions, type ActionFinding } from "./scanActions";
 import type { SchemaModel } from "./prismaSchema";
 
@@ -179,16 +179,6 @@ function callVerdict(call: ts.CallExpression, model: SchemaModel, ctx: Ctx): Ver
   if (!where) return "no-where";
   const obj = resolveObject(where, call);
   return obj ? ownerVerdict(model, obj, ctx) : "unresolved-where";
-}
-
-function containingFunction(node: ts.Node): string {
-  for (let n: ts.Node | undefined = node.parent; n; n = n.parent) {
-    if (ts.isFunctionDeclaration(n) && n.name) return n.name.text;
-    if ((ts.isArrowFunction(n) || ts.isFunctionExpression(n)) && ts.isVariableDeclaration(n.parent) && ts.isIdentifier(n.parent.name)) {
-      return n.parent.name.text;
-    }
-  }
-  return "<module>";
 }
 
 const isClient = (e: ts.Expression) => ts.isIdentifier(e) && CLIENTS.has(e.text);
