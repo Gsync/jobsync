@@ -185,6 +185,17 @@ describe("changeJobStatus", () => {
     expect(fake.rows.job[0].appliedDate).toEqual(backdated);
   });
 
+  it("6c8d8c46: marks a job that already has a Date Applied as applied, whatever its status", async () => {
+    const { fake } = setup(
+      withJob({ applied: false, appliedDate: backdated }, [stage()]),
+    );
+
+    await call("s-rejected");
+
+    expect(fake.rows.job[0].applied).toBe(true);
+    expect(fake.rows.job[0].appliedDate).toEqual(backdated);
+  });
+
   it("dates the new Applied stage from jobFields.appliedDate", async () => {
     const { fake } = setup(withJob({}, [stage()]));
 

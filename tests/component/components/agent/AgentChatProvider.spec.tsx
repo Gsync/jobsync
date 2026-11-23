@@ -543,6 +543,32 @@ describe("AgentChatProvider", () => {
     expect(refresh).not.toHaveBeenCalled();
   });
 
+  it("1171f7ef: does not announce another tool's created:true result as a job write", async () => {
+    const { rerender } = setup();
+
+    chat.messages = [
+      {
+        id: "a5",
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-other_tool",
+            toolCallId: "o1",
+            state: "output-available",
+            input: {},
+            output: { created: true },
+          },
+        ],
+      },
+    ];
+    await act(async () => {
+      rerender(tree());
+    });
+
+    expect(screen.getByTestId("job-writes").textContent).toBe("0");
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
   // The route stubs only the copy it writes to the DB. Without the client
   // doing the same to its own transcript, the next thing the user types
   // re-injects the posting and calls add_job again on the job just saved.

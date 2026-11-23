@@ -3,6 +3,7 @@ import { numCtxFor } from "@/lib/ai/numCtx";
 import { NextRequest } from "next/server";
 import { POST } from "@/app/api/ai/chat/route";
 import { AGENT_PASTE_PART_TYPE } from "@/models/agent.model";
+import { repairStringifiedInput } from "@/lib/agent/turn/repairToolInput";
 
 const { save, update, load, startUsage, createJob, resolveResume, resolveJob } = vi.hoisted(() => ({
   resolveResume: vi.fn(async (..._args: unknown[]) => ({ status: "no_resumes" })),
@@ -46,6 +47,7 @@ type TurnArgs = {
   providerOptions: unknown;
   toolApproval?: Record<string, unknown>;
   stopWhen: unknown[];
+  repairToolCall?: unknown;
 };
 
 const streamText = vi.fn((_args: TurnArgs) => ({ stream: new ReadableStream() }));
@@ -313,6 +315,11 @@ it("leaves an approval whose schema input differs from the confirmed action to t
   await postTurn(approvalTurn(approval));
   expect(createJob).not.toHaveBeenCalled();
   expect(streamText).toHaveBeenCalledTimes(1);
+});
+
+it("77441d08: repairs a stringified tool argument in place instead of a retry step", async () => {
+  await postTurn(turns.plain);
+  expect(streamText.mock.calls[0]![0].repairToolCall).toBe(repairStringifiedInput);
 });
 
 it("settles the running picker card when a lookup throws", async () => {
