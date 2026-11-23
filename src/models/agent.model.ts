@@ -91,11 +91,38 @@ export type AgentQuestionPasteCut = {
   lastQuestion: string;
 };
 
+// saved and note are for the model: qwen read a held result as a save
 export type AgentAddQuestionResult = {
-  items: SaveQuestionResult[];
+  items: (SaveQuestionResult & { saved?: boolean })[];
+  note?: string;
   paste?: AgentQuestionPasteCut;
   error?: string;
 };
+
+const QUESTION_NOTE_GROUPS: [SaveQuestionResult["status"][], string][] = [
+  [["saved", "merged"], "Saved"],
+  [["exists", "similar"], "Not saved yet"],
+  [["skipped"], "Already in the bank, nothing written"],
+  [["invalid", "failed"], "Not saved"],
+];
+
+export function questionResultsForModel(
+  items: SaveQuestionResult[],
+): Pick<AgentAddQuestionResult, "items" | "note"> {
+  const wrote = (item: SaveQuestionResult) => item.status === "saved" || item.status === "merged";
+  // A repeat folded into an earlier item, so it shares that item's outcome
+  const marked = items.map((item) => ({
+    ...item,
+    saved: item.status === "repeat" ? items.some((o) => o.index === item.of && wrote(o)) : wrote(item),
+  }));
+  if (marked.every((item) => item.saved)) return { items: marked };
+  const note = QUESTION_NOTE_GROUPS
+    .map(([statuses, label]) => [label, items.filter((item) => statuses.includes(item.status)).length] as const)
+    .filter(([, count]) => count > 0)
+    .map(([label, count]) => `${label}: ${count}.`)
+    .join(" ");
+  return { items: marked, note };
+}
 
 // Which rule picked the resume. Surfaced so the result card can say "your
 // default resume" instead of leaving the user guessing which one was read.

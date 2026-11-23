@@ -1,0 +1,14 @@
+1. Tell me about a time you disagreed with your manager.
+Answer: On a payments migration my manager wanted a big-bang cutover. I laid out the rollback risk with numbers from our last incident, proposed a two-week dual-write phase, and we shipped it that way with no customer impact.
+
+2. How do you prioritise when everything is urgent?
+Answer: I sort by customer impact and reversibility, agree the order with whoever owns the roadmap, and say out loud what is being dropped so nobody is surprised later.
+
+3. What is the difference between a process and a thread?
+Answer: A process has its own address space; threads share one inside a process. Threads are cheaper to create and switch, but shared memory means you need locks or message passing to stay safe.
+
+4. Why do you want to work at a smaller company?
+Answer: I want to own a product area end to end and see the effect of my work on customers within weeks, not quarters.
+
+5. Describe a production incident you led.
+Answer: A bad index migration locked our orders table at peak. I called the incident, rolled the migration back, wrote the timeline that night, and added an online-migration check to CI the following week.

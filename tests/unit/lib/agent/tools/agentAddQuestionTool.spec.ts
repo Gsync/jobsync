@@ -29,9 +29,33 @@ describe("add_question agent tool", () => {
     });
   });
 
-  it("returns the save results unchanged", async () => {
+  it("returns the save results, each marked saved", async () => {
     const tool = buildAddQuestionTool({ userId: "user-1", writer });
-    expect(await execute(tool, { questions: [{ question: "Tell me about yourself" }] })).toEqual({ items });
+    expect(await execute(tool, { questions: [{ question: "Tell me about yourself" }] }))
+      .toEqual({ items: [{ ...items[0], saved: true }] });
+  });
+
+  it("marks a repeat like the item it folded into", async () => {
+    (saveQuestions as any).mockResolvedValue([...items, { index: 2, question: "tell me about yourself", status: "repeat", of: 1 }]);
+    const output = await execute(buildAddQuestionTool({ userId: "user-1", writer }), { questions: [{ question: "x" }] });
+    expect(output.items.map((item: any) => item.saved)).toEqual([true, true]);
+    expect(output.note).toBeUndefined();
+  });
+
+  // qwen read a held result as a save and told the user it was saved
+  it("marks held and failed items not saved and says so in a note", async () => {
+    const mixed: SaveQuestionResult[] = [
+      ...items,
+      { index: 2, question: "Why leave?", status: "similar", candidates: [] },
+      { index: 3, question: "Why Postgres?", status: "skipped", existing: { question: "Why Postgres?" } },
+      { index: 4, question: "Hi?", status: "invalid", error: "Too short." },
+    ];
+    (saveQuestions as any).mockResolvedValue(mixed);
+    const output = await execute(buildAddQuestionTool({ userId: "user-1", writer }), { questions: [{ question: "x" }] });
+    expect(output.items.map((item: any) => item.saved)).toEqual([true, false, false, false]);
+    expect(output.note).toBe(
+      "Saved: 1. Not saved yet: 1. Already in the bank, nothing written: 1. Not saved: 1.",
+    );
   });
 
   it("returns a fixed error that never echoes the thrown message", async () => {

@@ -6,7 +6,7 @@ import { saveQuestions } from "@/lib/questions/saveQuestions";
 import { normalizeQuestionText } from "@/lib/questions/similarity";
 import { log } from "@/lib/telemetry";
 import { toolStepReporter } from "@/lib/agent/steps/progress";
-import type { AgentAddQuestionResult, AgentQuestionPasteCut } from "@/models/agent.model";
+import { questionResultsForModel, type AgentAddQuestionResult, type AgentQuestionPasteCut } from "@/models/agent.model";
 import type { SaveQuestionResult } from "@/models/question.model";
 
 const UNSETTLED: ReadonlySet<SaveQuestionResult["status"]> = new Set([
@@ -102,7 +102,7 @@ export function buildAddQuestionTool({
           onStep: report,
         });
         report.finish();
-        return { items, ...paste };
+        return { ...questionResultsForModel(items), ...paste };
       } catch (error) {
         log.error("[agent-chat] add_question failed", { error: String(error) });
         // Fixed text: Prisma messages carry connection details

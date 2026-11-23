@@ -1,5 +1,7 @@
 import { AGENT_CHAT_SYSTEM_PROMPT, historicalPageHint, buildPasteContextMessage } from '../../src/lib/agent/prompt';
 import { APP_CONSTANTS } from '../../src/lib/constants';
+import { questionResultsForModel } from '../../src/models/agent.model';
+import type { SaveQuestionResult } from '../../src/models/question.model';
 
 import { longHistory } from './longHistory';
 
@@ -118,6 +120,45 @@ function addJobTurn(providerId: string): Message[] {
   ];
 }
 
+// One prior add_question round as saveQuestions returns it; the tool's own
+// model view is applied below. Ids appear only in held results, as in the app.
+const PRIOR_ADD_QUESTION: Record<string, { input: unknown; output: { items: SaveQuestionResult[] } }> = {
+  exists: {
+    input: { questions: [{ question: 'Why Postgres over Mongo?', answer: 'Postgres gives us relational integrity, and JSONB covers the document cases.', tags: ['Postgres'] }] },
+    output: { items: [{ index: 1, question: 'Why Postgres over Mongo?', status: 'exists', existing: { id: 'q-eval-1', question: 'Why Postgres over Mongo?', hasAnswer: true } }] },
+  },
+  similar: {
+    input: { questions: [{ question: 'Why do you want to leave your job?', tags: ['Motivation'] }] },
+    output: { items: [{ index: 1, question: 'Why do you want to leave your job?', status: 'similar', candidates: [{ id: 'q-eval-2', question: 'Why do you want to work here?', score: 0.45, hasAnswer: false }] }] },
+  },
+  similarAnswered: {
+    input: { questions: [{ question: 'How do you deal with a broken deployment?', answer: 'I roll back first, then find the cause from the deploy diff and the logs.', tags: ['Incident response'] }] },
+    output: { items: [{ index: 1, question: 'How do you deal with a broken deployment?', status: 'similar', candidates: [{ id: 'q-eval-3', question: 'How do you handle a failing deploy?', score: 0.28, hasAnswer: true }] }] },
+  },
+  saved: {
+    input: { questions: [{ question: 'Tell me about yourself', tags: ['Introduction'] }, { question: 'Why Postgres over Mongo?', tags: ['Postgres'] }] },
+    output: { items: [
+      { index: 1, question: 'Tell me about yourself', status: 'saved', tags: [{ id: 'tag-1', label: 'Introduction', created: false }], droppedTags: [] },
+      { index: 2, question: 'Why Postgres over Mongo?', status: 'saved', tags: [{ id: 'tag-2', label: 'Postgres', created: false }], droppedTags: [] },
+    ] },
+  },
+};
+
+function addQuestionTurn(kind: string, providerId: string, reply?: string): Message[] {
+  const { input, output } = PRIOR_ADD_QUESTION[kind];
+  return [
+    {
+      role: 'assistant', content: null, reasoning_content: '',
+      tool_calls: [{
+        id: 'call_add_question_1', type: 'function',
+        function: { name: 'add_question', arguments: toolArguments(input as Record<string, unknown>, providerId) },
+      }],
+    },
+    { role: 'tool', tool_call_id: 'call_add_question_1', content: JSON.stringify(questionResultsForModel(output.items)) },
+    ...(reply ? [{ role: 'assistant', content: reply, reasoning_content: '' }] : []),
+  ];
+}
+
 function noJobTurn(providerId: string): Message[] {
   return [
     {
@@ -160,6 +201,9 @@ export default function prompt({
   if (vars.priorAddJob) messages.push(...addJobTurn(providerId));
   if (vars.priorResumeSelection) messages.push(...resumeSelectionTurn(providerId));
   if (vars.priorNoJob) messages.push(...noJobTurn(providerId));
+  if (vars.priorAddQuestion) {
+    messages.push(...addQuestionTurn(vars.priorAddQuestion, providerId, vars.priorAssistantReply));
+  }
   if (vars.followUp) messages.push({ role: 'user', content: vars.followUp });
 
   const withPages = messages.flatMap((message, index) => {

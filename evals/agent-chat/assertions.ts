@@ -247,3 +247,47 @@ export function assertFollowUpStaysConversational(output: unknown): AssertionRes
   const pass = calls.length === 0 && !scores;
   return { pass, score: pass ? 1 : 0, reason: pass ? 'answered from context, no tool call, no new SCORES line' : `expected a plain answer, got: ${calls.length ? describe(calls) : 'a new SCORES line'}` };
 }
+
+// add_question
+
+function questionsOf(output: unknown): Record<string, any>[] {
+  const args = parseToolCalls(output).find((c) => c.name === 'add_question')?.args ?? {};
+  return Array.isArray(args.questions) ? args.questions : [];
+}
+
+export function assertCallsAddQuestion(output: unknown): AssertionResult {
+  const calls = parseToolCalls(output);
+  const pass = calls.length === 1 && calls[0].name === 'add_question';
+  return { pass, score: pass ? 1 : 0, reason: pass ? 'called add_question' : `expected one add_question call, got: ${describe(calls)}` };
+}
+
+export function assertQuestionCount(output: unknown, context: Context): AssertionResult {
+  const want = Number(context.vars.expectedQuestions);
+  const got = questionsOf(output).length;
+  const pass = got === want;
+  return { pass, score: pass ? 1 : 0, reason: pass ? `sent ${got} questions` : `sent ${got} questions, wanted ${want}` };
+}
+
+export function assertQuestionTags(output: unknown): AssertionResult {
+  const items = questionsOf(output);
+  const bad = items
+    .map((item, i) => ({ i: i + 1, n: Array.isArray(item.tags) ? item.tags.length : 0 }))
+    .filter(({ n }) => n < 1 || n > 5);
+  const pass = items.length > 0 && bad.length === 0;
+  return { pass, score: pass ? 1 : 0, reason: pass ? 'every item carries 1–5 tags' : items.length === 0 ? 'no questions sent' : `items outside 1–5 tags: ${bad.map(({ i, n }) => `#${i}=${n}`).join(', ')}` };
+}
+
+// The re-call rejects the offered candidate by id, without asking the user
+export function assertNotSameAs(output: unknown, context: Context): AssertionResult {
+  const id = context.vars.expectedQuestionId;
+  const item = questionsOf(output)[0];
+  const pass = Boolean(item?.notSameAs?.includes(id)) && !item?.mergeInto;
+  return { pass, score: pass ? 1 : 0, reason: pass ? `notSameAs carries ${id}` : `expected notSameAs with ${id} and no mergeInto, got: ${JSON.stringify(item ?? null)}` };
+}
+
+export function assertMergeInto(output: unknown, context: Context): AssertionResult {
+  const { expectedQuestionId: id, expectedMode: mode } = context.vars;
+  const merge = questionsOf(output)[0]?.mergeInto;
+  const pass = merge?.questionId === id && merge?.mode === mode;
+  return { pass, score: pass ? 1 : 0, reason: pass ? `mergeInto ${id} (${mode})` : `expected mergeInto ${id} (${mode}), got: ${JSON.stringify(merge ?? null)}` };
+}

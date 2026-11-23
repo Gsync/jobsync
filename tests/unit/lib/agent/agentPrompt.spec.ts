@@ -129,6 +129,14 @@ describe("agent chat system prompt", () => {
     expect(AGENT_TOOL_DESCRIPTIONS.add_question).toMatch(/for an invalid result, tell the user what to change/i);
   });
 
+  it("tells the model held questions are not saved yet", () => {
+    expect(AGENT_TOOL_DESCRIPTIONS.add_question).toMatch(/exists or similar are not saved yet, so never tell the user they were/i);
+  });
+
+  it("tells the model to tag every question itself", () => {
+    expect(AGENT_TOOL_DESCRIPTIONS.add_question).toMatch(/give every question 1–5 tags yourself; never ask the user for them/i);
+  });
+
   it("describes add_job without mentioning tools the chat does not expose", () => {
     expect(AGENT_TOOL_DESCRIPTIONS.add_job).toBeTruthy();
     expect(AGENT_TOOL_DESCRIPTIONS.add_job).not.toMatch(/upsert|allowDuplicate|update_job/);

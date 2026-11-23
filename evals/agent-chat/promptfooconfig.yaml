@@ -448,3 +448,210 @@ tests:
     assert:
       - type: icontains
         value: sediment transport
+
+  # add_question. Prior rounds are injected by prompt.ts's priorAddQuestion,
+  # shaped as the tool returns them.
+  - description: Single question with an answer - calls add_question with 1 item
+    vars:
+      userMessage: >-
+        Save this interview question: What is a closure in JavaScript? My
+        answer: a function that keeps access to the variables of the scope it
+        was created in, even after that scope has returned.
+      pageLocation: elsewhere
+      expectedQuestions: 1
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertQuestionCount
+
+  - description: List of 3 with no answers - asks once about answers, no tool call
+    vars:
+      userMessage: >-
+        Save these questions: 1) Tell me about yourself 2) Why Postgres over
+        Mongo? 3) How do you handle a failing deploy?
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
+      - type: llm-rubric
+        value: >-
+          The reply lists the three questions and asks the user once whether
+          they want to add answers to any of them. It does not claim the
+          questions are already saved.
+
+  # From the Phase 3 manual check: the app saved both at once.
+  - description: Two questions with no answers - asks once about answers, no tool call
+    vars:
+      userMessage: "Save these: 1) Tell me about yourself 2) Why Postgres over Mongo?"
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
+      - type: llm-rubric
+        value: >-
+          The reply asks the user whether they want to add answers before
+          saving. It does not claim the questions are already saved.
+
+  - description: List of 3 where two have answers - calls with 3 items
+    vars:
+      userMessage: >-
+        Add these to my question bank:
+        1) Tell me about yourself - I'm a backend engineer with eight years on
+        payments systems, most recently leading a team of four.
+        2) Why Postgres over Mongo? - Relational integrity for money, and JSONB
+        covers the few document-shaped cases we have.
+        3) Where do you see yourself in five years?
+      pageLocation: elsewhere
+      expectedQuestions: 3
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertQuestionCount
+
+  # From the Phase 3 manual check: all three chat saves arrived with no tags.
+  - description: Tags - every add_question item carries 1-5 tags
+    vars:
+      userMessage: >-
+        Add these to my question bank:
+        1) Tell me about yourself - I'm a backend engineer with eight years on
+        payments systems, most recently leading a team of four.
+        2) Why Postgres over Mongo? - Relational integrity for money, and JSONB
+        covers the few document-shaped cases we have.
+        3) Where do you see yourself in five years?
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertQuestionTags
+
+  # Phase 3 deferred minor: settling relies on the model sending exactly 20.
+  - description: 21 questions with no answers wanted - first call sends exactly 20
+    vars:
+      userMessage: >-
+        Save all of these, no answers needed: 1) Tell me about yourself
+        2) Why this company? 3) Why are you leaving? 4) Greatest strength?
+        5) Greatest weakness? 6) Describe a conflict 7) Describe a failure
+        8) Describe a success 9) How do you prioritise? 10) How do you handle
+        stress? 11) What motivates you? 12) Ideal manager? 13) Ideal team?
+        14) Salary expectations? 15) Notice period? 16) Remote or office?
+        17) Biggest project? 18) Hardest bug? 19) How do you learn? 20) Any
+        questions for us? 21) Where do you see yourself in five years?
+      pageLocation: elsewhere
+      expectedQuestions: 20
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertQuestionCount
+
+  - description: After exists, "add it below" - re-calls with mergeInto append
+    vars:
+      userMessage: >-
+        Save this question: Why Postgres over Mongo? My answer: Postgres gives
+        us relational integrity, and JSONB covers the document cases.
+      priorAddQuestion: exists
+      priorAssistantReply: >-
+        "Why Postgres over Mongo?" is already in your bank with an answer.
+        Should I add your answer below the saved one, replace it, or skip it?
+      followUp: Add it below.
+      priorPageLocation: elsewhere
+      pageLocation: elsewhere
+      expectedQuestionId: q-eval-1
+      expectedMode: append
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertMergeInto
+
+  - description: After exists, "replace it" - re-calls with mergeInto replace
+    vars:
+      userMessage: >-
+        Save this question: Why Postgres over Mongo? My answer: Postgres gives
+        us relational integrity, and JSONB covers the document cases.
+      priorAddQuestion: exists
+      priorAssistantReply: >-
+        "Why Postgres over Mongo?" is already in your bank with an answer.
+        Should I add your answer below the saved one, replace it, or skip it?
+      followUp: Replace it.
+      priorPageLocation: elsewhere
+      pageLocation: elsewhere
+      expectedQuestionId: q-eval-1
+      expectedMode: replace
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertMergeInto
+
+  # Acceptance: a different question that shares words is rejected by id,
+  # with no question to the user.
+  - description: Similar but not the same question - re-calls with notSameAs, no question to the user
+    vars:
+      userMessage: "Save this question, no answer: Why do you want to leave your job?"
+      priorAddQuestion: similar
+      pageLocation: elsewhere
+      expectedQuestionId: q-eval-2
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertNotSameAs
+
+  # From the Phase 3 manual check: only merge and save-as-new were offered.
+  - description: Similar with a user answer - offers add below, replace, save as new and skip
+    vars:
+      userMessage: >-
+        Save this question: How do you deal with a broken deployment? My
+        answer: I roll back first, then find the cause from the deploy diff and
+        the logs.
+      priorAddQuestion: similarAnswered
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
+      - type: llm-rubric
+        value: >-
+          The reply tells the user their question looks like the saved
+          question "How do you handle a failing deploy?" and offers all four
+          choices: add their answer below the saved one, replace the saved
+          answer, save theirs as a new question, or skip it.
+
+  # From the Phase 3 manual check: the model answered from history with no
+  # call. Informational: with the saved result in context a prose "already
+  # saved" is truthful and writes nothing.
+  - description: Same list sent again after it saved - calls add_question (informational)
+    vars:
+      userMessage: "Save these, no answers: 1) Tell me about yourself 2) Why Postgres over Mongo?"
+      priorAddQuestion: saved
+      priorAssistantReply: Saved both questions to your bank.
+      followUp: "Save these, no answers: 1) Tell me about yourself 2) Why Postgres over Mongo?"
+      priorPageLocation: elsewhere
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+
+  # Chip-only send: the model sees "(pasted content)" and the neutral block.
+  - description: Paste-only question list with answers - add_question, not add_job
+    vars:
+      jobPosting: file://./fixtures/question-paste.txt
+      userMessage: (pasted content)
+      pageLocation: elsewhere
+      expectedQuestions: 5
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertQuestionCount
+
+  - description: Asks what an interviewer might ask - answers, no tool call
+    vars:
+      userMessage: What might they ask me in a system design round?
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
