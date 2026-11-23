@@ -21,17 +21,22 @@ type AgentStep = {
   toolResults?: readonly { toolName: string; output?: unknown }[];
 };
 
-const hasAddQuestionCall = (step: AgentStep) =>
-  Boolean(step.toolCalls?.some((c) => c.toolName === "add_question"));
+const isAddQuestion = (part: { toolName: string }) => part.toolName === "add_question";
 
-// No approval, so a missing result means the call errored, never pending
-function addQuestionStepResolved(step: AgentStep): boolean {
-  const call = step.toolCalls?.find((c) => c.toolName === "add_question");
-  if (!call || call.invalid) return false;
-  const result = step.toolResults?.find((r) => r.toolName === "add_question");
-  const output = result?.output as AgentAddQuestionResult | undefined;
+const hasAddQuestionCall = (step: AgentStep) => Boolean(step.toolCalls?.some(isAddQuestion));
+
+function outputResolved(output: AgentAddQuestionResult | undefined): boolean {
   if (!output || output.error) return false;
   return !output.items.some((item) => UNSETTLED.has(item.status));
+}
+
+// Every parallel call counts. No approval, so a missing result means an error
+function addQuestionStepResolved(step: AgentStep): boolean {
+  const calls = step.toolCalls?.filter(isAddQuestion) ?? [];
+  const results = step.toolResults?.filter(isAddQuestion) ?? [];
+  if (calls.length === 0 || calls.some((c) => c.invalid)) return false;
+  if (results.length < calls.length) return false;
+  return results.every((r) => outputResolved(r.output as AgentAddQuestionResult | undefined));
 }
 
 /**
@@ -45,7 +50,7 @@ export function addQuestionSettled(steps: readonly AgentStep[]): boolean {
   if (!last || !addQuestionStepResolved(last)) return false;
   const earlier = steps.slice(0, -1).filter(hasAddQuestionCall);
   if (!earlier.every(addQuestionStepResolved)) return false;
-  const call = last.toolCalls?.find((c) => c.toolName === "add_question");
+  const call = last.toolCalls?.filter(isAddQuestion).at(-1);
   const sent = (call?.input as { questions?: unknown[] } | undefined)?.questions;
   return sent?.length !== APP_CONSTANTS.MAX_QUESTIONS_PER_CALL;
 }

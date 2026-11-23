@@ -1,4 +1,4 @@
-import { buildAddQuestionTool } from "@/lib/agent/tools/addQuestion";
+import { addQuestionSettled, buildAddQuestionTool } from "@/lib/agent/tools/addQuestion";
 import { saveQuestions } from "@/lib/questions/saveQuestions";
 import type { SaveQuestionResult } from "@/models/question.model";
 
@@ -124,6 +124,28 @@ describe("add_question agent tool", () => {
       expect((await execute(tool, { questions })).paste).toEqual({
         readChars: 2000, totalChars: 3400, lastQuestion: "Why this company?",
       });
+    });
+  });
+
+  describe("addQuestionSettled", () => {
+    const call = (n: number) => ({ toolName: "add_question", input: { questions: Array.from({ length: n }, () => ({})) } });
+    const result = (status: SaveQuestionResult["status"]) => ({ toolName: "add_question", output: { items: [{ status }] } });
+
+    it("keeps the turn open after a full call so the rest of the list can follow", () => {
+      expect(addQuestionSettled([{ toolCalls: [call(20)], toolResults: [result("saved")] }])).toBe(false);
+    });
+
+    // DeepSeek sends a long list as parallel calls in one step
+    it("settles a step that sent the rest of the list alongside the full call", () => {
+      expect(addQuestionSettled([{ toolCalls: [call(20), call(1)], toolResults: [result("saved"), result("saved")] }])).toBe(true);
+    });
+
+    it("keeps the turn open when a parallel call came back held", () => {
+      expect(addQuestionSettled([{ toolCalls: [call(1), call(1)], toolResults: [result("saved"), result("similar")] }])).toBe(false);
+    });
+
+    it("keeps the turn open when a parallel call has no result", () => {
+      expect(addQuestionSettled([{ toolCalls: [call(1), call(1)], toolResults: [result("saved")] }])).toBe(false);
     });
   });
 });

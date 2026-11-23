@@ -261,6 +261,13 @@ export function assertCallsAddQuestion(output: unknown): AssertionResult {
   return { pass, score: pass ? 1 : 0, reason: pass ? 'called add_question' : `expected one add_question call, got: ${describe(calls)}` };
 }
 
+// A long list may arrive as parallel calls in one step; the app settles that
+export function assertOnlyAddQuestionCalls(output: unknown): AssertionResult {
+  const calls = parseToolCalls(output);
+  const pass = calls.length > 0 && calls.every((c) => c.name === 'add_question');
+  return { pass, score: pass ? 1 : 0, reason: pass ? `called add_question ${calls.length}x` : `expected only add_question calls, got: ${describe(calls)}` };
+}
+
 export function assertQuestionCount(output: unknown, context: Context): AssertionResult {
   const want = Number(context.vars.expectedQuestions);
   const got = questionsOf(output).length;

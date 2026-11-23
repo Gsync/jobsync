@@ -528,6 +528,7 @@ tests:
         value: file://./assertions.ts:assertQuestionTags
 
   # Phase 3 deferred minor: settling relies on the model sending exactly 20.
+  # The remaining 1 may follow in a parallel call in the same step.
   - description: 21 questions with no answers wanted - first call sends exactly 20
     vars:
       userMessage: >-
@@ -543,7 +544,7 @@ tests:
       expectedQuestions: 20
     assert:
       - type: javascript
-        value: file://./assertions.ts:assertCallsAddQuestion
+        value: file://./assertions.ts:assertOnlyAddQuestionCalls
       - type: javascript
         value: file://./assertions.ts:assertQuestionCount
 
@@ -621,9 +622,9 @@ tests:
           answer, save theirs as a new question, or skip it.
 
   # From the Phase 3 manual check: the model answered from history with no
-  # call. Informational: with the saved result in context a prose "already
-  # saved" is truthful and writes nothing.
-  - description: Same list sent again after it saved - calls add_question (informational)
+  # call. With the saved result in context a prose "already saved" is
+  # truthful and writes nothing, so either outcome passes.
+  - description: Same list sent again after it saved - calls add_question or says already saved
     vars:
       userMessage: "Save these, no answers: 1) Tell me about yourself 2) Why Postgres over Mongo?"
       priorAddQuestion: saved
@@ -632,8 +633,11 @@ tests:
       priorPageLocation: elsewhere
       pageLocation: elsewhere
     assert:
-      - type: javascript
-        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: llm-rubric
+        value: >-
+          Either the output is an add_question call with both questions, or
+          the reply says both questions are already saved and does not claim
+          it saved anything new.
 
   # Chip-only send: the model sees "(pasted content)" and the neutral block.
   - description: Paste-only question list with answers - add_question, not add_job
