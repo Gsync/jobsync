@@ -10,6 +10,7 @@
     "eval:resume-import": "promptfoo eval --no-cache --env-file ../.env --config resume-import/promptfooconfig.yaml",
     "eval:mcp-tools": "tsx mcp-tools/generate-tools.ts && promptfoo eval --no-cache --env-file ../.env --config mcp-tools/promptfooconfig.yaml",
     "eval:agent-chat": "tsx agent-chat/generate-tools.ts && promptfoo eval --no-cache --env-file ../.env --config agent-chat/promptfooconfig.yaml",
+    "eval:agent-chat-latency": "tsx agent-chat/generate-tools.ts && tsx agent-chat/latency.ts",
     "eval:all": "promptfoo eval --no-cache --env-file ../.env --config promptfooconfig.yaml",
     "eval:view": "promptfoo view"
   },

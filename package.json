@@ -28,6 +28,7 @@
     "eval:resume-import": "npm --prefix evals run eval:resume-import",
     "eval:mcp-tools": "npm --prefix evals run eval:mcp-tools",
     "eval:agent-chat": "npm --prefix evals run eval:agent-chat",
+    "eval:agent-chat-latency": "npm --prefix evals run eval:agent-chat-latency --",
     "eval:all": "npm --prefix evals run eval:all",
     "eval:view": "npm --prefix evals run eval:view"
   },
