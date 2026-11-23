@@ -29,7 +29,7 @@ type WriteDecision =
 function answerTooLong(html: string, joined: boolean): string | undefined {
   if (html.length <= MAX_QUESTION_ANSWER_LENGTH) return undefined;
   return joined
-    ? `The combined answer would exceed ${MAX_QUESTION_ANSWER_LENGTH} characters. Replace the saved answer instead, or shorten it.`
+    ? `Adding this text would take the saved answer over ${MAX_QUESTION_ANSWER_LENGTH.toLocaleString("en-US")} characters. Try adding less text.`
     : `The answer would exceed ${MAX_QUESTION_ANSWER_LENGTH} characters once saved. Shorten it.`;
 }
 
@@ -85,7 +85,16 @@ async function mergeQuestion(
   });
   const addedTags = resolved.map((t) => ({ id: t.id, value: canonicalizeEntityValue(t.label) }));
   return {
-    result: { index: item.index, question: item.question, status: "merged", mode, tags: tagReport(resolved), droppedTags: dropped },
+    result: {
+      index: item.index,
+      question: item.question,
+      status: "merged",
+      mode,
+      savedQuestion: target.question,
+      hadAnswer: hasAnswer(target.answer),
+      tags: tagReport(resolved),
+      droppedTags: dropped,
+    },
     updated: { ...target, answer, tags: [...target.tags, ...addedTags] },
   };
 }
@@ -115,7 +124,8 @@ async function saveOne(
   const { answer, joined } = storedAnswer(item, decision);
   const tooLong = answerTooLong(answer, joined);
   if (tooLong) {
-    return { result: { index: item.index, question: item.question, status: "invalid", error: tooLong }, bank };
+    const result = { index: item.index, question: item.question, error: tooLong };
+    return { result: { ...result, status: "invalid", userFacing: true }, bank };
   }
   onWrite();
   try {

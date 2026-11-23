@@ -17,7 +17,7 @@ vi.mock("@/lib/jobs/resolve", () => ({ resolveTags: vi.fn() }));
 vi.mock("@/lib/telemetry", () => ({ log: { error: vi.fn() } }));
 
 const USER = "user-1";
-const CHAT: SaveQuestionsOptions = { createdVia: "chat", replaceAgentCreatedOnly: false };
+const UNRESTRICTED: SaveQuestionsOptions = { createdVia: "chat", replaceAgentCreatedOnly: false };
 const MCP: SaveQuestionsOptions = { createdVia: "Claude Desktop", replaceAgentCreatedOnly: true };
 const ANSWER = "Roll back first, then read the logs.";
 
@@ -44,17 +44,17 @@ describe("saveQuestions", () => {
   });
 
   it("loads only the user's bank", async () => {
-    await saveQuestions([{ question: DEPLOY }], USER, CHAT);
+    await saveQuestions([{ question: DEPLOY }], USER, UNRESTRICTED);
     expect((prisma.question.findMany as any).mock.calls[0][0].where).toEqual({ createdBy: USER });
   });
 
   it("an answerless question saves TBD", async () => {
-    await saveQuestions([{ question: DEPLOY }], USER, CHAT);
+    await saveQuestions([{ question: DEPLOY }], USER, UNRESTRICTED);
     expect(createData()).toMatchObject({ answer: "TBD", createdVia: "chat", createdBy: USER });
   });
 
   it("renders the markdown answer", async () => {
-    await saveQuestions([{ question: DEPLOY, answer: "**Roll back** first." }], USER, CHAT);
+    await saveQuestions([{ question: DEPLOY, answer: "**Roll back** first." }], USER, UNRESTRICTED);
     expect(createData().answer).toContain("<strong>");
   });
 
@@ -63,7 +63,7 @@ describe("saveQuestions", () => {
       resolved: [{ id: "tag-1", label: "CI/CD", created: true }],
       dropped: ["Extra"],
     });
-    const [result] = await saveQuestions([{ question: DEPLOY, tags: ["CI/CD"] }], USER, CHAT);
+    const [result] = await saveQuestions([{ question: DEPLOY, tags: ["CI/CD"] }], USER, UNRESTRICTED);
     expect(resolveTags).toHaveBeenCalledWith(["CI/CD"], USER, 10);
     expect(createData().tags).toEqual({ connect: [{ id: "tag-1" }] });
     expect(result).toMatchObject({
@@ -85,7 +85,7 @@ describe("saveQuestions", () => {
         { question: DEPLOY, answer: ANSWER, tags: ["CI/CD"], mergeInto: { questionId: "q-1", mode: "append" } },
       ],
       USER,
-      CHAT,
+      UNRESTRICTED,
     );
     for (const result of results) {
       expect(result).toMatchObject({ tags: [{ id: "tag-1", label: "CI/CD", created: false }] });
@@ -101,7 +101,7 @@ describe("saveQuestions", () => {
     const results = await saveQuestions(
       [{ question: "Tell me about yourself", answer: ANSWER }, { question: "Why Postgres over Mongo?" }],
       USER,
-      CHAT,
+      UNRESTRICTED,
     );
     expect(results.map((r) => r.status)).toEqual(["exists", "skipped"]);
     expect(prisma.question.create).not.toHaveBeenCalled();
@@ -109,7 +109,7 @@ describe("saveQuestions", () => {
 
   it("exact match with notSameAs creates nothing", async () => {
     bank(row({ id: "q-1", question: DEPLOY }));
-    const [result] = await saveQuestions([{ question: DEPLOY, notSameAs: ["q-1"] }], USER, CHAT);
+    const [result] = await saveQuestions([{ question: DEPLOY, notSameAs: ["q-1"] }], USER, UNRESTRICTED);
     expect(result.status).toBe("skipped");
     expect(prisma.question.create).not.toHaveBeenCalled();
   });
@@ -119,11 +119,11 @@ describe("saveQuestions", () => {
       row({ id: "q-1", question: "How do you handle a failing build?" }),
       row({ id: "q-2", question: "How do you deal with a broken deployment?" }),
     );
-    const [held] = await saveQuestions([{ question: DEPLOY, notSameAs: ["q-1"] }], USER, CHAT);
+    const [held] = await saveQuestions([{ question: DEPLOY, notSameAs: ["q-1"] }], USER, UNRESTRICTED);
     expect(held.status).toBe("similar");
     expect(prisma.question.create).not.toHaveBeenCalled();
 
-    const [saved] = await saveQuestions([{ question: DEPLOY, notSameAs: ["q-1", "q-2"] }], USER, CHAT);
+    const [saved] = await saveQuestions([{ question: DEPLOY, notSameAs: ["q-1", "q-2"] }], USER, UNRESTRICTED);
     expect(saved.status).toBe("saved");
     expect(prisma.question.create).toHaveBeenCalledTimes(1);
   });
@@ -133,33 +133,47 @@ describe("saveQuestions", () => {
     const [result] = await saveQuestions(
       [{ question: DEPLOY, answer: ANSWER, mergeInto: { questionId: "q-1", mode: "append" } }],
       USER,
-      CHAT,
+      UNRESTRICTED,
     );
-    expect(result).toMatchObject({ status: "merged", mode: "append" });
+    expect(result).toMatchObject({ status: "merged", mode: "append", hadAnswer: true, savedQuestion: DEPLOY });
     expect(updateArgs().data.answer).toMatch(/^<p>Saved answer<\/p><hr><p>Roll back first/);
   });
 
   it("append to <p>TBD</p> sets it", async () => {
     bank(row({ id: "q-1", question: DEPLOY, answer: "<p>TBD</p>" }));
-    await saveQuestions(
+    const [result] = await saveQuestions(
       [{ question: DEPLOY, answer: ANSWER, mergeInto: { questionId: "q-1", mode: "append" } }],
       USER,
-      CHAT,
+      UNRESTRICTED,
     );
     const { answer } = updateArgs().data;
     expect(answer).toContain("Roll back first");
     expect(answer).not.toContain("TBD");
     expect(answer).not.toContain("<hr>");
+    expect(result).toMatchObject({ status: "merged", mode: "append", hadAnswer: false, savedQuestion: DEPLOY });
   });
 
   it("replace overwrites", async () => {
     bank(row({ id: "q-1", question: DEPLOY }));
-    await saveQuestions(
+    const [result] = await saveQuestions(
       [{ question: DEPLOY, answer: ANSWER, mergeInto: { questionId: "q-1", mode: "replace" } }],
       USER,
-      CHAT,
+      UNRESTRICTED,
     );
     expect(updateArgs().data.answer).toBe("<p>Roll back first, then read the logs.</p>\n");
+    expect(result).toMatchObject({ status: "merged", mode: "replace", hadAnswer: true, savedQuestion: DEPLOY });
+  });
+
+  it("a similar merge keeps the incoming wording and names the stored question", async () => {
+    const incoming = "How do you deal with a broken deployment?";
+    bank(row({ id: "q-1", question: DEPLOY }));
+    const [result] = await saveQuestions(
+      [{ question: incoming, answer: ANSWER, mergeInto: { questionId: "q-1", mode: "append" } }],
+      USER,
+      UNRESTRICTED,
+    );
+    expect(result).toMatchObject({ status: "merged", question: incoming, savedQuestion: DEPLOY });
+    expect(updateArgs().data).not.toHaveProperty("question");
   });
 
   it("replace on an unanswered question is invalid and writes nothing", async () => {
@@ -167,7 +181,7 @@ describe("saveQuestions", () => {
     const [result] = await saveQuestions(
       [{ question: DEPLOY, answer: ANSWER, mergeInto: { questionId: "q-1", mode: "replace" } }],
       USER,
-      CHAT,
+      UNRESTRICTED,
     );
     expect(result.status).toBe("invalid");
     expect(prisma.question.update).not.toHaveBeenCalled();
@@ -178,7 +192,7 @@ describe("saveQuestions", () => {
     await saveQuestions(
       [{ question: DEPLOY, answer: ANSWER, mergeInto: { questionId: "q-1", mode: "append" } }],
       USER,
-      CHAT,
+      UNRESTRICTED,
     );
     const { where, data } = updateArgs();
     expect(where).toEqual({ id: "q-1", createdBy: USER });
@@ -190,7 +204,7 @@ describe("saveQuestions", () => {
     const [result] = await saveQuestions(
       [{ question: DEPLOY, answer: ANSWER, mergeInto: { questionId: "other-user-q", mode: "append" } }],
       USER,
-      CHAT,
+      UNRESTRICTED,
     );
     expect(result.status).toBe("invalid");
     expect(prisma.question.update).not.toHaveBeenCalled();
@@ -219,21 +233,25 @@ describe("saveQuestions", () => {
     await saveQuestions(
       [{ question: DEPLOY, answer: ANSWER, tags: ["Postgres", "Redis"], mergeInto: { questionId: "q-1", mode: "append" } }],
       USER,
-      CHAT,
+      UNRESTRICTED,
     );
     expect(resolveTags).toHaveBeenCalledWith(["Redis"], USER, 1);
   });
 
-  it("combined length over the limit is invalid and writes nothing", async () => {
+  it.each([
+    { name: "unrestricted", options: UNRESTRICTED },
+    { name: "app-created, agent-created-only replace", options: MCP },
+  ])("combined length over the limit is invalid and writes nothing ($name)", async ({ options }) => {
     bank(row({ id: "q-1", question: DEPLOY, answer: `<p>${"x".repeat(4980)}</p>` }));
     const [result] = await saveQuestions(
       [{ question: DEPLOY, answer: ANSWER, mergeInto: { questionId: "q-1", mode: "append" } }],
       USER,
-      CHAT,
+      options,
     );
     expect(result).toMatchObject({
       status: "invalid",
-      error: "The combined answer would exceed 5000 characters. Replace the saved answer instead, or shorten it.",
+      error: "Adding this text would take the saved answer over 5,000 characters. Try adding less text.",
+      userFacing: true,
     });
     expect(prisma.question.update).not.toHaveBeenCalled();
     expect(resolveTags).not.toHaveBeenCalled();
@@ -250,7 +268,7 @@ describe("saveQuestions", () => {
     });
 
     it("insert", async () => {
-      const [result] = await saveQuestions([{ question: DEPLOY, answer: long }], USER, CHAT);
+      const [result] = await saveQuestions([{ question: DEPLOY, answer: long }], USER, UNRESTRICTED);
       expect(result).toMatchObject({ status: "invalid", error: message });
     });
 
@@ -259,7 +277,7 @@ describe("saveQuestions", () => {
       const [result] = await saveQuestions(
         [{ question: DEPLOY, answer: long, mergeInto: { questionId: "q-1", mode: "replace" } }],
         USER,
-        CHAT,
+        UNRESTRICTED,
       );
       expect(result).toMatchObject({ status: "invalid", error: message });
     });
@@ -269,7 +287,7 @@ describe("saveQuestions", () => {
       const [result] = await saveQuestions(
         [{ question: DEPLOY, answer: long, mergeInto: { questionId: "q-1", mode: "append" } }],
         USER,
-        CHAT,
+        UNRESTRICTED,
       );
       expect(result).toMatchObject({ status: "invalid", error: message });
     });
@@ -287,7 +305,7 @@ describe("saveQuestions", () => {
       { question: q2.question, answer: ANSWER, mergeInto: { questionId: "q-2", mode: "append" as const } },
       { question: DEPLOY },
     ];
-    const results = await saveQuestions(input, USER, CHAT);
+    const results = await saveQuestions(input, USER, UNRESTRICTED);
     expect(results.map((r) => r.status)).toEqual(["merged", "failed", "saved"]);
     expect(results[1]).toMatchObject({ error: "Saving this question failed. Try it again." });
     expect(JSON.stringify(results)).not.toContain("secret-host");
@@ -297,7 +315,7 @@ describe("saveQuestions", () => {
     (prisma.question.update as any).mockResolvedValue({ id: "q-2" });
     const firstAnswer = (await import("@/lib/questions/renderAnswer")).renderAnswerMarkdown(ANSWER);
     bank({ ...q1, answer: `${q1.answer}<hr>${firstAnswer}` }, q2);
-    await saveQuestions([input[1]], USER, CHAT);
+    await saveQuestions([input[1]], USER, UNRESTRICTED);
     expect(prisma.question.update).toHaveBeenCalledTimes(1);
     expect(updateArgs().where).toEqual({ id: "q-2", createdBy: USER });
   });
@@ -322,7 +340,7 @@ describe("saveQuestions", () => {
         { question: "Describe your ideal team", tags: ["CI/CD"] },
       ],
       USER,
-      CHAT,
+      UNRESTRICTED,
     );
     const byStatus = Object.fromEntries(results.map((r) => [r.status, JSON.stringify(r)]));
     expect(Object.keys(byStatus).sort()).toEqual(["exists", "merged", "saved", "similar", "skipped"]);
@@ -337,7 +355,7 @@ describe("saveQuestions", () => {
     const results = await saveQuestions(
       [{ question: DEPLOY }, { question: "How do you deal with a broken deployment?" }],
       USER,
-      CHAT,
+      UNRESTRICTED,
     );
     expect(results.map((r) => r.status)).toEqual(["saved", "saved"]);
     expect(prisma.question.create).toHaveBeenCalledTimes(2);
@@ -351,7 +369,7 @@ describe("saveQuestions", () => {
         { question: "How do you deal with a broken deployment?", answer: "Then write a postmortem.", mergeInto: { questionId: "q-1", mode: "append" } },
       ],
       USER,
-      CHAT,
+      UNRESTRICTED,
     );
     expect(prisma.question.update).toHaveBeenCalledTimes(2);
     expect(updateArgs(1).data.answer.split("<hr>")).toHaveLength(3);
@@ -370,7 +388,7 @@ describe("saveQuestions", () => {
         { question: "Describe your ideal team", tags: ["Teamwork"] },
       ],
       USER,
-      CHAT,
+      UNRESTRICTED,
     );
     expect(resolveTags).toHaveBeenCalledTimes(1);
     expect(resolveTags).toHaveBeenCalledWith(["Teamwork"], USER, 10);
@@ -378,18 +396,18 @@ describe("saveQuestions", () => {
 
   it("reports the duplicate and save steps", async () => {
     const steps: string[] = [];
-    await saveQuestions([{ question: DEPLOY }], USER, { ...CHAT, onStep: (s) => steps.push(s) });
+    await saveQuestions([{ question: DEPLOY }], USER, { ...UNRESTRICTED, onStep: (s) => steps.push(s) });
     expect(steps).toEqual(["duplicate", "save"]);
 
     steps.length = 0;
     bank(row({ id: "q-1", question: DEPLOY }));
-    await saveQuestions([{ question: DEPLOY }], USER, { ...CHAT, onStep: (s) => steps.push(s) });
+    await saveQuestions([{ question: DEPLOY }], USER, { ...UNRESTRICTED, onStep: (s) => steps.push(s) });
     expect(steps).toEqual(["duplicate"]);
 
     steps.length = 0;
     bank();
     await saveQuestions([{ question: DEPLOY, answer: "x".repeat(5000) }], USER, {
-      ...CHAT,
+      ...UNRESTRICTED,
       onStep: (s) => steps.push(s),
     });
     expect(steps).toEqual(["duplicate"]);
@@ -404,7 +422,7 @@ describe("saveQuestions", () => {
         { question: "Describe your ideal team" },
       ],
       USER,
-      CHAT,
+      UNRESTRICTED,
     );
     expect(results.map((r) => [r.index, r.status])).toEqual([
       [1, "invalid"],

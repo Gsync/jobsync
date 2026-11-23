@@ -80,7 +80,7 @@ Eleven. All but find_job and list_jobs write to your own data:
 - **find_job** — checks whether a posting is already saved, by link or by company and title, at any age and in any status.
 - **list_jobs** — lists your saved jobs in short rows, filtered by company, status, source or date, so an agent can load what you already track at the start of a run.
 - **update_job** — corrects or enriches a job that was added through MCP. Only the fields supplied change.
-- **add_question** — adds an interview question to your Question Bank, with skill tags and your answer if you gave one (otherwise TBD). A question you already have is never saved twice, and for similar saved ones the agent asks you whether one is the same. If so, it can add your answer below the saved one or replace it. Replace works only on questions an agent created.
+- **add_question** — adds an interview question to your Question Bank, with skill tags and your answer if you gave one (otherwise TBD). A question you already have is never saved twice, and for similar saved ones the agent asks you whether one is the same. If so, it adds your answer to it or, for an answered question an agent created, can replace the saved answer.
 - **add_questions_batch** — the same thing for up to 20 questions in one call, such as everything from one interview.
 - **review_resume** / **save_resume_review** — hands the agent your default resume and reviewing instructions, then stores the review it writes.
 - **save_match_result** / **save_match_results_batch** — stores a job-fit analysis the agent produced after adding a job.

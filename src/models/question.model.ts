@@ -27,6 +27,9 @@ export type QuestionCandidate = {
   hasAnswer: boolean;
 };
 
+// canReplace describes the target under the caller's origin policy
+export type HeldCandidate = QuestionCandidate & { canReplace: boolean };
+
 // candidateRows is server-side only, for merge targeting
 export type QuestionMatch = {
   exact?: BankQuestion;
@@ -52,12 +55,13 @@ export type QuestionTagReport = {
 // index is the 1-based input position; only exists/similar carry question ids
 export type SaveQuestionResult = { index: number; question: string } & (
   | ({ status: "saved" } & QuestionTagReport)
-  | ({ status: "merged"; mode: QuestionMergeMode } & QuestionTagReport)
+  | ({ status: "merged"; mode: QuestionMergeMode; savedQuestion: string; hadAnswer: boolean } & QuestionTagReport)
   | { status: "skipped"; existing: { question: string } }
-  | { status: "exists"; existing: { id: string; question: string; hasAnswer: boolean } }
-  | { status: "similar"; candidates: QuestionCandidate[] }
+  | { status: "exists"; existing: { id: string; question: string; hasAnswer: boolean; canReplace: boolean } }
+  | { status: "similar"; candidates: HeldCandidate[]; hasIncomingAnswer: boolean }
   | { status: "repeat"; of: number }
-  | { status: "invalid"; error: string; appendOnly?: true }
+  // userFacing marks an error written for the user; others address the model
+  | { status: "invalid"; error: string; appendOnly?: true; userFacing?: true }
   | { status: "failed"; error: string }
 );
 

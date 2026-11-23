@@ -62,7 +62,7 @@ export function prepareQuestions(items: SaveQuestionInput[]): {
     const answer = cleanAnswer(input.answer);
     const error = lengthError(question, answer);
     if (error) {
-      results.push({ index, question, status: "invalid", error });
+      results.push({ index, question, status: "invalid", error, userFacing: true });
       return;
     }
     const answers = answer === undefined ? [] : [answer];
@@ -80,11 +80,27 @@ export function prepareQuestions(items: SaveQuestionInput[]): {
   return { prepared: [...byText.values()], results };
 }
 
-function invalid(item: PreparedQuestion, error: string, appendOnly?: true): QuestionDecision {
-  return {
-    kind: "result",
-    result: { index: item.index, question: item.question, status: "invalid", error, ...(appendOnly ? { appendOnly } : {}) },
-  };
+function invalid(item: PreparedQuestion, error: string): QuestionDecision {
+  return { kind: "result", result: { index: item.index, question: item.question, status: "invalid", error } };
+}
+
+// A refused Replace leaves append as the only merge; its reason is for the user
+function refused(item: PreparedQuestion, error: string): QuestionDecision {
+  const result = { index: item.index, question: item.question, error };
+  return { kind: "result", result: { ...result, status: "invalid", appendOnly: true, userFacing: true } };
+}
+
+// The write decision uses this too, so an offered Replace is never refused
+export function canReplaceRow(row: BankQuestion, replaceAgentCreatedOnly: boolean): boolean {
+  if (!hasAnswer(row.answer)) return false;
+  return !replaceAgentCreatedOnly || row.createdVia !== null;
+}
+
+function heldCandidates(match: QuestionMatch, replaceAgentCreatedOnly: boolean) {
+  return match.candidates.map((candidate, i) => ({
+    ...candidate,
+    canReplace: canReplaceRow(match.candidateRows[i], replaceAgentCreatedOnly),
+  }));
 }
 
 function decideMerge(
@@ -97,11 +113,9 @@ function decideMerge(
   const allowed = [match.exact, ...match.candidateRows].filter((row) => row !== undefined);
   const target = allowed.find((row) => row.id === questionId);
   if (!target) return invalid(item, FOREIGN_MERGE_ID);
-  if (mode === "replace" && !hasAnswer(target.answer)) {
-    return invalid(item, "The saved question has no answer, so there is nothing to replace; use append.");
-  }
-  if (mode === "replace" && replaceAgentCreatedOnly && target.createdVia === null) {
-    return invalid(item, "This question was created in the app, so only append is allowed.", true);
+  if (mode === "replace" && !canReplaceRow(target, replaceAgentCreatedOnly)) {
+    if (!hasAnswer(target.answer)) return refused(item, "This question has no saved answer to replace. Your answer can be added as its first answer instead.");
+    return refused(item, "Only an answer added below the saved one is allowed for this app-created question.");
   }
   return { kind: "merge", target, mode };
 }
@@ -118,16 +132,19 @@ export function decideQuestion(
   if (item.mergeInto) return decideMerge(item, match, options.replaceAgentCreatedOnly);
   if (match.exact) {
     const { id, question, answer } = match.exact;
+    const canReplace = canReplaceRow(match.exact, options.replaceAgentCreatedOnly);
     if (item.answers.length === 0) {
       return { kind: "result", result: { ...base, status: "skipped", existing: { question } } };
     }
     return {
       kind: "result",
-      result: { ...base, status: "exists", existing: { id, question, hasAnswer: hasAnswer(answer) } },
+      result: { ...base, status: "exists", existing: { id, question, hasAnswer: hasAnswer(answer), canReplace } },
     };
   }
   if (match.candidates.length === 0) return { kind: "insert" };
   const rejected = new Set(item.notSameAs ?? []);
   if (match.candidates.every((c) => rejected.has(c.id))) return { kind: "insert" };
-  return { kind: "result", result: { ...base, status: "similar", candidates: match.candidates } };
+  const candidates = heldCandidates(match, options.replaceAgentCreatedOnly);
+  const hasIncomingAnswer = item.answers.length > 0;
+  return { kind: "result", result: { ...base, status: "similar", candidates, hasIncomingAnswer } };
 }

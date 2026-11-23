@@ -18,7 +18,7 @@ const item = (overrides: Partial<PreparedQuestion> = {}): PreparedQuestion => ({
 });
 
 const MCP = { replaceAgentCreatedOnly: true };
-const CHAT = { replaceAgentCreatedOnly: false };
+const UNRESTRICTED = { replaceAgentCreatedOnly: false };
 
 describe("prepareQuestions", () => {
   it("fails only the item with a short answer", () => {
@@ -33,6 +33,7 @@ describe("prepareQuestions", () => {
         index: 2,
         status: "invalid",
         error: "answer must be at least 10 characters",
+        userFacing: true,
       }),
     ]);
   });
@@ -96,7 +97,7 @@ describe("decideQuestion", () => {
     const decision = decideQuestion(
       item({ answers: ["Roll back first."], notSameAs: ["q-deploy"], mergeInto: { questionId: "q-deploy", mode: "append" } }),
       matchQuestion(item().question, [deploy]),
-      CHAT,
+      UNRESTRICTED,
     );
     expect(decision).toMatchObject({ kind: "result", result: { status: "invalid" } });
   });
@@ -105,16 +106,26 @@ describe("decideQuestion", () => {
     const decision = decideQuestion(
       item({ mergeInto: { questionId: "q-deploy", mode: "append" } }),
       matchQuestion(item().question, [deploy]),
-      CHAT,
+      UNRESTRICTED,
     );
     expect(decision).toMatchObject({ kind: "result", result: { status: "invalid" } });
+  });
+
+  it("leaves protocol errors unmarked for the user", () => {
+    const decision = decideQuestion(
+      item({ answers: ["Roll back first."], mergeInto: { questionId: "other-user-q", mode: "append" } }),
+      matchQuestion(item().question, [exactRow, deploy]),
+      UNRESTRICTED,
+    );
+    expect(decision).toMatchObject({ kind: "result", result: { status: "invalid" } });
+    expect(decision).not.toHaveProperty("result.userFacing");
   });
 
   it("rejects a mergeInto id outside the match set without naming any id", () => {
     const decision = decideQuestion(
       item({ answers: ["Roll back first."], mergeInto: { questionId: "other-user-q", mode: "append" } }),
       matchQuestion(item().question, [exactRow, deploy]),
-      CHAT,
+      UNRESTRICTED,
     );
     expect(decision).toMatchObject({
       kind: "result",
@@ -133,11 +144,11 @@ describe("decideQuestion", () => {
     const decision = decideQuestion(
       item({ answers: ["Roll back first."], mergeInto: { questionId: "q-deploy", mode: "replace" } }),
       matchQuestion(item().question, [unanswered]),
-      CHAT,
+      UNRESTRICTED,
     );
     expect(decision).toMatchObject({
       kind: "result",
-      result: { status: "invalid", error: expect.stringContaining("nothing to replace; use append") },
+      result: { status: "invalid", error: "This question has no saved answer to replace. Your answer can be added as its first answer instead.", appendOnly: true, userFacing: true },
     });
   });
 
@@ -147,7 +158,15 @@ describe("decideQuestion", () => {
       matchQuestion(item().question, [deploy]),
       MCP,
     );
-    expect(decision).toMatchObject({ kind: "result", result: { status: "invalid", appendOnly: true } });
+    expect(decision).toMatchObject({
+      kind: "result",
+      result: {
+        status: "invalid",
+        appendOnly: true,
+        userFacing: true,
+        error: "Only an answer added below the saved one is allowed for this app-created question.",
+      },
+    });
   });
 
   it("allows MCP replace on an agent-created question", () => {
@@ -164,7 +183,7 @@ describe("decideQuestion", () => {
     const decision = decideQuestion(
       item({ answers: ["Roll back first."], mergeInto: { questionId: "q-deploy", mode: "replace" } }),
       matchQuestion(item().question, [deploy]),
-      CHAT,
+      UNRESTRICTED,
     );
     expect(decision).toEqual({ kind: "merge", target: deploy, mode: "replace" });
   });
@@ -173,7 +192,7 @@ describe("decideQuestion", () => {
     const decision = decideQuestion(
       item({ answers: ["Roll back first."], mergeInto: { questionId: "q-exact", mode: "append" } }),
       matchQuestion(item().question, [exactRow]),
-      CHAT,
+      UNRESTRICTED,
     );
     expect(decision).toEqual({ kind: "merge", target: exactRow, mode: "append" });
   });
@@ -182,7 +201,7 @@ describe("decideQuestion", () => {
     const decision = decideQuestion(
       item({ answers: ["Roll back first."] }),
       matchQuestion(item().question, [exactRow]),
-      CHAT,
+      UNRESTRICTED,
     );
     expect(decision).toEqual({
       kind: "result",
@@ -190,7 +209,7 @@ describe("decideQuestion", () => {
         index: 1,
         question: item().question,
         status: "exists",
-        existing: { id: "q-exact", question: exactRow.question, hasAnswer: true },
+        existing: { id: "q-exact", question: exactRow.question, hasAnswer: true, canReplace: true },
       },
     });
   });
@@ -199,7 +218,7 @@ describe("decideQuestion", () => {
     const decision = decideQuestion(
       item({ notSameAs: ["q-exact"] }),
       matchQuestion(item().question, [exactRow]),
-      CHAT,
+      UNRESTRICTED,
     );
     expect(decision).toEqual({
       kind: "result",
@@ -208,11 +227,11 @@ describe("decideQuestion", () => {
   });
 
   it("inserts with no candidates", () => {
-    expect(decideQuestion(item(), matchQuestion(item().question, []), CHAT)).toEqual({ kind: "insert" });
+    expect(decideQuestion(item(), matchQuestion(item().question, []), UNRESTRICTED)).toEqual({ kind: "insert" });
   });
 
   it("holds a near match as similar", () => {
-    const decision = decideQuestion(item(), matchQuestion(item().question, [deploy]), CHAT);
+    const decision = decideQuestion(item(), matchQuestion(item().question, [deploy]), UNRESTRICTED);
     expect(decision).toMatchObject({
       kind: "result",
       result: { status: "similar", candidates: [expect.objectContaining({ id: "q-deploy" })] },
@@ -223,7 +242,7 @@ describe("decideQuestion", () => {
     const decision = decideQuestion(
       item({ notSameAs: ["q-deploy"] }),
       matchQuestion(item().question, [deploy]),
-      CHAT,
+      UNRESTRICTED,
     );
     expect(decision).toEqual({ kind: "insert" });
   });
@@ -237,8 +256,63 @@ describe("decideQuestion", () => {
     const decision = decideQuestion(
       item({ notSameAs: ["q-deploy", "q-build"] }),
       matchQuestion(item().question, bank),
-      CHAT,
+      UNRESTRICTED,
     );
     expect(decision).toMatchObject({ kind: "result", result: { status: "similar" } });
+  });
+
+  describe("canReplace", () => {
+    const TBD = "<p>TBD</p>";
+    const targets = [
+      { name: "unanswered, created in app", answer: TBD, createdVia: null, restricted: false, unrestricted: false },
+      { name: "unanswered, created by agent", answer: TBD, createdVia: "Claude Desktop", restricted: false, unrestricted: false },
+      { name: "answered, created in app", answer: "<p>Saved answer</p>", createdVia: null, restricted: false, unrestricted: true },
+      { name: "answered, created by agent", answer: "<p>Saved answer</p>", createdVia: "chat", restricted: true, unrestricted: true },
+    ];
+
+    it.each(targets)("exists target $name", ({ answer, createdVia, restricted, unrestricted }) => {
+      const target = row({ ...exactRow, answer, createdVia });
+      const decide = (options: { replaceAgentCreatedOnly: boolean }) =>
+        decideQuestion(item({ answers: ["Roll back first."] }), matchQuestion(item().question, [target]), options);
+      expect(decide(MCP)).toMatchObject({ result: { status: "exists", existing: { canReplace: restricted } } });
+      expect(decide(UNRESTRICTED)).toMatchObject({ result: { status: "exists", existing: { canReplace: unrestricted } } });
+    });
+
+    it.each(targets)("similar target $name", ({ answer, createdVia, restricted, unrestricted }) => {
+      const target = row({ ...deploy, answer, createdVia });
+      const decide = (options: { replaceAgentCreatedOnly: boolean }) =>
+        decideQuestion(item({ answers: ["Roll back first."] }), matchQuestion(item().question, [target]), options);
+      expect(decide(MCP)).toMatchObject({ result: { status: "similar", candidates: [{ canReplace: restricted }] } });
+      expect(decide(UNRESTRICTED)).toMatchObject({ result: { status: "similar", candidates: [{ canReplace: unrestricted }] } });
+    });
+
+    it("judges each candidate in a mixed list on its own", () => {
+      const bank = [
+        row({ id: "q-app", question: "How do you deal with a failing deploy?" }),
+        row({ id: "q-agent", question: "How do you handle a failing deployment?", createdVia: "chat" }),
+        row({ id: "q-blank", question: "How do you handle a broken deploy?", answer: TBD, createdVia: "chat" }),
+      ];
+      const decision = decideQuestion(item({ answers: ["Roll back first."] }), matchQuestion(item().question, bank), MCP);
+      if (decision.kind !== "result" || decision.result.status !== "similar") throw new Error("expected similar");
+      const byId = Object.fromEntries(decision.result.candidates.map((c) => [c.id, c.canReplace]));
+      expect(byId).toEqual({ "q-app": false, "q-agent": true, "q-blank": false });
+    });
+
+    it("refuses a restricted Replace on an app-created answered match as append-only", () => {
+      const decision = decideQuestion(
+        item({ answers: ["Roll back first."], mergeInto: { questionId: "q-exact", mode: "replace" } }),
+        matchQuestion(item().question, [exactRow]),
+        MCP,
+      );
+      expect(decision).toMatchObject({ kind: "result", result: { status: "invalid", appendOnly: true } });
+    });
+  });
+
+  it.each([
+    { answers: ["Roll back first."], hasIncomingAnswer: true },
+    { answers: [], hasIncomingAnswer: false },
+  ])("a similar result reports hasIncomingAnswer $hasIncomingAnswer", ({ answers, hasIncomingAnswer }) => {
+    const decision = decideQuestion(item({ answers }), matchQuestion(item().question, [deploy]), MCP);
+    expect(decision).toMatchObject({ result: { status: "similar", hasIncomingAnswer } });
   });
 });

@@ -12,6 +12,11 @@ function itemsWith<S extends Status>(items: SaveQuestionResult[], statuses: read
   return items.filter((item): item is ItemOf<S> => (statuses as readonly Status[]).includes(item.status));
 }
 
+// Transcripts saved before savedQuestion existed name only the input
+function storedQuestion(item: ItemOf<"merged">): string {
+  return (item as { savedQuestion?: string }).savedQuestion ?? item.question;
+}
+
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div role="group" aria-label={title} className="mt-2 first:mt-0">
@@ -74,7 +79,7 @@ export function AddQuestionResult({ output }: { output: AgentAddQuestionResult }
         <Group title="Updated">
           {updated.map((item) => (
             <li key={item.index}>
-              {item.question}{" "}
+              {storedQuestion(item)}{" "}
               <span className="text-xs text-muted-foreground">
                 · {item.mode === "replace" ? "Answer replaced" : "Answer added"}
               </span>
@@ -89,7 +94,17 @@ export function AddQuestionResult({ output }: { output: AgentAddQuestionResult }
       )}
       {held.length > 0 && (
         <Group title="Waiting on your reply">
-          {held.map((item) => <li key={item.index}>{item.question}</li>)}
+          {held.map((item) => (
+            <li key={item.index}>
+              {item.question}
+              {item.status === "invalid" && item.userFacing && (
+                <>
+                  {" "}
+                  <span className="text-xs text-muted-foreground">· {item.error}</span>
+                </>
+              )}
+            </li>
+          ))}
         </Group>
       )}
       {failed.length > 0 && (

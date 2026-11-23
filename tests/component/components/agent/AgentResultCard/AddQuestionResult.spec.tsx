@@ -7,11 +7,11 @@ const tag = (label: string) => ({ id: `t-${label}`, label, created: false });
 
 const items: SaveQuestionResult[] = [
   { index: 1, question: "Tell me about yourself", status: "saved", tags: [tag("Communication")], droppedTags: [] },
-  { index: 2, question: "Why Postgres over Mongo?", status: "merged", mode: "append", tags: [], droppedTags: [] },
-  { index: 3, question: "What is a closure?", status: "merged", mode: "replace", tags: [], droppedTags: [] },
+  { index: 2, question: "Why Postgres over Mongo?", status: "merged", mode: "append", savedQuestion: "Why Postgres over Mongo?", hadAnswer: true, tags: [], droppedTags: [] },
+  { index: 3, question: "What is a closure?", status: "merged", mode: "replace", savedQuestion: "What is a closure?", hadAnswer: true, tags: [], droppedTags: [] },
   { index: 4, question: "Why this company?", status: "skipped", existing: { question: "Why this company?" } },
-  { index: 5, question: "Describe a deploy", status: "exists", existing: { id: "q1", question: "Describe a deploy", hasAnswer: true } },
-  { index: 6, question: "How do you deal with a broken deployment?", status: "similar", candidates: [] },
+  { index: 5, question: "Describe a deploy", status: "exists", existing: { id: "q1", question: "Describe a deploy", hasAnswer: true, canReplace: true } },
+  { index: 6, question: "How do you deal with a broken deployment?", status: "similar", candidates: [], hasIncomingAnswer: false },
   { index: 7, question: "Short answer", status: "invalid", error: "Answer too short." },
   { index: 8, question: "What is Redis?", status: "failed", error: "Saving this question failed." },
   { index: 9, question: "tell me about yourself", status: "repeat", of: 1 },
@@ -43,6 +43,49 @@ it("says whether an update added or replaced the answer", () => {
   renderCard({ items: [items[1]!, items[2]!] });
   expect(screen.getByText(/Answer added/)).toBeInTheDocument();
   expect(screen.getByText(/Answer replaced/)).toBeInTheDocument();
+});
+
+it("names the stored spelling of an updated question", () => {
+  renderCard({ items: [{
+    index: 1, question: "how do you handle a failing deploy", status: "merged", mode: "append",
+    savedQuestion: "How do you deal with a broken deployment?", hadAnswer: true, tags: [], droppedTags: [],
+  }] });
+  const group = screen.getByRole("group", { name: "Updated" });
+  expect(group).toHaveTextContent("How do you deal with a broken deployment?");
+  expect(group).not.toHaveTextContent("how do you handle a failing deploy");
+});
+
+// Transcripts saved before savedQuestion existed still render
+it("falls back to the question on a historical merged result", () => {
+  const historical = { index: 1, question: "Why Postgres over Mongo?", status: "merged", mode: "append", tags: [], droppedTags: [] };
+  renderCard({ items: [historical as unknown as SaveQuestionResult] });
+  expect(screen.getByRole("group", { name: "Updated" })).toHaveTextContent("Why Postgres over Mongo?");
+});
+
+it("shows a refused Replace's reason with no instructions to the assistant", () => {
+  renderCard({ items: [{
+    index: 1, question: "Describe a deploy", status: "invalid", appendOnly: true, userFacing: true,
+    error: "Only an answer added below the saved one is allowed for this app-created question.",
+  }] });
+  const group = screen.getByRole("group", { name: "Waiting on your reply" });
+  expect(group).toHaveTextContent("Only an answer added below the saved one is allowed for this app-created question.");
+  expect(group).not.toHaveTextContent(/mergeInto|add_question|call/i);
+});
+
+it("shows a validation error on an invalid item", () => {
+  renderCard({ items: [{ index: 1, question: "Short answer", status: "invalid", error: "answer must be at least 10 characters", userFacing: true }] });
+  expect(screen.getByRole("group", { name: "Waiting on your reply" })).toHaveTextContent("answer must be at least 10 characters");
+});
+
+// Protocol errors and older transcripts address the model, not the user
+it.each([
+  "That question id does not match this question. Send it again without mergeInto to see its matches.",
+  "The saved question has no answer, so there is nothing to replace; use append.",
+])("hides error text not written for the user: %s", (error) => {
+  renderCard({ items: [{ index: 1, question: "Describe a deploy", status: "invalid", error }] });
+  const group = screen.getByRole("group", { name: "Waiting on your reply" });
+  expect(group).toHaveTextContent("Describe a deploy");
+  expect(group).not.toHaveTextContent(error);
 });
 
 it("shows a failed item's error under Not saved", () => {

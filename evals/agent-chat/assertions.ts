@@ -189,6 +189,12 @@ function textOf(output: unknown): string {
 // The inverse of the assertCalls* family, for the rows where reaching for a
 // tool is itself the failure. Pairs with an llm-rubric on what was said
 // instead — this half only pins that nothing was called.
+// An empty finish (reasoning only) must fail even if a grader would accept it
+export function assertVisibleReply(output: unknown): AssertionResult {
+  const pass = textOf(output).trim().length > 0;
+  return { pass, score: pass ? 1 : 0, reason: pass ? 'visible reply' : 'no visible reply (empty or reasoning-only finish)' };
+}
+
 export function assertNoToolCall(output: unknown): AssertionResult {
   const calls = parseToolCalls(output);
   const pass = calls.length === 0;
@@ -290,6 +296,20 @@ export function assertNotSameAs(output: unknown, context: Context): AssertionRes
   const item = questionsOf(output)[0];
   const pass = Boolean(item?.notSameAs?.includes(id)) && !item?.mergeInto;
   return { pass, score: pass ? 1 : 0, reason: pass ? `notSameAs carries ${id}` : `expected notSameAs with ${id} and no mergeInto, got: ${JSON.stringify(item ?? null)}` };
+}
+
+// After a Replace the menu should not have offered: ask afresh, or attempt
+// exactly that Replace once. Never a silent Append or save as new
+export function assertReplaceOrAsk(output: unknown, context: Context): AssertionResult {
+  const calls = parseToolCalls(output);
+  if (calls.length === 0) return assertVisibleReply(output);
+  const items = questionsOf(output);
+  const item = items[0];
+  const merge = item?.mergeInto;
+  const pass = calls.length === 1 && calls[0].name === 'add_question' && items.length === 1 &&
+    merge?.questionId === context.vars.expectedQuestionId && merge?.mode === 'replace' &&
+    typeof item?.answer === 'string' && item.answer.length > 0 && !item?.notSameAs?.length;
+  return { pass, score: pass ? 1 : 0, reason: pass ? 'attempted only the requested replace' : `expected a fresh question or one replace on ${context.vars.expectedQuestionId}, got: ${describe(calls)} ${JSON.stringify(items)}` };
 }
 
 export function assertMergeInto(output: unknown, context: Context): AssertionResult {

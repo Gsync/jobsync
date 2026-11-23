@@ -35,6 +35,20 @@ describe("add_question agent tool", () => {
       .toEqual({ items: [{ ...items[0], saved: true }] });
   });
 
+  it("passes the engine's merge and target facts through to the model", async () => {
+    const merged: SaveQuestionResult = {
+      index: 1, question: "How do you deal with a broken deployment?", status: "merged", mode: "append",
+      savedQuestion: "How do you handle a failing deploy?", hadAnswer: false, tags: [], droppedTags: [],
+    };
+    const similar: SaveQuestionResult = {
+      index: 2, question: "Why leave?", status: "similar", hasIncomingAnswer: true,
+      candidates: [{ id: "q-1", question: "Why work here?", score: 0.45, hasAnswer: true, canReplace: false }],
+    };
+    (saveQuestions as any).mockResolvedValue([merged, similar]);
+    const output = await execute(buildAddQuestionTool({ userId: "user-1", writer }), { questions: [{ question: "x" }] });
+    expect(output.items).toEqual([{ ...merged, saved: true }, { ...similar, saved: false }]);
+  });
+
   it("marks a repeat like the item it folded into", async () => {
     (saveQuestions as any).mockResolvedValue([...items, { index: 2, question: "tell me about yourself", status: "repeat", of: 1 }]);
     const output = await execute(buildAddQuestionTool({ userId: "user-1", writer }), { questions: [{ question: "x" }] });
@@ -46,7 +60,7 @@ describe("add_question agent tool", () => {
   it("marks held and failed items not saved and says so in a note", async () => {
     const mixed: SaveQuestionResult[] = [
       ...items,
-      { index: 2, question: "Why leave?", status: "similar", candidates: [] },
+      { index: 2, question: "Why leave?", status: "similar", candidates: [], hasIncomingAnswer: false },
       { index: 3, question: "Why Postgres?", status: "skipped", existing: { question: "Why Postgres?" } },
       { index: 4, question: "Hi?", status: "invalid", error: "Too short." },
     ];

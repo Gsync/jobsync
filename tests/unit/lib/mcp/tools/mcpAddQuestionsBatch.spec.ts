@@ -58,6 +58,23 @@ describe("handleAddQuestionsBatch", () => {
     expect(text.indexOf("[1/3]")).toBeLessThan(text.indexOf("[3/3]"));
   });
 
+  it("names the stored question on a merge receipt and keeps the input in the result", async () => {
+    vi.mocked(checkMcpRateLimit).mockReturnValue(allow);
+    const incoming = questions[1].question;
+    const stored = "How do you deal with a broken deployment?";
+    vi.mocked(saveQuestions).mockResolvedValue([
+      saved(1),
+      { index: 2, question: incoming, status: "merged", mode: "append", savedQuestion: stored, hadAnswer: true, tags: [], droppedTags: [] },
+      saved(3),
+    ]);
+
+    const out = await handleAddQuestionsBatch({ questions }, "user-1", "Claude Desktop");
+    const results = out.structuredContent!.results as Array<{ question: string }>;
+
+    expect(out.content[0].text).toContain(`[2/3] ${incoming}: Merged (append): added the answer below the saved answer of "${stored}".`);
+    expect(results[1].question).toBe(incoming);
+  });
+
   it("saves only the allowed prefix when the rate limit runs out", async () => {
     vi.mocked(checkMcpRateLimit).mockReturnValueOnce(allow).mockReturnValue(deny);
     vi.mocked(saveQuestions).mockResolvedValue([saved(1)]);

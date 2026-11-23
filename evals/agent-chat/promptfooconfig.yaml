@@ -42,6 +42,9 @@ providers:
       temperature: 0.1
       # Mirrors the route: providerOptions.ollama.think plus AGENT_CHAT_NUM_CTX.
       think: true
+      # Grade what the user sees: thinking text in output let a reasoning-only
+      # finish read as a reply
+      showThinking: false
       num_ctx: 16384
       tools: file://./tools.json
 
@@ -649,24 +652,147 @@ tests:
           question "How do you handle a failing deploy?", asks whether to save
           theirs as a new question or skip it, and does not claim it was saved.
 
-  # From the Phase 3 manual check: only merge and save-as-new were offered.
+  # Fixture changed 2026-11-23 to the 0.89 failing-deployment pair; compare
+  # with earlier runs (0.28 broken-deployment pair) separately.
   - description: Similar with a user answer - offers add below, replace, save as new and skip
     vars:
       userMessage: >-
-        Save this question: How do you deal with a broken deployment? My
-        answer: I roll back first, then find the cause from the deploy diff and
-        the logs.
+        Save this question: How do you handle a failing deployment? My answer: I roll back first, then find the cause from the deploy diff and the logs.
       priorAddQuestion: similarAnswered
       pageLocation: elsewhere
     assert:
       - type: javascript
         value: file://./assertions.ts:assertNoToolCall
+      - type: javascript
+        value: file://./assertions.ts:assertVisibleReply
       - type: llm-rubric
         value: >-
-          The reply tells the user their question looks like the saved
-          question "How do you handle a failing deploy?" and offers all four
-          choices: add their answer below the saved one, replace the saved
-          answer, save theirs as a new question, or skip it.
+          The reply tells the user their question matches the saved question "How do you handle a failing deploy?" and offers four choices: add their answer below the saved answer, replace the saved answer (described as changing or overwriting it), save theirs as a new question, or skip it. It does not claim anything was saved.
+
+  # Unanswered target: there is no saved answer, so no add-below and no replace
+  - description: Similar with a user answer, unanswered target - offers first answer, save as new and skip
+    vars:
+      userMessage: >-
+        Save this question: How do you handle a failing deployment? My answer: I roll back first, then find the cause from the deploy diff and the logs.
+      priorAddQuestion: similarAnsweredBlank
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
+      - type: javascript
+        value: file://./assertions.ts:assertVisibleReply
+      - type: llm-rubric
+        value: >-
+          The reply tells the user their question matches the saved question "How do you handle a failing deploy?", which has no answer yet, and offers to add their answer as its first answer, save theirs as a new question, or skip it. It does not offer to replace the saved answer and does not claim anything was saved.
+
+  # App-created answered target: canReplace is false, so no replace
+  - description: Similar with a user answer, app-created target - offers add below, save as new and skip
+    vars:
+      userMessage: >-
+        Save this question: How do you handle a failing deployment? My answer: I roll back first, then find the cause from the deploy diff and the logs.
+      priorAddQuestion: similarAnsweredApp
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
+      - type: javascript
+        value: file://./assertions.ts:assertVisibleReply
+      - type: llm-rubric
+        value: >-
+          The reply tells the user their question matches the saved question "How do you handle a failing deploy?" and offers to add their answer below the saved answer, save theirs as a new question, or skip it. It does not offer to replace the saved answer and does not claim anything was saved.
+
+  # The menu wrongly offered Replace and the user took it: ask afresh or try
+  # exactly that Replace once; a silent Append or save as new fails
+  - description: User says Replace after a mistaken menu - asks afresh or attempts only that replace
+    vars:
+      userMessage: >-
+        Save this question: How do you handle a failing deployment? My answer: I roll back first, then find the cause from the deploy diff and the logs.
+      priorAddQuestion: similarAnsweredApp
+      priorAssistantReply: >-
+        "How do you handle a failing deployment?" matches "How do you handle a
+        failing deploy?" in your bank. Should I add your answer to it, replace
+        the saved answer, save yours as a new question, or skip it?
+      followUp: Replace.
+      priorPageLocation: elsewhere
+      pageLocation: elsewhere
+      expectedQuestionId: q-eval-3
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertReplaceOrAsk
+      # The JS check only sees that text exists; a false "replaced" must fail
+      - type: llm-rubric
+        value: >-
+          Either the output is a single add_question call that tries to replace
+          the saved answer, or the reply asks the user for a fresh choice or
+          explains that replacing is not available for this question. A reply
+          that claims the answer was saved, added or replaced fails.
+
+  # After a refused Replace the assistant explains and waits; any call fails
+  - description: Replace refused on an unanswered target - explains and asks, no call
+    vars:
+      userMessage: >-
+        Save this question: How do you handle a failing deployment? My answer: I roll back first, then find the cause from the deploy diff and the logs.
+      priorAddQuestion: similarAnsweredBlank
+      priorAssistantReply: >-
+        "How do you handle a failing deployment?" matches "How do you handle a
+        failing deploy?" in your bank. Should I add your answer to it, replace
+        the saved answer, save yours as a new question, or skip it?
+      followUp: Replace.
+      priorRetry: refusedReplaceBlank
+      priorPageLocation: elsewhere
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
+      - type: javascript
+        value: file://./assertions.ts:assertVisibleReply
+      - type: llm-rubric
+        value: >-
+          The reply explains that the saved question has no answer to replace, asks whether to add the user's answer to it instead, and does not claim anything was saved.
+
+  - description: Replace refused on an app-created target - explains and asks, no call
+    vars:
+      userMessage: >-
+        Save this question: How do you handle a failing deployment? My answer: I roll back first, then find the cause from the deploy diff and the logs.
+      priorAddQuestion: similarAnsweredApp
+      priorAssistantReply: >-
+        "How do you handle a failing deployment?" matches "How do you handle a
+        failing deploy?" in your bank. Should I add your answer to it, replace
+        the saved answer, save yours as a new question, or skip it?
+      followUp: Replace.
+      priorRetry: refusedReplaceApp
+      priorPageLocation: elsewhere
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
+      - type: javascript
+        value: file://./assertions.ts:assertVisibleReply
+      - type: llm-rubric
+        value: >-
+          The reply explains that for this question, which was created in the app, the user's answer can only be added below the saved answer, asks whether to add it below instead, and does not claim anything was saved or replaced.
+
+  # A merge onto an unanswered question: the report must match storage
+  - description: Append onto TBD, user asks what changed - first answer, wording kept
+    vars:
+      userMessage: >-
+        Save this question: How do you handle a failing deployment? My answer: I roll back first, then find the cause from the deploy diff and the logs.
+      priorAddQuestion: mergedOntoTbd
+      priorAssistantReply: Done.
+      followUp: What exactly did you save?
+      priorPageLocation: elsewhere
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
+      - type: javascript
+        value: file://./assertions.ts:assertVisibleReply
+      - type: llm-rubric
+        value: >-
+          The reply says the user's answer was added as the first answer of
+          the saved question "How do you handle a failing deploy?" and that the
+          saved question's wording was kept. It does not say the answer was
+          added below an existing answer or that the question was renamed.
 
   # From the Phase 3 manual check: the model answered from history with no
   # call. With the saved result in context a prose "already saved" is

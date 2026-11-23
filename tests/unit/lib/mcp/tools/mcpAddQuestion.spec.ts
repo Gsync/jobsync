@@ -52,7 +52,8 @@ describe("handleAddQuestion", () => {
     const result: SaveQuestionResult = {
       ...base,
       status: "similar",
-      candidates: [{ id: "q-9", question: "How do you deal with a broken deployment?", score: 0.28, hasAnswer: true }],
+      candidates: [{ id: "q-9", question: "How do you deal with a broken deployment?", score: 0.28, hasAnswer: true, canReplace: true }],
+      hasIncomingAnswer: true,
     };
     mockResult(result);
     const out = await handleAddQuestion(input, "user-1", "Claude Desktop");
@@ -76,9 +77,31 @@ describe("handleAddQuestion", () => {
     expect(text).not.toContain("t-1");
   });
 
-  it("names the mode of a merge", async () => {
-    const text = await proseFor({ ...base, status: "merged", mode: "append", tags: [], droppedTags: [] });
-    expect(text).toMatch(/append/i);
+  describe("names the stored question and what the merge did", () => {
+    const stored = "How do you deal with a broken deployment?";
+    const merged = (mode: "append" | "replace", hadAnswer: boolean): SaveQuestionResult =>
+      ({ ...base, status: "merged", mode, savedQuestion: stored, hadAnswer, tags: [], droppedTags: [] });
+
+    it("append onto an unanswered question", async () => {
+      const text = await proseFor(merged("append", false));
+      expect(text).toContain(`Merged (append): added the answer as the first answer of "${stored}".`);
+    });
+
+    it("append below a saved answer", async () => {
+      const text = await proseFor(merged("append", true));
+      expect(text).toContain(`Merged (append): added the answer below the saved answer of "${stored}".`);
+    });
+
+    it("replace", async () => {
+      const text = await proseFor(merged("replace", true));
+      expect(text).toContain(`Merged (replace): replaced the saved answer of "${stored}".`);
+    });
+
+    it("never calls the incoming wording the saved question", async () => {
+      const text = await proseFor(merged("append", true));
+      expect(text).not.toContain(`"${base.question}"`);
+      expect(text).toContain("The saved question keeps its wording.");
+    });
   });
 
   it("says a skipped question is already in the bank", async () => {
@@ -91,18 +114,29 @@ describe("handleAddQuestion", () => {
     const text = await proseFor({
       ...base,
       status: "exists",
-      existing: { id: "q-1", question: input.question, hasAnswer: true },
+      existing: { id: "q-1", question: input.question, hasAnswer: true, canReplace: true },
     });
     expect(text).toContain("q-1");
     expect(text).toContain("mergeInto");
     expect(text).toMatch(/replace/);
   });
 
+  it("offers add below or skip, never replace, on an app-created answered exact match", async () => {
+    const text = await proseFor({
+      ...base,
+      status: "exists",
+      existing: { id: "q-1", question: input.question, hasAnswer: true, canReplace: false },
+    });
+    expect(text).toMatch(/add their answer below the saved one or skip it/);
+    expect(text).toContain('mode: "append" }');
+    expect(text).not.toMatch(/replace/);
+  });
+
   it("offers only append when the exact match has no answer", async () => {
     const text = await proseFor({
       ...base,
       status: "exists",
-      existing: { id: "q-1", question: input.question, hasAnswer: false },
+      existing: { id: "q-1", question: input.question, hasAnswer: false, canReplace: false },
     });
     expect(text).toContain("mergeInto");
     expect(text).not.toMatch(/replace/);
@@ -113,15 +147,48 @@ describe("handleAddQuestion", () => {
       ...base,
       status: "similar",
       candidates: [
-        { id: "q-7", question: "How do you deal with a broken deployment?", score: 0.28, hasAnswer: true },
-        { id: "q-8", question: "How do you handle a failed release?", score: 0.26, hasAnswer: false },
+        { id: "q-7", question: "How do you deal with a broken deployment?", score: 0.28, hasAnswer: true, canReplace: true },
+        { id: "q-8", question: "How do you handle a failed release?", score: 0.26, hasAnswer: false, canReplace: false },
       ],
+      hasIncomingAnswer: true,
     });
     expect(text).toContain("q-7");
     expect(text).toContain("How do you deal with a broken deployment?");
     expect(text).toContain("q-8");
     expect(text).toContain("mergeInto");
     expect(text).toContain("notSameAs");
+  });
+
+  it("lists each candidate's own choices", async () => {
+    const text = await proseFor({
+      ...base,
+      status: "similar",
+      candidates: [
+        { id: "q-7", question: "How do you deal with a broken deployment?", score: 0.28, hasAnswer: true, canReplace: true },
+        { id: "q-8", question: "How do you handle a failed release?", score: 0.26, hasAnswer: false, canReplace: false },
+        { id: "q-9", question: "How do you handle a failed deploy?", score: 0.3, hasAnswer: true, canReplace: false },
+      ],
+      hasIncomingAnswer: true,
+    });
+    const line = (id: string) => text.split("\n").find((l) => l.includes(`id ${id}:`)) ?? "";
+    expect(line("q-7")).toContain("choices: add below the saved answer, replace the saved answer");
+    expect(line("q-8")).toContain("choices: add your answer");
+    expect(line("q-8")).not.toContain("replace");
+    expect(line("q-9")).toContain("choices: add below the saved answer");
+    expect(line("q-9")).not.toContain("replace");
+  });
+
+  it("offers only save as new or skip for a similar question without an answer", async () => {
+    const text = await proseFor({
+      ...base,
+      status: "similar",
+      candidates: [{ id: "q-7", question: "How do you deal with a broken deployment?", score: 0.28, hasAnswer: true, canReplace: true }],
+      hasIncomingAnswer: false,
+    });
+    expect(text).toContain("offer only to save it as new or skip it");
+    expect(text).toContain("notSameAs");
+    expect(text).not.toContain("mergeInto");
+    expect(text).not.toContain("choices:");
   });
 
   it("names the item a repeat folded into", async () => {
@@ -133,21 +200,22 @@ describe("handleAddQuestion", () => {
     const text = await proseFor({
       ...base,
       status: "invalid",
-      error: "This question was created in the app, so only append is allowed.",
+      error: "Only an answer added below the saved one is allowed for this app-created question.",
       appendOnly: true,
     });
-    expect(text).toContain("Not saved: This question was created in the app");
-    expect(text).toContain("Only append is allowed for this question.");
+    expect(text).toContain("Not saved: Only an answer added below the saved one is allowed for this app-created question.");
+    expect(text).toContain("Explain this reason to the user");
   });
 
   it("tells the caller how to re-call after a refused replace", async () => {
     const text = await proseFor({
       ...base,
       status: "invalid",
-      error: "This question was created in the app, so only append is allowed.",
+      error: "Only an answer added below the saved one is allowed for this app-created question.",
       appendOnly: true,
     });
-    expect(text).toMatch(/ask the user whether to append instead/i);
+    expect(text).toMatch(/ask whether to add their answer instead/i);
+    expect(text).toMatch(/wait for their reply/i);
     expect(text).toContain('mode: "append"');
     expect(text).toMatch(/same question and answer/);
   });
