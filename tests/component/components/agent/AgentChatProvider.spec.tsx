@@ -672,6 +672,29 @@ describe("AgentChatProvider", () => {
     expect(screen.getByTestId("question-writes").textContent).toBe("0");
   });
 
+  // Left live after Stop, the next typed message re-sends the whole dump
+  it("stubs the client-side paste when the user stops after add_question", async () => {
+    setup();
+    await act(async () => {
+      chatInit().onFinish({ message: questionMessage, messages: [questionMessage], isAbort: true });
+    });
+    const update = chat.setMessages.mock.calls.at(-1)![0] as any;
+    const stubbed = update([
+      {
+        id: "u1",
+        role: "user",
+        parts: [{
+          type: "data-paste",
+          id: "p1",
+          data: { id: "p1", text: "QUESTION_DUMP", chars: 13, truncated: false, consumed: false },
+        }],
+      },
+      questionMessage,
+    ]);
+    expect(stubbed[0].parts[0].data.consumed).toBe(true);
+    expect(JSON.stringify(stubbed)).not.toContain("QUESTION_DUMP");
+  });
+
   it("does not stub the client-side paste when no job was created", async () => {
     setup();
     await act(async () => {

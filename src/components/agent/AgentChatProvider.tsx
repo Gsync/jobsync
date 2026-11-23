@@ -198,6 +198,17 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
       turnTimedOutRef.current = false;
       const stop = replyStop(timedOut, { isAbort, isDisconnect, finishReason });
       if (stop) setStoppedReplies((prev) => new Map(prev).set(message.id, stop));
+      // The route stubs the paste on its way into the DB, but that copy is
+      // not the one the client POSTs next turn — so without this the browser
+      // keeps a consumed posting marked unconsumed, resolvePastedText finds
+      // it one user message later, and the next thing the user types calls
+      // add_job again on the job they just saved. It self-corrected only on
+      // reload, when the stubbed row re-seeded the transcript.
+      // Stays here rather than in the effect below: its deadline is the next
+      // POST, and writing to useChat's store mid-stream risks being clobbered.
+      // Before the abort return: a Stop after a save must still stub it.
+      if (message && consumesPaste([message])) chat.setMessages((prev) => stubConsumedPastes(prev));
+
       // onFinish runs from a finally block, so it fires on abort too.
       if (isAbort || isError) return;
 
@@ -207,16 +218,6 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
         .map((part) => getToolName(part as ToolUIPart));
       const refreshPage = finishedTools.some((name) => toolInvalidates(name).includes("page"));
       const refreshJobsList = finishedTools.some((name) => toolInvalidates(name).includes("jobsList"));
-
-      // The route stubs the paste on its way into the DB, but that copy is
-      // not the one the client POSTs next turn — so without this the browser
-      // keeps a consumed posting marked unconsumed, resolvePastedText finds
-      // it one user message later, and the next thing the user types calls
-      // add_job again on the job they just saved. It self-corrected only on
-      // reload, when the stubbed row re-seeded the transcript.
-      // Stays here rather than in the effect below: its deadline is the next
-      // POST, and writing to useChat's store mid-stream risks being clobbered.
-      if (message && consumesPaste([message])) chat.setMessages((prev) => stubConsumedPastes(prev));
 
       // Only the nested tools. A job write refreshes the moment add_job
       // returns — see the effect below. An RSC refresh on an irrelevant page

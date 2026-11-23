@@ -39,12 +39,7 @@ function addQuestionStepResolved(step: AgentStep): boolean {
   return results.every((r) => outputResolved(r.output as AgentAddQuestionResult | undefined));
 }
 
-/**
- * Held or failed items keep the turn open for the model to ask about them,
- * and a full last call keeps it open so the rest of a longer list can follow.
- * An earlier unresolved step keeps it open too: its re-call settling must not
- * end the turn before the rest of the list is sent.
- */
+// Open while any call this turn left items unsettled, or the last was full
 export function addQuestionSettled(steps: readonly AgentStep[]): boolean {
   const last = steps.at(-1);
   if (!last || !addQuestionStepResolved(last)) return false;
@@ -61,7 +56,7 @@ function drewOnPaste(pastedText: string, questions: { question: string }[]): boo
   return questions.some(({ question }) => paste.includes(normalizeQuestionText(question)));
 }
 
-// lastQuestion is the last one the model sent, so the user knows where to resume
+// lastQuestion is the last one the model sent: where the user resumes
 export function pasteCut(
   pastedText: string | undefined,
   questions: { question: string }[],
