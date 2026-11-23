@@ -26,13 +26,14 @@ npm run test:watch        # unit + component, watch mode
 npm run test:coverage     # unit + component
 npm run test:integration  # opt-in; skips without BACKUP_TEST_DATABASE_URL
 npm run test:property     # opt-in; seeded fast-check suites
+npm run test:mutation     # opt-in; Stryker over six modules, about 5 minutes
 npm run test:e2e          # Playwright, needs the dev server
 npm test -- tests/unit/lib/jobs/resolveCompany.spec.ts  # one file
 ```
 
 Next.js route folders such as `[id]` are mirrored as-is; quote those paths in zsh, which otherwise treats the brackets as a glob and fails with "no matches found": `npm test -- 'tests/unit/app/dashboard/myjobs/[id]/JobDetailsPage.spec.tsx'`.
 
-`npm test`, `test:watch` and `test:coverage` never select the integration or property suites, Playwright or the evals.
+`npm test`, `test:watch` and `test:coverage` never select the integration or property suites, Playwright or the evals. `test:mutation` runs the unit and property suites against mutated copies of six modules and is never run by CI.
 
 ## Property tests
 
@@ -128,3 +129,31 @@ Each row is a behavior a past `fix` commit introduced. "Shown red" is the date t
 | `1171f7ef` | Only `add_job` results consume a paste | unit/lib/agent/agentPaste.spec.ts › ignores a created:true result from a tool that is not add_job | 2026-11-23 |
 | `1171f7ef` | The chat provider counts only `add_job` results as created jobs | component/components/agent/AgentChatProvider.spec.tsx › 1171f7ef: does not announce another tool's created:true result as a job write | 2026-11-23 |
 | `1171f7ef` | Turn logs report a status-carrying result by its status | unit/app/api/ai/chat/agentChatRoute.spec.ts › logs a status-carrying result from an unrecognised tool by its status | 2026-11-23 |
+
+## Mutation testing
+
+`npm run test:mutation` (Stryker, `stryker.config.mjs`) mutates six modules and re-runs the unit and property suites (`vitest.mutation.config.mts`) against each mutant. It is on demand: run it in the foreground after changing one of them, never in CI. There is no gate (`thresholds.break` is null); the table is a baseline to compare against. The HTML report is `reports/mutation/mutation.html`, git-ignored.
+
+Baseline, 2026-11-23 (first run, then after the triage assertions):
+
+| Module | First run | After | Survived or uncovered, all equivalent |
+|---|---|---|---|
+| `lib/jobs/timeline/derive.ts` | 100.00 | 100.00 | 0 |
+| `lib/jobs/timeline/index.ts` | 75.00 | 75.81 | 30 |
+| `lib/jobs/timeline/internal.ts` | 50.77 | 50.77 | 32 |
+| `lib/jobs/sortStages.ts` | 100.00 | 100.00 | 0 |
+| `lib/jobs/canonicalize.ts` | 78.57 | 85.71 | 6 |
+| `lib/jobs/resolve.ts` | 75.52 | 92.19 | 15 |
+| `lib/jobs/jobDedupe.ts` | 83.33 | 83.33 | 14 |
+| `models/apiV1.schema.ts` | 69.62 | 72.15 | 22 |
+| All files | 74.92 | 80.99 | 119 |
+
+Equivalent mutants, each reviewed 2026-11-23:
+
+- **Query shape.** `select: { x: true }` or `_max` flipped to `false` or `{}` (about 68 mutants across `jobDedupe`, `resolve`, `timeline/index`, `timeline/internal`, `apiV1.schema`). The mocks and the timeline fake ignore `select`, and no spec may need a database server; asserting the call shape would pin the line, not a rule.
+- **Ownership filters inside the timeline helpers.** The outer `where` of every `promoteStage`, `syncJobFromCurrentStage` and `changeStageTypeStatus` query is killed (by the timeline state machine, or by `setJobCurrentStage › scopes the clear step to the owner`), but the inner `Job: { userId }` (`internal.ts` 36, 51, 99; `index.ts` 118) and the job `where { id, userId }` (`internal.ts` 62, 112) survive. They are defense in depth: callers check ownership first (`internal.ts` D8 comment), and `changeJobStatus` checks twice (`index.ts` 93 and 109), so removing one layer changes nothing observable. A direct cross-user test of the helpers would kill them; nobody has asked for one.
+- **Rows the foreign keys guarantee.** `status?.value ?? ""` (`index.ts` 102, 192, 216), `job?.appliedDate` and `(await …)?.statusId` (`internal.ts` 74, 110), and `job.stages[0]?.occurredAt` (`index.ts` 194): the row always exists.
+- **`canonicalize.ts` 47, 48, 51, 59.** The suffix pattern needs a space before the suffix, so stripping never empties a label, the `length > 0` guards never fire, and `canonicalizeEntityValue` trims after `decodeHtml` anyway.
+- **`appliedDateFromUser === undefined`** (`index.ts` 113): the count it skips is unused on that path.
+- **Optional chaining on a thrown Prisma error** (`resolve.ts` 60, 144, 229): Prisma always throws an object.
+- **Message wording** (`apiV1.schema.ts` string literals, `JobResolutionError.name`): the v1 contract pins that `message` is a string, not its text. `abort: true` on `min(1)` and `stripLegalSuffix` on `company` change nothing for the same reason as the suffix rule above.

@@ -7,7 +7,7 @@ const V1_IMPORTS = "v1 routes take schemas only from @/models/apiV1.schema, so a
 const toastPaths = [{ name: "sonner", message: TOAST }];
 
 const eslintConfig = [
-  { ignores: [".next/", "coverage/", "tests/mocks/", "src/generated/", "scripts/dist/"] },
+  { ignores: [".next/", "coverage/", "tests/mocks/", "src/generated/", "scripts/dist/", "reports/", ".stryker-tmp/"] },
   ...nextVitals,
   {
     files: ["src/**/*.{ts,tsx}"],

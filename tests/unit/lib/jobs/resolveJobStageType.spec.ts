@@ -108,6 +108,61 @@ describe("resolveJobStageType", () => {
     expect(res).toEqual({ id: "t3", label: "Panel", created: false });
   });
 
+  it("re-fetches the race winner by this user's canonical value", async () => {
+    db.jobStageType.findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: "t3", label: "Panel" });
+    db.jobStageType.create.mockRejectedValue({ code: "P2002" });
+
+    await resolveJobStageType("Panel", "u1", "s1");
+
+    expect(db.jobStageType.findUnique).toHaveBeenNthCalledWith(2, {
+      where: { value_createdBy: { value: "panel", createdBy: "u1" } },
+    });
+  });
+
+  it("does not look for a winner after a non-P2002 error", async () => {
+    db.jobStageType.findUnique.mockResolvedValue(null);
+    db.jobStageType.create.mockRejectedValue(new Error("connection lost"));
+
+    await expect(resolveJobStageType("Panel", "u1", "s1")).rejects.toThrow(
+      "connection lost",
+    );
+    expect(db.jobStageType.findUnique).toHaveBeenCalledTimes(1);
+  });
+
+  it("rethrows the P2002 when no winner is found", async () => {
+    const p2002 = { code: "P2002" };
+    db.jobStageType.findUnique.mockResolvedValue(null);
+    db.jobStageType.create.mockRejectedValue(p2002);
+
+    await expect(resolveJobStageType("Panel", "u1", "s1")).rejects.toBe(p2002);
+  });
+
+  it("scopes both sortOrder lookups to this user", async () => {
+    db.jobStageType.findUnique.mockResolvedValue(null);
+    db.jobStageType.create.mockResolvedValue({ id: "t9", label: "Panel" });
+
+    await resolveJobStageType("Panel", "u1", "s1");
+
+    const wheres = db.jobStageType.aggregate.mock.calls.map((c: any) => c[0].where);
+    expect(wheres).toEqual(
+      expect.arrayContaining([{ createdBy: "u1", statusId: "s1" }, { createdBy: "u1" }]),
+    );
+  });
+
+  it("gives a user's first stage type sortOrder 0", async () => {
+    db.jobStageType.findUnique.mockResolvedValue(null);
+    db.jobStageType.aggregate.mockResolvedValue({ _max: { sortOrder: null } });
+    db.jobStageType.create.mockResolvedValue({ id: "t1", label: "Panel" });
+
+    await resolveJobStageType("Panel", "u1", "s1");
+
+    expect(db.jobStageType.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ sortOrder: 0 }) }),
+    );
+  });
+
   it("rejects an empty label", async () => {
     await expect(resolveJobStageType("   ", "u1", "s1")).rejects.toThrow(
       "A non-empty label is required",
@@ -139,6 +194,9 @@ describe("resolveStageTypeForStatusId", () => {
 
     const id = await resolveStageTypeForStatusId("s-oa", "u1");
 
+    expect(db.jobStatus.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "s-oa" } }),
+    );
     expect(db.jobStageType.findUnique).toHaveBeenCalledWith({
       where: { value_createdBy: { value: "offer accepted", createdBy: "u1" } },
     });

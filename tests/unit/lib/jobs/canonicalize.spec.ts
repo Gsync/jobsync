@@ -17,6 +17,10 @@ describe("canonicalizeEntityValue", () => {
     );
   });
 
+  it("turns a comma with no space after it into a separator too", () => {
+    expect(canonicalizeEntityValue("San Francisco,CA")).toBe("san francisco ca");
+  });
+
   it("folds diacritics", () => {
     expect(canonicalizeEntityValue("Zürich")).toBe("zurich");
     expect(canonicalizeEntityValue("México City")).toBe("mexico city");
@@ -48,6 +52,11 @@ describe("canonicalizeEntityValue", () => {
 
     it("unwinds stacked suffixes", () => {
       expect(canonicalizeEntityValue("Foo Corp Company", strip)).toBe("foo");
+    });
+
+    it("strips GmbH and PLC", () => {
+      expect(canonicalizeEntityValue("Foo GmbH", strip)).toBe("foo");
+      expect(canonicalizeEntityValue("Foo PLC", strip)).toBe("foo");
     });
 
     it("does not strip when stripLegalSuffix is off", () => {

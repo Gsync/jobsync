@@ -18,6 +18,7 @@
     "test:unit": "vitest run --project unit",
     "test:component": "vitest run --project component",
     "test:property": "vitest run --project property",
+    "test:mutation": "stryker run",
     "test:integration": "node --env-file-if-exists=.env node_modules/vitest/vitest.mjs run --project integration",
     "test:e2e": "npx playwright test --project=chromium",
     "test:watch": "vitest --project unit --project component",
@@ -101,6 +102,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.49.1",
+    "@stryker-mutator/core": "10.1.1",
+    "@stryker-mutator/vitest-runner": "10.1.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^7.0.1",

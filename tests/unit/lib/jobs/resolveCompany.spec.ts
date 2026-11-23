@@ -1,4 +1,6 @@
 import {
+  findCompany,
+  findJobTitle,
   resolveCompany,
   resolveJobTitle,
   resolveLocation,
@@ -68,6 +70,82 @@ describe("resolveCompany", () => {
     (prisma.company.create as any).mockRejectedValue(new Error("connection lost"));
 
     await expect(resolveCompany("Acme", userId)).rejects.toThrow("connection lost");
+  });
+
+  it("re-fetches the race winner by this user's canonical value", async () => {
+    (prisma.company.findUnique as any)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: "winner-company", label: "Acme" });
+    (prisma.company.create as any).mockRejectedValue({ code: "P2002" });
+
+    await resolveCompany("Acme", userId);
+
+    expect(prisma.company.findUnique).toHaveBeenNthCalledWith(2, {
+      where: { value_createdBy: { value: "acme", createdBy: userId } },
+    });
+  });
+
+  it("does not look for a winner after a non-P2002 error", async () => {
+    (prisma.company.findUnique as any)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: "unrelated", label: "Acme" });
+    (prisma.company.create as any).mockRejectedValue(new Error("connection lost"));
+
+    await expect(resolveCompany("Acme", userId)).rejects.toThrow("connection lost");
+    expect(prisma.company.findUnique).toHaveBeenCalledTimes(1);
+    // The unused winner would otherwise leak into the next test's queue
+    (prisma.company.findUnique as any).mockReset();
+  });
+
+  it("rethrows the P2002 when no winner is found", async () => {
+    const p2002 = Object.assign(new Error("Unique constraint failed"), {
+      code: "P2002",
+    });
+    (prisma.company.create as any).mockRejectedValue(p2002);
+
+    await expect(resolveCompany("Acme", userId)).rejects.toBe(p2002);
+  });
+});
+
+describe("findCompany / findJobTitle (read-only)", () => {
+  const userId = "user-1";
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (prisma.company.findUnique as any).mockResolvedValue(null);
+    (prisma.jobTitle.findUnique as any).mockResolvedValue(null);
+  });
+
+  it("finds a company by its legal-suffix-stripped value, for this user", async () => {
+    (prisma.company.findUnique as any).mockResolvedValue({
+      id: "c1",
+      label: "Acme",
+    });
+
+    const result = await findCompany("Acme Inc.", userId);
+
+    expect(prisma.company.findUnique).toHaveBeenCalledWith({
+      where: { value_createdBy: { value: "acme", createdBy: userId } },
+    });
+    expect(result).toEqual({ id: "c1", label: "Acme", created: false });
+  });
+
+  it("returns null and creates nothing when the company is unknown", async () => {
+    expect(await findCompany("Acme", userId)).toBeNull();
+    expect(prisma.company.create).not.toHaveBeenCalled();
+  });
+
+  it("keeps a job title's trailing suffix word when matching", async () => {
+    await findJobTitle("Sales Co", userId);
+
+    expect(prisma.jobTitle.findUnique).toHaveBeenCalledWith({
+      where: { value_createdBy: { value: "sales co", createdBy: userId } },
+    });
+  });
+
+  it("returns null without querying for a label that canonicalizes to empty", async () => {
+    expect(await findCompany(" , ", userId)).toBeNull();
+    expect(prisma.company.findUnique).not.toHaveBeenCalled();
   });
 });
 

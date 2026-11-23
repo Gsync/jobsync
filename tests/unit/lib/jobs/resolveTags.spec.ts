@@ -123,4 +123,38 @@ describe("resolveTags", () => {
 
     await expect(resolveTags(["React"], userId, 10)).rejects.toThrow("connection lost");
   });
+
+  it("re-fetches the race winner by this user's canonical value", async () => {
+    (prisma.tag.findUnique as any)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: "winner-tag",
+        label: "React",
+        value: "react",
+        createdBy: userId,
+      });
+    (prisma.tag.create as any).mockRejectedValue({ code: "P2002" });
+
+    await resolveTags(["React"], userId, 10);
+
+    expect(prisma.tag.findUnique).toHaveBeenNthCalledWith(2, {
+      where: { value_createdBy: { value: "react", createdBy: userId } },
+    });
+  });
+
+  it("does not look for a winner after a non-P2002 error", async () => {
+    (prisma.tag.create as any).mockRejectedValue(new Error("connection lost"));
+
+    await expect(resolveTags(["React"], userId, 10)).rejects.toThrow("connection lost");
+    expect(prisma.tag.findUnique).toHaveBeenCalledTimes(1);
+  });
+
+  it("rethrows the P2002 when no winner is found", async () => {
+    const p2002 = Object.assign(new Error("Unique constraint failed"), {
+      code: "P2002",
+    });
+    (prisma.tag.create as any).mockRejectedValue(p2002);
+
+    await expect(resolveTags(["React"], userId, 10)).rejects.toBe(p2002);
+  });
 });

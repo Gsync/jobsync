@@ -204,6 +204,17 @@ describe("changeJobStatus", () => {
     expect(fake.rows.jobStage[1].occurredAt).toEqual(backdated);
   });
 
+  it("re-dates an Applied pick when jobFields clears the Date Applied", async () => {
+    const { fake } = setup(
+      withJob({ appliedDate: backdated, applied: true }, [stage()]),
+    );
+
+    await call("s-applied", { jobFields: { appliedDate: null } });
+
+    const saved = fake.rows.job[0].appliedDate as Date | null;
+    expect(Math.abs(saved!.getTime() - Date.now())).toBeLessThan(1000);
+  });
+
   it("dates a new Applied stage now, not from a stored appliedDate", async () => {
     const { fake } = setup(
       withJob({ appliedDate: backdated, applied: true }, [stage()]),
