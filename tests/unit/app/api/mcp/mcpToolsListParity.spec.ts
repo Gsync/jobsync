@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { listTools, rpc } from "./helpers/listTools";
 
 vi.mock("@/lib/mcp/auth", () => ({
   resolveMcpToken: vi.fn(async () => ({
@@ -21,36 +22,9 @@ import { handleFindJob } from "@/lib/mcp/tools/findJob";
 // registerTool migration; it must not change without a deliberate decision.
 const FIXTURE = path.join(__dirname, "fixtures/mcpToolsList.json");
 
-const rpc = (body: object) =>
-  new Request("http://localhost/api/mcp", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      accept: "application/json, text/event-stream",
-    },
-    body: JSON.stringify({ jsonrpc: "2.0", ...body }),
-  });
-
-async function listTools(): Promise<unknown[]> {
-  await POST(
-    rpc({
-      id: 1,
-      method: "initialize",
-      params: {
-        protocolVersion: "2025-06-18",
-        capabilities: {},
-        clientInfo: { name: "parity-spec", version: "1.0.0" },
-      },
-    }),
-  );
-  const res = await POST(rpc({ id: 2, method: "tools/list", params: {} }));
-  const json = await res.json();
-  return json.result.tools;
-}
-
 describe("MCP tools/list parity", () => {
   it("lists the eleven tools with unchanged names, descriptions and input schemas", async () => {
-    const tools = await listTools();
+    const tools = await listTools(POST);
     const expected = JSON.parse(readFileSync(FIXTURE, "utf8"));
     expect(tools).toHaveLength(11);
     expect(tools).toEqual(expected);
