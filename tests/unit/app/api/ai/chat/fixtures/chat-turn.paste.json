@@ -195,7 +195,7 @@
                   }
                 },
                 "mergeInto": {
-                  "description": "Only after a result named a matching saved question: that question's id, with mode \"append\" to add the answer (the first answer if the saved question has none, otherwise below the saved one) or \"replace\" to change the saved answer, only when the result offers replace. Either way the saved question keeps its wording.",
+                  "description": "Only after a result named a matching saved question: that question's id, with mode \"append\" to add the answer below the saved one or \"replace\" to overwrite it.",
                   "type": "object",
                   "properties": {
                     "questionId": {

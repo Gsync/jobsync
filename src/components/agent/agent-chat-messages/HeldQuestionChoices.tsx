@@ -11,7 +11,7 @@ const quoted = (text: string) => `“${text}”`;
 function HeldEntry({ held, changed }: { held: HeldItem; changed: ReadonlySet<string> }) {
   const question = quoted(held.question);
   if (!hasCapabilities(held)) {
-    return <li>{`${question}: tell me what you'd like to do with it.`}</li>;
+    return <li>{question}</li>;
   }
   if (held.status === "exists") {
     const choices = [...targetChoices(held.existing, changed), SKIP];

@@ -186,15 +186,15 @@ function textOf(output: unknown): string {
   return String(raw?.content ?? '');
 }
 
-// The inverse of the assertCalls* family, for the rows where reaching for a
-// tool is itself the failure. Pairs with an llm-rubric on what was said
-// instead — this half only pins that nothing was called.
 // An empty finish (reasoning only) must fail even if a grader would accept it
 export function assertVisibleReply(output: unknown): AssertionResult {
   const pass = textOf(output).trim().length > 0;
   return { pass, score: pass ? 1 : 0, reason: pass ? 'visible reply' : 'no visible reply (empty or reasoning-only finish)' };
 }
 
+// The inverse of the assertCalls* family, for the rows where reaching for a
+// tool is itself the failure. Pairs with an llm-rubric on what was said
+// instead — this half only pins that nothing was called.
 export function assertNoToolCall(output: unknown): AssertionResult {
   const calls = parseToolCalls(output);
   const pass = calls.length === 0;

@@ -250,7 +250,7 @@ describe("saveQuestions", () => {
     );
     expect(result).toMatchObject({
       status: "invalid",
-      error: "Adding this text would take the saved answer over 5,000 characters. Try adding less text.",
+      error: "Adding this text would take the saved answer over 5000 characters. Try adding less text.",
       userFacing: true,
     });
     expect(prisma.question.update).not.toHaveBeenCalled();

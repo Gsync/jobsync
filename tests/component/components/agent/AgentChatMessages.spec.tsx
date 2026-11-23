@@ -632,6 +632,44 @@ describe("AgentChatMessages", () => {
       expect(waiting()).not.toBeInTheDocument();
     });
 
+    it("drops a question saved as new under new wording", () => {
+      chat.messages = [assistant([
+        call("c1", [{ question: "Question A here" }], [similar(1, "Question A here", [cand("q-a", "Saved A", false, false)], false)]),
+        call("c2", [{ question: "Question A, reworded", notSameAs: ["q-a"] }], [
+          { index: 1, question: "Question A, reworded", status: "saved", tags: [], droppedTags: [], saved: true },
+        ]),
+        thought,
+      ])];
+      render(<AgentChatMessages />);
+      expect(waiting()).not.toBeInTheDocument();
+    });
+
+    it("leaves out a held question that visible text already covered", () => {
+      chat.messages = [assistant([
+        call("c1", [{ question: "Question A here" }], [similar(1, "Question A here", [cand("q-a", "Saved A", false, false)], false)]),
+        { type: "text", text: "Question A looks like a saved one. Save as new or skip?" },
+        call("c2", [{ question: "Question B here" }], [similar(1, "Question B here", [cand("q-b", "Saved B", false, false)], false)]),
+        thought,
+      ])];
+      render(<AgentChatMessages />);
+      const note = waiting()!;
+      expect(note).not.toHaveTextContent("Question A here");
+      expect(note).toHaveTextContent("Question B here");
+    });
+
+    it("stays out of the way when text covered the held question before a later save", () => {
+      chat.messages = [assistant([
+        call("c1", [{ question: "Question A here" }], [similar(1, "Question A here", [cand("q-a", "Saved A", false, false)], false)]),
+        { type: "text", text: "Question A looks like a saved one. Save as new or skip?" },
+        call("c2", [{ question: "Question C here" }], [
+          { index: 1, question: "Question C here", status: "saved", tags: [], droppedTags: [], saved: true },
+        ]),
+        thought,
+      ])];
+      render(<AgentChatMessages />);
+      expect(waiting()).not.toBeInTheDocument();
+    });
+
     it("invites a reply without inventing choices for a historical result", () => {
       chat.messages = [assistant([
         call("c1", [{ question: DEPLOY, answer: "Roll back first." }], [
@@ -642,8 +680,9 @@ describe("AgentChatMessages", () => {
       render(<AgentChatMessages />);
       const note = waiting()!;
       expect(note).toHaveTextContent(DEPLOY);
-      expect(note).toHaveTextContent(/tell me what you'd like to do/i);
+      expect(note).not.toHaveTextContent("me ");
       expect(note).not.toHaveTextContent("replace");
+      expect(note).not.toHaveTextContent(/save as new/i);
     });
 
     const heldTurn = (extra: any[] = []) => assistant([

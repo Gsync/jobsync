@@ -31,7 +31,7 @@ function describeExists(existing: { id: string; hasAnswer: boolean; canReplace: 
 }
 
 const SIMILAR_WITH_ANSWER =
-  'Ask the user whether any of them is the same question. If one is, offer only the choices on its line, then call add_question again with mergeInto: { questionId, mode: "append" } to add the answer, or mode "replace" where replace is listed. Otherwise offer to save it as new, calling again with notSameAs listing every candidate id, or to skip it by leaving it out.';
+  'Ask the user whether any of them is the same question. For one that is, offer only the choices on its line. Either way, also offer to save it as new or skip it. Then call add_question again with mergeInto: { questionId, mode: "append" } to add the answer, or mode "replace" where replace is listed; with notSameAs listing every candidate id to save it as new; or leave it out to skip it.';
 const SIMILAR_WITHOUT_ANSWER =
   "The user gave no answer, so offer only to save it as new or skip it: to save it as new, call add_question again with notSameAs listing every candidate id; leave it out to skip it.";
 

@@ -176,6 +176,7 @@ describe("handleAddQuestion", () => {
     expect(line("q-8")).not.toContain("replace");
     expect(line("q-9")).toContain("choices: add below the saved answer");
     expect(line("q-9")).not.toContain("replace");
+    expect(text).toContain("Either way, also offer to save it as new or skip it");
   });
 
   it("offers only save as new or skip for a similar question without an answer", async () => {

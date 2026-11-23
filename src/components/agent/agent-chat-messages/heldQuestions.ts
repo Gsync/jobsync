@@ -10,7 +10,7 @@ export type HeldItem = Extract<SaveQuestionResult, { status: "exists" | "similar
 export type HeldOutcome = { waiting: HeldItem[]; changed: ReadonlySet<string> };
 
 type Part = UIMessage["parts"][number];
-type State = { waiting: Map<string, HeldItem>; changed: Set<string> };
+type State = { waiting: Map<string, HeldItem>; changed: Set<string>; explained: Set<string> };
 
 const RESOLVED: ReadonlySet<SaveQuestionResult["status"]> = new Set(["saved", "merged", "skipped"]);
 
@@ -18,7 +18,7 @@ function targetIds(held: HeldItem): string[] {
   return held.status === "exists" ? [held.existing.id] : held.candidates.map((c) => c.id);
 }
 
-// A reworded re-call is matched by its target, and only when one input owns it
+// A reworded re-call matches by target; all owners drop, none misreported
 function releaseTarget(state: State, target: string) {
   const owners = [...state.waiting].filter(([, held]) => targetIds(held).includes(target));
   for (const [key] of owners) state.waiting.delete(key);
@@ -28,13 +28,15 @@ function applyItem(state: State, item: SaveQuestionResult, inputs: SaveQuestionI
   const key = normalizeQuestionText(item.question);
   if (item.status === "exists" || item.status === "similar") {
     state.waiting.set(key, item);
+    state.explained.delete(key);
     return;
   }
   if (!RESOLVED.has(item.status)) return;
-  const target = inputs.find((i) => normalizeQuestionText(i.question) === key)?.mergeInto?.questionId;
+  const input = inputs.find((i) => normalizeQuestionText(i.question) === key);
+  const target = input?.mergeInto?.questionId;
   if (item.status === "merged" && target) state.changed.add(target);
-  if (state.waiting.delete(key) || !target) return;
-  releaseTarget(state, target);
+  if (state.waiting.delete(key)) return;
+  for (const id of target ? [target] : input?.notSameAs ?? []) releaseTarget(state, id);
 }
 
 function addQuestionResults(part: Part): { items: SaveQuestionResult[]; inputs: SaveQuestionInput[] } | undefined {
@@ -45,22 +47,23 @@ function addQuestionResults(part: Part): { items: SaveQuestionResult[]; inputs: 
   return { items: output.items, inputs };
 }
 
-// Ordered add_question results in one assistant turn. Silent only: any visible
-// text after the last call means the model already explained the choices
-export function heldAfterSilence(message: UIMessage): HeldOutcome | undefined {
-  const lastCall = message.parts.findLastIndex((p) => p.type === "tool-add_question");
-  if (lastCall === -1) return;
-  const after = message.parts.slice(lastCall + 1);
-  if (after.some((p) => p.type === "text" && p.text.trim().length > 0)) return;
-
-  const state: State = { waiting: new Map(), changed: new Set() };
-  for (const part of message.parts) {
-    const results = addQuestionResults(part);
-    if (!results) continue;
-    for (const item of results.items) applyItem(state, item, results.inputs);
+function applyPart(state: State, part: Part) {
+  if (part.type === "text" && part.text.trim().length > 0) {
+    for (const key of state.waiting.keys()) state.explained.add(key);
+    return;
   }
-  if (state.waiting.size === 0) return;
-  return { waiting: [...state.waiting.values()], changed: state.changed };
+  const results = addQuestionResults(part);
+  if (!results) return;
+  for (const item of results.items) applyItem(state, item, results.inputs);
+}
+
+// Held questions in one assistant turn that no visible text followed
+export function heldAfterSilence(message: UIMessage): HeldOutcome | undefined {
+  const state: State = { waiting: new Map(), changed: new Set(), explained: new Set() };
+  for (const part of message.parts) applyPart(state, part);
+  const silent = [...state.waiting].filter(([key]) => !state.explained.has(key)).map(([, held]) => held);
+  if (silent.length === 0) return;
+  return { waiting: silent, changed: state.changed };
 }
 
 // Older transcripts lack these facts; their choices are not guessed

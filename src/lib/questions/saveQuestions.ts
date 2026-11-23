@@ -29,7 +29,7 @@ type WriteDecision =
 function answerTooLong(html: string, joined: boolean): string | undefined {
   if (html.length <= MAX_QUESTION_ANSWER_LENGTH) return undefined;
   return joined
-    ? `Adding this text would take the saved answer over ${MAX_QUESTION_ANSWER_LENGTH.toLocaleString("en-US")} characters. Try adding less text.`
+    ? `Adding this text would take the saved answer over ${MAX_QUESTION_ANSWER_LENGTH} characters. Try adding less text.`
     : `The answer would exceed ${MAX_QUESTION_ANSWER_LENGTH} characters once saved. Shorten it.`;
 }
 

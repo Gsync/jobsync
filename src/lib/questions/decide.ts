@@ -91,7 +91,7 @@ function refused(item: PreparedQuestion, error: string): QuestionDecision {
 }
 
 // The write decision uses this too, so an offered Replace is never refused
-export function canReplaceRow(row: BankQuestion, replaceAgentCreatedOnly: boolean): boolean {
+function canReplaceRow(row: BankQuestion, replaceAgentCreatedOnly: boolean): boolean {
   if (!hasAnswer(row.answer)) return false;
   return !replaceAgentCreatedOnly || row.createdVia !== null;
 }
