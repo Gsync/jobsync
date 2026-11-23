@@ -18,7 +18,7 @@ import {
   getQuestionsList,
 } from "@/actions/question.actions";
 import { toastActionResult, toastError } from "@/lib/toast";
-import { Question } from "@/models/question.model";
+import { Question, QuestionListItem } from "@/models/question.model";
 import { Tag } from "@/models/job.model";
 import { RecordsCount } from "../RecordsCount";
 import { APP_CONSTANTS } from "@/lib/constants";
@@ -41,7 +41,7 @@ function QuestionsContainer({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { questionWrites } = useAgentChat();
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<QuestionListItem[]>([]);
   const [page, setPage] = useState(1);
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [editQuestion, setEditQuestion] = useState<Question | null>(null);

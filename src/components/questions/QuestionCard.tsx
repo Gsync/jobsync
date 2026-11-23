@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Question } from "@/models/question.model";
+import { Question, QuestionListItem } from "@/models/question.model";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { QuestionTagBadge } from "@/components/questions/QuestionTagBadge";
@@ -18,7 +18,7 @@ import {
 import { TipTapContentViewer } from "@/components/TipTapContentViewer";
 
 type QuestionCardProps = {
-  question: Question;
+  question: QuestionListItem;
   onEdit: (question: Question) => void;
   onDelete: (questionId: string) => void;
 };
@@ -98,11 +98,21 @@ export function QuestionCard({
           </div>
         )}
 
-        {question.createdVia && (
-          <div className="mt-2">
-            <Badge variant="outline" className="text-xs text-muted-foreground">
-              via {question.createdVia}
-            </Badge>
+        {(question.createdVia || question.askedCount > 0) && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {question.createdVia && (
+              <Badge variant="outline" className="text-xs text-muted-foreground">
+                via {question.createdVia}
+              </Badge>
+            )}
+            {question.askedCount > 0 && (
+              <Badge
+                variant="outline"
+                className="border-transparent bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+              >
+                Asked {question.askedCount} {question.askedCount === 1 ? "time" : "times"}
+              </Badge>
+            )}
           </div>
         )}
 

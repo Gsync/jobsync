@@ -61,12 +61,18 @@ describe("Question Actions", () => {
   describe("getQuestionsList", () => {
     it("should return paginated questions", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
-      (prisma.question.findMany as any).mockResolvedValue([mockQuestion]);
+      (prisma.question.findMany as any).mockResolvedValue([
+        { ...mockQuestion, _count: { prepLinks: 2 } },
+      ]);
       (prisma.question.count as any).mockResolvedValue(1);
 
       const result = await getQuestionsList(1, 10);
 
-      expect(result).toEqual({ success: true, data: [mockQuestion], total: 1 });
+      expect(result).toEqual({
+        success: true,
+        data: [{ ...mockQuestion, askedCount: 2 }],
+        total: 1,
+      });
       expect(prisma.question.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { createdBy: mockUser.id },
@@ -75,6 +81,11 @@ describe("Question Actions", () => {
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           include: {
             tags: { orderBy: [{ label: "asc" }, { id: "asc" }] },
+            _count: {
+              select: {
+                prepLinks: { where: { asked: true, Stage: { Job: { userId: mockUser.id } } } },
+              },
+            },
           },
         }),
       );

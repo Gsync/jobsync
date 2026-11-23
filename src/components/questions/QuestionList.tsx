@@ -1,9 +1,9 @@
 "use client";
-import { Question } from "@/models/question.model";
+import { Question, QuestionListItem } from "@/models/question.model";
 import { QuestionCard } from "./QuestionCard";
 
 type QuestionListProps = {
-  questions: Question[];
+  questions: QuestionListItem[];
   onEdit: (question: Question) => void;
   onDelete: (questionId: string) => void;
 };

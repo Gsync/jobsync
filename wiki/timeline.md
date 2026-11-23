@@ -77,7 +77,7 @@ A question can be on the prep lists of several stages at once, and **✕** besid
 
 A prep-list question is one you *expect*; the checkbox beside it records that it was *actually asked*. Tick it during or after the interview and it saves immediately — there is no separate save step — and the **Prep List** tab carries a running `2 of 5` tally, so you can read the progress without opening the tab.
 
-The distinction is what makes the list useful afterwards: which of the questions you prepared for came up, and which did not. Marking a question asked never changes the question itself or its answer in your bank.
+On the **Questions** page, the card shows **Asked 2 times** if you marked that question as asked in two interview rounds across your jobs. Clearing a checkbox reduces the count, and the badge disappears at zero.
 
 One knock-on effect: a question that is on any prep list cannot be deleted from the question bank. The Questions page refuses with a count of the interview stages using it. Remove it from those prep lists first, then delete.
 

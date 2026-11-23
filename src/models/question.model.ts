@@ -11,6 +11,8 @@ export interface Question {
   createdVia?: string | null;
 }
 
+export type QuestionListItem = Question & { askedCount: number };
+
 // A saved question as the duplicate check and merges see it
 export type BankQuestion = {
   id: string;

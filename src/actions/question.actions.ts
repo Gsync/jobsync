@@ -42,11 +42,16 @@ export const getQuestionsList = async (
       ];
     }
 
-    const [data, total] = await Promise.all([
+    const [questions, total] = await Promise.all([
       prisma.question.findMany({
         where: whereClause,
         include: {
           tags: { orderBy: [{ label: "asc" }, { id: "asc" }] },
+          _count: {
+            select: {
+              prepLinks: { where: { asked: true, Stage: { Job: { userId: user.id } } } },
+            },
+          },
         },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         skip: offset,
@@ -55,6 +60,10 @@ export const getQuestionsList = async (
       prisma.question.count({ where: whereClause }),
     ]);
 
+    const data = questions.map(({ _count, ...question }) => ({
+      ...question,
+      askedCount: _count.prepLinks,
+    }));
     return { success: true, data, total };
   } catch (error) {
     return handleError(error, "Failed to fetch questions list.");
