@@ -602,6 +602,53 @@ tests:
       - type: javascript
         value: file://./assertions.ts:assertNotSameAs
 
+  # Live 2026-11-22: the shared "what are your" opening held a distinct question
+  - description: Similar weaknesses/strengths - re-sends at once with notSameAs, no question to the user
+    vars:
+      userMessage: "Save this question, no answer: What are your weaknesses?"
+      priorAddQuestion: similarWeakness
+      pageLocation: elsewhere
+      expectedQuestionId: q-eval-4
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertNotSameAs
+
+  # Live 2026-11-22: "save it" re-sent the held question unchanged, held again
+  - description: Save it after a held similar question - re-sends with notSameAs
+    vars:
+      userMessage: "Save this question, no answer: What are your weaknesses?"
+      priorAddQuestion: similarWeakness
+      priorAssistantReply: >-
+        "What are your weaknesses?" looks similar to "What are your strengths?",
+        which is already in your bank. Should I save yours as a new question,
+        or skip it?
+      followUp: save it
+      priorPageLocation: elsewhere
+      pageLocation: elsewhere
+      expectedQuestionId: q-eval-4
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertNotSameAs
+
+  # Counterweight to the notSameAs rows: sending it here saves a duplicate
+  - description: Similar unanswered rewording - asks, does not re-send with notSameAs
+    vars:
+      userMessage: "Save this question, no answer: How do you deal with a broken deployment?"
+      priorAddQuestion: similarRewording
+      pageLocation: elsewhere
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertNoToolCall
+      - type: llm-rubric
+        value: >-
+          The reply tells the user their question looks like the saved
+          question "How do you handle a failing deploy?", asks whether to save
+          theirs as a new question or skip it, and does not claim it was saved.
+
   # From the Phase 3 manual check: only merge and save-as-new were offered.
   - description: Similar with a user answer - offers add below, replace, save as new and skip
     vars:

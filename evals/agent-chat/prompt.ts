@@ -131,6 +131,16 @@ const PRIOR_ADD_QUESTION: Record<string, { input: unknown; output: { items: Save
     input: { questions: [{ question: 'Why do you want to leave your job?', tags: ['Motivation'] }] },
     output: { items: [{ index: 1, question: 'Why do you want to leave your job?', status: 'similar', candidates: [{ id: 'q-eval-2', question: 'Why do you want to work here?', score: 0.45, hasAnswer: false }] }] },
   },
+  // The live pair: a shared opening scores 0.39, above the 0.25 floor
+  similarWeakness: {
+    input: { questions: [{ question: 'What are your weaknesses?', tags: ['Self-awareness'] }] },
+    output: { items: [{ index: 1, question: 'What are your weaknesses?', status: 'similar', candidates: [{ id: 'q-eval-4', question: 'What are your strengths?', score: 0.39, hasAnswer: false }] }] },
+  },
+  // A real rewording, no answer: notSameAs here would save a duplicate
+  similarRewording: {
+    input: { questions: [{ question: 'How do you deal with a broken deployment?', tags: ['Incident response'] }] },
+    output: { items: [{ index: 1, question: 'How do you deal with a broken deployment?', status: 'similar', candidates: [{ id: 'q-eval-3', question: 'How do you handle a failing deploy?', score: 0.28, hasAnswer: true }] }] },
+  },
   similarAnswered: {
     input: { questions: [{ question: 'How do you deal with a broken deployment?', answer: 'I roll back first, then find the cause from the deploy diff and the logs.', tags: ['Incident response'] }] },
     output: { items: [{ index: 1, question: 'How do you deal with a broken deployment?', status: 'similar', candidates: [{ id: 'q-eval-3', question: 'How do you handle a failing deploy?', score: 0.28, hasAnswer: true }] }] },
