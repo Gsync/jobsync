@@ -9,6 +9,7 @@ Every executable test lives here, split by suite first and by the production cod
 | Unit | `unit/` | Vitest project `unit` | Functions, schemas, server actions and API route handlers, with Prisma and other dependencies mocked |
 | Component | `component/` | Vitest project `component` | Components, contexts and hooks rendered with React Testing Library |
 | Integration | `integration/` | Vitest project `integration` | Several real layers at a documented boundary; today only the opt-in backup round trip against a real Postgres |
+| Property | `property/` | Vitest project `property` (opt-in) | Seeded fast-check suites over pure logic and the job timeline; never run by `npm test` or CI |
 | E2E | `tests/e2e/` | Playwright | Browser flows against a running dev server |
 
 Inside `unit/` and `component/`, a spec sits in the directory that mirrors its primary production module's parent, without `src/` — the spec for `src/lib/jobs/resolve.ts` lives in `unit/lib/jobs/`. Exceptions: `unit/project/` holds repository-wide checks (`browserslistFloor`, `postgresQueryParity`, `jobStatusWrites`, `stageResolverTransactions`, `stageOrdering`, `eslintRules`), `unit/scripts/` holds specs for `scripts/`, `component/regressions/` holds cross-feature render regressions, and `unit/proxyMatcher.spec.ts` sits at the suite root because `src/proxy.ts` sits at the `src/` root.
@@ -24,13 +25,18 @@ npm run test:component
 npm run test:watch        # unit + component, watch mode
 npm run test:coverage     # unit + component
 npm run test:integration  # opt-in; skips without BACKUP_TEST_DATABASE_URL
+npm run test:property     # opt-in; seeded fast-check suites
 npm run test:e2e          # Playwright, needs the dev server
 npm test -- tests/unit/lib/jobs/resolveCompany.spec.ts  # one file
 ```
 
 Next.js route folders such as `[id]` are mirrored as-is; quote those paths in zsh, which otherwise treats the brackets as a glob and fails with "no matches found": `npm test -- 'tests/unit/app/dashboard/myjobs/[id]/JobDetailsPage.spec.tsx'`.
 
-`npm test`, `test:watch` and `test:coverage` never select the integration suite, Playwright or the evals.
+`npm test`, `test:watch` and `test:coverage` never select the integration or property suites, Playwright or the evals.
+
+## Property tests
+
+`tests/property/` mirrors `src/` and runs fast-check with a fixed seed (`setup/fastCheck.ts`: 200 runs, seed 20261123). A failure message prints its seed and path; reproduce it with `FC_SEED=<seed> npm run test:property`, and widen a run with `FC_RUNS=2000`. A failing property is a finding: show the counterexample, do not narrow the generator to make it pass. The timeline machine reuses the fake in `unit/lib/jobs/timeline/helpers/`.
 
 ## Environments and setup
 
