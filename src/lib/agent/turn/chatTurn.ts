@@ -15,6 +15,7 @@ import { AGENT_CHAT_SYSTEM_PROMPT } from "../prompt";
 import type { NestedGenerationGuard } from "../steps/nestedGeneration";
 import { buildAgentStopWhen, buildAgentToolApproval, buildAgentTools } from "../tools";
 import { persistTurn } from "./persistTurn";
+import { repairStringifiedInput } from "./repairToolInput";
 import { directCallFor, recordToolProgress, runToolDirect, type DirectRun } from "./runToolDirect";
 import { measureTurnPrefix, type TurnPrefixMetrics } from "./turnMetrics";
 import { buildTurnLogFields, endTurnSpan } from "./turnLog";
@@ -124,6 +125,8 @@ export function runChatTurn(input: {
           messages: routedMessages,
           tools,
           toolApproval,
+          // Fixes it in place: a retry costs a whole thinking step
+          repairToolCall: repairStringifiedInput,
           stopWhen: [isStepCount(APP_CONSTANTS.AGENT_CHAT_MAX_STEPS), ...buildAgentStopWhen()],
           // Argument extraction wants determinism.
           temperature: TEMPERATURES.ANALYSIS,
