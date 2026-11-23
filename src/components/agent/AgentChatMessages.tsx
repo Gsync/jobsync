@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { AgentMarkdown } from "@/components/agent/AgentMarkdown";
 import { AgentStatusRow } from "@/components/agent/AgentStatusRow";
 import { AgentToolPart } from "@/components/agent/AgentToolPart";
+import { HeldQuestionChoices } from "@/components/agent/agent-chat-messages/HeldQuestionChoices";
+import { heldAfterSilence } from "@/components/agent/agent-chat-messages/heldQuestions";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
 import { resolvePastedText } from "@/lib/agent/memory/paste";
 import { cn } from "@/lib/utils";
@@ -122,6 +124,9 @@ export function AgentChatMessages() {
   const last = messages.at(-1);
   const directTool = pendingDirectTool(messages, status);
   const thinking = showThinking(messages, status);
+  // A held result then only reasoning leaves the user no way forward
+  const held = status === "ready" && !showContinue && last?.role === "assistant" &&
+    !stoppedReplies.get(last.id) ? heldAfterSilence(last) : undefined;
 
   const dismiss = () => {
     setDismissed(true);
@@ -185,6 +190,8 @@ export function AgentChatMessages() {
             })}
           </div>;
         })}
+
+        {held && <HeldQuestionChoices outcome={held} />}
 
         {showContinue && (
           <div className="flex items-center gap-2 rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
