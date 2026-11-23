@@ -31,5 +31,5 @@
     "src/lib/data/seedData.js",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "scripts"]
+  "exclude": ["node_modules", "scripts", "evals/agent-chat/latency.ts"]
 }
