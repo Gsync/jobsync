@@ -57,6 +57,12 @@ export const AGENT_ADD_JOB_INTRO = [
   "You will see everything I extracted on a confirmation card before anything is saved.",
 ].join("\n");
 
+export const AGENT_ADD_QUESTION_INTRO = [
+  "Happy to save it. Paste the interview question here, and your answer too if you have one.",
+  "",
+  "I'll check your question bank first so nothing is saved twice, and add skill tags if I can tell what it tests.",
+].join("\n");
+
 export const AGENT_TOOL_DESCRIPTIONS = Object.fromEntries(
   AGENT_TOOL_NAMES.map((name) => [name, AGENT_TOOL_META[name].description]),
 ) as { readonly [Name in AgentToolName]: (typeof AGENT_TOOL_META)[Name]["description"] };

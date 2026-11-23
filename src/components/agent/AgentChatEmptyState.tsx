@@ -2,21 +2,23 @@
 
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
-import { AGENT_ADD_JOB_INTRO } from "@/lib/agent/prompt";
+import { AGENT_ADD_JOB_INTRO, AGENT_ADD_QUESTION_INTRO } from "@/lib/agent/prompt";
 import type { DirectInvokeToolName } from "@/lib/agent/registry";
 import { directInvokeParts } from "@/models/agent.model";
 
 // None need editing first, so they act on click. The three tool chips run as
 // direct invokes, skipping the model's thinking turn; off a job's page the job
 // tools reply with a graceful "no_job" result. ADD_JOB is the one whose answer
-// is knowable without the model — see AGENT_ADD_JOB_INTRO.
-const ADD_JOB = "Add a job posting";
+// is knowable without the model — see AGENT_ADD_JOB_INTRO. ADD_QUESTION
+// likewise: it needs the question pasted first.
+const ADD_JOB = "Add a job";
+const ADD_QUESTION = "Add a question";
 const TOOL_EXAMPLES: Record<string, DirectInvokeToolName> = {
   "Review resume": "review_resume",
   "Match a job": "match_job",
   "Generate cover letter": "generate_cover_letter",
 };
-const EXAMPLES = [ADD_JOB, ...Object.keys(TOOL_EXAMPLES)];
+const EXAMPLES = [ADD_JOB, ADD_QUESTION, ...Object.keys(TOOL_EXAMPLES)];
 
 export function AgentChatEmptyState() {
   const { sendMessage, seedExchange, preflight } = useAgentChat();
@@ -27,7 +29,13 @@ export function AgentChatEmptyState() {
       seedExchange(example, AGENT_ADD_JOB_INTRO);
       return;
     }
-    void sendMessage({ parts: directInvokeParts(example, TOOL_EXAMPLES[example]) });
+    if (example === ADD_QUESTION) {
+      seedExchange(example, AGENT_ADD_QUESTION_INTRO);
+      return;
+    }
+    void sendMessage({
+      parts: directInvokeParts(example, TOOL_EXAMPLES[example]),
+    });
   };
 
   return (
@@ -39,7 +47,8 @@ export function AgentChatEmptyState() {
         and I&apos;ll show you what I extracted before anything is saved. I can
         also read and review your resumes, and while you&apos;re looking at a
         job I can score how well one of them matches it or write you a cover
-        letter. I can&apos;t search your existing jobs or read your tasks yet.
+        letter. I can also save interview questions, and your answers, to your
+        question bank. I can&apos;t search your existing jobs or read your tasks yet.
       </p>
 
       <Suggestions>

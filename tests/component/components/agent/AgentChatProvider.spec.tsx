@@ -78,7 +78,7 @@ function Probe() {
       >
         sendSecond
       </button>
-      <button onClick={() => c.seedExchange("Add a job posting", "canned")}>
+      <button onClick={() => c.seedExchange("Add a job", "canned")}>
         seedExchange
       </button>
       <button onClick={c.clearQueued}>clearQueued</button>
@@ -152,7 +152,7 @@ describe("AgentChatProvider", () => {
     expect(next).toHaveLength(3);
     expect(next[1]).toMatchObject({
       role: "user",
-      parts: [{ type: "text", text: "Add a job posting" }],
+      parts: [{ type: "text", text: "Add a job" }],
     });
     expect(next[2]).toMatchObject({
       role: "assistant",

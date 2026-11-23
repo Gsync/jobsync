@@ -47,7 +47,7 @@ There is a faster route once an AI provider is set: click **Chat AI** in the hea
 
 ## How do I save interview questions from AI chat?
 
-Click **Chat AI**, type or paste your questions and ask the assistant to save them; they go straight into **Questions**, with no approval step, and an open Questions page updates by itself. If you gave no answers, the assistant may first ask whether you want to add any, or save them straight away; a question saved without an answer shows **TBD**, and you can fill it in later on the Questions page. It picks a few skill tags for each question itself.
+Click **Chat AI**, then **Add a question** (or just type or paste your questions and ask the assistant to save them); they go straight into **Questions**, with no approval step, and an open Questions page updates by itself. If you gave no answers, the assistant may first ask whether you want to add any, or save them straight away; a question saved without an answer shows **TBD**, and you can fill it in later on the Questions page. It picks a few skill tags for each question itself.
 
 Each question is checked against your bank first. One already saved, sent without an answer, is reported as already in your bank. For one already saved that you did answer, or one close to a saved question, the assistant asks what to do: add your answer below the saved one, replace it, save yours as a new question (close matches only), or skip it. Replace only works on questions an agent created; on one you wrote in the app, your answer can only go below. The check compares shared words, not meaning, so "Describe a conflict with a coworker" and "Tell me about a time you disagreed with a colleague" save as two questions.
 
