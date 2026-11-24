@@ -97,6 +97,25 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     },
   },
 
+  "openai-compatible": {
+    id: "openai-compatible",
+    displayName: "OpenAI-compatible",
+    credentialType: "base-url",
+    category: "local",
+    envVar: "OPENAI_COMPATIBLE_BASE_URL",
+    modelsEndpoint: "openai-compatible/models",
+    parseModelsResponse: (data) =>
+      data.data?.map((model: { id: string }) => model.id).filter((id: string) => !/embed/i.test(id)) ?? [],
+    requiresRunningCheck: false,
+    supportsKeepAlive: false,
+    keyConfig: {
+      placeholder: "http://host.docker.internal:1234",
+      inputType: "text",
+      description: "Base URL of an LM Studio, oMLX, llama.cpp or vLLM server. Load models with at least 16k context (chat needs it).",
+      sensitive: false,
+    },
+  },
+
   gemini: {
     id: "gemini",
     displayName: "Google Gemini",
@@ -117,8 +136,12 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
   },
 };
 
-export const AI_PROVIDERS = ["ollama", "openai", "deepseek", "openrouter", "gemini"] as const;
+export const AI_PROVIDERS = ["ollama", "openai", "deepseek", "openrouter", "gemini", "openai-compatible"] as const;
 export type AiProviderId = (typeof AI_PROVIDERS)[number];
+
+export function isLocalProvider(id: string): boolean {
+  return PROVIDER_REGISTRY[id]?.category === "local";
+}
 
 export function getAiProviders(): ProviderRegistryEntry[] {
   return AI_PROVIDERS.map((id) => PROVIDER_REGISTRY[id]);

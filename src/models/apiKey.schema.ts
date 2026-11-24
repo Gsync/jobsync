@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const apiKeySaveSchema = z.object({
-  provider: z.enum(["openai", "deepseek", "openrouter", "ollama", "gemini"]),
+  provider: z.enum(["openai", "deepseek", "openrouter", "ollama", "gemini", "openai-compatible"]),
   key: z.string().min(1, "API key is required"),
   label: z.string().optional(),
   sensitive: z.boolean().default(true),

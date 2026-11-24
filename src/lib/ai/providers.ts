@@ -3,7 +3,7 @@ import { PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
 import { PROVIDER_FACTORIES } from "@/lib/ai/provider-registry.server";
 import { MissingCredentialError } from "@/lib/ai/tools/errors";
 
-export type ProviderType = "openai" | "ollama" | "deepseek" | "openrouter" | "gemini";
+export type ProviderType = "openai" | "ollama" | "deepseek" | "openrouter" | "gemini" | "openai-compatible";
 
 export async function getModel(
   provider: ProviderType,

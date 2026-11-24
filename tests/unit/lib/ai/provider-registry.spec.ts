@@ -1,15 +1,15 @@
-import { PROVIDER_REGISTRY, AI_PROVIDERS } from "@/lib/ai/provider-registry";
+import { PROVIDER_REGISTRY, AI_PROVIDERS, isLocalProvider } from "@/lib/ai/provider-registry";
 
 describe("AI_PROVIDERS", () => {
   it("includes openrouter", () => {
     expect(AI_PROVIDERS).toContain("openrouter");
   });
 
-  it("contains exactly 5 providers", () => {
-    expect(AI_PROVIDERS).toHaveLength(5);
+  it("contains exactly 6 providers", () => {
+    expect(AI_PROVIDERS).toHaveLength(6);
   });
 
-  it("contains ollama, openai, deepseek, openrouter, gemini", () => {
+  it("contains ollama, openai, deepseek, openrouter, gemini, openai-compatible", () => {
     expect(AI_PROVIDERS).toEqual(
       expect.arrayContaining([
         "ollama",
@@ -17,6 +17,7 @@ describe("AI_PROVIDERS", () => {
         "deepseek",
         "openrouter",
         "gemini",
+        "openai-compatible",
       ]),
     );
   });
@@ -133,4 +134,28 @@ describe("PROVIDER_REGISTRY – openrouter entry", () => {
       ]);
     });
   });
+});
+
+describe("OpenAI-compatible settings", () => {
+  const entry = PROVIDER_REGISTRY["openai-compatible"];
+
+  it("offers a local base URL and leaves it unset by default", () => {
+    expect(entry).toMatchObject({
+      displayName: "OpenAI-compatible", credentialType: "base-url", category: "local",
+      envVar: "OPENAI_COMPATIBLE_BASE_URL", modelsEndpoint: "openai-compatible/models",
+      keyConfig: { sensitive: false, placeholder: "http://host.docker.internal:1234", description: expect.stringContaining("16k") },
+    });
+    expect(entry.defaultCredential).toBeUndefined();
+  });
+
+  it("offers chat models and excludes embedding models", () => {
+    expect(entry.parseModelsResponse!({ data: [
+      { id: "qwen3.5-9b" }, { id: "text-embedding-nomic-embed-text-v1.5" }, { id: "Embed-small" },
+    ] })).toEqual(["qwen3.5-9b"]);
+    expect(entry.parseModelsResponse!({})).toEqual([]);
+  });
+
+  it.each([["ollama", true], ["openai-compatible", true], ["openai", false], ["gemini", false], ["nope", false]] as const)(
+    "classifies %s", (id, expected) => expect(isLocalProvider(id)).toBe(expected),
+  );
 });

@@ -45,6 +45,7 @@ it("returns the generation and records its usage once with the provider's defaul
   expect(generateText.mock.calls[0][0]).toStrictEqual({
     model: input.ai.model, instructions: input.system, prompt: input.prompt,
     temperature: input.temperature, abortSignal,
+    providerOptions: { openaiCompatible: { chat_template_kwargs: { enable_thinking: false } } },
   });
   expect(startAiCall).toHaveBeenCalledExactlyOnceWith({
     userId: input.userId, feature: input.feature, provider: "ollama", model: "local",
@@ -64,7 +65,10 @@ it("returns the generation and records its usage once with the provider's defaul
 it("sends and records an explicit Ollama context size", async () => {
   generateText.mockResolvedValueOnce(result);
   await runTrackedGeneration({ ...input, ai: { ...input.ai, numCtx: 4096 } });
-  expect(generateText.mock.calls[0][0].providerOptions).toEqual({ ollama: { options: { num_ctx: 4096 } } });
+  expect(generateText.mock.calls[0][0].providerOptions).toEqual({
+    ollama: { options: { num_ctx: 4096 } },
+    openaiCompatible: { chat_template_kwargs: { enable_thinking: false } },
+  });
   expect(startAiCall).toHaveBeenCalledWith(expect.objectContaining({ numCtx: 4096 }));
   expect(withSpan.mock.calls[0][1]["jobsync.ollama.num_ctx"]).toBe(4096);
 });

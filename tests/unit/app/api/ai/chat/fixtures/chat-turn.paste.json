@@ -258,6 +258,11 @@
         "num_ctx": 16384
       }
     },
+    "openaiCompatible": {
+      "chat_template_kwargs": {
+        "enable_thinking": true
+      }
+    },
     "openai": {
       "store": false
     }

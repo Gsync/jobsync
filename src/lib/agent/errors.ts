@@ -7,6 +7,7 @@ import {
   ToolCallNotFoundForApprovalError,
 } from "ai";
 import { AIUnavailableError, MissingCredentialError } from "@/lib/ai";
+import { PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
 import { log } from "@/lib/telemetry";
 
 type ErrorContext = { provider?: string; model?: string };
@@ -54,6 +55,10 @@ export function mapAgentError(
   if (error instanceof AIUnavailableError) return error.message;
 
   if (error instanceof MissingCredentialError) {
+    const entry = PROVIDER_REGISTRY[provider];
+    if (entry?.credentialType === "base-url") {
+      return `No base URL is set for ${entry.displayName}. Add one in Settings → API Keys, or switch provider.`;
+    }
     return `No API key is set for ${provider}. Add one in Settings, or switch provider.`;
   }
 
@@ -75,6 +80,10 @@ export function mapAgentError(
 
   if (/fetch failed|ECONNREFUSED|ENOTFOUND|ECONNRESET/i.test(message)) {
     return `Cannot reach ${provider}. Make sure the service is running, or switch provider in Settings.`;
+  }
+
+  if (provider === "openai-compatible" && /context length|context size|exceeds the available context|tokens to keep/i.test(message)) {
+    return `The prompt is longer than the context ${model ?? "the model"} was loaded with. Raise its context length to at least 16k in your server.`;
   }
 
   const status = statusOf(error);

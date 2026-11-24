@@ -1,7 +1,10 @@
+import { generateText } from "ai";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 // Mock server-only so the module can be imported in the jest (jsdom) environment
 vi.mock("server-only", () => ({}));
 
 // Mock AI SDK packages to avoid loading provider implementations in tests
+vi.mock("@ai-sdk/openai-compatible", { spy: true });
 vi.mock("@ai-sdk/openai", () => ({ createOpenAI: vi.fn() }));
 vi.mock("@ai-sdk/deepseek", () => ({ createDeepSeek: vi.fn() }));
 vi.mock("@ai-sdk/google", () => ({ createGoogleGenerativeAI: vi.fn() }));
@@ -9,6 +12,7 @@ vi.mock("ollama-ai-provider-v2", () => ({ createOllama: vi.fn() }));
 
 import { createOpenAI } from "@ai-sdk/openai";
 import {
+  openaiCompatibleV1Url,
   PROVIDER_FACTORIES,
   PROVIDER_VERIFIERS,
 } from "@/lib/ai/provider-registry.server";
@@ -144,5 +148,73 @@ describe("PROVIDER_FACTORIES – openrouter", () => {
     expect(createOpenAI).toHaveBeenCalledWith(
       expect.objectContaining({ apiKey: "sk-or-specific-key" }),
     );
+  });
+});
+
+describe("OpenAI-compatible server", () => {
+  const base = "http://h:1234";
+  const factory = PROVIDER_FACTORIES["openai-compatible"];
+  const verify = PROVIDER_VERIFIERS["openai-compatible"];
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubEnv("OPENAI_COMPATIBLE_API_KEY", undefined);
+    vi.stubEnv("OPENAI_COMPATIBLE_BASE_URL", base + "/v1/");
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it.each(["", "/", "/v1", "/v1/", "//"])("normalizes the suffix %s", suffix => {
+    expect(openaiCompatibleV1Url(base + suffix)).toBe(base + "/v1");
+  });
+
+  it.each([undefined, "k"])("sends the model, options and credential through the SDK", async key => {
+    vi.stubEnv("OPENAI_COMPATIBLE_API_KEY", key);
+    fetchMock.mockResolvedValue(Response.json({
+      choices: [{ message: { role: "assistant", content: "<think>plan</think>Answer" }, finish_reason: "stop" }],
+    }));
+    const result = await generateText({
+      model: factory(base, "m"), prompt: "x", maxRetries: 0,
+      providerOptions: { openaiCompatible: { chat_template_kwargs: { enable_thinking: false } } },
+    });
+    expect(createOpenAICompatible).toHaveBeenCalledWith({
+      name: "openai-compatible", baseURL: base + "/v1", apiKey: key,
+      includeUsage: true, supportsStructuredOutputs: true,
+    });
+    const [url, request] = fetchMock.mock.calls[0];
+    expect(url).toBe(base + "/v1/chat/completions");
+    expect(JSON.parse(request.body)).toMatchObject({ model: "m", chat_template_kwargs: { enable_thinking: false } });
+    expect(new Headers(request.headers).get("authorization")).toBe(key ? "Bearer k" : null);
+    expect(result.text).toBe("Answer");
+    expect(result.reasoningText).toBe("plan");
+  });
+
+  it.each([
+    [base, undefined, null], [base, "k", "Bearer k"], ["http://other:1234", "k", null],
+  ] as const)("verifies %s using its own credential", async (url, key, header) => {
+    vi.stubEnv("OPENAI_COMPATIBLE_API_KEY", key);
+    fetchMock.mockResolvedValue({ ok: true });
+    expect(await verify(url)).toEqual({ success: true });
+    const [requestUrl, request] = fetchMock.mock.calls[0];
+    expect(requestUrl).toBe(url + "/v1/models");
+    expect(request.signal).toBeInstanceOf(AbortSignal);
+    expect(new Headers(request.headers).get("authorization")).toBe(header);
+  });
+
+  it("rejects an unsuccessful models response", async () => {
+    fetchMock.mockResolvedValue({ ok: false });
+    expect(await verify(base)).toMatchObject({ success: false, error: expect.stringContaining("Cannot connect to OpenAI-compatible at http://h:1234/v1") });
+  });
+
+  it.each([
+    [new DOMException("timeout", "TimeoutError"), /did not respond in time/],
+    [new TypeError("Failed to parse URL"), /Invalid OpenAI-compatible URL/],
+    [new Error("unreachable"), /host.docker.internal.*Serve on Local Network/],
+  ] as const)("explains the connection failure", async (error, message) => {
+    fetchMock.mockRejectedValue(error);
+    expect(await verify(base)).toMatchObject({ success: false, error: expect.stringMatching(message) });
   });
 });

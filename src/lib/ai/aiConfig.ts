@@ -19,6 +19,8 @@ export function getDefaultModelForProvider(provider: AiProvider): string {
   switch (provider) {
     case AiProvider.OLLAMA:
       return OllamaModel.QWEN3_5_9B;
+    case AiProvider.OPENAI_COMPATIBLE:
+      return "";
     case AiProvider.OPENAI:
       return OpenaiModel.GPT4O_MINI;
     case AiProvider.DEEPSEEK:

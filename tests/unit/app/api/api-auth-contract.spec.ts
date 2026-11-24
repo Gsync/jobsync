@@ -35,6 +35,7 @@ import { POST as agentChat } from "@/app/api/ai/chat/route";
 import { GET as openaiModels } from "@/app/api/ai/openai/models/route";
 import { GET as geminiModels } from "@/app/api/ai/gemini/models/route";
 import { GET as deepseekModels } from "@/app/api/ai/deepseek/models/route";
+import { GET as openaiCompatibleModels } from "@/app/api/ai/openai-compatible/models/route";
 import { GET as openrouterModels } from "@/app/api/ai/openrouter/models/route";
 
 const anonAuth = () => (auth as any).mockResolvedValue(null);
@@ -89,6 +90,7 @@ describe("API auth contract: guarded routes reject anonymous requests", () => {
     ["gemini", geminiModels],
     ["deepseek", deepseekModels],
     ["openrouter", openrouterModels],
+    ["openai-compatible", openaiCompatibleModels],
   ])("GET /api/ai/%s/models -> 401 before resolving a key", async (_, handler) => {
     const res = await handler();
     expect(res.status).toBe(401);

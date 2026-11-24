@@ -145,7 +145,10 @@ export async function runNestedGeneration({
         },
         // Deliberately no think:true. These sub-calls have no tools, so
         // reasoning buys nothing and costs 30s. The chat loop enables it.
-        providerOptions: { ollama: { options: { num_ctx: numCtx } } },
+        providerOptions: {
+          ollama: { options: { num_ctx: numCtx } },
+          openaiCompatible: { chat_template_kwargs: { enable_thinking: false } },
+        },
       });
 
       for await (const delta of sub.textStream) {

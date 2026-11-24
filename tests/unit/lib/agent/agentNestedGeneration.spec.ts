@@ -92,6 +92,7 @@ describe("runNestedGeneration", () => {
   // The chat loop needs think:true; a sub-call with no tools does not.
   it("never enables the thinking channel", async () => {
     await runNestedGeneration(args());
+    expect(streamText.mock.calls[0][0].providerOptions.openaiCompatible).toEqual({ chat_template_kwargs: { enable_thinking: false } });
     expect(streamText.mock.calls[0][0].providerOptions.ollama.think).toBeUndefined();
   });
 
