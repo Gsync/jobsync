@@ -135,6 +135,14 @@
   textarea::placeholder {
     color: var(--color-gray-400);
   }
+
+  /* Preflight zeroes block margins and Tiptap ships no content styles */
+  .tiptap > :is(p, h1, h2, h3, h4, h5, h6, ul, ol, blockquote, pre, hr) {
+    @apply my-2 first:mt-0 last:mb-0;
+  }
+  .tiptap li + li {
+    @apply mt-1;
+  }
 }
 
 /* Hide scrollbar across browsers */
