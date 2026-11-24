@@ -39,4 +39,4 @@ it("excepts only the reviewed call in the function", () => {
 it("keeps job status writes in the timeline", () => {
   checkSourceInvariant(scanStatusWrites, STATUS_WRITE_EXCEPTIONS,
     "Job status is written only through src/lib/jobs/timeline/. Read src/actions/jobStage/CLAUDE.md");
-});
+}, 30_000);

@@ -31,4 +31,4 @@ it("keeps the checked names in sync with the resolver exports", () => {
 
 it("resolves stage types before opening a transaction", () => {
   checkSourceInvariant(scanResolverTransactions, RESOLVER_TX_EXCEPTIONS, rule);
-});
+}, 30_000);

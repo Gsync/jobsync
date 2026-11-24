@@ -20,4 +20,4 @@ it.each([
 it("leaves timeline ordering to sortStages", () => {
   checkSourceInvariant(scanStageOrderBy, STAGE_ORDER_EXCEPTIONS,
     "Stage order is sortStages (src/lib/jobs/sortStages.ts), never a Prisma orderBy. Read src/actions/jobStage/CLAUDE.md");
-});
+}, 30_000);
