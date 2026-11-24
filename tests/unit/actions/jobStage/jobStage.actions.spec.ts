@@ -1,6 +1,7 @@
 import {
   getJobStages,
   addJobStage,
+  updateJobStage,
   deleteJobStage,
   setCurrentJobStage,
   setStageNotes,
@@ -22,10 +23,14 @@ vi.mock("@/lib/db", () => {
   };
   const job = { count: vi.fn(), findFirst: vi.fn(), update: vi.fn() };
   const jobStageType = { findFirst: vi.fn() };
+  const jobStageInterviewer = { count: vi.fn() };
+  const jobStagePrepQuestion = { count: vi.fn() };
   const client = {
     jobStage,
     job,
     jobStageType,
+    jobStageInterviewer,
+    jobStagePrepQuestion,
     $transaction: vi.fn(async (fn: any) => fn(client)),
   };
   return { default: client };
@@ -393,5 +398,35 @@ describe("setStageOutcome", () => {
     const res = await setStageOutcome("s1", "passed");
 
     expect(res).toEqual({ success: false, message: "Stage not found" });
+  });
+});
+
+describe("updateJobStage", () => {
+  // Interviewers and prep questions have no UI on a non-interview stage
+  it("1a57ac35: refuses to retype an interview stage that still has interviewers or prep questions", async () => {
+    db.jobStage.findFirst.mockResolvedValue({
+      id: "st1",
+      jobId: "j1",
+      occurredAt: null,
+      isCurrent: false,
+      StageType: interviewType,
+    });
+    db.jobStageType.findFirst.mockResolvedValue({
+      id: "t-rej",
+      Status: { value: "rejected" },
+    });
+    db.jobStageInterviewer.count.mockResolvedValue(2);
+    db.jobStagePrepQuestion.count.mockResolvedValue(1);
+
+    const res = await updateJobStage({
+      id: "st1",
+      jobId: "j1",
+      stageTypeId: "t-rej",
+      setAsCurrent: false,
+    } as any);
+
+    expect(res.success).toBe(false);
+    expect(res.message).toContain("2 interviewers and 1 prep question");
+    expect(db.jobStage.update).not.toHaveBeenCalled();
   });
 });

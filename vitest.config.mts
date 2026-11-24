@@ -42,6 +42,18 @@ const jsdomProject = (name: string) => ({
   },
 });
 
+// Opt-in: not in `npm test`; run with `npm run test:property`.
+const base = jsdomProject("property");
+const propertyProject = {
+  ...base,
+  test: {
+    ...base.test,
+    environment: "node",
+    include: ["tests/property/**/*.spec.{ts,tsx}"],
+    setupFiles: [...base.test.setupFiles, "./tests/setup/fastCheck.ts"],
+  },
+};
+
 export default defineConfig({
   test: {
     coverage: {
@@ -51,6 +63,7 @@ export default defineConfig({
     projects: [
       jsdomProject("unit"),
       jsdomProject("component"),
+      propertyProject,
       {
         resolve: {
           alias: [

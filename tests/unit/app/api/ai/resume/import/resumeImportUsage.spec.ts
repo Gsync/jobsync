@@ -8,7 +8,8 @@ vi.mock("@/lib/ai", () => ({ preprocessText: async (t: string) => ({ success: tr
 vi.mock("@/lib/ai/import/extract-text", () => ({
   extractText: async () => ({ success: true, data: { text: "resume text", truncated: false } }),
 }));
-vi.mock("@/lib/resumeFiles", () => ({ isResumeFilePath: () => true }));
+const { isResumeFilePath } = vi.hoisted(() => ({ isResumeFilePath: vi.fn((..._a: unknown[]) => true) }));
+vi.mock("@/lib/resumeFiles", () => ({ isResumeFilePath }));
 vi.mock("@/lib/db", () => ({
   default: { resume: { findUnique: async () => ({ File: { filePath: "/uploads/files/resumes/a.pdf" } }) } },
 }));
@@ -133,5 +134,17 @@ describe("resume import usage", () => {
     client.abort();
     abort();
     expect((await res.text()).trim()).toBe("");
+  });
+});
+
+describe("resume import file path", () => {
+  it("c522ba47: refuses a stored path outside the resumes directory before reading it", async () => {
+    isResumeFilePath.mockReturnValueOnce(false);
+
+    const res = await POST(req());
+
+    expect(isResumeFilePath).toHaveBeenCalledWith("/uploads/files/resumes/a.pdf");
+    expect(res.status).toBe(400);
+    expect(await (res as Response).json()).toEqual({ error: "Invalid file path" });
   });
 });

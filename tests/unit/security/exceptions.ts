@@ -19,9 +19,9 @@ export interface SecurityException extends FindingKey {
 const sameFinding = (a: FindingKey, b: FindingKey) =>
   a.file === b.file && a.target === b.target && a.check === b.check;
 
-export function applyExceptions<F extends FindingKey>(
+export function applyExceptions<F extends FindingKey, E extends FindingKey>(
   findings: F[],
-  exceptions: SecurityException[],
+  exceptions: E[],
 ) {
   const unexcepted = findings.filter((f) => !exceptions.some((e) => sameFinding(e, f)));
   const stale = exceptions

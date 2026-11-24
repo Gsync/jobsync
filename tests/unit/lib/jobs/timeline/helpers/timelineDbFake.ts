@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 
 export type TimelineRows = {
-  jobStatus: { id: string; value: string }[];
+  jobStatus: { id: string; value: string; label?: string }[];
   jobStageType: {
     id: string;
     value: string;
@@ -140,6 +140,12 @@ export function createTimelineDbFake(seed: TimelineRows) {
           if (!r) throw pgError("P2025");
           Object.assign(r, a!.data);
           return shape(model, r);
+        }),
+      delete: async (a) =>
+        write(model, () => {
+          const i = rows[model].findIndex((r) => match(model, r, a!.where));
+          if (i === -1) throw pgError("P2025");
+          return rows[model].splice(i, 1)[0];
         }),
       updateMany: async (a) =>
         write(model, () => {

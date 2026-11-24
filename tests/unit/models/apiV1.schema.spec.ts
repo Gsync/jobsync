@@ -103,7 +103,14 @@ describe("ApiV1AddJobSchema", () => {
   });
 
   it("rejects non-http URLs", () => {
-    for (const jobUrl of ["javascript:alert(1)", "ftp://x.test/a", "not a url"]) {
+    const rejected = [
+      "javascript:alert(1)",
+      "ftp://x.test/a",
+      "not a url",
+      "httpx://x.test/a",
+      "xhttp://x.test/a",
+    ];
+    for (const jobUrl of rejected) {
       expect(paths({ ...base, jobUrl })).toEqual(["jobUrl"]);
     }
     expect(paths({ ...base, jobUrl: "http://x.test/a" })).toBeUndefined();

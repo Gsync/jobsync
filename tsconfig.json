@@ -31,5 +31,5 @@
     "src/lib/data/seedData.js",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "scripts", "evals/agent-chat/latency.ts"]
+  "exclude": ["node_modules", ".stryker-tmp", "scripts", "evals/agent-chat/latency.ts"]
 }

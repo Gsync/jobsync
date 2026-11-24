@@ -104,6 +104,22 @@ describe("linkStageInterviewer", () => {
     });
   });
 
+  it("1a57ac35: writes the stage link and its roster entry through one transaction", async () => {
+    const tx = {
+      jobStageInterviewer: { create: vi.fn().mockResolvedValue({ id: "link1" }) },
+      jobContact: { findFirst: vi.fn().mockResolvedValue(null), create: vi.fn() },
+    };
+    db.$transaction.mockImplementationOnce(async (fn: (tx: unknown) => Promise<unknown>) => fn(tx));
+
+    const res = await linkStageInterviewer("st1", "c1");
+
+    expect(res.success).toBe(true);
+    expect(tx.jobStageInterviewer.create).toHaveBeenCalledTimes(1);
+    expect(tx.jobContact.create).toHaveBeenCalledTimes(1);
+    expect(db.jobStageInterviewer.create).not.toHaveBeenCalled();
+    expect(db.jobContact.create).not.toHaveBeenCalled();
+  });
+
   it("does not duplicate an existing JobContact for that role", async () => {
     db.jobContact.findFirst.mockResolvedValue({ id: "jc1" });
 

@@ -727,6 +727,17 @@ describe("Company Actions", () => {
       });
     });
 
+    it("e6cd1113: fails with Company not found when the company is missing or not the caller's, writing nothing", async () => {
+      (getCurrentUser as any).mockResolvedValue(mockUser);
+      (prisma.company.findFirst as any).mockResolvedValueOnce(null);
+
+      const result = await updateCompany(validData);
+
+      expect(result).toEqual({ success: false, message: "Company not found" });
+      expect(prisma.company.findFirst).toHaveBeenCalledTimes(1);
+      expect(prisma.company.update).not.toHaveBeenCalled();
+    });
+
     it("strips a legal suffix so 'Acme Inc.' matches an existing 'Acme'", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
       const mockExistingCompany = {

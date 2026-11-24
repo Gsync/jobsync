@@ -169,6 +169,17 @@ pipeline {
                             sleep 10
                         done
                     '''
+                    withCredentials([string(credentialsId: 'jobsync-smoke-token', variable: 'SMOKE_TOKEN')]) {
+                        sh '''
+                            set -e
+                            SMOKE_EXPECTED_VERSION=$(docker exec ${CI_CONTAINER} node -p "require('./package.json').version")
+                            export SMOKE_EXPECTED_VERSION
+                            if ! docker compose exec -T -e SMOKE_TOKEN -e SMOKE_EXPECTED_VERSION app node - < scripts/smoke.mjs; then
+                                docker compose logs --tail=40
+                                exit 1
+                            fi
+                        '''
+                    }
                 }
             }
         }
