@@ -2,9 +2,11 @@ import { ESLint } from "eslint";
 import { beforeAll, expect, it } from "vitest";
 
 let eslint: ESLint;
-beforeAll(() => {
+beforeAll(async () => {
   eslint = new ESLint({ cwd: process.cwd() });
-});
+  // Config and parser load on the first lint, so pay it here, not in a test
+  await eslint.lintText("", { filePath: "src/components/Example.tsx" });
+}, 15_000);
 
 async function ruleIds(code: string, filePath: string): Promise<string[]> {
   const [result] = await eslint.lintText(code, { filePath });
