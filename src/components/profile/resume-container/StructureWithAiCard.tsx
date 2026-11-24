@@ -1,4 +1,5 @@
 "use client";
+import { isLocalProvider } from "@/lib/ai/provider-registry";
 import { Loader, Sparkles } from "lucide-react";
 import type { AiModel } from "@/models/ai.model";
 import { ResponsiveCardHeader } from "../../ResponsiveCardHeader";
@@ -25,7 +26,7 @@ export function StructureWithAiCard({
           <p className="text-sm text-muted-foreground">
             A file is attached. Structure it into sections using AI.
           </p>
-          {aiModel.provider === "ollama" &&
+          {isLocalProvider(aiModel.provider) &&
             ollamaConnected === false &&
             connectionError && (
               <p className="text-xs text-red-600 mt-1">
@@ -38,7 +39,7 @@ export function StructureWithAiCard({
           variant="outline"
           disabled={
             isStructuring ||
-            (aiModel.provider === "ollama" && ollamaConnected === false)
+            (isLocalProvider(aiModel.provider) && ollamaConnected === false)
           }
           onClick={onStructure}
         >

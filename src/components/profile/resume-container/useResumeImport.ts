@@ -1,4 +1,5 @@
 "use client";
+import { isLocalProvider, PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toastError } from "@/lib/toast";
@@ -7,7 +8,7 @@ import { resolveImportCard } from "@/actions/resumeImport.actions";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { AiModel, defaultModel } from "@/models/ai.model";
 import type { Resume } from "@/models/profile.model";
-import { checkOllamaConnection } from "@/utils/ai.utils";
+import { checkLocalProviderConnection } from "@/utils/ai.utils";
 import { streamResumeImport } from "@/utils/resumeImportStream.utils";
 import {
   buildPendingCards,
@@ -159,14 +160,14 @@ export function useResumeImport(resume: Resume) {
           };
           setAiModel(model);
           setAiReady(true);
-          if (model.provider === "ollama") {
+          if (isLocalProvider(model.provider)) {
             setOllamaConnected(null);
             setConnectionError("");
-            checkOllamaConnection(model.provider).then((result) => {
+            checkLocalProviderConnection(model.provider).then((result) => {
               setOllamaConnected(result.isConnected);
               if (!result.isConnected) {
                 setConnectionError(
-                  result.error || "Ollama is not reachable.",
+                  result.error || `${PROVIDER_REGISTRY[model.provider].displayName} is not reachable.`,
                 );
               }
             });

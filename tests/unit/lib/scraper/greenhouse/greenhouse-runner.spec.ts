@@ -34,7 +34,7 @@ vi.mock("@/lib/scraper/greenhouse", () => ({
 }));
 
 vi.mock("@/lib/api-key-resolver", () => ({
-  resolveApiKey: vi.fn().mockResolvedValue(undefined),
+  resolveApiKey: vi.fn().mockResolvedValue("http://127.0.0.1:11434"),
 }));
 
 // Real verifier does a network fetch to Ollama; these tests aren't
