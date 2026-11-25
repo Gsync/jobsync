@@ -419,7 +419,7 @@ describe("AgentChatProvider", () => {
     vi.mocked(checkLocalProviderConnection).mockResolvedValueOnce({ isConnected: false, error: "Server offline" });
     setup();
     await userEvent.click(screen.getByText("open"));
-    expect(checkLocalProviderConnection).toHaveBeenCalledWith("openai-compatible");
+    expect(checkLocalProviderConnection).toHaveBeenCalledWith("openai-compatible", "qwen");
     expect(screen.getByTestId("state").textContent).toMatch(/false$/);
     expect(screen.getByTestId("preflight-error")).toHaveTextContent("Server offline");
   });

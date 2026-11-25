@@ -297,7 +297,7 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
       setPreflight({ checked: true, ok: true, provider, model: ai.model });
       return;
     }
-    const result = await checkLocalProviderConnection(provider);
+    const result = await checkLocalProviderConnection(provider, ai.model);
     setPreflight({
       checked: true,
       ok: result.isConnected,

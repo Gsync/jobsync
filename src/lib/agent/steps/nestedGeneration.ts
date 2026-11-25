@@ -130,6 +130,9 @@ export async function runNestedGeneration({
     }
 
     let text = "";
+    // The SDK reports the provider's failure here, then rejects finishReason
+    // with a generic NoOutputGeneratedError that hides it.
+    let providerError: unknown;
     try {
       const sub = streamText({
         model,
@@ -138,6 +141,9 @@ export async function runNestedGeneration({
         temperature,
         abortSignal: signal,
         include: { rawChunks: true },
+        onError: ({ error }) => {
+          providerError = error;
+        },
         onChunk: ({ chunk }) => {
           if (chunk.type !== "raw") return;
           const step = readOllamaTimings(chunk.rawValue);
@@ -172,14 +178,19 @@ export async function runNestedGeneration({
       const tokens = await Promise.resolve(sub.usage).catch(() => undefined);
       void tracker.finish({ usage: tokens, finishReason });
       if (finishReason !== "stop") {
-        span.setError(new Error(`finishReason=${finishReason}`));
+        // An in-stream error chunk resolves to "error" instead of rejecting.
+        if (providerError) {
+          log.warn(`[agent-chat] ${label} stream error`, { error: String(providerError) });
+        }
+        span.setError(providerError ?? new Error(`finishReason=${finishReason}`));
         endGeneration("incomplete", genAiResponseAttrs({ finishReason }));
         return { status: "incomplete" };
       }
 
       endGeneration("ok", genAiResponseAttrs({ usage: tokens, finishReason, text }));
       return { status: "ok", text };
-    } catch (error) {
+    } catch (caught) {
+      const error = providerError ?? caught;
       void tracker.finish({ error, abortedBy: signal });
       log.error(`[agent-chat] ${label} generation failed`, { error: String(error) });
       span.setError(error);

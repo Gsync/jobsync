@@ -12,6 +12,7 @@ export interface LocalProviderConnectionResult {
 
 export const checkLocalProviderConnection = async (
   provider: string,
+  selectedModel?: string,
 ): Promise<LocalProviderConnectionResult> => {
   if (!isLocalProvider(provider)) {
     return { isConnected: true };
@@ -33,6 +34,16 @@ export const checkLocalProviderConnection = async (
         error:
           `${displayName} service is not responding. Please make sure ${displayName} is running.`,
       };
+    }
+
+    if (provider === "openai-compatible" && selectedModel) {
+      const models = PROVIDER_REGISTRY[provider].parseModelsResponse?.(await response.json());
+      if (!models?.includes(selectedModel)) {
+        return {
+          isConnected: false,
+          error: `The current server does not list "${selectedModel}". Select a model in Settings → AI Provider.`,
+        };
+      }
     }
 
     return { isConnected: true };

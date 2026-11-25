@@ -185,6 +185,43 @@ describe("runNestedGeneration", () => {
     expect(result).toEqual({ status: "failed" });
   });
 
+  it("logs the provider's error, not the SDK's no-output wrapper", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    const providerError = Object.assign(new Error("Model 'qwen' not found"), {
+      requestBodyValues: { messages: [{ role: "user", content: "RESUME TEXT" }] },
+    });
+    streamText.mockImplementation(({ onError }) => {
+      onError({ error: providerError });
+      const finishReason = Promise.reject(new Error("No output generated. Check the stream for errors."));
+      finishReason.catch(() => {});
+      return { textStream: (async function* () {})(), finishReason, usage: Promise.resolve(undefined) };
+    });
+
+    const result = await runNestedGeneration(args());
+
+    expect(result).toEqual({ status: "failed" });
+    const output = JSON.stringify(logged.mock.calls);
+    expect(output).toContain("Model 'qwen' not found");
+    expect(output).not.toContain("No output generated");
+    expect(output).not.toContain("RESUME TEXT");
+  });
+
+  it("logs a mid-stream provider error when the stream resolves with error", async () => {
+    const warned = vi.spyOn(console, "warn").mockImplementation(() => {});
+    streamText.mockImplementation(({ onError }) => ({
+      ...textStreamOf([], "error"),
+      textStream: (async function* () {
+        yield "partial ";
+        onError({ error: new Error("upstream model crashed") });
+      })(),
+    }));
+
+    const result = await runNestedGeneration(args());
+
+    expect(result).toEqual({ status: "incomplete" });
+    expect(JSON.stringify(warned.mock.calls)).toContain("upstream model crashed");
+  });
+
   // Two nested generations in one turn serialize on Ollama to ~360s against a
   // 300s deadline, so the second must be refused rather than started.
   it("refuses a second generation while one is already running", async () => {
