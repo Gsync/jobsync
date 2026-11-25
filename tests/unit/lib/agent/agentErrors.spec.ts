@@ -16,6 +16,25 @@ const apiCallError = (statusCode: number, message = "Provider returned error") =
   });
 
 describe("mapAgentError", () => {
+  it("directs a missing base URL to API Keys", () => {
+    expect(mapAgentError(new MissingCredentialError("OpenAI-compatible"), { provider: "openai-compatible" }))
+      .toBe("No base URL is set for OpenAI-compatible. Add one in Settings → API Keys, or switch provider.");
+  });
+
+  const overflow = "This model's maximum context length is 4096 tokens. However, you requested 9000 tokens";
+  it.each([
+    new Error("Trying to keep the first 9000 tokens when context the overflows. However, the model is loaded with context length of only 4096 tokens"),
+    new Error("the request exceeds the available context size, try increasing it"),
+    new Error(overflow), apiCallError(400, overflow),
+  ])("explains the server's loaded context limit", error => {
+    expect(mapAgentError(error, { provider: "openai-compatible", model: "qwen" }))
+      .toBe("The prompt is longer than the context qwen was loaded with. Raise its context length to at least 16k in your server.");
+  });
+
+  it.each(["openai", "ollama"])("keeps server context advice specific to OpenAI-compatible", provider => {
+    expect(mapAgentError(new Error(overflow), { provider })).toBe("Something went wrong on that turn. Try asking again.");
+  });
+
   it("never echoes an unmapped error's message", () => {
     const marker = "SENSITIVE-REQUEST-CONTEXT-9f3a";
     const mapped = mapAgentError(new Error(`Request failed: ${marker}`));
@@ -101,6 +120,14 @@ describe("mapAgentError", () => {
     });
     expect(mapped).toMatch(/rejected the API key/i);
     expect(mapped).toMatch(/settings/i);
+  });
+
+  it("points an OpenAI-compatible 401 at the server-side key", () => {
+    const mapped = mapAgentError(apiCallError(401, "Unauthorized"), {
+      provider: "openai-compatible",
+    });
+    expect(mapped).toMatch(/OPENAI_COMPATIBLE_API_KEY/);
+    expect(mapped).not.toMatch(/Re-save/);
   });
 
   it("does not echo the provider's body on a mapped status", () => {

@@ -88,7 +88,7 @@ export const APP_CONSTANTS = {
   // Resume review generation timeout. The review is a full markdown analysis
   // (scores line plus several sections), so a local model can take minutes;
   // too low cuts the stream mid-review.
-  AI_RESUME_REVIEW_TIMEOUT_MS: 180_000,
+  AI_RESUME_REVIEW_TIMEOUT_MS: 240_000,
 
   // Job match generation timeout. Like the review, the match is a markdown
   // analysis (scores line plus several sections) over a resume and a JD, so a
@@ -192,9 +192,8 @@ export const APP_CONSTANTS = {
   // precisely wrong rather than approximately right.
   AGENT_CHAT_CHARS_PER_TOKEN: 4,
   // Must clear one nested generation plus the thinking steps around it: two
-  // 15-30s think steps plus a 180s review is ~242s, which the old 240s cut off
-  // after the user had watched the whole review stream in.
-  AGENT_CHAT_TIMEOUT_MS: 300_000,
+  // 15-30s think steps plus a 240s review is ~300s, so 360s leaves a margin.
+  AGENT_CHAT_TIMEOUT_MS: 360_000,
   // The chat loop and its nested tools share a context size to avoid reloads.
   AGENT_CHAT_NUM_CTX: 16384,
   // Below this a paste stays inline text and no chip is made, so add_job

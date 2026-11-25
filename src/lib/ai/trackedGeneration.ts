@@ -38,9 +38,10 @@ export async function runTrackedGeneration(input: {
         prompt,
         temperature,
         abortSignal,
-        ...(ai.numCtx !== undefined && {
-          providerOptions: { ollama: { options: { num_ctx: ai.numCtx } } },
-        }),
+        providerOptions: {
+          ...(ai.numCtx !== undefined && { ollama: { options: { num_ctx: ai.numCtx } } }),
+          openaiCompatible: { chat_template_kwargs: { enable_thinking: false } },
+        },
       });
     } catch (error) {
       void tracker.finish({ error, abortedBy: abortSignal });

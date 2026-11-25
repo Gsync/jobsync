@@ -1,5 +1,6 @@
 "use client";
 
+import { isLocalProvider, PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
 import { CheckCircle, Loader2, Maximize, Minimize, Sparkles, Trash2, X, XCircle } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,6 @@ import { AgentChatEmptyState } from "@/components/agent/AgentChatEmptyState";
 import { AgentChatInput } from "@/components/agent/AgentChatInput";
 import { AgentChatMessages } from "@/components/agent/AgentChatMessages";
 import { useAgentChat } from "@/components/agent/AgentChatProvider";
-import { AiProvider } from "@/models/ai.model";
 
 export function AgentChatPanel() {
   const {
@@ -27,7 +27,7 @@ export function AgentChatPanel() {
   // surfaces use for their provider preflight.
   const statusIcon = !preflight.checked ? (
     <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
-  ) : preflight.provider === AiProvider.OLLAMA ? (
+  ) : isLocalProvider(preflight.provider ?? "") ? (
     preflight.ok ? (
       <CheckCircle className="h-3.5 w-3.5 shrink-0 text-green-500" />
     ) : (
@@ -38,7 +38,7 @@ export function AgentChatPanel() {
   );
 
   const providerLabel = preflight.provider
-    ? preflight.provider.charAt(0).toUpperCase() + preflight.provider.slice(1)
+    ? PROVIDER_REGISTRY[preflight.provider]?.displayName ?? preflight.provider
     : "";
   const expandLabel = isPanelExpanded ? "Restore panel" : "Expand panel";
   const ExpandIcon = isPanelExpanded ? Minimize : Maximize;

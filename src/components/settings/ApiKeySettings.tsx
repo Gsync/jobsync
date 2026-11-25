@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Card,
   CardContent,
@@ -30,14 +30,14 @@ import {
   saveApiKey,
   deleteApiKey,
   getDefaultOllamaBaseUrl,
+  getDefaultOpenaiCompatibleBaseUrl,
 } from "@/actions/apiKey.actions";
 import type {
   ApiKeyClientResponse,
   ApiKeyProvider,
 } from "@/models/apiKey.model";
-import { getAiProviders } from "@/lib/ai/provider-registry";
-import { AiProvider } from "@/models/ai.model";
-import { checkOllamaConnection } from "@/utils/ai.utils";
+import { getAiProviders, isLocalProvider, PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
+import { checkLocalProviderConnection, type LocalProviderConnectionResult } from "@/utils/ai.utils";
 import { getUserSettings } from "@/actions/userSettings.actions";
 
 interface ProviderConfig {
@@ -64,20 +64,28 @@ function ApiKeySettings() {
   const [defaultOllamaUrl, setDefaultOllamaUrl] = useState(
     "http://127.0.0.1:11434",
   );
+  const [defaultOpenaiCompatibleUrl, setDefaultOpenaiCompatibleUrl] = useState<string | null>(null);
   const [editingProvider, setEditingProvider] = useState<ApiKeyProvider | null>(
     null,
   );
   const [inputValue, setInputValue] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [ollamaConnected, setOllamaConnected] = useState<boolean | null>(null);
-  const [ollamaChecking, setOllamaChecking] = useState(false);
+  // An absent entry is unchecked. Null means a check is in progress.
+  const [connections, setConnections] = useState<
+    Partial<Record<ApiKeyProvider, LocalProviderConnectionResult | null>>
+  >({});
 
-  const recheckOllamaConnection = async () => {
-    setOllamaChecking(true);
-    const result = await checkOllamaConnection(AiProvider.OLLAMA);
-    setOllamaConnected(result.isConnected);
-    setOllamaChecking(false);
+  const pendingChecks = useRef(new Map<ApiKeyProvider, ReturnType<typeof checkLocalProviderConnection>>());
+
+  const recheckConnection = async (provider: ApiKeyProvider) => {
+    setConnections((prev) => ({ ...prev, [provider]: null }));
+    const check = checkLocalProviderConnection(provider);
+    pendingChecks.current.set(provider, check);
+    const result = await check;
+    if (pendingChecks.current.get(provider) !== check) return;
+    pendingChecks.current.delete(provider);
+    setConnections((prev) => ({ ...prev, [provider]: result }));
   };
 
   const applyKeys = (
@@ -106,22 +114,17 @@ function ApiKeySettings() {
       .catch((error) => console.error("Error fetching API keys:", error))
       .finally(() => setIsLoading(false));
     getDefaultOllamaBaseUrl().then(setDefaultOllamaUrl);
-    // Probing on mount for someone who picked another provider reads as the
-    // app overriding their choice, so only auto-check when Ollama is selected.
+    getDefaultOpenaiCompatibleBaseUrl().then(setDefaultOpenaiCompatibleUrl);
     getUserSettings().then((result) => {
-      if (result?.success && result.data?.settings?.ai?.provider === AiProvider.OLLAMA) {
-        recheckOllamaConnection();
+      const provider = result?.data?.settings?.ai?.provider;
+      if (result?.success && provider && isLocalProvider(provider)) {
+        void recheckConnection(provider);
       }
     });
   }, []);
 
   const getKeyForProvider = (provider: ApiKeyProvider) =>
     keys.find((k) => k.provider === provider);
-
-  const isBaseUrlProvider = (providerId: string) => {
-    const entry = getAiProviders().find((e) => e.id === providerId);
-    return entry?.credentialType === "base-url";
-  };
 
   const handleVerifyAndSave = async (provider: ApiKeyProvider) => {
     if (!inputValue.trim()) return;
@@ -154,6 +157,7 @@ function ApiKeySettings() {
         toastSuccess(`${PROVIDERS.find((p) => p.id === provider)?.name} key verified and saved.`, "API key saved");
         setEditingProvider(null);
         setInputValue("");
+        if (isLocalProvider(provider)) void recheckConnection(provider);
         await fetchKeys();
       } else {
         toastError(saveResult.message || "Failed to save API key", "Save failed");
@@ -172,6 +176,7 @@ function ApiKeySettings() {
       const result = await deleteApiKey(provider);
       if (result.success) {
         toastSuccess(`${PROVIDERS.find((p) => p.id === provider)?.name} key removed.`, "API key deleted");
+        if (isLocalProvider(provider)) void recheckConnection(provider);
         await fetchKeys();
       } else {
         toastError(result.message || "Failed to delete API key");
@@ -219,7 +224,14 @@ function ApiKeySettings() {
         {PROVIDERS.map((provider) => {
           const existingKey = getKeyForProvider(provider.id);
           const isEditing = editingProvider === provider.id;
-          const isBaseUrl = isBaseUrlProvider(provider.id);
+          const entry = PROVIDER_REGISTRY[provider.id];
+          const isBaseUrl = entry.credentialType === "base-url";
+          const defaultUrl =
+            provider.id === "ollama" ? defaultOllamaUrl
+            : provider.id === "openai-compatible" ? defaultOpenaiCompatibleUrl ?? undefined
+            : entry.defaultCredential;
+          const connection = connections[provider.id];
+          const checking = connection === null;
 
           return (
             <Card key={provider.id}>
@@ -231,7 +243,7 @@ function ApiKeySettings() {
                       {provider.description}
                       {isBaseUrl && (
                         <span className="block text-xs text-muted-foreground/70 mt-0.5">
-                          Default: {provider.id === "ollama" ? defaultOllamaUrl : provider.placeholder}
+                          Default: {defaultUrl ?? "none — set a URL"}
                         </span>
                       )}
                     </CardDescription>
@@ -248,33 +260,34 @@ function ApiKeySettings() {
                   )}
                 </div>
               </CardHeader>
-              {provider.id === "ollama" && (
+              {isLocalProvider(provider.id) && (
                 <div className="px-6 pb-3">
                   <div className="flex items-center gap-2">
-                    {ollamaChecking ? (
+                    {checking ? (
                       <div className="flex items-center gap-1 text-muted-foreground text-sm">
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         <span>Checking...</span>
                       </div>
-                    ) : ollamaConnected === true ? (
+                    ) : connection?.isConnected === true ? (
                       <div className="flex items-center gap-1 text-green-600 text-sm">
                         <CheckCircle className="h-3.5 w-3.5 shrink-0" />
-                        <span>Ollama is running</span>
+                        <span>{provider.name} is running</span>
                       </div>
-                    ) : ollamaConnected === false ? (
+                    ) : connection?.isConnected === false ? (
                       <div className="flex items-center gap-1 text-red-600 text-sm">
                         <XCircle className="h-3.5 w-3.5 shrink-0" />
-                        <span>Ollama is not running</span>
+                        <span>{connection.error ?? `${provider.name} is not running`}</span>
                       </div>
                     ) : null}
                     <Button
                       size="sm"
                       variant="ghost"
                       className="h-6 w-6 p-0"
-                      onClick={recheckOllamaConnection}
-                      disabled={ollamaChecking}
+                      aria-label={`Check ${provider.name} connection`}
+                      onClick={() => recheckConnection(provider.id)}
+                      disabled={checking}
                     >
-                      <RefreshCw className={`h-3.5 w-3.5 ${ollamaChecking ? "animate-spin" : ""}`} />
+                      <RefreshCw className={`h-3.5 w-3.5 ${checking ? "animate-spin" : ""}`} />
                     </Button>
                   </div>
                 </div>
@@ -347,7 +360,7 @@ function ApiKeySettings() {
                               <Trash2 className="h-3 w-3" />
                             )}
                             {isBaseUrl && (
-                              <span className="ml-1">Reset to default</span>
+                              <span className="ml-1">{defaultUrl ? "Reset to default" : "Remove"}</span>
                             )}
                           </Button>
                         </AlertDialogTrigger>
@@ -355,19 +368,14 @@ function ApiKeySettings() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>
                               {isBaseUrl
-                                ? `Reset ${provider.name} Base URL`
+                                ? `${defaultUrl ? "Reset" : "Remove"} ${provider.name} Base URL`
                                 : "Delete API Key"}
                             </AlertDialogTitle>
                             <AlertDialogDescription>
                               {isBaseUrl ? (
-                                <>
-                                  Clear the saved {provider.name} base URL?
-                                  JobSync will use the server default,{" "}
-                                  {provider.id === "ollama"
-                                    ? defaultOllamaUrl
-                                    : provider.placeholder}
-                                  .
-                                </>
+                                defaultUrl
+                                  ? `Clear the saved ${provider.name} base URL? JobSync will use the server default, ${defaultUrl}.`
+                                  : `Clear the saved ${provider.name} base URL? It stops working until you add one again, unless the server sets ${entry.envVar}.`
                               ) : (
                                 <>
                                   Are you sure you want to delete your{" "}
@@ -383,7 +391,7 @@ function ApiKeySettings() {
                             <AlertDialogAction
                               onClick={() => handleDelete(provider.id)}
                             >
-                              {isBaseUrl ? "Reset" : "Delete"}
+                              {isBaseUrl ? (defaultUrl ? "Reset" : "Remove") : "Delete"}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>

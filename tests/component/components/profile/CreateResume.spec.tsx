@@ -3,6 +3,12 @@ import { Resume } from "@/models/profile.model";
 import { getUserSettings } from "@/actions/userSettings.actions";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
+import { checkLocalProviderConnection } from "@/utils/ai.utils";
+
+vi.mock("@/utils/ai.utils", () => ({
+  checkLocalProviderConnection: vi.fn(async (provider: string) => ({ isConnected: provider === "openai-compatible" })),
+}));
+
 const { mockPush } = vi.hoisted(() => ({ mockPush: vi.fn() }));
 
 vi.mock("next/navigation", () => ({
@@ -106,6 +112,19 @@ describe("CreateResume Component", () => {
     await waitFor(() => {
       expect(screen.getByText(/resume title is required/i)).toBeInTheDocument();
     });
+  });
+
+  it("enables auto-fill when the selected compatible server is reachable", async () => {
+    vi.mocked(getUserSettings).mockResolvedValueOnce({
+      success: true,
+      data: { settings: { ai: { provider: "openai-compatible", model: "qwen" } } },
+    } as any);
+    renderComponent();
+    fireEvent.change(document.querySelector('input[type="file"]')!, {
+      target: { files: [new File(["%PDF"], "cv.pdf", { type: "application/pdf" })] },
+    });
+    await waitFor(() => expect(screen.getByRole("switch")).toBeEnabled());
+    expect(checkLocalProviderConnection).toHaveBeenCalledWith("openai-compatible");
   });
 
   it("opens the new resume, not the new profile, on a first upload with auto-fill", async () => {

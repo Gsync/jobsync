@@ -37,7 +37,7 @@ vi.mock("@/actions/userSettings.actions", () => ({
   })),
 }));
 vi.mock("@/utils/ai.utils", () => ({
-  checkOllamaConnection: vi.fn(async () => ({ isConnected: true })),
+  checkLocalProviderConnection: vi.fn(async () => ({ isConnected: true })),
 }));
 
 import {
@@ -51,7 +51,7 @@ import {
   saveChatConversation,
 } from "@/actions/agentChat.actions";
 import { getUserSettings } from "@/actions/userSettings.actions";
-import { checkOllamaConnection } from "@/utils/ai.utils";
+import { checkLocalProviderConnection } from "@/utils/ai.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 
 function Probe() {
@@ -88,6 +88,7 @@ function Probe() {
       <button onClick={c.togglePanelExpand}>togglePanelExpand</button>
       <button onClick={toggle}>toggleSidebar</button>
       <span data-testid="sidebar">{String(expanded)}</span>
+      <span data-testid="preflight-error">{c.preflight.error}</span>
       <span data-testid="state">{`${c.isOpen}|${c.approvalPending}|${c.interruptedTurn}|${holder}|${c.preflight.ok}`}</span>
       <span data-testid="composer-nonce">{c.composerNonce}</span>
       <span data-testid="panel-expanded">{String(c.isPanelExpanded)}</span>
@@ -399,7 +400,7 @@ describe("AgentChatProvider", () => {
   });
 
   it("preflights Ollama on open and reports a failure", async () => {
-    (checkOllamaConnection as any).mockResolvedValue({
+    (checkLocalProviderConnection as any).mockResolvedValue({
       isConnected: false,
       error: "Ollama is not reachable.",
     });
@@ -408,6 +409,19 @@ describe("AgentChatProvider", () => {
       await userEvent.click(screen.getByText("open"));
     });
     expect(screen.getByTestId("state").textContent).toMatch(/false$/);
+  });
+
+  it("blocks chat with the selected compatible server's connection error", async () => {
+    vi.mocked(getUserSettings).mockResolvedValueOnce({
+      success: true,
+      data: { settings: { ai: { provider: "openai-compatible", model: "qwen" } } },
+    } as any);
+    vi.mocked(checkLocalProviderConnection).mockResolvedValueOnce({ isConnected: false, error: "Server offline" });
+    setup();
+    await userEvent.click(screen.getByText("open"));
+    expect(checkLocalProviderConnection).toHaveBeenCalledWith("openai-compatible", "qwen");
+    expect(screen.getByTestId("state").textContent).toMatch(/false$/);
+    expect(screen.getByTestId("preflight-error")).toHaveTextContent("Server offline");
   });
 
   it("fails the preflight when no model is configured, without probing Ollama", async () => {
@@ -420,7 +434,7 @@ describe("AgentChatProvider", () => {
       await userEvent.click(screen.getByText("open"));
     });
     expect(screen.getByTestId("state").textContent).toMatch(/false$/);
-    expect(checkOllamaConnection).not.toHaveBeenCalled();
+    expect(checkLocalProviderConnection).not.toHaveBeenCalled();
   });
 
   it("puts the page context in the request body", () => {

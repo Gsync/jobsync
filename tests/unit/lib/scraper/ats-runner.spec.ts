@@ -41,7 +41,7 @@ vi.mock("@/lib/scraper/lever", () => ({
 }));
 
 vi.mock("@/lib/api-key-resolver", () => ({
-  resolveApiKey: vi.fn().mockResolvedValue(undefined),
+  resolveApiKey: vi.fn().mockResolvedValue("http://127.0.0.1:11434"),
 }));
 
 vi.mock("@/lib/ai/provider-registry.server", () => ({

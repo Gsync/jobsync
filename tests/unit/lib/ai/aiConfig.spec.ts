@@ -1,4 +1,5 @@
-import { resolveAiConfig } from "@/lib/ai/aiConfig";
+import { AiProvider } from "@/models/ai.model";
+import { getDefaultModelForProvider, resolveAiConfig } from "@/lib/ai/aiConfig";
 import type { AiSurface } from "@/lib/ai/numCtx";
 
 const { findUnique } = vi.hoisted(() => ({ findUnique: vi.fn() }));
@@ -32,4 +33,8 @@ describe("resolveAiConfig", () => {
       config: { provider: "ollama", modelName: "custom:latest", ...(numCtx !== undefined && { numCtx }) },
     });
   });
+});
+
+it("leaves the model unset for an OpenAI-compatible server", () => {
+  expect(getDefaultModelForProvider(AiProvider.OPENAI_COMPATIBLE)).toBe("");
 });

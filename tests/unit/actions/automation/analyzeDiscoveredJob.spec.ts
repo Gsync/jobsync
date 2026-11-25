@@ -107,6 +107,14 @@ describe("analyze discovered job model", () => {
     expect(getModel).toHaveBeenCalledWith("openai", "gpt-4o-mini", "user-1");
   });
 
+  it("refuses an OpenAI-compatible analysis with no model picked", async () => {
+    settings({ provider: "openai-compatible" });
+    expect(await analyzeDiscoveredJob("job-1")).toEqual({
+      success: false, message: "No AI model is selected. Pick one in Settings → AI Provider.",
+    });
+    expect(getModel).not.toHaveBeenCalled();
+  });
+
   it("keeps qwen3.5:9b for Ollama with no settings row", async () => {
     db.userSettings.findUnique.mockResolvedValue(null);
     await analyzeDiscoveredJob("job-1");

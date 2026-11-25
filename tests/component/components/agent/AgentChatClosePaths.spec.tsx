@@ -31,7 +31,7 @@ vi.mock("@/actions/userSettings.actions", () => ({
   })),
 }));
 vi.mock("@/utils/ai.utils", () => ({
-  checkOllamaConnection: vi.fn(async () => ({ isConnected: true })),
+  checkLocalProviderConnection: vi.fn(async () => ({ isConnected: true })),
 }));
 vi.mock("@/lib/toast", () => ({ toastInfo: vi.fn() }));
 

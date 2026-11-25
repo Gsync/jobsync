@@ -175,11 +175,12 @@ export const POST = async (req: NextRequest) => {
         abortSignal: controller.signal,
         providerOptions: {
           ollama: { options: { num_ctx: APP_CONSTANTS.AI_OLLAMA_NUM_CTX } },
-          // OpenAI (and OpenRouter, same factory) default to strict
+          // OpenAI, OpenRouter and OpenAI-compatible default to strict
           // json_schema, which rejects any object whose `required` omits a key
           // — this schema is optional-by-design throughout. Non-strict passes
           // it as guidance.
           openai: { strictJsonSchema: false },
+          openaiCompatible: { strictJsonSchema: false, chat_template_kwargs: { enable_thinking: false } },
         },
         onEnd: ({ usage, finishReason }) => {
           clearTimeout(timer);

@@ -57,6 +57,9 @@ export async function analyzeDiscoveredJob(jobId: string): Promise<{
     }
 
     const { config: ai, configuredModel } = await resolveAiConfig(user.id, "analyze");
+    if (!ai.modelName) {
+      return { success: false, message: "No AI model is selected. Pick one in Settings → AI Provider." };
+    }
 
     const [{ data: resume }, { job: jobDetails }] = await Promise.all([
       getResumeById(resumeId),

@@ -2,10 +2,8 @@ import db from "@/lib/db";
 import { resumeDetailInclude } from "@/lib/jobs/resumeDetailInclude";
 import type { Automation } from "@/models/automation.model";
 import { ATS_PROVIDERS } from "./ats/registry";
-import { AiProvider } from "@/models/ai.model";
+import { verifyLocalProvider } from "@/lib/ai/localProvider.server";
 import { automationLogger } from "@/lib/automation-logger";
-import { PROVIDER_VERIFIERS } from "@/lib/ai/provider-registry.server";
-import { resolveApiKey } from "@/lib/api-key-resolver";
 import { log, withSpan } from "@/lib/telemetry";
 import type { ResumeWithSections, RunnerResult } from "./automation-run/types";
 import { getUserAiSettings } from "./automation-run/aiSettings";
@@ -141,27 +139,21 @@ async function runAutomationTraced(
     // Checked here (not just in the manual /run route) so scheduled/cron
     // runs also fail fast instead of silently completing with 0 matches.
     const aiSettings = await getUserAiSettings(automation.userId);
-    if (aiSettings.provider === AiProvider.OLLAMA) {
-      const ollamaCheck = await PROVIDER_VERIFIERS.ollama(
-        (await resolveApiKey(automation.userId, "ollama"))!,
-      );
-      if (!ollamaCheck.success) {
-        const message =
-          ollamaCheck.error ||
-          "Ollama is not available. Please make sure Ollama is running.";
-        automationLogger.log(automation.id, "error", message);
-        automationLogger.endRun(automation.id);
+    const check = await verifyLocalProvider(automation.userId, aiSettings.provider, aiSettings.model);
+    if (!check.success) {
+      const message = check.error;
+      automationLogger.log(automation.id, "error", message);
+      automationLogger.endRun(automation.id);
 
-        return await finalizeRun(run.id, {
-          status: "failed",
-          errorMessage: message,
-          jobsSearched: 0,
-          jobsDeduplicated: 0,
-          jobsProcessed: 0,
-          jobsMatched: 0,
-          jobsSaved: 0,
-        });
-      }
+      return await finalizeRun(run.id, {
+        status: "failed",
+        errorMessage: message,
+        jobsSearched: 0,
+        jobsDeduplicated: 0,
+        jobsProcessed: 0,
+        jobsMatched: 0,
+        jobsSaved: 0,
+      });
     }
 
     automationLogger.log(automation.id, "info", "Fetching resume data...");

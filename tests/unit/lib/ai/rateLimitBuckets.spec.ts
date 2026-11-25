@@ -41,8 +41,9 @@ describe("checkRateLimit buckets", () => {
     );
     // 2 is the floor: the paste must survive one clarifying exchange.
     expect(APP_CONSTANTS.AGENT_CHAT_PASTE_ACTIVE_USER_MESSAGES).toBeGreaterThanOrEqual(2);
+    // A review plus two 30s think steps must finish inside the turn.
     expect(APP_CONSTANTS.AGENT_CHAT_TIMEOUT_MS).toBeGreaterThan(
-      APP_CONSTANTS.AI_RESUME_REVIEW_TIMEOUT_MS,
+      APP_CONSTANTS.AI_RESUME_REVIEW_TIMEOUT_MS + 2 * 30_000,
     );
     expect(APP_CONSTANTS.AGENT_CHAT_HISTORY_MESSAGES).toBeLessThan(
       APP_CONSTANTS.AGENT_CHAT_MAX_STORED_MESSAGES,

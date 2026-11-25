@@ -55,6 +55,7 @@ export const PROVIDER_COLORS: Record<
 > = {
   dark: {
     ollama: "#60A5FA",
+    "openai-compatible": "#4ADE80",
     deepseek: "#F59E0B",
     openai: "#14B8A6",
     gemini: "#C4B5FD",
@@ -62,6 +63,7 @@ export const PROVIDER_COLORS: Record<
   },
   light: {
     ollama: "#2563EB",
+    "openai-compatible": "#16A34A",
     deepseek: "#D97706",
     openai: "#0D9488",
     gemini: "#7C3AED",

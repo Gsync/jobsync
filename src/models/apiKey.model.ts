@@ -1,4 +1,4 @@
-export type ApiKeyProvider = "openai" | "deepseek" | "openrouter" | "ollama";
+export type ApiKeyProvider = "openai" | "deepseek" | "openrouter" | "ollama" | "openai-compatible";
 
 export interface ApiKeyRecord {
   id: string;

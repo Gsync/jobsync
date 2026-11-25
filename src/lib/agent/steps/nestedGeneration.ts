@@ -97,8 +97,8 @@ export async function runNestedGeneration({
   });
 
   // Terminal tools stop the loop after a step, not within one: the model can
-  // still emit both nested tools in a single step, and two 180s sub-calls
-  // serialize on Ollama past the 300s turn deadline, losing both.
+  // still emit both nested tools in a single step, and two long sub-calls
+  // serialize on Ollama past the 360s turn deadline, losing both.
   if (guard.running) {
     span.end({ "jobsync.nested.status": "busy" });
     return { status: "busy" };
@@ -130,6 +130,9 @@ export async function runNestedGeneration({
     }
 
     let text = "";
+    // The SDK reports the provider's failure here, then rejects finishReason
+    // with a generic NoOutputGeneratedError that hides it.
+    let providerError: unknown;
     try {
       const sub = streamText({
         model,
@@ -138,6 +141,9 @@ export async function runNestedGeneration({
         temperature,
         abortSignal: signal,
         include: { rawChunks: true },
+        onError: ({ error }) => {
+          providerError = error;
+        },
         onChunk: ({ chunk }) => {
           if (chunk.type !== "raw") return;
           const step = readOllamaTimings(chunk.rawValue);
@@ -145,7 +151,10 @@ export async function runNestedGeneration({
         },
         // Deliberately no think:true. These sub-calls have no tools, so
         // reasoning buys nothing and costs 30s. The chat loop enables it.
-        providerOptions: { ollama: { options: { num_ctx: numCtx } } },
+        providerOptions: {
+          ollama: { options: { num_ctx: numCtx } },
+          openaiCompatible: { chat_template_kwargs: { enable_thinking: false } },
+        },
       });
 
       for await (const delta of sub.textStream) {
@@ -169,14 +178,19 @@ export async function runNestedGeneration({
       const tokens = await Promise.resolve(sub.usage).catch(() => undefined);
       void tracker.finish({ usage: tokens, finishReason });
       if (finishReason !== "stop") {
-        span.setError(new Error(`finishReason=${finishReason}`));
+        // An in-stream error chunk resolves to "error" instead of rejecting.
+        if (providerError) {
+          log.warn(`[agent-chat] ${label} stream error`, { error: String(providerError) });
+        }
+        span.setError(providerError ?? new Error(`finishReason=${finishReason}`));
         endGeneration("incomplete", genAiResponseAttrs({ finishReason }));
         return { status: "incomplete" };
       }
 
       endGeneration("ok", genAiResponseAttrs({ usage: tokens, finishReason, text }));
       return { status: "ok", text };
-    } catch (error) {
+    } catch (caught) {
+      const error = providerError ?? caught;
       void tracker.finish({ error, abortedBy: signal });
       log.error(`[agent-chat] ${label} generation failed`, { error: String(error) });
       span.setError(error);

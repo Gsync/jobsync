@@ -161,6 +161,10 @@ export async function getDefaultOllamaBaseUrl(): Promise<string> {
   return process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
 }
 
+export async function getDefaultOpenaiCompatibleBaseUrl(): Promise<string | null> {
+  return process.env.OPENAI_COMPATIBLE_BASE_URL || null;
+}
+
 export async function getOllamaBaseUrl(): Promise<string> {
   try {
     const user = await getCurrentUser();

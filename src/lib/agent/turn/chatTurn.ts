@@ -134,6 +134,8 @@ export function runChatTurn(input: {
           providerOptions: {
             // qwen3.5 selected add_job 7/7 with thinking enabled versus 1/7 without.
             ollama: { think: true, ...(numCtx !== undefined && { options: { num_ctx: numCtx } }) },
+            // Mirrors ollama.think; servers that ignore it follow their preset.
+            openaiCompatible: { chat_template_kwargs: { enable_thinking: true } },
             // Replay history as text, not item_references to OpenAI storage.
             openai: { store: false },
           },
@@ -179,7 +181,7 @@ export function runChatTurn(input: {
         );
       }),
     onEnd: async ({ messages: finalMessages, responseMessage, isAborted }) => {
-      // A finished turn must not leave a closure pinned on the 300s timer.
+      // A finished turn must not leave a closure pinned on the 360s timer.
       if (onTurnTimeout) turnTimeout.removeEventListener("abort", onTurnTimeout);
       const fields = {
         ...buildTurnLogFields({
