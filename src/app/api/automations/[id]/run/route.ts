@@ -91,7 +91,7 @@ export async function POST(
     }
 
     const aiSettings = await getUserAiSettings(userId);
-    const check = await verifyLocalProvider(userId, aiSettings.provider);
+    const check = await verifyLocalProvider(userId, aiSettings.provider, aiSettings.model);
     if (!check.success) {
       return NextResponse.json(
         {

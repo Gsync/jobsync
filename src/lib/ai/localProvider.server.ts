@@ -4,7 +4,7 @@ import { resolveApiKey } from "@/lib/api-key-resolver";
 import { isLocalProvider, PROVIDER_REGISTRY } from "./provider-registry";
 import { PROVIDER_VERIFIERS } from "./provider-registry.server";
 
-export async function verifyLocalProvider(userId: string, provider: string): Promise<
+export async function verifyLocalProvider(userId: string, provider: string, model?: string): Promise<
   { success: true } | { success: false; error: string }
 > {
   if (!isLocalProvider(provider)) return { success: true };
@@ -16,6 +16,10 @@ export async function verifyLocalProvider(userId: string, provider: string): Pro
       success: false,
       error: `No base URL is set for ${name}. Add one under Settings → API Keys.`,
     };
+  }
+  // Ollama falls back to a default model; an OpenAI-compatible server has none.
+  if (provider === "openai-compatible" && !model) {
+    return { success: false, error: `No model is selected for ${name}. Pick one in Settings → AI Provider.` };
   }
 
   const result = await PROVIDER_VERIFIERS[provider](url);

@@ -97,8 +97,8 @@ export async function runNestedGeneration({
   });
 
   // Terminal tools stop the loop after a step, not within one: the model can
-  // still emit both nested tools in a single step, and two 180s sub-calls
-  // serialize on Ollama past the 300s turn deadline, losing both.
+  // still emit both nested tools in a single step, and two long sub-calls
+  // serialize on Ollama past the 360s turn deadline, losing both.
   if (guard.running) {
     span.end({ "jobsync.nested.status": "busy" });
     return { status: "busy" };

@@ -191,8 +191,9 @@ export const APP_CONSTANTS = {
   // reachable there is no single correct vocab, and a real tokenizer would be
   // precisely wrong rather than approximately right.
   AGENT_CHAT_CHARS_PER_TOKEN: 4,
-  // Allow one extra minute for chat steps around a full resume review.
-  AGENT_CHAT_TIMEOUT_MS: 300_000,
+  // Must clear one nested generation plus the thinking steps around it: two
+  // 15-30s think steps plus a 240s review is ~300s, so 360s leaves a margin.
+  AGENT_CHAT_TIMEOUT_MS: 360_000,
   // The chat loop and its nested tools share a context size to avoid reloads.
   AGENT_CHAT_NUM_CTX: 16384,
   // Below this a paste stays inline text and no chip is made, so add_job

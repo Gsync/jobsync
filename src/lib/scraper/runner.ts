@@ -139,7 +139,7 @@ async function runAutomationTraced(
     // Checked here (not just in the manual /run route) so scheduled/cron
     // runs also fail fast instead of silently completing with 0 matches.
     const aiSettings = await getUserAiSettings(automation.userId);
-    const check = await verifyLocalProvider(automation.userId, aiSettings.provider);
+    const check = await verifyLocalProvider(automation.userId, aiSettings.provider, aiSettings.model);
     if (!check.success) {
       const message = check.error;
       automationLogger.log(automation.id, "error", message);

@@ -55,7 +55,7 @@ export const PROVIDER_FACTORIES: Record<
 
 export const PROVIDER_VERIFIERS: Record<
   string,
-  (key: string) => Promise<{ success: boolean; error?: string }>
+  (key: string) => Promise<{ success: boolean; error?: string; reason?: "unreachable" }>
 > = {
   openai: async (key) => {
     const res = await fetch("https://api.openai.com/v1/models", {
@@ -147,16 +147,23 @@ export const PROVIDER_VERIFIERS: Record<
     try {
       const response = await fetchOpenaiCompatibleModels(url);
       if (response.ok) return { success: true };
-      return { success: false, error: `Cannot connect to OpenAI-compatible at ${v1}` };
+      if (response.status === 401 || response.status === 403) {
+        return {
+          success: false,
+          error: `OpenAI-compatible at ${v1} rejected the request (${response.status}). Its API key comes from OPENAI_COMPATIBLE_API_KEY on the JobSync server and is sent only when this URL matches OPENAI_COMPATIBLE_BASE_URL.`,
+        };
+      }
+      return { success: false, error: `OpenAI-compatible at ${v1} returned ${response.status}.` };
     } catch (error) {
       if (error instanceof Error && error.name === "TimeoutError") {
-        return { success: false, error: `OpenAI-compatible at ${v1} did not respond in time.` };
+        return { success: false, reason: "unreachable", error: `OpenAI-compatible at ${v1} did not respond in time.` };
       }
       if (error instanceof TypeError && /failed to parse url/i.test(error.message)) {
         return { success: false, error: `Invalid OpenAI-compatible URL: ${v1}` };
       }
       return {
         success: false,
+        reason: "unreachable",
         error: `Cannot connect to OpenAI-compatible at ${v1}. From Docker use http://host.docker.internal:<port>, and make the server listen on the network (LM Studio: Serve on Local Network).`,
       };
     }

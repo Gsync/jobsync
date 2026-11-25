@@ -204,17 +204,26 @@ describe("OpenAI-compatible server", () => {
     expect(new Headers(request.headers).get("authorization")).toBe(header);
   });
 
-  it("rejects an unsuccessful models response", async () => {
-    fetchMock.mockResolvedValue({ ok: false });
-    expect(await verify(base)).toMatchObject({ success: false, error: expect.stringContaining("Cannot connect to OpenAI-compatible at http://h:1234/v1") });
+  it("reports the status of an unsuccessful models response", async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 500 });
+    expect(await verify(base)).toEqual({ success: false, error: "OpenAI-compatible at http://h:1234/v1 returned 500." });
+  });
+
+  it.each([401, 403])("points a %s at the server-side key", async status => {
+    fetchMock.mockResolvedValue({ ok: false, status });
+    const result = await verify(base);
+    expect(result).toMatchObject({ success: false, error: expect.stringMatching(/OPENAI_COMPATIBLE_API_KEY.*OPENAI_COMPATIBLE_BASE_URL/) });
+    expect(result.reason).toBeUndefined();
   });
 
   it.each([
-    [new DOMException("timeout", "TimeoutError"), /did not respond in time/],
-    [new TypeError("Failed to parse URL"), /Invalid OpenAI-compatible URL/],
-    [new Error("unreachable"), /host.docker.internal.*Serve on Local Network/],
-  ] as const)("explains the connection failure", async (error, message) => {
+    [new DOMException("timeout", "TimeoutError"), /did not respond in time/, "unreachable"],
+    [new TypeError("Failed to parse URL"), /Invalid OpenAI-compatible URL/, undefined],
+    [new Error("unreachable"), /host.docker.internal.*Serve on Local Network/, "unreachable"],
+  ] as const)("explains the connection failure", async (error, message, reason) => {
     fetchMock.mockRejectedValue(error);
-    expect(await verify(base)).toMatchObject({ success: false, error: expect.stringMatching(message) });
+    const result = await verify(base);
+    expect(result).toMatchObject({ success: false, error: expect.stringMatching(message) });
+    expect(result.reason).toBe(reason);
   });
 });

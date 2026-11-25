@@ -122,6 +122,14 @@ describe("mapAgentError", () => {
     expect(mapped).toMatch(/settings/i);
   });
 
+  it("points an OpenAI-compatible 401 at the server-side key", () => {
+    const mapped = mapAgentError(apiCallError(401, "Unauthorized"), {
+      provider: "openai-compatible",
+    });
+    expect(mapped).toMatch(/OPENAI_COMPATIBLE_API_KEY/);
+    expect(mapped).not.toMatch(/Re-save/);
+  });
+
   it("does not echo the provider's body on a mapped status", () => {
     const marker = "user_39CAXN1SLbb8LlFuJ4uyCKjcXWB";
     const mapped = mapAgentError(apiCallError(429, `limit hit ${marker}`), {

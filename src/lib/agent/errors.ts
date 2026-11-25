@@ -92,6 +92,10 @@ export function mapAgentError(
     return `${provider}${model ? ` / ${model}` : ""} is rate-limited right now. Wait a moment and ask again, or pick another model in Settings.`;
   }
 
+  if (status === 401 && provider === "openai-compatible") {
+    return `${provider} rejected the request. Its API key is OPENAI_COMPATIBLE_API_KEY on the JobSync server, sent only when the saved URL matches OPENAI_COMPATIBLE_BASE_URL.`;
+  }
+
   if (status === 401) {
     return `${provider} rejected the API key. Re-save it in Settings.`;
   }

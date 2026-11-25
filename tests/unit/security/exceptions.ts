@@ -256,6 +256,7 @@ export const ACTION_EXCEPTIONS: SecurityException[] = [
   requireUserException("auth.actions.ts", "authenticate", "public", "Sign-in runs before a session exists"),
   requireUserException("apiKey.actions.ts", "getOllamaBaseUrl", "contract-exception", DEGRADE),
   requireUserException("apiKey.actions.ts", "getDefaultOllamaBaseUrl", "contract-exception", "Returns the env default; reads no user data"),
+  requireUserException("apiKey.actions.ts", "getDefaultOpenaiCompatibleBaseUrl", "contract-exception", "Returns the env default; reads no user data"),
   requireUserException("atsCompany.actions.ts", "searchAtsCompanies", "contract-exception", DEGRADE),
   requireUserException("atsCompany.actions.ts", "getAtsCompanyCount", "contract-exception", DEGRADE),
   requireUserException("atsCompany.actions.ts", "resolveAtsBoard", "contract-exception", DEGRADE),

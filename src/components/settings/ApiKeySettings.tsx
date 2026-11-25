@@ -30,13 +30,14 @@ import {
   saveApiKey,
   deleteApiKey,
   getDefaultOllamaBaseUrl,
+  getDefaultOpenaiCompatibleBaseUrl,
 } from "@/actions/apiKey.actions";
 import type {
   ApiKeyClientResponse,
   ApiKeyProvider,
 } from "@/models/apiKey.model";
 import { getAiProviders, isLocalProvider, PROVIDER_REGISTRY } from "@/lib/ai/provider-registry";
-import { checkLocalProviderConnection } from "@/utils/ai.utils";
+import { checkLocalProviderConnection, type LocalProviderConnectionResult } from "@/utils/ai.utils";
 import { getUserSettings } from "@/actions/userSettings.actions";
 
 interface ProviderConfig {
@@ -63,6 +64,7 @@ function ApiKeySettings() {
   const [defaultOllamaUrl, setDefaultOllamaUrl] = useState(
     "http://127.0.0.1:11434",
   );
+  const [defaultOpenaiCompatibleUrl, setDefaultOpenaiCompatibleUrl] = useState<string | null>(null);
   const [editingProvider, setEditingProvider] = useState<ApiKeyProvider | null>(
     null,
   );
@@ -70,7 +72,9 @@ function ApiKeySettings() {
   const [verifying, setVerifying] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   // An absent entry is unchecked. Null means a check is in progress.
-  const [connections, setConnections] = useState<Partial<Record<ApiKeyProvider, boolean | null>>>({});
+  const [connections, setConnections] = useState<
+    Partial<Record<ApiKeyProvider, LocalProviderConnectionResult | null>>
+  >({});
 
   const pendingChecks = useRef(new Map<ApiKeyProvider, ReturnType<typeof checkLocalProviderConnection>>());
 
@@ -81,7 +85,7 @@ function ApiKeySettings() {
     const result = await check;
     if (pendingChecks.current.get(provider) !== check) return;
     pendingChecks.current.delete(provider);
-    setConnections((prev) => ({ ...prev, [provider]: result.isConnected }));
+    setConnections((prev) => ({ ...prev, [provider]: result }));
   };
 
   const applyKeys = (
@@ -110,6 +114,7 @@ function ApiKeySettings() {
       .catch((error) => console.error("Error fetching API keys:", error))
       .finally(() => setIsLoading(false));
     getDefaultOllamaBaseUrl().then(setDefaultOllamaUrl);
+    getDefaultOpenaiCompatibleBaseUrl().then(setDefaultOpenaiCompatibleUrl);
     getUserSettings().then((result) => {
       const provider = result?.data?.settings?.ai?.provider;
       if (result?.success && provider && isLocalProvider(provider)) {
@@ -221,9 +226,12 @@ function ApiKeySettings() {
           const isEditing = editingProvider === provider.id;
           const entry = PROVIDER_REGISTRY[provider.id];
           const isBaseUrl = entry.credentialType === "base-url";
-          const defaultUrl = provider.id === "ollama" ? defaultOllamaUrl : entry.defaultCredential;
-          const connected = connections[provider.id];
-          const checking = connected === null;
+          const defaultUrl =
+            provider.id === "ollama" ? defaultOllamaUrl
+            : provider.id === "openai-compatible" ? defaultOpenaiCompatibleUrl ?? undefined
+            : entry.defaultCredential;
+          const connection = connections[provider.id];
+          const checking = connection === null;
 
           return (
             <Card key={provider.id}>
@@ -260,15 +268,15 @@ function ApiKeySettings() {
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         <span>Checking...</span>
                       </div>
-                    ) : connected === true ? (
+                    ) : connection?.isConnected === true ? (
                       <div className="flex items-center gap-1 text-green-600 text-sm">
                         <CheckCircle className="h-3.5 w-3.5 shrink-0" />
                         <span>{provider.name} is running</span>
                       </div>
-                    ) : connected === false ? (
+                    ) : connection?.isConnected === false ? (
                       <div className="flex items-center gap-1 text-red-600 text-sm">
                         <XCircle className="h-3.5 w-3.5 shrink-0" />
-                        <span>{provider.name} is not running</span>
+                        <span>{connection.error ?? `${provider.name} is not running`}</span>
                       </div>
                     ) : null}
                     <Button

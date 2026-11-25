@@ -181,7 +181,7 @@ export function runChatTurn(input: {
         );
       }),
     onEnd: async ({ messages: finalMessages, responseMessage, isAborted }) => {
-      // A finished turn must not leave a closure pinned on the 300s timer.
+      // A finished turn must not leave a closure pinned on the 360s timer.
       if (onTurnTimeout) turnTimeout.removeEventListener("abort", onTurnTimeout);
       const fields = {
         ...buildTurnLogFields({

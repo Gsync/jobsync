@@ -4,6 +4,7 @@ import { AiProvider } from "@/models/ai.model";
 
 const getUserApiKeys = vi.fn();
 const getDefaultOllamaBaseUrl = vi.fn();
+const getDefaultOpenaiCompatibleBaseUrl = vi.fn(async (): Promise<string | null> => null);
 const deleteApiKey = vi.fn();
 const getUserSettings = vi.fn();
 const checkLocalProviderConnection = vi.fn();
@@ -13,6 +14,7 @@ vi.mock("@/actions/apiKey.actions", () => ({
   saveApiKey: vi.fn(),
   deleteApiKey: (provider: string) => deleteApiKey(provider),
   getDefaultOllamaBaseUrl: () => getDefaultOllamaBaseUrl(),
+  getDefaultOpenaiCompatibleBaseUrl: () => getDefaultOpenaiCompatibleBaseUrl(),
 }));
 
 vi.mock("@/actions/userSettings.actions", () => ({
@@ -112,6 +114,23 @@ describe("ApiKeySettings — clearing a stored base URL", () => {
     expect(await screen.findByText("Clear the saved OpenAI-compatible base URL? It stops working until you add one again, unless the server sets OPENAI_COMPATIBLE_BASE_URL.")).toBeInTheDocument();
     fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Remove" }));
     expect(await screen.findByText("OpenAI-compatible is not running")).toBeInTheDocument();
+  });
+
+  it("shows the compatible server's env default and offers a reset to it", async () => {
+    getDefaultOpenaiCompatibleBaseUrl.mockResolvedValueOnce("http://host.docker.internal:1234");
+    getUserApiKeys.mockResolvedValue({ success: true, data: [{ provider: "openai-compatible", displayValue: "http://local" }] });
+    render(<ApiKeySettings />);
+    expect(await screen.findByText("Default: http://host.docker.internal:1234")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Reset to default" }));
+    expect(await screen.findByText("Clear the saved OpenAI-compatible base URL? JobSync will use the server default, http://host.docker.internal:1234.")).toBeInTheDocument();
+  });
+
+  it("shows why the connection check failed", async () => {
+    getUserSettings.mockResolvedValue(settingsFor(AiProvider.OPENAI_COMPATIBLE));
+    checkLocalProviderConnection.mockResolvedValue({ isConnected: false, error: "No base URL is set for OpenAI-compatible. Add one under Settings → API Keys." });
+    render(<ApiKeySettings />);
+    expect(await screen.findByText("No base URL is set for OpenAI-compatible. Add one under Settings → API Keys.")).toBeInTheDocument();
+    expect(screen.queryByText("OpenAI-compatible is not running")).not.toBeInTheDocument();
   });
 
   it("offers a labelled reset that names the server default", async () => {
