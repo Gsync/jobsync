@@ -21,7 +21,7 @@ Open the avatar menu at the bottom of the left sidebar and choose **Settings**, 
 
 Ollama uses the default URL shown under **Settings → API Keys**. Enter a custom base URL on the Ollama card or choose **Reset to default** to restore it. JobSync checks the selected local provider automatically. Use either card’s refresh button to check its connection.
 
-For LM Studio, oMLX, llama.cpp or vLLM, save the server's base URL under **Settings → API Keys → OpenAI-compatible**. From Docker, use `http://host.docker.internal:<port>` and configure the server to listen on the network (in LM Studio, enable **Serve on Local Network**). You can also set `OPENAI_COMPATIBLE_BASE_URL` on the JobSync server. If your model server requires a key, set `OPENAI_COMPATIBLE_API_KEY` alongside its matching base URL. Load the model with at least 16k context for chat. If the server ignores the app's thinking setting, its model preset controls thinking.
+For oMLX, LM Studio, llama.cpp or vLLM, save the server's base URL under **Settings → API Keys → OpenAI-compatible**. From Docker, use `http://host.docker.internal:<port>` and configure the server to listen on the network (in LM Studio, enable **Serve on Local Network**). You can also set `OPENAI_COMPATIBLE_BASE_URL` on the JobSync server. If your model server requires a key, set `OPENAI_COMPATIBLE_API_KEY` alongside its matching base URL. Load the model with at least 16k context for chat. If the server ignores the app's thinking setting, its model preset controls thinking.
 
 Select both a provider and a model for resume review, job matching, cover letters and chat. If a local model list is empty, check that JobSync can reach the server and that it lists a chat model.
 
