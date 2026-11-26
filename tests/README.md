@@ -8,7 +8,7 @@ Every executable test lives here, split by suite first and by the production cod
 | --- | --- | --- | --- |
 | Unit | `unit/` | Vitest project `unit` | Functions, schemas, server actions and API route handlers, with Prisma and other dependencies mocked |
 | Component | `component/` | Vitest project `component` | Components, contexts and hooks rendered with React Testing Library |
-| Integration | `integration/` | Vitest project `integration` | Several real layers at a documented boundary; today only the opt-in backup round trip against a real Postgres |
+| Integration | `integration/` | Vitest project `integration` | Several real layers at a documented boundary; opt-in specs against a real Postgres: the backup round trip, the partial unique indexes applied from the migrations, and concurrent duplicate job saves |
 | Property | `property/` | Vitest project `property` (opt-in) | Seeded fast-check suites over pure logic and the job timeline; never run by `npm test` or CI |
 | E2E | `tests/e2e/` | Playwright | Browser flows against a running dev server |
 
@@ -48,7 +48,7 @@ Next.js route folders such as `[id]` are mirrored as-is; quote those paths in zs
 
 ## Integration opt-in
 
-`npm run test:integration` loads `.env` when present; exported shell variables take precedence. `integration/backup/backupRoundTrip.spec.ts` skips unless `BACKUP_TEST_DATABASE_URL` is set. When it is, the spec creates a throwaway schema on that server, pushes the Prisma schema into it and drops it afterwards. Point it at a dev database, never production's `jobsync`, and never set the variable in CI:
+`npm run test:integration` loads `.env` when present; exported shell variables take precedence. Every integration spec skips unless `BACKUP_TEST_DATABASE_URL` is set. When it is, each spec creates a throwaway schema on that server and drops it afterwards. `integration/backup/backupRoundTrip.spec.ts` pushes the Prisma schema into it; `integration/migrations/` and `integration/jobs/` apply the real migration SQL with the boot-time `migrateDeploy` (no Prisma CLI), so they see the partial indexes that `db push` cannot create. Point it at a dev database, never production's `jobsync`, and never set the variable in CI:
 
 ```bash
 BACKUP_TEST_DATABASE_URL=<dev Postgres URL> npm run test:integration
