@@ -2,38 +2,15 @@
 
 import { JobForm } from "@/models/job.model";
 import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 
 import { ControllerRenderProps } from "react-hook-form";
+import { richTextExtensions } from "./richTextExtensions";
 import { Toggle } from "./ui/toggle";
 import { Bold, Heading2, Italic, List, ListOrdered } from "lucide-react";
 
 const Tiptap = ({ field }: { field: ControllerRenderProps<any, any> }) => {
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        // StarterKit 3 additions; off to keep v2 output (links stay inert)
-        link: false,
-        underline: false,
-        trailingNode: false,
-        heading: {
-          HTMLAttributes: {
-            class: "text-xl",
-          },
-        },
-        orderedList: {
-          HTMLAttributes: {
-            class: "list-decimal pl-4",
-          },
-        },
-
-        bulletList: {
-          HTMLAttributes: {
-            class: "list-disc pl-4",
-          },
-        },
-      }),
-    ],
+    extensions: richTextExtensions,
     editorProps: {
       attributes: {
         class:
