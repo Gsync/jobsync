@@ -33,6 +33,22 @@ providers:
       tool_choice: auto
       tools: file://./tools.json
 
+  # Any OpenAI-compatible local server (oMLX, LM Studio, ...). Run with
+  # --openai-compatible to use it in place of Ollama.
+  - id: openai:chat:{{ env.EVAL_OPENAI_COMPATIBLE_MODEL | default('Qwen3.5-9B-MLX-4bit') }}
+    label: openai-compatible
+    config:
+      apiBaseUrl: "{{ env.EVAL_OPENAI_COMPATIBLE_BASE_URL | default('http://localhost:8000/v1') }}"
+      apiKey: none
+      # Same as the app's openaiCompatible providerOptions for this surface
+      passthrough:
+        chat_template_kwargs:
+          enable_thinking: false
+      temperature: 0
+      max_tokens: 8192
+      tool_choice: auto
+      tools: file://./tools.json
+
 prompts:
   - file://./prompt.ts
 

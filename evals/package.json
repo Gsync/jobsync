@@ -3,15 +3,15 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "eval:resume-review": "promptfoo eval --no-cache --env-file ../.env --config resume-review/promptfooconfig.yaml",
-    "eval:job-match": "promptfoo eval --no-cache --env-file ../.env --config job-match/promptfooconfig.yaml",
-    "eval:automation-match": "promptfoo eval --no-cache --env-file ../.env --config job-match/automation.promptfooconfig.yaml",
-    "eval:cover-letter": "promptfoo eval --no-cache --env-file ../.env --config cover-letter/promptfooconfig.yaml",
-    "eval:resume-import": "promptfoo eval --no-cache --env-file ../.env --config resume-import/promptfooconfig.yaml",
-    "eval:mcp-tools": "tsx mcp-tools/generate-tools.ts && promptfoo eval --no-cache --env-file ../.env --config mcp-tools/promptfooconfig.yaml",
-    "eval:agent-chat": "tsx agent-chat/generate-tools.ts && promptfoo eval --no-cache --env-file ../.env --config agent-chat/promptfooconfig.yaml",
+    "eval:resume-review": "tsx run-eval.ts resume-review/promptfooconfig.yaml",
+    "eval:job-match": "tsx run-eval.ts job-match/promptfooconfig.yaml",
+    "eval:automation-match": "tsx run-eval.ts job-match/automation.promptfooconfig.yaml",
+    "eval:cover-letter": "tsx run-eval.ts cover-letter/promptfooconfig.yaml",
+    "eval:resume-import": "tsx run-eval.ts resume-import/promptfooconfig.yaml",
+    "eval:mcp-tools": "tsx mcp-tools/generate-tools.ts && tsx run-eval.ts mcp-tools/promptfooconfig.yaml",
+    "eval:agent-chat": "tsx agent-chat/generate-tools.ts && tsx run-eval.ts agent-chat/promptfooconfig.yaml",
     "eval:agent-chat-latency": "tsx agent-chat/generate-tools.ts && tsx agent-chat/latency.ts",
-    "eval:all": "promptfoo eval --no-cache --env-file ../.env --config promptfooconfig.yaml",
+    "eval:all": "tsx run-eval.ts promptfooconfig.yaml",
     "eval:view": "promptfoo view"
   },
   "devDependencies": {
