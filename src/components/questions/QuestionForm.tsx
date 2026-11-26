@@ -180,7 +180,7 @@ export function QuestionForm({
                   <FormItem className="flex flex-col">
                     <FormLabel>Answer *</FormLabel>
                     <FormControl>
-                      <TiptapEditor field={field} />
+                      <TiptapEditor field={field} codeBlocks />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

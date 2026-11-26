@@ -6,9 +6,23 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import { ControllerRenderProps } from "react-hook-form";
 import { richTextExtensions } from "./richTextExtensions";
 import { Toggle } from "./ui/toggle";
-import { Bold, Heading2, Italic, List, ListOrdered } from "lucide-react";
+import {
+  Bold,
+  Heading2,
+  Italic,
+  List,
+  ListOrdered,
+  SquareCode,
+} from "lucide-react";
+import { CodeLanguageSelect } from "./CodeLanguageSelect";
 
-const Tiptap = ({ field }: { field: ControllerRenderProps<any, any> }) => {
+const Tiptap = ({
+  field,
+  codeBlocks = false,
+}: {
+  field: ControllerRenderProps<any, any>;
+  codeBlocks?: boolean;
+}) => {
   const editor = useEditor({
     extensions: richTextExtensions,
     editorProps: {
@@ -70,6 +84,21 @@ const Tiptap = ({ field }: { field: ControllerRenderProps<any, any> }) => {
           >
             <List className="w-4 h-4" />
           </Toggle>
+          {codeBlocks && (
+            <Toggle
+              aria-label="Code block"
+              pressed={editor.isActive("codeBlock")}
+              onPressedChange={() =>
+                editor.chain().focus().toggleCodeBlock().run()
+              }
+              size={"sm"}
+            >
+              <SquareCode className="w-4 h-4" />
+            </Toggle>
+          )}
+          {codeBlocks && editor.isActive("codeBlock") && (
+            <CodeLanguageSelect editor={editor} />
+          )}
         </div>
       )}
       <EditorContent
