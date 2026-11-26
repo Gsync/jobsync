@@ -281,6 +281,19 @@ export function assertQuestionCount(output: unknown, context: Context): Assertio
   return { pass, score: pass ? 1 : 0, reason: pass ? `sent ${got} questions` : `sent ${got} questions, wanted ${want}` };
 }
 
+// Regex vars are anchored by the row; a prose-only row passes expectedAnswer
+// "none" and must come back without any fence
+export function assertAnswerFence(output: unknown, context: Context): AssertionResult {
+  const answer = String(questionsOf(output)[0]?.answer ?? '');
+  const want = context.vars.expectedAnswer;
+  if (want === 'none') {
+    const pass = !answer.includes('```');
+    return { pass, score: pass ? 1 : 0, reason: pass ? 'no fence added' : `prose answer gained a fence: ${JSON.stringify(answer)}` };
+  }
+  const pass = new RegExp(want).test(answer);
+  return { pass, score: pass ? 1 : 0, reason: pass ? `answer matches ${want}` : `answer does not match ${want}: ${JSON.stringify(answer)}` };
+}
+
 export function assertQuestionTags(output: unknown): AssertionResult {
   const items = questionsOf(output);
   const bad = items

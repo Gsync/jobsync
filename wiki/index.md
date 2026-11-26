@@ -10,6 +10,7 @@ JobSync tracks job applications, resumes and the work you do around them. These 
 - [Jobs](./jobs.md) — add jobs manually or by pasting a posting into AI chat, move them through the status workflow, edit, filter, export and delete them.
 - [Job Timeline](./timeline.md) — record each stage of a hiring process with its date, link the interviewers, and build a prep list of the questions you expect.
 - [Interviews](./interviews.md) — every interview round across your jobs in one list, with filters and outcomes.
+- [Questions](./questions.md) — save interview questions with your answers, including code with syntax highlighting.
 - [Contacts](./contacts.md) — track recruiters, interviewers and references, link them to the jobs they touched, and record how you know them.
 - [Companies](./companies.md) — a company's details page with its jobs and contacts, watching a company, and why a company can't be deleted.
 - [Automations](./automations.md) — set up a scheduled search over Greenhouse, Lever and Ashby company boards, fill in the filters that make it work, and handle the jobs it discovers.

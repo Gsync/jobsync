@@ -68,6 +68,93 @@ describe("TiptapEditor", () => {
   });
 });
 
+describe("TiptapEditor code blocks", () => {
+  beforeAll(() => {
+    window.HTMLElement.prototype.hasPointerCapture = vi.fn();
+    window.HTMLElement.prototype.scrollIntoView = vi.fn();
+  });
+
+  // jsdom has no caret, so place the DOM selection and let ProseMirror read it
+  const placeCaretIn = (el: Element) => {
+    const pm = el.closest(".ProseMirror") as HTMLElement;
+    pm.focus();
+    document.getSelection()!.collapse(el.firstChild ?? el, 0);
+    document.dispatchEvent(new Event("selectionchange"));
+  };
+
+  it("offers no code block toggle by default", async () => {
+    render(<Tiptap field={makeField("<p>hello</p>")} />);
+    await screen.findAllByRole("button");
+    expect(screen.queryByRole("button", { name: "Code block" })).toBeNull();
+  });
+
+  it("code block toggle wraps the paragraph and reveals the language picker", async () => {
+    const user = userEvent.setup();
+    const field = makeField("<p>hello</p>");
+    render(<Tiptap field={field} codeBlocks />);
+    const toggle = await screen.findByRole("button", { name: "Code block" });
+    expect(screen.queryByLabelText("Code language")).toBeNull();
+    await user.click(toggle);
+    expect(field.onChange).toHaveBeenLastCalledWith(
+      "<pre><code>hello</code></pre>",
+    );
+    expect(screen.getByLabelText("Code language")).toBeInTheDocument();
+  });
+
+  it("picking a language sets its class", async () => {
+    const user = userEvent.setup();
+    const field = makeField("<pre><code>hello</code></pre>");
+    const { container } = render(<Tiptap field={field} codeBlocks />);
+    await screen.findAllByRole("button");
+    placeCaretIn(container.querySelector(".ProseMirror pre code")!);
+    await user.click(await screen.findByLabelText("Code language"));
+    await user.click(screen.getByRole("option", { name: "TypeScript" }));
+    expect(field.onChange).toHaveBeenLastCalledWith(
+      '<pre><code class="language-typescript">hello</code></pre>',
+    );
+  });
+
+  it("Auto-detect clears the language", async () => {
+    const user = userEvent.setup();
+    const field = makeField(
+      '<pre><code class="language-typescript">hello</code></pre>',
+    );
+    const { container } = render(<Tiptap field={field} codeBlocks />);
+    await screen.findAllByRole("button");
+    placeCaretIn(container.querySelector(".ProseMirror pre code")!);
+    await user.click(await screen.findByLabelText("Code language"));
+    await user.click(screen.getByRole("option", { name: "Auto-detect" }));
+    expect(field.onChange).toHaveBeenLastCalledWith(
+      "<pre><code>hello</code></pre>",
+    );
+  });
+
+  it("shows the placeholder after moving from a typescript block into a ts block", async () => {
+    const { container } = render(
+      <Tiptap
+        field={makeField(
+          '<pre><code class="language-typescript">a</code></pre><p>x</p><pre><code class="language-ts">b</code></pre>',
+        )}
+        codeBlocks
+      />,
+    );
+    await screen.findAllByRole("button");
+    const [first, second] = container.querySelectorAll(".ProseMirror pre code");
+    placeCaretIn(first);
+    await waitFor(() =>
+      expect(screen.getByLabelText("Code language")).toHaveTextContent(
+        "TypeScript",
+      ),
+    );
+    placeCaretIn(second);
+    await waitFor(() =>
+      expect(screen.getByLabelText("Code language")).toHaveTextContent(
+        "Language",
+      ),
+    );
+  });
+});
+
 describe("TipTapContentViewer", () => {
   it("viewer renders links and underline as plain text", async () => {
     const { container } = render(

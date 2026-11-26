@@ -58,7 +58,7 @@ function QuestionsPageClient({
         selectedFilter={filterKey}
         onFilterChange={onFilterChange}
       />
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <QuestionsContainer
           availableTags={allTags}
           filterKey={filterKey}

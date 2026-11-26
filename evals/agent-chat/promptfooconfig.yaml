@@ -468,6 +468,62 @@ tests:
       - type: javascript
         value: file://./assertions.ts:assertQuestionCount
 
+  # From the code-highlighting browser check B1: a described Python snippet was
+  # saved as two plain lines with no fence.
+  - description: Described code answer - the saved answer is a python fence
+    vars:
+      userMessage: >-
+        Save this interview question to my question bank: "How do you reverse
+        a string in Python?" My answer is a Python code block containing:
+        def reverse(s): return s[::-1]
+      pageLocation: elsewhere
+      expectedQuestions: 1
+      expectedAnswer: '```(python|py)\n[\s\S]*s\[::-1\]'
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertQuestionCount
+      - type: javascript
+        value: file://./assertions.ts:assertAnswerFence
+
+  - description: Pasted fenced code answer - the fence and its indentation survive
+    vars:
+      userMessage: |-
+        Save this interview question: How do you reverse a string in Python?
+        My answer:
+        ```python
+        def reverse(s):
+            return s[::-1]
+        ```
+      pageLocation: elsewhere
+      expectedQuestions: 1
+      expectedAnswer: '```python\ndef reverse\(s\):\n    return s\[::-1\]\n```'
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertQuestionCount
+      - type: javascript
+        value: file://./assertions.ts:assertAnswerFence
+
+  - description: Prose-only answer naming a function - no fence is added
+    vars:
+      userMessage: >-
+        Save this interview question: What does useEffect do in React? My
+        answer: it runs side effects after render, and the cleanup function
+        it returns runs before the next effect or on unmount.
+      pageLocation: elsewhere
+      expectedQuestions: 1
+      expectedAnswer: none
+    assert:
+      - type: javascript
+        value: file://./assertions.ts:assertCallsAddQuestion
+      - type: javascript
+        value: file://./assertions.ts:assertQuestionCount
+      - type: javascript
+        value: file://./assertions.ts:assertAnswerFence
+
   - description: List of 3 with no answers - asks once about answers, no tool call
     vars:
       userMessage: >-

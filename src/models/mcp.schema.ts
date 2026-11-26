@@ -79,7 +79,7 @@ export const McpAddQuestionInputShape = {
   question: z.string()
     .describe(`The interview question as asked, ${APP_CONSTANTS.MIN_QUESTION_LENGTH}–${APP_CONSTANTS.MAX_QUESTION_LENGTH} characters.`),
   answer: z.string().optional()
-    .describe(`The user's answer or notes in markdown, ${APP_CONSTANTS.MIN_QUESTION_ANSWER_LENGTH}–${APP_CONSTANTS.MAX_QUESTION_ANSWER_LENGTH} characters. Omit it when the user gave none.`),
+    .describe(`The user's answer or notes in markdown, ${APP_CONSTANTS.MIN_QUESTION_ANSWER_LENGTH}–${APP_CONSTANTS.MAX_QUESTION_ANSWER_LENGTH} characters; put any code in a fenced block with its language. Omit it when the user gave none.`),
   tags: z.array(z.string()).optional()
     .describe("1–5 skills or topics the question tests, e.g. [\"Postgres\", \"Database design\"] for \"Why Postgres over Mongo?\"."),
   notSameAs: z.array(z.string()).optional()

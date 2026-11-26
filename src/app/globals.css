@@ -83,6 +83,13 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    --code-keyword: 354 66% 48%;
+    --code-string: 212 94% 20%;
+    --code-comment: 210 7% 42%;
+    --code-number: 212 100% 39%;
+    --code-title: 261 51% 51%;
+    --code-type: 25 98% 35%;
+    --code-tag: 137 59% 30%;
   }
 
   .dark {
@@ -113,6 +120,13 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --code-keyword: 3 100% 72%;
+    --code-string: 208 100% 82%;
+    --code-comment: 212 9% 58%;
+    --code-number: 205 100% 74%;
+    --code-title: 267 100% 83%;
+    --code-type: 30 100% 67%;
+    --code-tag: 129 67% 74%;
   }
 }
 
@@ -142,6 +156,36 @@
   }
   .tiptap li + li {
     @apply mt-1;
+  }
+  .tiptap pre {
+    @apply rounded-md bg-muted px-3 py-2 font-mono text-sm overflow-x-auto;
+  }
+  .tiptap pre code {
+    white-space: pre;
+  }
+
+  /* Token colours for CodeBlockLowlight; each ≥4.5:1 on bg-muted */
+  .tiptap :is(.hljs-keyword, .hljs-selector-tag, .hljs-meta-keyword, .hljs-doctag, .hljs-deletion) {
+    color: hsl(var(--code-keyword));
+  }
+  .tiptap :is(.hljs-string, .hljs-regexp, .hljs-meta-string) {
+    color: hsl(var(--code-string));
+  }
+  .tiptap :is(.hljs-comment, .hljs-quote) {
+    color: hsl(var(--code-comment));
+    font-style: italic;
+  }
+  .tiptap :is(.hljs-number, .hljs-literal, .hljs-variable, .hljs-attr, .hljs-attribute, .hljs-symbol) {
+    color: hsl(var(--code-number));
+  }
+  .tiptap :is(.hljs-title, .hljs-section) {
+    color: hsl(var(--code-title));
+  }
+  .tiptap :is(.hljs-built_in, .hljs-type, .hljs-params) {
+    color: hsl(var(--code-type));
+  }
+  .tiptap :is(.hljs-name, .hljs-tag, .hljs-selector-class, .hljs-selector-id, .hljs-addition) {
+    color: hsl(var(--code-tag));
   }
 }
 
