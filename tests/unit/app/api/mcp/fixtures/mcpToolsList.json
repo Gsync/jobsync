@@ -307,7 +307,7 @@
           "description": "The interview question as asked, 5–500 characters."
         },
         "answer": {
-          "description": "The user's answer or notes in markdown, 10–5000 characters. Omit it when the user gave none.",
+          "description": "The user's answer or notes in markdown, 10–5000 characters; put any code in a fenced block with its language. Omit it when the user gave none.",
           "type": "string"
         },
         "tags": {
@@ -372,7 +372,7 @@
                 "description": "The interview question as asked, 5–500 characters."
               },
               "answer": {
-                "description": "The user's answer or notes in markdown, 10–5000 characters. Omit it when the user gave none.",
+                "description": "The user's answer or notes in markdown, 10–5000 characters; put any code in a fenced block with its language. Omit it when the user gave none.",
                 "type": "string"
               },
               "tags": {
