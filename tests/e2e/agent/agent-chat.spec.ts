@@ -78,8 +78,19 @@ async function openChat(page: Page) {
   await page.route("**/api/ai/ollama/tags", (route) =>
     route.fulfill({ contentType: "application/json", body: "{}" }),
   );
+  // The first open exposes the configured model in the panel header.
+  // Advertise that model on the reload without contacting the local server.
+  let models: { id: string }[] = [];
+  await page.route("**/api/ai/openai-compatible/models", (route) =>
+    route.fulfill({ json: { data: models } }),
+  );
   await page.goto("/dashboard/myjobs");
   await page.getByRole("button", { name: "Chat AI" }).click();
+  const modelLabel = await page.getByRole("dialog").getByText(/^.+? \/ .+/).innerText();
+  const prefix = "OpenAI-compatible / ";
+  if (modelLabel.startsWith(prefix)) {
+    models = [{ id: modelLabel.slice(prefix.length) }];
+  }
   // A shared user can carry a transcript in from another run or a manual
   // pass, so start from Clear Session. Then reload: clear() calls setMessages([])
   // only after the server action resolves, and waiting on the HTTP response

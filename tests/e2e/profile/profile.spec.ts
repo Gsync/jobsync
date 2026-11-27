@@ -32,7 +32,7 @@ test.describe("Profile page", () => {
     await deleteResume(page, resumeTitle);
     // Assert on the persistent outcome (row removed) rather than the toast,
     // which auto-dismisses after 5s and can vanish before the poll under load.
-    await expect(page.locator("tbody")).not.toContainText(resumeTitle, {
+    await expect(page.getByRole("row").filter({ hasText: resumeTitle })).toHaveCount(0, {
       timeout: 20000,
     });
   });

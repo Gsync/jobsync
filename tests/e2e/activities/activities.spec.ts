@@ -144,7 +144,7 @@ test.describe.serial("Activities Management", () => {
     await expect(stoppedRow).toContainText(/min/);
   });
 
-  test("should pause and resume an activity with a break", async ({
+  test("should pause and resume an activity with a break", { tag: "@account-break" }, async ({
     page,
     cleanup,
   }) => {
