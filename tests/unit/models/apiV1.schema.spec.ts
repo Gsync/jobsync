@@ -7,6 +7,9 @@ const paths = (body: unknown) =>
 
 const parse = (body: unknown) => ApiV1AddJobSchema.parse(body);
 
+const messages = (body: unknown) =>
+  ApiV1AddJobSchema.safeParse(body).error?.issues.map((i) => i.message);
+
 describe("ApiV1AddJobSchema", () => {
   it("parses the minimal body", () => {
     expect(parse(base)).toEqual({
@@ -56,6 +59,47 @@ describe("ApiV1AddJobSchema", () => {
     expect(paths({ ...base, jobTitle: "," })).toEqual(["jobTitle"]);
     expect(paths({ ...base, location: "," })).toEqual(["location"]);
     expect(paths({ ...base, source: "," })).toEqual(["source"]);
+  });
+
+  it("rejects a blank job title", () => {
+    expect(paths({ ...base, jobTitle: "   " })).toEqual(["jobTitle"]);
+  });
+
+  it("names the field and the rule in each message", () => {
+    expect(messages({ ...base, company: "  " })).toEqual(["company is required"]);
+    expect(messages({ ...base, jobTitle: "" })).toEqual(["jobTitle is required"]);
+    expect(messages({ ...base, company: "x".repeat(201) })).toEqual([
+      "company must be at most 200 characters",
+    ]);
+    expect(messages({ ...base, jobUrl: "ftp://x.test/a" })).toEqual([
+      "jobUrl must be an http or https URL",
+    ]);
+    for (const field of ["company", "jobTitle", "location", "source"]) {
+      expect(messages({ ...base, [field]: "," })).toEqual([
+        `${field} is not a usable name`,
+      ]);
+    }
+  });
+
+  it("names the field in every NUL message", () => {
+    const fields = [
+      "company",
+      "jobTitle",
+      "jobDescription",
+      "jobUrl",
+      "location",
+      "source",
+      "jobType",
+      "workplaceType",
+      "salaryRange",
+      "status",
+      "via",
+    ];
+    for (const field of fields) {
+      expect(messages({ ...base, [field]: "Ac\u0000me" })).toContain(
+        `${field} must not contain NUL characters`,
+      );
+    }
   });
 
   it("enforces length bounds", () => {

@@ -78,18 +78,29 @@ export function createTimelineDbFake(seed: TimelineRows) {
       return v === cond;
     });
 
-  // Scalar select is ignored: whole rows, joined with StageType.Status.
+  // Mirrors Prisma: a select returns only its truthy fields and needs one.
   const shape = (model: Model, row: Row, args: Row = {}): Row => {
-    const out: Row = { ...row };
-    for (const name of ["Status", "StageType"]) {
-      const r = rel(model, name, row) as Row | undefined;
-      if (r) out[name] = model === "jobStage" ? shape("jobStageType", r) : r;
+    const select = args.select;
+    if (!select) return { ...row };
+    const keys = Object.keys(select).filter((k) => select[k]);
+    if (keys.length === 0)
+      throw new Error(`select on ${model} needs at least one truthy value`);
+    const out: Row = {};
+    for (const key of keys) {
+      if (!(key in relModel)) {
+        out[key] = row[key];
+        continue;
+      }
+      const sub = select[key] === true ? {} : select[key];
+      const related = rel(model, key, row);
+      out[key] = Array.isArray(related)
+        ? related
+            .filter((r) => match(relModel[key], r, sub.where))
+            .map((r) => shape(relModel[key], r, sub))
+        : related
+          ? shape(relModel[key], related, sub)
+          : null;
     }
-    const nested = (args.select ?? args.include)?.stages;
-    if (nested)
-      out.stages = (rel(model, "stages", row) as Row[]).filter((s) =>
-        match("jobStage", s, nested.where),
-      );
     return out;
   };
 

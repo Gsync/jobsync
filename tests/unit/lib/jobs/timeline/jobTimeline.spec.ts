@@ -146,6 +146,21 @@ describe("changeJobStatus", () => {
     await expect(call("s-applied")).rejects.toBeInstanceOf(JobNotFoundError);
 
     expect(fake.rows).toEqual(before);
+    // The resolver can create a stage type row, so it must not run either
+    expect(h.resolve).not.toHaveBeenCalled();
+    expect(fake.db.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("refuses a job deleted between the ownership check and the transaction", async () => {
+    const { fake } = setup(withJob({}, [stage()]));
+    h.resolve.mockImplementationOnce(async () => {
+      fake.rows.job.splice(0);
+      return "t-applied";
+    });
+
+    await expect(call("s-applied")).rejects.toBeInstanceOf(JobNotFoundError);
+
+    expect(fake.rows.jobStage).toHaveLength(1);
   });
 
   it("refuses a hand-added job when requireCreatedVia is set", async () => {
