@@ -27,7 +27,8 @@ npm run test:coverage     # unit + component
 npm run test:integration  # opt-in; skips without BACKUP_TEST_DATABASE_URL
 npm run test:property     # opt-in; seeded fast-check suites
 npm run test:mutation     # opt-in; Stryker over six modules, about 5 minutes
-npm run test:e2e          # Playwright, needs the dev server
+npm run test:e2e          # Playwright, needs the dev server; @account-break tests first
+npm run test:e2e:break    # the @account-break tests alone, one worker
 npm test -- tests/unit/lib/jobs/resolveCompany.spec.ts  # one file
 ```
 
