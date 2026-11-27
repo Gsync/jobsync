@@ -135,6 +135,29 @@ export async function createNewJob(
   return jobId;
 }
 
+// Mints an access token through Settings (the PAT both MCP and API v1 take)
+// and registers it for cleanup before it is revealed.
+export async function createAccessToken(
+  page: Page,
+  cleanup: CleanupRegistry,
+  baseName: string,
+): Promise<{ name: string; token: string }> {
+  const name = uniqueName(baseName);
+  await page.goto("/dashboard/settings");
+  await page.getByText("Access Tokens").click();
+  await page.getByRole("button", { name: "Generate" }).click();
+  await page.getByPlaceholder("e.g. Claude Desktop").fill(name);
+  await page.getByRole("button", { name: "Generate" }).click();
+  cleanup.mcpToken(name);
+
+  const revealDialog = page.getByRole("dialog", { name: "Token Created" });
+  await expect(revealDialog).toBeVisible();
+  const token = await revealDialog.getByRole("textbox").inputValue();
+  expect(token).toMatch(/^jsync_/);
+  await page.getByRole("button", { name: "I saved my token" }).click();
+  return { name, token };
+}
+
 // Records the ids/names a test creates so they can be torn down after the
 // test, pass or fail, via the test-only cleanup API.
 export type CleanupRegistry = {

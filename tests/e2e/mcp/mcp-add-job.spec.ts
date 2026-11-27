@@ -1,6 +1,11 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { test, expect, uniqueName } from "../fixtures";
+import {
+  test,
+  expect,
+  createAccessToken,
+  uniqueName,
+} from "../fixtures";
 
 // Drives the real MCP protocol: creates a token through the Settings UI,
 // then calls add_job over actual HTTP (JSON-RPC via the MCP SDK client)
@@ -8,22 +13,9 @@ import { test, expect, uniqueName } from "../fixtures";
 // handleAddJob end to end, not just the unit-tested function in isolation.
 test.describe("MCP add_job", () => {
   test("creates a job via a real MCP tool call", async ({ page, baseURL, cleanup }) => {
-    const tokenName = uniqueName("e2e mcp token");
     const jobTitle = uniqueName("mcp job title");
     const company = uniqueName("mcp company");
-
-    await page.goto("/dashboard/settings");
-    await page.getByText("Access Tokens").click();
-    await page.getByRole("button", { name: "Generate" }).click();
-    await page.getByPlaceholder("e.g. Claude Desktop").fill(tokenName);
-    await page.getByRole("button", { name: "Generate" }).click();
-    cleanup.mcpToken(tokenName);
-
-    const revealDialog = page.getByRole("dialog", { name: "Token Created" });
-    await expect(revealDialog).toBeVisible();
-    const token = await revealDialog.getByRole("textbox").inputValue();
-    expect(token).toMatch(/^jsync_/);
-    await page.getByRole("button", { name: "I saved my token" }).click();
+    const { token } = await createAccessToken(page, cleanup, "e2e mcp token");
 
     const transport = new StreamableHTTPClientTransport(
       new URL("/api/mcp", baseURL),
