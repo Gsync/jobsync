@@ -50,6 +50,19 @@ export function directCallFor(message?: UIMessage): DirectCall | undefined {
   return { toolName: data.toolName, toolCallId: generateId(), input: data.input };
 }
 
+// A blank Cancel is a stop; the model only retries when it has a reason.
+export function reasonlessCancelFor(message?: UIMessage): string | undefined {
+  if (message?.role !== "assistant") return;
+  const step = message.parts.findLastIndex(part => part.type === "step-start");
+  const calls = message.parts.slice(step + 1).filter(isToolUIPart);
+  const [part] = calls;
+  if (calls.length !== 1 || part.type !== "tool-add_job") return;
+  if (part.state !== "approval-responded" || part.approval.approved !== false) return;
+  const { reason } = part.approval;
+  if (reason !== undefined && (typeof reason !== "string" || reason.trim())) return;
+  return part.toolCallId;
+}
+
 // Tools hold this writer, so a committed result can keep its last steps.
 export function recordToolProgress(writer: UIMessageStreamWriter) {
   const last = new Map<string, unknown>();

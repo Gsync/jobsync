@@ -410,10 +410,13 @@ function useAgentChatValue(initialMessages: UIMessage[]) {
   // instant sendAutomaticallyWhen fires the POST that executes the approved
   // tool, so releasing on that alone would race it and cut the tool off
   // mid-execution; status is what proves the connection is actually free.
+  // Status is still "ready" while the SDK awaits before that POST, so the
+  // auto-send predicate holds the release until the response POST goes out.
   // Released in render; the send itself is the effect below. Wrapped so each
   // release is a new object even if the same message is queued twice.
   const [released, setReleased] = useState<{ message: QueuedMessage }>();
-  if (queued && !approvalPending && chat.status === "ready") {
+  const awaitingAutoSend = lastAssistantMessageIsCompleteWithApprovalResponses({ messages: chat.messages });
+  if (queued && !approvalPending && !awaitingAutoSend && chat.status === "ready") {
     setReleased({ message: queued });
     setQueued(undefined);
     setInterruptedTurn(false);

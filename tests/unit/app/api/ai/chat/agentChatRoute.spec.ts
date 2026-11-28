@@ -527,18 +527,43 @@ describe("POST /api/ai/chat", () => {
     );
   });
 
-  it("does not re-inject the paste head when a denied approval resumes the model", async () => {
+  it("does not re-inject the paste head when a reasoned Cancel resumes the model", async () => {
     const messages = [
       pasteMessage("HEAD_MARKER posting body"),
       {
         id: "m2",
         role: "assistant",
-        parts: [{ type: "tool-add_job", toolCallId: "c1", state: "approval-responded", input: { company: "Acme", jobTitle: "Eng" }, approval: { id: "a1", approved: false } }],
+        parts: [{ type: "tool-add_job", toolCallId: "c1", state: "approval-responded", input: { company: "Acme", jobTitle: "Eng" }, approval: { id: "a1", approved: false, reason: "Wrong company" } }],
       },
     ];
     await POST(req({ messages }));
+    expect(streamText).toHaveBeenCalledTimes(1);
     const sent = JSON.stringify(streamArgs().messages);
     expect(sent).not.toContain("<<<PASTED_");
+  });
+
+  it("ends a Cancel with no reason before loading AI settings, saving it as denied", async () => {
+    vi.mocked(resolveAiConfig).mockResolvedValue({ ok: false, reason: "no_model" } as any);
+    const messages = [
+      { id: "m1", role: "user", parts: [{ type: "text", text: "add a job" }] },
+      { id: "m2", role: "assistant", parts: [
+        { type: "step-start" },
+        { type: "tool-add_job", toolCallId: "c1", state: "approval-responded",
+          input: { company: "Acme", jobTitle: "Eng", jobDescription: "d" }, approval: { id: "a1", approved: false } },
+      ] },
+    ];
+    const res = await POST(req({ messages }));
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain('"type":"tool-output-denied"');
+    expect(body).toContain('"toolCallId":"c1"');
+    expect(resolveAiConfig).not.toHaveBeenCalled();
+    expect(streamText).not.toHaveBeenCalled();
+    expect(startAiCall).not.toHaveBeenCalled();
+    // The first save already holds the terminal state, so a reload never shows "Waiting…".
+    expect(saveChatConversation).toHaveBeenCalledTimes(1);
+    const saved = (saveChatConversation as any).mock.calls[0][0];
+    expect(saved.at(-1).parts.find((p: any) => p.toolCallId === "c1").state).toBe("output-denied");
   });
 
   // Defect A: the model replayed turn 1's no_job on turns 2 and 3 because
